@@ -10,7 +10,7 @@ function CreateIncludesPlugin(options) {
 
 function getScript(filename, nomodule) {
   return (
-    '<script src="{{STATIC_URL}}@nyaruka/temba-components/' +
+    '<script src="{{STATIC_URL}}@nyaruka/temba-components/build/' +
     filename +
     '"' +
     (nomodule ? ' nomodule="">' : ">") +
@@ -34,7 +34,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
           let loaderSource = compilation.assets[filename].source();
           loaderSource = loaderSource.replace(
             /\"\.\/temba-components/g,
-            'static_url + "@nyaruka/temba-components/temba-components'
+            'static_url + "@nyaruka/temba-components/temba-components/build'
           );
           loaderSource = loaderSource.replace(
             /\"polyfills\//g,
@@ -57,7 +57,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
 
             fs.writeFileSync(
               path.resolve(templates, "components-head.html"),
-              '<link rel="preload" href="{{STATIC_URL}}@nyaruka/temba-components/' +
+              '<link rel="preload" href="{{STATIC_URL}}@nyaruka/temba-components/build/' +
                 filename +
                 '" as="script"></link>'
             );
