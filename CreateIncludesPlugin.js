@@ -32,10 +32,12 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
         if (filename.startsWith("loader.")) {
           loaderFile = "prefixed." + filename;
           let loaderSource = compilation.assets[filename].source();
+
           loaderSource = loaderSource.replace(
-            /\"\.\/temba-components/g,
-            'static_url + "@nyaruka/temba-components/temba-components/build'
+            /\"\.\/index\.js/g,
+            'static_url + "@nyaruka/temba-components/build/index.js'
           );
+
           loaderSource = loaderSource.replace(
             /\"polyfills\//g,
             'static_url + "@nyaruka/temba-components/polyfills/'
@@ -50,7 +52,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
         }
 
         // our main components file, it'll be included in the head of our template
-        if (filename.startsWith("index")) {
+        if (filename.startsWith("index.js")) {
           mkdirp(templates).then(err => {
             // console.error(err);
             // if (err) return callback(err);
