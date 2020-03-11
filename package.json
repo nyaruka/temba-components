@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "General Purpose Web Components",
   "author": "Nyaruka <code@nyaruka.com>",
   "homepage": "https://github.com/nyaruka/temba-components/",
@@ -12,6 +12,8 @@
   "main": "index.js",
   "module": "src/temba-components.js",
   "scripts": {
+    "postversion": "git push --tags && git push origin master",
+    "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "build": "webpack --mode production",
     "start": "webpack-dev-server --mode development",
     "start:build": "http-server dist -o"
@@ -34,6 +36,7 @@
     "@types/autosize": "3.0.6",
     "@types/leaflet": "1.4.4",
     "@types/textarea-caret": "3.0.0",
+    "auto-changelog": "^1.16.2",
     "file-loader": "^5.1.0",
     "http-server": "0.12.1",
     "mkdirp": "^1.0.3",
