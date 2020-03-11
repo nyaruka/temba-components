@@ -34,8 +34,8 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
           let loaderSource = compilation.assets[filename].source();
 
           loaderSource = loaderSource.replace(
-            /\"\.\/index\.js/g,
-            'static_url + "@nyaruka/temba-components/build/index.js'
+            /\"\.\/temba_components/g,
+            'static_url + "@nyaruka/temba-components/build/temba_components'
           );
 
           loaderSource = loaderSource.replace(
@@ -52,11 +52,8 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
         }
 
         // our main components file, it'll be included in the head of our template
-        if (filename.startsWith("index.js")) {
+        if (filename.startsWith("temba-components")) {
           mkdirp(templates).then(err => {
-            // console.error(err);
-            // if (err) return callback(err);
-
             fs.writeFileSync(
               path.resolve(templates, "components-head.html"),
               '<link rel="preload" href="{{STATIC_URL}}@nyaruka/temba-components/build/' +
@@ -64,6 +61,11 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
                 '" as="script"></link>'
             );
           });
+
+          // fs.copyFileSync(
+          // path.resolve(compiler.options.output.path, filename),
+          // path.resolve(compiler.options.output.path, "index.js")
+          // );
         }
 
         // we have some polyfills that are always present in our body, keep track of those here
@@ -79,9 +81,6 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
       // our main body template has a couple universal polyfills and our dynamic loader for any remaining
       // ones the current browser might need
       mkdirp(templates).then(err => {
-        // console.error(err);
-        // if (err) return callback(err);
-
         fs.writeFileSync(
           path.resolve(templates, "components-body.html"),
           getScript(bodyScripts[0], true) +

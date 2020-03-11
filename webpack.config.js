@@ -28,7 +28,7 @@ module.exports = configs.map(config => {
       path: path.resolve(process.cwd(), "build"),
       library: "temba-components",
       libraryTarget: "umd",
-      filename: `${prefix}index.js`
+      filename: `temba-components-[hash].js`
     },
     module: {
       rules: [
