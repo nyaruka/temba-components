@@ -74,7 +74,6 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
         }
       });
 
-      console.log(templates);
       // our main body template has a couple universal polyfills and our dynamic loader for any remaining
       // ones the current browser might need
       mkdirp(templates).then(err => {
