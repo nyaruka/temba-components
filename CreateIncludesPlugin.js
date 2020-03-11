@@ -50,7 +50,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
         }
 
         // our main components file, it'll be included in the head of our template
-        if (filename.startsWith("temba-components")) {
+        if (filename.startsWith("index")) {
           mkdirp(templates).then(err => {
             // console.error(err);
             // if (err) return callback(err);
