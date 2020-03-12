@@ -13,11 +13,8 @@ import FormElement from "../FormElement";
 
 import { getId } from "./helpers";
 
-import TextInput from "../textinput/TextInput";
-
 import flru from "flru";
 import { CustomEventType } from "../interfaces";
-import { styleMap } from "lit-html/directives/style-map.js";
 
 const LOOK_AHEAD = 20;
 
@@ -607,10 +604,6 @@ export default class Select extends FormElement {
 
     this.anchorElement = this.shadowRoot.querySelector(".select-container");
 
-    if (this.searchable) {
-      this.quietMillis = 200;
-    }
-
     if (!this.hasAttribute("tabindex")) {
       this.setAttribute("tabindex", "0");
     }
@@ -635,6 +628,10 @@ export default class Select extends FormElement {
             }
           }
         }
+      }
+
+      if (this.searchable && this.staticOptions.length === 0) {
+        this.quietMillis = 200;
       }
     }, 0);
   }
