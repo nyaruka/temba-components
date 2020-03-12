@@ -10,8 +10,7 @@
     "build"
   ],
   "private": false,
-  "main": "index.js",
-  "module": "src/temba-components.js",
+  "main": "build/index.js",
   "scripts": {
     "postversion": "git push --tags && git push origin master",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
