@@ -34,8 +34,8 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
           let loaderSource = compilation.assets[filename].source();
 
           loaderSource = loaderSource.replace(
-            /\"\.\/temba_components/g,
-            'static_url + "@nyaruka/temba-components/build/temba_components'
+            /\"\.\/temba-components/g,
+            'static_url + "@nyaruka/temba-components/build/temba-components'
           );
 
           loaderSource = loaderSource.replace(
@@ -61,11 +61,6 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
                 '" as="script"></link>'
             );
           });
-
-          // fs.copyFileSync(
-          // path.resolve(compiler.options.output.path, filename),
-          // path.resolve(compiler.options.output.path, "index.js")
-          // );
         }
 
         // we have some polyfills that are always present in our body, keep track of those here

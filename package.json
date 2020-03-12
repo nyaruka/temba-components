@@ -9,6 +9,7 @@
   "files": [
     "build"
   ],
+  "private": false,
   "main": "index.js",
   "module": "src/temba-components.js",
   "scripts": {
@@ -16,7 +17,8 @@
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "build": "webpack --mode production && cp build/temba-components* build/index.js",
     "start": "webpack-dev-server --mode development",
-    "start:build": "http-server dist -o"
+    "start:build": "http-server dist -o",
+    "dev": "yarn run build && cp -R ./build/* ../rapidpro/node_modules/@nyaruka/temba-components/build/ && cp -R ./build/* ../floweditor/node_modules/@nyaruka/temba-components/build/"
   },
   "dependencies": {
     "autosize": "4.0.2",
