@@ -462,6 +462,7 @@ export default class Select extends FormElement {
               option.name.toLowerCase().indexOf(query.toLowerCase()) > -1
           )
         );
+        this.cursorIndex = 0;
       }
 
       if (this.endpoint) {
