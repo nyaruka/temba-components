@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   css,
-  property
+  property,
 } from "lit-element";
 import { getUrl, getClasses } from "../utils";
 import axios, { AxiosResponse, CancelTokenSource, AxiosStatic } from "axios";
@@ -188,8 +188,16 @@ export default class Select extends FormElement {
         margin: none;
         border: none;
         visibility: visible;
-
         // padding: 9px;
+      }
+
+      .searchable.single.no-search-input input {
+        flex-grow: inherit;
+        min-width: 1px;
+      }
+
+      .searchable.single.search-input .selected .selected-item {
+        display: none;
       }
 
       /*
@@ -315,7 +323,11 @@ export default class Select extends FormElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has("input") && !changedProperties.has("values")) {
+    if (
+      changedProperties.has("input") &&
+      !changedProperties.has("values") &&
+      !changedProperties.has("options")
+    ) {
       if (this.lastQuery) {
         window.clearTimeout(this.lastQuery);
       }
@@ -387,7 +399,6 @@ export default class Select extends FormElement {
         const exists = options.find(
           (option: any) => option.id === arbitraryOption.id
         );
-        console.log("Exists", exists, arbitraryOption, options);
         if (!exists) {
           if (options.length > 0) {
             if (options[0].arbitrary) {
@@ -408,8 +419,8 @@ export default class Select extends FormElement {
       if (getId(this.values[0])) {
         if (this.multi) {
           this.options = options.filter(
-            option =>
-              !this.values.find(selected => getId(selected) === getId(option))
+            (option) =>
+              !this.values.find((selected) => getId(selected) === getId(option))
           );
           return;
         } else {
@@ -417,7 +428,7 @@ export default class Select extends FormElement {
           this.options = options;
 
           this.cursorIndex = options.findIndex(
-            option => getId(option) === getId(this.values[0])
+            (option) => getId(option) === getId(this.values[0])
           );
           this.requestUpdate("cursorIndex");
           return;
@@ -489,7 +500,7 @@ export default class Select extends FormElement {
             if (this.cache) {
               this.lruCache.set(cacheKey, {
                 options: this.options,
-                complete: this.complete
+                complete: this.complete,
               });
             }
 
@@ -516,6 +527,7 @@ export default class Select extends FormElement {
     this.focused = false;
     if (this.options.length > 0) {
       this.options = [];
+      this.input = "";
     }
   }
 
@@ -574,6 +586,7 @@ export default class Select extends FormElement {
       const input = this.shadowRoot.querySelector("input");
       if (input) {
         input.click();
+        input.focus();
         return;
       }
 
@@ -592,10 +605,10 @@ export default class Select extends FormElement {
       { event: CustomEventType.Canceled, method: this.handleCancel },
       {
         event: CustomEventType.CursorChanged,
-        method: this.handleCursorChanged
+        method: this.handleCursorChanged,
       },
       { event: "focusout", method: this.handleBlur },
-      { event: "focusin", method: this.handleFocus }
+      { event: "focusin", method: this.handleFocus },
     ];
   }
 
@@ -645,9 +658,7 @@ export default class Select extends FormElement {
   }
 
   private renderSelectedItemDefault(option: any): TemplateResult {
-    return html`
-      <div class="name">${option.name}</div>
-    `;
+    return html` <div class="name">${option.name}</div> `;
   }
 
   public serializeValue(value: any): string {
@@ -661,9 +672,7 @@ export default class Select extends FormElement {
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : "";
     const placeholderDiv = !this.searchable
-      ? html`
-          <div class="placeholder">${placeholder}</div>
-        `
+      ? html` <div class="placeholder">${placeholder}</div> `
       : null;
 
     const classes = getClasses({
@@ -672,15 +681,24 @@ export default class Select extends FormElement {
       searchable: this.searchable,
       empty: this.values.length === 0,
       options: this.options.length > 0,
-      focused: this.focused
+      focused: this.focused,
+      "search-input": this.input.length > 0,
+      "no-search-input": this.input.length === 0,
     });
 
-    let hasInput = this.searchable;
-
-    // if we are single select and have a selection, no input
-    if (!this.multi && this.values.length > 0) {
-      hasInput = false;
-    }
+    const input = this.searchable
+      ? html`
+          <input
+            style=""
+            @keyup=${this.handleKeyUp}
+            @keydown=${this.handleKeyDown}
+            @click=${this.handleClick}
+            type="text"
+            placeholder=${placeholder}
+            .value=${this.input}
+          />
+        `
+      : placeholderDiv;
 
     return html`
       <temba-field
@@ -696,6 +714,7 @@ export default class Select extends FormElement {
         >
           <div class="left">
             <div class="selected">
+              ${!this.multi ? input : null}
               ${this.values.map(
                 (selected: any, index: number) => html`
                   <div
@@ -727,19 +746,7 @@ export default class Select extends FormElement {
                   </div>
                 `
               )}
-              ${hasInput
-                ? html`
-                    <input
-                      style=""
-                      @keyup=${this.handleKeyUp}
-                      @keydown=${this.handleKeyDown}
-                      @click=${this.handleClick}
-                      type="text"
-                      placeholder=${placeholder}
-                      .value=${this.input}
-                    />
-                  `
-                : placeholderDiv}
+              ${this.multi ? input : null}
             </div>
           </div>
 
