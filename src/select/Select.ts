@@ -99,6 +99,7 @@ export default class Select extends FormElement {
         transition: all ease-in-out 200ms;
         cursor: pointer;
         border-radius: var(--curvature-widget);
+        background: var(--color-widget-bg);
       }
 
       .select-container:hover {
