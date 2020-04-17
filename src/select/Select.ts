@@ -142,7 +142,7 @@ export default class Select extends FormElement {
       }
 
       .multi.empty .selected {
-        padding: 9px;
+        padding: var(--temba-select-selected-padding);
       }
 
       .selected .selected-item {
