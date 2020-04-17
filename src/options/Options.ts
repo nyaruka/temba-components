@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   property,
-  css
+  css,
 } from "lit-element";
 import { CustomEventType } from "../interfaces";
 import RapidElement, { EventHandler } from "../RapidElement";
@@ -24,6 +24,7 @@ export default class Options extends RapidElement {
         z-index: 1;
         user-select: none;
         border-radius: var(--curvature-widget);
+        overflow: hidden;
       }
 
       .options {
@@ -160,18 +161,14 @@ export default class Options extends RapidElement {
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html`
-      ${option.name}
-    `;
+    return html` ${option.name} `;
   }
 
   private renderOptionDetailDefault(
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html`
-      ${option.detail}
-    `;
+    return html` ${option.detail} `;
   }
 
   private handleSelection(tabbed: boolean = false) {
@@ -241,7 +238,7 @@ export default class Options extends RapidElement {
   public getEventHandlers(): EventHandler[] {
     return [
       { event: "keydown", method: this.handleKeyDown, isDocument: true },
-      { event: "scroll", method: this.calculatePosition, isDocument: true }
+      { event: "scroll", method: this.calculatePosition, isDocument: true },
     ];
   }
 
@@ -260,16 +257,16 @@ export default class Options extends RapidElement {
       left: `${this.left}px`,
       width: `${this.width}px`,
       "margin-left": `${this.marginHorizontal}px`,
-      "margin-top": `${vertical}px`
+      "margin-top": `${vertical}px`,
     };
 
     const optionsStyle = {
-      width: `${this.width}px`
+      width: `${this.width}px`,
     };
 
     const classes = getClasses({
       show: this.visible,
-      top: this.poppedTop
+      top: this.poppedTop,
     });
 
     return html`
@@ -289,7 +286,7 @@ export default class Options extends RapidElement {
                 @click=${(evt: MouseEvent) => {
                   evt.preventDefault();
                   this.fireCustomEvent(CustomEventType.Selection, {
-                    selected: option
+                    selected: option,
                   });
                 }}
                 class="option ${index == this.cursorIndex ? "focused" : ""}"

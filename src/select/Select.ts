@@ -23,6 +23,8 @@ interface StaticOption {
   value: string;
 }
 
+/* 12px, 13px, pad 6px */
+
 @customElement("temba-select")
 export default class Select extends FormElement {
   static get styles() {
@@ -35,6 +37,10 @@ export default class Select extends FormElement {
         outline: none;
 
         --arrow-icon-color: var(--color-text-dark-secondary);
+
+        --temba-select-selected-padding: 9px;
+        --temba-select-selected-line-height: 16px;
+        --temba-select-selected-font-size: 12px;
       }
 
       :host:focus {
@@ -126,7 +132,7 @@ export default class Select extends FormElement {
         flex-direction: row;
         align-items: stretch;
         user-select: none;
-        padding: 9px;
+        padding: var(--temba-select-selected-padding);
       }
 
       .multi .selected {
@@ -142,7 +148,7 @@ export default class Select extends FormElement {
         display: flex;
         overflow: hidden;
         color: var(--color-widget-text);
-        line-height: 16px;
+        line-height: var(--temba-select-selected-line-height);
       }
 
       .multi .selected .selected-item {
@@ -158,7 +164,7 @@ export default class Select extends FormElement {
 
       .selected-item .name {
         padding: 0px;
-        font-size: 13px;
+        font-size: var(--temba-select-selected-font-size);
         align-self: center;
       }
 
@@ -244,7 +250,7 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   searchOnFocus: boolean = false;
 
-  @property()
+  @property({ type: String })
   placeholder: string = "";
 
   @property()
@@ -350,7 +356,7 @@ export default class Select extends FormElement {
     }
   }
 
-  private handleOptionSelection(event: CustomEvent) {
+  public handleOptionSelection(event: CustomEvent) {
     const selected = event.detail.selected;
 
     if (this.multi) {
@@ -366,6 +372,7 @@ export default class Select extends FormElement {
     this.options = [];
     this.input = "";
     this.selectedIndex = -1;
+    this.fireEvent("change");
   }
 
   private getOptionsDefault(response: AxiosResponse): any[] {
@@ -379,9 +386,10 @@ export default class Select extends FormElement {
     return !response.data["more"];
   }
 
-  private removeSelection(selectionToRemove: any): void {
+  public handleRemoveSelection(selectionToRemove: any): void {
     this.removeValue(selectionToRemove);
     this.options = [];
+    this.fireEvent("change");
   }
 
   private createArbitraryOptionDefault(input: string): any {
@@ -424,13 +432,18 @@ export default class Select extends FormElement {
           );
           return;
         } else {
-          // single select should set our cursor to the selected item
+          // if no search, single select should set our cursor to the selected item
           this.options = options;
 
-          this.cursorIndex = options.findIndex(
-            (option) => getId(option) === getId(this.values[0])
-          );
+          if (!this.input) {
+            this.cursorIndex = options.findIndex(
+              (option) => getId(option) === getId(this.values[0])
+            );
+          } else {
+            this.cursorIndex = 0;
+          }
           this.requestUpdate("cursorIndex");
+
           return;
         }
       }
@@ -462,7 +475,6 @@ export default class Select extends FormElement {
               option.name.toLowerCase().indexOf(query.toLowerCase()) > -1
           )
         );
-        this.cursorIndex = 0;
       }
 
       if (this.endpoint) {
@@ -603,6 +615,7 @@ export default class Select extends FormElement {
 
   public getEventHandlers(): EventHandler[] {
     return [
+      { event: CustomEventType.Selection, method: this.handleOptionSelection },
       { event: CustomEventType.Canceled, method: this.handleCancel },
       {
         event: CustomEventType.CursorChanged,
@@ -672,9 +685,9 @@ export default class Select extends FormElement {
 
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : "";
-    const placeholderDiv = !this.searchable
-      ? html` <div class="placeholder">${placeholder}</div> `
-      : null;
+    const placeholderDiv = html`
+      <div class="placeholder">${placeholder}</div>
+    `;
 
     const classes = getClasses({
       multi: this.multi,
@@ -730,7 +743,7 @@ export default class Select extends FormElement {
                             @click=${(evt: MouseEvent) => {
                               evt.preventDefault();
                               evt.stopPropagation();
-                              this.removeSelection(selected);
+                              this.handleRemoveSelection(selected);
                             }}
                           >
                             <fa-icon
@@ -765,7 +778,6 @@ export default class Select extends FormElement {
       </temba-field>
 
       <temba-options
-        @temba-selection=${this.handleOptionSelection}
         .cursorIndex=${this.cursorIndex}
         .renderOptionDetail=${this.renderOptionDetail}
         .renderOptionName=${this.renderOptionName}
