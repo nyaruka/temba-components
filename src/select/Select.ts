@@ -206,20 +206,8 @@ export default class Select extends FormElement {
         display: none;
       }
 
-      /*
-      border: none;
-      margin: 0;
-      background: none;
-      color: var(--color-widget-text);
-      font-size: 13px;
-      cursor: text;
-      resize: none;
-      font-weight: 300;
-      */
-
       .empty input {
         width: 100%;
-        /* caret-color: transparent; */
       }
 
       .searchable input {
@@ -236,10 +224,10 @@ export default class Select extends FormElement {
       }
 
       .placeholder {
-        font-size: 13px;
+        font-size: var(--temba-select-selected-font-size);
         color: var(--color-placeholder);
         display: none;
-        line-height: 16px;
+        line-height: var(--temba-select-selected-line-height);
       }
     `;
   }
