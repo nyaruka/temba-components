@@ -1,5 +1,5 @@
-import RapidElement from './RapidElement';
-import { property } from 'lit-element';
+import RapidElement from "./RapidElement";
+import { property } from "lit-element";
 
 /**
  * FormElement is a component that appends a hidden input (outside of
@@ -8,25 +8,25 @@ import { property } from 'lit-element';
 export default class FormElement extends RapidElement {
   private hiddenInputs: HTMLInputElement[] = [];
 
-  @property({type: String, attribute: "help_text"})
+  @property({ type: String, attribute: "help_text" })
   helpText: string;
 
-  @property({type: Boolean, attribute: "widget_only"})
+  @property({ type: Boolean, attribute: "widget_only" })
   widgetOnly: boolean;
 
-  @property({type: String})
+  @property({ type: String })
   label: string;
-  
-  @property({type: Array})
+
+  @property({ type: Array })
   errors: string[];
-  
-  @property({type: Array})
+
+  @property({ type: Array })
   values: any[] = [];
 
-  @property({type: String})
-  value: string = '';
+  @property({ type: String })
+  value: string = "";
 
-  @property({attribute: false})
+  @property({ attribute: false })
   inputRoot: HTMLElement = this;
 
   public setValue(value: any) {
@@ -44,16 +44,16 @@ export default class FormElement extends RapidElement {
   }
 
   public removeValue(valueToRemove: any) {
-    this.values = this.values.filter((value: any) => value !== valueToRemove)
+    this.values = this.values.filter((value: any) => value !== valueToRemove);
     this.requestUpdate("values");
   }
 
-  public popValue() { 
+  public popValue() {
     this.values.pop();
     this.requestUpdate("values");
   }
 
-  public clear() { 
+  public clear() {
     this.values = [];
     this.requestUpdate("values");
   }
@@ -63,7 +63,7 @@ export default class FormElement extends RapidElement {
   }
 
   private updateInputs(): void {
-    for(let ele = null; ele = this.hiddenInputs.pop();) {
+    for (let ele = null; (ele = this.hiddenInputs.pop()); ) {
       ele.remove();
     }
 
@@ -81,9 +81,8 @@ export default class FormElement extends RapidElement {
     super.updated(changedProperties);
 
     // if our cursor changed, lets make sure our scrollbox is showing it
-    if(changedProperties.has("values")) {
+    if (changedProperties.has("values")) {
       this.updateInputs();
     }
   }
- 
 }

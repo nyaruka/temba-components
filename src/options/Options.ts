@@ -3,12 +3,12 @@ import {
   TemplateResult,
   html,
   property,
-  css
+  css,
 } from "lit-element";
 import { CustomEventType } from "../interfaces";
 import RapidElement, { EventHandler } from "../RapidElement";
 import { styleMap } from "lit-html/directives/style-map.js";
-import { getClasses } from "../utils";
+import { getClasses, getScrollParent, isElementVisible } from "../utils";
 
 @customElement("temba-options")
 export default class Options extends RapidElement {
@@ -24,6 +24,7 @@ export default class Options extends RapidElement {
         z-index: 1;
         user-select: none;
         border-radius: var(--curvature-widget);
+        overflow: hidden;
       }
 
       .options {
@@ -103,6 +104,22 @@ export default class Options extends RapidElement {
   @property({ attribute: false })
   renderOptionDetail: (option: any, selected: boolean) => void;
 
+  scrollParent: HTMLElement = null;
+
+  firstUpdated() {
+    this.scrollParent = getScrollParent(this);
+    this.calculatePosition = this.calculatePosition.bind(this);
+    if (this.scrollParent) {
+      this.scrollParent.addEventListener("scroll", this.calculatePosition);
+    }
+  }
+
+  disconnectedCallback() {
+    if (this.scrollParent) {
+      this.scrollParent.removeEventListener("scroll", this.calculatePosition);
+    }
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
@@ -160,18 +177,14 @@ export default class Options extends RapidElement {
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html`
-      ${option.name}
-    `;
+    return html` ${option.name} `;
   }
 
   private renderOptionDetailDefault(
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html`
-      ${option.detail}
-    `;
+    return html` ${option.detail} `;
   }
 
   private handleSelection(tabbed: boolean = false) {
@@ -215,33 +228,48 @@ export default class Options extends RapidElement {
   }
 
   private calculatePosition() {
-    const optionsBounds = this.shadowRoot
-      .querySelector(".options-container")
-      .getBoundingClientRect();
-    if (this.anchorTo) {
-      const anchorBounds = this.anchorTo.getBoundingClientRect();
-      const topTop = anchorBounds.top - optionsBounds.height;
+    if (this.visible) {
+      const optionsBounds = this.shadowRoot
+        .querySelector(".options-container")
+        .getBoundingClientRect();
 
-      if (
-        topTop > 0 &&
-        anchorBounds.bottom + optionsBounds.height > window.innerHeight
-      ) {
-        this.top = topTop; //  + window.pageYOffset;
-        this.poppedTop = true;
-      } else {
-        this.top = anchorBounds.bottom; //  + window.pageYOffset;
-        this.poppedTop = false;
+      if (this.anchorTo) {
+        const anchorBounds = this.anchorTo.getBoundingClientRect();
+        const topTop = anchorBounds.top - optionsBounds.height;
+
+        if (this.anchorTo && this.scrollParent) {
+          if (!isElementVisible(this.anchorTo, this.scrollParent)) {
+            console.log("Not visible canceling");
+            this.fireCustomEvent(CustomEventType.Canceled);
+          }
+        }
+        //      console.log(isVisible(this.anchorTo));
+        /* console.log(anchorBounds);
+      if (this.scrollParent) {
+        console.log(this.scrollParent.getBoundingClientRect());
+      }*/
+
+        if (
+          topTop > 0 &&
+          anchorBounds.bottom + optionsBounds.height > window.innerHeight
+        ) {
+          this.top = topTop; //  + window.pageYOffset;
+          this.poppedTop = true;
+        } else {
+          this.top = anchorBounds.bottom; //  + window.pageYOffset;
+          this.poppedTop = false;
+        }
+
+        this.left = anchorBounds.left;
+        this.width = anchorBounds.width - 2 - this.marginHorizontal * 2;
       }
-
-      this.left = anchorBounds.left;
-      this.width = anchorBounds.width - 2 - this.marginHorizontal * 2;
     }
   }
 
   public getEventHandlers(): EventHandler[] {
     return [
       { event: "keydown", method: this.handleKeyDown, isDocument: true },
-      { event: "scroll", method: this.calculatePosition, isDocument: true }
+      { event: "scroll", method: this.calculatePosition, isDocument: true },
     ];
   }
 
@@ -260,16 +288,16 @@ export default class Options extends RapidElement {
       left: `${this.left}px`,
       width: `${this.width}px`,
       "margin-left": `${this.marginHorizontal}px`,
-      "margin-top": `${vertical}px`
+      "margin-top": `${vertical}px`,
     };
 
     const optionsStyle = {
-      width: `${this.width}px`
+      width: `${this.width}px`,
     };
 
     const classes = getClasses({
       show: this.visible,
-      top: this.poppedTop
+      top: this.poppedTop,
     });
 
     return html`
@@ -289,7 +317,7 @@ export default class Options extends RapidElement {
                 @click=${(evt: MouseEvent) => {
                   evt.preventDefault();
                   this.fireCustomEvent(CustomEventType.Selection, {
-                    selected: option
+                    selected: option,
                   });
                 }}
                 class="option ${index == this.cursorIndex ? "focused" : ""}"

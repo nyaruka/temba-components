@@ -1,5 +1,5 @@
-import { LitElement } from 'lit-element';
-import { CustomEventType } from './interfaces';
+import { LitElement } from "lit-element";
+import { CustomEventType } from "./interfaces";
 
 export interface EventHandler {
   event: string;
@@ -8,7 +8,6 @@ export interface EventHandler {
 }
 
 export default class RapidElement extends LitElement {
-
   public getEventHandlers(): EventHandler[] {
     return [];
   }
@@ -36,18 +35,20 @@ export default class RapidElement extends LitElement {
   }
 
   public fireEvent(type: string): void {
-    this.dispatchEvent(new Event(type, {
-      bubbles: true,
-      composed: true
-  }))
+    this.dispatchEvent(
+      new Event(type, {
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   public fireCustomEvent(type: CustomEventType, detail: any = {}): void {
     const event = new CustomEvent(type, {
-        detail,
-        bubbles: true,
-        composed: true
+      detail,
+      bubbles: true,
+      composed: true,
     });
     this.dispatchEvent(event);
-  };
+  }
 }
