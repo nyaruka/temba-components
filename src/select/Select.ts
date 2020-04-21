@@ -40,7 +40,7 @@ export default class Select extends FormElement {
 
         --temba-select-selected-padding: 9px;
         --temba-select-selected-line-height: 16px;
-        --temba-select-selected-font-size: 12px;
+        --temba-select-selected-font-size: 14px;
       }
 
       :host:focus {
@@ -184,18 +184,22 @@ export default class Select extends FormElement {
       }
 
       input {
-        padding: 0;
-        // padding: 5px 4px;
         font-size: 13px;
-        width: 0;
+        width: 0px;
         cursor: pointer;
         background: none;
         resize: none;
-        box-shadow: none;
-        margin: none;
-        border: none;
+        border: none !important;
         visibility: visible;
-        // padding: 9px;
+        line-height: inherit !important;
+        height: inherit !important;
+        margin: 0px !important;
+        padding: 0px !important;
+        box-shadow: none !important;
+      }
+
+      input:focus {
+        box-shadow: none !important;
       }
 
       .searchable.single.no-search-input input {
@@ -217,11 +221,15 @@ export default class Select extends FormElement {
         background: none;
         color: var(--color-text);
         resize: none;
-        box-shadow: none;
+        box-shadow: none !important;
         margin: none;
         flex-grow: 1;
         border: none;
         caret-color: inherit;
+      }
+
+      .searchable input:focus {
+        box-shadow: none !important;
       }
 
       .placeholder {

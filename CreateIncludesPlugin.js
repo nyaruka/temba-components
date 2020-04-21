@@ -18,14 +18,14 @@ function getScript(filename, nomodule) {
   );
 }
 
-CreateIncludesPlugin.prototype.apply = function(compiler) {
+CreateIncludesPlugin.prototype.apply = function (compiler) {
   let loaderFile = "";
   const bodyScripts = [];
 
   compiler.plugin(
     "emit",
-    function(compilation, callback) {
-      Object.keys(compilation.assets).forEach(function(filename) {
+    function (compilation, callback) {
+      Object.keys(compilation.assets).forEach(function (filename) {
         // The loader file is responsible for bringing in polyfills as
         // necessary. It references files that need to be located
         // inside our static directory
@@ -40,7 +40,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
 
           loaderSource = loaderSource.replace(
             /\"polyfills\//g,
-            'static_url + "@nyaruka/temba-components/polyfills/'
+            'static_url + "@nyaruka/temba-components/build/polyfills/'
           );
 
           mkdirp(path.resolve(compiler.options.output.path)).then(() => {
@@ -53,7 +53,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
 
         // our main components file, it'll be included in the head of our template
         if (filename.startsWith("temba-components")) {
-          mkdirp(templates).then(err => {
+          mkdirp(templates).then((err) => {
             fs.writeFileSync(
               path.resolve(templates, "components-head.html"),
               '<link rel="preload" href="{{STATIC_URL}}@nyaruka/temba-components/build/' +
@@ -75,7 +75,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
 
       // our main body template has a couple universal polyfills and our dynamic loader for any remaining
       // ones the current browser might need
-      mkdirp(templates).then(err => {
+      mkdirp(templates).then((err) => {
         fs.writeFileSync(
           path.resolve(templates, "components-body.html"),
           getScript(bodyScripts[0], true) +
@@ -87,7 +87,7 @@ CreateIncludesPlugin.prototype.apply = function(compiler) {
     }.bind(this)
   );
 
-  compiler.plugin("done", function() {
+  compiler.plugin("done", function () {
     console.log("\x1b[36m%s\x1b[0m", "Generated templates in " + templates);
     console.log(
       "\x1b[36m%s\x1b[0m",
