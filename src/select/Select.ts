@@ -280,6 +280,9 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   focused: boolean = false;
 
+  @property({ type: Boolean })
+  disabled: boolean = false;
+
   @property({ attribute: false })
   selectedIndex: number = -1;
 
@@ -592,6 +595,10 @@ export default class Select extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
+    if (this.disabled) {
+      return;
+    }
+
     if ((event.target as any).tagName !== "INPUT") {
       const input = this.shadowRoot.querySelector("input");
       if (input) {
@@ -678,6 +685,18 @@ export default class Select extends FormElement {
       return value.value;
     }
     return super.serializeValue(value);
+  }
+
+  public setSelection(value: string): void {
+    for (const option of this.staticOptions) {
+      if (option.value === value) {
+        if (this.values.length === 0 || this.values[0].value !== "" + value) {
+          this.setValue(option);
+          this.fireEvent("change");
+        }
+        return;
+      }
+    }
   }
 
   public render(): TemplateResult {

@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   css,
-  property
+  property,
 } from "lit-element";
 import { styleMap } from "lit-html/directives/style-map.js";
 import FormElement from "../FormElement";
@@ -12,10 +12,6 @@ import FormElement from "../FormElement";
 export default class TextInput extends FormElement {
   static get styles() {
     return css`
-      :host {
-        font-family: var(--font-family);
-      }
-
       .input-container {
         border-radius: var(--curvature-widget);
         cursor: text;
@@ -49,6 +45,7 @@ export default class TextInput extends FormElement {
         margin: 0;
         background: none;
         color: var(--color-widget-text);
+        font-family: var(--font-family);
         font-size: 13px;
         cursor: text;
         resize: none;
@@ -108,7 +105,7 @@ export default class TextInput extends FormElement {
   // TODO make this a formelement and have contactsearch set the root
   public render(): TemplateResult {
     const containerStyle = {
-      height: `${this.textarea ? "100%" : "auto"}`
+      height: `${this.textarea ? "100%" : "auto"}`,
     };
 
     return html`

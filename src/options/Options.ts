@@ -25,11 +25,12 @@ export default class Options extends RapidElement {
         user-select: none;
         border-radius: var(--curvature-widget);
         overflow: hidden;
+        margin-top: var(--options-margin-top);
       }
 
       .options {
         border-radius: var(--curvature-widget);
-        overflow-y: scroll;
+        overflow-y: auto;
         max-height: 225px;
         border: none;
       }
@@ -78,7 +79,7 @@ export default class Options extends RapidElement {
   marginHorizontal: number = 0;
 
   @property({ type: Number })
-  marginVertical: number = 3;
+  marginVertical: number = 7;
 
   @property({ type: Object })
   anchorTo: HTMLElement;
@@ -300,12 +301,16 @@ export default class Options extends RapidElement {
       top: this.poppedTop,
     });
 
+    const classesInner = getClasses({
+      options: true,
+    });
+
     return html`
       <div
         class="options-container ${classes}"
         style=${styleMap(containerStyle)}
       >
-        <div class="options" style=${styleMap(optionsStyle)}>
+        <div class="${classesInner}" style=${styleMap(optionsStyle)}>
           ${this.options.map(
             (option: any, index: number) => html`
               <div
