@@ -4,7 +4,7 @@ import {
   html,
   css,
   customElement,
-  property
+  property,
 } from "lit-element";
 import { getClasses } from "../utils";
 
@@ -54,10 +54,10 @@ export default class Button extends LitElement {
       }
 
       .button-mask {
-        padding: 8px 14px;
+        padding: var(--button-y) var(--button-x);
         border-radius: var(--curvature);
         border: 1px solid transparent;
-        transition: all ease-in 100ms;
+        transition: all ease-in 250ms;
       }
 
       .button-container.button-disabled {
@@ -97,6 +97,11 @@ export default class Button extends LitElement {
         color: var(--color-button-primary-text);
       }
 
+      .button-attention {
+        background: var(--color-button-attention);
+        color: var(--color-button-primary-text);
+      }
+
       .button-secondary {
         background: transparent;
         color: var(--color-text);
@@ -117,6 +122,9 @@ export default class Button extends LitElement {
 
   @property({ type: Boolean })
   secondary: boolean;
+
+  @property({ type: Boolean })
+  attention: boolean;
 
   @property()
   name: string;
@@ -160,10 +168,13 @@ export default class Button extends LitElement {
       <div
         class="button-container 
           ${getClasses({
-          "button-primary": this.primary,
+          "button-primary":
+            this.primary ||
+            (!this.primary && !this.secondary && !this.attention),
           "button-secondary": this.secondary,
           "button-disabled": this.disabled,
-          "button-active": this.active
+          "button-active": this.active,
+          "button-attention": this.attention,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}
