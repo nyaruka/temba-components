@@ -90,11 +90,18 @@ export default class TextInput extends FormElement {
     super.updated(changes);
     if (changes.has("value")) {
       this.setValues([this.value]);
+      this.fireEvent("change");
     }
   }
 
   private handleChange(update: any): void {
     this.value = update.target.value;
+    this.fireEvent("change");
+  }
+
+  private handleInput(update: any): void {
+    this.value = update.target.value;
+    this.fireEvent("input");
   }
 
   /** we just return the value since it should be a string */
@@ -131,7 +138,8 @@ export default class TextInput extends FormElement {
                   class="textinput"
                   name=${this.name}
                   placeholder=${this.placeholder}
-                  @input=${this.handleChange}
+                  @change=${this.handleChange}
+                  @input=${this.handleInput}
                   .value=${this.value}
                 >
                 </textarea>
@@ -141,9 +149,10 @@ export default class TextInput extends FormElement {
                   class="textinput"
                   name=${this.name}
                   type="text"
-                  @input=${this.handleChange}
+                  @change=${this.handleChange}
+                  @input=${this.handleInput}
                   placeholder=${this.placeholder}
-                  .value=${this.value}
+                  .value="${this.value}"
                 />
               `}
           <slot></slot>
