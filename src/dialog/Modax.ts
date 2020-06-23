@@ -6,6 +6,7 @@ import axios, { AxiosResponse, CancelTokenSource } from "axios";
 import { unsafeHTML } from "lit-html/directives/unsafe-html";
 import TextInput from "../textinput/TextInput";
 import { throws } from "assert";
+import { CustomEventType } from "../interfaces";
 
 @customElement("temba-modax")
 export default class Modax extends RapidElement {
@@ -18,7 +19,7 @@ export default class Modax extends RapidElement {
       }
 
       .control-group {
-        margin-bottom: 15px;
+        margin-bottom: 8px;
         display: block;
       }
 
@@ -37,15 +38,22 @@ export default class Modax extends RapidElement {
       }
 
       ul.errorlist {
-        margin-top: 8px;
+        margin-top: 0px;
         list-style-type: none;
         padding-left: 0;
+        padding-bottom: 7px;
       }
 
       ul.errorlist li {
-        color: var(--color-error) !important;
+        color: var(--color-error);
         padding: 3px 8px;
-        border-left: 6px solid var(--color-error);
+        background: rgba(var(--error-rgb), 0.15);
+        color: tomato;
+        font-size: 13px;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        font-weight: normal;
       }
     `;
   }
@@ -69,6 +77,12 @@ export default class Modax extends RapidElement {
   primaryName: string;
 
   @property({ type: String })
+  onLoaded: string;
+
+  @property({ type: String })
+  onSubmitted: string;
+
+  @property({ type: String })
   body: any = this.getLoading();
 
   private cancelToken: CancelTokenSource;
@@ -82,7 +96,7 @@ export default class Modax extends RapidElement {
       const input = this.shadowRoot.querySelector(
         "temba-textinput"
       ) as TextInput;
-      if (input) {
+      if (input && !input.inputElement.readOnly) {
         input.inputElement.click();
       }
     });
@@ -109,9 +123,7 @@ export default class Modax extends RapidElement {
   }
 
   private getLoading() {
-    return html`
-      <temba-loading units="6" size="8"></temba-loading>
-    `;
+    return html` <temba-loading units="6" size="8"></temba-loading> `;
   }
 
   private updatePrimaryButton(): void {
@@ -174,6 +186,18 @@ export default class Modax extends RapidElement {
         this.setBody(response.data);
         this.updatePrimaryButton();
         this.fetching = false;
+        if (this.onLoaded) {
+          window.setTimeout(() => {
+            const fn = eval(this.onLoaded);
+            fn(
+              new CustomEvent("loaded", {
+                detail: { body: this.shadowRoot.querySelector(".modax-body") },
+                bubbles: true,
+                composed: true,
+              })
+            );
+          }, 0);
+        }
       }
     );
   }
@@ -193,6 +217,18 @@ export default class Modax extends RapidElement {
               if (redirect) {
                 if (redirect === "hide") {
                   this.open = false;
+
+                  if (this.onSubmitted) {
+                    window.setTimeout(() => {
+                      const fn = eval(this.onSubmitted);
+                      fn(
+                        new CustomEvent("submitted", {
+                          bubbles: true,
+                          composed: true,
+                        })
+                      );
+                    }, 0);
+                  }
                 } else {
                   this.ownerDocument.location = redirect;
                 }

@@ -14,6 +14,9 @@ export default class FormElement extends RapidElement {
   @property({ type: Boolean, attribute: "widget_only" })
   widgetOnly: boolean;
 
+  @property({ type: Boolean, attribute: "hide_label" })
+  hideLabel: boolean;
+
   @property({ type: String })
   label: string;
 

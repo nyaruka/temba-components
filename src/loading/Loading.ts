@@ -4,7 +4,7 @@ import {
   html,
   TemplateResult,
   css,
-  LitElement
+  LitElement,
 } from "lit-element";
 import RapidElement from "../RapidElement";
 import { styleMap } from "lit-html/directives/style-map";
@@ -16,8 +16,11 @@ export default class Loading extends LitElement {
     return css`
       .loading-unit {
         border: 1px inset rgba(0, 0, 0, 0.05);
-        display: inline-block;
         animation: loading-pulse 0.9s cubic-bezier(0.3, 0, 0.7, 1) infinite;
+      }
+
+      .loading-container {
+        display: flex;
       }
 
       @keyframes loading-pulse {
@@ -53,7 +56,7 @@ export default class Loading extends LitElement {
     const margin = this.size / 2;
 
     return html`
-      <div>
+      <div class="loading-container">
         ${range(0, this.units).map((num: number) => {
           const ballStyle = {
             "border-radius": this.square ? "0" : "50%",
@@ -61,7 +64,7 @@ export default class Loading extends LitElement {
             height: this.size + "px",
             margin: margin + "px",
             animationDelay: `-${1 - num * (1 / this.units)}s`,
-            background: this.color
+            background: this.color,
           };
           return html`
             <div class="loading-unit" style=${styleMap(ballStyle)}></div>

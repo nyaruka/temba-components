@@ -19,9 +19,9 @@ export default class Options extends RapidElement {
         position: fixed;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg-focused);
-        box-shadow: var(--widget-box-shadow-focused);
-        border: 1px solid var(--color-focus);
-        z-index: 1;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--color-widget-border);
         user-select: none;
         border-radius: var(--curvature-widget);
         overflow: hidden;
@@ -37,12 +37,13 @@ export default class Options extends RapidElement {
 
       .show {
         visibility: visible;
+        z-index: 10000;
       }
 
       .option {
         font-size: 14px;
         padding: 5px 10px;
-        border-radius: var(--curvature-widget);
+        border-radius: 4px;
         margin: 3px;
         cursor: pointer;
         color: var(--color-text-dark);
@@ -50,7 +51,7 @@ export default class Options extends RapidElement {
 
       .option.focused {
         background: var(--color-selection);
-        color: var(--color-text-light);
+        color: var(--color-text-dark);
       }
 
       .option .detail {
@@ -155,6 +156,12 @@ export default class Options extends RapidElement {
         this.setCursor(0);
       }
     }
+
+    if (changedProperties.has("visible")) {
+      window.setTimeout(() => {
+        this.calculatePosition();
+      }, 100);
+    }
   }
 
   private renderOptionDefault(option: any, selected: boolean): TemplateResult {
@@ -244,11 +251,6 @@ export default class Options extends RapidElement {
             this.fireCustomEvent(CustomEventType.Canceled);
           }
         }
-        //      console.log(isVisible(this.anchorTo));
-        /* console.log(anchorBounds);
-      if (this.scrollParent) {
-        console.log(this.scrollParent.getBoundingClientRect());
-      }*/
 
         if (
           topTop > 0 &&

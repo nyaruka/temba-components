@@ -15,3 +15,4 @@ import "./contactsearch/ContactSearch";
 import "./loading/Loading";
 import "./alert/Alert";
 import "./checkbox/Checkbox";
+import "./datepicker/DatePicker";

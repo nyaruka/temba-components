@@ -24,9 +24,10 @@ export interface FeatureProperties {
 }
 
 export enum CustomEventType {
+  Loaded = "temba-loaded",
   Canceled = "temba-canceled",
   CursorChanged = "temba-cursor-changed",
   Selection = "temba-selection",
   ButtonClicked = "temba-button-clicked",
-  DialogHidden = "temba-dialog-hidden"
+  DialogHidden = "temba-dialog-hidden",
 }

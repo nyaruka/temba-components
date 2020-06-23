@@ -15,7 +15,7 @@ export default class Button extends LitElement {
       :host {
         display: inline-block;
         font-family: var(--font-family);
-        font-weight: 200;
+        font-weight: 300;
       }
 
       .button-container {
@@ -114,6 +114,10 @@ export default class Button extends LitElement {
       .button-secondary .button-mask:hover {
         background: transparent;
       }
+
+      temba-loading {
+        margin-bottom: -3px;
+      }
     `;
   }
 
@@ -131,6 +135,9 @@ export default class Button extends LitElement {
 
   @property({ type: Boolean })
   disabled: boolean;
+
+  @property({ type: Boolean })
+  submitting: boolean;
 
   @property({ type: Boolean })
   active: boolean;
@@ -172,7 +179,7 @@ export default class Button extends LitElement {
             this.primary ||
             (!this.primary && !this.secondary && !this.attention),
           "button-secondary": this.secondary,
-          "button-disabled": this.disabled,
+          "button-disabled": this.disabled || this.submitting,
           "button-active": this.active,
           "button-attention": this.attention,
         })}"
@@ -184,7 +191,15 @@ export default class Button extends LitElement {
         @click=${this.handleClick}
       >
         <div class="button-mask">
-          <div class="button-name">${this.name}</div>
+          <div class="button-name">
+            ${this.submitting
+              ? html`<temba-loading
+                  units="3"
+                  size="8"
+                  color="#eee"
+                ></temba-loading>`
+              : this.name}
+          </div>
         </div>
       </div>
     `;

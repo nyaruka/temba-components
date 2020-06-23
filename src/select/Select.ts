@@ -40,16 +40,11 @@ export default class Select extends FormElement {
 
         --temba-select-selected-padding: 9px;
         --temba-select-selected-line-height: 16px;
-        --temba-select-selected-font-size: 14px;
+        --temba-select-selected-font-size: 13px;
       }
 
       :host:focus {
         outline: none;
-      }
-
-      input::placeholder {
-        color: var(--color-placeholder);
-        font-weight: 200;
       }
 
       .remove-item {
@@ -100,6 +95,8 @@ export default class Select extends FormElement {
         cursor: pointer;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
+        box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
+          0 1px 2px 0 rgba(0, 0, 0, 0.02);
       }
 
       .select-container:hover {
@@ -196,6 +193,7 @@ export default class Select extends FormElement {
         margin: 0px !important;
         padding: 0px !important;
         box-shadow: none !important;
+        font-family: var(--font-family);
       }
 
       input:focus {
@@ -232,10 +230,16 @@ export default class Select extends FormElement {
         box-shadow: none !important;
       }
 
+      .searchbox::placeholder {
+        color: var(--color-placeholder);
+        font-weight: 300;
+      }
+
       .placeholder {
         font-size: var(--temba-select-selected-font-size);
         color: var(--color-placeholder);
         display: none;
+        font-weight: 300;
         line-height: var(--temba-select-selected-line-height);
       }
     `;
@@ -719,7 +723,7 @@ export default class Select extends FormElement {
     const input = this.searchable
       ? html`
           <input
-            style=""
+            class="searchbox"
             @keyup=${this.handleKeyUp}
             @keydown=${this.handleKeyDown}
             @click=${this.handleClick}
@@ -765,7 +769,7 @@ export default class Select extends FormElement {
                             <fa-icon
                               class="fas times"
                               size="12px"
-                              style="margin-bottom:-2px; fill: var(--color-widget-border)"
+                              style="margin-bottom:-2px; fill: var(--color-overlay-dark)"
                               }
                               path-prefix="/sitestatic"
                             />
