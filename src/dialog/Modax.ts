@@ -93,13 +93,22 @@ export default class Modax extends RapidElement {
 
   private focusFirstInput(): void {
     window.setTimeout(() => {
-      const input = this.shadowRoot.querySelector(
-        "temba-textinput"
-      ) as TextInput;
-      if (input && !input.inputElement.readOnly) {
-        input.inputElement.click();
+      let input = this.shadowRoot.querySelector(
+        "temba-textinput, temba-completion"
+      ) as any;
+
+      if (input) {
+        input = input.textInputElement
+          ? input.textInputElement.inputElement
+          : input.inputElement;
+
+        if (input) {
+          if (!input.readOnly) {
+            input.click();
+          }
+        }
       }
-    });
+    }, 100);
   }
 
   public updated(changes: Map<string, any>) {
@@ -117,7 +126,7 @@ export default class Modax extends RapidElement {
       }
     }
 
-    if (changes.has("body")) {
+    if (changes.has("body") && this.open && this.body) {
       this.focusFirstInput();
     }
   }

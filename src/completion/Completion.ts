@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   css,
-  property
+  property,
 } from "lit-element";
 import RapidElement, { EventHandler } from "../RapidElement";
 import ExcellentParser, { Expression } from "./ExcellentParser";
@@ -15,7 +15,7 @@ import {
   Position,
   KeyedAssets,
   getVerticalScroll,
-  getOffset
+  getOffset,
 } from "./helpers";
 import { getUrl, getAssets, Asset } from "../utils";
 import { AxiosResponse } from "axios";
@@ -114,7 +114,7 @@ export default class Completion extends FormElement {
     "contact",
     "fields",
     "globals",
-    "urns"
+    "urns",
   ]);
 
   /** Remote description of our completion schema */
@@ -297,7 +297,7 @@ export default class Completion extends FormElement {
             );
             this.anchorPosition = {
               left: caret.left - 2 - this.inputElement.scrollLeft,
-              top: caret.top - this.inputElement.scrollTop
+              top: caret.top - this.inputElement.scrollTop,
             };
 
             this.query = currentExpression.text.substr(
@@ -308,7 +308,7 @@ export default class Completion extends FormElement {
               ...getCompletions(this.schema, this.query, this.keyedAssets),
               ...(includeFunctions
                 ? getFunctions(this.functions, this.query)
-                : [])
+                : []),
             ];
 
             return;
@@ -415,9 +415,7 @@ export default class Completion extends FormElement {
       <div>
         <div style="${selected ? "font-weight: 400" : ""}">${option.name}</div>
         ${selected
-          ? html`
-              <div style="font-size: 85%">${option.summary}</div>
-            `
+          ? html` <div style="font-size: 85%">${option.summary}</div> `
           : null}
       </div>
     `;
@@ -426,7 +424,7 @@ export default class Completion extends FormElement {
   public render(): TemplateResult {
     const anchorStyles = {
       top: `${this.anchorPosition.top}px`,
-      left: `${this.anchorPosition.left}px`
+      left: `${this.anchorPosition.left}px`,
     };
 
     return html`

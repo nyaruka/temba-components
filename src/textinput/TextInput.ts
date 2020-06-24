@@ -76,16 +76,6 @@ export default class TextInput extends FormElement {
         color: var(--color-placeholder);
         font-weight: 300;
       }
-
-      .hidden-cursor {
-        // color: transparent;
-        // text-shadow: 0 0 0 var(--color-widget-text);
-        cursor: pointer;
-      }
-
-      .hidden-cursor:focus {
-        cursor: pointer;
-      }
     `;
   }
 
@@ -94,9 +84,6 @@ export default class TextInput extends FormElement {
 
   @property({ type: Boolean })
   datepicker: boolean;
-
-  @property({ type: Boolean })
-  focused: boolean;
 
   @property({ type: String })
   placeholder: string = "";
@@ -115,12 +102,12 @@ export default class TextInput extends FormElement {
 
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
+
     this.inputElement = this.shadowRoot.querySelector(".textinput");
     this.dateElement = this.shadowRoot.querySelector(".datepicker");
 
-    const picker = this.dateElement;
-
     if (this.dateElement) {
+      const picker = this.dateElement;
       window.setTimeout(() => {
         this.dateElement.set(
           "onChange",
@@ -157,7 +144,7 @@ export default class TextInput extends FormElement {
   private handleContainerClick(): void {
     const input: any = this.shadowRoot.querySelector(".textinput");
     if (input) {
-      input.click();
+      input.focus();
     } else {
       const datepicker: any = this.shadowRoot.querySelector(".datepicker");
       datepicker.open();
@@ -209,7 +196,7 @@ export default class TextInput extends FormElement {
     if (this.datepicker) {
       input = html`
         <input
-          class="textinput hidden-cursor"
+          class="textinput"
           name=${this.name}
           type="text"
           @click=${this.handleDateClick}
@@ -241,7 +228,7 @@ export default class TextInput extends FormElement {
         .hideLabel=${this.hideLabel}
       >
         <div
-          class="input-container ${this.focused ? "focused" : ""}"
+          class="input-container"
           style=${styleMap(containerStyle)}
           @click=${this.handleContainerClick}
         >
