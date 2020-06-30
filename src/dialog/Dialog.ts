@@ -28,7 +28,7 @@ export default class Dialog extends RapidElement {
         display: flex;
         flex-direction: column;
         height: 100vh;
-        width: 100vh;
+        width: 100%;
         position: absolute;
         left: 0px;
         top: 0px;
@@ -40,7 +40,7 @@ export default class Dialog extends RapidElement {
       }
 
       .bottom-padding {
-        padding: 7rem;
+        padding: 3rem;
       }
 
       .dialog-mask {
@@ -94,7 +94,7 @@ export default class Dialog extends RapidElement {
 
       .header-text {
         font-size: 20px;
-        padding: 16px;
+        padding: 12px 20px;
         font-weight: 300;
         color: var(--color-text-light);
         background: var(--color-primary-dark);
@@ -152,6 +152,9 @@ export default class Dialog extends RapidElement {
 
   @property({ type: Boolean })
   submitting: boolean;
+
+  @property({ type: Boolean })
+  destructive: boolean;
 
   @property({ type: Boolean })
   loading: boolean;
@@ -301,7 +304,8 @@ export default class Dialog extends RapidElement {
                         <temba-button
                           @click=${this.handleClick}
                           .name=${this.primaryButtonName}
-                          primary
+                          ?destructive=${this.destructive}
+                          ?primary=${!this.destructive}
                           ?submitting=${this.submitting}
                           >}</temba-button
                         >
@@ -316,6 +320,7 @@ export default class Dialog extends RapidElement {
               </div>
             </div>
             <div class="flex-grow bottom-padding"></div>
+            <div class="bottom-padding"></div>
           </div>
         </div>
       </div>

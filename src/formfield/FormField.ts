@@ -35,19 +35,26 @@ export default class FormField extends LitElement {
         line-height: inherit;
         color: var(--color-text-help);
         margin-left: 4px;
-        margin-top: -20px;
+        margin-top: -16px;
         opacity: 0;
         transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
         pointer-events: none;
       }
 
       .field:focus-within .help-text {
-        margin-top: 2px;
+        margin-top: 6px;
         opacity: 1;
       }
 
-      temba-alert {
-        margin-top: 10px;
+      .alert-error {
+        background: rgba(255, 181, 181, .17);
+        border: none;
+        border-left: 0px solid var(--color-error);
+        color: var(--color-error);
+        padding: 10px;
+        margin: 15px 0px;
+        border-radius: var(--curvature);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
       }
     }`;
   }
@@ -72,7 +79,7 @@ export default class FormField extends LitElement {
 
   public render(): TemplateResult {
     const errors = (this.errors || []).map((error: string) => {
-      return html` <temba-alert level="error">${error}</temba-alert> `;
+      return html` <div class="alert-error">${error}</div> `;
     });
 
     if (this.widgetOnly) {

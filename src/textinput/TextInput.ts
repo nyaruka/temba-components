@@ -175,6 +175,11 @@ export default class TextInput extends FormElement {
         type="text"
         @change=${this.handleChange}
         @input=${this.handleInput}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.keyCode == 13) {
+            this.fireEvent("submit");
+          }
+        }}
         placeholder=${this.placeholder}
         .value="${this.value}"
       />
@@ -210,7 +215,6 @@ export default class TextInput extends FormElement {
         />
         <lit-flatpickr
           class="datepicker hidden"
-          id="my-date-picker"
           altInput
           altFormat="F j, Y"
           dateFormat="Y-m-d"

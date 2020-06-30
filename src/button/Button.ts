@@ -107,6 +107,11 @@ export default class Button extends LitElement {
         color: var(--color-text);
       }
 
+      .button-destructive {
+        background: var(--color-button-destructive);
+        color: var(--color-button-destructive-text);
+      }
+
       .button-mask.disabled {
         background: rgba(0, 0, 0, 0.1);
       }
@@ -129,6 +134,9 @@ export default class Button extends LitElement {
 
   @property({ type: Boolean })
   attention: boolean;
+
+  @property({ type: Boolean })
+  destructive: boolean;
 
   @property()
   name: string;
@@ -182,6 +190,7 @@ export default class Button extends LitElement {
           "button-disabled": this.disabled || this.submitting,
           "button-active": this.active,
           "button-attention": this.attention,
+          "button-destructive": this.destructive,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}

@@ -19,7 +19,7 @@ export default class Modax extends RapidElement {
       }
 
       .control-group {
-        margin-bottom: 8px;
+        margin-bottom: 12px;
         display: block;
       }
 
@@ -46,8 +46,10 @@ export default class Modax extends RapidElement {
 
       ul.errorlist li {
         color: var(--color-error);
+        background: rgba(255, 181, 181, 0.17);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+          0 1px 2px 0 rgba(0, 0, 0, 0.06);
         padding: 3px 8px;
-        background: rgba(var(--error-rgb), 0.15);
         color: tomato;
         font-size: 13px;
         padding: 8px 10px;
@@ -75,6 +77,9 @@ export default class Modax extends RapidElement {
 
   @property({ type: String })
   primaryName: string;
+
+  @property({ type: String })
+  cancelName: string;
 
   @property({ type: String })
   onLoaded: string;
@@ -137,12 +142,17 @@ export default class Modax extends RapidElement {
 
   private updatePrimaryButton(): void {
     window.setTimeout(() => {
-      const primaryName = (this.shadowRoot.querySelector(
+      const submitButton = this.shadowRoot.querySelector(
         "input[type='submit']"
-      ) as any).value;
-      if (primaryName) {
-        this.primaryName = primaryName;
+      ) as any;
+
+      if (submitButton) {
+        this.primaryName = submitButton.value;
+      } else {
+        this.primaryName = null;
+        this.cancelName = "Ok";
       }
+
       this.submitting = false;
     }, 0);
   }
@@ -213,7 +223,7 @@ export default class Modax extends RapidElement {
 
   private handleDialogClick(evt: CustomEvent) {
     const button = evt.detail.button;
-    if (!button.disabled) {
+    if (!button.disabled && !button.submitting) {
       if (button.name === this.primaryName) {
         this.submitting = true;
         const form = this.shadowRoot.querySelector("form");
@@ -251,7 +261,7 @@ export default class Modax extends RapidElement {
       }
     }
 
-    if (button.name === "Cancel") {
+    if (button.name === (this.cancelName || "Cancel")) {
       this.open = false;
       this.fetching = false;
       this.cancelToken.cancel();
@@ -268,10 +278,13 @@ export default class Modax extends RapidElement {
     return html`
       <temba-dialog
         header=${this.header}
-        .open=${this.open}
-        .loading=${this.fetching}
         .primaryButtonName=${this.primaryName}
-        .submitting=${this.submitting}
+        .cancelButtonName=${this.cancelName || "Cancel"}
+        ?open=${this.open}
+        ?loading=${this.fetching}
+        ?submitting=${this.submitting}
+        ?destructive=${this.primaryName &&
+        this.primaryName.toLowerCase().indexOf("delete") > -1}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
