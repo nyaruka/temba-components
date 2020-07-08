@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   css,
-  property
+  property,
 } from "lit-element";
 import FormElement from "../FormElement";
 import "fa-icons";
@@ -14,6 +14,11 @@ export default class Checkbox extends FormElement {
     return css`
       :host {
         color: var(--color-text);
+      }
+
+      temba-field {
+        --help-text-margin-left: 24px;
+        pointer: cursor;
       }
 
       .checkbox-container {
@@ -33,6 +38,7 @@ export default class Checkbox extends FormElement {
       }
 
       .far {
+        height: 16px;
         margin-top: 1px;
       }
     `;
@@ -82,8 +88,10 @@ export default class Checkbox extends FormElement {
         .helpText=${this.helpText}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
+        .helpAlways=${true}
+        @click=${this.handleClick}
       >
-        <div class="checkbox-container" @click=${this.handleClick}>
+        <div class="checkbox-container">
           ${icon}
           <div class="checkbox-label">${this.label}</div>
         </div>

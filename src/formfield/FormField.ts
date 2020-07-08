@@ -17,6 +17,8 @@ export default class FormField extends LitElement {
     return css`
       :host {
         font-family: var(--font-family);
+        --help-text-margin-left: 4px;
+        --help-text-margin-top: 0px;
       }
 
       label {
@@ -34,11 +36,17 @@ export default class FormField extends LitElement {
         font-size: 11px;
         line-height: inherit;
         color: var(--color-text-help);
-        margin-left: 4px;
+        margin-left: var(--help-text-margin-left);
         margin-top: -16px;
         opacity: 0;
         transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
         pointer-events: none;
+      }
+
+      .help-text.help-always {
+        opacity: 1;
+        margin-left: var(--help-text-margin-left);
+        margin-top: 0px;
       }
 
       .field:focus-within .help-text {
@@ -71,6 +79,9 @@ export default class FormField extends LitElement {
   @property({ type: String, attribute: "help_text" })
   helpText: string;
 
+  @property({ type: Boolean, attribute: "help_always" })
+  helpAlways: boolean;
+
   @property({ type: String })
   label: string;
 
@@ -102,7 +113,11 @@ export default class FormField extends LitElement {
           <slot></slot>
         </div>
         ${this.helpText
-          ? html` <div class="help-text">${this.helpText}</div> `
+          ? html`
+              <div class="help-text ${this.helpAlways ? "help-always" : null}">
+                ${this.helpText}
+              </div>
+            `
           : null}
         ${errors}
       </div>

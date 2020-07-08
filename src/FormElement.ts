@@ -11,6 +11,9 @@ export default class FormElement extends RapidElement {
   @property({ type: String, attribute: "help_text" })
   helpText: string;
 
+  @property({ type: Boolean, attribute: "help_always" })
+  helpAlways: boolean;
+
   @property({ type: Boolean, attribute: "widget_only" })
   widgetOnly: boolean;
 
