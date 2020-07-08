@@ -296,6 +296,12 @@ export default class Select extends FormElement {
   @property({ attribute: false })
   anchorElement: HTMLElement;
 
+  @property({ type: Boolean })
+  tags: boolean = false;
+
+  @property({ type: Boolean, attribute: "space_select" })
+  spaceSelect: boolean;
+
   @property({ attribute: false })
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
@@ -458,7 +464,7 @@ export default class Select extends FormElement {
 
   public fetchOptions(query: string, page: number = 0) {
     const cacheKey = `${query}_$page`;
-    if (this.cache && this.lruCache.has(cacheKey)) {
+    if (this.cache && !this.tags && this.lruCache.has(cacheKey)) {
       const { options, complete } = this.lruCache.get(cacheKey);
       this.setOptions(options);
       this.complete = complete;
@@ -472,14 +478,26 @@ export default class Select extends FormElement {
         this.cancelToken.cancel();
       }
 
+      let options: any = [];
+      const q = query.toLowerCase();
+
       if (this.staticOptions.length > 0) {
-        this.setOptions(
-          this.staticOptions.filter(
-            (option: StaticOption) =>
-              option.name.toLowerCase().indexOf(query.toLowerCase()) > -1
-          )
+        options = this.staticOptions.filter(
+          (option: StaticOption) => option.name.toLowerCase().indexOf(q) > -1
         );
       }
+
+      if (this.tags && q) {
+        if (
+          !options.find(
+            (option: any) => option.value && option.value.toLowerCase() === q
+          )
+        ) {
+          options.splice(0, 0, { name: q, value: q });
+        }
+      }
+
+      this.setOptions(options);
 
       if (this.endpoint) {
         const cacheKey = `${query}_$page`;
@@ -514,7 +532,7 @@ export default class Select extends FormElement {
               this.complete = this.isComplete(newResults, response);
             }
 
-            if (this.cache) {
+            if (this.cache && !this.tags) {
               this.lruCache.set(cacheKey, {
                 options: this.options,
                 complete: this.complete,
@@ -585,10 +603,12 @@ export default class Select extends FormElement {
     }
   }
 
-  private handleKeyUp(evt: KeyboardEvent) {
+  private handleInput(evt: KeyboardEvent) {
     const ele = evt.currentTarget as HTMLInputElement;
     this.input = ele.value;
   }
+
+  private handleKeyUp(evt: KeyboardEvent) {}
 
   private handleCancel() {
     this.options = [];
@@ -685,9 +705,10 @@ export default class Select extends FormElement {
 
   public serializeValue(value: any): string {
     // static options just use their value
-    if (this.staticOptions.length > 0) {
+    if (this.staticOptions.length > 0 || this.tags) {
       return value.value;
     }
+
     return super.serializeValue(value);
   }
 
@@ -724,7 +745,7 @@ export default class Select extends FormElement {
       ? html`
           <input
             class="searchbox"
-            @keyup=${this.handleKeyUp}
+            @input=${this.handleInput}
             @keydown=${this.handleKeyDown}
             @click=${this.handleClick}
             type="text"
@@ -784,15 +805,20 @@ export default class Select extends FormElement {
             </div>
           </div>
 
-          <div class="right" @click=${this.handleArrowClick}>
-            <fa-icon
-              class="fa chevron-down ${this.options.length > 0
-                ? "open"
-                : ""} arrow-icon"
-              size="14px"
-              style="fill: var(--arrow-icon-color)"
-              path-prefix="/sitestatic"
-            />
+          ${
+            !this.tags
+              ? html`<div class="right" @click=${this.handleArrowClick}>
+                  <fa-icon
+                    class="fa chevron-down ${this.options.length > 0
+                      ? "open"
+                      : ""} arrow-icon"
+                    size="14px"
+                    style="fill: var(--arrow-icon-color)"
+                    path-prefix="/sitestatic"
+                  />
+                </div>`
+              : null
+          }
           </div>
         </div>
       </temba-field>
@@ -804,6 +830,7 @@ export default class Select extends FormElement {
         .renderOption=${this.renderOption}
         .anchorTo=${this.anchorElement}
         .options=${this.options}
+        .spaceSelect=${this.spaceSelect}
         ?visible=${this.options.length > 0}
       ></temba-options>
     `;

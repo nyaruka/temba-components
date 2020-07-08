@@ -97,6 +97,9 @@ export default class Options extends RapidElement {
   @property({ type: Boolean })
   poppedTop: boolean;
 
+  @property({ type: Boolean })
+  spaceSelect: boolean;
+
   @property({ attribute: false })
   renderOption: (option: any, selected: boolean) => void;
 
@@ -223,7 +226,11 @@ export default class Options extends RapidElement {
       } else if ((evt.ctrlKey && evt.key === "p") || evt.key === "ArrowUp") {
         this.moveCursor(-1);
         evt.preventDefault();
-      } else if (evt.key === "Enter" || evt.key === "Tab") {
+      } else if (
+        evt.key === "Enter" ||
+        evt.key === "Tab" ||
+        (this.spaceSelect && evt.key === " ")
+      ) {
         this.handleSelection(evt.key === "Tab");
         evt.preventDefault();
         evt.stopPropagation();

@@ -26,7 +26,7 @@ export default class FormField extends LitElement {
         font-weight: 400;
         font-size: 13px;
         letter-spacing: 0.05em;
-        line-height: inherit;
+        line-height: normal;
         color: #777;
       }
 

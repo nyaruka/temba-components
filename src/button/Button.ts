@@ -63,6 +63,7 @@ export default class Button extends LitElement {
       .button-container.button-disabled {
         background: var(--color-button-disabled);
         color: rgba(255, 255, 255, 0.45);
+        cursor: default;
       }
 
       .button-container.button-disabled .button-mask {

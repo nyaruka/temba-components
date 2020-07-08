@@ -47,6 +47,7 @@ export default class TextInput extends FormElement {
 
       .textinput {
         padding: 9px;
+        padding-top: 10px;
         border: none;
         flex: 1;
         margin: 0;

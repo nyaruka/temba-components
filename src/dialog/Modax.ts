@@ -49,13 +49,11 @@ export default class Modax extends RapidElement {
         background: rgba(255, 181, 181, 0.17);
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        padding: 3px 8px;
         color: tomato;
-        font-size: 13px;
-        padding: 8px 10px;
+        padding: 10px;
         margin-bottom: 10px;
         border-radius: 6px;
-        font-weight: normal;
+        font-weight: 300;
       }
     `;
   }
@@ -86,6 +84,9 @@ export default class Modax extends RapidElement {
 
   @property({ type: String })
   onSubmitted: string;
+
+  @property({ type: Boolean })
+  noSubmit: boolean;
 
   @property({ type: String })
   body: any = this.getLoading();
@@ -141,23 +142,25 @@ export default class Modax extends RapidElement {
   }
 
   private updatePrimaryButton(): void {
-    window.setTimeout(() => {
-      const submitButton = this.shadowRoot.querySelector(
-        "input[type='submit']"
-      ) as any;
+    if (!this.noSubmit) {
+      window.setTimeout(() => {
+        const submitButton = this.shadowRoot.querySelector(
+          "input[type='submit']"
+        ) as any;
 
-      if (submitButton) {
-        this.primaryName = submitButton.value;
-      } else {
-        this.primaryName = null;
-        this.cancelName = "Ok";
-      }
+        if (submitButton) {
+          this.primaryName = submitButton.value;
+        } else {
+          this.primaryName = null;
+          this.cancelName = "Ok";
+        }
 
-      this.submitting = false;
-    }, 0);
+        this.submitting = false;
+      }, 0);
+    }
   }
 
-  private setBody(body: string) {
+  private setBody(body: string): boolean {
     // remove any existing on our previous body
     const scriptBlock = this.shadowRoot.querySelector(".scripts");
     for (const child of scriptBlock.children) {
@@ -184,15 +187,22 @@ export default class Modax extends RapidElement {
       toAdd.push(script);
 
       // remove it from our current body text
-      div.removeChild(scripts[i]);
+      scripts[i].remove();
     }
 
-    this.body = unsafeHTML(div.innerHTML);
+    const scriptOnly = !!div.querySelector(".success-script");
+
+    if (!scriptOnly) {
+      this.body = unsafeHTML(div.innerHTML);
+    }
+
     window.setTimeout(() => {
       for (const script of toAdd) {
         scriptBlock.appendChild(script);
       }
     }, 0);
+
+    return !scriptOnly;
   }
 
   private fetchForm() {
@@ -252,8 +262,10 @@ export default class Modax extends RapidElement {
                   this.ownerDocument.location = redirect;
                 }
               } else {
-                this.setBody(response.data);
-                this.updatePrimaryButton();
+                // if we set the body, update our submit button
+                if (this.setBody(response.data)) {
+                  this.updatePrimaryButton();
+                }
               }
             }, 2000);
           }
@@ -278,7 +290,7 @@ export default class Modax extends RapidElement {
     return html`
       <temba-dialog
         header=${this.header}
-        .primaryButtonName=${this.primaryName}
+        .primaryButtonName=${this.noSubmit ? null : this.primaryName}
         .cancelButtonName=${this.cancelName || "Cancel"}
         ?open=${this.open}
         ?loading=${this.fetching}
