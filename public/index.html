@@ -213,6 +213,22 @@
     </div>
 
     <div class="example">
+      <div class="example-header">Tags Initialized</div>
+      <temba-select
+        name="tagged"
+        placeholder="Pick some colors"
+        multi
+        searchable
+        tags
+        space_select
+      >
+        <temba-option value="red" name="Red" selected></temba-option>
+        <temba-option value="green" name="Green" selected></temba-option>
+        <temba-option value="blue" name="Blue"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
       <div class="example-header">Multi Remote</div>
       <temba-select
         endpoint="/contact/omnibox/?v=2"

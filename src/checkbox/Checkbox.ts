@@ -56,9 +56,13 @@ export default class Checkbox extends FormElement {
       if (this.checked) {
         this.setValue(1);
       } else {
-        this.setValue(0);
+        this.setValue("");
       }
     }
+  }
+
+  public serializeValue(value: any): string {
+    return value;
   }
 
   private handleClick(): void {
