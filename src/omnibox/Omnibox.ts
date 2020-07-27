@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   css,
-  property
+  property,
 } from "lit-element";
 import RapidElement from "../RapidElement";
 import { styleMap } from "lit-html/directives/style-map.js";
@@ -12,7 +12,7 @@ import "fa-icons";
 enum OmniType {
   Group = "group",
   Contact = "contact",
-  Urn = "urn"
+  Urn = "urn",
 }
 
 interface OmniOption {
@@ -28,7 +28,7 @@ interface OmniOption {
 const postNameStyle = {
   color: "var(--color-text-dark)",
   padding: "0px 6px",
-  fontSize: "12px"
+  fontSize: "12px",
 };
 
 @customElement("temba-omnibox")
@@ -38,6 +38,9 @@ export default class Omnibox extends RapidElement {
       temba-select:focus {
         outline: none;
         box-shadow: none;
+      }
+
+      :host {
       }
     `;
   }
@@ -85,22 +88,15 @@ export default class Omnibox extends RapidElement {
     selected: boolean = false
   ): TemplateResult {
     const style = { ...postNameStyle };
-    if (selected) {
-      style["color"] = "#fff";
-    }
 
     if (option.urn && option.type === OmniType.Contact) {
       if (option.urn !== option.name) {
-        return html`
-          <div style=${styleMap(style)}>${option.urn}</div>
-        `;
+        return html` <div style=${styleMap(style)}>${option.urn}</div> `;
       }
     }
 
     if (option.type === OmniType.Group) {
-      return html`
-        <div style=${styleMap(style)}>${option.count}</div>
-      `;
+      return html` <div style=${styleMap(style)}>${option.count}</div> `;
     }
 
     return null;

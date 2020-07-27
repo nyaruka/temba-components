@@ -4,7 +4,7 @@ import {
   html,
   css,
   property,
-  LitElement
+  LitElement,
 } from "lit-element";
 
 /**
@@ -17,29 +17,58 @@ export default class FormField extends LitElement {
     return css`
       :host {
         font-family: var(--font-family);
+        --help-text-margin-left: 4px;
+        --help-text-margin-top: 0px;
       }
 
       label {
-        margin-bottom: 4px;
+        margin-bottom: 5px;
+        margin-left: 4px;
         display: block;   
-        font-weight: 300;
-        font-size: 14px;
-        line-height: inherit;
-
+        font-weight: 400;
+        font-size: 13px;
+        letter-spacing: 0.05em;
+        line-height: normal;
+        color: #777;
       }
 
       .help-text {
-        font-size: 12px;
-        line-height: inherit;
+        font-size: 11px;
+        line-height: normal;
         color: var(--color-text-help);
-        margin: 4px 0 14px;
+        margin-left: var(--help-text-margin-left);
+        margin-top: -16px;
+        opacity: 0;
+        transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
+        pointer-events: none;
       }
 
-      temba-alert {
-        margin-top: 10px;
+      .help-text.help-always {
+        opacity: 1;
+        margin-top: 6px;
+        margin-left: var(--help-text-margin-left);
+      }
+
+      .field:focus-within .help-text {
+        margin-top: 6px;
+        opacity: 1;
+      }
+
+      .alert-error {
+        background: rgba(255, 181, 181, .17);
+        border: none;
+        border-left: 0px solid var(--color-error);
+        color: var(--color-error);
+        padding: 10px;
+        margin: 15px 0px;
+        border-radius: var(--curvature);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
       }
     }`;
   }
+
+  @property({ type: Boolean, attribute: "hide_label" })
+  hideLabel: boolean;
 
   @property({ type: Boolean, attribute: "widget_only" })
   widgetOnly: boolean;
@@ -50,6 +79,9 @@ export default class FormField extends LitElement {
   @property({ type: String, attribute: "help_text" })
   helpText: string;
 
+  @property({ type: Boolean, attribute: "help_always" })
+  helpAlways: boolean = true;
+
   @property({ type: String })
   label: string;
 
@@ -58,9 +90,7 @@ export default class FormField extends LitElement {
 
   public render(): TemplateResult {
     const errors = (this.errors || []).map((error: string) => {
-      return html`
-        <temba-alert level="error">${error}</temba-alert>
-      `;
+      return html` <div class="alert-error">${error}</div> `;
     });
 
     if (this.widgetOnly) {
@@ -71,20 +101,26 @@ export default class FormField extends LitElement {
     }
 
     return html`
-      ${this.name
-        ? html`
-            <label class="control-label" for="${this.name}"
-              >${this.label}</label
-            >
-          `
-        : null}
-      <slot></slot>
-      ${this.helpText
-        ? html`
-            <div class="help-text">${this.helpText}</div>
-          `
-        : null}
-      ${errors}
+      <div class="field">
+        ${this.name && !this.hideLabel
+          ? html`
+              <label class="control-label" for="${this.name}"
+                >${this.label}</label
+              >
+            `
+          : null}
+        <div class="widget">
+          <slot></slot>
+        </div>
+        ${this.helpText && this.helpText !== "None"
+          ? html`
+              <div class="help-text ${this.helpAlways ? "help-always" : null}">
+                ${this.helpText}
+              </div>
+            `
+          : null}
+        ${errors}
+      </div>
     `;
   }
 }

@@ -40,16 +40,11 @@ export default class Select extends FormElement {
 
         --temba-select-selected-padding: 9px;
         --temba-select-selected-line-height: 16px;
-        --temba-select-selected-font-size: 14px;
+        --temba-select-selected-font-size: 13px;
       }
 
       :host:focus {
         outline: none;
-      }
-
-      input::placeholder {
-        color: var(--color-placeholder);
-        font-weight: 200;
       }
 
       .remove-item {
@@ -100,6 +95,8 @@ export default class Select extends FormElement {
         cursor: pointer;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
+        box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
+          0 1px 2px 0 rgba(0, 0, 0, 0.02);
       }
 
       .select-container:hover {
@@ -196,6 +193,7 @@ export default class Select extends FormElement {
         margin: 0px !important;
         padding: 0px !important;
         box-shadow: none !important;
+        font-family: var(--font-family);
       }
 
       input:focus {
@@ -232,10 +230,16 @@ export default class Select extends FormElement {
         box-shadow: none !important;
       }
 
+      .searchbox::placeholder {
+        color: var(--color-placeholder);
+        font-weight: 300;
+      }
+
       .placeholder {
         font-size: var(--temba-select-selected-font-size);
         color: var(--color-placeholder);
         display: none;
+        font-weight: 300;
         line-height: var(--temba-select-selected-line-height);
       }
     `;
@@ -292,6 +296,15 @@ export default class Select extends FormElement {
   @property({ attribute: false })
   anchorElement: HTMLElement;
 
+  @property({ type: Boolean })
+  tags: boolean = false;
+
+  @property({ type: Boolean, attribute: "space_select" })
+  spaceSelect: boolean;
+
+  @property({ type: Boolean })
+  jsonValue: boolean;
+
   @property({ attribute: false })
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
@@ -318,6 +331,7 @@ export default class Select extends FormElement {
     .isCompleteDefault;
 
   private lastQuery: number;
+
   private cancelToken: CancelTokenSource;
   private complete: boolean;
   private page: number;
@@ -454,7 +468,7 @@ export default class Select extends FormElement {
 
   public fetchOptions(query: string, page: number = 0) {
     const cacheKey = `${query}_$page`;
-    if (this.cache && this.lruCache.has(cacheKey)) {
+    if (this.cache && !this.tags && this.lruCache.has(cacheKey)) {
       const { options, complete } = this.lruCache.get(cacheKey);
       this.setOptions(options);
       this.complete = complete;
@@ -468,24 +482,38 @@ export default class Select extends FormElement {
         this.cancelToken.cancel();
       }
 
+      let options: any = [];
+      const q = query.toLowerCase();
+
       if (this.staticOptions.length > 0) {
-        this.setOptions(
-          this.staticOptions.filter(
-            (option: StaticOption) =>
-              option.name.toLowerCase().indexOf(query.toLowerCase()) > -1
-          )
+        options = this.staticOptions.filter(
+          (option: StaticOption) => option.name.toLowerCase().indexOf(q) > -1
         );
       }
+
+      if (this.tags && q) {
+        if (
+          !options.find(
+            (option: any) => option.value && option.value.toLowerCase() === q
+          )
+        ) {
+          options.splice(0, 0, { name: q, value: q });
+        }
+      }
+
+      this.setOptions(options);
 
       if (this.endpoint) {
         const cacheKey = `${query}_$page`;
 
-        let url =
-          this.endpoint +
-          "&" +
-          this.queryParam +
-          "=" +
-          encodeURIComponent(query);
+        let url = this.endpoint;
+        if (url.indexOf("?") > -1) {
+          url += "&";
+        } else {
+          url += "?";
+        }
+
+        url += this.queryParam + "=" + encodeURIComponent(query);
         if (page) {
           url += "&page=" + page;
         }
@@ -510,7 +538,7 @@ export default class Select extends FormElement {
               this.complete = this.isComplete(newResults, response);
             }
 
-            if (this.cache) {
+            if (this.cache && !this.tags) {
               this.lruCache.set(cacheKey, {
                 options: this.options,
                 complete: this.complete,
@@ -581,10 +609,12 @@ export default class Select extends FormElement {
     }
   }
 
-  private handleKeyUp(evt: KeyboardEvent) {
+  private handleInput(evt: KeyboardEvent) {
     const ele = evt.currentTarget as HTMLInputElement;
     this.input = ele.value;
   }
+
+  private handleKeyUp(evt: KeyboardEvent) {}
 
   private handleCancel() {
     this.options = [];
@@ -681,9 +711,10 @@ export default class Select extends FormElement {
 
   public serializeValue(value: any): string {
     // static options just use their value
-    if (this.staticOptions.length > 0) {
+    if (!this.jsonValue && (this.staticOptions.length > 0 || this.tags)) {
       return value.value;
     }
+
     return super.serializeValue(value);
   }
 
@@ -719,8 +750,8 @@ export default class Select extends FormElement {
     const input = this.searchable
       ? html`
           <input
-            style=""
-            @keyup=${this.handleKeyUp}
+            class="searchbox"
+            @input=${this.handleInput}
             @keydown=${this.handleKeyDown}
             @click=${this.handleClick}
             type="text"
@@ -765,7 +796,7 @@ export default class Select extends FormElement {
                             <fa-icon
                               class="fas times"
                               size="12px"
-                              style="margin-bottom:-2px; fill: var(--color-widget-border)"
+                              style="margin-bottom:-2px; fill: var(--color-overlay-dark)"
                               }
                               path-prefix="/sitestatic"
                             />
@@ -780,15 +811,20 @@ export default class Select extends FormElement {
             </div>
           </div>
 
-          <div class="right" @click=${this.handleArrowClick}>
-            <fa-icon
-              class="fa chevron-down ${this.options.length > 0
-                ? "open"
-                : ""} arrow-icon"
-              size="14px"
-              style="fill: var(--arrow-icon-color)"
-              path-prefix="/sitestatic"
-            />
+          ${
+            !this.tags
+              ? html`<div class="right" @click=${this.handleArrowClick}>
+                  <fa-icon
+                    class="fa chevron-down ${this.options.length > 0
+                      ? "open"
+                      : ""} arrow-icon"
+                    size="14px"
+                    style="fill: var(--arrow-icon-color)"
+                    path-prefix="/sitestatic"
+                  />
+                </div>`
+              : null
+          }
           </div>
         </div>
       </temba-field>
@@ -800,6 +836,7 @@ export default class Select extends FormElement {
         .renderOption=${this.renderOption}
         .anchorTo=${this.anchorElement}
         .options=${this.options}
+        .spaceSelect=${this.spaceSelect}
         ?visible=${this.options.length > 0}
       ></temba-options>
     `;

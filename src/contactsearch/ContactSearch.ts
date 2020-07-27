@@ -3,7 +3,7 @@ import {
   TemplateResult,
   html,
   property,
-  css
+  css,
 } from "lit-element";
 import RapidElement from "../RapidElement";
 import axios, { CancelTokenSource, AxiosResponse } from "axios";
@@ -12,6 +12,7 @@ import TextInput from "../textinput/TextInput";
 import "../alert/Alert";
 import { Contact } from "../interfaces";
 import { styleMap } from "lit-html/directives/style-map";
+import FormElement from "../FormElement";
 
 const QUEIT_MILLIS = 1000;
 
@@ -24,7 +25,7 @@ interface SummaryResponse {
 }
 
 @customElement("temba-contact-search")
-export default class ContactSearch extends RapidElement {
+export default class ContactSearch extends FormElement {
   static get styles() {
     return css`
       :host {
@@ -180,7 +181,7 @@ export default class ContactSearch extends RapidElement {
         const count = this.summary.total;
         const message = fillTemplate(this.matchesText, {
           query: this.summary.query,
-          count
+          count,
         });
 
         summary = html`
@@ -188,9 +189,7 @@ export default class ContactSearch extends RapidElement {
             <tr class="header">
               <td colspan="2"></td>
               ${fields.map(
-                field => html`
-                  <td class="field-header">${field.label}</td>
-                `
+                (field) => html` <td class="field-header">${field.label}</td> `
               )}
               <td></td>
               <td class="field-header created-on">Created On</td>
@@ -202,7 +201,7 @@ export default class ContactSearch extends RapidElement {
                   <td class="urn">${contact.primary_urn_formatted}</td>
                   <td class="name">${contact.name}</td>
                   ${fields.map(
-                    field => html`
+                    (field) => html`
                       <td class="field">
                         ${(contact.fields[field.uuid] || { text: "" }).text}
                       </td>

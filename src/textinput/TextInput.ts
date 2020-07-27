@@ -7,6 +7,7 @@ import {
 } from "lit-element";
 import { styleMap } from "lit-html/directives/style-map.js";
 import FormElement from "../FormElement";
+import "lit-flatpickr";
 
 @customElement("temba-textinput")
 export default class TextInput extends FormElement {
@@ -17,11 +18,17 @@ export default class TextInput extends FormElement {
         cursor: text;
         background: var(--color-widget-bg);
         border: 1px solid var(--color-widget-border);
-        box-shadow: none;
         transition: all ease-in-out 200ms;
         display: flex;
         flex-direction: row;
         align-items: stretch;
+        box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
+          0 1px 2px 0 rgba(0, 0, 0, 0.02);
+      }
+
+      .hidden {
+        visibility: hidden;
+        position: absolute;
       }
 
       .input-container:focus-within {
@@ -40,6 +47,7 @@ export default class TextInput extends FormElement {
 
       .textinput {
         padding: 9px;
+        padding-top: 10px;
         border: none;
         flex: 1;
         margin: 0;
@@ -53,6 +61,12 @@ export default class TextInput extends FormElement {
         width: 100%;
       }
 
+      .datepicker {
+        padding: 9px;
+        margin: 0px;
+        border: 1px red solid;
+      }
+
       .textinput:focus {
         outline: none;
         box-shadow: none;
@@ -61,13 +75,16 @@ export default class TextInput extends FormElement {
 
       .textinput::placeholder {
         color: var(--color-placeholder);
-        font-weight: 200;
+        font-weight: 300;
       }
     `;
   }
 
   @property({ type: Boolean })
   textarea: boolean;
+
+  @property({ type: Boolean })
+  datepicker: boolean;
 
   @property({ type: String })
   placeholder: string = "";
@@ -78,12 +95,40 @@ export default class TextInput extends FormElement {
   @property({ type: String })
   name: string = "";
 
+  @property({ type: Boolean })
+  password: boolean;
+
+  @property({ type: Number })
+  maxlength: number;
+
   @property({ type: Object })
   inputElement: HTMLInputElement;
 
+  @property({ type: Object })
+  dateElement: any;
+
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
+
     this.inputElement = this.shadowRoot.querySelector(".textinput");
+    this.dateElement = this.shadowRoot.querySelector(".datepicker");
+
+    if (this.dateElement) {
+      const picker = this.dateElement;
+      window.setTimeout(() => {
+        this.dateElement.set(
+          "onChange",
+          (dates: Date[], formattedDate: string) => {
+            this.inputElement.value = picker.formatDate(
+              dates[0],
+              picker.altFormat
+            );
+            this.setValue(formattedDate);
+            this.inputElement.blur();
+          }
+        );
+      }, 1000);
+    }
   }
 
   public updated(changes: Map<string, any>) {
@@ -97,6 +142,21 @@ export default class TextInput extends FormElement {
   private handleChange(update: any): void {
     this.value = update.target.value;
     this.fireEvent("change");
+  }
+
+  private handleDateClick(): void {
+    (this.shadowRoot.querySelector(".datepicker") as any).open();
+  }
+
+  private handleContainerClick(): void {
+    const input: any = this.shadowRoot.querySelector(".textinput");
+    if (input) {
+      input.focus();
+    } else {
+      const datepicker: any = this.shadowRoot.querySelector(".datepicker");
+      datepicker.open();
+      datepicker.focus();
+    }
   }
 
   private handleInput(update: any): void {
@@ -115,6 +175,61 @@ export default class TextInput extends FormElement {
       height: `${this.textarea ? "100%" : "auto"}`,
     };
 
+    let input = html`
+      <input
+        class="textinput"
+        name=${this.name}
+        type="${this.password ? "password" : "text"}"
+        maxlength="${this.maxlength}"
+        @change=${this.handleChange}
+        @input=${this.handleInput}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.keyCode == 13) {
+            this.fireEvent("submit");
+          }
+        }}
+        placeholder=${this.placeholder}
+        .value="${this.value}"
+      />
+    `;
+    if (this.textarea) {
+      input = html`
+        <textarea
+          class="textinput"
+          name=${this.name}
+          placeholder=${this.placeholder}
+          @change=${this.handleChange}
+          @input=${this.handleInput}
+          .value=${this.value}
+        >
+        </textarea>
+      `;
+    }
+
+    if (this.datepicker) {
+      input = html`
+        <input
+          class="textinput"
+          name=${this.name}
+          type="text"
+          @click=${this.handleDateClick}
+          @focus=${this.handleDateClick}
+          @keydown=${(e: any) => {
+            e.preventDefault();
+          }}
+          readonly="true"
+          placeholder=${this.placeholder}
+          .value="${this.value}"
+        />
+        <lit-flatpickr
+          class="datepicker hidden"
+          altInput
+          altFormat="F j, Y"
+          dateFormat="Y-m-d"
+        ></lit-flatpickr>
+      `;
+    }
+
     return html`
       <temba-field
         name=${this.name}
@@ -122,39 +237,14 @@ export default class TextInput extends FormElement {
         .helpText=${this.helpText}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
+        .hideLabel=${this.hideLabel}
       >
         <div
           class="input-container"
           style=${styleMap(containerStyle)}
-          @click=${() => {
-            (this.shadowRoot.querySelector(
-              ".textinput"
-            ) as HTMLInputElement).focus();
-          }}
+          @click=${this.handleContainerClick}
         >
-          ${this.textarea
-            ? html`
-                <textarea
-                  class="textinput"
-                  name=${this.name}
-                  placeholder=${this.placeholder}
-                  @change=${this.handleChange}
-                  @input=${this.handleInput}
-                  .value=${this.value}
-                >
-                </textarea>
-              `
-            : html`
-                <input
-                  class="textinput"
-                  name=${this.name}
-                  type="text"
-                  @change=${this.handleChange}
-                  @input=${this.handleInput}
-                  placeholder=${this.placeholder}
-                  .value="${this.value}"
-                />
-              `}
+          ${input}
           <slot></slot>
         </div>
       </temba-field>

@@ -2,6 +2,7 @@ import { customElement, property } from "lit-element/lib/decorators";
 import { TemplateResult, html, css } from "lit-element";
 import Button from "../button/Button";
 import RapidElement from "../RapidElement";
+import Shadowless from "../shadowless/Shadowless";
 import { CustomEventType } from "../interfaces";
 import { styleMap } from "lit-html/directives/style-map.js";
 import { getClasses } from "../utils";
@@ -12,7 +13,7 @@ export default class Dialog extends RapidElement {
     return {
       small: "400px",
       medium: "600px",
-      large: "655px"
+      large: "655px",
     };
   }
 
@@ -24,50 +25,80 @@ export default class Dialog extends RapidElement {
         font-family: var(--font-family);
       }
 
+      .flex {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        align-items: center;
+      }
+
+      .flex-grow {
+        flex-grow: 1;
+      }
+
+      .bottom-padding {
+        padding: 3rem;
+      }
+
       .dialog-mask {
         width: 100%;
         background: rgba(0, 0, 0, 0.5);
         opacity: 0;
-        visibility: hidden;
         position: fixed;
         top: 0px;
         left: 0px;
-        transition: all ease-in 250ms;
+        transition: opacity linear 100ms;
+        pointer-events: none;
       }
 
       .dialog-container {
-        margin: 0px auto;
-        top: -300px;
+        margin-top: -10000px;
         position: relative;
-        transition: top ease-in-out 200ms;
+        transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33) 250ms,
+          opacity ease-in-out 200ms;
         border-radius: var(--curvature);
         box-shadow: 0px 0px 2px 4px rgba(0, 0, 0, 0.06);
         overflow: hidden;
-        opacity: 0;
+        transform: scale(0.7);
       }
 
       .dialog-body {
         background: #fff;
+        max-height: 460px;
+        overflow-y: auto;
       }
 
       .dialog-mask.dialog-open {
         opacity: 1;
-        visibility: visible;
+        pointer-events: auto;
       }
 
-      .dialog-mask.dialog-open > .dialog-container {
-        top: 20px;
-        opacity: 1;
+      .dialog-mask.dialog-open .dialog-container {
+        top: inherit;
       }
 
-      .dialog-mask.dialog-loading > .dialog-container {
-        top: -300px;
+      .dialog-mask.dialog-animation-end .dialog-container {
+        margin-top: 0;
+        transform: scale(1) !important;
+      }
+
+      .dialog-mask.dialog-ready .dialog-container {
+        margin-top: 0;
+        transform: none;
+      }
+
+      .dialog-mask.dialog-loading .dialog-container {
+        margin-top: -10000px;
       }
 
       .header-text {
         font-size: 20px;
-        padding: 16px;
-        font-weight: 200;
+        padding: 12px 20px;
+        font-weight: 300;
         color: var(--color-text-light);
         background: var(--color-primary-dark);
       }
@@ -105,6 +136,11 @@ export default class Dialog extends RapidElement {
         opacity: 1;
         visibility: visible;
       }
+
+      #submit-loader {
+        flex-grow: 1;
+        text-align: right;
+      }
     `;
   }
 
@@ -121,6 +157,9 @@ export default class Dialog extends RapidElement {
   submitting: boolean;
 
   @property({ type: Boolean })
+  destructive: boolean;
+
+  @property({ type: Boolean })
   loading: boolean;
 
   @property()
@@ -135,6 +174,12 @@ export default class Dialog extends RapidElement {
   @property()
   submittingName: string = "Saving";
 
+  @property()
+  animationEnd: boolean;
+
+  @property()
+  ready: boolean;
+
   @property({ attribute: false })
   onButtonClicked: (button: Button) => void;
 
@@ -144,6 +189,14 @@ export default class Dialog extends RapidElement {
 
   public updated(changedProperties: Map<string, any>) {
     if (changedProperties.has("open")) {
+      if (this.open) {
+        this.animationEnd = true;
+        window.setTimeout(() => {
+          this.ready = true;
+          this.animationEnd = false;
+        }, 400);
+      }
+
       // make sure our buttons aren't in progress on show
       if (this.open) {
         this.shadowRoot
@@ -152,9 +205,13 @@ export default class Dialog extends RapidElement {
         const inputs = this.querySelectorAll("textarea,input");
         if (inputs.length > 0) {
           window.setTimeout(() => {
-            (inputs[0] as any).focus();
+            (inputs[0] as any).click();
           }, 100);
         }
+      } else {
+        window.setTimeout(() => {
+          this.ready = false;
+        }, 400);
       }
     }
   }
@@ -217,7 +274,9 @@ export default class Dialog extends RapidElement {
         @click=${this.handleClickMask}
         class="dialog-mask ${getClasses({
           "dialog-open": this.open,
-          "dialog-loading": this.loading
+          "dialog-loading": this.loading,
+          "dialog-animation-end": this.animationEnd,
+          "dialog-ready": this.ready,
         })}"
         style=${styleMap(maskStyle)}
       >
@@ -228,38 +287,43 @@ export default class Dialog extends RapidElement {
           color="#ccc"
         ></temba-loading>
 
-        <div
-          @keyup=${this.handleKeyUp}
-          style=${styleMap(dialogStyle)}
-          class="dialog-container"
-        >
-          ${header}
-          <div class="dialog-body" @keypress=${this.handleKeyUp}>
-            ${this.body
-              ? this.body
-              : html`
-                  <slot></slot>
-                `}
-            <temba-loading units="6" size="8"></temba-loading>
-          </div>
+        <div class="flex">
+          <div class="flex-grow"></div>
+          <div
+            @keyup=${this.handleKeyUp}
+            style=${styleMap(dialogStyle)}
+            class="dialog-container"
+          >
+            ${header}
+            <div class="dialog-body" @keypress=${this.handleKeyUp}>
+              ${this.body ? this.body : html` <slot></slot> `}
+              <temba-loading units="6" size="8"></temba-loading>
+            </div>
 
-          <div class="dialog-footer">
-            ${this.primaryButtonName
-              ? html`
-                  <temba-button
-                    @click=${this.handleClick}
-                    .name=${this.primaryButtonName}
-                    primary
-                    ?disabled=${this.submitting}
-                    >}</temba-button
-                  >
-                `
-              : null}
-            <temba-button
-              @click=${this.handleClick}
-              name=${this.cancelButtonName}
-              secondary
-            ></temba-button>
+            <div class="dialog-footer">
+                ${
+                  this.primaryButtonName
+                    ? html`
+                        <temba-button
+                          @click=${this.handleClick}
+                          .name=${this.primaryButtonName}
+                          ?destructive=${this.destructive}
+                          ?primary=${!this.destructive}
+                          ?submitting=${this.submitting}
+                          >}</temba-button
+                        >
+                      `
+                    : null
+                }
+                <temba-button
+                  @click=${this.handleClick}
+                  name=${this.cancelButtonName}
+                  secondary
+                ></temba-button>
+              </div>
+            </div>
+            <div class="flex-grow bottom-padding"></div>
+            <div class="bottom-padding"></div>
           </div>
         </div>
       </div>

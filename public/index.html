@@ -3,99 +3,25 @@
   <head>
     <script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.3.0/bundles/webcomponents-sd-ce.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.js"></script>
+    <link
+      href="/sitestatic/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+
+    <link
+      href="/sitestatic/css/tailwind.css"
+      rel="stylesheet"
+      type="text/css"
+    />
   </head>
   <body>
     <link
       href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
       rel="stylesheet"
     />
+
     <style>
-      html {
-        --font-family: Helvetica, Helvetica, Arial, sans-serif;
-
-        font-family: var(--font-family);
-        font-size: 13px;
-        font-weight: 200;
-
-        --curvature: 4px;
-        --curvature-widget: 0px;
-
-        /* primary colors, should be dark */
-        --primary-rgb: 52, 152, 219;
-        --secondary-rgb: 0, 77, 129;
-        --focus-rgb: 82, 168, 236;
-        --error-rgb: 255, 99, 71;
-
-        --color-info: #c0d9eb;
-        --color-warning: #fff6c0;
-        --color-error: rgb(var(--error-rgb));
-
-        /* page text, borders, widgets */
-        --color-text: #555;
-        --color-widget-text: #555;
-        --color-borders: rgba(0, 0, 0, 0.07);
-
-        --widget-box-shadow-focused: inset 0 1px 1px rgba(0, 0, 0, 0.075),
-          0 0 8px rgba(var(--focus-rgb), 0.6);
-        --widget-box-shadow-focused-error: inset 0 1px 1px
-            rgba(var(--error-rgb), 0.075),
-          0 0 8px rgba(var(--error-rgb), 0.6);
-        --color-focus: rgba(var(--focus-rgb), 0.8);
-
-        --color-widget-bg: #fff;
-        --color-widget-bg-focused: #fff;
-        --color-widget-border: rgb(204, 204, 204);
-        --color-placeholder: var(--color-text-help);
-
-        /* light colors, panel backgrounds, selection, etc */
-        --color-primary-light: #eee;
-        --color-secondary-light: #ccc;
-
-        /* dark colors, nav bar, buttons, etc */
-        --color-primary-dark: rgb(var(--primary-rgb));
-        --color-secondary-dark: rgb(var(--secondary-rgb));
-
-        /* light text goes over dark, dark over lights */
-        --color-text-light: rgba(255, 255, 255, 0.92);
-        --color-text-dark: rgba(0, 0, 0, 0.5);
-        --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
-        --color-text-help: rgba(0, 0, 0, 0.45);
-
-        /* --color-selection: #3875d7; */
-        --color-selection: rgb(var(--primary-rgb));
-
-        /* solid overlays with text */
-        --color-overlay-dark: rgba(0, 0, 0, 0.2);
-        --color-overlay-dark-text: rgba(255, 255, 255, 0.9);
-        --color-overlay-light: rgba(0, 0, 0, 0.05);
-        --color-overlay-light-text: rgba(0, 0, 0, 0.6);
-
-        /* links, buttons, and label badges */
-        --color-link-primary: rgba(var(--primary-rgb), 0.8);
-        --color-link-primary-hover: rgba(var(--primary-rgb), 0.9);
-        --color-link-secondary: rgba(var(--secondary-rgb), 0.8);
-        --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
-        --color-button-primary: var(--color-primary-dark);
-        --color-button-primary-text: var(--color-text-light);
-        --color-button-secondary: var(--color-secondary-light);
-        --color-button-secondary-text: var(--color-text-dark);
-        --color-button-attention: var(--color-primary-dark);
-        --color-button-disabled: rgba(0, 0, 0, 0.03);
-
-        --color-label-primary: var(--color-primary-dark);
-        --color-label-primary-text: var(--color-text-light);
-        --color-label-secondary: rgba(0, 0, 0, 0.2);
-        --color-label-secondary-text: rgba(255, 255, 255, 0.9);
-
-        --button-y: 8px;
-        --button-x: 14px;
-      }
-
-      temba-select:focus {
-        outline: none;
-        box-shadow: none;
-      }
-
       .example {
         padding: 20px;
         border: 1px solid #e6e6e6;
@@ -113,6 +39,7 @@
       <temba-checkbox
         name="schedule"
         label="Schedule for later delivery"
+        help_text="This is something you should think long and hard about"
       ></temba-checkbox>
     </div>
 
@@ -122,7 +49,7 @@
         header="Send Message"
         endpoint="/broadcast/send/"
       >
-        <temba-button name="Send Message" primary></temba-button>
+        <div class="button-primary inline-block">Send Message</div>
       </temba-modax>
     </div>
 
@@ -271,6 +198,38 @@
       >
         <temba-option value="red" name="Red"></temba-option>
         <temba-option value="green" name="Green"></temba-option>
+        <temba-option value="blue" name="Blue"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <div class="example-header">Tags</div>
+      <temba-select
+        name="tagged"
+        placeholder="Pick some colors"
+        multi
+        searchable
+        tags
+        space_select
+      >
+        <temba-option value="red" name="Red"></temba-option>
+        <temba-option value="green" name="Green"></temba-option>
+        <temba-option value="blue" name="Blue"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <div class="example-header">Tags Initialized</div>
+      <temba-select
+        name="tagged"
+        placeholder="Pick some colors"
+        multi
+        searchable
+        tags
+        space_select
+      >
+        <temba-option value="red" name="Red" selected></temba-option>
+        <temba-option value="green" name="Green" selected></temba-option>
         <temba-option value="blue" name="Blue"></temba-option>
       </temba-select>
     </div>

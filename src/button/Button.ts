@@ -15,7 +15,7 @@ export default class Button extends LitElement {
       :host {
         display: inline-block;
         font-family: var(--font-family);
-        font-weight: 200;
+        font-weight: 300;
       }
 
       .button-container {
@@ -63,6 +63,7 @@ export default class Button extends LitElement {
       .button-container.button-disabled {
         background: var(--color-button-disabled);
         color: rgba(255, 255, 255, 0.45);
+        cursor: default;
       }
 
       .button-container.button-disabled .button-mask {
@@ -107,12 +108,21 @@ export default class Button extends LitElement {
         color: var(--color-text);
       }
 
+      .button-destructive {
+        background: var(--color-button-destructive);
+        color: var(--color-button-destructive-text);
+      }
+
       .button-mask.disabled {
         background: rgba(0, 0, 0, 0.1);
       }
 
       .button-secondary .button-mask:hover {
         background: transparent;
+      }
+
+      temba-loading {
+        margin-bottom: -3px;
       }
     `;
   }
@@ -126,11 +136,17 @@ export default class Button extends LitElement {
   @property({ type: Boolean })
   attention: boolean;
 
+  @property({ type: Boolean })
+  destructive: boolean;
+
   @property()
   name: string;
 
   @property({ type: Boolean })
   disabled: boolean;
+
+  @property({ type: Boolean })
+  submitting: boolean;
 
   @property({ type: Boolean })
   active: boolean;
@@ -172,9 +188,10 @@ export default class Button extends LitElement {
             this.primary ||
             (!this.primary && !this.secondary && !this.attention),
           "button-secondary": this.secondary,
-          "button-disabled": this.disabled,
+          "button-disabled": this.disabled || this.submitting,
           "button-active": this.active,
           "button-attention": this.attention,
+          "button-destructive": this.destructive,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}
@@ -184,7 +201,15 @@ export default class Button extends LitElement {
         @click=${this.handleClick}
       >
         <div class="button-mask">
-          <div class="button-name">${this.name}</div>
+          <div class="button-name">
+            ${this.submitting
+              ? html`<temba-loading
+                  units="3"
+                  size="8"
+                  color="#eee"
+                ></temba-loading>`
+              : this.name}
+          </div>
         </div>
       </div>
     `;

@@ -4,7 +4,7 @@ import {
   html,
   LitElement,
   property,
-  TemplateResult
+  TemplateResult,
 } from "lit-element";
 
 @customElement("temba-alert")
@@ -32,7 +32,6 @@ export default class Alert extends LitElement {
       }
 
       .temba-error {
-        border-left: 6px solid var(--color-error);
         color: var(--color-error);
       }
     `;

@@ -6,6 +6,7 @@ import axios, { AxiosResponse, CancelTokenSource } from "axios";
 import { unsafeHTML } from "lit-html/directives/unsafe-html";
 import TextInput from "../textinput/TextInput";
 import { throws } from "assert";
+import { CustomEventType } from "../interfaces";
 
 @customElement("temba-modax")
 export default class Modax extends RapidElement {
@@ -18,7 +19,7 @@ export default class Modax extends RapidElement {
       }
 
       .control-group {
-        margin-bottom: 15px;
+        margin-bottom: 12px;
         display: block;
       }
 
@@ -37,15 +38,22 @@ export default class Modax extends RapidElement {
       }
 
       ul.errorlist {
-        margin-top: 8px;
+        margin-top: 0px;
         list-style-type: none;
         padding-left: 0;
+        padding-bottom: 7px;
       }
 
       ul.errorlist li {
-        color: var(--color-error) !important;
-        padding: 3px 8px;
-        border-left: 6px solid var(--color-error);
+        color: var(--color-error);
+        background: rgba(255, 181, 181, 0.17);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+          0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        color: tomato;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        font-weight: 300;
       }
     `;
   }
@@ -69,6 +77,18 @@ export default class Modax extends RapidElement {
   primaryName: string;
 
   @property({ type: String })
+  cancelName: string;
+
+  @property({ type: String })
+  onLoaded: string;
+
+  @property({ type: String })
+  onSubmitted: string;
+
+  @property({ type: Boolean })
+  noSubmit: boolean;
+
+  @property({ type: String })
   body: any = this.getLoading();
 
   private cancelToken: CancelTokenSource;
@@ -79,13 +99,22 @@ export default class Modax extends RapidElement {
 
   private focusFirstInput(): void {
     window.setTimeout(() => {
-      const input = this.shadowRoot.querySelector(
-        "temba-textinput"
-      ) as TextInput;
+      let input = this.shadowRoot.querySelector(
+        "temba-textinput, temba-completion"
+      ) as any;
+
       if (input) {
-        input.inputElement.click();
+        input = input.textInputElement
+          ? input.textInputElement.inputElement
+          : input.inputElement;
+
+        if (input) {
+          if (!input.readOnly) {
+            input.click();
+          }
+        }
       }
-    });
+    }, 100);
   }
 
   public updated(changes: Map<string, any>) {
@@ -103,30 +132,35 @@ export default class Modax extends RapidElement {
       }
     }
 
-    if (changes.has("body")) {
+    if (changes.has("body") && this.open && this.body) {
       this.focusFirstInput();
     }
   }
 
   private getLoading() {
-    return html`
-      <temba-loading units="6" size="8"></temba-loading>
-    `;
+    return html` <temba-loading units="6" size="8"></temba-loading> `;
   }
 
   private updatePrimaryButton(): void {
-    window.setTimeout(() => {
-      const primaryName = (this.shadowRoot.querySelector(
-        "input[type='submit']"
-      ) as any).value;
-      if (primaryName) {
-        this.primaryName = primaryName;
-      }
-      this.submitting = false;
-    }, 0);
+    if (!this.noSubmit) {
+      window.setTimeout(() => {
+        const submitButton = this.shadowRoot.querySelector(
+          "input[type='submit']"
+        ) as any;
+
+        if (submitButton) {
+          this.primaryName = submitButton.value;
+        } else {
+          this.primaryName = null;
+          this.cancelName = "Ok";
+        }
+
+        this.submitting = false;
+      }, 0);
+    }
   }
 
-  private setBody(body: string) {
+  private setBody(body: string): boolean {
     // remove any existing on our previous body
     const scriptBlock = this.shadowRoot.querySelector(".scripts");
     for (const child of scriptBlock.children) {
@@ -147,21 +181,38 @@ export default class Modax extends RapidElement {
     const toAdd: any = [];
     // now add them in
     for (let i = scripts.length - 1; i >= 0; i--) {
+      // for (let i = 0; i < scripts.length; i++) {
       const script = this.ownerDocument.createElement("script");
       var code = scripts[i].innerText;
-      script.appendChild(this.ownerDocument.createTextNode(code));
-      toAdd.push(script);
+      if (scripts[i].src) {
+        script.src = scripts[i].src;
+        script.type = "text/javascript";
+        script.async = true;
 
-      // remove it from our current body text
-      div.removeChild(scripts[i]);
+        // TODO: track and fire event once all scripts are loaded
+        script.onload = function () {};
+        toAdd.push(script);
+      } else if (code) {
+        script.appendChild(this.ownerDocument.createTextNode(code));
+        toAdd.push(script);
+        // remove it from our current body text
+      }
+      scripts[i].remove();
     }
 
-    this.body = unsafeHTML(div.innerHTML);
+    const scriptOnly = !!div.querySelector(".success-script");
+
+    if (!scriptOnly) {
+      this.body = unsafeHTML(div.innerHTML);
+    }
+
     window.setTimeout(() => {
       for (const script of toAdd) {
         scriptBlock.appendChild(script);
       }
     }, 0);
+
+    return !scriptOnly;
   }
 
   private fetchForm() {
@@ -174,13 +225,25 @@ export default class Modax extends RapidElement {
         this.setBody(response.data);
         this.updatePrimaryButton();
         this.fetching = false;
+        if (this.onLoaded) {
+          window.setTimeout(() => {
+            const fn = eval(this.onLoaded);
+            fn(
+              new CustomEvent("loaded", {
+                detail: { body: this.shadowRoot.querySelector(".modax-body") },
+                bubbles: true,
+                composed: true,
+              })
+            );
+          }, 0);
+        }
       }
     );
   }
 
   private handleDialogClick(evt: CustomEvent) {
     const button = evt.detail.button;
-    if (!button.disabled) {
+    if (!button.disabled && !button.submitting) {
       if (button.name === this.primaryName) {
         this.submitting = true;
         const form = this.shadowRoot.querySelector("form");
@@ -193,12 +256,26 @@ export default class Modax extends RapidElement {
               if (redirect) {
                 if (redirect === "hide") {
                   this.open = false;
+
+                  if (this.onSubmitted) {
+                    window.setTimeout(() => {
+                      const fn = eval(this.onSubmitted);
+                      fn(
+                        new CustomEvent("submitted", {
+                          bubbles: true,
+                          composed: true,
+                        })
+                      );
+                    }, 0);
+                  }
                 } else {
                   this.ownerDocument.location = redirect;
                 }
               } else {
-                this.setBody(response.data);
-                this.updatePrimaryButton();
+                // if we set the body, update our submit button
+                if (this.setBody(response.data)) {
+                  this.updatePrimaryButton();
+                }
               }
             }, 2000);
           }
@@ -206,7 +283,7 @@ export default class Modax extends RapidElement {
       }
     }
 
-    if (button.name === "Cancel") {
+    if (button.name === (this.cancelName || "Cancel")) {
       this.open = false;
       this.fetching = false;
       this.cancelToken.cancel();
@@ -223,10 +300,13 @@ export default class Modax extends RapidElement {
     return html`
       <temba-dialog
         header=${this.header}
-        .open=${this.open}
-        .loading=${this.fetching}
-        .primaryButtonName=${this.primaryName}
-        .submitting=${this.submitting}
+        .primaryButtonName=${this.noSubmit ? null : this.primaryName}
+        .cancelButtonName=${this.cancelName || "Cancel"}
+        ?open=${this.open}
+        ?loading=${this.fetching}
+        ?submitting=${this.submitting}
+        ?destructive=${this.primaryName &&
+        this.primaryName.toLowerCase().indexOf("delete") > -1}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
