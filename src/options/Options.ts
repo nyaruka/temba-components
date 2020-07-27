@@ -254,8 +254,8 @@ export default class Options extends RapidElement {
 
         if (this.anchorTo && this.scrollParent) {
           if (!isElementVisible(this.anchorTo, this.scrollParent)) {
-            console.log("Not visible canceling");
-            this.fireCustomEvent(CustomEventType.Canceled);
+            // console.log("Not visible canceling");
+            // this.fireCustomEvent(CustomEventType.Canceled);
           }
         }
 

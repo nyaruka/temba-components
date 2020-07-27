@@ -181,12 +181,22 @@ export default class Modax extends RapidElement {
     const toAdd: any = [];
     // now add them in
     for (let i = scripts.length - 1; i >= 0; i--) {
+      // for (let i = 0; i < scripts.length; i++) {
       const script = this.ownerDocument.createElement("script");
       var code = scripts[i].innerText;
-      script.appendChild(this.ownerDocument.createTextNode(code));
-      toAdd.push(script);
+      if (scripts[i].src) {
+        script.src = scripts[i].src;
+        script.type = "text/javascript";
+        script.async = true;
 
-      // remove it from our current body text
+        // TODO: track and fire event once all scripts are loaded
+        script.onload = function () {};
+        toAdd.push(script);
+      } else if (code) {
+        script.appendChild(this.ownerDocument.createTextNode(code));
+        toAdd.push(script);
+        // remove it from our current body text
+      }
       scripts[i].remove();
     }
 

@@ -95,6 +95,12 @@ export default class TextInput extends FormElement {
   @property({ type: String })
   name: string = "";
 
+  @property({ type: Boolean })
+  password: boolean;
+
+  @property({ type: Number })
+  maxlength: number;
+
   @property({ type: Object })
   inputElement: HTMLInputElement;
 
@@ -173,7 +179,8 @@ export default class TextInput extends FormElement {
       <input
         class="textinput"
         name=${this.name}
-        type="text"
+        type="${this.password ? "password" : "text"}"
+        maxlength="${this.maxlength}"
         @change=${this.handleChange}
         @input=${this.handleInput}
         @keydown=${(e: KeyboardEvent) => {

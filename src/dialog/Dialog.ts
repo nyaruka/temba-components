@@ -2,6 +2,7 @@ import { customElement, property } from "lit-element/lib/decorators";
 import { TemplateResult, html, css } from "lit-element";
 import Button from "../button/Button";
 import RapidElement from "../RapidElement";
+import Shadowless from "../shadowless/Shadowless";
 import { CustomEventType } from "../interfaces";
 import { styleMap } from "lit-html/directives/style-map.js";
 import { getClasses } from "../utils";
@@ -67,6 +68,8 @@ export default class Dialog extends RapidElement {
 
       .dialog-body {
         background: #fff;
+        max-height: 460px;
+        overflow-y: auto;
       }
 
       .dialog-mask.dialog-open {

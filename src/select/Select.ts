@@ -302,6 +302,9 @@ export default class Select extends FormElement {
   @property({ type: Boolean, attribute: "space_select" })
   spaceSelect: boolean;
 
+  @property({ type: Boolean })
+  jsonValue: boolean;
+
   @property({ attribute: false })
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
@@ -328,6 +331,7 @@ export default class Select extends FormElement {
     .isCompleteDefault;
 
   private lastQuery: number;
+
   private cancelToken: CancelTokenSource;
   private complete: boolean;
   private page: number;
@@ -502,12 +506,14 @@ export default class Select extends FormElement {
       if (this.endpoint) {
         const cacheKey = `${query}_$page`;
 
-        let url =
-          this.endpoint +
-          "&" +
-          this.queryParam +
-          "=" +
-          encodeURIComponent(query);
+        let url = this.endpoint;
+        if (url.indexOf("?") > -1) {
+          url += "&";
+        } else {
+          url += "?";
+        }
+
+        url += this.queryParam + "=" + encodeURIComponent(query);
         if (page) {
           url += "&page=" + page;
         }
@@ -705,7 +711,7 @@ export default class Select extends FormElement {
 
   public serializeValue(value: any): string {
     // static options just use their value
-    if (this.staticOptions.length > 0 || this.tags) {
+    if (!this.jsonValue && (this.staticOptions.length > 0 || this.tags)) {
       return value.value;
     }
 

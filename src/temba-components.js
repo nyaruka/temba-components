@@ -16,3 +16,4 @@ import "./loading/Loading";
 import "./alert/Alert";
 import "./checkbox/Checkbox";
 import "./datepicker/DatePicker";
+import "./shadowless/Shadowless";
