@@ -252,7 +252,16 @@ export default class Modax extends RapidElement {
         postUrl(this.endpoint, postData, true).then(
           (response: AxiosResponse) => {
             window.setTimeout(() => {
-              const redirect = response.headers["temba-success"];
+              let redirect = response.headers["temba-success"];
+
+              if (
+                !redirect &&
+                response.request.responseURL &&
+                response.request.responseURL !== this.endpoint
+              ) {
+                redirect = response.request.responseURL;
+              }
+
               if (redirect) {
                 if (redirect === "hide") {
                   this.open = false;
@@ -296,6 +305,10 @@ export default class Modax extends RapidElement {
     this.fetching = false;
   }
 
+  private isDestructive(): boolean {
+    return this.endpoint.indexOf("delete") > -1;
+  }
+
   public render(): TemplateResult {
     return html`
       <temba-dialog
@@ -305,8 +318,7 @@ export default class Modax extends RapidElement {
         ?open=${this.open}
         ?loading=${this.fetching}
         ?submitting=${this.submitting}
-        ?destructive=${this.primaryName &&
-        this.primaryName.toLowerCase().indexOf("delete") > -1}
+        ?destructive=${this.isDestructive()}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
