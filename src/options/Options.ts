@@ -56,11 +56,11 @@ export default class Options extends RapidElement {
 
       .option .detail {
         font-size: 85%;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(0, 0, 0, 0.4);
       }
 
       code {
-        background: rgba(0, 0, 0, 0.15);
+        background: rgba(0, 0, 0, 0.05);
         padding: 1px 5px;
         border-radius: var(--curvature-widget);
       }
