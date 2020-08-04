@@ -330,6 +330,9 @@ export default class Select extends FormElement {
   isComplete: (newestOptions: any[], response: AxiosResponse) => boolean = this
     .isCompleteDefault;
 
+  @property({ type: Array, attribute: "options" })
+  private staticOptions: StaticOption[] = [];
+
   private lastQuery: number;
 
   private cancelToken: CancelTokenSource;
@@ -338,7 +341,6 @@ export default class Select extends FormElement {
   private query: string;
 
   private lruCache = flru(20);
-  private staticOptions: StaticOption[] = [];
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
@@ -367,6 +369,15 @@ export default class Select extends FormElement {
       ) {
         this.fetchOptions(this.query, this.page + 1);
       }
+    }
+
+    // default to the first option if we don't have a placeholder
+    if (
+      this.values.length === 0 &&
+      !this.placeholder &&
+      this.staticOptions.length > 0
+    ) {
+      this.setValue(this.staticOptions[0]);
     }
   }
 

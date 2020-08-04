@@ -306,7 +306,7 @@ export default class Modax extends RapidElement {
   }
 
   private isDestructive(): boolean {
-    return this.endpoint.indexOf("delete") > -1;
+    return this.endpoint && this.endpoint.indexOf("delete") > -1;
   }
 
   public render(): TemplateResult {
