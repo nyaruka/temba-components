@@ -8,40 +8,41 @@ const mode = getDefaultMode();
 
 const configs = [
   createDefaultConfig({
-    input: path.resolve(__dirname, "./public/index.html")
-  })
+    input: path.resolve(__dirname, "./public/index.html"),
+  }),
 ];
 
-module.exports = configs.map(config => {
+module.exports = configs.map((config) => {
   const legacy = config.output.filename.indexOf("legacy") === 0;
   const prefix = legacy ? "legacy/" : "";
   // const outputChunkFilename = `${prefix}${'chunk-[id].js'}`;
 
   const conf = merge(config, {
     devServer: {
-      disableHostCheck: true
+      disableHostCheck: true,
+      port: 8090,
     },
     resolve: {
-      extensions: [".ts", ".js", ".json", ".css"]
+      extensions: [".ts", ".js", ".json", ".css"],
     },
     output: {
       path: path.resolve(process.cwd(), "build"),
       library: "temba-components",
       libraryTarget: "umd",
-      filename: `temba-components-[hash].js`
+      filename: `temba-components-[hash].js`,
     },
     module: {
       rules: [
         { test: /\.ts$/, loader: "ts-loader" },
         {
           test: /\.scss$/,
-          use: ["style-loader", "css-loader", "sass-loader"]
+          use: ["style-loader", "css-loader", "sass-loader"],
         },
         { test: /\.css$/, use: ["style-loader", "css-loader"] },
-        { test: /\.(png|svg|jpg|gif)$/, loader: "file-loader" }
-      ]
+        { test: /\.(png|svg|jpg|gif)$/, loader: "file-loader" },
+      ],
     },
-    devtool: mode !== "production" ? "inline-source-map" : false
+    devtool: mode !== "production" ? "inline-source-map" : false,
   });
 
   if (mode === "production") {
@@ -52,15 +53,15 @@ module.exports = configs.map(config => {
         coreJs: true,
         regeneratorRuntime: true,
         webcomponents: true,
-        fetch: true
+        fetch: true,
       },
-      loader: "external"
+      loader: "external",
     });
 
     // create our django template includes
     conf["plugins"].push(
       new CreateIncludesPlugin({
-        templates: path.resolve(process.cwd(), "build", "templates")
+        templates: path.resolve(process.cwd(), "build", "templates"),
       })
     );
   }

@@ -71,7 +71,8 @@ export default class DatePicker extends FormElement {
         id="my-date-picker"
         altInput
         altFormat="F j, Y"
-        dateFormat="Y-m-d"
+        dateFormat="Y-m-d H:i"
+        enableTime: true
       >
         <input class="textinput"></input>
       </lit-flatpickr>

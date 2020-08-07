@@ -65,7 +65,7 @@ export default class Checkbox extends FormElement {
     return value;
   }
 
-  private handleClick(): void {
+  private handleClick(event: MouseEvent): void {
     this.checked = !this.checked;
   }
 
@@ -97,7 +97,9 @@ export default class Checkbox extends FormElement {
       >
         <div class="checkbox-container">
           ${icon}
-          <div class="checkbox-label">${this.label}</div>
+          ${this.label
+            ? html`<div class="checkbox-label">${this.label}</div>`
+            : null}
         </div>
       </temba-field>
     `;

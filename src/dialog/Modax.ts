@@ -230,12 +230,20 @@ export default class Modax extends RapidElement {
             const fn = eval(this.onLoaded);
             fn(
               new CustomEvent("loaded", {
-                detail: { body: this.shadowRoot.querySelector(".modax-body") },
+                detail: { body: this.getBody() },
                 bubbles: true,
                 composed: true,
               })
             );
           }, 0);
+        } else {
+          this.dispatchEvent(
+            new CustomEvent(CustomEventType.Loaded, {
+              detail: { body: this.getBody() },
+              bubbles: true,
+              composed: true,
+            })
+          );
         }
       }
     );
@@ -257,7 +265,7 @@ export default class Modax extends RapidElement {
               if (
                 !redirect &&
                 response.request.responseURL &&
-                response.request.responseURL !== this.endpoint
+                response.request.responseURL.indexOf(this.endpoint) === -1
               ) {
                 redirect = response.request.responseURL;
               }
@@ -307,6 +315,10 @@ export default class Modax extends RapidElement {
 
   private isDestructive(): boolean {
     return this.endpoint && this.endpoint.indexOf("delete") > -1;
+  }
+
+  public getBody() {
+    return this.shadowRoot.querySelector(".modax-body");
   }
 
   public render(): TemplateResult {

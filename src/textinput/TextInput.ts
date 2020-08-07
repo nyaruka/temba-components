@@ -26,6 +26,18 @@ export default class TextInput extends FormElement {
           0 1px 2px 0 rgba(0, 0, 0, 0.02);
       }
 
+      .clear-icon {
+        color: var(--color-text-dark-secondary);
+        cursor: pointer;
+        margin: auto;
+        padding-right: 10px;
+        line-height: 1;
+      }
+
+      .clear-icon:hover {
+        color: var(--color-text-dark);
+      }
+
       .hidden {
         visibility: hidden;
         position: absolute;
@@ -61,6 +73,14 @@ export default class TextInput extends FormElement {
         width: 100%;
       }
 
+      .textinput.withdate {
+        cursor: pointer;
+      }
+
+      .textinput.withdate.loading {
+        color: #fff;
+      }
+
       .datepicker {
         padding: 9px;
         margin: 0px;
@@ -86,6 +106,9 @@ export default class TextInput extends FormElement {
   @property({ type: Boolean })
   datepicker: boolean;
 
+  @property({ type: Boolean })
+  datetimepicker: boolean;
+
   @property({ type: String })
   placeholder: string = "";
 
@@ -107,6 +130,13 @@ export default class TextInput extends FormElement {
   @property({ type: Object })
   dateElement: any;
 
+  @property({ type: Boolean })
+  clearable: boolean;
+
+  // if we are still loading
+  @property({ type: Boolean })
+  loading: boolean = true;
+
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
 
@@ -117,7 +147,7 @@ export default class TextInput extends FormElement {
       const picker = this.dateElement;
       window.setTimeout(() => {
         this.dateElement.set(
-          "onChange",
+          "onValueUpdate",
           (dates: Date[], formattedDate: string) => {
             this.inputElement.value = picker.formatDate(
               dates[0],
@@ -127,7 +157,15 @@ export default class TextInput extends FormElement {
             this.inputElement.blur();
           }
         );
-      }, 1000);
+
+        if (this.value) {
+          this.inputElement.value = picker.formatDate(
+            picker.parseDate(this.value),
+            picker.altFormat
+          );
+        }
+        this.loading = false;
+      }, 300);
     }
   }
 
@@ -137,6 +175,12 @@ export default class TextInput extends FormElement {
       this.setValues([this.value]);
       this.fireEvent("change");
     }
+  }
+
+  private handleClear(event: any): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.value = null;
   }
 
   private handleChange(update: any): void {
@@ -175,6 +219,16 @@ export default class TextInput extends FormElement {
       height: `${this.textarea ? "100%" : "auto"}`,
     };
 
+    const clear =
+      this.clearable && this.inputElement && this.inputElement.value
+        ? html`<fa-icon
+            class="fa times clear-icon"
+            size="14px"
+            path-prefix="/sitestatic"
+            @click=${this.handleClear}
+          />`
+        : null;
+
     let input = html`
       <input
         class="textinput"
@@ -206,10 +260,10 @@ export default class TextInput extends FormElement {
       `;
     }
 
-    if (this.datepicker) {
+    if (this.datepicker || this.datetimepicker) {
       input = html`
         <input
-          class="textinput"
+          class="textinput withdate ${this.loading ? "loading" : ""}"
           name=${this.name}
           type="text"
           @click=${this.handleDateClick}
@@ -224,8 +278,9 @@ export default class TextInput extends FormElement {
         <lit-flatpickr
           class="datepicker hidden"
           altInput
-          altFormat="F j, Y"
-          dateFormat="Y-m-d"
+          altFormat="${this.datepicker ? "F j, Y" : "F j, Y h:i K"}"
+          dateFormat="${this.datepicker ? "Y-m-d" : "Y-m-d H:i"}"
+          ?enableTime=${this.datetimepicker}
         ></lit-flatpickr>
       `;
     }
@@ -244,7 +299,7 @@ export default class TextInput extends FormElement {
           style=${styleMap(containerStyle)}
           @click=${this.handleContainerClick}
         >
-          ${input}
+          ${input} ${clear}
           <slot></slot>
         </div>
       </temba-field>
