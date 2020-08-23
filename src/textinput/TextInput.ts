@@ -66,7 +66,7 @@ export default class TextInput extends FormElement {
         background: none;
         color: var(--color-widget-text);
         font-family: var(--font-family);
-        font-size: 13px;
+        font-size: 14px;
         cursor: text;
         resize: none;
         font-weight: 300;
@@ -204,7 +204,7 @@ export default class TextInput extends FormElement {
   }
 
   private handleInput(update: any): void {
-    this.value = update.target.value;
+    this.setValues([this.value]);
     this.fireEvent("input");
   }
 
@@ -239,7 +239,24 @@ export default class TextInput extends FormElement {
         @input=${this.handleInput}
         @keydown=${(e: KeyboardEvent) => {
           if (e.keyCode == 13) {
-            this.fireEvent("submit");
+            this.value = this.values[0];
+            this.fireEvent("change");
+
+            var parent = this as HTMLElement;
+
+            // look for a parent form to submit
+            window.setTimeout(function () {
+              while (true) {
+                if (!parent) {
+                  break;
+                }
+                parent = parent.parentElement;
+                if (parent.tagName === "FORM") {
+                  (parent as HTMLFormElement).submit();
+                  break;
+                }
+              }
+            }, 0);
           }
         }}
         placeholder=${this.placeholder}

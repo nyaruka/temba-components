@@ -28,6 +28,7 @@ export default class Button extends LitElement {
         transition: background ease-in 100ms;
         user-select: none;
         text-align: center;
+        font-weight: 400;
       }
 
       .button-secondary:hover .button-mask {
@@ -106,6 +107,7 @@ export default class Button extends LitElement {
       .button-secondary {
         background: transparent;
         color: var(--color-text);
+        font-weight: 300;
       }
 
       .button-destructive {

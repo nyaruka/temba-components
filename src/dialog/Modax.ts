@@ -29,6 +29,20 @@ export default class Modax extends RapidElement {
 
       .modax-body {
         padding: 20px;
+        display: block;
+        position: relative;
+      }
+
+      .modax-body.submitting:before {
+        display: inline-block;
+        content: "";
+        height: 100%;
+        width: 100%;
+        margin-left: -20px;
+        margin-top: -20px;
+        background: rgba(200, 200, 200, 0.1);
+        position: absolute;
+        z-index: 10000;
       }
 
       temba-loading {
@@ -334,7 +348,7 @@ export default class Modax extends RapidElement {
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
-        <div class="modax-body">
+        <div class="modax-body${this.submitting ? " submitting" : ""}">
           ${this.body}
         </div>
         <div class="scripts"></div>

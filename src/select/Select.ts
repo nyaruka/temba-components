@@ -267,7 +267,7 @@ export default class Select extends FormElement {
   input: string = "";
 
   @property({ type: Array })
-  options: any[] = [];
+  visibleOptions: any[] = [];
 
   @property({ type: Number })
   quietMillis: number = 0;
@@ -362,10 +362,10 @@ export default class Select extends FormElement {
     // if our cursor changed, lets make sure our scrollbox is showing it
     if (changedProperties.has("cursorIndex") && this.endpoint) {
       if (
-        this.options.length > 0 &&
+        this.visibleOptions.length > 0 &&
         this.query &&
         !this.complete &&
-        this.cursorIndex > this.options.length - LOOK_AHEAD
+        this.cursorIndex > this.visibleOptions.length - LOOK_AHEAD
       ) {
         this.fetchOptions(this.query, this.page + 1);
       }
@@ -394,7 +394,7 @@ export default class Select extends FormElement {
       this.blur();
     }
 
-    this.options = [];
+    this.visibleOptions = [];
     this.input = "";
     this.selectedIndex = -1;
     this.fireEvent("change");
@@ -413,7 +413,7 @@ export default class Select extends FormElement {
 
   public handleRemoveSelection(selectionToRemove: any): void {
     this.removeValue(selectionToRemove);
-    this.options = [];
+    this.visibleOptions = [];
     this.fireEvent("change");
   }
 
@@ -421,7 +421,15 @@ export default class Select extends FormElement {
     return null;
   }
 
-  private setOptions(options: any[]) {
+  public open(): void {
+    this.requestUpdate("input");
+  }
+
+  public setOptions(options: StaticOption[]): void {
+    this.staticOptions = options;
+  }
+
+  private setVisibleOptions(options: any[]) {
     if (this.input) {
       const arbitraryOption: any = this.createArbitraryOption(this.input);
       if (arbitraryOption) {
@@ -451,14 +459,14 @@ export default class Select extends FormElement {
     if (this.values.length > 0) {
       if (getId(this.values[0])) {
         if (this.multi) {
-          this.options = options.filter(
+          this.visibleOptions = options.filter(
             (option) =>
               !this.values.find((selected) => getId(selected) === getId(option))
           );
           return;
         } else {
           // if no search, single select should set our cursor to the selected item
-          this.options = options;
+          this.visibleOptions = options;
 
           if (!this.input) {
             this.cursorIndex = options.findIndex(
@@ -474,14 +482,15 @@ export default class Select extends FormElement {
       }
     }
 
-    this.options = options;
+    this.visibleOptions = options;
   }
 
   public fetchOptions(query: string, page: number = 0) {
+    console.log("fetching options", query, this.staticOptions);
     const cacheKey = `${query}_$page`;
     if (this.cache && !this.tags && this.lruCache.has(cacheKey)) {
       const { options, complete } = this.lruCache.get(cacheKey);
-      this.setOptions(options);
+      this.setVisibleOptions(options);
       this.complete = complete;
       this.query = query;
       return;
@@ -508,11 +517,11 @@ export default class Select extends FormElement {
             (option: any) => option.value && option.value.toLowerCase() === q
           )
         ) {
-          options.splice(0, 0, { name: q, value: q });
+          options.splice(0, 0, { name: query, value: query });
         }
       }
 
-      this.setOptions(options);
+      this.setVisibleOptions(options);
 
       if (this.endpoint) {
         const cacheKey = `${query}_$page`;
@@ -538,20 +547,20 @@ export default class Select extends FormElement {
           .then((response: AxiosResponse) => {
             if (page === 0) {
               this.cursorIndex = 0;
-              this.setOptions(this.getOptions(response));
+              this.setVisibleOptions(this.getOptions(response));
               this.query = query;
-              this.complete = this.isComplete(this.options, response);
+              this.complete = this.isComplete(this.visibleOptions, response);
             } else {
               const newResults = this.getOptions(response);
               if (newResults.length > 0) {
-                this.setOptions([...this.options, ...newResults]);
+                this.setVisibleOptions([...this.visibleOptions, ...newResults]);
               }
               this.complete = this.isComplete(newResults, response);
             }
 
             if (this.cache && !this.tags) {
               this.lruCache.set(cacheKey, {
-                options: this.options,
+                options: this.visibleOptions,
                 complete: this.complete,
               });
             }
@@ -577,8 +586,8 @@ export default class Select extends FormElement {
 
   private handleBlur() {
     this.focused = false;
-    if (this.options.length > 0) {
-      this.options = [];
+    if (this.visibleOptions.length > 0) {
+      this.visibleOptions = [];
       this.input = "";
     }
   }
@@ -595,7 +604,7 @@ export default class Select extends FormElement {
       evt.key === "ArrowDown" ||
       (evt.key === "n" && evt.ctrlKey)
     ) {
-      if (this.options.length === 0) {
+      if (this.visibleOptions.length === 0) {
         this.requestUpdate("input");
         return;
       }
@@ -603,14 +612,14 @@ export default class Select extends FormElement {
 
     // focus our last item on delete
     if (this.multi && evt.key === "Backspace" && !this.input) {
-      if (this.options.length > 0) {
-        this.options = [];
+      if (this.visibleOptions.length > 0) {
+        this.visibleOptions = [];
         return;
       }
 
       if (this.selectedIndex === -1) {
         this.selectedIndex = this.values.length - 1;
-        this.options = [];
+        this.visibleOptions = [];
       } else {
         this.popValue();
         this.selectedIndex = -1;
@@ -628,7 +637,7 @@ export default class Select extends FormElement {
   private handleKeyUp(evt: KeyboardEvent) {}
 
   private handleCancel() {
-    this.options = [];
+    this.visibleOptions = [];
   }
 
   private handleCursorChanged(event: CustomEvent) {
@@ -648,8 +657,8 @@ export default class Select extends FormElement {
         return;
       }
 
-      if (this.options.length > 0) {
-        this.options = [];
+      if (this.visibleOptions.length > 0) {
+        this.visibleOptions = [];
         event.preventDefault();
         event.stopPropagation();
       } else {
@@ -709,8 +718,8 @@ export default class Select extends FormElement {
   }
 
   private handleArrowClick(event: MouseEvent): void {
-    if (this.options.length > 0) {
-      this.options = [];
+    if (this.visibleOptions.length > 0) {
+      this.visibleOptions = [];
       event.preventDefault();
       event.stopPropagation();
     }
@@ -752,7 +761,7 @@ export default class Select extends FormElement {
       single: !this.multi,
       searchable: this.searchable,
       empty: this.values.length === 0,
-      options: this.options.length > 0,
+      options: this.visibleOptions.length > 0,
       focused: this.focused,
       "search-input": this.input.length > 0,
       "no-search-input": this.input.length === 0,
@@ -826,7 +835,7 @@ export default class Select extends FormElement {
             !this.tags
               ? html`<div class="right" @click=${this.handleArrowClick}>
                   <fa-icon
-                    class="fa chevron-down ${this.options.length > 0
+                    class="fa chevron-down ${this.visibleOptions.length > 0
                       ? "open"
                       : ""} arrow-icon"
                     size="14px"
@@ -846,9 +855,9 @@ export default class Select extends FormElement {
         .renderOptionName=${this.renderOptionName}
         .renderOption=${this.renderOption}
         .anchorTo=${this.anchorElement}
-        .options=${this.options}
+        .options=${this.visibleOptions}
         .spaceSelect=${this.spaceSelect}
-        ?visible=${this.options.length > 0}
+        ?visible=${this.visibleOptions.length > 0}
       ></temba-options>
     `;
   }
