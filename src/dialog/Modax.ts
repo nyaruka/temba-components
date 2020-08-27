@@ -263,54 +263,56 @@ export default class Modax extends RapidElement {
     );
   }
 
+  public submit(): void {
+    this.submitting = true;
+    const form = this.shadowRoot.querySelector("form");
+    const postData = serialize(form);
+
+    postUrl(this.endpoint, postData, true).then((response: AxiosResponse) => {
+      window.setTimeout(() => {
+        let redirect = response.headers["temba-success"];
+
+        if (
+          !redirect &&
+          response.request.responseURL &&
+          response.request.responseURL.indexOf(this.endpoint) === -1
+        ) {
+          redirect = response.request.responseURL;
+        }
+
+        if (redirect) {
+          if (redirect === "hide") {
+            this.open = false;
+
+            if (this.onSubmitted) {
+              window.setTimeout(() => {
+                const fn = eval(this.onSubmitted);
+                fn(
+                  new CustomEvent("submitted", {
+                    bubbles: true,
+                    composed: true,
+                  })
+                );
+              }, 0);
+            }
+          } else {
+            this.ownerDocument.location = redirect;
+          }
+        } else {
+          // if we set the body, update our submit button
+          if (this.setBody(response.data)) {
+            this.updatePrimaryButton();
+          }
+        }
+      }, 2000);
+    });
+  }
+
   private handleDialogClick(evt: CustomEvent) {
     const button = evt.detail.button;
     if (!button.disabled && !button.submitting) {
       if (button.name === this.primaryName) {
-        this.submitting = true;
-        const form = this.shadowRoot.querySelector("form");
-        const postData = serialize(form);
-
-        postUrl(this.endpoint, postData, true).then(
-          (response: AxiosResponse) => {
-            window.setTimeout(() => {
-              let redirect = response.headers["temba-success"];
-
-              if (
-                !redirect &&
-                response.request.responseURL &&
-                response.request.responseURL.indexOf(this.endpoint) === -1
-              ) {
-                redirect = response.request.responseURL;
-              }
-
-              if (redirect) {
-                if (redirect === "hide") {
-                  this.open = false;
-
-                  if (this.onSubmitted) {
-                    window.setTimeout(() => {
-                      const fn = eval(this.onSubmitted);
-                      fn(
-                        new CustomEvent("submitted", {
-                          bubbles: true,
-                          composed: true,
-                        })
-                      );
-                    }, 0);
-                  }
-                } else {
-                  this.ownerDocument.location = redirect;
-                }
-              } else {
-                // if we set the body, update our submit button
-                if (this.setBody(response.data)) {
-                  this.updatePrimaryButton();
-                }
-              }
-            }, 2000);
-          }
-        );
+        this.submit();
       }
     }
 

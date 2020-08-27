@@ -8,6 +8,7 @@ import {
 import { styleMap } from "lit-html/directives/style-map.js";
 import FormElement from "../FormElement";
 import "lit-flatpickr";
+import Modax from "../dialog/Modax";
 
 @customElement("temba-textinput")
 export default class TextInput extends FormElement {
@@ -214,6 +215,48 @@ export default class TextInput extends FormElement {
     return value;
   }
 
+  public getParentModax(): Modax {
+    var parent = this as HTMLElement;
+
+    while (parent) {
+      if (parent.parentElement) {
+        parent = parent.parentElement;
+      } else {
+        parent = (parent as any).getRootNode().host;
+      }
+
+      if (!parent) {
+        return null;
+      }
+
+      if (parent.tagName == "TEMBA-MODAX") {
+        return parent as Modax;
+      }
+    }
+  }
+
+  public getParentFormSubmit(): HTMLInputElement {
+    var parent = this as HTMLElement;
+
+    while (parent) {
+      if (parent.parentElement) {
+        parent = parent.parentElement;
+      } else {
+        parent = (parent as any).getRootNode().host;
+      }
+
+      if (!parent) {
+        return null;
+      }
+
+      if (parent.tagName === "FORM") {
+        const form = parent as HTMLFormElement;
+        // now that we have a form, look for a primary button to submit
+        return form.querySelector("input[type=submit]") as HTMLInputElement;
+      }
+    }
+  }
+
   // TODO make this a formelement and have contactsearch set the root
   public render(): TemplateResult {
     const containerStyle = {
@@ -243,21 +286,25 @@ export default class TextInput extends FormElement {
             this.value = this.values[0];
             this.fireEvent("change");
 
-            var parent = this as HTMLElement;
+            const input = this;
+            input.blur();
 
-            // look for a parent form to submit
+            // look for a form to submit
             window.setTimeout(function () {
-              while (true) {
-                if (!parent) {
-                  break;
-                }
-                parent = parent.parentElement;
-                if (parent.tagName === "FORM") {
-                  (parent as HTMLFormElement).submit();
-                  break;
+              // first, look for a modax that contains us
+              const modax = input.getParentModax();
+              if (modax) {
+                modax.submit();
+              } else {
+                // otherwise, just look for a vanilla submit button
+                const submit = input.getParentFormSubmit();
+                if (submit) {
+                  submit.click();
                 }
               }
-            }, 0);
+            }, 10);
+            // this is needed for firefox, would be nice to
+            // find a way to do this with a callback instead
           }
         }}
         placeholder=${this.placeholder}
