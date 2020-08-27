@@ -113,7 +113,7 @@ export default class Select extends FormElement {
         box-shadow: var(--widget-box-shadow-focused);
       }
 
-      .left {
+      .left-side {
         flex: 1;
       }
 
@@ -160,13 +160,13 @@ export default class Select extends FormElement {
         margin: 2px 2px;
       }
 
-      .selected-item .name {
+      .selected-item .option-name {
         padding: 0px;
         font-size: var(--temba-select-selected-font-size);
         align-self: center;
       }
 
-      .multi .selected-item .name {
+      .multi .selected-item .option-name {
         flex: 1 1 auto;
         align-self: center;
         white-space: nowrap;
@@ -726,7 +726,7 @@ export default class Select extends FormElement {
   }
 
   private renderSelectedItemDefault(option: any): TemplateResult {
-    return html` <div class="name">${option.name}</div> `;
+    return html` <div class="option-name">${option.name}</div> `;
   }
 
   public serializeValue(value: any): string {
@@ -793,7 +793,7 @@ export default class Select extends FormElement {
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
         >
-          <div class="left">
+          <div class="left-side">
             <div class="selected">
               ${!this.multi ? input : null}
               ${this.values.map(
@@ -833,7 +833,7 @@ export default class Select extends FormElement {
 
           ${
             !this.tags
-              ? html`<div class="right" @click=${this.handleArrowClick}>
+              ? html`<div class="right-side" @click=${this.handleArrowClick}>
                   <fa-icon
                     class="fa chevron-down ${this.visibleOptions.length > 0
                       ? "open"

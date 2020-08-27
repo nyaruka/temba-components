@@ -19,7 +19,6 @@ export default class Button extends LitElement {
       }
 
       .button-container {
-        background: blue;
         color: #fff;
         cursor: pointer;
         display: block;
@@ -31,7 +30,7 @@ export default class Button extends LitElement {
         font-weight: 400;
       }
 
-      .button-secondary:hover .button-mask {
+      .secondary-button:hover .button-mask {
         border: 1px solid var(--color-button-secondary);
       }
 
@@ -49,7 +48,7 @@ export default class Button extends LitElement {
         box-shadow: 0 0 0px 1px var(--color-focus);
       }
 
-      .button-container.button-secondary:focus .button-mask {
+      .button-container.secondary-button:focus .button-mask {
         background: transparent;
         box-shadow: 0 0 0px 1px var(--color-focus);
       }
@@ -61,70 +60,74 @@ export default class Button extends LitElement {
         transition: all ease-in 250ms;
       }
 
-      .button-container.button-disabled {
-        background: var(--color-button-disabled);
+      .button-container.disabled-button {
+        background: rgb(0, 0, 0, 0.05);
         color: rgba(255, 255, 255, 0.45);
         cursor: default;
       }
 
-      .button-container.button-disabled .button-mask {
+      .button-container.disabled-button .button-mask {
         box-shadow: 0 0 0px 1px var(--color-button-disabled);
       }
 
-      .button-container.button-disabled:hover .button-mask {
+      .button-container.disabled-button:hover .button-mask {
         box-shadow: 0 0 0px 1px var(--color-button-disabled);
       }
 
-      .button-container.button-active .button-mask {
+      .button-container.active-button .button-mask {
         box-shadow: inset 0 0 4px 2px rgb(0, 0, 0, 0.1);
       }
 
-      .button-secondary.button-active {
+      .secondary-button.active-button {
         background: transparent;
         color: var(--color-text);
       }
 
-      .button-secondary.active .button-mask {
-        /* box-shadow: inset 0 0 4px 2px rgb(0,0,0, .1); */
+      .secondary-button.active-button .button-mask {
         border: none;
       }
 
-      .button-container.button-secondary.button-active:focus .button-mask {
+      .button-container.secondary-button.active-button:focus .button-mask {
         background: transparent;
         box-shadow: none;
       }
 
-      .button-primary {
+      .primary-button {
         background: var(--color-button-primary);
         color: var(--color-button-primary-text);
       }
 
-      .button-attention {
+      .attention-button {
         background: var(--color-button-attention);
         color: var(--color-button-primary-text);
       }
 
-      .button-secondary {
+      .secondary-button {
         background: transparent;
         color: var(--color-text);
         font-weight: 300;
       }
 
-      .button-destructive {
+      .destructive-button {
         background: var(--color-button-destructive);
         color: var(--color-button-destructive-text);
       }
 
-      .button-mask.disabled {
+      .button-mask.disabled-button {
         background: rgba(0, 0, 0, 0.1);
       }
 
-      .button-secondary .button-mask:hover {
+      .secondary-button .button-mask:hover {
         background: transparent;
       }
 
-      temba-loading {
+      .submit-animation {
+        padding: 1px 4px;
+      }
+
+      .submit-animation temba-loading {
         margin-bottom: -3px;
+        line-height: normal;
       }
     `;
   }
@@ -172,7 +175,7 @@ export default class Button extends LitElement {
   }
 
   private handleMouseDown(event: MouseEvent): void {
-    if (!this.disabled) {
+    if (!this.disabled && !this.submitting) {
       this.active = true;
     }
   }
@@ -186,14 +189,14 @@ export default class Button extends LitElement {
       <div
         class="button-container 
           ${getClasses({
-          "button-primary":
+          "primary-button":
             this.primary ||
             (!this.primary && !this.secondary && !this.attention),
-          "button-secondary": this.secondary,
-          "button-disabled": this.disabled || this.submitting,
-          "button-active": this.active,
-          "button-attention": this.attention,
-          "button-destructive": this.destructive,
+          "secondary-button": this.secondary,
+          "disabled-button": this.disabled,
+          "active-button": this.active,
+          "attention-button": this.attention,
+          "destructive-button": this.destructive,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}
@@ -205,11 +208,13 @@ export default class Button extends LitElement {
         <div class="button-mask">
           <div class="button-name">
             ${this.submitting
-              ? html`<temba-loading
-                  units="3"
-                  size="8"
-                  color="#eee"
-                ></temba-loading>`
+              ? html`<div class="submit-animation">
+                  <temba-loading
+                    units="3"
+                    size="8"
+                    color="#eee"
+                  ></temba-loading>
+                </div>`
               : this.name}
           </div>
         </div>

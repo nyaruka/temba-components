@@ -67,6 +67,7 @@ export default class TextInput extends FormElement {
         color: var(--color-widget-text);
         font-family: var(--font-family);
         font-size: 14px;
+        line-height: normal;
         cursor: text;
         resize: none;
         font-weight: 300;
