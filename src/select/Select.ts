@@ -95,6 +95,7 @@ export default class Select extends FormElement {
         cursor: pointer;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
+        padding-top: 1px;
         box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
           0 1px 2px 0 rgba(0, 0, 0, 0.02);
       }
