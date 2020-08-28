@@ -235,7 +235,7 @@ export default class TextInput extends FormElement {
     }
   }
 
-  public getParentFormSubmit(): HTMLInputElement {
+  public getParentForm(): HTMLFormElement {
     var parent = this as HTMLElement;
 
     while (parent) {
@@ -250,9 +250,7 @@ export default class TextInput extends FormElement {
       }
 
       if (parent.tagName === "FORM") {
-        const form = parent as HTMLFormElement;
-        // now that we have a form, look for a primary button to submit
-        return form.querySelector("input[type=submit]") as HTMLInputElement;
+        return parent as HTMLFormElement;
       }
     }
   }
@@ -297,9 +295,17 @@ export default class TextInput extends FormElement {
                 modax.submit();
               } else {
                 // otherwise, just look for a vanilla submit button
-                const submit = input.getParentFormSubmit();
-                if (submit) {
-                  submit.click();
+                const form = input.getParentForm();
+
+                if (form) {
+                  var submitButton = form.querySelector(
+                    "input[type='submit']"
+                  ) as HTMLInputElement;
+                  if (submitButton) {
+                    submitButton.click();
+                  } else {
+                    form.submit();
+                  }
                 }
               }
             }, 10);

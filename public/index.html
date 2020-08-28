@@ -68,6 +68,16 @@
 
     <div class="example">
       <temba-modax
+        header="Edit Label"
+        endpoint="/label/update/102/"
+        id="update-label"
+      >
+        <div class="button-primary inline-block">Edit Label</div>
+      </temba-modax>
+    </div>
+
+    <div class="example">
+      <temba-modax
         id="edit-group"
         header="Edit Group"
         endpoint="/contactgroup/update/139/"
@@ -107,7 +117,7 @@
     <div class="example">
       <div class="example-header">Side by Side</div>
 
-      <div style="display: flex; align-items: center;">
+      <div style="display: flex; align-items: center">
         <temba-select name="start-type" placeholder="Pick some colors" multi>
           <temba-option value="red" name="Red"></temba-option>
           <temba-option value="gree" name="Green" selected></temba-option>
