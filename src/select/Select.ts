@@ -487,7 +487,6 @@ export default class Select extends FormElement {
   }
 
   public fetchOptions(query: string, page: number = 0) {
-    console.log("fetching options", query, this.staticOptions);
     const cacheKey = `${query}_$page`;
     if (this.cache && !this.tags && this.lruCache.has(cacheKey)) {
       const { options, complete } = this.lruCache.get(cacheKey);
