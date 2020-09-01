@@ -151,7 +151,6 @@ export default class TextInput extends FormElement {
         this.dateElement.set(
           "onValueUpdate",
           (dates: Date[], formattedDate: string) => {
-            console.log("onValueUpdate", dates, formattedDate);
             this.inputElement.value = picker.formatDate(
               dates[0],
               picker.altFormat
