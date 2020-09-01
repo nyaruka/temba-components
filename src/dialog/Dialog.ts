@@ -28,9 +28,8 @@ export default class Dialog extends RapidElement {
       .flex {
         display: flex;
         flex-direction: column;
-        height: 100vh;
         width: 100%;
-        position: absolute;
+        position: relative;
         left: 0px;
         top: 0px;
         align-items: center;
@@ -68,7 +67,7 @@ export default class Dialog extends RapidElement {
 
       .dialog-body {
         background: #fff;
-        max-height: 460px;
+        max-height: 55vh;
         overflow-y: auto;
       }
 
@@ -82,12 +81,12 @@ export default class Dialog extends RapidElement {
       }
 
       .dialog-mask.dialog-animation-end .dialog-container {
-        margin-top: 0;
+        margin-top: 10vh;
         transform: scale(1) !important;
       }
 
       .dialog-mask.dialog-ready .dialog-container {
-        margin-top: 0;
+        margin-top: 10vh;
         transform: none;
       }
 
@@ -282,12 +281,14 @@ export default class Dialog extends RapidElement {
         })}"
         style=${styleMap(maskStyle)}
       >
-        <temba-loading
-          id="page-loader"
-          units="6"
-          size="12"
-          color="#ccc"
-        ></temba-loading>
+        <div style="position: absolute; width: 100%;">
+          <temba-loading
+            id="page-loader"
+            units="6"
+            size="12"
+            color="#ccc"
+          ></temba-loading>
+        </div>
 
         <div class="flex">
           <div class="flex-grow"></div>
