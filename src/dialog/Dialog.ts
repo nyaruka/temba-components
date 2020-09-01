@@ -124,10 +124,12 @@ export default class Dialog extends RapidElement {
 
       #page-loader {
         text-align: center;
-        padding-top: 30px;
         display: block;
         position: relative;
         opacity: 0;
+        margin: auto;
+        margin-top: 30px;
+        width: 154px;
         transition: opacity 1000ms ease-in 500ms;
         visibility: hidden;
       }
