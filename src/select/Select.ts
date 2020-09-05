@@ -629,6 +629,10 @@ export default class Select extends FormElement {
     }
   }
 
+  public getStaticOptions() {
+    return this.staticOptions;
+  }
+
   private handleInput(evt: KeyboardEvent) {
     const ele = evt.currentTarget as HTMLInputElement;
     this.input = ele.value;
