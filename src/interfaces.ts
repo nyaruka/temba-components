@@ -1,3 +1,8 @@
+import { CompletionOption } from "./completion/Completion";
+import TextInput from "./textinput/TextInput";
+import { CompletionSchema } from "./completion/helpers";
+import Store from "./store/Store";
+
 export interface URN {
   scheme: string;
   path: string;
@@ -21,6 +26,18 @@ export interface FeatureProperties {
   parent_osm_id?: string;
   id?: number;
   path?: string;
+}
+
+export interface Position {
+  top: number;
+  left: number;
+}
+
+export interface CompletionResult {
+  anchorPosition: Position;
+  query: string;
+  options: CompletionOption[];
+  currentFunction: CompletionOption;
 }
 
 export enum CustomEventType {

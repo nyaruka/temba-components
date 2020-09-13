@@ -35,6 +35,13 @@
       }
     </style>
 
+    <temba-store
+      completions="/mr/docs/completion.json"
+      functions="/mr/docs/functions.json"
+      fields="/api/v2/fields.json"
+      globals="/api/v2/globals.json"
+    ></temba-store>
+
     <div class="example">
       <temba-textinput
         name="start"
@@ -236,7 +243,7 @@
     <div class="example">
       <div class="example-header">Single Remote Search Unfiltered</div>
       <temba-select
-        endpoint="/api/v2/channels.json/"
+        endpoint="/api/v2/channels.json"
         placeholder="Contacts"
         valueKey="uuid"
         searchable
@@ -314,6 +321,19 @@
         endpoint="/contact/omnibox/?v=2"
         queryParam="search"
         placeholder="Contacts"
+        searchable
+        multi
+      >
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <div class="example-header">Multi Remote with Expressions</div>
+      <temba-select
+        endpoint="/contact/omnibox/?v=2"
+        queryParam="search"
+        placeholder="Contacts"
+        expressions
         searchable
         multi
       >

@@ -4,26 +4,69 @@ const path = require("path");
 const puppeteer = require("puppeteer");
 process.env.CHROME_BIN = puppeteer.executablePath();
 
-delete webpackConfig.entry;
-webpackConfig.mode = "development";
+delete webpackConfig[0].entry;
+webpackConfig[0].mode = "development";
 webpackConfig[0]["plugins"] = [webpackConfig[0]["plugins"][0]];
 webpackConfig[0]["module"]["rules"] = webpackConfig[0]["module"]["rules"].slice(
   1
 );
 
-// console.log(JSON.stringify(webpackConfig[0]["module"]["rules"], null, 2));
+// make sure our typescript gets analyzed for coverge
+webpackConfig[0]["module"]["rules"][0] = {
+  test: /\.ts/,
+  exclude: [/\.test\.ts$/, /node_modules/],
+  use: ["@jsdevtools/coverage-istanbul-loader", "ts-loader"],
+};
+
+webpackConfig[0]["module"]["rules"].push({
+  test: /\.test\.ts$/,
+  use: ["ts-loader"],
+});
+
+delete webpackConfig[0].output;
+
+// would love inline-source-map to work here but
+// i've lost too much time wrestling with that
+webpackConfig[0].devtool = false;
 
 module.exports = (config) => {
   config.set({
+    basePath: "",
     browsers: ["ChromeHeadless"],
     frameworks: ["mocha"],
-    reporters: ["spec"],
-    files: ["src/**/*.test.ts"],
+    files: [
+      "test/index.test.js",
+      {
+        pattern: "test-assets/**/*",
+        watched: false,
+        included: false,
+        served: true,
+      },
+    ],
+
     preprocessors: {
-      "src/**/*.ts": ["webpack"],
+      "test/index.test.js": ["webpack"],
     },
+
+    plugins: [
+      "karma-mocha",
+      "karma-mocha-reporter",
+      "karma-chrome-launcher",
+      "karma-coverage-istanbul-reporter",
+      "karma-webpack",
+      "karma-firefox-launcher",
+      "karma-spec-reporter",
+    ],
+
+    reporters: ["coverage-istanbul", "mocha"],
+
+    proxies: {
+      "/sitestatic/": "/base/test-assets/",
+    },
+
     mime: {
       "text/x-typescript": ["ts", "tsx"],
+      "image/svg+xml": ["svg"],
     },
     webpack: webpackConfig,
     webpackMiddleware: {
@@ -32,10 +75,15 @@ module.exports = (config) => {
     coverageIstanbulReporter: {
       reports: ["html", "text-summary", "lcovonly"],
       dir: path.join(__dirname, "coverage"),
+
       fixWebpackSourcePaths: true,
       "report-config": {
         html: { outdir: "html" },
       },
     },
   });
+
+  // handy for debugging our config
+  // const util = require("util");
+  // console.log(util.inspect(config, false, null, true));
 };

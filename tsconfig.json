@@ -1,4 +1,9 @@
 {
+  /* "awesomeTypescriptLoaderOptions": {
+    "forkChecker": true,
+    "useWebpackText": true,
+    "transpileOnly": false
+  },*/
   "compilerOptions": {
     "experimentalDecorators": true,
     "target": "esnext",
@@ -8,6 +13,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": false,
+    // "inlineSourceMap": true,
     "sourceMap": true,
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
@@ -25,5 +31,6 @@
       }
     ]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

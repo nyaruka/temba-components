@@ -1,0 +1,11 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    { "key": "conversion", "label": "Conversion", "value_type": "text" },
+    { "key": "district", "label": "District", "value_type": "district" },
+    { "key": "joined", "label": "Joined On", "value_type": "datetime" },
+    { "key": "age", "label": "Age", "value_type": "numeric" },
+    { "key": "gender", "label": "Gender", "value_type": "text" }
+  ]
+}

@@ -5,27 +5,17 @@ import {
   css,
   property,
 } from "lit-element";
-import RapidElement, { EventHandler } from "../RapidElement";
-import ExcellentParser, { Expression } from "./ExcellentParser";
+import ExcellentParser from "./ExcellentParser";
 import TextInput from "../textinput/TextInput";
 import {
-  getCompletions,
-  CompletionSchema,
-  getFunctions,
-  Position,
-  KeyedAssets,
-  getVerticalScroll,
-  getOffset,
+  renderCompletionOption,
+  updateInputElementWithCompletion,
+  executeCompletionQuery,
 } from "./helpers";
-import { getUrl, getAssets, Asset } from "../utils";
-import { AxiosResponse } from "axios";
-import getCaretCoordinates from "textarea-caret";
-import { directive, Part } from "lit-html";
-import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
 import { styleMap } from "lit-html/directives/style-map.js";
 import FormElement from "../FormElement";
-
-const marked = require("marked");
+import { Position } from "../interfaces";
+import Store from "../store/Store";
 
 export interface FunctionExample {
   template: string;
@@ -41,10 +31,6 @@ export interface CompletionOption {
   detail?: string;
   examples?: FunctionExample[];
 }
-
-const markedRender = directive((contents: string) => (part: Part) => {
-  part.setValue(unsafeHTML(marked(contents)));
-});
 
 /**
  * Completion is a text input that handles excellent completion options in a popup
@@ -117,15 +103,6 @@ export default class Completion extends FormElement {
     "urns",
   ]);
 
-  /** Remote description of our completion schema */
-
-  private schema: CompletionSchema;
-
-  /** Remote list of our function options */
-  private functions: CompletionOption[];
-
-  private keyedAssets: KeyedAssets;
-
   @property({ type: Object })
   anchorPosition: Position = { left: 0, top: 0 };
 
@@ -166,7 +143,6 @@ export default class Completion extends FormElement {
   textarea: boolean;
 
   private hiddenElement: HTMLInputElement;
-  private inputElement: HTMLInputElement;
   private query: string;
 
   public firstUpdated(changedProperties: Map<string, any>) {
@@ -174,32 +150,6 @@ export default class Completion extends FormElement {
       "temba-textinput"
     ) as TextInput;
     this.anchorElement = this.shadowRoot.querySelector("#anchor");
-    this.keyedAssets = {};
-
-    // TODO: fetch these once per page, not once per control
-    if (this.completionsEndpoint) {
-      getUrl(this.completionsEndpoint).then((response: AxiosResponse) => {
-        this.schema = response.data as CompletionSchema;
-      });
-    }
-
-    if (this.functionsEndpoint) {
-      getUrl(this.functionsEndpoint).then((response: AxiosResponse) => {
-        this.functions = response.data as CompletionOption[];
-      });
-    }
-
-    if (this.fieldsEndpoint) {
-      getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
-        this.keyedAssets["fields"] = assets.map((asset: Asset) => asset.key);
-      });
-    }
-
-    if (this.globalsEndpoint) {
-      getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
-        this.keyedAssets["globals"] = assets.map((asset: Asset) => asset.key);
-      });
-    }
 
     // create our hidden container so it gets included in our host element's form
     this.hiddenElement = document.createElement("input");
@@ -235,90 +185,16 @@ export default class Completion extends FormElement {
     }
   }
 
-  private handleClick(evt: MouseEvent) {
-    this.executeQuery(evt.currentTarget as TextInput);
+  private executeQuery(ele: TextInput) {
+    const store: Store = document.querySelector("temba-store");
+    const result = executeCompletionQuery(ele.inputElement, store);
+    this.query = result.query;
+    this.options = result.options;
+    this.anchorPosition = result.anchorPosition;
   }
 
-  /**
-   * handle the user moving the caret to a new location
-   */
-  private executeQuery(ele: TextInput) {
-    this.inputElement = ele.inputElement;
-    this.currentFunction = null;
-
-    if (this.schema) {
-      const cursor = ele.inputElement.selectionStart;
-      const input = ele.inputElement.value.substring(0, cursor);
-      const expressions = Completion.parser.findExpressions(input);
-      const currentExpression = expressions.find(
-        (expr: Expression) =>
-          expr.start <= cursor &&
-          (expr.end > cursor || (expr.end === cursor && !expr.closed))
-      );
-
-      if (currentExpression) {
-        const includeFunctions = currentExpression.text.indexOf("(") > -1;
-        if (includeFunctions) {
-          const functionQuery = Completion.parser.functionContext(
-            currentExpression.text
-          );
-          if (functionQuery) {
-            const fns = getFunctions(this.functions, functionQuery);
-            if (fns.length > 0) {
-              this.currentFunction = fns[0];
-            }
-          }
-        }
-
-        for (let i = currentExpression.text.length; i >= 0; i--) {
-          const curr = currentExpression.text[i];
-          if (
-            curr === "@" ||
-            curr === "(" ||
-            curr === " " ||
-            curr === "," ||
-            curr === ")" ||
-            i === 0
-          ) {
-            // don't include non-expression chars
-            if (
-              curr === "(" ||
-              curr === " " ||
-              curr === "," ||
-              curr === ")" ||
-              curr === "@"
-            ) {
-              i++;
-            }
-
-            var caret = getCaretCoordinates(
-              ele.inputElement,
-              currentExpression.start + i
-            );
-            this.anchorPosition = {
-              left: caret.left - 2 - this.inputElement.scrollLeft,
-              top: caret.top - this.inputElement.scrollTop,
-            };
-
-            this.query = currentExpression.text.substr(
-              i,
-              currentExpression.text.length - i
-            );
-            this.options = [
-              ...getCompletions(this.schema, this.query, this.keyedAssets),
-              ...(includeFunctions
-                ? getFunctions(this.functions, this.query)
-                : []),
-            ];
-
-            return;
-          }
-        }
-      } else {
-        this.options = [];
-        this.query = "";
-      }
-    }
+  private handleClick(evt: MouseEvent) {
+    this.executeQuery(evt.currentTarget as TextInput);
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -345,40 +221,11 @@ export default class Completion extends FormElement {
     const option = evt.detail.selected as CompletionOption;
     const tabbed = evt.detail.tabbed;
 
-    let insertText = "";
-
-    if (option.signature) {
-      // they selected a function
-      insertText = option.signature.substr(
-        0,
-        option.signature.indexOf("(") + 1
-      );
-    } else {
-      insertText = option.name;
-    }
-
-    if (this.inputElement) {
-      let value = this.inputElement.value;
-      const insertionPoint =
-        this.inputElement.selectionStart - this.query.length;
-
-      // strip out our query
-      // const insertionPoint = value.lastIndexOf(value.substring(0, this.inputElement.selectionStart));
-      const leftSide = value.substr(0, insertionPoint);
-      const remaining = value.substr(insertionPoint + this.query.length);
-      const caret = leftSide.length + insertText.length;
-
-      // set our value and our new caret
-      this.inputElement.value = leftSide + insertText + remaining;
-      this.inputElement.setSelectionRange(caret, caret);
-
-      // now scroll our text box if necessary
-      const position = getCaretCoordinates(this.inputElement, caret);
-      if (position.left > this.inputElement.width) {
-        this.inputElement.scrollLeft = position.left;
-      }
-    }
-
+    updateInputElementWithCompletion(
+      this.query,
+      this.textInputElement.inputElement,
+      option
+    );
     this.query = "";
     this.options = [];
 
@@ -387,45 +234,13 @@ export default class Completion extends FormElement {
     }
   }
 
-  private renderCompletionOption(option: CompletionOption, selected: boolean) {
-    if (option.signature) {
-      const argStart = option.signature.indexOf("(");
-      const name = option.signature.substr(0, argStart);
-      const args = option.signature.substr(argStart);
-
-      return html`
-        <div style="${selected ? "font-weight: 400" : ""}">
-          <div style="display:inline-block;margin-right: 5px">ƒ</div>
-          <div style="display:inline-block">${name}</div>
-          ${selected
-            ? html`
-                <div
-                  style="display:inline-block; font-weight: 300; font-size: 85%"
-                >
-                  ${args}
-                </div>
-                <div class="detail">${markedRender(option.summary)}</div>
-              `
-            : null}
-        </div>
-      `;
-    }
-
-    return html`
-      <div>
-        <div style="${selected ? "font-weight: 400" : ""}">${option.name}</div>
-        ${selected
-          ? html` <div style="font-size: 85%">${option.summary}</div> `
-          : null}
-      </div>
-    `;
-  }
-
   public render(): TemplateResult {
-    const anchorStyles = {
-      top: `${this.anchorPosition.top}px`,
-      left: `${this.anchorPosition.left}px`,
-    };
+    const anchorStyles = this.anchorPosition
+      ? {
+          top: `${this.anchorPosition.top}px`,
+          left: `${this.anchorPosition.left}px`,
+        }
+      : {};
 
     return html`
       <temba-field
@@ -452,13 +267,13 @@ export default class Completion extends FormElement {
             @temba-canceled=${this.handleOptionCanceled}
             .anchorTo=${this.anchorElement}
             .options=${this.options}
-            .renderOption=${this.renderCompletionOption}
+            .renderOption=${renderCompletionOption}
             ?visible=${this.options.length > 0}
           >
             ${this.currentFunction
               ? html`
                   <div class="current-fn">
-                    ${this.renderCompletionOption(this.currentFunction, true)}
+                    ${renderCompletionOption(this.currentFunction, true)}
                   </div>
                 `
               : null}
