@@ -1,4 +1,5 @@
 // Our top-level components we can use
+import "./store/Store";
 import "./aliaseditor/AliasEditor";
 import "./leafletmap/LeafletMap";
 import "./vectoricon/VectorIcon";

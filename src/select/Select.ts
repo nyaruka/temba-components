@@ -14,7 +14,15 @@ import FormElement from "../FormElement";
 import { getId } from "./helpers";
 
 import flru from "flru";
-import { CustomEventType } from "../interfaces";
+import { CustomEventType, Position } from "../interfaces";
+import {
+  renderCompletionOption,
+  updateInputElementWithCompletion,
+  executeCompletionQuery,
+} from "../completion/helpers";
+import { CompletionOption } from "../completion/Completion";
+import Store from "../store/Store";
+import { styleMap } from "lit-html/directives/style-map";
 
 const LOOK_AHEAD = 20;
 
@@ -36,6 +44,7 @@ export default class Select extends FormElement {
         line-height: normal;
         outline: none;
 
+        position: relative;
         --arrow-icon-color: var(--color-text-dark-secondary);
 
         --temba-select-selected-padding: 9px;
@@ -45,6 +54,13 @@ export default class Select extends FormElement {
 
       :host:focus {
         outline: none;
+      }
+
+      #anchor {
+        position: absolute;
+        visibility: hidden;
+        width: 250px;
+        height: 20px;
       }
 
       .remove-item {
@@ -231,6 +247,17 @@ export default class Select extends FormElement {
         box-shadow: none !important;
       }
 
+      .input-wrapper {
+        display: flex;
+        position: relative;
+        border: 0px solid red;
+        flex-grow: 1;
+      }
+
+      .searchbox {
+        border: 0px;
+      }
+
       .searchbox::placeholder {
         color: var(--color-placeholder);
         font-weight: 300;
@@ -242,6 +269,15 @@ export default class Select extends FormElement {
         display: none;
         font-weight: 300;
         line-height: var(--temba-select-selected-line-height);
+      }
+
+      .footer {
+        padding: 5px 10px;
+        background: var(--color-primary-light);
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 80%;
+        border-bottom-left-radius: var(--curvature-widget);
+        border-bottom-right-radius: var(--curvature-widget);
       }
     `;
   }
@@ -262,6 +298,15 @@ export default class Select extends FormElement {
   endpoint: string;
 
   @property({ type: String })
+  nameKey: string = "name";
+
+  @property({ type: String })
+  valueKey: string = "value";
+
+  @property({ attribute: false })
+  currentFunction: CompletionOption;
+
+  @property({ type: String })
   queryParam: string = "q";
 
   @property({ type: String })
@@ -269,6 +314,9 @@ export default class Select extends FormElement {
 
   @property({ type: Array })
   visibleOptions: any[] = [];
+
+  @property({ type: Array })
+  completionOptions: CompletionOption[] = [];
 
   @property({ type: Number })
   quietMillis: number = 0;
@@ -278,6 +326,9 @@ export default class Select extends FormElement {
 
   @property({ type: Boolean })
   searchable: boolean = false;
+
+  @property({ type: Boolean })
+  expressions: boolean = false;
 
   @property({ type: Boolean })
   cache: boolean = true;
@@ -296,6 +347,12 @@ export default class Select extends FormElement {
 
   @property({ attribute: false })
   anchorElement: HTMLElement;
+
+  @property({ attribute: false })
+  anchorExpressions: HTMLElement;
+
+  @property({ type: Object })
+  anchorPosition: Position = { left: 0, top: 0 };
 
   @property({ type: Boolean })
   tags: boolean = false;
@@ -356,7 +413,11 @@ export default class Select extends FormElement {
       }
 
       this.lastQuery = window.setTimeout(() => {
-        this.fetchOptions(this.input);
+        if (this.expressions && this.input.indexOf("@") > -1) {
+          this.fetchExpressions();
+        } else {
+          this.fetchOptions(this.input);
+        }
       }, this.quietMillis);
     }
 
@@ -399,6 +460,21 @@ export default class Select extends FormElement {
     this.input = "";
     this.selectedIndex = -1;
     this.fireEvent("change");
+  }
+
+  private handleExpressionSelection(evt: CustomEvent) {
+    const option = evt.detail.selected as CompletionOption;
+    const tabbed = evt.detail.tabbed;
+
+    const ele = this.shadowRoot.querySelector(".searchbox") as HTMLInputElement;
+    updateInputElementWithCompletion(this.query, ele, option);
+
+    this.query = "";
+    this.completionOptions = [];
+
+    if (tabbed) {
+      this.fetchExpressions();
+    }
   }
 
   private getOptionsDefault(response: AxiosResponse): any[] {
@@ -486,7 +562,25 @@ export default class Select extends FormElement {
     this.visibleOptions = options;
   }
 
+  public fetchExpressions() {
+    const store: Store = document.querySelector("temba-store");
+    if (this.expressions && store) {
+      const ele = this.shadowRoot.querySelector(
+        ".searchbox"
+      ) as HTMLInputElement;
+
+      const result = executeCompletionQuery(ele, store);
+      this.query = result.query;
+      this.completionOptions = result.options;
+      this.visibleOptions = [];
+      this.anchorPosition = result.anchorPosition;
+      return;
+    }
+  }
+
   public fetchOptions(query: string, page: number = 0) {
+    this.completionOptions = [];
+
     const cacheKey = `${query}_$page`;
     if (this.cache && !this.tags && this.lruCache.has(cacheKey)) {
       const { options, complete } = this.lruCache.get(cacheKey);
@@ -527,35 +621,49 @@ export default class Select extends FormElement {
         const cacheKey = `${query}_$page`;
 
         let url = this.endpoint;
-        if (url.indexOf("?") > -1) {
-          url += "&";
-        } else {
-          url += "?";
+
+        if (query) {
+          if (url.indexOf("?") > -1) {
+            url += "&";
+          } else {
+            url += "?";
+          }
+
+          url += this.queryParam + "=" + encodeURIComponent(query);
         }
 
-        url += this.queryParam + "=" + encodeURIComponent(query);
         if (page) {
-          url += "&page=" + page;
+          if (url.indexOf("?") > -1) {
+            url += "&";
+          } else {
+            url += "?";
+          }
+          url += "page=" + page;
         }
 
         const CancelToken = axios.CancelToken;
         this.cancelToken = CancelToken.source();
-
         this.fetching = true;
 
         getUrl(url, this.cancelToken.token)
           .then((response: AxiosResponse) => {
+            const results = this.getOptions(response).filter(
+              (option: any) =>
+                option[this.nameKey]
+                  .toLowerCase()
+                  .indexOf(query.toLowerCase()) > -1
+            );
+
             if (page === 0) {
               this.cursorIndex = 0;
-              this.setVisibleOptions(this.getOptions(response));
+              this.setVisibleOptions(results);
               this.query = query;
               this.complete = this.isComplete(this.visibleOptions, response);
             } else {
-              const newResults = this.getOptions(response);
-              if (newResults.length > 0) {
-                this.setVisibleOptions([...this.visibleOptions, ...newResults]);
+              if (results.length > 0) {
+                this.setVisibleOptions([...this.visibleOptions, ...results]);
               }
-              this.complete = this.isComplete(newResults, response);
+              this.complete = this.isComplete(results, response);
             }
 
             if (this.cache && !this.tags) {
@@ -598,13 +706,43 @@ export default class Select extends FormElement {
   }
 
   private handleKeyDown(evt: KeyboardEvent) {
+    // if we are completing an expression, select it
+    if (
+      evt.key === "Enter" &&
+      this.expressions &&
+      this.completionOptions.length === 0 &&
+      this.input.indexOf("@") > -1
+    ) {
+      const ele = this.shadowRoot.querySelector(
+        ".searchbox"
+      ) as HTMLInputElement;
+      const expression = {
+        name: ele.value,
+        value: ele.value,
+        expression: true,
+      };
+      if (this.multi) {
+        this.addValue(expression);
+      } else {
+        this.setValue(expression);
+      }
+      this.input = "";
+
+      if (!this.multi) {
+        this.blur();
+      }
+    }
+
     // see if we should open our options on a key event
     if (
       evt.key === "Enter" ||
       evt.key === "ArrowDown" ||
       (evt.key === "n" && evt.ctrlKey)
     ) {
-      if (this.visibleOptions.length === 0) {
+      if (
+        this.visibleOptions.length === 0 &&
+        this.completionOptions.length === 0
+      ) {
         this.requestUpdate("input");
         return;
       }
@@ -673,7 +811,7 @@ export default class Select extends FormElement {
 
   public getEventHandlers(): EventHandler[] {
     return [
-      { event: CustomEventType.Selection, method: this.handleOptionSelection },
+      // { event: CustomEventType.Selection, method: this.handleOptionSelection },
       { event: CustomEventType.Canceled, method: this.handleCancel },
       {
         event: CustomEventType.CursorChanged,
@@ -688,6 +826,7 @@ export default class Select extends FormElement {
     super.firstUpdated(changedProperties);
 
     this.anchorElement = this.shadowRoot.querySelector(".select-container");
+    this.anchorExpressions = this.shadowRoot.querySelector("#anchor");
 
     if (!this.hasAttribute("tabindex")) {
       this.setAttribute("tabindex", "0");
@@ -771,17 +910,27 @@ export default class Select extends FormElement {
       "no-search-input": this.input.length === 0,
     });
 
+    const anchorStyles = this.anchorPosition
+      ? {
+          top: `${this.anchorPosition.top}px`,
+          left: `${this.anchorPosition.left}px`,
+        }
+      : {};
+
     const input = this.searchable
       ? html`
-          <input
-            class="searchbox"
-            @input=${this.handleInput}
-            @keydown=${this.handleKeyDown}
-            @click=${this.handleClick}
-            type="text"
-            placeholder=${placeholder}
-            .value=${this.input}
-          />
+          <div class="input-wrapper">
+            <input
+              class="searchbox"
+              @input=${this.handleInput}
+              @keydown=${this.handleKeyDown}
+              @click=${this.handleClick}
+              type="text"
+              placeholder=${placeholder}
+              .value=${this.input}
+            />
+            <div id="anchor" style=${styleMap(anchorStyles)}></div>
+          </div>
         `
       : placeholderDiv;
 
@@ -793,10 +942,12 @@ export default class Select extends FormElement {
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
       >
+      
         <div
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
         >
+          
           <div class="left-side">
             <div class="selected">
               ${!this.multi ? input : null}
@@ -854,7 +1005,8 @@ export default class Select extends FormElement {
       </temba-field>
 
       <temba-options
-        .cursorIndex=${this.cursorIndex}
+        @temba-selection=${this.handleOptionSelection}
+      .cursorIndex=${this.cursorIndex}
         .renderOptionDetail=${this.renderOptionDetail}
         .renderOptionName=${this.renderOptionName}
         .renderOption=${this.renderOption}
@@ -863,6 +1015,28 @@ export default class Select extends FormElement {
         .spaceSelect=${this.spaceSelect}
         ?visible=${this.visibleOptions.length > 0}
       ></temba-options>
+
+      <temba-options
+        @temba-selection=${this.handleExpressionSelection}
+        @temba-canceled=${() => {}}
+        .anchorTo=${this.anchorExpressions}
+        
+        .options=${this.completionOptions}
+        .renderOption=${renderCompletionOption}
+        ?visible=${this.completionOptions.length > 0}
+      >
+        ${
+          this.currentFunction
+            ? html`
+                <div class="current-fn">
+                  ${renderCompletionOption(this.currentFunction, true)}
+                </div>
+              `
+            : null
+        }
+        <div class="footer">Tab to complete, enter to select</div>
+      </temba-options>
+
     `;
   }
 }

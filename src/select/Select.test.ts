@@ -1,19 +1,35 @@
+import axios from "axios";
 import Select from "./Select";
 import { fixture, html, expect, assert } from "@open-wc/testing";
-import sinon from "sinon";
 import { use } from "chai";
 import { matchSnapshot } from "chai-karma-snapshot";
 import Options from "../options/Options";
+import sinon from "sinon";
+import moxios from "moxios";
+import Store from "../store/Store";
+import completion from "../../test-assets/store/completion.json";
+
+const colorResponse: any = {
+  next: null,
+  previous: null,
+  results: [
+    { name: "Red", value: "red" },
+    { name: "Green", value: "green" },
+    { name: "Blue", value: "blue" },
+  ],
+};
 
 use(matchSnapshot);
 
 var clock: any;
 beforeEach(function () {
   clock = sinon.useFakeTimers();
+  moxios.install();
 });
 
 afterEach(function () {
   clock.restore();
+  moxios.uninstall();
 });
 
 const createSelect = async (def: string) => {
@@ -24,14 +40,28 @@ const createSelect = async (def: string) => {
   return select;
 };
 
+const search = async (select: Select, query: string) => {
+  var search = select.shadowRoot.querySelector(
+    "temba-field .searchbox"
+  ) as HTMLInputElement;
+  search.value = query;
+  search.dispatchEvent(new Event("input"));
+  clock.tick(300);
+  await select.updateComplete;
+  return select;
+};
+
 const open = async (select: Select) => {
   (select.shadowRoot.querySelector(
     ".select-container"
   ) as HTMLDivElement).click();
 
   await select.updateComplete;
-  clock.tick(1);
+
+  // searchable has a quiet of 200ms
+  clock.tick(200);
   await select.updateComplete;
+  return select;
 };
 
 const getOptions = (select: Select): Options => {
@@ -45,11 +75,12 @@ const clickOption = async (select: Select, index: number) => {
   ] as HTMLElement;
 
   option.click();
+  return option;
 };
 
 const openAndClick = async (select: Select, index: number) => {
   await open(select);
-  await clickOption(select, index);
+  return clickOption(select, index);
 };
 
 const colorOptions =
@@ -93,7 +124,7 @@ describe("temba-select", () => {
   });
 
   it("can select a single option", async () => {
-    var select = await createSelect(colorOptions);
+    const select = await createSelect(colorOptions);
     expect(select.values.length).to.equal(0);
 
     // select the first option
@@ -105,7 +136,7 @@ describe("temba-select", () => {
   });
 
   it("can select multiple options", async () => {
-    var select = await createSelect(multiColorOptions);
+    const select = await createSelect(multiColorOptions);
     expect(select.values.length).to.equal(0);
 
     // select the first option twice
@@ -116,5 +147,75 @@ describe("temba-select", () => {
     expect(select.values.length).to.equal(2);
     expect(select.shadowRoot.innerHTML).to.contain("Red");
     expect(select.shadowRoot.innerHTML).to.contain("Green");
+  });
+
+  describe("endpoints", () => {
+    beforeEach(function () {
+      // Match against an exact URL value
+      moxios.stubRequest(/colors\.json.*/, {
+        status: 200,
+        responseText: JSON.stringify(colorResponse),
+      });
+    });
+
+    it("can load from an endpoint", (done) => {
+      createSelect(
+        "<temba-select placeholder='Pick a color' endpoint='/colors.json'></temba-select>"
+      ).then((select: Select) => {
+        open(select).then(() => {
+          // wait for the open
+          select.updateComplete.then(() => {
+            // wait for the fetch to complete
+            select.updateComplete.then(() => {
+              try {
+                assert.equal(select.visibleOptions.length, 3);
+                done();
+              } catch (e) {
+                done(e);
+              }
+            });
+          });
+        });
+      });
+    });
+
+    it("can search an endpoint", async () => {
+      const select = await createSelect(
+        "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable></temba-select>"
+      );
+
+      await search(select, "re");
+      await open(select);
+
+      // wait for the open, and then the fetch
+      await select.updateComplete;
+      await select.updateComplete;
+
+      assert.equal(select.visibleOptions.length, 2);
+    });
+
+    it("can enter expressions", async () => {
+      moxios.stubRequest("/completion.json", {
+        status: 200,
+        responseText: JSON.stringify(completion),
+      });
+
+      const store: Store = await fixture(
+        "<temba-store completions='/completion.json'></temba-store>"
+      );
+
+      const select = await createSelect(
+        "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable expressions></temba-select>"
+      );
+
+      await search(select, "@contact");
+      await open(select);
+
+      // wait for the open, and then the fetch
+      await select.updateComplete;
+      await select.updateComplete;
+
+      assert.equal(select.completionOptions.length, 12);
+    });
   });
 });
