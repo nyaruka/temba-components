@@ -8,6 +8,7 @@ import sinon from "sinon";
 import moxios from "moxios";
 import Store from "../store/Store";
 import completion from "../../test-assets/store/completion.json";
+import { assertScreenshot } from "../../test/utils";
 
 const colorResponse: any = {
   next: null,
@@ -35,7 +36,6 @@ afterEach(function () {
 const createSelect = async (def: string) => {
   const select: Select = await fixture(def);
   clock.tick(1);
-  // document.body.appendChild(select);
   await select.updateComplete;
   return select;
 };
@@ -48,6 +48,8 @@ const search = async (select: Select, query: string) => {
   search.dispatchEvent(new Event("input"));
   clock.tick(300);
   await select.updateComplete;
+  await select.updateComplete;
+
   return select;
 };
 
@@ -57,7 +59,6 @@ const open = async (select: Select) => {
   ) as HTMLDivElement).click();
 
   await select.updateComplete;
-
   // searchable has a quiet of 200ms
   clock.tick(200);
   await select.updateComplete;
@@ -83,28 +84,53 @@ const openAndClick = async (select: Select, index: number) => {
   return clickOption(select, index);
 };
 
-const colorOptions =
-  "<temba-select placeholder='Pick a color'>" +
-  "<temba-option name='Red' value='0'></temba-option>" +
-  "<temba-option name='Green' value='1'></temba-option>" +
-  "<temba-option name='Blue' value='2'></temba-option>" +
-  "</temba-select>";
+const colors = [
+  { name: "Red", value: "0" },
+  { name: "Green", value: "1" },
+  { name: "Blue", value: "2" },
+];
 
-const multiColorOptions =
-  "<temba-select placeholder='Pick a color' multi>" +
-  "<temba-option name='Red' value='0'></temba-option>" +
-  "<temba-option name='Green' value='1'></temba-option>" +
-  "<temba-option name='Blue' value='2'></temba-option>" +
-  "</temba-select>";
+const getSelectHTML = (options: any[] = colors, attrs: any = {}): string => {
+  return `
+  <temba-select placeholder='Pick a color' ${Object.keys(attrs).map(
+    (name: string) => `${name}='${attrs[name]}'`
+  )}>
+    ${options
+      .map(
+        (option) =>
+          `<temba-option name="${option.name}" value="${option.value}"></temba-option>`
+      )
+      .join("")}
+  </temba-select>`;
+};
+
+const closedClip = {
+  y: 70,
+  x: 0,
+  width: 485,
+  height: 55,
+};
+
+const clip = (height: number = 55) => {
+  return { ...closedClip, height };
+};
+
+(window as any).setViewport({
+  width: 500,
+  height: 1000,
+  deviceScaleFactor: 2,
+});
 
 describe("temba-select", () => {
-  it("is defined", async () => {
+  it("can be created", async () => {
     const select = await createSelect("<temba-select></temba-select>");
     assert.instanceOf(select, Select);
   });
 
-  it("creates options", async () => {
-    var select = await createSelect(colorOptions);
+  it("can be created with temba-option tags", async () => {
+    var select = await createSelect(getSelectHTML());
+
+    await assertScreenshot("select", clip());
 
     await open(select);
     const options = getOptions(select);
@@ -121,32 +147,87 @@ describe("temba-select", () => {
         .querySelector(".options-container")
         .classList.contains("show")
     );
+
+    await assertScreenshot("select-open", clip(160));
   });
 
-  it("can select a single option", async () => {
-    const select = await createSelect(colorOptions);
-    expect(select.values.length).to.equal(0);
-
+  it("can be created with attribute options", async () => {
+    const options = JSON.stringify([{ name: "Embedded Option", value: "0" }]);
+    const select = await createSelect(getSelectHTML([], { options }));
     // select the first option
     await openAndClick(select, 0);
-
-    expect(select.values.length).to.equal(1);
-    expect(select.values[0].name).to.equal("Red");
-    expect(select.shadowRoot.innerHTML).to.contain("Red");
+    expect(select.values[0].name).to.equal("Embedded Option");
   });
 
-  it("can select multiple options", async () => {
-    const select = await createSelect(multiColorOptions);
-    expect(select.values.length).to.equal(0);
+  describe("single selection", () => {
+    it("can select a single option", async () => {
+      const select = await createSelect(getSelectHTML());
+      expect(select.values.length).to.equal(0);
 
-    // select the first option twice
-    await openAndClick(select, 0);
-    await openAndClick(select, 0);
+      // select the first option
+      await openAndClick(select, 0);
 
-    // now we should have red and green selected
-    expect(select.values.length).to.equal(2);
-    expect(select.shadowRoot.innerHTML).to.contain("Red");
-    expect(select.shadowRoot.innerHTML).to.contain("Green");
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal("Red");
+      expect(select.shadowRoot.innerHTML).to.contain("Red");
+
+      await assertScreenshot("select-selected", clip());
+    });
+
+    it("can search ", async () => {
+      const select = await createSelect(
+        getSelectHTML(colors, { searchable: true })
+      );
+      await assertScreenshot("select-search", clip());
+    });
+
+    it("can search with existing selection", async () => {
+      const select = await createSelect(
+        getSelectHTML(colors, { searchable: true })
+      );
+
+      await assertScreenshot("select-search", clip());
+
+      // select the first option
+      await openAndClick(select, 1);
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal("Green");
+
+      await assertScreenshot("select-search-selected", clip());
+
+      // for single selection our current selection should be in the list and focused
+      await open(select);
+      assert.equal(select.cursorIndex, 1);
+      assert.equal(select.visibleOptions.length, 3);
+
+      await assertScreenshot("select-search-selected-open", clip(160));
+
+      // now lets do a search, we should see our selection (green) and one other (red)
+      await search(select, "re");
+      await open(select);
+
+      assert.equal(select.visibleOptions.length, 2);
+      await assertScreenshot("select-search-selected-open-query", clip(130));
+
+      // but our cursor should be on the first match
+      assert.equal(select.cursorIndex, 0);
+    });
+  });
+
+  describe("multiple selection", () => {
+    it("can select multiple options", async () => {
+      const select = await createSelect(getSelectHTML(colors, { multi: true }));
+      expect(select.values.length).to.equal(0);
+
+      // select the first option twice
+      await openAndClick(select, 0);
+      await openAndClick(select, 0);
+
+      // now we should have red and green selected
+      expect(select.values.length).to.equal(2);
+      expect(select.shadowRoot.innerHTML).to.contain("Red");
+      expect(select.shadowRoot.innerHTML).to.contain("Green");
+    });
   });
 
   describe("endpoints", () => {
@@ -187,7 +268,7 @@ describe("temba-select", () => {
       await search(select, "re");
       await open(select);
 
-      // wait for the open, and then the fetch
+      // wait for remote fetch
       await select.updateComplete;
       await select.updateComplete;
 
@@ -200,7 +281,7 @@ describe("temba-select", () => {
         responseText: JSON.stringify(completion),
       });
 
-      const store: Store = await fixture(
+      await fixture(
         "<temba-store completions='/completion.json'></temba-store>"
       );
 
@@ -210,10 +291,6 @@ describe("temba-select", () => {
 
       await search(select, "@contact");
       await open(select);
-
-      // wait for the open, and then the fetch
-      await select.updateComplete;
-      await select.updateComplete;
 
       assert.equal(select.completionOptions.length, 12);
     });

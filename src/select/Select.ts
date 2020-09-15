@@ -217,9 +217,18 @@ export default class Select extends FormElement {
         box-shadow: none !important;
       }
 
-      .searchable.single.no-search-input input {
+      .searchable.single.no-search-input .input-wrapper {
         flex-grow: inherit;
         min-width: 1px;
+      }
+
+      .searchable.single.no-search-input .input-wrapper .searchbox {
+        flex-grow: inherit;
+        min-width: 1px;
+      }
+      .searchable.single .input-wrapper .searchbox {
+        flex-grow: 1;
+        min-width: 100%;
       }
 
       .searchable.single.search-input .selected .selected-item {
@@ -248,7 +257,6 @@ export default class Select extends FormElement {
       }
 
       .input-wrapper {
-        display: flex;
         position: relative;
         border: 0px solid red;
         flex-grow: 1;
@@ -256,6 +264,7 @@ export default class Select extends FormElement {
 
       .searchbox {
         border: 0px;
+        // border: 1px solid purple !important;
       }
 
       .searchbox::placeholder {
