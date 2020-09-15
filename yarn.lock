@@ -7025,9 +7025,9 @@ karma-phantomjs-launcher@^1.0.4:
     lodash "^4.0.1"
     phantomjs-prebuilt "^2.1.7"
 
-"karma-puppeteer-launcher@ssh://git@github.com:nyaruka/karma-puppeteer-launcher.git":
+"karma-puppeteer-launcher@https://github.com/nyaruka/karma-puppeteer-launcher":
   version "1.0.4"
-  resolved "ssh://git@github.com:nyaruka/karma-puppeteer-launcher.git#dd4433e9aaa264d143d294822e9eba764f50c229"
+  resolved "https://github.com/nyaruka/karma-puppeteer-launcher#5cef6e6148921cd56eb9b60ea6d368f90456cc73"
   dependencies:
     dynamicpixelmatch "0.0.2"
     fs-access "^1.0.0"

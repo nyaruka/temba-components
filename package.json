@@ -65,7 +65,7 @@
     "http-server": "0.12.1",
     "karma": "^5.2.1",
     "karma-coverage-istanbul-reporter": "^3.0.3",
-    "karma-puppeteer-launcher": "ssh://git@github.com:nyaruka/karma-puppeteer-launcher.git",
+    "karma-puppeteer-launcher": "https://github.com/nyaruka/karma-puppeteer-launcher",
     "karma-sourcemap-loader": "^0.3.8",
     "karma-spec-reporter": "^0.0.32",
     "karma-typescript": "^5.1.0",
