@@ -1,6 +1,5 @@
 html {
-  --font-family: "Roboto", Helvetica, Arial, sans-serif;
-
+  --font-family: Helvetica, Arial, sans-serif;
   --primary-rgb: 35, 135, 202;
   --secondary-rgb: 140, 51, 140;
   --tertiary-rgb: 135, 202, 35;

@@ -186,8 +186,6 @@ describe("temba-select", () => {
         getSelectHTML(colors, { searchable: true })
       );
 
-      await assertScreenshot("select-search", clip());
-
       // select the first option
       await openAndClick(select, 1);
       expect(select.values.length).to.equal(1);
