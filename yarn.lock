@@ -7027,7 +7027,7 @@ karma-phantomjs-launcher@^1.0.4:
 
 "karma-puppeteer-launcher@https://github.com/nyaruka/karma-puppeteer-launcher":
   version "1.0.4"
-  resolved "https://github.com/nyaruka/karma-puppeteer-launcher#9aa7fa6ac7edf5b5666970a554dd55f442bee874"
+  resolved "https://github.com/nyaruka/karma-puppeteer-launcher#81a903bd10fdf03efc214f5c45fcae573bc6e0e5"
   dependencies:
     dynamicpixelmatch "0.0.2"
     fs-access "^1.0.0"

@@ -16,6 +16,7 @@ export const delay = (millis: number) => {
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,
+  threshold: number = 0.35,
   exclude: Clip[] = []
 ) => {
   const screenShotsEnabled = !!__karma__.config.args.find(
@@ -26,7 +27,8 @@ export const assertScreenshot = async (
     const matches = await (window as any).matchPageSnapshot(
       [`${filename}.png`],
       clip,
-      []
+      exclude,
+      threshold
     );
 
     if (!matches) {
