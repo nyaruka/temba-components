@@ -37,6 +37,7 @@ const createSelect = async (def: string) => {
   const select: Select = await fixture(def);
   clock.tick(1);
   await select.updateComplete;
+  (window as any).waitForSelector("temba-select");
   return select;
 };
 
