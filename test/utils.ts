@@ -7,6 +7,12 @@ interface Clip {
 
 declare const __karma__: any;
 
+export const delay = (millis: number) => {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, millis);
+  });
+};
+
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,

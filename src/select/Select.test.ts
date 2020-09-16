@@ -33,11 +33,11 @@ afterEach(function () {
   moxios.uninstall();
 });
 
-const createSelect = async (def: string) => {
+const createSelect = async (def: string, delay: number = 1000) => {
   const select: Select = await fixture(def);
   clock.tick(1);
   await select.updateComplete;
-  (window as any).waitForSelector("temba-select");
+  await (window as any).waitFor(delay);
   return select;
 };
 
@@ -129,18 +129,15 @@ describe("temba-select", () => {
   });
 
   it("can be created with temba-option tags", async () => {
-    var select = await createSelect(getSelectHTML());
-
+    await createSelect(getSelectHTML());
     await assertScreenshot("select", clip());
+  });
 
+  it("shows options when opened open", async () => {
+    var select = await createSelect(getSelectHTML());
     await open(select);
     const options = getOptions(select);
     assert.instanceOf(options, Options);
-
-    const optionsHTML = options.shadowRoot.innerHTML;
-    expect(optionsHTML).to.contain("Red");
-    expect(optionsHTML).to.contain("Green");
-    expect(optionsHTML).to.contain("Blue");
 
     // our options should be visible
     assert.isTrue(
