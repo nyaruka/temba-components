@@ -17,7 +17,14 @@ import "../src/checkbox/Checkbox";
 import "../src/datepicker/DatePicker";
 import "../src/shadowless/Shadowless";
 
-const testsContext = require.context("../src", true, /test$/);
+let screenshots = !!__karma__.config.args.find(function (option) {
+  return option === "--screenshots";
+});
+
+const testsContext = screenshots
+  ? require.context("../src", true, /(test|screenshot)$/)
+  : require.context("../src", true, /test$/);
+
 testsContext.keys().forEach(testsContext);
 
 const font = document.createElement("link");

@@ -1,16 +1,12 @@
-import axios from "axios";
 import Select from "./Select";
-import { fixture, html, expect, assert } from "@open-wc/testing";
-import { use } from "chai";
-import { matchSnapshot } from "chai-karma-snapshot";
+import { fixture, expect, assert } from "@open-wc/testing";
 import Options from "../options/Options";
 import sinon from "sinon";
 import moxios from "moxios";
 import Store from "../store/Store";
 import completion from "../../test-assets/store/completion.json";
-import { assertScreenshot } from "../../test/utils";
 
-const colorResponse: any = {
+export const colorResponse: any = {
   next: null,
   previous: null,
   results: [
@@ -20,41 +16,36 @@ const colorResponse: any = {
   ],
 };
 
-use(matchSnapshot);
-
-var clock: any;
-beforeEach(function () {
-  clock = sinon.useFakeTimers();
-  moxios.install();
-});
-
-afterEach(function () {
-  clock.restore();
-  moxios.uninstall();
-});
-
-const createSelect = async (def: string, delay: number = 1000) => {
+export const createSelect = async (def: string, delay: number = 0) => {
+  var clock = sinon.useFakeTimers();
   const select: Select = await fixture(def);
   clock.tick(1);
   await select.updateComplete;
   await (window as any).waitFor(delay);
+  clock.restore();
   return select;
 };
 
-const search = async (select: Select, query: string) => {
+export const search = async (select: Select, query: string) => {
+  var clock = sinon.useFakeTimers();
+
   var search = select.shadowRoot.querySelector(
     "temba-field .searchbox"
   ) as HTMLInputElement;
+
   search.value = query;
   search.dispatchEvent(new Event("input"));
   clock.tick(300);
   await select.updateComplete;
   await select.updateComplete;
+  clock.restore();
 
   return select;
 };
 
-const open = async (select: Select) => {
+export const open = async (select: Select) => {
+  var clock = sinon.useFakeTimers();
+
   (select.shadowRoot.querySelector(
     ".select-container"
   ) as HTMLDivElement).click();
@@ -63,14 +54,17 @@ const open = async (select: Select) => {
   // searchable has a quiet of 200ms
   clock.tick(200);
   await select.updateComplete;
+
+  clock.restore();
+
   return select;
 };
 
-const getOptions = (select: Select): Options => {
+export const getOptions = (select: Select): Options => {
   return select.shadowRoot.querySelector("temba-options");
 };
 
-const clickOption = async (select: Select, index: number) => {
+export const clickOption = async (select: Select, index: number) => {
   const options = getOptions(select);
   const option = options.shadowRoot.querySelectorAll(".option")[
     index
@@ -80,18 +74,21 @@ const clickOption = async (select: Select, index: number) => {
   return option;
 };
 
-const openAndClick = async (select: Select, index: number) => {
+export const openAndClick = async (select: Select, index: number) => {
   await open(select);
   return clickOption(select, index);
 };
 
-const colors = [
+export const colors = [
   { name: "Red", value: "0" },
   { name: "Green", value: "1" },
   { name: "Blue", value: "2" },
 ];
 
-const getSelectHTML = (options: any[] = colors, attrs: any = {}): string => {
+export const getSelectHTML = (
+  options: any[] = colors,
+  attrs: any = {}
+): string => {
   return `
   <temba-select placeholder='Pick a color' ${Object.keys(attrs).map(
     (name: string) => `${name}='${attrs[name]}'`
@@ -105,32 +102,23 @@ const getSelectHTML = (options: any[] = colors, attrs: any = {}): string => {
   </temba-select>`;
 };
 
-const closedClip = {
-  y: 70,
-  x: 0,
-  width: 485,
-  height: 55,
-};
-
-const clip = (height: number = 55) => {
-  return { ...closedClip, height };
-};
-
-(window as any).setViewport({
-  width: 500,
-  height: 1000,
-  deviceScaleFactor: 1,
-});
-
 describe("temba-select", () => {
+  beforeEach(function () {
+    moxios.install();
+  });
+
+  afterEach(function () {
+    moxios.uninstall();
+  });
+
   it("can be created", async () => {
     const select = await createSelect("<temba-select></temba-select>");
     assert.instanceOf(select, Select);
   });
 
   it("can be created with temba-option tags", async () => {
-    await createSelect(getSelectHTML());
-    await assertScreenshot("select", clip());
+    const select = await createSelect(getSelectHTML());
+    assert.equal(select.getStaticOptions().length, 3);
   });
 
   it("shows options when opened open", async () => {
@@ -145,8 +133,6 @@ describe("temba-select", () => {
         .querySelector(".options-container")
         .classList.contains("show")
     );
-
-    await assertScreenshot("select-open", clip(160));
   });
 
   it("can be created with attribute options", async () => {
@@ -168,15 +154,6 @@ describe("temba-select", () => {
       expect(select.values.length).to.equal(1);
       expect(select.values[0].name).to.equal("Red");
       expect(select.shadowRoot.innerHTML).to.contain("Red");
-
-      await assertScreenshot("select-selected", clip());
-    });
-
-    it("can search ", async () => {
-      const select = await createSelect(
-        getSelectHTML(colors, { searchable: true })
-      );
-      await assertScreenshot("select-search", clip());
     });
 
     it("can search with existing selection", async () => {
@@ -189,21 +166,15 @@ describe("temba-select", () => {
       expect(select.values.length).to.equal(1);
       expect(select.values[0].name).to.equal("Green");
 
-      await assertScreenshot("select-search-selected", clip());
-
       // for single selection our current selection should be in the list and focused
       await open(select);
       assert.equal(select.cursorIndex, 1);
       assert.equal(select.visibleOptions.length, 3);
 
-      await assertScreenshot("select-search-selected-open", clip(160));
-
       // now lets do a search, we should see our selection (green) and one other (red)
       await search(select, "re");
       await open(select);
-
       assert.equal(select.visibleOptions.length, 2);
-      await assertScreenshot("select-search-selected-open-query", clip(130));
 
       // but our cursor should be on the first match
       assert.equal(select.cursorIndex, 0);
