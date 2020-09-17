@@ -20,9 +20,10 @@ import "../src/shadowless/Shadowless";
 const testsContext = require.context("../src", true, /test$/);
 testsContext.keys().forEach(testsContext);
 
-console.log("Adding font!");
 const font = document.createElement("link");
-font.href =
-  "https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500";
+// font.href =
+// "https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500";
+font.href = "https://fonts.googleapis.com/css?family=Open+Sans:300,400,500";
+
 font.rel = "stylesheet";
 document.head.appendChild(font);

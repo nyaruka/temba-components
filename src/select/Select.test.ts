@@ -33,7 +33,7 @@ afterEach(function () {
   moxios.uninstall();
 });
 
-const createSelect = async (def: string, delay: number = 1000) => {
+const createSelect = async (def: string, delay: number = 500) => {
   const select: Select = await fixture(def);
   clock.tick(1);
   await select.updateComplete;
