@@ -11,7 +11,6 @@ import Store from "./Store";
 import sinon from "sinon";
 import { CompletionSchema } from "../completion/helpers";
 import moxios from "moxios";
-var clock: any;
 
 import completion from "../../test-assets/store/completion.json";
 import functions from "../../test-assets/store/functions.json";
@@ -22,35 +21,35 @@ const createStore = async (def: string): Promise<Store> => {
   return await fixture(def);
 };
 
+beforeEach(function () {
+  moxios.install();
+
+  moxios.stubRequest("/completion.json", {
+    status: 200,
+    responseText: JSON.stringify(completion),
+  });
+
+  moxios.stubRequest("/functions.json", {
+    status: 200,
+    responseText: JSON.stringify(functions),
+  });
+
+  moxios.stubRequest("/globals.json", {
+    status: 200,
+    responseText: JSON.stringify(globals),
+  });
+
+  moxios.stubRequest("/fields.json", {
+    status: 200,
+    responseText: JSON.stringify(fields),
+  });
+});
+
+afterEach(function () {
+  moxios.uninstall();
+});
+
 describe("temba-store", () => {
-  beforeEach(function () {
-    clock = sinon.useFakeTimers();
-
-    moxios.stubRequest("/completion.json", {
-      status: 200,
-      responseText: JSON.stringify(completion),
-    });
-
-    moxios.stubRequest("/functions.json", {
-      status: 200,
-      responseText: JSON.stringify(functions),
-    });
-
-    moxios.stubRequest("/globals.json", {
-      status: 200,
-      responseText: JSON.stringify(globals),
-    });
-
-    moxios.stubRequest("/fields.json", {
-      status: 200,
-      responseText: JSON.stringify(fields),
-    });
-  });
-
-  afterEach(function () {
-    clock.restore();
-  });
-
   it("is defined", async () => {
     const store = await createStore("<temba-store></temba-store>");
     assert.instanceOf(store, Store);

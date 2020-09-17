@@ -32,10 +32,27 @@ webpackConfig[0].devtool = false;
 module.exports = (config) => {
   config.set({
     basePath: "",
-    browsers: ["ChromeHeadless"],
+    browsers: ["PuppeteerHeadless"],
+
+    client: {
+      args: config.screenshots ? ["--screenshots"] : [],
+    },
+
+    customLaunchers: {
+      PuppeteerHeadless: {
+        base: "Puppeteer",
+        flags: ["--headless=true"],
+      },
+    },
     frameworks: ["mocha"],
     files: [
       "test/index.test.js",
+      {
+        pattern: "test-assets/style.css",
+        watched: true,
+        included: true,
+        served: true,
+      },
       {
         pattern: "test-assets/**/*",
         watched: false,
@@ -50,11 +67,12 @@ module.exports = (config) => {
 
     plugins: [
       "karma-mocha",
-      "karma-mocha-reporter",
-      "karma-chrome-launcher",
-      "karma-coverage-istanbul-reporter",
       "karma-webpack",
+      "karma-chrome-launcher",
       "karma-firefox-launcher",
+      "karma-puppeteer-launcher",
+      "karma-mocha-reporter",
+      "karma-coverage-istanbul-reporter",
       "karma-spec-reporter",
     ],
 

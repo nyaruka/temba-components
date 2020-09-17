@@ -22,3 +22,24 @@ jobs:
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           file: coverage/lcov.info
+
+  screenshots:
+    runs-on: macos-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Screenshot Tests
+        run: |
+          yarn install
+          yarn screenshots
+        env:
+          CI: true
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: screenshots
+          path: target/

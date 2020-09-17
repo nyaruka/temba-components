@@ -1,15 +1,12 @@
-import axios from "axios";
 import Select from "./Select";
-import { fixture, html, expect, assert } from "@open-wc/testing";
-import { use } from "chai";
-import { matchSnapshot } from "chai-karma-snapshot";
+import { fixture, expect, assert } from "@open-wc/testing";
 import Options from "../options/Options";
 import sinon from "sinon";
 import moxios from "moxios";
 import Store from "../store/Store";
 import completion from "../../test-assets/store/completion.json";
 
-const colorResponse: any = {
+export const colorResponse: any = {
   next: null,
   previous: null,
   results: [
@@ -19,56 +16,55 @@ const colorResponse: any = {
   ],
 };
 
-use(matchSnapshot);
-
-var clock: any;
-beforeEach(function () {
-  clock = sinon.useFakeTimers();
-  moxios.install();
-});
-
-afterEach(function () {
-  clock.restore();
-  moxios.uninstall();
-});
-
-const createSelect = async (def: string) => {
+export const createSelect = async (def: string, delay: number = 0) => {
+  var clock = sinon.useFakeTimers();
   const select: Select = await fixture(def);
   clock.tick(1);
-  // document.body.appendChild(select);
   await select.updateComplete;
+  await (window as any).waitFor(delay);
+  clock.restore();
   return select;
 };
 
-const search = async (select: Select, query: string) => {
+export const search = async (select: Select, query: string) => {
+  var clock = sinon.useFakeTimers();
+
   var search = select.shadowRoot.querySelector(
     "temba-field .searchbox"
   ) as HTMLInputElement;
+
   search.value = query;
   search.dispatchEvent(new Event("input"));
   clock.tick(300);
   await select.updateComplete;
+  await select.updateComplete;
+  clock.restore();
+
   return select;
 };
 
-const open = async (select: Select) => {
+export const open = async (select: Select) => {
+  var clock = sinon.useFakeTimers();
+
   (select.shadowRoot.querySelector(
     ".select-container"
   ) as HTMLDivElement).click();
 
   await select.updateComplete;
-
   // searchable has a quiet of 200ms
   clock.tick(200);
   await select.updateComplete;
+
+  clock.restore();
+
   return select;
 };
 
-const getOptions = (select: Select): Options => {
+export const getOptions = (select: Select): Options => {
   return select.shadowRoot.querySelector("temba-options");
 };
 
-const clickOption = async (select: Select, index: number) => {
+export const clickOption = async (select: Select, index: number) => {
   const options = getOptions(select);
   const option = options.shadowRoot.querySelectorAll(".option")[
     index
@@ -78,42 +74,58 @@ const clickOption = async (select: Select, index: number) => {
   return option;
 };
 
-const openAndClick = async (select: Select, index: number) => {
+export const openAndClick = async (select: Select, index: number) => {
   await open(select);
   return clickOption(select, index);
 };
 
-const colorOptions =
-  "<temba-select placeholder='Pick a color'>" +
-  "<temba-option name='Red' value='0'></temba-option>" +
-  "<temba-option name='Green' value='1'></temba-option>" +
-  "<temba-option name='Blue' value='2'></temba-option>" +
-  "</temba-select>";
+export const colors = [
+  { name: "Red", value: "0" },
+  { name: "Green", value: "1" },
+  { name: "Blue", value: "2" },
+];
 
-const multiColorOptions =
-  "<temba-select placeholder='Pick a color' multi>" +
-  "<temba-option name='Red' value='0'></temba-option>" +
-  "<temba-option name='Green' value='1'></temba-option>" +
-  "<temba-option name='Blue' value='2'></temba-option>" +
-  "</temba-select>";
+export const getSelectHTML = (
+  options: any[] = colors,
+  attrs: any = {}
+): string => {
+  return `
+  <temba-select placeholder='Pick a color' ${Object.keys(attrs).map(
+    (name: string) => `${name}='${attrs[name]}'`
+  )}>
+    ${options
+      .map(
+        (option) =>
+          `<temba-option name="${option.name}" value="${option.value}"></temba-option>`
+      )
+      .join("")}
+  </temba-select>`;
+};
 
 describe("temba-select", () => {
-  it("is defined", async () => {
+  beforeEach(function () {
+    moxios.install();
+  });
+
+  afterEach(function () {
+    moxios.uninstall();
+  });
+
+  it("can be created", async () => {
     const select = await createSelect("<temba-select></temba-select>");
     assert.instanceOf(select, Select);
   });
 
-  it("creates options", async () => {
-    var select = await createSelect(colorOptions);
+  it("can be created with temba-option tags", async () => {
+    const select = await createSelect(getSelectHTML());
+    assert.equal(select.getStaticOptions().length, 3);
+  });
 
+  it("shows options when opened open", async () => {
+    var select = await createSelect(getSelectHTML());
     await open(select);
     const options = getOptions(select);
     assert.instanceOf(options, Options);
-
-    const optionsHTML = options.shadowRoot.innerHTML;
-    expect(optionsHTML).to.contain("Red");
-    expect(optionsHTML).to.contain("Green");
-    expect(optionsHTML).to.contain("Blue");
 
     // our options should be visible
     assert.isTrue(
@@ -123,30 +135,66 @@ describe("temba-select", () => {
     );
   });
 
-  it("can select a single option", async () => {
-    const select = await createSelect(colorOptions);
-    expect(select.values.length).to.equal(0);
-
+  it("can be created with attribute options", async () => {
+    const options = JSON.stringify([{ name: "Embedded Option", value: "0" }]);
+    const select = await createSelect(getSelectHTML([], { options }));
     // select the first option
     await openAndClick(select, 0);
-
-    expect(select.values.length).to.equal(1);
-    expect(select.values[0].name).to.equal("Red");
-    expect(select.shadowRoot.innerHTML).to.contain("Red");
+    expect(select.values[0].name).to.equal("Embedded Option");
   });
 
-  it("can select multiple options", async () => {
-    const select = await createSelect(multiColorOptions);
-    expect(select.values.length).to.equal(0);
+  describe("single selection", () => {
+    it("can select a single option", async () => {
+      const select = await createSelect(getSelectHTML());
+      expect(select.values.length).to.equal(0);
 
-    // select the first option twice
-    await openAndClick(select, 0);
-    await openAndClick(select, 0);
+      // select the first option
+      await openAndClick(select, 0);
 
-    // now we should have red and green selected
-    expect(select.values.length).to.equal(2);
-    expect(select.shadowRoot.innerHTML).to.contain("Red");
-    expect(select.shadowRoot.innerHTML).to.contain("Green");
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal("Red");
+      expect(select.shadowRoot.innerHTML).to.contain("Red");
+    });
+
+    it("can search with existing selection", async () => {
+      const select = await createSelect(
+        getSelectHTML(colors, { searchable: true })
+      );
+
+      // select the first option
+      await openAndClick(select, 1);
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal("Green");
+
+      // for single selection our current selection should be in the list and focused
+      await open(select);
+      assert.equal(select.cursorIndex, 1);
+      assert.equal(select.visibleOptions.length, 3);
+
+      // now lets do a search, we should see our selection (green) and one other (red)
+      await search(select, "re");
+      await open(select);
+      assert.equal(select.visibleOptions.length, 2);
+
+      // but our cursor should be on the first match
+      assert.equal(select.cursorIndex, 0);
+    });
+  });
+
+  describe("multiple selection", () => {
+    it("can select multiple options", async () => {
+      const select = await createSelect(getSelectHTML(colors, { multi: true }));
+      expect(select.values.length).to.equal(0);
+
+      // select the first option twice
+      await openAndClick(select, 0);
+      await openAndClick(select, 0);
+
+      // now we should have red and green selected
+      expect(select.values.length).to.equal(2);
+      expect(select.shadowRoot.innerHTML).to.contain("Red");
+      expect(select.shadowRoot.innerHTML).to.contain("Green");
+    });
   });
 
   describe("endpoints", () => {
@@ -187,7 +235,7 @@ describe("temba-select", () => {
       await search(select, "re");
       await open(select);
 
-      // wait for the open, and then the fetch
+      // wait for remote fetch
       await select.updateComplete;
       await select.updateComplete;
 
@@ -200,7 +248,7 @@ describe("temba-select", () => {
         responseText: JSON.stringify(completion),
       });
 
-      const store: Store = await fixture(
+      await fixture(
         "<temba-store completions='/completion.json'></temba-store>"
       );
 
@@ -210,10 +258,6 @@ describe("temba-select", () => {
 
       await search(select, "@contact");
       await open(select);
-
-      // wait for the open, and then the fetch
-      await select.updateComplete;
-      await select.updateComplete;
 
       assert.equal(select.completionOptions.length, 12);
     });

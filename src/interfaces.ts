@@ -1,7 +1,4 @@
 import { CompletionOption } from "./completion/Completion";
-import TextInput from "./textinput/TextInput";
-import { CompletionSchema } from "./completion/helpers";
-import Store from "./store/Store";
 
 export interface URN {
   scheme: string;
