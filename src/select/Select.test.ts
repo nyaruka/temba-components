@@ -90,9 +90,9 @@ export const getSelectHTML = (
   attrs: any = {}
 ): string => {
   return `
-  <temba-select placeholder='Pick a color' ${Object.keys(attrs).map(
-    (name: string) => `${name}='${attrs[name]}'`
-  )}>
+  <temba-select placeholder='Pick a color' ${Object.keys(attrs)
+    .map((name: string) => `${name}='${attrs[name]}'`)
+    .join("")}>
     ${options
       .map(
         (option) =>

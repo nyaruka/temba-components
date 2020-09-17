@@ -52,7 +52,7 @@ describe("temba-select-screenshots", () => {
   });
 
   it("should show single selected option", async () => {
-    const select = await createSelect(getSelectHTML());
+    const select = await createSelect(getSelectHTML(), 1000);
 
     // select the first option
     await openAndClick(select, 0);
@@ -61,14 +61,16 @@ describe("temba-select-screenshots", () => {
 
   it("should look the same with search enabled", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
     await assertScreenshot("select-search", clip());
   });
 
   it("should look the same with search enabled and selection made", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
 
     // select the first option
@@ -78,7 +80,8 @@ describe("temba-select-screenshots", () => {
 
   it("should show focus for the selected option", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
 
     // select the first option
@@ -89,9 +92,10 @@ describe("temba-select-screenshots", () => {
     await assertScreenshot("select-search-selected-open", clip(160));
   });
 
-  it("can search with existing selection", async () => {
+  it("should show search with existing selection", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
 
     // select the first option
@@ -103,5 +107,28 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     await assertScreenshot("select-search-selected-open-query", clip(130));
+  });
+
+  it("should show search with existing multiple selection", async () => {
+    console.log(getSelectHTML(colors, { searchable: true, multi: true }));
+    const select = await createSelect(
+      getSelectHTML(colors, { searchable: true, multi: true }),
+      1000
+    );
+
+    // select the first option
+    await openAndClick(select, 0);
+    await openAndClick(select, 0);
+    await open(select);
+
+    // now lets do a search, we should see our selection (green) and one other (red)
+    await search(select, "re");
+    await open(select);
+
+    // should have two things selected and active query and no matching options
+    await assertScreenshot(
+      "select-search-multi-selected-open-query",
+      clip(130)
+    );
   });
 });

@@ -150,6 +150,10 @@ export default class Select extends FormElement {
         padding: var(--temba-select-selected-padding);
       }
 
+      .searchable .selected {
+        padding: 4px !important;
+      }
+
       .multi .selected {
         flex-wrap: wrap;
         padding: 4px;
@@ -217,18 +221,20 @@ export default class Select extends FormElement {
         box-shadow: none !important;
       }
 
-      .searchable.single.no-search-input .input-wrapper {
+      .searchable.no-search-input .input-wrapper {
         flex-grow: inherit;
         min-width: 1px;
       }
 
-      .searchable.single.no-search-input .input-wrapper .searchbox {
+      .searchable.no-search-input .input-wrapper .searchbox {
         flex-grow: inherit;
         min-width: 1px;
       }
-      .searchable.single .input-wrapper .searchbox {
+
+      .searchable .input-wrapper .searchbox {
         flex-grow: 1;
         min-width: 100%;
+        height: 100%;
       }
 
       .searchable.single.search-input .selected .selected-item {
@@ -240,13 +246,16 @@ export default class Select extends FormElement {
       }
 
       .searchable input {
+        padding: 6px 4px !important;
+      }
+
+      .searchable input {
         visibility: visible;
         cursor: pointer;
         background: none;
         color: var(--color-text);
         resize: none;
         box-shadow: none !important;
-        margin: none;
         flex-grow: 1;
         border: none;
         caret-color: inherit;
@@ -258,8 +267,11 @@ export default class Select extends FormElement {
 
       .input-wrapper {
         position: relative;
-        border: 0px solid red;
         flex-grow: 1;
+      }
+
+      .input-wrapper .searchbox {
+        // border: 1px solid purple !important;
       }
 
       .searchbox {
