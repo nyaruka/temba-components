@@ -119,7 +119,7 @@ const clip = (height: number = 55) => {
 (window as any).setViewport({
   width: 500,
   height: 1000,
-  deviceScaleFactor: 2,
+  deviceScaleFactor: 1,
 });
 
 describe("temba-select", () => {
