@@ -64,6 +64,10 @@ export default class FormField extends LitElement {
         border-radius: var(--curvature);
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
       }
+
+      .disabled {
+        opacity: 0.5;
+      }
     }`;
   }
 
@@ -88,6 +92,9 @@ export default class FormField extends LitElement {
   @property({ type: String })
   name: string;
 
+  @property({ type: Boolean })
+  disabled = false;
+
   public render(): TemplateResult {
     const errors = (this.errors || []).map((error: string) => {
       return html` <div class="alert-error">${error}</div> `;
@@ -101,7 +108,7 @@ export default class FormField extends LitElement {
     }
 
     return html`
-      <div class="field">
+      <div class="field ${this.disabled ? "disabled" : ""}">
         ${this.name && !this.hideLabel
           ? html`
               <label class="control-label" for="${this.name}"

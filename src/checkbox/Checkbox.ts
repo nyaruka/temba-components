@@ -18,7 +18,7 @@ export default class Checkbox extends FormElement {
 
       temba-field {
         --help-text-margin-left: 24px;
-        pointer: cursor;
+        cursor: pointer;
       }
 
       .checkbox-container {
@@ -41,6 +41,10 @@ export default class Checkbox extends FormElement {
         height: 16px;
         margin-top: 1px;
       }
+
+      .disabled {
+        opacity: 0.5;
+      }
     `;
   }
 
@@ -49,6 +53,9 @@ export default class Checkbox extends FormElement {
 
   @property({ type: Boolean })
   checked: boolean;
+
+  @property({ type: Boolean })
+  disabled = false;
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
@@ -66,7 +73,9 @@ export default class Checkbox extends FormElement {
   }
 
   private handleClick(event: MouseEvent): void {
-    this.checked = !this.checked;
+    if (!this.disabled) {
+      this.checked = !this.checked;
+    }
   }
 
   public render(): TemplateResult {
@@ -76,14 +85,12 @@ export default class Checkbox extends FormElement {
             class="far fa-check-square"
             size="16px"
             path-prefix="/sitestatic"
-          />
+          >
+          </fa-icon>
         `
       : html`
-          <fa-icon
-            class="far fa-square"
-            size="16px"
-            path-prefix="/sitestatic"
-          />
+          <fa-icon class="far fa-square" size="16px" path-prefix="/sitestatic">
+          </fa-icon>
         `;
 
     return html`
@@ -93,9 +100,10 @@ export default class Checkbox extends FormElement {
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         .helpAlways=${true}
+        .disabled=${this.disabled}
         @click=${this.handleClick}
       >
-        <div class="checkbox-container">
+        <div class="checkbox-container ${this.disabled ? "disabled" : ""}">
           ${icon}
           ${this.label
             ? html`<div class="checkbox-label">${this.label}</div>`
