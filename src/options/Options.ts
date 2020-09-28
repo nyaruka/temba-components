@@ -100,14 +100,24 @@ export default class Options extends RapidElement {
   @property({ type: Boolean })
   spaceSelect: boolean;
 
-  @property({ attribute: false })
-  renderOption: (option: any, selected: boolean) => void;
+  @property({ type: String })
+  nameKey: string = "name";
 
   @property({ attribute: false })
-  renderOptionName: (option: any, selected: boolean) => void;
+  getName: (option: any) => string = (option: any) =>
+    option[this.nameKey || "name"];
 
   @property({ attribute: false })
-  renderOptionDetail: (option: any, selected: boolean) => void;
+  renderInputOption: () => TemplateResult = () => null;
+
+  @property({ attribute: false })
+  renderOption: (option: any, selected: boolean) => TemplateResult;
+
+  @property({ attribute: false })
+  renderOptionName: (option: any, selected: boolean) => TemplateResult;
+
+  @property({ attribute: false })
+  renderOptionDetail: (option: any, selected: boolean) => TemplateResult;
 
   scrollParent: HTMLElement = null;
 
@@ -168,10 +178,13 @@ export default class Options extends RapidElement {
   }
 
   private renderOptionDefault(option: any, selected: boolean): TemplateResult {
-    const renderOptionName =
-      this.renderOptionName || this.renderOptionNameDefault;
-    const renderOptionDetail =
-      this.renderOptionDetail || this.renderOptionDetailDefault;
+    const renderOptionName = (
+      this.renderOptionName || this.renderOptionNameDefault
+    ).bind(this);
+    const renderOptionDetail = (
+      this.renderOptionDetail || this.renderOptionDetailDefault
+    ).bind(this);
+
     if (selected) {
       return html`
         <div class="name">${renderOptionName(option, selected)}</div>
@@ -188,7 +201,7 @@ export default class Options extends RapidElement {
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html` ${option.name} `;
+    return html`${option.prefix}${this.getName(option)}`;
   }
 
   private renderOptionDetailDefault(

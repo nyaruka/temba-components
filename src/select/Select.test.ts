@@ -3,7 +3,6 @@ import { fixture, expect, assert } from "@open-wc/testing";
 import Options from "../options/Options";
 import sinon from "sinon";
 import moxios from "moxios";
-import Store from "../store/Store";
 import completion from "../../test-assets/store/completion.json";
 
 export const colorResponse: any = {
@@ -90,9 +89,9 @@ export const getSelectHTML = (
   attrs: any = {}
 ): string => {
   return `
-  <temba-select placeholder='Pick a color' ${Object.keys(attrs).map(
-    (name: string) => `${name}='${attrs[name]}'`
-  )}>
+  <temba-select placeholder='Pick a color' ${Object.keys(attrs)
+    .map((name: string) => `${name}='${attrs[name]}'`)
+    .join("")}>
     ${options
       .map(
         (option) =>

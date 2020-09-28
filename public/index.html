@@ -171,7 +171,7 @@
 
         <temba-select
           name="start-type"
-          placeholder="Search how to start"
+          placeholder="Search how to start but make sure you can read this entire message"
           searchable
         >
           <temba-option
@@ -222,7 +222,7 @@
       <div class="example-header">Single Searchable</div>
       <temba-select
         name="start-type"
-        placeholder="Search how to start"
+        placeholder="Search how to start but make sure you can read this entire message"
         searchable
       >
         <temba-option
@@ -251,7 +251,7 @@
       <div class="example-header">Single Remote Search Unfiltered</div>
       <temba-select
         endpoint="/api/v2/channels.json"
-        placeholder="Contacts"
+        placeholder="Channels"
         valueKey="uuid"
         searchable
       >
@@ -325,6 +325,7 @@
     <div class="example">
       <div class="example-header">Multi Remote</div>
       <temba-select
+        id="multi-remote"
         endpoint="/contact/omnibox/?v=2"
         queryParam="search"
         placeholder="Contacts"
@@ -332,6 +333,26 @@
         multi
       >
       </temba-select>
+
+      <script>
+        window.setTimeout(() => {
+          var multiRemote = document.getElementById("multi-remote");
+          multiRemote.createArbitraryOption = function (input, options) {
+            var existing = options.find(function (option) {
+              return (
+                option.name.toLowerCase().trim() === input.toLowerCase().trim()
+              );
+            });
+            if (!existing) {
+              return {
+                prefix: "Create: ",
+                name: input,
+                id: "created",
+              };
+            }
+          };
+        }, 2000);
+      </script>
     </div>
 
     <div class="example">

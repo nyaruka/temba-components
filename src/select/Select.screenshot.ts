@@ -1,4 +1,3 @@
-import Select from "./Select";
 import {
   createSelect,
   getSelectHTML,
@@ -10,6 +9,9 @@ import {
 import moxios from "moxios";
 import sinon from "sinon";
 import { assertScreenshot } from "../../test/utils";
+import { fixture } from "@open-wc/testing";
+import completion from "../../test-assets/store/completion.json";
+import functions from "../../test-assets/store/functions.json";
 
 const closedClip = {
   y: 70,
@@ -27,6 +29,22 @@ const clip = (height: number = 55) => {
   height: 1000,
   deviceScaleFactor: 2,
 });
+
+const loadStore = async () => {
+  moxios.stubRequest("/completion.json", {
+    status: 200,
+    responseText: JSON.stringify(completion),
+  });
+
+  moxios.stubRequest("/functions.json", {
+    status: 200,
+    responseText: JSON.stringify(functions),
+  });
+
+  await fixture(
+    "<temba-store completions='/completion.json' functions='/functions.json'></temba-store>"
+  );
+};
 
 describe("temba-select-screenshots", () => {
   var clock: any;
@@ -52,7 +70,7 @@ describe("temba-select-screenshots", () => {
   });
 
   it("should show single selected option", async () => {
-    const select = await createSelect(getSelectHTML());
+    const select = await createSelect(getSelectHTML(), 1000);
 
     // select the first option
     await openAndClick(select, 0);
@@ -61,14 +79,16 @@ describe("temba-select-screenshots", () => {
 
   it("should look the same with search enabled", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
     await assertScreenshot("select-search", clip());
   });
 
   it("should look the same with search enabled and selection made", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
 
     // select the first option
@@ -78,7 +98,8 @@ describe("temba-select-screenshots", () => {
 
   it("should show focus for the selected option", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
 
     // select the first option
@@ -89,9 +110,10 @@ describe("temba-select-screenshots", () => {
     await assertScreenshot("select-search-selected-open", clip(160));
   });
 
-  it("can search with existing selection", async () => {
+  it("should show search with existing selection", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true })
+      getSelectHTML(colors, { searchable: true }),
+      1000
     );
 
     // select the first option
@@ -103,5 +125,55 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     await assertScreenshot("select-search-selected-open-query", clip(130));
+  });
+
+  it("should show search with existing multiple selection", async () => {
+    const select = await createSelect(
+      getSelectHTML(colors, { searchable: true, multi: true }),
+      1000
+    );
+
+    // select the first option
+    await openAndClick(select, 0);
+    await openAndClick(select, 0);
+    await open(select);
+
+    // now lets do a search, we should see our selection (green) and one other (red)
+    await search(select, "re");
+    await open(select);
+
+    // should have two things selected and active query and no matching options
+    await assertScreenshot(
+      "select-search-multi-selected-open-query",
+      clip(130)
+    );
+  });
+
+  it("should allow expressions", async () => {
+    await loadStore();
+
+    const select = await createSelect(
+      getSelectHTML(colors, { searchable: true, expressions: true }),
+      1000
+    );
+
+    await search(select, "@cont");
+    await open(select);
+
+    await assertScreenshot("select-expression", clip(130));
+  });
+
+  it("should show functions", async () => {
+    await loadStore();
+
+    const select = await createSelect(
+      getSelectHTML(colors, { searchable: true, expressions: true }),
+      1000
+    );
+
+    await search(select, "look at @(max(m");
+    await open(select);
+
+    await assertScreenshot("select-expression-function", clip(250));
   });
 });

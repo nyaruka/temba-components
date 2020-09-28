@@ -80,6 +80,9 @@ export default class FormField extends LitElement {
   @property({ type: Array, attribute: false })
   errors: string[] = [];
 
+  @property({ type: Boolean })
+  hideErrors: boolean = false;
+
   @property({ type: String, attribute: "help_text" })
   helpText: string;
 
@@ -96,9 +99,11 @@ export default class FormField extends LitElement {
   disabled = false;
 
   public render(): TemplateResult {
-    const errors = (this.errors || []).map((error: string) => {
-      return html` <div class="alert-error">${error}</div> `;
-    });
+    const errors = !this.hideErrors
+      ? (this.errors || []).map((error: string) => {
+          return html` <div class="alert-error">${error}</div> `;
+        })
+      : [];
 
     if (this.widgetOnly) {
       return html`
