@@ -11,8 +11,6 @@ import "../options/Options";
 import { EventHandler } from "../RapidElement";
 import FormElement from "../FormElement";
 
-import { getId } from "./helpers";
-
 import flru from "flru";
 import { CustomEventType, Position } from "../interfaces";
 import {
@@ -25,11 +23,6 @@ import Store from "../store/Store";
 import { styleMap } from "lit-html/directives/style-map";
 
 const LOOK_AHEAD = 20;
-
-interface StaticOption {
-  name: string;
-  value: string;
-}
 
 /* 12px, 13px, pad 6px */
 
@@ -210,7 +203,7 @@ export default class Select extends FormElement {
         border: none !important;
         visibility: visible;
         line-height: inherit !important;
-        height: inherit !important;
+        height: var(--search-input-height) !important;
         margin: 0px !important;
         padding: 0px !important;
         box-shadow: none !important;
@@ -223,6 +216,11 @@ export default class Select extends FormElement {
 
       .searchable.no-search-input .input-wrapper {
         flex-grow: inherit;
+        min-width: 1px;
+      }
+
+      .searchable.no-search-input.empty .input-wrapper {
+        flex-grow: 1;
         min-width: 1px;
       }
 
@@ -354,6 +352,9 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   cache: boolean = true;
 
+  @property({ type: String })
+  cacheKey: string = "";
+
   @property({ type: Boolean })
   focused: boolean = false;
 
@@ -384,6 +385,23 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   jsonValue: boolean;
 
+  @property({ type: Boolean })
+  hideErrors: boolean;
+
+  @property({ attribute: false })
+  getName: (option: any) => string = (option: any) =>
+    option[this.nameKey || "name"];
+
+  @property({ attribute: false })
+  getValue: (option: any) => string = (option: any) =>
+    option[this.valueKey || "value"] || option.id;
+
+  @property({ attribute: false })
+  shouldExclude: (option: any) => boolean;
+
+  @property({ attribute: false })
+  sortFunction: (a: any, b: any) => number;
+
   @property({ attribute: false })
   renderOption: (option: any, selected: boolean) => TemplateResult;
 
@@ -399,7 +417,7 @@ export default class Select extends FormElement {
     .renderSelectedItemDefault;
 
   @property({ attribute: false })
-  createArbitraryOption: (input: string) => any = this
+  createArbitraryOption: (input: string, options: any[]) => any = this
     .createArbitraryOptionDefault;
 
   @property({ attribute: false })
@@ -410,7 +428,7 @@ export default class Select extends FormElement {
     .isCompleteDefault;
 
   @property({ type: Array, attribute: "options" })
-  private staticOptions: StaticOption[] = [];
+  private staticOptions: any[] = [];
 
   private lastQuery: number;
 
@@ -423,6 +441,11 @@ export default class Select extends FormElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    // if our cache key changes, clear it out
+    if (changedProperties.has("cacheKey")) {
+      this.lruCache.clear(false);
+    }
 
     if (
       changedProperties.has("input") &&
@@ -515,7 +538,7 @@ export default class Select extends FormElement {
     this.fireEvent("change");
   }
 
-  private createArbitraryOptionDefault(input: string): any {
+  private createArbitraryOptionDefault(input: string, options: any[]): any {
     return null;
   }
 
@@ -523,21 +546,32 @@ export default class Select extends FormElement {
     this.requestUpdate("input");
   }
 
-  public setOptions(options: StaticOption[]): void {
+  public setOptions(options: any[]): void {
     this.staticOptions = options;
   }
 
   private setVisibleOptions(options: any[]) {
+    // if we have an exclusion filter apply it
+    if (this.shouldExclude) {
+      options = options.filter((option) => !this.shouldExclude(option));
+    }
+
     if (this.input) {
-      const arbitraryOption: any = this.createArbitraryOption(this.input);
+      const arbitraryOption: any = this.createArbitraryOption(
+        this.input,
+        options
+      );
+
       if (arbitraryOption) {
         // set our arbitrary flag so we never have more than one
         arbitraryOption.arbitrary = true;
 
         // make sure our id is not already present
         const exists = options.find(
-          (option: any) => option.id === arbitraryOption.id
+          (option: any) =>
+            this.getValue(option) === this.getValue(arbitraryOption)
         );
+
         if (!exists) {
           if (options.length > 0) {
             if (options[0].arbitrary) {
@@ -555,29 +589,29 @@ export default class Select extends FormElement {
     // filter out any options already selected by id
     // TODO: should maybe be doing a deep equals here with option to optimize
     if (this.values.length > 0) {
-      if (getId(this.values[0])) {
-        if (this.multi) {
-          this.visibleOptions = options.filter(
-            (option) =>
-              !this.values.find((selected) => getId(selected) === getId(option))
+      if (this.multi) {
+        options = options.filter(
+          (option) =>
+            !this.values.find(
+              (selected) => this.getValue(selected) === this.getValue(option)
+            )
+        );
+      } else {
+        // if no search, single select should set our cursor to the selected item
+        if (!this.input) {
+          this.cursorIndex = options.findIndex(
+            (option) => this.getValue(option) === this.getValue(this.values[0])
           );
-          return;
         } else {
-          // if no search, single select should set our cursor to the selected item
-          this.visibleOptions = options;
-
-          if (!this.input) {
-            this.cursorIndex = options.findIndex(
-              (option) => getId(option) === getId(this.values[0])
-            );
-          } else {
-            this.cursorIndex = 0;
-          }
-          this.requestUpdate("cursorIndex");
-
-          return;
+          this.cursorIndex = 0;
         }
+        this.requestUpdate("cursorIndex");
       }
+    }
+
+    // finally sort
+    if (this.sortFunction) {
+      options.sort(this.sortFunction);
     }
 
     this.visibleOptions = options;
@@ -612,6 +646,7 @@ export default class Select extends FormElement {
     }
 
     if (!this.fetching) {
+      this.fetching = true;
       // make sure we cancel any previous request
       if (this.cancelToken) {
         this.cancelToken.cancel();
@@ -622,21 +657,20 @@ export default class Select extends FormElement {
 
       if (this.staticOptions.length > 0) {
         options = this.staticOptions.filter(
-          (option: StaticOption) => option.name.toLowerCase().indexOf(q) > -1
+          (option: any) => this.getName(option).toLowerCase().indexOf(q) > -1
         );
       }
 
       if (this.tags && q) {
         if (
           !options.find(
-            (option: any) => option.value && option.value.toLowerCase() === q
+            (option: any) =>
+              this.getValue(option) && this.getValue(option).toLowerCase() === q
           )
         ) {
           options.splice(0, 0, { name: query, value: query });
         }
       }
-
-      this.setVisibleOptions(options);
 
       if (this.endpoint) {
         const cacheKey = `${query}_$page`;
@@ -664,20 +698,21 @@ export default class Select extends FormElement {
 
         const CancelToken = axios.CancelToken;
         this.cancelToken = CancelToken.source();
-        this.fetching = true;
 
         getUrl(url, this.cancelToken.token)
           .then((response: AxiosResponse) => {
-            const results = this.getOptions(response).filter(
-              (option: any) =>
-                option[this.nameKey]
+            const results = this.getOptions(response).filter((option: any) => {
+              const match =
+                this.getName(option)
                   .toLowerCase()
-                  .indexOf(query.toLowerCase()) > -1
-            );
+                  .indexOf(query.toLowerCase()) > -1;
+
+              return match;
+            });
 
             if (page === 0) {
               this.cursorIndex = 0;
-              this.setVisibleOptions(results);
+              this.setVisibleOptions([...options, ...results]);
               this.query = query;
               this.complete = this.isComplete(this.visibleOptions, response);
             } else {
@@ -699,7 +734,11 @@ export default class Select extends FormElement {
           })
           .catch((reason: any) => {
             // cancelled
+            this.fetching = false;
           });
+      } else {
+        this.fetching = false;
+        this.setVisibleOptions(options);
       }
     }
   }
@@ -742,8 +781,21 @@ export default class Select extends FormElement {
         value: ele.value,
         expression: true,
       };
+
       if (this.multi) {
-        this.addValue(expression);
+        if (
+          !this.values.find((option) => {
+            return (
+              option.expression &&
+              option.value &&
+              expression.value &&
+              option.value.toLowerCase().trim() ==
+                expression.value.toLowerCase().trim()
+            );
+          })
+        ) {
+          this.addValue(expression);
+        }
       } else {
         this.setValue(expression);
       }
@@ -752,6 +804,8 @@ export default class Select extends FormElement {
       if (!this.multi) {
         this.blur();
       }
+
+      this.fireEvent("change");
     }
 
     // see if we should open our options on a key event
@@ -890,7 +944,7 @@ export default class Select extends FormElement {
   }
 
   private renderSelectedItemDefault(option: any): TemplateResult {
-    return html` <div class="option-name">${option.name}</div> `;
+    return html` <div class="option-name">${this.getName(option)}</div> `;
   }
 
   public serializeValue(value: any): string {
@@ -962,6 +1016,7 @@ export default class Select extends FormElement {
         .helpText=${this.helpText}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
+        .hideErrors=${this.hideErrors}
       >
       
         <div
@@ -1027,13 +1082,15 @@ export default class Select extends FormElement {
 
       <temba-options
         @temba-selection=${this.handleOptionSelection}
-      .cursorIndex=${this.cursorIndex}
+        .cursorIndex=${this.cursorIndex}
         .renderOptionDetail=${this.renderOptionDetail}
         .renderOptionName=${this.renderOptionName}
         .renderOption=${this.renderOption}
         .anchorTo=${this.anchorElement}
         .options=${this.visibleOptions}
         .spaceSelect=${this.spaceSelect}
+        .nameKey=${this.nameKey}
+        .getName=${this.getName}
         ?visible=${this.visibleOptions.length > 0}
       ></temba-options>
 
@@ -1041,7 +1098,6 @@ export default class Select extends FormElement {
         @temba-selection=${this.handleExpressionSelection}
         @temba-canceled=${() => {}}
         .anchorTo=${this.anchorExpressions}
-        
         .options=${this.completionOptions}
         .renderOption=${renderCompletionOption}
         ?visible=${this.completionOptions.length > 0}

@@ -1,4 +1,3 @@
-import Select from "./Select";
 import {
   createSelect,
   getSelectHTML,
@@ -10,6 +9,9 @@ import {
 import moxios from "moxios";
 import sinon from "sinon";
 import { assertScreenshot } from "../../test/utils";
+import { fixture } from "@open-wc/testing";
+import completion from "../../test-assets/store/completion.json";
+import functions from "../../test-assets/store/functions.json";
 
 const closedClip = {
   y: 70,
@@ -27,6 +29,22 @@ const clip = (height: number = 55) => {
   height: 1000,
   deviceScaleFactor: 2,
 });
+
+const loadStore = async () => {
+  moxios.stubRequest("/completion.json", {
+    status: 200,
+    responseText: JSON.stringify(completion),
+  });
+
+  moxios.stubRequest("/functions.json", {
+    status: 200,
+    responseText: JSON.stringify(functions),
+  });
+
+  await fixture(
+    "<temba-store completions='/completion.json' functions='/functions.json'></temba-store>"
+  );
+};
 
 describe("temba-select-screenshots", () => {
   var clock: any;
@@ -110,7 +128,6 @@ describe("temba-select-screenshots", () => {
   });
 
   it("should show search with existing multiple selection", async () => {
-    console.log(getSelectHTML(colors, { searchable: true, multi: true }));
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true, multi: true }),
       1000
@@ -130,5 +147,33 @@ describe("temba-select-screenshots", () => {
       "select-search-multi-selected-open-query",
       clip(130)
     );
+  });
+
+  it("should allow expressions", async () => {
+    await loadStore();
+
+    const select = await createSelect(
+      getSelectHTML(colors, { searchable: true, expressions: true }),
+      1000
+    );
+
+    await search(select, "@cont");
+    await open(select);
+
+    await assertScreenshot("select-expression", clip(130));
+  });
+
+  it("should show functions", async () => {
+    await loadStore();
+
+    const select = await createSelect(
+      getSelectHTML(colors, { searchable: true, expressions: true }),
+      1000
+    );
+
+    await search(select, "look at @(max(m");
+    await open(select);
+
+    await assertScreenshot("select-expression-function", clip(250));
   });
 });

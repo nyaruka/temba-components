@@ -3,7 +3,6 @@ import { fixture, expect, assert } from "@open-wc/testing";
 import Options from "../options/Options";
 import sinon from "sinon";
 import moxios from "moxios";
-import Store from "../store/Store";
 import completion from "../../test-assets/store/completion.json";
 
 export const colorResponse: any = {
