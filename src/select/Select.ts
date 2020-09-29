@@ -239,6 +239,20 @@ export default class Select extends FormElement {
         display: none;
       }
 
+      .searchable.single.no-search-input
+        .selected
+        .input-wrapper
+        input.searchbox {
+        padding: 6px 2px !important;
+      }
+
+      .searchable.single.no-search-input.empty
+        .selected
+        .input-wrapper
+        input.searchbox {
+        padding: 6px 6px !important;
+      }
+
       .empty input {
         width: 100%;
       }
@@ -248,6 +262,7 @@ export default class Select extends FormElement {
       }
 
       .searchable input {
+        font-weight: 300;
         visibility: visible;
         cursor: pointer;
         background: none;
