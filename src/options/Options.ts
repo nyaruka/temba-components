@@ -143,6 +143,7 @@ export default class Options extends RapidElement {
       const focusedEle = this.shadowRoot.querySelector(
         ".focused"
       ) as HTMLDivElement;
+
       if (focusedEle) {
         const scrollBox = this.shadowRoot.querySelector(".options");
         const scrollBoxRect = scrollBox.getBoundingClientRect();

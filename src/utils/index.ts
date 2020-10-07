@@ -12,6 +12,11 @@ interface AssetPage {
   next: string;
 }
 
+interface ResultsPage {
+  results: any[];
+  next: string;
+}
+
 /** Get the value for a named cookie */
 export const getCookie = (name: string): string => {
   for (const cookie of document.cookie.split(";")) {
@@ -47,6 +52,34 @@ export const getClasses = (map: ClassMap): string => {
     result = " " + result;
   }
   return result;
+};
+
+export const fetchResultsPage = (url: string): Promise<ResultsPage> => {
+  return new Promise<ResultsPage>((resolve, reject) => {
+    getUrl(url)
+      .then((response: AxiosResponse) => {
+        resolve({
+          results: response.data.results,
+          next: response.data.next,
+        });
+      })
+      .catch((error) => reject(error));
+  });
+};
+
+export const fetchResults = async (url: string): Promise<any[]> => {
+  if (!url) {
+    return new Promise<any[]>((resolve, reject) => resolve([]));
+  }
+
+  let results: any[] = [];
+  let pageUrl = url;
+  while (pageUrl) {
+    const resultsPage = await fetchResultsPage(pageUrl);
+    results = results.concat(resultsPage.results);
+    pageUrl = resultsPage.next;
+  }
+  return results;
 };
 
 export const getAssetPage = (url: string): Promise<AssetPage> => {
