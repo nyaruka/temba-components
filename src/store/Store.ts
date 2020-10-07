@@ -15,6 +15,9 @@ export default class Store extends LitElement {
   @property({ type: String, attribute: "fields" })
   fieldsEndpoint: string;
 
+  @property({ type: String, attribute: "groups" })
+  groupsEndpoint: string;
+
   @property({ type: String, attribute: "globals" })
   globalsEndpoint: string;
 

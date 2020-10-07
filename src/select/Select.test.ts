@@ -4,6 +4,10 @@ import Options from "../options/Options";
 import sinon from "sinon";
 import moxios from "moxios";
 import completion from "../../test-assets/store/completion.json";
+import groups from "../../test-assets/select/groups.json";
+import groups_2 from "../../test-assets/select/groups_2.json";
+import groups_3 from "../../test-assets/select/groups_3.json";
+import { range } from "../utils";
 
 export const colorResponse: any = {
   next: null,
@@ -99,6 +103,12 @@ export const getSelectHTML = (
       )
       .join("")}
   </temba-select>`;
+};
+
+export const forPages = async (select: Select, pages: number = 1) => {
+  for (let i in range(0, pages * 3 + 1)) {
+    await select.updateComplete;
+  }
 };
 
 describe("temba-select", () => {
@@ -203,6 +213,21 @@ describe("temba-select", () => {
         status: 200,
         responseText: JSON.stringify(colorResponse),
       });
+
+      moxios.stubRequest("/groups.json", {
+        status: 200,
+        responseText: JSON.stringify(groups),
+      });
+
+      moxios.stubRequest("/groups.json?cursor=SECOND_PAGE", {
+        status: 200,
+        responseText: JSON.stringify(groups_2),
+      });
+
+      moxios.stubRequest("/groups.json?cursor=THIRD_PAGE", {
+        status: 200,
+        responseText: JSON.stringify(groups_3),
+      });
     });
 
     it("can load from an endpoint", (done) => {
@@ -233,12 +258,42 @@ describe("temba-select", () => {
 
       await search(select, "re");
       await open(select);
-
-      // wait for remote fetch
-      await select.updateComplete;
-      await select.updateComplete;
+      await forPages(select);
 
       assert.equal(select.visibleOptions.length, 2);
+    });
+
+    it("pages through cursor results", async () => {
+      const select = await createSelect(
+        "<temba-select placeholder='Pick a group' endpoint='/groups.json'></temba-select>"
+      );
+
+      await open(select);
+      await forPages(select, 3);
+
+      // should have all three pages visible right away
+      assert.equal(select.visibleOptions.length, 15);
+    });
+
+    it("shows cached results", async () => {
+      const select = await createSelect(
+        "<temba-select placeholder='Pick a group' endpoint='/groups.json' searchable></temba-select>"
+      );
+
+      // wait for updates from fetching three pages
+      await open(select);
+      await forPages(select, 4);
+      assert.equal(select.visibleOptions.length, 15);
+
+      // close and reopen
+      select.blur();
+      await open(select);
+      assert.equal(select.visibleOptions.length, 15);
+
+      // close and reopen once more (bug failed on third opening)
+      select.blur();
+      await open(select);
+      assert.equal(select.visibleOptions.length, 15);
     });
 
     it("can enter expressions", async () => {

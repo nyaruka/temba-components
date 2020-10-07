@@ -5,7 +5,7 @@ import {
   css,
   property,
 } from "lit-element";
-import { getUrl, getClasses } from "../utils";
+import { getUrl, getClasses, fetchResults } from "../utils";
 import axios, { AxiosResponse, CancelTokenSource, AxiosStatic } from "axios";
 import "../options/Options";
 import { EventHandler } from "../RapidElement";
@@ -341,7 +341,7 @@ export default class Select extends FormElement {
   currentFunction: CompletionOption;
 
   @property({ type: String })
-  queryParam: string = "q";
+  queryParam: string = null;
 
   @property({ type: String })
   input: string = "";
@@ -450,6 +450,7 @@ export default class Select extends FormElement {
   private cancelToken: CancelTokenSource;
   private complete: boolean;
   private page: number;
+  private next: string = null;
   private query: string;
 
   private lruCache = flru(20);
@@ -481,12 +482,16 @@ export default class Select extends FormElement {
     }
 
     // if our cursor changed, lets make sure our scrollbox is showing it
-    if (changedProperties.has("cursorIndex") && this.endpoint) {
+    if (
+      (changedProperties.has("cursorIndex") ||
+        changedProperties.has("visibleOptions")) &&
+      this.endpoint &&
+      !this.fetching
+    ) {
       if (
-        this.visibleOptions.length > 0 &&
-        this.query &&
+        (this.visibleOptions.length > 0 || this.next) &&
         !this.complete &&
-        this.cursorIndex > this.visibleOptions.length - LOOK_AHEAD
+        (this.cursorIndex || 0) > this.visibleOptions.length - LOOK_AHEAD
       ) {
         this.fetchOptions(this.query, this.page + 1);
       }
@@ -517,6 +522,8 @@ export default class Select extends FormElement {
 
     this.visibleOptions = [];
     this.input = "";
+    this.next = null;
+    this.complete = true;
     this.selectedIndex = -1;
     this.fireEvent("change");
   }
@@ -536,6 +543,10 @@ export default class Select extends FormElement {
     }
   }
 
+  private getNameInternal: (option: any) => string = (option: any) => {
+    return this.getName(option);
+  };
+
   private getOptionsDefault(response: AxiosResponse): any[] {
     return response.data["results"];
   }
@@ -544,7 +555,7 @@ export default class Select extends FormElement {
     newestOptions: any[],
     response: AxiosResponse
   ): boolean {
-    return !response.data["more"];
+    return !response.data["more"] && !response.data["next"];
   }
 
   public handleRemoveSelection(selectionToRemove: any): void {
@@ -567,11 +578,27 @@ export default class Select extends FormElement {
 
   private setVisibleOptions(options: any[]) {
     // if we have an exclusion filter apply it
-    if (this.shouldExclude) {
-      options = options.filter((option) => !this.shouldExclude(option));
-    }
+    options = options.filter((option) => {
+      // exclude unnamed
+      if (!this.getNameInternal(option)) {
+        return false;
+      }
+
+      if (this.shouldExclude) {
+        return !this.shouldExclude(option);
+      }
+      return true;
+    });
 
     if (this.input) {
+      // if we are searching locally, filter for the query
+      if (this.searchable && !this.queryParam) {
+        const q = this.input.trim().toLowerCase();
+        options = options.filter((option: any) => {
+          return this.getName(option).toLowerCase().indexOf(q) > -1;
+        });
+      }
+
       const arbitraryOption: any = this.createArbitraryOption(
         this.input,
         options
@@ -651,30 +678,16 @@ export default class Select extends FormElement {
   public fetchOptions(query: string, page: number = 0) {
     this.completionOptions = [];
 
-    const cacheKey = `${query}_$page`;
-    if (this.cache && !this.tags && this.lruCache.has(cacheKey)) {
-      const { options, complete } = this.lruCache.get(cacheKey);
-      this.setVisibleOptions(options);
-      this.complete = complete;
-      this.query = query;
-      return;
-    }
-
     if (!this.fetching) {
       this.fetching = true;
+
       // make sure we cancel any previous request
       if (this.cancelToken) {
         this.cancelToken.cancel();
       }
 
-      let options: any = [];
-      const q = query.toLowerCase();
-
-      if (this.staticOptions.length > 0) {
-        options = this.staticOptions.filter(
-          (option: any) => this.getName(option).toLowerCase().indexOf(q) > -1
-        );
-      }
+      let options: any = [...this.staticOptions];
+      const q = (query || "").trim().toLowerCase();
 
       if (this.tags && q) {
         if (
@@ -688,11 +701,9 @@ export default class Select extends FormElement {
       }
 
       if (this.endpoint) {
-        const cacheKey = `${query}_$page`;
-
         let url = this.endpoint;
 
-        if (query) {
+        if (query && this.queryParam) {
           if (url.indexOf("?") > -1) {
             url += "&";
           } else {
@@ -711,46 +722,86 @@ export default class Select extends FormElement {
           url += "page=" + page;
         }
 
+        if (this.next) {
+          url = this.next;
+        }
+
+        if (this.cache && !this.tags && this.lruCache.has(url)) {
+          const cache = this.lruCache.get(url);
+          if (page === 0 && !this.next) {
+            this.cursorIndex = 0;
+            this.setVisibleOptions([...options, ...cache.options]);
+          } else {
+            this.setVisibleOptions([...this.visibleOptions, ...cache.options]);
+          }
+
+          this.complete = cache.complete;
+          this.next = cache.next;
+          this.fetching = false;
+          return;
+        }
+
         const CancelToken = axios.CancelToken;
         this.cancelToken = CancelToken.source();
 
-        getUrl(url, this.cancelToken.token)
-          .then((response: AxiosResponse) => {
-            const results = this.getOptions(response).filter((option: any) => {
-              const match =
-                this.getName(option)
-                  .toLowerCase()
-                  .indexOf(query.toLowerCase()) > -1;
-
-              return match;
-            });
-
-            if (page === 0) {
-              this.cursorIndex = 0;
-              this.setVisibleOptions([...options, ...results]);
-              this.query = query;
-              this.complete = this.isComplete(this.visibleOptions, response);
-            } else {
-              if (results.length > 0) {
-                this.setVisibleOptions([...this.visibleOptions, ...results]);
-              }
-              this.complete = this.isComplete(results, response);
-            }
-
+        // if we are searchable, but doing it locally, fetch all the options
+        if (this.searchable && !this.queryParam) {
+          fetchResults(url).then((results: any) => {
             if (this.cache && !this.tags) {
-              this.lruCache.set(cacheKey, {
-                options: this.visibleOptions,
-                complete: this.complete,
+              this.lruCache.set(url, {
+                options: results,
+                complete: true,
+                next: null,
               });
-            }
 
-            this.fetching = false;
-            this.page = page;
-          })
-          .catch((reason: any) => {
-            // cancelled
-            this.fetching = false;
+              this.complete = true;
+              this.next = null;
+              this.setVisibleOptions([...options, ...results]);
+              this.fetching = false;
+            }
           });
+        } else {
+          getUrl(url, this.cancelToken.token)
+            .then((response: AxiosResponse) => {
+              const results = this.getOptions(response).filter(
+                (option: any) => {
+                  return this.getName(option).toLowerCase().indexOf(q) > -1;
+                }
+              );
+
+              if (response.data.next) {
+                this.next = response.data.next;
+              }
+
+              if (page === 0 && !this.next) {
+                this.cursorIndex = 0;
+                this.setVisibleOptions([...options, ...results]);
+                this.query = query;
+                this.complete = this.isComplete(this.visibleOptions, response);
+              } else {
+                if (results.length > 0) {
+                  this.setVisibleOptions([...this.visibleOptions, ...results]);
+                }
+                this.complete = this.isComplete(results, response);
+              }
+
+              if (this.cache && !this.tags) {
+                this.lruCache.set(url, {
+                  options: results,
+                  complete: this.complete,
+                  next: this.next,
+                });
+              }
+
+              this.fetching = false;
+              this.page = page;
+            })
+            .catch((reason: any) => {
+              // cancelled
+              this.fetching = false;
+              console.error(reason);
+            });
+        }
       } else {
         this.fetching = false;
         this.setVisibleOptions(options);
@@ -772,6 +823,8 @@ export default class Select extends FormElement {
     if (this.visibleOptions.length > 0) {
       this.visibleOptions = [];
       this.input = "";
+      this.next = null;
+      this.complete = true;
     }
   }
 
@@ -1105,7 +1158,7 @@ export default class Select extends FormElement {
         .options=${this.visibleOptions}
         .spaceSelect=${this.spaceSelect}
         .nameKey=${this.nameKey}
-        .getName=${this.getName}
+        .getName=${this.getNameInternal}
         ?visible=${this.visibleOptions.length > 0}
       ></temba-options>
 
