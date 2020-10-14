@@ -176,4 +176,10 @@ describe("temba-select-screenshots", () => {
 
     await assertScreenshot("select-expression-function", clip(250));
   });
+
+  it("shows clear option", async()=>{
+    const select = await createSelect(getSelectHTML(colors, { clearable: true }));
+    await openAndClick(select, 0);
+    await assertScreenshot("select-clearable", clip());
+  })
 });
