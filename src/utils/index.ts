@@ -110,19 +110,27 @@ export const getAssets = async (url: string): Promise<Asset[]> => {
   return assets;
 };
 
-export const getUrl = (
-  url: string,
-  cancelToken: CancelToken = null,
-  pjax: boolean = false
-): Promise<AxiosResponse> => {
+export const getHeaders = (pjax: boolean) => {
   const csrf = getCookie("csrftoken");
   const headers: any = csrf ? { "X-CSRFToken": csrf } : {};
+
+  // mark us as ajax
+  headers["X-Requested-With"] = "XMLHttpRequest";
 
   if (pjax) {
     headers["X-PJAX"] = "true";
   }
 
-  const config: AxiosRequestConfig = { headers };
+  return headers;
+}
+
+export const getUrl = (
+  url: string,
+  cancelToken: CancelToken = null,
+  pjax: boolean = false
+): Promise<AxiosResponse> => {
+
+  const config: AxiosRequestConfig = { headers: getHeaders(pjax) };
   if (cancelToken) {
     config.cancelToken = cancelToken;
   }
@@ -134,14 +142,7 @@ export const postUrl = (
   payload: any,
   pjax: boolean = false
 ): Promise<AxiosResponse> => {
-  const csrf = getCookie("csrftoken");
-  const headers: any = csrf ? { "X-CSRFToken": csrf } : {};
-
-  if (pjax) {
-    headers["X-PJAX"] = "true";
-  }
-
-  return axios.post(url, payload, { headers });
+  return axios.post(url, payload, { headers: getHeaders(pjax) });
 };
 
 /**
