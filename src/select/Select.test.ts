@@ -63,6 +63,12 @@ export const open = async (select: Select) => {
   return select;
 };
 
+export const clear = async(select: Select) => {
+  (select.shadowRoot.querySelector(
+    ".clear-icon"
+  ) as HTMLDivElement).click();
+}
+
 export const getOptions = (select: Select): Options => {
   return select.shadowRoot.querySelector("temba-options");
 };
@@ -315,5 +321,16 @@ describe("temba-select", () => {
 
       assert.equal(select.completionOptions.length, 12);
     });
+
+    it("clears single selection", async()=>{
+      const select = await createSelect(getSelectHTML(colors, { clearable: true }));
+      assert.equal(select.getStaticOptions().length, 3);
+
+      await openAndClick(select, 0);
+      expect(select.values[0].name).to.equal("Red");
+
+      clear(select);
+      expect(select.values.length).to.equal(0);
+    })
   });
 });

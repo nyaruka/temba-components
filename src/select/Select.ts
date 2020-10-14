@@ -45,6 +45,14 @@ export default class Select extends FormElement {
         --temba-select-selected-font-size: 13px;
       }
 
+      .clear-icon {
+        color: var(--color-text-dark-secondary);
+        cursor: pointer;
+        margin: auto;
+        padding-right: 6px;
+        line-height: 1;
+      }
+
       :host:focus {
         outline: none;
       }
@@ -402,6 +410,9 @@ export default class Select extends FormElement {
 
   @property({ type: Boolean })
   hideErrors: boolean;
+
+  @property({type: Boolean})
+  clearable: boolean;
 
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
@@ -1036,11 +1047,28 @@ export default class Select extends FormElement {
     }
   }
 
+  private handleClear(evt: MouseEvent): void {
+    evt.preventDefault();
+    evt.stopPropagation();
+    this.setValues([]);
+    this.fireEvent("change");
+  }
+
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : "";
     const placeholderDiv = html`
       <div class="placeholder">${placeholder}</div>
     `;
+
+    const clear =
+    this.clearable && this.values.length > 0 && !this.multi
+      ? html`<fa-icon
+          class="fa times clear-icon"
+          size="14px"
+          path-prefix="/sitestatic"
+          @click=${this.handleClear}
+        />`
+      : null;
 
     const classes = getClasses({
       multi: this.multi,
@@ -1129,6 +1157,8 @@ export default class Select extends FormElement {
               ${this.multi ? input : null}
             </div>
           </div>
+
+          ${clear}
 
           ${
             !this.tags
