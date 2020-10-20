@@ -5,10 +5,14 @@ import {
   css,
   property,
 } from "lit-element";
+import { ifDefined } from "lit-html/directives/if-defined";
 import { styleMap } from "lit-html/directives/style-map.js";
 import FormElement from "../FormElement";
 import "lit-flatpickr";
 import Modax from "../dialog/Modax";
+import { sanitize } from "./helpers";
+import CharCount from "../charcount/CharCount";
+import { colorResponse } from "../select/Select.test";
 
 @customElement("temba-textinput")
 export default class TextInput extends FormElement {
@@ -25,6 +29,8 @@ export default class TextInput extends FormElement {
         align-items: stretch;
         box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
           0 1px 2px 0 rgba(0, 0, 0, 0.02);
+
+        caret-color: var(--input-caret);
       }
 
       .clear-icon {
@@ -135,15 +141,28 @@ export default class TextInput extends FormElement {
   @property({ type: Boolean })
   clearable: boolean;
 
+  @property({ type: Boolean })
+  gsm: boolean;
+
+  @property({ type: String })
+  counter: string;
+
   // if we are still loading
   @property({ type: Boolean })
   loading: boolean = true;
+
+  counterElement: CharCount = null;
 
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
 
     this.inputElement = this.shadowRoot.querySelector(".textinput");
     this.dateElement = this.shadowRoot.querySelector(".datepicker");
+
+    if (changes.has("counter")) {
+      this.counterElement = document.querySelector(this.counter);
+      this.counterElement.text = this.value;
+    }
 
     if (this.dateElement) {
       const picker = this.dateElement;
@@ -186,8 +205,19 @@ export default class TextInput extends FormElement {
     this.value = null;
   }
 
+  private updateValue(value: string): void {
+    this.value = this.sanitizeGSM(value);
+    if (this.counterElement) {
+      this.counterElement.text = value;
+    }
+  }
+
+  private sanitizeGSM(text: string): string {
+    return this.gsm ? sanitize(text) : text;
+  }
+
   private handleChange(update: any): void {
-    this.value = update.target.value;
+    this.updateValue(update.target.value);
     this.fireEvent("change");
   }
 
@@ -207,6 +237,7 @@ export default class TextInput extends FormElement {
   }
 
   private handleInput(update: any): void {
+    this.updateValue(update.target.value);
     this.setValues([this.value]);
     this.fireEvent("input");
   }
@@ -277,7 +308,7 @@ export default class TextInput extends FormElement {
         class="textinput"
         name=${this.name}
         type="${this.password ? "password" : "text"}"
-        maxlength="${this.maxlength}"
+        maxlength="${ifDefined(this.maxlength)}"
         @change=${this.handleChange}
         @input=${this.handleInput}
         @keydown=${(e: KeyboardEvent) => {

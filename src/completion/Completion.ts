@@ -5,6 +5,7 @@ import {
   css,
   property,
 } from "lit-element";
+import { ifDefined } from 'lit-html/directives/if-defined';
 import ExcellentParser from "./ExcellentParser";
 import TextInput from "../textinput/TextInput";
 import {
@@ -103,6 +104,23 @@ export default class Completion extends FormElement {
     "urns",
   ]);
 
+  static sessionParser = new ExcellentParser("@", [
+    "contact",
+    "fields",
+    "globals",
+    "urns",
+    "results",
+    "input",
+    "run",
+    "child",
+    "parent",
+    "webhook",
+    "trigger"
+  ]);
+
+  @property({ type: Boolean})
+  session: boolean;
+
   @property({ type: Object })
   anchorPosition: Position = { left: 0, top: 0 };
 
@@ -127,20 +145,15 @@ export default class Completion extends FormElement {
   @property({ type: String })
   value: string = "";
 
-  @property({ type: String })
-  completionsEndpoint: string;
-
-  @property({ type: String })
-  functionsEndpoint: string;
-
-  @property({ type: String })
-  fieldsEndpoint: string;
-
-  @property({ type: String })
-  globalsEndpoint: string;
-
   @property({ type: Boolean })
   textarea: boolean;
+
+  @property({ type: Boolean})
+  gsm: boolean;
+
+  @property({ type: String})
+  counter: string;
+
 
   private hiddenElement: HTMLInputElement;
   private query: string;
@@ -187,7 +200,7 @@ export default class Completion extends FormElement {
 
   private executeQuery(ele: TextInput) {
     const store: Store = document.querySelector("temba-store");
-    const result = executeCompletionQuery(ele.inputElement, store);
+    const result = executeCompletionQuery(ele.inputElement, store, this.session);
     this.query = result.query;
     this.options = result.options;
     this.anchorPosition = result.anchorPosition;
@@ -210,6 +223,7 @@ export default class Completion extends FormElement {
     const ele = evt.currentTarget as TextInput;
     this.executeQuery(ele);
     this.value = ele.inputElement.value;
+    this.fireEvent("change");
   }
 
   private handleOptionCanceled(evt: CustomEvent) {
@@ -255,6 +269,8 @@ export default class Completion extends FormElement {
           <temba-textinput
             name=${this.name}
             placeholder=${this.placeholder}
+            gsm=${this.gsm}
+            counter=${ifDefined(this.counter)}
             @keyup=${this.handleKeyUp}
             @click=${this.handleClick}
             @input=${this.handleInput}

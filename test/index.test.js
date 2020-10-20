@@ -16,6 +16,7 @@ import "../src/alert/Alert";
 import "../src/checkbox/Checkbox";
 import "../src/datepicker/DatePicker";
 import "../src/shadowless/Shadowless";
+import "../src/charcount/CharCount";
 
 let screenshots = !!__karma__.config.args.find(function (option) {
   return option === "--screenshots";

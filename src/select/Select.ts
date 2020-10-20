@@ -216,6 +216,7 @@ export default class Select extends FormElement {
         padding: 0px !important;
         box-shadow: none !important;
         font-family: var(--font-family);
+        caret-color: var(--input-caret);
       }
 
       input:focus {
@@ -279,7 +280,7 @@ export default class Select extends FormElement {
         box-shadow: none !important;
         flex-grow: 1;
         border: none;
-        caret-color: inherit;
+        caret-color: var(--input-caret);
       }
 
       .searchable input:focus {
@@ -369,8 +370,8 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   searchable: boolean = false;
 
-  @property({ type: Boolean })
-  expressions: boolean = false;
+  @property({ type: String })
+  expressions: string;
 
   @property({ type: Boolean })
   cache: boolean = true;
@@ -411,7 +412,7 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   hideErrors: boolean;
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   clearable: boolean;
 
   @property({ attribute: false })
@@ -677,7 +678,11 @@ export default class Select extends FormElement {
         ".searchbox"
       ) as HTMLInputElement;
 
-      const result = executeCompletionQuery(ele, store);
+      const result = executeCompletionQuery(
+        ele,
+        store,
+        this.expressions === "session"
+      );
       this.query = result.query;
       this.completionOptions = result.options;
       this.visibleOptions = [];
@@ -1061,14 +1066,14 @@ export default class Select extends FormElement {
     `;
 
     const clear =
-    this.clearable && this.values.length > 0 && !this.multi
-      ? html`<fa-icon
-          class="fa times clear-icon"
-          size="14px"
-          path-prefix="/sitestatic"
-          @click=${this.handleClear}
-        />`
-      : null;
+      this.clearable && this.values.length > 0 && !this.multi
+        ? html`<fa-icon
+            class="fa times clear-icon"
+            size="14px"
+            path-prefix="/sitestatic"
+            @click=${this.handleClear}
+          />`
+        : null;
 
     const classes = getClasses({
       multi: this.multi,

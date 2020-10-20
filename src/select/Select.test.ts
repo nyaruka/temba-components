@@ -63,11 +63,9 @@ export const open = async (select: Select) => {
   return select;
 };
 
-export const clear = async(select: Select) => {
-  (select.shadowRoot.querySelector(
-    ".clear-icon"
-  ) as HTMLDivElement).click();
-}
+export const clear = async (select: Select) => {
+  (select.shadowRoot.querySelector(".clear-icon") as HTMLDivElement).click();
+};
 
 export const getOptions = (select: Select): Options => {
   return select.shadowRoot.querySelector("temba-options");
@@ -313,7 +311,7 @@ describe("temba-select", () => {
       );
 
       const select = await createSelect(
-        "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable expressions></temba-select>"
+        "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable expressions='session'></temba-select>"
       );
 
       await search(select, "@contact");
@@ -322,8 +320,10 @@ describe("temba-select", () => {
       assert.equal(select.completionOptions.length, 12);
     });
 
-    it("clears single selection", async()=>{
-      const select = await createSelect(getSelectHTML(colors, { clearable: true }));
+    it("clears single selection", async () => {
+      const select = await createSelect(
+        getSelectHTML(colors, { clearable: true })
+      );
       assert.equal(select.getStaticOptions().length, 3);
 
       await openAndClick(select, 0);
@@ -331,6 +331,6 @@ describe("temba-select", () => {
 
       clear(select);
       expect(select.values.length).to.equal(0);
-    })
+    });
   });
 });
