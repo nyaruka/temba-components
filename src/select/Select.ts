@@ -216,6 +216,7 @@ export default class Select extends FormElement {
         padding: 0px !important;
         box-shadow: none !important;
         font-family: var(--font-family);
+        caret-color: var(--input-caret);
       }
 
       input:focus {
@@ -279,7 +280,7 @@ export default class Select extends FormElement {
         box-shadow: none !important;
         flex-grow: 1;
         border: none;
-        caret-color: inherit;
+        caret-color: var(--input-caret);
       }
 
       .searchable input:focus {

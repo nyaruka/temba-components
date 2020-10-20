@@ -5,7 +5,7 @@ import {
   css,
   property,
 } from "lit-element";
-import { ifDefined } from 'lit-html/directives/if-defined';
+import { ifDefined } from "lit-html/directives/if-defined";
 import { styleMap } from "lit-html/directives/style-map.js";
 import FormElement from "../FormElement";
 import "lit-flatpickr";
@@ -29,6 +29,8 @@ export default class TextInput extends FormElement {
         align-items: stretch;
         box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
           0 1px 2px 0 rgba(0, 0, 0, 0.02);
+
+        caret-color: var(--input-caret);
       }
 
       .clear-icon {
@@ -139,10 +141,10 @@ export default class TextInput extends FormElement {
   @property({ type: Boolean })
   clearable: boolean;
 
-  @property({ type: Boolean})
+  @property({ type: Boolean })
   gsm: boolean;
 
-  @property({ type: String})
+  @property({ type: String })
   counter: string;
 
   // if we are still loading
@@ -161,7 +163,7 @@ export default class TextInput extends FormElement {
       this.counterElement = document.querySelector(this.counter);
       this.counterElement.text = this.value;
     }
-    
+
     if (this.dateElement) {
       const picker = this.dateElement;
       window.setTimeout(() => {
@@ -211,7 +213,7 @@ export default class TextInput extends FormElement {
   }
 
   private sanitizeGSM(text: string): string {
-    return this.gsm ? sanitize(text): text;
+    return this.gsm ? sanitize(text) : text;
   }
 
   private handleChange(update: any): void {

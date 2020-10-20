@@ -1,4 +1,7 @@
 html {
+
+  --input-caret: transparent !important;
+
   --font-family: "Roboto";
   --primary-rgb: 35, 135, 202;
   --secondary-rgb: 140, 51, 140;
