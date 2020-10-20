@@ -24,6 +24,8 @@ export const assertScreenshot = async (
   );
 
   if (screenShotsEnabled) {
+    await (window as any).waitFor(300);
+
     const matches = await (window as any).matchPageSnapshot(
       [`${filename}.png`],
       clip,

@@ -411,7 +411,7 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   hideErrors: boolean;
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   clearable: boolean;
 
   @property({ attribute: false })
@@ -677,9 +677,11 @@ export default class Select extends FormElement {
         ".searchbox"
       ) as HTMLInputElement;
 
-      console.log(this.expressions, this.expressions === "session");
-
-      const result = executeCompletionQuery(ele, store, this.expressions === "session");
+      const result = executeCompletionQuery(
+        ele,
+        store,
+        this.expressions === "session"
+      );
       this.query = result.query;
       this.completionOptions = result.options;
       this.visibleOptions = [];
@@ -1063,14 +1065,14 @@ export default class Select extends FormElement {
     `;
 
     const clear =
-    this.clearable && this.values.length > 0 && !this.multi
-      ? html`<fa-icon
-          class="fa times clear-icon"
-          size="14px"
-          path-prefix="/sitestatic"
-          @click=${this.handleClear}
-        />`
-      : null;
+      this.clearable && this.values.length > 0 && !this.multi
+        ? html`<fa-icon
+            class="fa times clear-icon"
+            size="14px"
+            path-prefix="/sitestatic"
+            @click=${this.handleClear}
+          />`
+        : null;
 
     const classes = getClasses({
       multi: this.multi,

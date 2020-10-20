@@ -1,4 +1,5 @@
 import { fixture } from "@open-wc/testing";
+import { delay } from "moxios";
 import { assertScreenshot } from "../../test/utils";
 import CharCount from "./CharCount";
 const hiddenClip = {
@@ -11,7 +12,7 @@ const clip = (height: number = 30) => {
   return { ...hiddenClip, height };
 };
 
-describe.only("temba-charcount-screenshots", () => {
+describe("temba-charcount-screenshots", () => {
   it("counts plain text", async () => {
     const counter: CharCount = await fixture(
       "<temba-charcount text='count this text'></temba-charcount>"
@@ -46,10 +47,8 @@ describe.only("temba-charcount-screenshots", () => {
     );
 
     const page = window as any;
-    // await page.waitFor(1500);
-    // await page.hover(".count");
     await page.moveMouse(350, 90);
-
     await assertScreenshot("count-summary", clip(220));
+    await page.moveMouse(0, 0);
   });
 });
