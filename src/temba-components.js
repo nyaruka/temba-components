@@ -18,3 +18,4 @@ import "./alert/Alert";
 import "./checkbox/Checkbox";
 import "./datepicker/DatePicker";
 import "./shadowless/Shadowless";
+import "./charcount/CharCount";

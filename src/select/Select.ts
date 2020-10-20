@@ -369,8 +369,8 @@ export default class Select extends FormElement {
   @property({ type: Boolean })
   searchable: boolean = false;
 
-  @property({ type: Boolean })
-  expressions: boolean = false;
+  @property({ type: String })
+  expressions: string;
 
   @property({ type: Boolean })
   cache: boolean = true;
@@ -677,7 +677,9 @@ export default class Select extends FormElement {
         ".searchbox"
       ) as HTMLInputElement;
 
-      const result = executeCompletionQuery(ele, store);
+      console.log(this.expressions, this.expressions === "session");
+
+      const result = executeCompletionQuery(ele, store, this.expressions === "session");
       this.query = result.query;
       this.completionOptions = result.options;
       this.visibleOptions = [];

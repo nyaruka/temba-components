@@ -22,7 +22,7 @@
     "dev": "yarn run build && cp -R ./build/* ../rapidpro/node_modules/@nyaruka/temba-components/build/ && cp -R ./build/* ../biz/node_modules/@nyaruka/temba-components/build/ && cp -R ./build/* ../floweditor/node_modules/@nyaruka/temba-components/build/",
     "screenshots": "karma start --screenshots --single-run --mode=development",
     "test": "karma start --single-run --mode=development",
-    "test:watch": "karma start --auto-watch=true --single-run=false --mode=development",
+    "test:watch": "karma start --screenshots --auto-watch=true --single-run=false --mode=development",
     "test:watch-light": "karma start --auto-watch=true --single-run=false --mode=development",
     "test:update-snapshots": "karma start --update-snapshots",
     "test:prune-snapshots": "karma start --prune-snapshots"
@@ -41,6 +41,7 @@
     "marked": "0.7.0",
     "node-forge": "0.10.0",
     "serialize-javascript": "^3.0.0",
+    "split-sms": "^0.1.7",
     "textarea-caret": "3.1.0"
   },
   "devDependencies": {

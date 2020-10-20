@@ -56,6 +56,10 @@ export default class Store extends LitElement {
     }
   }
 
+  public setKeyedAssets(name: string, values: string[]): void {
+    this.keyedAssets[name] = values;
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
   }

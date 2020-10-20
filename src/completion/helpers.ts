@@ -2,7 +2,7 @@ import Completion, { CompletionOption } from "./Completion";
 import { html, directive, Part } from "lit-html";
 import { unsafeHTML } from "lit-html/directives/unsafe-html";
 import TextInput from "../textinput/TextInput";
-import { Expression } from "./ExcellentParser";
+import ExcellentParser, { Expression } from "./ExcellentParser";
 import { CompletionResult } from "../interfaces";
 import getCaretCoordinates from "textarea-caret";
 import { query } from "lit-element";
@@ -95,10 +95,11 @@ export const getFunctions = (
 export const getCompletions = (
   schema: CompletionSchema,
   dotQuery: string,
-  keyedAssets: KeyedAssets = {}
+  keyedAssets: KeyedAssets = {},
+  session: boolean
 ): CompletionOption[] => {
   const parts = (dotQuery || "").split(".");
-  let currentProps: CompletionProperty[] = schema.root_no_session;
+  let currentProps: CompletionProperty[] = session ? schema.root : schema.root_no_session;
 
   let prefix = "";
   let part = "";
@@ -221,7 +222,8 @@ export const updateInputElementWithCompletion = (
 
 export const executeCompletionQuery = (
   ele: HTMLInputElement,
-  store: Store
+  store: Store, 
+  session: boolean,
 ): CompletionResult => {
   const result: CompletionResult = {
     currentFunction: null,
@@ -238,7 +240,9 @@ export const executeCompletionQuery = (
   let currentFunction: CompletionOption = null;
   const cursor = ele.selectionStart;
   const input = ele.value.substring(0, cursor);
-  const expressions = Completion.parser.findExpressions(input);
+
+  const parser = session ? Completion.sessionParser : Completion.parser;
+  const expressions = parser.findExpressions(input);
   const currentExpression = expressions.find(
     (expr: Expression) =>
       expr.start <= cursor &&
@@ -248,7 +252,7 @@ export const executeCompletionQuery = (
   if (currentExpression) {
     const includeFunctions = currentExpression.text.indexOf("(") > -1;
     if (includeFunctions) {
-      const functionQuery = Completion.parser.functionContext(
+      const functionQuery = parser.functionContext(
         currentExpression.text
       );
       if (functionQuery) {
@@ -294,7 +298,8 @@ export const executeCompletionQuery = (
           ...getCompletions(
             store.getCompletionSchema(),
             result.query,
-            store.getKeyedAssets()
+            store.getKeyedAssets(),
+            session
           ),
           ...(includeFunctions
             ? getFunctions(store.getFunctions(), result.query)

@@ -7027,7 +7027,7 @@ karma-phantomjs-launcher@^1.0.4:
 
 "karma-puppeteer-launcher@https://github.com/nyaruka/karma-puppeteer-launcher":
   version "1.0.4"
-  resolved "https://github.com/nyaruka/karma-puppeteer-launcher#9c4c070abfe4e4a85fad6068b693026624ad3f4d"
+  resolved "https://github.com/nyaruka/karma-puppeteer-launcher#55d8aa12af8e14611ce7f64d3a1f6ccca549d8f5"
   dependencies:
     dynamicpixelmatch "0.0.2"
     fs-access "^1.0.0"
@@ -9722,6 +9722,11 @@ spdy@^4.0.0:
     http-deceiver "^1.2.7"
     select-hose "^2.0.0"
     spdy-transport "^3.0.0"
+
+split-sms@^0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/split-sms/-/split-sms-0.1.7.tgz#be627246933678dc1e44240689d7902f462f53b6"
+  integrity sha1-vmJyRpM2eNweRCQGideQL0YvU7Y=
 
 split-string@^3.0.1, split-string@^3.0.2:
   version "3.1.0"
