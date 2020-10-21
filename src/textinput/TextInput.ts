@@ -160,7 +160,14 @@ export default class TextInput extends FormElement {
     this.dateElement = this.shadowRoot.querySelector(".datepicker");
 
     if (changes.has("counter")) {
-      this.counterElement = document.querySelector(this.counter);
+      let root = this.getParentModax() as any;
+      if (root) {
+        root = root.shadowRoot;
+      }
+      if (!root) {
+        root = document;
+      }
+      this.counterElement = root.querySelector(this.counter);
       this.counterElement.text = this.value;
     }
 
