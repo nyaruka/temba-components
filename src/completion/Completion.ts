@@ -5,7 +5,7 @@ import {
   css,
   property,
 } from "lit-element";
-import { ifDefined } from 'lit-html/directives/if-defined';
+import { ifDefined } from "lit-html/directives/if-defined";
 import ExcellentParser from "./ExcellentParser";
 import TextInput from "../textinput/TextInput";
 import {
@@ -115,10 +115,10 @@ export default class Completion extends FormElement {
     "child",
     "parent",
     "webhook",
-    "trigger"
+    "trigger",
   ]);
 
-  @property({ type: Boolean})
+  @property({ type: Boolean })
   session: boolean;
 
   @property({ type: Object })
@@ -148,12 +148,11 @@ export default class Completion extends FormElement {
   @property({ type: Boolean })
   textarea: boolean;
 
-  @property({ type: Boolean})
+  @property({ type: Boolean })
   gsm: boolean;
 
-  @property({ type: String})
+  @property({ type: String })
   counter: string;
-
 
   private hiddenElement: HTMLInputElement;
   private query: string;
@@ -200,7 +199,11 @@ export default class Completion extends FormElement {
 
   private executeQuery(ele: TextInput) {
     const store: Store = document.querySelector("temba-store");
-    const result = executeCompletionQuery(ele.inputElement, store, this.session);
+    const result = executeCompletionQuery(
+      ele.inputElement,
+      store,
+      this.session
+    );
     this.query = result.query;
     this.options = result.options;
     this.anchorPosition = result.anchorPosition;
@@ -274,8 +277,10 @@ export default class Completion extends FormElement {
             @keyup=${this.handleKeyUp}
             @click=${this.handleClick}
             @input=${this.handleInput}
+            @blur=${this.handleOptionCanceled}
             .value=${this.value}
             ?textarea=${this.textarea}
+            ?ignoreSubmit=${true}
           >
           </temba-textinput>
           <temba-options

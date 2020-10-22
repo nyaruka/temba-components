@@ -99,7 +99,9 @@ export const getCompletions = (
   session: boolean
 ): CompletionOption[] => {
   const parts = (dotQuery || "").split(".");
-  let currentProps: CompletionProperty[] = session ? schema.root : schema.root_no_session;
+  let currentProps: CompletionProperty[] = session
+    ? schema.root
+    : schema.root_no_session;
 
   let prefix = "";
   let part = "";
@@ -217,13 +219,15 @@ export const updateInputElementWithCompletion = (
     if (position.left > ele.width) {
       ele.scrollLeft = position.left;
     }
+
+    ele.dispatchEvent(new Event("input"));
   }
 };
 
 export const executeCompletionQuery = (
   ele: HTMLInputElement,
-  store: Store, 
-  session: boolean,
+  store: Store,
+  session: boolean
 ): CompletionResult => {
   const result: CompletionResult = {
     currentFunction: null,
@@ -252,9 +256,7 @@ export const executeCompletionQuery = (
   if (currentExpression) {
     const includeFunctions = currentExpression.text.indexOf("(") > -1;
     if (includeFunctions) {
-      const functionQuery = parser.functionContext(
-        currentExpression.text
-      );
+      const functionQuery = parser.functionContext(currentExpression.text);
       if (functionQuery) {
         const fns = getFunctions(store.getFunctions(), functionQuery);
         if (fns.length > 0) {

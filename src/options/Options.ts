@@ -246,8 +246,6 @@ export default class Options extends RapidElement {
         (this.spaceSelect && evt.key === " ")
       ) {
         this.handleSelection(evt.key === "Tab");
-        evt.preventDefault();
-        evt.stopPropagation();
       }
 
       if (evt.key === "Escape") {

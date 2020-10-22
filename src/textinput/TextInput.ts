@@ -12,7 +12,6 @@ import "lit-flatpickr";
 import Modax from "../dialog/Modax";
 import { sanitize } from "./helpers";
 import CharCount from "../charcount/CharCount";
-import { colorResponse } from "../select/Select.test";
 
 @customElement("temba-textinput")
 export default class TextInput extends FormElement {
@@ -65,15 +64,14 @@ export default class TextInput extends FormElement {
       }
 
       .textinput {
-        padding: 9px;
-        padding-top: 10px;
+        padding: var(--temba-textinput-padding);
         border: none;
         flex: 1;
         margin: 0;
         background: none;
         color: var(--color-widget-text);
         font-family: var(--font-family);
-        font-size: 14px;
+        font-size: var(--temba-textinput-font-size);
         line-height: normal;
         cursor: text;
         resize: none;
@@ -150,6 +148,12 @@ export default class TextInput extends FormElement {
   // if we are still loading
   @property({ type: Boolean })
   loading: boolean = true;
+
+  @property({ type: Boolean })
+  ignoreSubmit: boolean = false;
+
+  @property()
+  onBlur: any;
 
   counterElement: CharCount = null;
 
@@ -318,38 +322,41 @@ export default class TextInput extends FormElement {
         maxlength="${ifDefined(this.maxlength)}"
         @change=${this.handleChange}
         @input=${this.handleInput}
+        @blur=${this.blur}
         @keydown=${(e: KeyboardEvent) => {
           if (e.keyCode == 13) {
-            this.value = this.values[0];
-            this.fireEvent("change");
+            if (!this.ignoreSubmit) {
+              this.value = this.values[0];
+              this.fireEvent("change");
 
-            const input = this;
-            input.blur();
+              const input = this;
+              input.blur();
 
-            // look for a form to submit
-            window.setTimeout(function () {
-              // first, look for a modax that contains us
-              const modax = input.getParentModax();
-              if (modax) {
-                modax.submit();
-              } else {
-                // otherwise, just look for a vanilla submit button
-                const form = input.getParentForm();
+              // look for a form to submit
+              window.setTimeout(function () {
+                // first, look for a modax that contains us
+                const modax = input.getParentModax();
+                if (modax) {
+                  modax.submit();
+                } else {
+                  // otherwise, just look for a vanilla submit button
+                  const form = input.getParentForm();
 
-                if (form) {
-                  var submitButton = form.querySelector(
-                    "input[type='submit']"
-                  ) as HTMLInputElement;
-                  if (submitButton) {
-                    submitButton.click();
-                  } else {
-                    form.submit();
+                  if (form) {
+                    var submitButton = form.querySelector(
+                      "input[type='submit']"
+                    ) as HTMLInputElement;
+                    if (submitButton) {
+                      submitButton.click();
+                    } else {
+                      form.submit();
+                    }
                   }
                 }
-              }
-            }, 10);
-            // this is needed for firefox, would be nice to
-            // find a way to do this with a callback instead
+              }, 10);
+              // this is needed for firefox, would be nice to
+              // find a way to do this with a callback instead
+            }
           }
         }}
         placeholder=${this.placeholder}
@@ -364,6 +371,7 @@ export default class TextInput extends FormElement {
           placeholder=${this.placeholder}
           @change=${this.handleChange}
           @input=${this.handleInput}
+          @blur=${this.blur}
           .value=${this.value}
         >
         </textarea>
