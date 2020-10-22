@@ -306,6 +306,21 @@
     </div>
 
     <div class="example">
+      <div class="example-header">Tags with expressions</div>
+      <temba-select
+        name="tagged"
+        placeholder="Pick some colors"
+        expressions="session"
+        multi
+        searchable
+        tags
+      >
+      </temba-select>
+    </div>
+
+
+
+    <div class="example">
       <div class="example-header">Tags</div>
       <temba-select
         name="tagged"
@@ -404,14 +419,12 @@
 
     <div class="example">
       <div class="example-header">Completion</div>
-      <temba-completion
-        completionsEndpoint="/mr/docs/completion.json"
-        functionsEndpoint="/mr/docs/functions.json"
-        fieldsEndpoint="/api/v2/fields.json"
-        globalsEndpoint="/api/v2/globals.json"
-        textarea
-      >
-      </temba-completion>
+      <temba-completion textarea></temba-completion>
+    </div>
+
+    <div class="example">
+      <div class="example-header">Completion</div>
+      <temba-completion></temba-completion>
     </div>
     <!-- 
       Alias Editor - Deprecated
