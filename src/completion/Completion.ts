@@ -230,8 +230,11 @@ export default class Completion extends FormElement {
   }
 
   private handleOptionCanceled(evt: CustomEvent) {
-    this.options = [];
-    this.query = "";
+    // delay in case we are actively selecting
+    window.setTimeout(() => {
+      this.options = [];
+      this.query = "";
+    }, 100);
   }
 
   private handleOptionSelection(evt: CustomEvent) {

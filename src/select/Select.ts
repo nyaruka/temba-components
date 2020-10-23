@@ -921,6 +921,7 @@ export default class Select extends FormElement {
         this.popValue();
         this.selectedIndex = -1;
       }
+      this.fireEvent("change");
     } else {
       this.selectedIndex = -1;
     }
