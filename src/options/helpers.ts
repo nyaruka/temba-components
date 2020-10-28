@@ -11,12 +11,9 @@ export const getScrollParent = (element: HTMLElement) => {
     return window;
   }
 
-  console.log("--------------");
   let parent = element.parentElement;
 
   while (parent) {
-    console.log(parent);
-
     if (parent.tagName === "BODY") {
       break;
     }
@@ -24,7 +21,6 @@ export const getScrollParent = (element: HTMLElement) => {
     style = getComputedStyle(parent);
 
     if (excludeStaticParent && style.position === "static") {
-      console.log("Skipping for static check");
       parent = parent.parentElement;
       continue;
     }
@@ -32,14 +28,11 @@ export const getScrollParent = (element: HTMLElement) => {
     if (
       overflowRegex.test(style.overflow + style.overflowY + style.overflowX)
     ) {
-      console.log("Returning", parent);
       return parent;
     }
 
     parent = parent.parentElement;
   }
-
-  console.log("returning window");
 
   return window;
 };

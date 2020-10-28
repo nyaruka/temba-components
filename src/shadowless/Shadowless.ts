@@ -20,10 +20,7 @@ export default class Shadowless extends LitElement {
   createRenderRoots() {
     const root = document.createElement("div");
     root.className = "content";
-    console.log("created root", root);
-    console.log("Adding to ", this);
     this.appendChild(root);
-    console.log("done!", root);
     return root;
   }
 
