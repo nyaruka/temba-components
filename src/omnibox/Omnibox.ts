@@ -63,6 +63,9 @@ export default class Omnibox extends RapidElement {
   @property({ type: Array })
   value: OmniOption[] = [];
 
+  @property({ type: Array })
+  errors: string[];
+
   @property()
   placeholder: string = "Select recipients";
 
@@ -192,6 +195,7 @@ export default class Omnibox extends RapidElement {
         endpoint=${this.getEndpoint()}
         placeholder=${this.placeholder}
         queryParam="search"
+        .errors=${this.errors}
         .values=${this.value}
         .renderOption=${this.renderOption.bind(this)}
         .renderSelectedItem=${this.renderSelection.bind(this)}
