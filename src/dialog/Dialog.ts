@@ -163,6 +163,9 @@ export default class Dialog extends RapidElement {
   @property({ type: Boolean })
   loading: boolean;
 
+  @property({ type: Boolean })
+  hideOnClick: boolean;
+
   @property()
   size: string = "medium";
 
@@ -184,18 +187,33 @@ export default class Dialog extends RapidElement {
   @property({ attribute: false })
   onButtonClicked: (button: Button) => void;
 
+  scrollOffset: any = 0;
+
   public constructor() {
     super();
   }
 
   public updated(changedProperties: Map<string, any>) {
     if (changedProperties.has("open")) {
+      const body = document.querySelector("body");
+
       if (this.open) {
         this.animationEnd = true;
         window.setTimeout(() => {
           this.ready = true;
           this.animationEnd = false;
         }, 400);
+
+        this.scrollOffset = -document.documentElement.scrollTop;
+        body.style.position = "fixed";
+        body.style.overflowY = "scroll";
+        body.style.top = this.scrollOffset + "px";
+        body.style.width = "100%";
+      } else {
+        body.style.position = "";
+        body.style.overflowY = "";
+        body.style.width = "";
+        window.scrollTo(0, parseInt(this.scrollOffset || "0") * -1);
       }
 
       // make sure our buttons aren't in progress on show
@@ -250,8 +268,11 @@ export default class Dialog extends RapidElement {
   }
 
   private handleClickMask(event: MouseEvent) {
-    if ((event.target as HTMLElement).id === "dialog-mask") {
-      this.fireCustomEvent(CustomEventType.DialogHidden);
+    if (this.hideOnClick) {
+      const id = (event.target as HTMLElement).id;
+      if (id === "dialog-mask" || id === "dialog-bg") {
+        this.fireCustomEvent(CustomEventType.DialogHidden);
+      }
     }
   }
 

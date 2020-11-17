@@ -121,6 +121,10 @@ export default class Select extends FormElement {
         --arrow-icon-color: #777;
       }
 
+      .select-container:focus {
+        outline: none;
+      }
+
       .select-container.multi {
         /* background: var(--color-widget-bg); */
       }
@@ -288,7 +292,6 @@ export default class Select extends FormElement {
       }
 
       .input-wrapper {
-        position: relative;
         flex-grow: 1;
       }
 
@@ -478,7 +481,8 @@ export default class Select extends FormElement {
     if (
       changedProperties.has("input") &&
       !changedProperties.has("values") &&
-      !changedProperties.has("options")
+      !changedProperties.has("options") &&
+      this.focused
     ) {
       if (this.lastQuery) {
         window.clearTimeout(this.lastQuery);
@@ -530,6 +534,7 @@ export default class Select extends FormElement {
 
     if (!this.multi || !this.searchable) {
       this.blur();
+      this.focused = false;
     }
 
     this.visibleOptions = [];
@@ -825,8 +830,8 @@ export default class Select extends FormElement {
     }
   }
 
-  private handleFocus(): void {
-    if (!this.focused) {
+  private handleFocus(evt: any): void {
+    if (!this.focused && this.visibleOptions.length === 0) {
       this.focused = true;
       if (this.searchOnFocus) {
         this.requestUpdate("input");
@@ -834,13 +839,13 @@ export default class Select extends FormElement {
     }
   }
 
-  private handleBlur() {
+  private handleBlur(evt: any) {
     this.focused = false;
     if (this.visibleOptions.length > 0) {
-      this.visibleOptions = [];
       this.input = "";
       this.next = null;
       this.complete = true;
+      this.visibleOptions = [];
     }
   }
 
@@ -977,8 +982,8 @@ export default class Select extends FormElement {
         event: CustomEventType.CursorChanged,
         method: this.handleCursorChanged,
       },
-      { event: "focusout", method: this.handleBlur },
-      { event: "focusin", method: this.handleFocus },
+      { event: "blur", method: this.handleBlur },
+      { event: "focus", method: this.handleFocus },
     ];
   }
 
@@ -987,10 +992,6 @@ export default class Select extends FormElement {
 
     this.anchorElement = this.shadowRoot.querySelector(".select-container");
     this.anchorExpressions = this.shadowRoot.querySelector("#anchor");
-
-    if (!this.hasAttribute("tabindex")) {
-      this.setAttribute("tabindex", "0");
-    }
 
     // wait until children are created before adding our static options
     window.setTimeout(() => {
@@ -1122,10 +1123,10 @@ export default class Select extends FormElement {
       >
       
         <div
+          tabindex="0"
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
-        >
-          
+        >          
           <div class="left-side">
             <div class="selected">
               ${!this.multi ? input : null}
@@ -1180,43 +1181,47 @@ export default class Select extends FormElement {
                 </div>`
               : null
           }
+          <temba-options
+          @temba-selection=${this.handleOptionSelection}
+          .cursorIndex=${this.cursorIndex}
+          .renderOptionDetail=${this.renderOptionDetail}
+          .renderOptionName=${this.renderOptionName}
+          .renderOption=${this.renderOption}
+          .anchorTo=${this.anchorElement}
+          .options=${this.visibleOptions}
+          .spaceSelect=${this.spaceSelect}
+          .nameKey=${this.nameKey}
+          .getName=${this.getNameInternal}
+          ?visible=${this.visibleOptions.length > 0}
+        ></temba-options>
+  
+          <temba-options
+          @temba-selection=${this.handleExpressionSelection}
+          @temba-canceled=${() => {}}
+          .anchorTo=${this.anchorExpressions}
+          .options=${this.completionOptions}
+          .renderOption=${renderCompletionOption}
+          ?visible=${this.completionOptions.length > 0}
+          >
+            ${
+              this.currentFunction
+                ? html`
+                    <div class="current-fn">
+                      ${renderCompletionOption(this.currentFunction, true)}
+                    </div>
+                  `
+                : null
+            }
+            <div class="footer">Tab to complete, enter to select</div>
+          </temba-options>
+
           </div>
+          
         </div>
-      </temba-field>
 
-      <temba-options
-        @temba-selection=${this.handleOptionSelection}
-        .cursorIndex=${this.cursorIndex}
-        .renderOptionDetail=${this.renderOptionDetail}
-        .renderOptionName=${this.renderOptionName}
-        .renderOption=${this.renderOption}
-        .anchorTo=${this.anchorElement}
-        .options=${this.visibleOptions}
-        .spaceSelect=${this.spaceSelect}
-        .nameKey=${this.nameKey}
-        .getName=${this.getNameInternal}
-        ?visible=${this.visibleOptions.length > 0}
-      ></temba-options>
+        </temba-field>
 
-      <temba-options
-        @temba-selection=${this.handleExpressionSelection}
-        @temba-canceled=${() => {}}
-        .anchorTo=${this.anchorExpressions}
-        .options=${this.completionOptions}
-        .renderOption=${renderCompletionOption}
-        ?visible=${this.completionOptions.length > 0}
-      >
-        ${
-          this.currentFunction
-            ? html`
-                <div class="current-fn">
-                  ${renderCompletionOption(this.currentFunction, true)}
-                </div>
-              `
-            : null
-        }
-        <div class="footer">Tab to complete, enter to select</div>
-      </temba-options>
+
 
     `;
   }

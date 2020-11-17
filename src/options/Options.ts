@@ -64,6 +64,9 @@ export default class Options extends RapidElement {
         padding: 1px 5px;
         border-radius: var(--curvature-widget);
       }
+      :host {
+        position: absolute;
+      }
     `;
   }
 
@@ -233,7 +236,7 @@ export default class Options extends RapidElement {
   }
 
   private handleKeyDown(evt: KeyboardEvent) {
-    if (this.visible) {
+    if (this.options.length > 0) {
       if ((evt.ctrlKey && evt.key === "n") || evt.key === "ArrowDown") {
         this.moveCursor(1);
         evt.preventDefault();
@@ -289,8 +292,15 @@ export default class Options extends RapidElement {
     }
   }
 
+  private handleClick(evt: MouseEvent) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    this.handleSelection(false);
+  }
+
   public getEventHandlers(): EventHandler[] {
     return [
+      { event: "click", method: this.handleClick, isDocument: false },
       { event: "keydown", method: this.handleKeyDown, isDocument: true },
       { event: "scroll", method: this.calculatePosition, isDocument: true },
     ];
@@ -340,12 +350,6 @@ export default class Options extends RapidElement {
                   if (Math.abs(evt.movementX) + Math.abs(evt.movementY) > 0) {
                     this.setCursor(index);
                   }
-                }}
-                @click=${(evt: MouseEvent) => {
-                  evt.preventDefault();
-                  this.fireCustomEvent(CustomEventType.Selection, {
-                    selected: option,
-                  });
                 }}
                 class="option ${index == this.cursorIndex ? "focused" : ""}"
               >
