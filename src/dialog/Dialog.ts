@@ -224,7 +224,9 @@ export default class Dialog extends RapidElement {
         const inputs = this.querySelectorAll("textarea,input");
         if (inputs.length > 0) {
           window.setTimeout(() => {
-            (inputs[0] as any).click();
+            const input = inputs[0] as any;
+            input.click();
+            input.focus();
           }, 100);
         }
       } else {
@@ -239,6 +241,9 @@ export default class Dialog extends RapidElement {
     const button = evt.currentTarget as Button;
     if (!button.disabled) {
       this.fireCustomEvent(CustomEventType.ButtonClicked, { button });
+      if (button.name === this.cancelButtonName) {
+        this.open = false;
+      }
     }
   }
 
@@ -254,16 +259,22 @@ export default class Dialog extends RapidElement {
     );
   }
 
+  private clickCancel() {
+    const cancel = this.getCancelButton();
+    if (cancel) {
+      cancel.click();
+    }
+  }
+
+  public getCancelButton(): Button {
+    return this.shadowRoot.querySelector(
+      `temba-button[name='${this.cancelButtonName}']`
+    );
+  }
+
   private handleKeyUp(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      // find our cancel button and click it
-      this.shadowRoot
-        .querySelectorAll("temba-button")
-        .forEach((button: Button) => {
-          if (button.name === this.cancelButtonName) {
-            button.click();
-          }
-        });
+      this.clickCancel();
     }
   }
 
@@ -272,6 +283,7 @@ export default class Dialog extends RapidElement {
       const id = (event.target as HTMLElement).id;
       if (id === "dialog-mask" || id === "dialog-bg") {
         this.fireCustomEvent(CustomEventType.DialogHidden);
+        this.clickCancel();
       }
     }
   }
