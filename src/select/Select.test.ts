@@ -73,12 +73,13 @@ export const getOptions = (select: Select): Options => {
 
 export const clickOption = async (select: Select, index: number) => {
   const options = getOptions(select);
-  const option = options.shadowRoot.querySelectorAll(".option")[
-    index
-  ] as HTMLElement;
 
-  option.click();
-  return option;
+  // key down to our option
+  const event = new KeyboardEvent("keydown", { key: "ArrowDown" });
+  for (let i = 0; i < index; i++) {
+    document.dispatchEvent(event);
+  }
+  options.click();
 };
 
 export const openAndClick = async (select: Select, index: number) => {
@@ -134,7 +135,7 @@ describe("temba-select", () => {
     assert.equal(select.getStaticOptions().length, 3);
   });
 
-  it("shows options when opened open", async () => {
+  it("shows options when opened", async () => {
     var select = await createSelect(getSelectHTML());
     await open(select);
     const options = getOptions(select);
@@ -174,7 +175,7 @@ describe("temba-select", () => {
         getSelectHTML(colors, { searchable: true })
       );
 
-      // select the first option
+      // select the second option
       await openAndClick(select, 1);
       expect(select.values.length).to.equal(1);
       expect(select.values[0].name).to.equal("Green");

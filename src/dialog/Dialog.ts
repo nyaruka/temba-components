@@ -163,6 +163,9 @@ export default class Dialog extends RapidElement {
   @property({ type: Boolean })
   loading: boolean;
 
+  @property({ type: Boolean })
+  hideOnClick: boolean;
+
   @property()
   size: string = "medium";
 
@@ -184,18 +187,33 @@ export default class Dialog extends RapidElement {
   @property({ attribute: false })
   onButtonClicked: (button: Button) => void;
 
+  scrollOffset: any = 0;
+
   public constructor() {
     super();
   }
 
   public updated(changedProperties: Map<string, any>) {
     if (changedProperties.has("open")) {
+      const body = document.querySelector("body");
+
       if (this.open) {
         this.animationEnd = true;
         window.setTimeout(() => {
           this.ready = true;
           this.animationEnd = false;
         }, 400);
+
+        this.scrollOffset = -document.documentElement.scrollTop;
+        body.style.position = "fixed";
+        body.style.overflowY = "scroll";
+        body.style.top = this.scrollOffset + "px";
+        body.style.width = "100%";
+      } else {
+        body.style.position = "";
+        body.style.overflowY = "";
+        body.style.width = "";
+        window.scrollTo(0, parseInt(this.scrollOffset || "0") * -1);
       }
 
       // make sure our buttons aren't in progress on show
@@ -206,7 +224,9 @@ export default class Dialog extends RapidElement {
         const inputs = this.querySelectorAll("textarea,input");
         if (inputs.length > 0) {
           window.setTimeout(() => {
-            (inputs[0] as any).click();
+            const input = inputs[0] as any;
+            input.click();
+            input.focus();
           }, 100);
         }
       } else {
@@ -221,6 +241,9 @@ export default class Dialog extends RapidElement {
     const button = evt.currentTarget as Button;
     if (!button.disabled) {
       this.fireCustomEvent(CustomEventType.ButtonClicked, { button });
+      if (button.name === this.cancelButtonName) {
+        this.open = false;
+      }
     }
   }
 
@@ -236,22 +259,32 @@ export default class Dialog extends RapidElement {
     );
   }
 
+  private clickCancel() {
+    const cancel = this.getCancelButton();
+    if (cancel) {
+      cancel.click();
+    }
+  }
+
+  public getCancelButton(): Button {
+    return this.shadowRoot.querySelector(
+      `temba-button[name='${this.cancelButtonName}']`
+    );
+  }
+
   private handleKeyUp(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      // find our cancel button and click it
-      this.shadowRoot
-        .querySelectorAll("temba-button")
-        .forEach((button: Button) => {
-          if (button.name === this.cancelButtonName) {
-            button.click();
-          }
-        });
+      this.clickCancel();
     }
   }
 
   private handleClickMask(event: MouseEvent) {
-    if ((event.target as HTMLElement).id === "dialog-mask") {
-      this.fireCustomEvent(CustomEventType.DialogHidden);
+    if (this.hideOnClick) {
+      const id = (event.target as HTMLElement).id;
+      if (id === "dialog-mask" || id === "dialog-bg") {
+        this.fireCustomEvent(CustomEventType.DialogHidden);
+        this.clickCancel();
+      }
     }
   }
 
