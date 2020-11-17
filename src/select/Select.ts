@@ -956,6 +956,8 @@ export default class Select extends FormElement {
       return;
     }
 
+    this.focused = true;
+
     if ((event.target as any).tagName !== "INPUT") {
       const input = this.shadowRoot.querySelector("input");
       if (input) {
