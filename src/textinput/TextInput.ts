@@ -360,7 +360,7 @@ export default class TextInput extends FormElement {
           }
         }}
         placeholder=${this.placeholder}
-        .value="${this.value}"
+        value="${this.value}"
       />
     `;
     if (this.textarea) {
@@ -372,7 +372,7 @@ export default class TextInput extends FormElement {
           @change=${this.handleChange}
           @input=${this.handleInput}
           @blur=${this.blur}
-          .value=${this.value}
+          value=${this.value}
         >
         </textarea>
       `;
