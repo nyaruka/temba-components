@@ -8,7 +8,7 @@ const getInputHTML = (textarea: boolean = false) => {
   }></temba-textinput>`;
 };
 
-describe.only("temba-textinput", () => {
+describe("temba-textinput", () => {
   beforeEach(function () {});
   afterEach(function () {});
 
