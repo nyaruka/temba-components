@@ -372,9 +372,8 @@ export default class TextInput extends FormElement {
           @change=${this.handleChange}
           @input=${this.handleInput}
           @blur=${this.blur}
-          value=${this.value}
-        >
-        </textarea>
+          .value=${this.value}
+        ></textarea>
       `;
     }
 
