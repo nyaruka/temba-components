@@ -1,8 +1,7 @@
 import { fixture, expect, assert } from "@open-wc/testing";
-import sinon from "sinon";
 import TextInput from "./TextInput";
 
-const getInputHTML = (textarea: boolean = false) => {
+export const getInputHTML = (textarea: boolean = false) => {
   return `<temba-textinput value="hello" ${
     textarea ? "textarea" : ""
   }></temba-textinput>`;

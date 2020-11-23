@@ -46,6 +46,8 @@ const loadStore = async () => {
   );
 };
 
+const pause = 500;
+
 describe("temba-select-screenshots", () => {
   var clock: any;
   beforeEach(async function () {
@@ -59,18 +61,18 @@ describe("temba-select-screenshots", () => {
   });
 
   it("should look ready for selection", async () => {
-    await createSelect(getSelectHTML(), 1000);
+    await createSelect(getSelectHTML(), pause);
     await assertScreenshot("select", clip());
   });
 
   it("should show open list with placeholder text", async () => {
-    const select = await createSelect(getSelectHTML(), 1000);
+    const select = await createSelect(getSelectHTML(), pause);
     await open(select);
     await assertScreenshot("select-open", clip(160));
   });
 
   it("should show single selected option", async () => {
-    const select = await createSelect(getSelectHTML(), 1000);
+    const select = await createSelect(getSelectHTML(), pause);
 
     // select the first option
     await openAndClick(select, 0);
@@ -80,7 +82,7 @@ describe("temba-select-screenshots", () => {
   it("should look the same with search enabled", async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true }),
-      1000
+      pause
     );
     await assertScreenshot("select-search", clip());
   });
@@ -88,7 +90,7 @@ describe("temba-select-screenshots", () => {
   it("should look the same with search enabled and selection made", async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true }),
-      1000
+      pause
     );
 
     // select the first option
@@ -99,7 +101,7 @@ describe("temba-select-screenshots", () => {
   it("should show focus for the selected option", async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true }),
-      1000
+      pause
     );
 
     // select the first option
@@ -113,7 +115,7 @@ describe("temba-select-screenshots", () => {
   it("should show search with existing selection", async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true }),
-      1000
+      pause
     );
 
     // select the first option
@@ -130,7 +132,7 @@ describe("temba-select-screenshots", () => {
   it("should show search with existing multiple selection", async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true, multi: true }),
-      1000
+      pause
     );
 
     // select the first option
@@ -154,7 +156,7 @@ describe("temba-select-screenshots", () => {
 
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true, expressions: true }),
-      1000
+      pause
     );
 
     await search(select, "@cont");
@@ -168,7 +170,7 @@ describe("temba-select-screenshots", () => {
 
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true, expressions: true }),
-      1000
+      pause
     );
 
     await search(select, "look at @(max(m");
@@ -177,9 +179,11 @@ describe("temba-select-screenshots", () => {
     await assertScreenshot("select-expression-function", clip(250));
   });
 
-  it("shows clear option", async()=>{
-    const select = await createSelect(getSelectHTML(colors, { clearable: true }));
+  it("shows clear option", async () => {
+    const select = await createSelect(
+      getSelectHTML(colors, { clearable: true })
+    );
     await openAndClick(select, 0);
     await assertScreenshot("select-clearable", clip());
-  })
+  });
 });
