@@ -32,6 +32,7 @@
     "axios": "^0.20.0",
     "buffer": "4",
     "es6-dynamic-template": "2.0.0",
+    "express-transform-bare-module-specifiers": "1.0.4",
     "fa-icons": "^0.2.0",
     "flru": "^1.0.2",
     "leaflet": "1.5.1",
