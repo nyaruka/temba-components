@@ -4,6 +4,7 @@ import sinon from "sinon";
 import { assertScreenshot } from "../../test/utils";
 import TextInput from "./TextInput";
 import { assert, fixture } from "@open-wc/testing";
+import { clickOption } from "../select/Select.test";
 
 const closedClip = {
   y: 70,
@@ -22,7 +23,7 @@ const clip = (height: number = 55) => {
   deviceScaleFactor: 2,
 });
 
-describe("temba-select-screenshots", () => {
+describe("temba-textinput-screenshots", () => {
   var clock: any;
   beforeEach(async function () {
     clock = sinon.useFakeTimers();

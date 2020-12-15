@@ -34,3 +34,9 @@ font.href =
 
 font.rel = "stylesheet";
 document.head.appendChild(font);
+
+
+const fonts = document.createElement("style");
+fonts.innerText = ``
+
+// document.head.appendChild(fonts);

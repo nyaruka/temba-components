@@ -38,3 +38,30 @@ export const assertScreenshot = async (
     }
   }
 };
+
+export const waitForSelector = async (selector: string[]) => {
+  if (!Array.isArray(selector)) {
+    selector = [selector];
+  }
+
+  // wait for our element to appear
+  return await await (window as any).waitForFunction(
+    (selector: string[]) => {
+      let root = document as any;
+      for (let i = 0; i < selector.length; i++) {
+        const step = selector[i];
+        root = root.querySelector(step);
+        if (!root) {
+          return false;
+        }
+
+        if (i < selector.length - 1) {
+          root = root.shadowRoot;
+        }
+      }
+      return root;
+    },
+    {},
+    selector
+  );
+};
