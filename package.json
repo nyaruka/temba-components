@@ -13,7 +13,7 @@
   "main": "build/index.js",
   "scripts": {
     "compile": "tsc",
-    "postversion": "git push --tags && git push origin master",
+    "postversion": "git push --tags && git push origin main",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "build": "webpack --mode production && cp build/temba-components*.js build/index.js",
     "build:esm": "tsc --downlevelIteration --module es2015 --target es5 --outDir test",
