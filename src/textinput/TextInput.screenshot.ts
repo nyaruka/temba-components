@@ -4,7 +4,6 @@ import sinon from "sinon";
 import { assertScreenshot } from "../../test/utils";
 import TextInput from "./TextInput";
 import { assert, fixture } from "@open-wc/testing";
-import { clickOption } from "../select/Select.test";
 
 const closedClip = {
   y: 70,

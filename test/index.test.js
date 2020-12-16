@@ -28,15 +28,13 @@ const testsContext = screenshots
 
 testsContext.keys().forEach(testsContext);
 
-const font = document.createElement("link");
-font.href =
-  "https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500";
+// const font = document.createElement("link");
+// font.href =
+//  "https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500";
+// font.rel = "stylesheet";
+// document.head.appendChild(font);
 
-font.rel = "stylesheet";
-document.head.appendChild(font);
-
-
-const fonts = document.createElement("style");
-fonts.innerText = ``
+// const fonts = document.createElement("style");
+// fonts.innerText = ``
 
 // document.head.appendChild(fonts);

@@ -30,18 +30,20 @@ export const createSelect = async (def: string, delay: number = 0) => {
 };
 
 export const search = async (select: Select, query: string) => {
-  var clock = sinon.useFakeTimers();
+  // var clock = sinon.useFakeTimers();
 
-  var search = select.shadowRoot.querySelector(
+  await typeInto("temba-select", query);
+
+  /* var search = select.shadowRoot.querySelector(
     "temba-field .searchbox"
-  ) as HTMLInputElement;
+  ) as HTMLInputElement;*/
 
-  search.value = query;
-  search.dispatchEvent(new Event("input"));
-  clock.tick(300);
-  await select.updateComplete;
-  await select.updateComplete;
-  clock.restore();
+  // search.value = query;
+  // search.dispatchEvent(new Event("input"));
+  // clock.tick(300);
+  // await select.updateComplete;
+  // await select.updateComplete;
+  // clock.restore();
 
   return select;
 };
@@ -49,9 +51,12 @@ export const search = async (select: Select, query: string) => {
 export const open = async (select: Select) => {
   var clock = sinon.useFakeTimers();
 
-  (select.shadowRoot.querySelector(
+  // console.log(select);
+  await click("temba-select");
+
+  /* (select.shadowRoot.querySelector(
     ".select-container"
-  ) as HTMLDivElement).click();
+  ) as HTMLDivElement).click();*/
 
   await select.updateComplete;
   // searchable has a quiet of 200ms

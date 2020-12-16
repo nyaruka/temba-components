@@ -1,5 +1,4 @@
 import { fixture, expect, assert } from "@open-wc/testing";
-import { assertScreenshot, waitForSelector } from "../../test/utils";
 import TextInput from "./TextInput";
 
 export const getInputHTML = (
@@ -10,17 +9,6 @@ export const getInputHTML = (
     ${textarea ? "textarea" : ""}
     ${gsm ? "gsm" : ""}
   ></temba-textinput>`;
-};
-
-const closedClip = {
-  y: 70,
-  x: 0,
-  width: 485,
-  height: 55,
-};
-
-const clip = (height: number = 55) => {
-  return { ...closedClip, height };
 };
 
 describe("temba-textinput", () => {
