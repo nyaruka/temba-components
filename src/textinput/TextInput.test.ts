@@ -1,10 +1,14 @@
 import { fixture, expect, assert } from "@open-wc/testing";
 import TextInput from "./TextInput";
 
-export const getInputHTML = (textarea: boolean = false) => {
-  return `<temba-textinput value="hello" ${
-    textarea ? "textarea" : ""
-  }></temba-textinput>`;
+export const getInputHTML = (
+  textarea: boolean = false,
+  gsm: boolean = false
+) => {
+  return `<temba-textinput value="hello" 
+    ${textarea ? "textarea" : ""}
+    ${gsm ? "gsm" : ""}
+  ></temba-textinput>`;
 };
 
 describe("temba-textinput", () => {
@@ -45,5 +49,19 @@ describe("temba-textinput", () => {
 
     // should be reflected on our main input
     expect(input.value).to.equal("world");
+  });
+
+  it("doesn't advance cursor on GSM character replacement", async () => {
+    const input: TextInput = await fixture(getInputHTML(true, true));
+    input.value = "Let’s try some text with a funny tick.";
+
+    // focus our widget, move back a few spots and insert some text
+    await click("temba-textinput");
+    await pressKey("ArrowLeft", 5);
+    await type("replaced ");
+
+    expect(input.value).to.equal(
+      "Let's try some text with a funny replaced tick."
+    );
   });
 });

@@ -22,7 +22,7 @@ const clip = (height: number = 55) => {
   deviceScaleFactor: 2,
 });
 
-describe("temba-select-screenshots", () => {
+describe("temba-textinput-screenshots", () => {
   var clock: any;
   beforeEach(async function () {
     clock = sinon.useFakeTimers();

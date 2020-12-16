@@ -45,7 +45,7 @@
     "textarea-caret": "3.1.0"
   },
   "devDependencies": {
-    "@open-wc/building-webpack": "2.6.1",
+    "@open-wc/building-webpack": "2.13.46",
     "@open-wc/karma-esm": "^3.0.5",
     "@open-wc/testing": "^2.5.25",
     "@open-wc/testing-karma": "^3.3.11",
