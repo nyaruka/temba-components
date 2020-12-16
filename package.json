@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.8.8",
+  "version": "0.8.10",
   "description": "General Purpose Web Components",
   "author": "Nyaruka <code@nyaruka.com>",
   "homepage": "https://github.com/nyaruka/temba-components/",
@@ -15,7 +15,7 @@
     "compile": "tsc",
     "postversion": "git push --tags && git push origin master",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
-    "build": "webpack --mode production && cp build/temba-components* build/index.js",
+    "build": "webpack --mode production && cp build/temba-components*.js build/index.js",
     "build:esm": "tsc --downlevelIteration --module es2015 --target es5 --outDir test",
     "start": "webpack-dev-server --mode development",
     "start:build": "http-server dist -o",
