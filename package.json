@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "autosize": "4.0.2",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "buffer": "4",
     "es6-dynamic-template": "2.0.0",
     "fa-icons": "^0.2.0",
