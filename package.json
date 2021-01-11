@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.8.8",
+  "version": "0.8.11",
   "description": "General Purpose Web Components",
   "author": "Nyaruka <code@nyaruka.com>",
   "homepage": "https://github.com/nyaruka/temba-components/",
@@ -13,9 +13,9 @@
   "main": "build/index.js",
   "scripts": {
     "compile": "tsc",
-    "postversion": "git push --tags && git push origin master",
+    "postversion": "git push --tags && git push origin main",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
-    "build": "webpack --mode production && cp build/temba-components* build/index.js",
+    "build": "webpack --mode production && cp build/temba-components*.js build/index.js",
     "build:esm": "tsc --downlevelIteration --module es2015 --target es5 --outDir test",
     "start": "webpack-dev-server --mode development",
     "start:build": "http-server dist -o",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "autosize": "4.0.2",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "buffer": "4",
     "es6-dynamic-template": "2.0.0",
     "fa-icons": "^0.2.0",
@@ -46,7 +46,7 @@
     "textarea-caret": "3.1.0"
   },
   "devDependencies": {
-    "@open-wc/building-webpack": "2.6.1",
+    "@open-wc/building-webpack": "2.13.46",
     "@open-wc/karma-esm": "^3.0.5",
     "@open-wc/testing": "^2.5.25",
     "@open-wc/testing-karma": "^3.3.11",

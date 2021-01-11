@@ -156,6 +156,8 @@ export default class TextInput extends FormElement {
   onBlur: any;
 
   counterElement: CharCount = null;
+  cursorStart = -1;
+  cursorEnd = -1;
 
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
@@ -207,6 +209,12 @@ export default class TextInput extends FormElement {
     if (changes.has("value")) {
       this.setValues([this.value]);
       this.fireEvent("change");
+
+      if (this.cursorStart > -1 && this.cursorEnd > -1) {
+        this.inputElement.setSelectionRange(this.cursorStart, this.cursorEnd);
+        this.cursorStart = -1;
+        this.cursorEnd = -1;
+      }
     }
   }
 
@@ -217,7 +225,22 @@ export default class TextInput extends FormElement {
   }
 
   private updateValue(value: string): void {
-    this.value = this.sanitizeGSM(value);
+    const cursorStart = this.inputElement.selectionStart;
+    const cursorEnd = this.inputElement.selectionEnd;
+
+    const sanitized = this.sanitizeGSM(value);
+
+    if (sanitized !== value) {
+      this.cursorStart = cursorStart;
+      this.cursorEnd = cursorEnd;
+    }
+
+    this.value = sanitized;
+
+    if (this.textarea) {
+      this.inputElement.value = this.value;
+    }
+
     if (this.counterElement) {
       this.counterElement.text = value;
     }

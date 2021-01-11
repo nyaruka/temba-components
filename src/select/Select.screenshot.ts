@@ -4,7 +4,6 @@ import {
   open,
   openAndClick,
   colors,
-  search,
 } from "./Select.test";
 import moxios from "moxios";
 import sinon from "sinon";
@@ -123,7 +122,7 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     // now lets do a search, we should see our selection (green) and one other (red)
-    await search(select, "re");
+    await typeInto("temba-select", "re");
     await open(select);
 
     await assertScreenshot("select-search-selected-open-query", clip(130));
@@ -141,7 +140,7 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     // now lets do a search, we should see our selection (green) and one other (red)
-    await search(select, "re");
+    await typeInto("temba-select", "re");
     await open(select);
 
     // should have two things selected and active query and no matching options
@@ -159,7 +158,7 @@ describe("temba-select-screenshots", () => {
       pause
     );
 
-    await search(select, "@cont");
+    await typeInto("temba-select", "@cont");
     await open(select);
 
     await assertScreenshot("select-expression", clip(130));
@@ -173,7 +172,7 @@ describe("temba-select-screenshots", () => {
       pause
     );
 
-    await search(select, "look at @(max(m");
+    await typeInto("temba-select", "look at @(max(m");
     await open(select);
 
     await assertScreenshot("select-expression-function", clip(250));

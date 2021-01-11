@@ -29,35 +29,15 @@ export const createSelect = async (def: string, delay: number = 0) => {
   return select;
 };
 
-export const search = async (select: Select, query: string) => {
-  var clock = sinon.useFakeTimers();
-
-  var search = select.shadowRoot.querySelector(
-    "temba-field .searchbox"
-  ) as HTMLInputElement;
-
-  search.value = query;
-  search.dispatchEvent(new Event("input"));
-  clock.tick(300);
-  await select.updateComplete;
-  await select.updateComplete;
-  clock.restore();
-
-  return select;
-};
-
 export const open = async (select: Select) => {
   var clock = sinon.useFakeTimers();
 
-  (select.shadowRoot.querySelector(
-    ".select-container"
-  ) as HTMLDivElement).click();
-
+  await click("temba-select");
   await select.updateComplete;
+
   // searchable has a quiet of 200ms
   clock.tick(200);
   await select.updateComplete;
-
   clock.restore();
 
   return select;
@@ -186,7 +166,7 @@ describe("temba-select", () => {
       assert.equal(select.visibleOptions.length, 3);
 
       // now lets do a search, we should see our selection (green) and one other (red)
-      await search(select, "re");
+      await typeInto("temba-select", "re");
       await open(select);
       assert.equal(select.visibleOptions.length, 2);
 
@@ -261,7 +241,7 @@ describe("temba-select", () => {
         "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable></temba-select>"
       );
 
-      await search(select, "re");
+      await typeInto("temba-select", "re");
       await open(select);
       await forPages(select);
 
@@ -315,7 +295,7 @@ describe("temba-select", () => {
         "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable expressions='session'></temba-select>"
       );
 
-      await search(select, "@contact");
+      await typeInto("temba-select", "@contact");
       await open(select);
 
       assert.equal(select.completionOptions.length, 12);
