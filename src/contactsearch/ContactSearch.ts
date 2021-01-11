@@ -198,12 +198,13 @@ export default class ContactSearch extends FormElement {
             ${this.summary.sample.map(
               (contact: Contact) => html`
                 <tr class="contact">
-                  <td class="urn">${contact.primary_urn_formatted}</td>
+                  <td class="urn">${(contact as any).primary_urn_formatted}</td>
                   <td class="name">${contact.name}</td>
                   ${fields.map(
                     (field) => html`
                       <td class="field">
-                        ${(contact.fields[field.uuid] || { text: "" }).text}
+                        ${((contact as any).fields[field.uuid] || { text: "" })
+                          .text}
                       </td>
                     `
                   )}
@@ -252,13 +253,7 @@ export default class ContactSearch extends FormElement {
           style=${styleMap(loadingStyle)}
         ></temba-loading>
       </temba-textinput>
-      ${this.summary
-        ? html`
-            <div class="summary">
-              ${summary}
-            </div>
-          `
-        : null}
+      ${this.summary ? html` <div class="summary">${summary}</div> ` : null}
     `;
   }
 }

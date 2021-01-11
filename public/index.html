@@ -14,7 +14,16 @@
       rel="stylesheet"
       type="text/css"
     />
-  </head>
+
+    <script language="javascript">
+      function handleContactChange(event) {
+        var contact = event.target.value;
+        var chat = document.querySelector("temba-contact-chat");
+        chat.contact = contact;
+      }
+    </script>
+  
+</head>
   <body>
     <link
       href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
@@ -34,6 +43,10 @@
         font-size: 12px;
       }
 
+      html {
+        --color-text-dark: #555;
+      }
+
     </style>
 
     <temba-store
@@ -43,6 +56,22 @@
       globals="/api/v2/globals.json"
     ></temba-store>
 
+
+    <div class="flex-col">
+      <div class="flex" style="height:100vh">
+        <div style="min-width:250px; max-width:450px" class="m-4 mr-2">
+          <temba-contacts endpoint="/api/v2/contacts.json" onchange="handleContactChange(event)"></temba-contacts>  
+        </div>
+        
+        <div class="flex-grow flex-col h-full py-4 pb-4 pr-4">
+          <temba-contact-chat></temba-contact-chat>
+        </div>
+      
+      </div>
+    </div>
+
+
+    <!--
     <div class="example">
       <temba-completion counter="temba-charcount" value="Some sample text"></temba-completion>
       <temba-charcount text='count this text'></temba-charcount>
@@ -426,6 +455,7 @@
       <div class="example-header">Completion</div>
       <temba-completion></temba-completion>
     </div>
+    -->
     <!-- 
       Alias Editor - Deprecated
       div class="example">
