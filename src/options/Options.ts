@@ -71,15 +71,20 @@ export default class Options extends RapidElement {
         border-radius: var(--curvature-widget);
       }
 
-      .block.options-container {
+      :host([block]) {
+        position: relative;
+      }
+
+      :host([block]) .options-container {
         position: relative;
         border: none;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.03);
         height: 100%;
+        z-index: 9000;
       }
 
-      .block .options {
+      :host([block]) .options {
         max-height: inherit;
         height: 100%;
       }
@@ -152,10 +157,6 @@ export default class Options extends RapidElement {
 
   scrollParent: HTMLElement = null;
 
-  constructor() {
-    super();
-  }
-
   public firstUpdated() {
     this.scrollParent = getScrollParent(this);
     this.calculatePosition = this.calculatePosition.bind(this);
@@ -171,10 +172,11 @@ export default class Options extends RapidElement {
   }
 
   private isFocused() {
-    return (
+    const focused =
       this.closestElement(document.activeElement.tagName) ===
-      document.activeElement
-    );
+      document.activeElement;
+
+    return focused;
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -382,9 +384,11 @@ export default class Options extends RapidElement {
 
   private handleClick(evt: MouseEvent) {
     if (!this.block) {
-      evt.preventDefault();
-      evt.stopPropagation();
-      this.handleSelection(false);
+      if (this.visible) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        this.handleSelection(false);
+      }
     }
   }
 
@@ -400,6 +404,7 @@ export default class Options extends RapidElement {
     const index = (evt.currentTarget as HTMLElement).getAttribute(
       "data-option-index"
     );
+
     if (index) {
       if (!this.block) {
         if (Math.abs(evt.movementX) + Math.abs(evt.movementY) > 0) {
@@ -436,9 +441,8 @@ export default class Options extends RapidElement {
     }
 
     const containerStyle = {
-      top: `${this.top}px`,
-      left: `${this.left}px`,
-      width: `${this.width}px`,
+      top: this.top ? `${this.top}px` : "0px",
+      left: this.left ? `${this.left}px` : "0px",
       "margin-left": `${this.marginHorizontal}px`,
       "margin-top": `${vertical}px`,
     };
@@ -450,7 +454,6 @@ export default class Options extends RapidElement {
     const classes = getClasses({
       show: this.visible,
       top: this.poppedTop,
-      block: this.block,
     });
 
     const classesInner = getClasses({

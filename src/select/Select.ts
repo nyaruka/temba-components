@@ -855,7 +855,7 @@ export default class Select extends FormElement {
       this.input = "";
       this.next = null;
       this.complete = true;
-      this.visibleOptions = [];
+      // this.visibleOptions = [];
     }
   }
 
