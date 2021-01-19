@@ -17,11 +17,6 @@ jobs:
           yarn test
         env:
           CI: true
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.2
-        with:
-          token: ${{secrets.CODECOV_TOKEN}}
-          file: coverage/lcov.info
 
   screenshots:
     runs-on: macos-latest
@@ -43,3 +38,8 @@ jobs:
         with:
           name: screenshots
           path: target/
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          file: coverage/lcov.info
