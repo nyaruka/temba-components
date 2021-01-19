@@ -30,7 +30,7 @@ export const getOptionsHTML = (attrs: any = {}): string => {
     </temba-select>`;
 };
 
-describe.only("temba-options-screenshots", () => {
+describe("temba-options-screenshots", () => {
   it("renders block mode", async () => {
     const ele: Options = await fixture(
       getOptionsHTML({ block: true, visible: true })
