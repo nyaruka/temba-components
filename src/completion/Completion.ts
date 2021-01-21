@@ -117,6 +117,7 @@ export default class Completion extends FormElement {
     "node",
     "webhook",
     "trigger",
+    "resume",
   ]);
 
   @property({ type: Boolean })
