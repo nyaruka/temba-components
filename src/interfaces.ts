@@ -5,12 +5,23 @@ export interface URN {
   path: string;
 }
 
-export interface Contact {
-  urns: URN[];
-  primary_urn_formatted: string;
+export interface Group {
   name: string;
-  fields: { [uuid: string]: { text: string } };
+  uuid: string;
+}
+
+export interface Contact {
+  name: string;
+  uuid: string;
+  stopped: boolean;
+  blocked: boolean;
+  urns: string[];
+  lang: string;
+  fields: { [key: string]: string };
+  groups: Group[];
+  modified_on: Date;
   created_on: Date;
+  last_seen_on: Date;
 }
 
 export interface FeatureProperties {
@@ -44,4 +55,5 @@ export enum CustomEventType {
   Selection = "temba-selection",
   ButtonClicked = "temba-button-clicked",
   DialogHidden = "temba-dialog-hidden",
+  ScrollThreshold = "temba-scroll-threshold",
 }

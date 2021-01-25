@@ -325,6 +325,13 @@ export default class Select extends FormElement {
         border-bottom-left-radius: var(--curvature-widget);
         border-bottom-right-radius: var(--curvature-widget);
       }
+
+      .small {
+        --temba-select-selected-padding: 7px;
+        --temba-select-selected-line-height: 13px;
+        --temba-select-selected-font-size: 12px;
+        --search-input-height: 7px !important;
+      }
     `;
   }
 
@@ -417,6 +424,9 @@ export default class Select extends FormElement {
 
   @property({ type: Boolean })
   clearable: boolean;
+
+  @property({ type: String })
+  flavor: string;
 
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
@@ -1088,6 +1098,7 @@ export default class Select extends FormElement {
       focused: this.focused,
       "search-input": this.input.length > 0,
       "no-search-input": this.input.length === 0,
+      [this.flavor]: this.flavor !== null,
     });
 
     const anchorStyles = this.anchorPosition
