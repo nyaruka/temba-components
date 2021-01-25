@@ -185,6 +185,12 @@ export default class Button extends LitElement {
   }
 
   public render(): TemplateResult {
+    const buttonName = this.submitting
+      ? html`<div class="submit-animation">
+          <temba-loading units="3" size="8" color="#eee"></temba-loading>
+        </div>`
+      : this.name;
+
     return html`
       <div
         class="button-container 
@@ -206,17 +212,7 @@ export default class Button extends LitElement {
         @click=${this.handleClick}
       >
         <div class="button-mask">
-          <div class="button-name">
-            ${this.submitting
-              ? html`<div class="submit-animation">
-                  <temba-loading
-                    units="3"
-                    size="8"
-                    color="#eee"
-                  ></temba-loading>
-                </div>`
-              : this.name}
-          </div>
+          <div class="button-name">${buttonName}</div>
         </div>
       </div>
     `;
