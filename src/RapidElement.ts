@@ -14,6 +14,7 @@ export default class RapidElement extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+
     for (const handler of this.getEventHandlers()) {
       if (handler.isDocument) {
         document.addEventListener(handler.event, handler.method.bind(this));
@@ -50,5 +51,17 @@ export default class RapidElement extends LitElement {
       composed: true,
     });
     this.dispatchEvent(event);
+  }
+
+  public closestElement(selector: string, base: Element = this) {
+    function __closestFrom(el: Element | Window | Document): Element {
+      if (!el || el === document || el === window) return null;
+      if ((el as any).assignedSlot) el = (el as any).assignedSlot;
+      let found = (el as Element).closest(selector);
+      return found
+        ? found
+        : __closestFrom(((el as Element).getRootNode() as ShadowRoot).host);
+    }
+    return __closestFrom(base);
   }
 }

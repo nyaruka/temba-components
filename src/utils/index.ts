@@ -12,7 +12,7 @@ interface AssetPage {
   next: string;
 }
 
-interface ResultsPage {
+export interface ResultsPage {
   results: any[];
   next: string;
 }
@@ -122,14 +122,13 @@ export const getHeaders = (pjax: boolean) => {
   }
 
   return headers;
-}
+};
 
 export const getUrl = (
   url: string,
   cancelToken: CancelToken = null,
   pjax: boolean = false
 ): Promise<AxiosResponse> => {
-
   const config: AxiosRequestConfig = { headers: getHeaders(pjax) };
   if (cancelToken) {
     config.cancelToken = cancelToken;
@@ -290,4 +289,42 @@ export const isElementVisible = (el: any, holder: any) => {
   return top <= holderRect.top
     ? bottom > holderRect.top
     : bottom < holderRect.bottom;
+};
+
+export const timeSince = (date: Date) => {
+  const now = new Date();
+  const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (secondsPast < 60) {
+    return Math.round(secondsPast) + "s";
+  }
+  if (secondsPast < 3600) {
+    return Math.round(secondsPast / 60) + "m";
+  }
+  if (secondsPast <= 86400) {
+    return Math.round(secondsPast / 3600) + "h";
+  }
+  if (secondsPast > 86400) {
+    const day = date.getDate();
+    const month = date
+      .toDateString()
+      .match(/ [a-zA-Z]*/)[0]
+      .replace(" ", "");
+    const year =
+      date.getFullYear() == now.getFullYear() ? "" : " " + date.getFullYear();
+    return day + " " + month + year;
+  }
+};
+
+export const isDate = (value: string): boolean => {
+  let dateFormat;
+  if (toString.call(value) === "[object Date]") {
+    return true;
+  }
+  if (typeof value.replace === "function") {
+    value.replace(/^\s+|\s+$/gm, "");
+  }
+
+  // value = value.split("+")[0];
+  dateFormat = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
+  return dateFormat.test(value);
 };

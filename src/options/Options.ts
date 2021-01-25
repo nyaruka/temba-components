@@ -49,6 +49,12 @@ export default class Options extends RapidElement {
         color: var(--color-text-dark);
       }
 
+      .option * {
+        user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+      }
+
       .option.focused {
         background: var(--color-selection);
         color: var(--color-text-dark);
@@ -64,8 +70,23 @@ export default class Options extends RapidElement {
         padding: 1px 5px;
         border-radius: var(--curvature-widget);
       }
-      :host {
-        position: absolute;
+
+      :host([block]) {
+        position: relative;
+      }
+
+      :host([block]) .options-container {
+        position: relative;
+        border: none;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+          0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        height: 100%;
+        z-index: 9000;
+      }
+
+      :host([block]) .options {
+        max-height: inherit;
+        height: 100%;
       }
     `;
   }
@@ -91,8 +112,14 @@ export default class Options extends RapidElement {
   @property({ type: Boolean })
   visible: boolean;
 
+  @property({ type: Boolean })
+  block: boolean;
+
   @property({ type: Number })
-  cursorIndex: number = 0;
+  scrollPct = 75;
+
+  @property({ type: Number })
+  cursorIndex: number = -1;
 
   @property({ type: Array })
   options: any[];
@@ -122,9 +149,15 @@ export default class Options extends RapidElement {
   @property({ attribute: false })
   renderOptionDetail: (option: any, selected: boolean) => TemplateResult;
 
+  @property({ type: Number })
+  scrollHeight = 0;
+
+  @property({ type: Boolean })
+  triggerScroll = false;
+
   scrollParent: HTMLElement = null;
 
-  firstUpdated() {
+  public firstUpdated() {
     this.scrollParent = getScrollParent(this);
     this.calculatePosition = this.calculatePosition.bind(this);
     if (this.scrollParent) {
@@ -132,10 +165,18 @@ export default class Options extends RapidElement {
     }
   }
 
-  disconnectedCallback() {
+  public disconnectedCallback() {
     if (this.scrollParent) {
       this.scrollParent.removeEventListener("scroll", this.calculatePosition);
     }
+  }
+
+  private isFocused() {
+    const focused =
+      this.closestElement(document.activeElement.tagName) ===
+      document.activeElement;
+
+    return focused;
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -169,8 +210,25 @@ export default class Options extends RapidElement {
 
     if (changedProperties.has("options")) {
       this.calculatePosition();
-      if (!changedProperties.has("cursorIndex")) {
+      const prevOptions = changedProperties.get("options");
+      const previousCount = prevOptions ? prevOptions.length : 0;
+      const newCount = this.options ? this.options.length : 0;
+
+      // if our option size is shrinking, reset our cursor
+      if (
+        newCount < previousCount ||
+        (previousCount === 0 &&
+          newCount > 0 &&
+          !changedProperties.has("cursorIndex"))
+      ) {
         this.setCursor(0);
+      }
+
+      // if on initial load we don't have enough options to load, trigger a scroll
+      // threshold event in case the page size is smaller than our control height
+      const scrollBox = this.shadowRoot.querySelector(".options");
+      if (scrollBox.scrollHeight == scrollBox.clientHeight) {
+        this.fireCustomEvent(CustomEventType.ScrollThreshold);
       }
     }
 
@@ -232,17 +290,30 @@ export default class Options extends RapidElement {
     if (newIndex !== this.cursorIndex) {
       this.cursorIndex = newIndex;
       this.fireCustomEvent(CustomEventType.CursorChanged, { index: newIndex });
+      if (this.block) {
+        this.handleSelection(false);
+      }
     }
   }
 
   private handleKeyDown(evt: KeyboardEvent) {
+    if (this.block && !this.isFocused()) {
+      return;
+    }
+
     if (this.options.length > 0) {
       if ((evt.ctrlKey && evt.key === "n") || evt.key === "ArrowDown") {
         this.moveCursor(1);
         evt.preventDefault();
+        if (this.block) {
+          this.handleSelection(false);
+        }
       } else if ((evt.ctrlKey && evt.key === "p") || evt.key === "ArrowUp") {
         this.moveCursor(-1);
         evt.preventDefault();
+        if (this.block) {
+          this.handleSelection(false);
+        }
       } else if (
         evt.key === "Enter" ||
         evt.key === "Tab" ||
@@ -258,8 +329,27 @@ export default class Options extends RapidElement {
     }
   }
 
+  private handleInnerScroll(evt: Event) {
+    const scrollbox = evt.target as HTMLDivElement;
+
+    // scroll height has changed, enable scroll trigger
+    if (scrollbox.scrollHeight != this.scrollHeight) {
+      this.scrollHeight = scrollbox.scrollHeight;
+      this.triggerScroll = true;
+    }
+
+    if (this.triggerScroll) {
+      const scrollPct =
+        scrollbox.scrollTop / (scrollbox.scrollHeight - scrollbox.clientHeight);
+      if (scrollPct * 100 > this.scrollPct) {
+        this.fireCustomEvent(CustomEventType.ScrollThreshold);
+        this.triggerScroll = false;
+      }
+    }
+  }
+
   private calculatePosition() {
-    if (this.visible) {
+    if (this.visible && !this.block) {
       const optionsBounds = this.shadowRoot
         .querySelector(".options-container")
         .getBoundingClientRect();
@@ -293,9 +383,13 @@ export default class Options extends RapidElement {
   }
 
   private handleClick(evt: MouseEvent) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    this.handleSelection(false);
+    if (!this.block) {
+      if (this.visible) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        this.handleSelection(false);
+      }
+    }
   }
 
   public getEventHandlers(): EventHandler[] {
@@ -306,20 +400,49 @@ export default class Options extends RapidElement {
     ];
   }
 
+  private handleMouseMove(evt: MouseEvent) {
+    const index = (evt.currentTarget as HTMLElement).getAttribute(
+      "data-option-index"
+    );
+
+    if (index) {
+      if (!this.block) {
+        if (Math.abs(evt.movementX) + Math.abs(evt.movementY) > 0) {
+          const indexNum = parseInt(index, 10);
+          if (indexNum !== this.cursorIndex) {
+            this.setCursor(indexNum);
+          }
+        }
+      }
+    }
+  }
+
+  private handleOptionClick(evt: MouseEvent) {
+    if (this.block) {
+      const index = (evt.currentTarget as HTMLElement).getAttribute(
+        "data-option-index"
+      );
+
+      if (index) {
+        this.setCursor(parseInt(index));
+        this.handleSelection(false);
+      }
+    }
+  }
+
   public render(): TemplateResult {
     const renderOption = (this.renderOption || this.renderOptionDefault).bind(
       this
     );
 
-    let vertical = this.marginVertical;
+    let vertical = this.block ? 0 : this.marginVertical;
     if (this.poppedTop) {
       vertical *= -1;
     }
 
     const containerStyle = {
-      top: `${this.top}px`,
-      left: `${this.left}px`,
-      width: `${this.width}px`,
+      top: this.top ? `${this.top}px` : "0px",
+      left: this.left ? `${this.left}px` : "0px",
       "margin-left": `${this.marginHorizontal}px`,
       "margin-top": `${vertical}px`,
     };
@@ -342,15 +465,17 @@ export default class Options extends RapidElement {
         class="options-container ${classes}"
         style=${styleMap(containerStyle)}
       >
-        <div class="${classesInner}" style=${styleMap(optionsStyle)}>
-          ${this.options.map(
+        <div
+          @scroll=${this.handleInnerScroll}
+          class="${classesInner}"
+          style=${styleMap(optionsStyle)}
+        >
+          ${(this.options || []).map(
             (option: any, index: number) => html`
               <div
-                @mousemove=${(evt: MouseEvent) => {
-                  if (Math.abs(evt.movementX) + Math.abs(evt.movementY) > 0) {
-                    this.setCursor(index);
-                  }
-                }}
+                data-option-index="${index}"
+                @mousemove=${this.handleMouseMove}
+                @click=${this.handleOptionClick}
                 class="option ${index == this.cursorIndex ? "focused" : ""}"
               >
                 ${renderOption(option, index == this.cursorIndex)}
