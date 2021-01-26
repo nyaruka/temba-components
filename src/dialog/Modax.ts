@@ -79,7 +79,7 @@ export default class Modax extends RapidElement {
   endpoint: string;
 
   @property({ type: Boolean, reflect: true })
-  open: boolean;
+  open: boolean = false;
 
   @property({ type: Boolean })
   fetching: boolean;
@@ -263,15 +263,18 @@ export default class Modax extends RapidElement {
     );
   }
 
+  public updateLocation(location: Location): void {
+    this.ownerDocument.location = location;
+  }
+
   public submit(): void {
     this.submitting = true;
     const form = this.shadowRoot.querySelector("form");
-    const postData = serialize(form);
+    const postData = form ? serialize(form) : {};
 
     postUrl(this.endpoint, postData, true).then((response: AxiosResponse) => {
       window.setTimeout(() => {
         let redirect = response.headers["temba-success"];
-
         if (
           !redirect &&
           response.request.responseURL &&
@@ -296,7 +299,8 @@ export default class Modax extends RapidElement {
               }, 0);
             }
           } else {
-            this.ownerDocument.location = redirect;
+            this.updateLocation(redirect);
+            this.open = false;
           }
         } else {
           // if we set the body, update our submit button
