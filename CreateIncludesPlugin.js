@@ -52,7 +52,7 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
         }
 
         // our main components file, it'll be included in the head of our template
-        if (filename.startsWith("temba-components")) {
+        if (filename.startsWith("temba-components") && filename.endsWith(".js")) {
           mkdirp(templates).then((err) => {
             fs.writeFileSync(
               path.resolve(templates, "components-head.html"),
