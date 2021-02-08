@@ -20,7 +20,7 @@ module.exports = configs.map((config) => {
   const conf = merge(config, {
     devServer: {
       disableHostCheck: true,
-      port: 8890,
+      port: 3010,
     },
     resolve: {
       extensions: [".ts", ".js", ".json", ".css"],
