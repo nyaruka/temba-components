@@ -3,11 +3,13 @@ import TextInput from "./TextInput";
 
 export const getInputHTML = (
   textarea: boolean = false,
-  gsm: boolean = false
+  gsm: boolean = false,
+  disabled: boolean = false
 ) => {
   return `<temba-textinput value="hello" 
     ${textarea ? "textarea" : ""}
     ${gsm ? "gsm" : ""}
+    ${disabled ? "disabled" : ""}
   ></temba-textinput>`;
 };
 
@@ -28,11 +30,28 @@ describe("temba-textinput", () => {
       ".textinput"
     ) as HTMLInputElement;
     expect(widget.tagName).to.equal("INPUT");
+    expect(widget.disabled).to.equal(false);
     widget.value = "world";
     widget.dispatchEvent(new InputEvent("change"));
 
     // should be reflected on our main input
     expect(input.value).to.equal("world");
+  });
+
+  it("does not take internal input changes for disabled", async () => {
+    const input: TextInput = await fixture(getInputHTML(false, false, true));
+
+    // trigger a change on our internal widget
+    const widget = input.shadowRoot.querySelector(
+      ".textinput"
+    ) as HTMLInputElement;
+    expect(widget.tagName).to.equal("INPUT");
+    expect(widget.disabled).to.equal(true);
+    widget.value = "world";
+    widget.dispatchEvent(new InputEvent("change"));
+
+    // should be reflected on our main input
+    expect(input.value).to.equal("hello");
   });
 
   it("takes internal textarea changes", async () => {
@@ -43,12 +62,30 @@ describe("temba-textinput", () => {
       ".textinput"
     ) as HTMLInputElement;
     expect(widget.tagName).to.equal("TEXTAREA");
+    expect(widget.disabled).to.equal(false);
 
     widget.value = "world";
     widget.dispatchEvent(new InputEvent("change"));
 
     // should be reflected on our main input
     expect(input.value).to.equal("world");
+  });
+
+  it("does not take internal textarea changes for disabled", async () => {
+    const input: TextInput = await fixture(getInputHTML(true, false, true));
+
+    // trigger a change on our internal widget
+    const widget = input.shadowRoot.querySelector(
+      ".textinput"
+    ) as HTMLInputElement;
+    expect(widget.tagName).to.equal("TEXTAREA");
+    expect(widget.disabled).to.equal(true);
+
+    widget.value = "world";
+    widget.dispatchEvent(new InputEvent("change"));
+
+    // should be reflected on our main input
+    expect(input.value).to.equal("hello");
   });
 
   it("doesn't advance cursor on GSM character replacement", async () => {
