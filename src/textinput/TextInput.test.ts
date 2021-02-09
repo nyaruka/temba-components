@@ -6,7 +6,7 @@ export const getInputHTML = (
   gsm: boolean = false,
   disabled: boolean = false
 ) => {
-  return `<temba-textinput value="hello" 
+  return `<temba-textinput value="hello world"
     ${textarea ? "textarea" : ""}
     ${gsm ? "gsm" : ""}
     ${disabled ? "disabled" : ""}
@@ -31,11 +31,14 @@ describe("temba-textinput", () => {
     ) as HTMLInputElement;
     expect(widget.tagName).to.equal("INPUT");
     expect(widget.disabled).to.equal(false);
-    widget.value = "world";
-    widget.dispatchEvent(new InputEvent("change"));
+
+    // focus our widget, move back a few spots and insert some text
+    await click("temba-textinput");
+    await pressKey("ArrowLeft", 5);
+    await type("to the ");
 
     // should be reflected on our main input
-    expect(input.value).to.equal("world");
+    expect(input.value).to.equal("hello to the world");
   });
 
   it("does not take internal input changes for disabled", async () => {
@@ -47,11 +50,14 @@ describe("temba-textinput", () => {
     ) as HTMLInputElement;
     expect(widget.tagName).to.equal("INPUT");
     expect(widget.disabled).to.equal(true);
-    widget.value = "world";
-    widget.dispatchEvent(new InputEvent("change"));
+
+    // focus our widget, move back a few spots and insert some text
+    await click("temba-textinput");
+    await pressKey("ArrowLeft", 5);
+    await type("to the ");
 
     // should be reflected on our main input
-    expect(input.value).to.equal("hello");
+    expect(input.value).to.equal("hello world");
   });
 
   it("takes internal textarea changes", async () => {
@@ -64,11 +70,13 @@ describe("temba-textinput", () => {
     expect(widget.tagName).to.equal("TEXTAREA");
     expect(widget.disabled).to.equal(false);
 
-    widget.value = "world";
-    widget.dispatchEvent(new InputEvent("change"));
+    // focus our widget, move back a few spots and insert some text
+    await click("temba-textinput");
+    await pressKey("ArrowLeft", 5);
+    await type("to the ");
 
     // should be reflected on our main input
-    expect(input.value).to.equal("world");
+    expect(input.value).to.equal("hello to the world");
   });
 
   it("does not take internal textarea changes for disabled", async () => {
@@ -81,11 +89,13 @@ describe("temba-textinput", () => {
     expect(widget.tagName).to.equal("TEXTAREA");
     expect(widget.disabled).to.equal(true);
 
-    widget.value = "world";
-    widget.dispatchEvent(new InputEvent("change"));
+    // focus our widget, move back a few spots and insert some text
+    await click("temba-textinput");
+    await pressKey("ArrowLeft", 5);
+    await type("to the ");
 
     // should be reflected on our main input
-    expect(input.value).to.equal("hello");
+    expect(input.value).to.equal("hello world");
   });
 
   it("doesn't advance cursor on GSM character replacement", async () => {
