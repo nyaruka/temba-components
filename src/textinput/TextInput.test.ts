@@ -2,11 +2,12 @@ import { fixture, expect, assert } from "@open-wc/testing";
 import TextInput from "./TextInput";
 
 export const getInputHTML = (
+  text: string = "hello",
   textarea: boolean = false,
   gsm: boolean = false,
-  disabled: boolean = false
+  disabled: boolean = false,
 ) => {
-  return `<temba-textinput value="hello world"
+  return `<temba-textinput value="${text}"
     ${textarea ? "textarea" : ""}
     ${gsm ? "gsm" : ""}
     ${disabled ? "disabled" : ""}
@@ -23,7 +24,7 @@ describe("temba-textinput", () => {
   });
 
   it("takes internal input changes", async () => {
-    const input: TextInput = await fixture(getInputHTML());
+    const input: TextInput = await fixture(getInputHTML("hello world", false, false, false, ));
 
     // trigger a change on our internal widget
     const widget = input.shadowRoot.querySelector(
@@ -42,7 +43,7 @@ describe("temba-textinput", () => {
   });
 
   it("does not take internal input changes for disabled", async () => {
-    const input: TextInput = await fixture(getInputHTML(false, false, true));
+    const input: TextInput = await fixture(getInputHTML("hello world", false, false, true));
 
     // trigger a change on our internal widget
     const widget = input.shadowRoot.querySelector(
@@ -61,7 +62,7 @@ describe("temba-textinput", () => {
   });
 
   it("takes internal textarea changes", async () => {
-    const input: TextInput = await fixture(getInputHTML(true));
+    const input: TextInput = await fixture(getInputHTML("hello world", true, false, false));
 
     // trigger a change on our internal widget
     const widget = input.shadowRoot.querySelector(
@@ -80,7 +81,7 @@ describe("temba-textinput", () => {
   });
 
   it("does not take internal textarea changes for disabled", async () => {
-    const input: TextInput = await fixture(getInputHTML(true, false, true));
+    const input: TextInput = await fixture(getInputHTML("hello world", true, false, true));
 
     // trigger a change on our internal widget
     const widget = input.shadowRoot.querySelector(
@@ -99,7 +100,7 @@ describe("temba-textinput", () => {
   });
 
   it("doesn't advance cursor on GSM character replacement", async () => {
-    const input: TextInput = await fixture(getInputHTML(true, true));
+    const input: TextInput = await fixture(getInputHTML("hello world", true, true));
     input.value = "Let’s try some text with a funny tick.";
 
     // focus our widget, move back a few spots and insert some text
