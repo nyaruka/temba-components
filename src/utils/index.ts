@@ -328,3 +328,71 @@ export const isDate = (value: string): boolean => {
   dateFormat = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
   return dateFormat.test(value);
 };
+
+export const debounce = (
+  fn: Function,
+  millis: number,
+  immediate: boolean = false
+) => {
+  let timeout: any;
+  return function () {
+    const context = this;
+    const args = arguments;
+
+    const later = function () {
+      timeout = null;
+      if (!immediate) {
+        fn.apply(context, args);
+      }
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, millis);
+    if (callNow) {
+      fn.apply(context, args);
+    }
+  };
+};
+
+export const throttle = (fn: Function, millis: number) => {
+  let ready: boolean = true;
+  return function () {
+    const context = this;
+    const args = arguments;
+
+    if (!ready) {
+      return;
+    }
+
+    ready = false;
+    fn.apply(context, args);
+    setTimeout(() => {
+      ready = true;
+    }, millis);
+  };
+};
+
+export interface NamedOjbect {
+  name: string;
+}
+
+export const oxford = (items: any[], joiner: string = "and") => {
+  const beginning = items.splice(0, items.length - 1);
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  if (items.length === 2) {
+    return items.join(" " + joiner + " ");
+  }
+
+  return items.join(", ") + joiner + items[items.length - 1];
+};
+
+export const oxfordFn = (items: any[], fn: (item: any) => TemplateResult) => {
+  return oxford(items.map(fn));
+};
+
+export const oxfordNamed = (items: NamedOjbect[], joiner: string = "and") => {
+  return oxford(items.map((value) => value.name));
+};

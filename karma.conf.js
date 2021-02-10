@@ -27,7 +27,7 @@ delete webpackConfig[0].output;
 
 // would love inline-source-map to work here but
 // i've lost too much time wrestling with that
-webpackConfig[0].devtool = false;
+// webpackConfig[0].devtool = false;
 
 module.exports = (config) => {
   config.set({
@@ -44,7 +44,7 @@ module.exports = (config) => {
         flags: ["--headless=true"],
       },
     },
-    frameworks: ["mocha"],
+    frameworks: ["mocha", 'source-map-support'],
     files: [
       "test/index.test.js",
       {
@@ -73,10 +73,11 @@ module.exports = (config) => {
       "karma-puppeteer-launcher",
       "karma-mocha-reporter",
       "karma-coverage-istanbul-reporter",
+      'karma-source-map-support',
       "karma-spec-reporter",
     ],
 
-    reporters: ["coverage-istanbul", "mocha"],
+    reporters: ["mocha", "coverage-istanbul" ],
 
     proxies: {
       "/sitestatic/": "/base/test-assets/",
@@ -87,8 +88,13 @@ module.exports = (config) => {
       "image/svg+xml": ["svg"],
     },
     webpack: webpackConfig,
+    
     webpackMiddleware: {
       noInfo: true,
+      stats: 'errors-only'
+    },
+    mochaReporter: {
+      showDiff: false
     },
     coverageIstanbulReporter: {
       reports: ["html", "text-summary", "lcovonly"],

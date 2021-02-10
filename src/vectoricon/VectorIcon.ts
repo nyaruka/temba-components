@@ -4,7 +4,7 @@ import {
   LitElement,
   TemplateResult,
   html,
-  css
+  css,
 } from "lit-element";
 
 @customElement("temba-icon")
@@ -12,38 +12,56 @@ export default class VectorIcon extends LitElement {
   static get styles() {
     return css`
       :host {
-        display: inline-block;
-        --icon-color: var(--color-text);
+        margin: auto;
+        --icon-color: var(--text-color);
+        --icon-color-hover: var(--icon-color);
       }
 
-      .fas {
-        transition: transform ease-in-out 150ms;
-        color: var(--icon-color);
+      :host([id="flow"]),
+      :host([name="flow"]) {
+        padding-bottom: 0.2em;
+      }
+
+      :host([id="bullhorn"]),
+      :host([name="bullhorn"]) {
+        padding-bottom: 0.1em;
+      }
+
+      :host([id="warning"]),
+      :host([name="warning"]) {
+        fill: var(--color-error);
+      }
+
+      svg {
+        display: block;
+        fill: var(--icon-color);
+      }
+
+      svg:hover {
       }
     `;
   }
 
   constructor() {
     super();
-    const fontEl = document.createElement("link");
-    fontEl.rel = "stylesheet";
-    fontEl.href = "https://use.fontawesome.com/releases/v5.0.13/css/all.css";
-    document.head.appendChild(fontEl);
   }
 
   @property({ type: String })
   name: string;
 
-  @property({ type: Number })
-  size: number = 16;
-
+  // same as name but without implicit coloring
   @property({ type: String })
-  hoverColor: string = "#666";
+  id: string;
+
+  @property({ type: Number })
+  size: number = 1;
 
   public render(): TemplateResult {
     return html`
-      <span style="font-size: ${this.size}px;">
-        <i class="fas fa-${this.name}"></i>
+      <svg style="height:${this.size}em;width:${this.size}em;">
+        <use href="/sitestatic/icons/symbol-defs.svg#icon-${
+          this.name || this.id
+        }"></i>
       </span>
     `;
   }

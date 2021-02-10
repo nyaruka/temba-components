@@ -47,6 +47,7 @@ export default class ContactList extends FormElement {
     return html`
       <temba-list
         @change=${this.handleChange.bind(this)}
+        valueKey="uuid"
         .endpoint=${this.endpoint}
         .renderOption=${this.renderOption.bind(this)}
         .sanitizeOption=${createContact}

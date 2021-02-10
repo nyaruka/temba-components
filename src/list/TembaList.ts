@@ -22,6 +22,9 @@ export default class TembaList extends RapidElement {
   @property({ type: Number })
   tabIndex: number = 1;
 
+  @property({ type: String })
+  valueKey: string;
+
   @property({ attribute: false })
   sanitizeOption: (option: any) => any;
 
@@ -70,6 +73,9 @@ export default class TembaList extends RapidElement {
   private handleScrollThreshold(event: CustomEvent) {
     if (this.nextPage) {
       fetchResultsPage(this.nextPage).then((page: ResultsPage) => {
+        if (this.sanitizeOption) {
+          page.results.forEach(this.sanitizeOption);
+        }
         this.items = [...this.items, ...page.results];
         this.nextPage = page.next;
       });
@@ -86,6 +92,7 @@ export default class TembaList extends RapidElement {
     return html`<temba-options
       ?visible=${true}
       ?block=${true}
+      valueKey=${this.valueKey}
       .renderOption=${this.renderOption}
       .renderOptionDetail=${this.renderOptionDetail}
       @temba-scroll-threshold=${this.handleScrollThreshold}

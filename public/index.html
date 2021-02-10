@@ -50,8 +50,8 @@
     </style>
 
     <temba-store
-      completions="/mr/docs/completion.json"
-      functions="/mr/docs/functions.json"
+      completions="/mr/docs/en-us/completion.json"
+      functions="/mr/docs/en-us/functions.json"
       fields="/api/v2/fields.json"
       globals="/api/v2/globals.json"
     ></temba-store>
@@ -370,9 +370,10 @@
       </temba-select>
     </div>
       -->
+
     <div class="flex-col">
       <div class="flex" style="height:100vh">
-        <div style="min-width:250px; max-width:450px" class="m-4 mr-2">
+        <div style="flex-basis: 300px; flex-grow: 0; flex-shrink: 0;" class="m-4 mr-2">
           <temba-contacts endpoint="/api/v2/contacts.json" onchange="handleContactChange(event)"></temba-contacts>  
         </div>
         
