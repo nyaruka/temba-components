@@ -291,19 +291,34 @@ export const isElementVisible = (el: any, holder: any) => {
     : bottom < holderRect.bottom;
 };
 
+const HOUR = 3600;
+const DAY = HOUR * 24;
+const WEEK = DAY * 7;
+const MONTH = DAY * 30;
+
 export const timeSince = (date: Date) => {
   const now = new Date();
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
+
   if (secondsPast < 60) {
-    return Math.round(secondsPast) + "s";
+    return "just now";
   }
-  if (secondsPast < 3600) {
+
+  if (secondsPast < HOUR) {
     return Math.round(secondsPast / 60) + "m";
   }
-  if (secondsPast <= 86400) {
-    return Math.round(secondsPast / 3600) + "h";
+
+  if (secondsPast <= DAY) {
+    return Math.round(secondsPast / HOUR) + "h";
   }
-  if (secondsPast > 86400) {
+
+  if (secondsPast <= MONTH) {
+    return Math.round(secondsPast / DAY) + "d";
+  }
+
+  if (secondsPast < MONTH * 6) {
+    return Math.round(secondsPast / MONTH) + "mth";
+  } else {
     const day = date.getDate();
     const month = date
       .toDateString()

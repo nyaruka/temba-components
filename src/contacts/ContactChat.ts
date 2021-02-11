@@ -24,7 +24,7 @@ import {
   UpdateFieldEvent,
   UpdateResultEvent,
 } from "./helpers";
-import { getClasses, oxfordFn, throttle } from "../utils";
+import { getClasses, oxfordFn, throttle, timeSince } from "../utils";
 
 @customElement("temba-contact-chat")
 export default class ContactChat extends RapidElement {
@@ -233,6 +233,18 @@ export default class ContactChat extends RapidElement {
         display: flex;
       }
 
+      .time {
+        --icon-color: rgba(0, 0, 0, 0.4);
+        font-size: 75%;
+        color: rgba(0, 0, 0, 0.4);
+        padding: 0.3em 3px;
+      }
+
+      .event.msg_created .time,
+      .event.broadcast_created .time {
+        text-align: right;
+      }
+
       .chatbox {
         padding: 1em;
         background: #f2f2f2;
@@ -286,7 +298,6 @@ export default class ContactChat extends RapidElement {
     return "verbose";
   };
 
-  scrollToPosition: number = undefined;
   lastHeight: number = undefined;
 
   public updated(changedProperties: Map<string, any>) {
@@ -314,10 +325,6 @@ export default class ContactChat extends RapidElement {
             return;
           }
           const fetchedEvents = results.events.reverse();
-
-          if (this.eventGroups.length === 0) {
-            this.scrollToPosition = Number.MAX_VALUE;
-          }
 
           const grouped: EventGroup[] = [];
           let eventGroup: EventGroup = undefined;
@@ -370,13 +377,9 @@ export default class ContactChat extends RapidElement {
           events.scrollTop + events.scrollHeight - this.lastHeight;
       }
 
-      if (this.scrollToPosition) {
-        if (this.scrollToPosition === Number.MAX_VALUE) {
-          events.scrollTop = events.scrollHeight;
-          this.scrollToPosition = undefined;
-        } else {
-          events.scrollTop = this.scrollToPosition;
-        }
+      // scroll to the bottom if it's our first fetch
+      if (this.lastHeight === 0) {
+        events.scrollTop = events.scrollHeight;
       }
     }
 
@@ -388,16 +391,27 @@ export default class ContactChat extends RapidElement {
   public renderMsgEvent(event: MsgEvent): TemplateResult {
     return html`
       ${event.type === Events.MESSAGE_RECEIVED
-        ? html` <div class="msg">${event.msg.text}</div> `
+        ? html`
+            <div>
+              <div class="msg">${event.msg.text}</div>
+              <div class="time">${timeSince(new Date(event.created_on))}</div>
+            </div>
+          `
         : html`
             <div>
               <div class="msg">${event.msg.text}</div>
-              ${event.recipient_count > 1
-                ? html`<div class="details">
-                    <temba-icon size="1.15" name="bullhorn"></temba-icon>
-                    Sent to ${event.recipient_count} contacts
-                  </div>`
-                : null}
+
+              <div class="time">
+                ${event.recipient_count > 1
+                  ? html`<temba-icon
+                        size="1"
+                        name="bullhorn"
+                        style="display:inline-block;margin-right:2px;margin-bottom:-3px"
+                      ></temba-icon>
+                      ${event.recipient_count} contacts • `
+                  : null}
+                ${timeSince(new Date(event.created_on))}
+              </div>
             </div>
           `}
     `;

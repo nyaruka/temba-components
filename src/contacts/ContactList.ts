@@ -33,12 +33,14 @@ export default class ContactList extends FormElement {
     return html`
       <div style="display: flex-col;">
         <div style="display:flex;	align-items: center;">
-          <div style="flex: 1; font-weight:400">${contact.name}</div>
+          <div style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em">
+            ${contact.name}
+          </div>
           <div style="font-size: 11px">
             ${timeSince(new Date(contact.modified_on))}
           </div>
         </div>
-        <div style="font-size: 11px">${contact.snippet}</div>
+        <div style="font-size: 11px; margin:0.4em 0">${contact.snippet}</div>
       </div>
     `;
   }
