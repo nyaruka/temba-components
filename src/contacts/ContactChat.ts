@@ -14,15 +14,17 @@ import {
   ContactGroupsEvent,
   ContactHistoryPage,
   ErrorMessageEvent,
+  EventGroup,
   Events,
   fetchContactHistory,
   FlowEvent,
   MsgEvent,
   ObjectReference,
+  SCROLL_THRESHOLD,
   UpdateFieldEvent,
   UpdateResultEvent,
 } from "./helpers";
-import { oxfordFn, oxfordNamed } from "../utils";
+import { getClasses, oxfordFn, throttle } from "../utils";
 
 @customElement("temba-contact-chat")
 export default class ContactChat extends RapidElement {
@@ -33,7 +35,10 @@ export default class ContactChat extends RapidElement {
   endpoint: string;
 
   @property({ type: Array })
-  events: ContactEvent[][] = [];
+  eventGroups: EventGroup[] = [];
+
+  @property({ type: Boolean })
+  fetching: boolean = false;
 
   debug: boolean = false;
 
@@ -84,27 +89,24 @@ export default class ContactChat extends RapidElement {
         padding-bottom: 1em;
       }
 
+
       .grouping.verbose {
         background: #f9f9f9;
-        max-height: 2px;
-        border-top: 1px solid #f1f1f1;
+        max-height: 1px;
+        border-top: 1px solid #f9f9f9;
         padding-top: 0;
         padding-bottom: 0;
         margin-top: 0;
         margin-bottom: 0;
-        transition: all 200ms ease-in-out;
-
       }
 
-      .grouping.verbose .event {
-        background: #f9f9f9;
+      .grouping.verbose > .event {
         max-height: 0px;
         padding-top: 0;
         padding-bottom: 0;
         margin-top: 0;
-        margin-bottom: 0;
+        margin-bottom: 0;        
         opacity: 0;
-        transition: all 200ms ease-in-out;
       }
 
       .event-count {
@@ -146,18 +148,16 @@ export default class ContactChat extends RapidElement {
         margin: 0 -1em;
         padding-bottom: 1em;
         box-shadow: inset 0px 11px 8px -15px #CCC, inset 0px -11px 8px -15px #CCC; 
-
+        transition: all 200ms ease-in-out;
       }
 
       .grouping.verbose.expanded .event {
-        background: #f9f9f9;
         max-height: 500px;
         margin-bottom: 1em;
         border-radius: 6px;
         opacity: 1;
+        transition: all 200ms ease-in-out;
       }
-
-
       .grouping.messages {
         display: flex;
         flex-direction: column;
@@ -176,13 +176,12 @@ export default class ContactChat extends RapidElement {
       }
 
       .event.msg_received .msg {
-        background: rgba(200, 200, 200, 0.1);
+        background: rgba(200, 200, 200, 0.1);        
       }
 
       .event.msg_created,
       .event.broadcast_created {
         align-self: flex-end;
-        
       }
 
       .event.msg_created .msg,
@@ -192,8 +191,6 @@ export default class ContactChat extends RapidElement {
 
       .contact_field_changed,
       .run_result_changed {
-        // border: 1px solid rgba(100, 100, 100, 0.2);
-        // padding: 1em;
         fill: rgba(1, 193, 175, 1);
       }
 
@@ -205,7 +202,6 @@ export default class ContactChat extends RapidElement {
         color: var(--color-error);
       }
 
-
       .info {
         border: 1px solid rgba(100, 100, 100, 0.2);
         background: rgba(10, 10, 10, 0.02);
@@ -215,7 +211,6 @@ export default class ContactChat extends RapidElement {
       .flow_entered {
         align-self: center;
         max-width: 80%;
-        // color: rgba(223, 65, 159, 1);
         fill: rgba(223, 65, 159, 1);
         display: flex;
         flex-direction: row;
@@ -230,9 +225,9 @@ export default class ContactChat extends RapidElement {
       }
 
       .details {
+        --icon-color: rgba(0, 0, 0, 0.4);
         font-size: 75%;
         color: rgba(0, 0, 0, 0.4);
-        --icon-color: rgba(0, 0, 0, 0.4);
         padding-top: 0.3em;
         padding-right: 3px;
         display: flex;
@@ -266,13 +261,22 @@ export default class ContactChat extends RapidElement {
         color: var(--color-link-primary-hover);
       }
 
+      temba-loading {
+        align-self: center;
+        margin-top: 1em;
+      }
+
     `;
   }
 
-  nextBefore: number;
+  nextBefore: number = new Date().getTime() * 1000;
   nextAfter: number;
+  complete: boolean = false;
 
-  getEventGrouping = (event: ContactEvent) => {
+  getEventGroupType = (event: ContactEvent) => {
+    if (!event) {
+      return "messages";
+    }
     switch (event.type) {
       case Events.BROADCAST_CREATED:
       case Events.MESSAGE_CREATED:
@@ -282,65 +286,102 @@ export default class ContactChat extends RapidElement {
     return "verbose";
   };
 
+  scrollToPosition: number = undefined;
+  lastHeight: number = undefined;
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
     // if we don't have an endpoint infer one
     if (changedProperties.has("contact")) {
-      this.events = [];
+      this.eventGroups = [];
+      this.fetching = false;
+      this.complete = false;
+      this.nextBefore = new Date().getTime() * 1000;
+      this.nextAfter = undefined;
       this.endpoint = `/contact/history/${this.contact.uuid}/?_format=json`;
     }
 
-    if (changedProperties.has("endpoint")) {
-      fetchContactHistory(this.endpoint, new Date().getTime() * 1000).then(
+    if (changedProperties.has("fetching") && this.fetching) {
+      const lastEndpoint = this.endpoint;
+
+      const events = this.getDiv(".events");
+      this.lastHeight = events.scrollHeight;
+
+      fetchContactHistory(this.endpoint, this.nextBefore).then(
         (results: ContactHistoryPage) => {
+          if (lastEndpoint !== this.endpoint) {
+            return;
+          }
           const fetchedEvents = results.events.reverse();
-          const scrollToEvent = fetchedEvents[fetchedEvents.length - 1];
 
-          const grouped: ContactEvent[][] = [];
+          if (this.eventGroups.length === 0) {
+            this.scrollToPosition = Number.MAX_VALUE;
+          }
 
-          let eventGroup: ContactEvent[] = [];
-          let lastEventGroup: string = null;
+          const grouped: EventGroup[] = [];
+          let eventGroup: EventGroup = undefined;
 
-          // rework our last group, new events might fit there
-          if (this.events.length > 0) {
-            eventGroup = this.events.splice(this.events.length, 1)[0];
-            lastEventGroup = this.getEventGrouping(
-              eventGroup[eventGroup.length - 1]
-            );
+          // reflow our last event group in case it merges with our new groups
+          if (this.eventGroups.length > 0) {
+            const sliced = this.eventGroups.splice(0, 1)[0];
+            fetchedEvents.push(...sliced.events);
           }
 
           for (const event of fetchedEvents) {
-            const currentEventGroup = this.getEventGrouping(event);
+            const currentEventGroupType = this.getEventGroupType(event);
 
-            /* console.log(
-              "match",
-              currentEventGroup,
-              lastEventGroup,
-              currentEventGroup === lastEventGroup
-            );*/
-
-            if (
-              eventGroup.length === 0 ||
-              currentEventGroup === lastEventGroup
-            ) {
-              eventGroup.push(event);
-              // console.log(currentEventGroup, lastEventGroup, "adding");
+            // see if we need a new event group
+            if (!eventGroup || eventGroup.type !== currentEventGroupType) {
+              // we have a new type, save our last group
+              if (eventGroup) {
+                grouped.push(eventGroup);
+              }
+              eventGroup = {
+                open: false,
+                events: [event],
+                type: currentEventGroupType,
+              };
             } else {
-              grouped.push(eventGroup);
-              eventGroup = [event];
-              // console.log(currentEventGroup, lastEventGroup, "reset");
+              // our event matches the current group, stuff it in there
+              eventGroup.events.push(event);
             }
-            lastEventGroup = currentEventGroup;
           }
 
-          this.events = [...grouped, ...this.events];
+          if (eventGroup && eventGroup.events.length > 0) {
+            grouped.push(eventGroup);
+            this.eventGroups = [...grouped, ...this.eventGroups];
+          }
+
+          if (results.next_before === this.nextBefore) {
+            this.complete = true;
+          }
           this.nextBefore = results.next_before;
           this.nextAfter = results.next_after;
-
-          // console.log(scrollToEvent);
+          this.fetching = false;
         }
       );
+    }
+
+    if (changedProperties.has("fetching") && !this.fetching) {
+      const events = this.getDiv(".events");
+      if (events.scrollHeight > this.lastHeight) {
+        events.scrollTop =
+          events.scrollTop + events.scrollHeight - this.lastHeight;
+      }
+
+      if (this.scrollToPosition) {
+        if (this.scrollToPosition === Number.MAX_VALUE) {
+          events.scrollTop = events.scrollHeight;
+          this.scrollToPosition = undefined;
+        } else {
+          events.scrollTop = this.scrollToPosition;
+        }
+      }
+    }
+
+    if (changedProperties.has("endpoint")) {
+      this.fetching = true;
     }
   }
 
@@ -462,8 +503,22 @@ export default class ContactChat extends RapidElement {
 
   private handleEventGroupClick(event: MouseEvent) {
     const grouping = event.currentTarget as HTMLDivElement;
-    if (!grouping.classList.contains("expanded")) {
-      grouping.classList.add("expanded");
+    if (grouping.classList.contains("verbose")) {
+      const groupIndex = parseInt(grouping.getAttribute("data-group-index"));
+      const eventGroup = this.eventGroups[
+        this.eventGroups.length - groupIndex - 1
+      ];
+      eventGroup.open = true;
+      this.requestUpdate("eventGroups");
+    }
+  }
+
+  private handleEventScroll(event: MouseEvent) {
+    const events = this.getDiv(".events");
+    if (events.scrollTop <= SCROLL_THRESHOLD) {
+      if (!this.fetching && !this.complete) {
+        this.fetching = true;
+      }
     }
   }
 
@@ -472,27 +527,43 @@ export default class ContactChat extends RapidElement {
       <div style="display: flex; height: 100%">
         <div style="flex-grow: 2; margin-right: 0em; min-width:400px">
           <div class="chat-wrapper">
-            <div class="events">
-              ${this.events.map((eventGroup: ContactEvent[]) => {
-                const grouping = this.getEventGrouping(eventGroup[0]);
-                return html`<div
-                  @click=${this.handleEventGroupClick}
-                  class="grouping ${grouping}"
-                >
-                  ${grouping === "verbose"
-                    ? html`<div class="event-count">
-                        ${eventGroup.length}
-                        ${eventGroup.length === 1 ? html`event` : html`events`}
-                      </div>`
-                    : null}
-                  ${eventGroup.map((event: ContactEvent) => {
-                    return html`<div class="event ${event.type}">
-                      ${this.renderEvent(event)}
-                      ${this.debug ? JSON.stringify(event, null, 1) : null}
-                    </div>`;
-                  })}
-                </div>`;
-              })}
+            <div class="events" @scroll=${throttle(this.handleEventScroll, 50)}>
+              ${this.fetching
+                ? html`<temba-loading units="5" size="10"></temba-loading>`
+                : html`<div style="height:2em"></div>`}
+              ${this.eventGroups.map(
+                (eventGroup: EventGroup, index: number) => {
+                  const grouping = this.getEventGroupType(eventGroup.events[0]);
+                  const groupIndex = this.eventGroups.length - index - 1;
+
+                  const classes = getClasses({
+                    grouping: true,
+                    [grouping]: true,
+                    expanded: eventGroup.open,
+                  });
+
+                  return html`<div
+                    @click=${this.handleEventGroupClick}
+                    data-group-index="${groupIndex}"
+                    class="${classes}"
+                  >
+                    ${grouping === "verbose"
+                      ? html`<div class="event-count">
+                          ${eventGroup.events.length}
+                          ${eventGroup.events.length === 1
+                            ? html`event`
+                            : html`events`}
+                        </div>`
+                      : null}
+                    ${eventGroup.events.map((event: ContactEvent) => {
+                      return html`<div class="event ${event.type}">
+                        ${this.renderEvent(event)}
+                        ${this.debug ? JSON.stringify(event, null, 1) : null}
+                      </div>`;
+                    })}
+                  </div>`;
+                }
+              )}
             </div>
 
             <div class="chatbox">

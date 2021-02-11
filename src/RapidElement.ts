@@ -8,6 +8,8 @@ export interface EventHandler {
 }
 
 export default class RapidElement extends LitElement {
+  private eles: { [selector: string]: HTMLDivElement } = {};
+
   public getEventHandlers(): EventHandler[] {
     return [];
   }
@@ -63,5 +65,16 @@ export default class RapidElement extends LitElement {
         : __closestFrom(((el as Element).getRootNode() as ShadowRoot).host);
     }
     return __closestFrom(base);
+  }
+
+  public getDiv(selector: string) {
+    let ele = this.eles[selector];
+    if (ele) {
+      return ele;
+    }
+
+    ele = this.shadowRoot.querySelector(selector);
+    this.eles[selector] = ele;
+    return ele;
   }
 }

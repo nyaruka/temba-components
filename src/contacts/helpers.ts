@@ -1,5 +1,14 @@
-import { AxiosResponse } from "axios";
+import axios, { AxiosResponse, CancelTokenSource } from "axios";
 import { getUrl } from "../utils";
+
+export const SCROLL_THRESHOLD = 100;
+export const SIMULATED_WEB_SLOWNESS = 500;
+
+export interface EventGroup {
+  type: string;
+  events: ContactEvent[];
+  open: boolean;
+}
 
 export interface ObjectReference {
   uuid: string;
@@ -79,25 +88,40 @@ export interface ContactHistoryPage {
   events: ContactEvent[];
 }
 
+let cancelToken: CancelTokenSource = undefined;
+
 export const fetchContactHistory = (
   endpoint: string,
   before: number = undefined,
   after: number = undefined,
   limit: number = undefined
 ): Promise<ContactHistoryPage> => {
+  // make sure we cancel any previous request
+  if (cancelToken) {
+    cancelToken.cancel();
+  }
+
+  const CancelToken = axios.CancelToken;
+
   return new Promise<ContactHistoryPage>((resolve, reject) => {
+    if (cancelToken) {
+      console.log("canceling cancel token");
+      cancelToken.cancel();
+    }
+
+    cancelToken = CancelToken.source();
+
     let url = endpoint;
     if (before) {
       url += `&before=${before}`;
     }
 
-    getUrl(url)
-      .then((response: AxiosResponse) => {
-        resolve(response.data as ContactHistoryPage);
-      })
-      .catch((error) => reject(error));
+    window.setTimeout(() => {
+      getUrl(url, cancelToken.token)
+        .then((response: AxiosResponse) => {
+          resolve(response.data as ContactHistoryPage);
+        })
+        .catch((error) => reject(error));
+    }, SIMULATED_WEB_SLOWNESS);
   });
 };
-
-// 1612816161547
-// 1612815806414808
