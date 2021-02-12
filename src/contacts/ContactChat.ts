@@ -18,13 +18,16 @@ import {
   Events,
   fetchContactHistory,
   FlowEvent,
+  MAX_CHAT_REFRESH,
+  MIN_CHAT_REFRESH,
   MsgEvent,
   ObjectReference,
   SCROLL_THRESHOLD,
   UpdateFieldEvent,
   UpdateResultEvent,
 } from "./helpers";
-import { getClasses, oxfordFn, throttle, timeSince } from "../utils";
+import { getClasses, oxfordFn, postUrl, throttle, timeSince } from "../utils";
+import TextInput from "../textinput/TextInput";
 
 @customElement("temba-contact-chat")
 export default class ContactChat extends RapidElement {
@@ -39,6 +42,12 @@ export default class ContactChat extends RapidElement {
 
   @property({ type: Boolean })
   fetching: boolean = false;
+
+  @property({ type: String })
+  currentChat: string = "";
+
+  @property({ type: Boolean })
+  refresh: boolean = false;
 
   debug: boolean = false;
 
@@ -278,10 +287,16 @@ export default class ContactChat extends RapidElement {
         margin-top: 1em;
       }
 
+      temba-button[name="Send"] {
+        margin-top: 1em;
+        margin-right: 2px;
+        --button-y: 2px;
+      }
+
     `;
   }
 
-  nextBefore: number = new Date().getTime() * 1000;
+  nextBefore: number;
   nextAfter: number;
   complete: boolean = false;
 
@@ -300,74 +315,178 @@ export default class ContactChat extends RapidElement {
 
   lastHeight: number = undefined;
 
+  private getEventGroups(events: ContactEvent[]): EventGroup[] {
+    const grouped: EventGroup[] = [];
+    let eventGroup: EventGroup = undefined;
+    for (const event of events) {
+      const currentEventGroupType = this.getEventGroupType(event);
+      // see if we need a new event group
+      if (!eventGroup || eventGroup.type !== currentEventGroupType) {
+        // we have a new type, save our last group
+        if (eventGroup) {
+          grouped.push(eventGroup);
+        }
+        eventGroup = {
+          open: false,
+          events: [event],
+          type: currentEventGroupType,
+        };
+      } else {
+        // our event matches the current group, stuff it in there
+        eventGroup.events.push(event);
+      }
+    }
+
+    if (eventGroup && eventGroup.events.length > 0) {
+      grouped.push(eventGroup);
+      // this.eventGroups = [...grouped, ...this.eventGroups];
+    }
+    return grouped;
+  }
+
+  private getLastEventTime(): number {
+    const mostRecentGroup = this.eventGroups[this.eventGroups.length - 1];
+    const mostRecentEvent =
+      mostRecentGroup.events[mostRecentGroup.events.length - 1];
+    return new Date(mostRecentEvent.created_on).getTime();
+  }
+
+  refreshTimeout: any = null;
+
+  private scheduleRefresh() {
+    if (!this.refresh) {
+      const lastEventTime = this.getLastEventTime();
+      const refreshWait = Math.max(
+        Math.min(new Date().getTime() - lastEventTime, MAX_CHAT_REFRESH),
+        MIN_CHAT_REFRESH
+      );
+
+      // cancel any outstanding timeout
+      if (this.refreshTimeout) {
+        window.clearTimeout(this.refreshTimeout);
+      }
+
+      this.refreshTimeout = window.setTimeout(() => {
+        this.refresh = true;
+      }, refreshWait);
+    }
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    const lastEndpoint = this.endpoint;
 
     // if we don't have an endpoint infer one
     if (changedProperties.has("contact")) {
       this.eventGroups = [];
       this.fetching = false;
       this.complete = false;
-      this.nextBefore = new Date().getTime() * 1000;
-      this.nextAfter = undefined;
+      this.nextBefore = null;
+      this.nextAfter = null;
       this.endpoint = `/contact/history/${this.contact.uuid}/?_format=json`;
     }
 
-    if (changedProperties.has("fetching") && this.fetching) {
-      const lastEndpoint = this.endpoint;
-
-      const events = this.getDiv(".events");
-      this.lastHeight = events.scrollHeight;
-
-      fetchContactHistory(this.endpoint, this.nextBefore).then(
+    if (changedProperties.has("refresh") && this.refresh) {
+      const after = (this.getLastEventTime() - 1) * 1000;
+      let forceOpen = false;
+      fetchContactHistory(this.endpoint, null, after).then(
         (results: ContactHistoryPage) => {
           if (lastEndpoint !== this.endpoint) {
             return;
           }
+
+          let fetchedEvents = results.events.reverse();
+
+          // dedupe any events we get from the server
+          // TODO: perhaps make this a little less crazy
+          fetchedEvents = fetchedEvents.filter((item) => {
+            const found = !!this.eventGroups.find(
+              (g) =>
+                !!g.events.find(
+                  (exists) =>
+                    exists.created_on === item.created_on &&
+                    exists.type === item.type
+                )
+            );
+
+            return !found;
+          });
+
+          // reflow our most recent event group in case it merges with our new groups
+          if (this.eventGroups.length > 0) {
+            const sliced = this.eventGroups.splice(
+              this.eventGroups.length - 1,
+              1
+            )[0];
+
+            forceOpen = sliced.open;
+            fetchedEvents.splice(0, 0, ...sliced.events);
+          }
+
+          const grouped = this.getEventGroups(fetchedEvents);
+          if (grouped.length) {
+            if (forceOpen) {
+              grouped[grouped.length - 1].open = forceOpen;
+            }
+
+            this.eventGroups = [...this.eventGroups, ...grouped];
+          }
+          this.refresh = false;
+
+          this.scheduleRefresh();
+        }
+      );
+    }
+
+    if (changedProperties.has("fetching") && this.fetching) {
+      const events = this.getDiv(".events");
+      this.lastHeight = events.scrollHeight;
+
+      if (!this.nextBefore) {
+        this.nextBefore = new Date().getTime() * 1000 - 1000;
+      }
+
+      fetchContactHistory(this.endpoint, this.nextBefore, this.nextAfter).then(
+        (results: ContactHistoryPage) => {
+          if (lastEndpoint !== this.endpoint) {
+            return;
+          }
+
+          let forceOpen = false;
           const fetchedEvents = results.events.reverse();
-
-          const grouped: EventGroup[] = [];
-          let eventGroup: EventGroup = undefined;
-
           // reflow our last event group in case it merges with our new groups
           if (this.eventGroups.length > 0) {
             const sliced = this.eventGroups.splice(0, 1)[0];
+            forceOpen = sliced.open;
             fetchedEvents.push(...sliced.events);
           }
 
-          for (const event of fetchedEvents) {
-            const currentEventGroupType = this.getEventGroupType(event);
-
-            // see if we need a new event group
-            if (!eventGroup || eventGroup.type !== currentEventGroupType) {
-              // we have a new type, save our last group
-              if (eventGroup) {
-                grouped.push(eventGroup);
-              }
-              eventGroup = {
-                open: false,
-                events: [event],
-                type: currentEventGroupType,
-              };
-            } else {
-              // our event matches the current group, stuff it in there
-              eventGroup.events.push(event);
+          const grouped = this.getEventGroups(fetchedEvents);
+          if (grouped.length) {
+            if (forceOpen) {
+              grouped[grouped.length - 1].open = forceOpen;
             }
-          }
 
-          if (eventGroup && eventGroup.events.length > 0) {
-            grouped.push(eventGroup);
             this.eventGroups = [...grouped, ...this.eventGroups];
           }
 
           if (results.next_before === this.nextBefore) {
             this.complete = true;
           }
+
           this.nextBefore = results.next_before;
           this.nextAfter = results.next_after;
           this.fetching = false;
+
+          this.scheduleRefresh();
         }
       );
+    }
+
+    if (changedProperties.has("refresh") && !this.refresh) {
+      const events = this.getDiv(".events");
+      events.scrollTop = events.scrollHeight;
     }
 
     if (changedProperties.has("fetching") && !this.fetching) {
@@ -536,6 +655,37 @@ export default class ContactChat extends RapidElement {
     }
   }
 
+  private handleChatChange(event: Event) {
+    const chat = event.currentTarget as TextInput;
+    this.currentChat = chat.value;
+
+    if (this.currentChat === "refresh") {
+      this.refresh = true;
+    }
+  }
+
+  private handleSend(event: MouseEvent) {
+    postUrl(`/api/v2/broadcasts.json`, {
+      contacts: [this.contact.uuid],
+      text: this.currentChat,
+    })
+      .then((response) => {
+        this.currentChat = "";
+        this.refresh = true;
+      })
+      .catch(() => {
+        // error message dialog?
+      })
+      .finally(() => {
+        // refocus our chatbox
+        const chatbox = this.shadowRoot.querySelector(
+          "temba-textinput"
+        ) as TextInput;
+
+        chatbox.click();
+      });
+  }
+
   public render(): TemplateResult {
     return html`
       <div style="display: flex; height: 100%">
@@ -581,7 +731,21 @@ export default class ContactChat extends RapidElement {
             </div>
 
             <div class="chatbox">
-              <temba-textinput textarea></temba-textinput>
+              <temba-textinput
+                textarea
+                @change=${this.handleChatChange}
+                .value=${this.currentChat}
+              ></temba-textinput>
+
+              <div
+                style="display:flex; align-items: flex-end; flex-direction: column"
+              >
+                <temba-button
+                  name="Send"
+                  ?disabled=${this.currentChat.length === 0 ? true : false}
+                  @click=${this.handleSend}
+                ></temba-button>
+              </div>
             </div>
           </div>
         </div>

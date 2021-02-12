@@ -3,6 +3,8 @@ import { getUrl } from "../utils";
 
 export const SCROLL_THRESHOLD = 100;
 export const SIMULATED_WEB_SLOWNESS = 500;
+export const MAX_CHAT_REFRESH = 15000;
+export const MIN_CHAT_REFRESH = 1000;
 
 export interface EventGroup {
   type: string;
@@ -43,7 +45,7 @@ export enum Events {
 
 export interface ContactEvent {
   type: string;
-  created_on: Date;
+  created_on: string;
 }
 
 export interface MsgEvent extends ContactEvent {
@@ -105,7 +107,6 @@ export const fetchContactHistory = (
 
   return new Promise<ContactHistoryPage>((resolve, reject) => {
     if (cancelToken) {
-      console.log("canceling cancel token");
       cancelToken.cancel();
     }
 
@@ -114,6 +115,10 @@ export const fetchContactHistory = (
     let url = endpoint;
     if (before) {
       url += `&before=${before}`;
+    }
+
+    if (after) {
+      url += `&after=${after}`;
     }
 
     window.setTimeout(() => {

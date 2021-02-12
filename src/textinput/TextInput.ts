@@ -321,6 +321,11 @@ export default class TextInput extends FormElement {
     }
   }
 
+  public click(): void {
+    super.click();
+    this.handleContainerClick();
+  }
+
   // TODO make this a formelement and have contactsearch set the root
   public render(): TemplateResult {
     const containerStyle = {
