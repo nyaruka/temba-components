@@ -49,6 +49,15 @@ export default class ContactChat extends RapidElement {
   @property({ type: Boolean })
   refresh: boolean = false;
 
+  @property({ type: Boolean })
+  complete: boolean = false;
+
+  lastHeight: number = undefined;
+  lastRefreshAdded: number;
+  refreshTimeout: any = null;
+  nextBefore: number;
+  nextAfter: number;
+
   debug: boolean = false;
 
   static get styles() {
@@ -296,10 +305,6 @@ export default class ContactChat extends RapidElement {
     `;
   }
 
-  nextBefore: number;
-  nextAfter: number;
-  complete: boolean = false;
-
   getEventGroupType = (event: ContactEvent) => {
     if (!event) {
       return "messages";
@@ -312,8 +317,6 @@ export default class ContactChat extends RapidElement {
     }
     return "verbose";
   };
-
-  lastHeight: number = undefined;
 
   private getEventGroups(events: ContactEvent[]): EventGroup[] {
     const grouped: EventGroup[] = [];
@@ -339,19 +342,19 @@ export default class ContactChat extends RapidElement {
 
     if (eventGroup && eventGroup.events.length > 0) {
       grouped.push(eventGroup);
-      // this.eventGroups = [...grouped, ...this.eventGroups];
     }
     return grouped;
   }
 
   private getLastEventTime(): number {
     const mostRecentGroup = this.eventGroups[this.eventGroups.length - 1];
-    const mostRecentEvent =
-      mostRecentGroup.events[mostRecentGroup.events.length - 1];
-    return new Date(mostRecentEvent.created_on).getTime();
+    if (mostRecentGroup) {
+      const mostRecentEvent =
+        mostRecentGroup.events[mostRecentGroup.events.length - 1];
+      return new Date(mostRecentEvent.created_on).getTime();
+    }
+    return 0;
   }
-
-  refreshTimeout: any = null;
 
   private scheduleRefresh() {
     if (!this.refresh) {
@@ -412,6 +415,8 @@ export default class ContactChat extends RapidElement {
 
             return !found;
           });
+
+          this.lastRefreshAdded = fetchedEvents.length;
 
           // reflow our most recent event group in case it merges with our new groups
           if (this.eventGroups.length > 0) {
@@ -485,8 +490,16 @@ export default class ContactChat extends RapidElement {
     }
 
     if (changedProperties.has("refresh") && !this.refresh) {
-      const events = this.getDiv(".events");
-      events.scrollTop = events.scrollHeight;
+      if (this.lastRefreshAdded > 0) {
+        const events = this.getDiv(".events");
+
+        // if we are near the bottom, push us to the bottom to show new stuff
+        const distanceFromBottom =
+          events.scrollHeight - events.scrollTop - this.lastHeight;
+        if (distanceFromBottom < 150) {
+          events.scrollTo({ top: events.scrollHeight, behavior: "smooth" });
+        }
+      }
     }
 
     if (changedProperties.has("fetching") && !this.fetching) {
