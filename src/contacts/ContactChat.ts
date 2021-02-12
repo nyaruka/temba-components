@@ -25,6 +25,7 @@ import {
   SCROLL_THRESHOLD,
   UpdateFieldEvent,
   UpdateResultEvent,
+  WebhookEvent,
 } from "./helpers";
 import { getClasses, oxfordFn, postUrl, throttle, timeSince } from "../utils";
 import TextInput from "../textinput/TextInput";
@@ -205,6 +206,15 @@ export default class ContactChat extends RapidElement {
       .event.msg_created .msg,
       .event.broadcast_created .msg {
         background: rgb(231, 243, 255);
+      }
+
+      .webhook_called {
+        fill: #e68628;
+      }
+
+      .webhook_called .failed {
+        fill: var(--color-error);
+        color: var(--color-error);
       }
 
       .contact_field_changed,
@@ -599,6 +609,22 @@ export default class ContactChat extends RapidElement {
     `;
   }
 
+  public renderWebhookEvent(event: WebhookEvent): TemplateResult {
+    return html`
+      <div
+        class="${event.status === "success" ? "" : "failed"}"
+        style="display: flex"
+      >
+        <temba-icon name="cloud-upload"></temba-icon>
+        <div class="description">
+          ${event.status === "success"
+            ? html`Successfully called ${event.url}`
+            : html`Failed to call ${event.url}`}
+        </div>
+      </div>
+    `;
+  }
+
   public renderContactGroupsEvent(event: ContactGroupsEvent): TemplateResult {
     return html`
       <temba-icon name="users-2"></temba-icon>
@@ -639,6 +665,8 @@ export default class ContactChat extends RapidElement {
         return this.renderErrorMessage(event as ErrorMessageEvent);
       case Events.CONTACT_GROUPS_CHANGED:
         return this.renderContactGroupsEvent(event as ContactGroupsEvent);
+      case Events.WEBHOOK_CALLED:
+        return this.renderWebhookEvent(event as WebhookEvent);
     }
 
     return html`<temba-icon name="power"></temba-icon>

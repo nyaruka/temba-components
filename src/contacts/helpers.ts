@@ -81,6 +81,14 @@ export interface ContactGroupsEvent extends ContactEvent {
   groups_added: ObjectReference[];
 }
 
+export interface WebhookEvent extends ContactEvent {
+  status: string;
+  status_code: number;
+  elapsed_ms: number;
+  logs_url: string;
+  url: string;
+}
+
 export interface ContactHistoryPage {
   has_older: boolean;
   recent_only: boolean;
