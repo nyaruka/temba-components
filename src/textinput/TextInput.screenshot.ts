@@ -41,7 +41,7 @@ describe("temba-textinput-screenshots", () => {
   });
 
   it("should render textarea", async () => {
-    const input: TextInput = await fixture(getInputHTML(true));
+    const input: TextInput = await fixture(getInputHTML("hello", true));
     assert.instanceOf(input, TextInput);
     await assertScreenshot("textinput-textarea", clip(70));
   });
