@@ -38,6 +38,7 @@ export const open = async (select: Select) => {
   // searchable has a quiet of 200ms
   clock.tick(200);
   await select.updateComplete;
+
   clock.restore();
 
   return select;
@@ -48,7 +49,7 @@ export const clear = async (select: Select) => {
 };
 
 export const getOptions = (select: Select): Options => {
-  return select.shadowRoot.querySelector("temba-options");
+  return select.shadowRoot.querySelector("temba-options[visible]");
 };
 
 export const clickOption = async (select: Select, index: number) => {
@@ -75,12 +76,12 @@ export const colors = [
 
 export const getSelectHTML = (
   options: any[] = colors,
-  attrs: any = {}
+  attrs: any = { placeholder: "Select a color" }
 ): string => {
   return `
-  <temba-select placeholder='Pick a color' ${Object.keys(attrs)
+  <temba-select ${Object.keys(attrs)
     .map((name: string) => `${name}='${attrs[name]}'`)
-    .join("")}>
+    .join(" ")}>
     ${options
       .map(
         (option) =>
@@ -177,7 +178,9 @@ describe("temba-select", () => {
 
   describe("multiple selection", () => {
     it("can select multiple options", async () => {
-      const select = await createSelect(getSelectHTML(colors, { multi: true }));
+      const select = await createSelect(
+        getSelectHTML(colors, { placeholder: "Select a color", multi: true })
+      );
       expect(select.values.length).to.equal(0);
 
       // select the first option twice
@@ -217,7 +220,10 @@ describe("temba-select", () => {
 
     it("can load from an endpoint", (done) => {
       createSelect(
-        "<temba-select placeholder='Pick a color' endpoint='/colors.json'></temba-select>"
+        getSelectHTML([], {
+          placeholder: "Select a color",
+          endpoint: "/colors.json",
+        })
       ).then((select: Select) => {
         open(select).then(() => {
           // wait for the open
@@ -238,7 +244,11 @@ describe("temba-select", () => {
 
     it("can search an endpoint", async () => {
       const select = await createSelect(
-        "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable></temba-select>"
+        getSelectHTML([], {
+          placeholder: "Select a color",
+          endpoint: "/colors.json",
+          searchable: true,
+        })
       );
 
       await typeInto("temba-select", "re");
@@ -250,7 +260,10 @@ describe("temba-select", () => {
 
     it("pages through cursor results", async () => {
       const select = await createSelect(
-        "<temba-select placeholder='Pick a group' endpoint='/groups.json'></temba-select>"
+        getSelectHTML([], {
+          placeholder: "Select a group",
+          endpoint: "/groups.json",
+        })
       );
 
       await open(select);
@@ -262,7 +275,11 @@ describe("temba-select", () => {
 
     it("shows cached results", async () => {
       const select = await createSelect(
-        "<temba-select placeholder='Pick a group' endpoint='/groups.json' searchable></temba-select>"
+        getSelectHTML([], {
+          placeholder: "Select a group",
+          endpoint: "/groups.json",
+          searchable: true,
+        })
       );
 
       // wait for updates from fetching three pages
@@ -292,7 +309,11 @@ describe("temba-select", () => {
       );
 
       const select = await createSelect(
-        "<temba-select placeholder='Pick a color' endpoint='/colors.json' searchable expressions='session'></temba-select>"
+        getSelectHTML([], {
+          endpoint: "/colors.json",
+          searchable: true,
+          expressions: "session",
+        })
       );
 
       await typeInto("temba-select", "@contact");
