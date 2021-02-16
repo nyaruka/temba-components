@@ -38,7 +38,6 @@ export const open = async (select: Select) => {
   // searchable has a quiet of 200ms
   clock.tick(200);
   await select.updateComplete;
-
   clock.restore();
 
   return select;
