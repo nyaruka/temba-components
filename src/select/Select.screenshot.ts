@@ -4,6 +4,7 @@ import {
   open,
   openAndClick,
   colors,
+  clickOption,
 } from "./Select.test";
 import moxios from "moxios";
 import sinon from "sinon";
@@ -79,8 +80,11 @@ describe("temba-select-screenshots", () => {
   });
 
   it("should look the same with search enabled", async () => {
-    const select = await createSelect(
-      getSelectHTML(colors, { searchable: true }),
+    await createSelect(
+      getSelectHTML(colors, {
+        placeholder: "Select a color",
+        searchable: true,
+      }),
       pause
     );
     await assertScreenshot("select-search", clip());
@@ -113,7 +117,10 @@ describe("temba-select-screenshots", () => {
 
   it("should show search with existing selection", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true }),
+      getSelectHTML(colors, {
+        placeholder: "Select a color",
+        searchable: true,
+      }),
       pause
     );
 
@@ -130,7 +137,11 @@ describe("temba-select-screenshots", () => {
 
   it("should show search with existing multiple selection", async () => {
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true, multi: true }),
+      getSelectHTML(colors, {
+        placeholder: "Select a color",
+        searchable: true,
+        multi: true,
+      }),
       pause
     );
 
@@ -168,7 +179,11 @@ describe("temba-select-screenshots", () => {
     await loadStore();
 
     const select = await createSelect(
-      getSelectHTML(colors, { searchable: true, expressions: true }),
+      getSelectHTML(colors, {
+        placeholder: "Select a color",
+        searchable: true,
+        expressions: "session",
+      }),
       pause
     );
 
@@ -176,6 +191,29 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     await assertScreenshot("select-expression-function", clip(250));
+  });
+
+  it("can select expression completion as value", async () => {
+    moxios.stubRequest("/completion.json", {
+      status: 200,
+      responseText: JSON.stringify(completion),
+    });
+
+    await fixture("<temba-store completions='/completion.json'></temba-store>");
+
+    const select = await createSelect(
+      getSelectHTML(colors, {
+        multi: true,
+        placeholder: "Select a color",
+        searchable: true,
+        expressions: "session",
+      }),
+      pause
+    );
+
+    await typeInto("temba-select", "@con");
+    await openAndClick(select, 0);
+    await assertScreenshot("select-expression-selected", clip());
   });
 
   it("shows clear option", async () => {
