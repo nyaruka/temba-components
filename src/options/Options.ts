@@ -298,7 +298,11 @@ export default class Options extends RapidElement {
     }
 
     const selected = this.options[index];
-    this.fireCustomEvent(CustomEventType.Selection, { selected, tabbed });
+    this.fireCustomEvent(CustomEventType.Selection, {
+      selected,
+      tabbed,
+      index,
+    });
   }
 
   private moveCursor(direction: number): void {

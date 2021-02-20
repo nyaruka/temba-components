@@ -52,6 +52,7 @@ export enum CustomEventType {
   Loaded = "temba-loaded",
   Canceled = "temba-canceled",
   CursorChanged = "temba-cursor-changed",
+  Refreshed = "temba-refreshed",
   Selection = "temba-selection",
   ButtonClicked = "temba-button-clicked",
   DialogHidden = "temba-dialog-hidden",

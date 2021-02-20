@@ -59,7 +59,7 @@ export default class VectorIcon extends LitElement {
   public render(): TemplateResult {
     return html`
       <svg style="height:${this.size}em;width:${this.size}em;">
-        <use href="/sitestatic/icons/symbol-defs.svg#icon-${
+        <use href="/sitestatic/icons/symbol-defs.svg?#icon-${
           this.name || this.id
         }"></i>
       </span>

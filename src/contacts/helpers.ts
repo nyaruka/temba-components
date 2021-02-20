@@ -1,4 +1,5 @@
 import axios, { AxiosResponse, CancelTokenSource } from "axios";
+import { Contact } from "../interfaces";
 import { getUrl } from "../utils";
 
 export const SCROLL_THRESHOLD = 100;
@@ -99,6 +100,16 @@ export interface ContactHistoryPage {
 }
 
 let cancelToken: CancelTokenSource = undefined;
+
+export const getContactDisplayName = (contact: Contact) => {
+  if (contact.name) {
+    return contact.name;
+  }
+  if (contact.urns.length > 0) {
+    return contact.urns[0].split(":")[1];
+  }
+  return "****";
+};
 
 export const fetchContactHistory = (
   endpoint: string,

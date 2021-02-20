@@ -3,6 +3,7 @@ import { CompletionSchema, KeyedAssets } from "../completion/helpers";
 import { AxiosResponse } from "axios";
 import { getUrl, getAssets, Asset } from "../utils";
 import { CompletionOption } from "../completion/Completion";
+import { ContactField } from "./interfaces";
 
 @customElement("temba-store")
 export default class Store extends LitElement {
@@ -30,6 +31,8 @@ export default class Store extends LitElement {
   @property({ type: Object, attribute: false })
   private keyedAssets: KeyedAssets = {};
 
+  private fields: { [key: string]: ContactField } = {};
+
   public firstUpdated(changedProperties: Map<string, any>) {
     if (this.completionsEndpoint) {
       getUrl(this.completionsEndpoint).then((response) => {
@@ -45,7 +48,11 @@ export default class Store extends LitElement {
 
     if (this.fieldsEndpoint) {
       getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
-        this.keyedAssets["fields"] = assets.map((asset: Asset) => asset.key);
+        this.keyedAssets["fields"] = [];
+        assets.forEach((field: ContactField) => {
+          this.keyedAssets["fields"].push(field.key);
+          this.fields[field.key] = field;
+        });
       });
     }
 
@@ -74,5 +81,9 @@ export default class Store extends LitElement {
 
   public getKeyedAssets(): KeyedAssets {
     return this.keyedAssets;
+  }
+
+  public getContactField(key: string): ContactField {
+    return this.fields[key];
   }
 }

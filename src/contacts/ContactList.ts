@@ -8,19 +8,22 @@ import {
 import TembaList from "../list/TembaList";
 import FormElement from "../FormElement";
 import { timeSince } from "../utils";
-import { loremIpsum } from "lorem-ipsum";
-
-export const createContact = (contact: any) => {
-  contact["snippet"] = loremIpsum();
-};
+import { getContactDisplayName } from "./helpers";
 
 @customElement("temba-contacts")
 export default class ContactList extends FormElement {
   @property({ type: String })
   endpoint: string;
 
+  @property({ type: String })
+  refreshKey: string;
+
   static get styles() {
     return css``;
+  }
+
+  public refresh(): void {
+    this.refreshKey = "requested_" + new Date().getTime();
   }
 
   private handleChange(event: Event) {
@@ -34,13 +37,19 @@ export default class ContactList extends FormElement {
       <div style="display: flex-col;">
         <div style="display:flex;	align-items: center;">
           <div style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em">
-            ${contact.name}
+            ${getContactDisplayName(contact)}
           </div>
           <div style="font-size: 11px">
             ${timeSince(new Date(contact.modified_on))}
           </div>
         </div>
-        <div style="font-size: 11px; margin:0.4em 0">${contact.snippet}</div>
+        ${contact.last_msg
+          ? html`
+              <div style="font-size: 11px; margin:0.4em 0">
+                ${contact.last_msg.text}
+              </div>
+            `
+          : null}
       </div>
     `;
   }
@@ -50,9 +59,9 @@ export default class ContactList extends FormElement {
       <temba-list
         @change=${this.handleChange.bind(this)}
         valueKey="uuid"
-        .endpoint=${this.endpoint}
+        .endpoint="${this.endpoint}&folder=open"
+        .refreshKey=${this.refreshKey}
         .renderOption=${this.renderOption.bind(this)}
-        .sanitizeOption=${createContact}
       ></temba-list>
     `;
   }

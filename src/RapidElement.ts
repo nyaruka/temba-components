@@ -55,6 +55,29 @@ export default class RapidElement extends LitElement {
     this.dispatchEvent(event);
   }
 
+  public dispatchEvent(event: any): any {
+    super.dispatchEvent(event);
+
+    const ele = event.target;
+    const eventFire = (ele as any)["on" + event.type];
+    if (eventFire) {
+      eventFire(event);
+    } else {
+      // lookup events with @ prefix and try to invoke them
+      const func = new Function(
+        "event",
+        `with(document) {
+          with(this) {
+            let handler = ${ele.getAttribute("@" + event.type)};
+            if(typeof attr === 'function') { 
+              handler(event) ;
+            }
+          }
+        }`
+      );
+      func.call(ele, event);
+    }
+  }
   public closestElement(selector: string, base: Element = this) {
     function __closestFrom(el: Element | Window | Document): Element {
       if (!el || el === document || el === window) return null;
