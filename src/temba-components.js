@@ -19,7 +19,7 @@ import "./checkbox/Checkbox";
 import "./datepicker/DatePicker";
 import "./shadowless/Shadowless";
 import "./charcount/CharCount";
-import "./contacts/ContactList";
 import "./contacts/ContactDetails";
 import "./contacts/ContactChat";
 import "./list/TembaList";
+import "./list/TicketList";

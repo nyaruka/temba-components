@@ -1,8 +1,8 @@
 import { fixture, expect, assert } from "@open-wc/testing";
-import ContactList from "./ContactList";
+import ContactList from "./TicketList";
 
 export const getHTML = () => {
-  return `<temba-contacts></temba-contacts>`;
+  return `<temba-tickets></temba-tickets>`;
 };
 
 describe("temba-contacts", () => {

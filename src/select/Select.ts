@@ -552,6 +552,7 @@ export default class Select extends FormElement {
     this.next = null;
     this.complete = true;
     this.selectedIndex = -1;
+
     this.fireEvent("change");
   }
 
@@ -856,6 +857,7 @@ export default class Select extends FormElement {
       this.next = null;
       this.complete = true;
       this.visibleOptions = [];
+      this.cursorIndex = 0;
     }
   }
 

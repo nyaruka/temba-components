@@ -59,14 +59,15 @@ export default class RapidElement extends LitElement {
     super.dispatchEvent(event);
 
     const ele = event.target;
-    const eventFire = (ele as any)["on" + event.type];
-    if (eventFire) {
-      eventFire(event);
-    } else {
-      // lookup events with @ prefix and try to invoke them
-      const func = new Function(
-        "event",
-        `with(document) {
+    if (ele) {
+      const eventFire = (ele as any)["@" + event.type];
+      if (eventFire) {
+        eventFire(event);
+      } else {
+        // lookup events with @ prefix and try to invoke them
+        const func = new Function(
+          "event",
+          `with(document) {
           with(this) {
             let handler = ${ele.getAttribute("@" + event.type)};
             if(typeof attr === 'function') { 
@@ -74,8 +75,9 @@ export default class RapidElement extends LitElement {
             }
           }
         }`
-      );
-      func.call(ele, event);
+        );
+        func.call(ele, event);
+      }
     }
   }
   public closestElement(selector: string, base: Element = this) {

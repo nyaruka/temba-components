@@ -6,9 +6,26 @@ import {
   html,
   css,
 } from "lit-element";
+import { getClasses } from "../utils";
 
 @customElement("temba-icon")
 export default class VectorIcon extends LitElement {
+  @property({ type: String })
+  name: string;
+
+  // same as name but without implicit coloring
+  @property({ type: String })
+  id: string;
+
+  @property({ type: Number })
+  size: number = 1;
+
+  @property({ type: Boolean })
+  spin: boolean;
+
+  @property({ type: Boolean })
+  clickable: boolean;
+
   static get styles() {
     return css`
       :host {
@@ -35,9 +52,18 @@ export default class VectorIcon extends LitElement {
       svg {
         display: block;
         fill: var(--icon-color);
+        transform: rotate(360deg);
+        transition: transform 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          fill 100ms ease-in-out;
       }
 
-      svg:hover {
+      svg.clickable:hover {
+        cursor: pointer;
+        fill: var(--color-link-primary);
+      }
+
+      .spin {
+        transform: rotate(0deg);
       }
     `;
   }
@@ -46,21 +72,30 @@ export default class VectorIcon extends LitElement {
     super();
   }
 
-  @property({ type: String })
-  name: string;
+  lastName: string;
 
-  // same as name but without implicit coloring
-  @property({ type: String })
-  id: string;
-
-  @property({ type: Number })
-  size: number = 1;
+  public updated(changes: Map<string, any>) {
+    super.updated(changes);
+    if (changes.has("name")) {
+      this.lastName = changes.get("name");
+      if (this.lastName) {
+        this.spin = !this.spin;
+        setTimeout(() => {
+          this.lastName = null;
+          this.requestUpdate();
+        }, 300);
+      }
+    }
+  }
 
   public render(): TemplateResult {
     return html`
-      <svg style="height:${this.size}em;width:${this.size}em;">
+      <svg style="height:${this.size}em;width:${
+      this.size
+    }em;" class="${getClasses({ spin: this.spin, clickable: this.clickable })}">
+    
         <use href="/sitestatic/icons/symbol-defs.svg?#icon-${
-          this.name || this.id
+          this.lastName || this.name || this.id
         }"></i>
       </span>
     `;

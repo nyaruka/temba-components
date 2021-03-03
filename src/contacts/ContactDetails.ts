@@ -5,16 +5,21 @@ import {
   property,
   TemplateResult,
 } from "lit-element";
-import { Group } from "../interfaces";
+import { Contact, ContactTicket, Group } from "../interfaces";
 import RapidElement from "../RapidElement";
-import { isDate, timeSince } from "../utils";
+import { fetchResults, isDate, timeSince } from "../utils";
 import Button from "../button/Button";
 import Store from "../store/Store";
+import { fetchContact } from "./helpers";
 
 @customElement("temba-contact-details")
 export default class ContactDetails extends RapidElement {
+  // display name comes from the tickets endpoint
   @property({ type: Object })
-  contact: any;
+  ticket: ContactTicket;
+
+  @property({ attribute: false, type: Object })
+  contact: Contact;
 
   @property({ attribute: false })
   flow: any = null;
@@ -23,13 +28,21 @@ export default class ContactDetails extends RapidElement {
   @property({ type: Array })
   fields: string[] = [];
 
+  @property({ type: String })
+  endpoint: string;
+
   static get styles() {
     return css`
       :host {
-        background: #f2f2f2;
+        box-shadow: inset 7px 0 14px -7px rgba(0, 0, 0, 0.15);
+        background: #e9e9e9;
         display: block;
         height: 100%;
-        padding: 1.5em;
+      }
+
+      .wrapper {
+        padding-right: 3.5em;
+        padding-left: 1em;
       }
 
       a {
@@ -40,9 +53,24 @@ export default class ContactDetails extends RapidElement {
         font-size: 0.8em;
       }
 
+      .contact {
+        // border-top-right-radius: 0.5em;
+        // overflow: hidden;
+      }
+
       .contact > .name {
+        box-shadow: inset 7px 0 14px -7px rgba(0, 0, 0, 0.15);
+
         font-size: 18px;
         font-weight: 400;
+        // margin-top: -0.75em;
+        // margin-left: -0.75em;
+        // margin-right: -2em;
+        padding: 0.75em;
+        padding-right: 1em;
+        margin-bottom: 0.5em;
+        background: #ccc;
+        color: #333;
       }
 
       .group-label {
@@ -59,13 +87,15 @@ export default class ContactDetails extends RapidElement {
         font-size: 0.75rem;
         font-weight: 400;
         border-radius: 9999px;
-        background-color: rgba(0, 0, 0, 0.05);
+        background-color: #fafafa;
         color: rgba(0, 0, 0, 0.5);
         letter-spacing: 0.025em;
         white-space: nowrap;
         text-align: center;
         margin-right: 6px;
         margin-top: 6px;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .group-label::before {
@@ -105,7 +135,6 @@ export default class ContactDetails extends RapidElement {
 
         display: flex;
         flex-direction: column;
-        // align-items: center;
         margin-bottom: 0.3em;
       }
 
@@ -129,12 +158,15 @@ export default class ContactDetails extends RapidElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("contact")) {
+    if (changes.has("endpoint")) {
       this.flow = null;
       this.expandFields = false;
-      this.fields = Object.keys(this.contact.fields).filter(
-        (key: string) => !!this.contact.fields[key]
-      );
+      fetchContact(this.endpoint).then((contact: Contact) => {
+        this.contact = contact;
+        this.fields = Object.keys(this.contact.fields).filter(
+          (key: string) => !!this.contact.fields[key]
+        );
+      });
     }
   }
 
@@ -157,43 +189,50 @@ export default class ContactDetails extends RapidElement {
     const store: Store = document.querySelector("temba-store");
     if (this.contact) {
       return html`<div class="contact">
-        <div class="name">${this.contact.name}</div>
-        <div>
-          ${this.contact.groups.map((group: Group) => {
-            return html`<div class="group-label">${group.name}</div>`;
-          })}
-        </div>
-        <div class="fields-wrapper">
-          <div class="fields">
-            ${this.fields
-              .slice(0, this.expandFields ? 255 : 3)
-              .map((key: string) => {
-                let value = this.contact.fields[key];
-
-                if (value) {
-                  if (isDate(value)) {
-                    value = timeSince(new Date(value));
-                  }
-                  return html`<div class="field">
-                    <div class="name">${store.getContactField(key).label}</div>
-                    <div class="value">${value}</div>
-                  </div>`;
-                }
-              })}
-
-            <div class="field-links">
-              ${this.fields.length > 3
-                ? !this.expandFields
-                  ? html`<a href="#" @click="${this.handleExpandFields}"
-                      >more</a
-                    >`
-                  : html`<a href="#" @click="${this.handleHideFields}">less</a>`
-                : null}
-            </div>
+        <div class="name">${this.contact.name || this.ticket.contact.name}</div>
+        <div class="wrapper">
+          <div>
+            ${this.contact.groups.map((group: Group) => {
+              return html`<div class="group-label">${group.name}</div>`;
+            })}
           </div>
-        </div>
+          ${this.fields.length > 0
+            ? html` <div class="fields-wrapper">
+                <div class="fields">
+                  ${this.fields
+                    .slice(0, this.expandFields ? 255 : 3)
+                    .map((key: string) => {
+                      let value = this.contact.fields[key];
 
-        <div class="actions">
+                      if (value) {
+                        if (isDate(value)) {
+                          value = timeSince(new Date(value));
+                        }
+                        return html`<div class="field">
+                          <div class="name">
+                            ${store.getContactField(key).label}
+                          </div>
+                          <div class="value">${value}</div>
+                        </div>`;
+                      }
+                    })}
+
+                  <div class="field-links">
+                    ${this.fields.length > 3
+                      ? !this.expandFields
+                        ? html`<a href="#" @click="${this.handleExpandFields}"
+                            >more</a
+                          >`
+                        : html`<a href="#" @click="${this.handleHideFields}"
+                            >less</a
+                          >`
+                      : null}
+                  </div>
+                </div>
+              </div>`
+            : null}
+
+          <!--div class="actions">
           <div class="start-flow">
             <temba-select
               endpoint="/api/v2/flows.json?archived=false"
@@ -203,6 +242,7 @@ export default class ContactDetails extends RapidElement {
               @temba-selection=${this.handleFlowChanged}
             ></temba-select>
           </div>
+        </div-->
         </div>
       </div>`;
     }

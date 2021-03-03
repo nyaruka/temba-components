@@ -95,6 +95,11 @@ export default class Options extends RapidElement {
         max-height: inherit;
         height: 100%;
       }
+
+      temba-loading {
+        align-self: center;
+        margin-top: 0.025em;
+      }
     `;
   }
 
@@ -142,6 +147,9 @@ export default class Options extends RapidElement {
 
   @property({ type: String })
   valueKey: string = "value";
+
+  @property({ type: Boolean })
+  loading: boolean = false;
 
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
@@ -229,8 +237,8 @@ export default class Options extends RapidElement {
       const previousCount = prevOptions ? prevOptions.length : 0;
       const newCount = this.options ? this.options.length : 0;
 
-      // if our option size is shrinking, reset our cursor
       if (
+        this.cursorIndex === -1 ||
         newCount < previousCount ||
         (previousCount === 0 &&
           newCount > 0 &&
@@ -481,6 +489,31 @@ export default class Options extends RapidElement {
     });
 
     const options = this.options || [];
+
+    let body = html`<div
+      style="padding: 1em;
+      margin-bottom: 1;
+      display: flex;
+      flex-direction: column;"
+    >
+      <temba-loading></temba-loading>
+    </div>`;
+    if (!this.loading) {
+      body = html`${repeat(
+        options,
+        (option) => option[this.valueKey],
+        (option, index) =>
+          html`<div
+            data-option-index="${index}"
+            @mousemove=${this.handleMouseMove}
+            @click=${this.handleOptionClick}
+            class="option ${index === this.cursorIndex ? "focused" : ""}"
+          >
+            ${renderOption(option, index === this.cursorIndex)}
+          </div>`
+      )}`;
+    }
+
     return html`
       <div
         class="options-container ${classes}"
@@ -491,19 +524,7 @@ export default class Options extends RapidElement {
           class="${classesInner}"
           style=${styleMap(optionsStyle)}
         >
-          ${repeat(
-            options,
-            (option) => option[this.valueKey],
-            (option, index) =>
-              html`<div
-                data-option-index="${index}"
-                @mousemove=${this.handleMouseMove}
-                @click=${this.handleOptionClick}
-                class="option ${index === this.cursorIndex ? "focused" : ""}"
-              >
-                ${renderOption(option, index === this.cursorIndex)}
-              </div>`
-          )}
+          ${body}
         </div>
         <slot></slot>
       </div>

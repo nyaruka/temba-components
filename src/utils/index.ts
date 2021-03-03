@@ -110,7 +110,7 @@ export const getAssets = async (url: string): Promise<Asset[]> => {
   return assets;
 };
 
-export const getHeaders = (pjax: boolean) => {
+export const getHeaders = (pjax: boolean = false) => {
   const csrf = getCookie("csrftoken");
   const headers: any = csrf ? { "X-CSRFToken": csrf } : {};
 
@@ -120,6 +120,9 @@ export const getHeaders = (pjax: boolean) => {
   if (pjax) {
     headers["X-PJAX"] = "true";
   }
+
+  // we should update smartmin to look for ajax markers for json
+  headers["X-FORMAX"] = "true";
 
   return headers;
 };
@@ -142,6 +145,45 @@ export const postUrl = (
   pjax: boolean = false
 ): Promise<AxiosResponse> => {
   return axios.post(url, payload, { headers: getHeaders(pjax) });
+};
+
+export interface FormResponse {
+  success: boolean;
+  results: any;
+}
+
+export const postFormData = (
+  url: string,
+  formData: FormData
+): Promise<FormResponse> => {
+  return new Promise<any>((resolve, reject) => {
+    axios
+      .post(url, formData, {
+        headers: getHeaders(),
+        params: { _format: "json" },
+      })
+      .then((response: AxiosResponse) => {
+        if (response.data.status !== "success") {
+          reject({ errors: response.data.errors });
+        } else {
+          resolve({ success: true, results: response.data.results });
+        }
+      })
+      .catch((reason) => {
+        reject(reason);
+      });
+  });
+};
+
+export const postForm = (
+  url: string,
+  payload: any | FormData
+): Promise<FormResponse> => {
+  const formData = new FormData();
+  Object.keys(payload).forEach((key: string) => {
+    formData.append(key, payload[key]);
+  });
+  return postFormData(url, formData);
 };
 
 /**

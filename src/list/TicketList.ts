@@ -8,22 +8,33 @@ import {
 import TembaList from "../list/TembaList";
 import FormElement from "../FormElement";
 import { timeSince } from "../utils";
-import { getContactDisplayName } from "./helpers";
+import { ContactTicket } from "../interfaces";
 
-@customElement("temba-contacts")
-export default class ContactList extends FormElement {
+@customElement("temba-tickets")
+export default class TicketList extends FormElement {
   @property({ type: String })
   endpoint: string;
 
   @property({ type: String })
   refreshKey: string;
 
+  @property({ type: String })
+  nextSelection: string;
+
   static get styles() {
-    return css``;
+    return css`
+      :host {
+        width: 100%;
+      }
+    `;
   }
 
   public refresh(): void {
     this.refreshKey = "requested_" + new Date().getTime();
+  }
+
+  public setNextSelection(value: string) {
+    this.nextSelection = value;
   }
 
   private handleChange(event: Event) {
@@ -32,21 +43,26 @@ export default class ContactList extends FormElement {
   }
 
   /** An option in the drop down */
-  private renderOption(contact: any, selected: boolean): TemplateResult {
+  private renderOption(
+    ticket: ContactTicket,
+    selected: boolean
+  ): TemplateResult {
     return html`
       <div style="display: flex-col;">
         <div style="display:flex;	align-items: center;">
           <div style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em">
-            ${getContactDisplayName(contact)}
+            ${ticket.contact.name}
           </div>
           <div style="font-size: 11px">
-            ${timeSince(new Date(contact.modified_on))}
+            ${timeSince(new Date(ticket.contact.modified_on))}
           </div>
         </div>
-        ${contact.last_msg
+        ${ticket.contact.last_msg
           ? html`
-              <div style="font-size: 11px; margin:0.4em 0">
-                ${contact.last_msg.text}
+              <div
+                style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+              >
+                ${ticket.contact.last_msg.text}
               </div>
             `
           : null}
@@ -59,7 +75,8 @@ export default class ContactList extends FormElement {
       <temba-list
         @change=${this.handleChange.bind(this)}
         valueKey="uuid"
-        .endpoint="${this.endpoint}&folder=open"
+        .nextSelection="${this.nextSelection}"
+        .endpoint="${this.endpoint}"
         .refreshKey=${this.refreshKey}
         .renderOption=${this.renderOption.bind(this)}
       ></temba-list>

@@ -5,6 +5,7 @@ import {
   property,
   TemplateResult,
 } from "lit-element";
+import { SIMULATED_WEB_SLOWNESS } from "../contacts/helpers";
 import { CustomEventType } from "../interfaces";
 import RapidElement from "../RapidElement";
 import { fetchResultsPage, ResultsPage } from "../utils";
@@ -30,6 +31,12 @@ export default class TembaList extends RapidElement {
 
   @property({ type: String })
   valueKey: string = "id";
+
+  @property({ type: Boolean })
+  loading: boolean = false;
+
+  @property({ type: String })
+  nextSelection: string;
 
   @property({ attribute: false })
   getNextRefresh: (firstOption: any) => any;
@@ -61,11 +68,13 @@ export default class TembaList extends RapidElement {
       :host {
         display: block;
         height: 100%;
+        width: 100%;
       }
 
       temba-options {
         display: block;
         height: 100%;
+        width: 100%;
       }
     `;
   }
@@ -82,12 +91,23 @@ export default class TembaList extends RapidElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
+    if (changedProperties.has("endpoint") && this.endpoint) {
+      this.loading = true;
+      window.setTimeout(() => {
+        this.fetchItems();
+      }, SIMULATED_WEB_SLOWNESS);
+    }
+
     if (
-      (changedProperties.has("endpoint") ||
-        changedProperties.has("refreshKey")) &&
-      this.endpoint
+      changedProperties.has("refreshKey") &&
+      !changedProperties.has("endpoint")
     ) {
-      this.fetchItems();
+      this.fetchItems().then(() => {
+        if (this.nextSelection) {
+          this.setSelection(this.nextSelection);
+          this.nextSelection = null;
+        }
+      });
     }
 
     if (changedProperties.has("mostRecentItem")) {
@@ -99,8 +119,24 @@ export default class TembaList extends RapidElement {
     }
   }
 
+  /** performs setSelection but is deferred until after the next fetch */
+  private setNextSelection(value: string) {
+    this.nextSelection = value;
+  }
+
+  private setSelection(value: string) {
+    const index = this.items.findIndex((item) => {
+      return item[this.valueKey] === value;
+    });
+    this.cursorIndex = index;
+    this.selected = this.items[index];
+    const evt = new Event("change", { bubbles: true });
+    this.dispatchEvent(evt);
+  }
+
   private async fetchItems() {
     let endpoint = this.endpoint;
+
     let pagesToFetch = this.pages || 1;
     this.pages = 0;
     this.nextPage = null;
@@ -135,7 +171,11 @@ export default class TembaList extends RapidElement {
     // see if our cursor needs to move to stay on the same item
     const newItem = fetchedItems[this.cursorIndex];
 
-    if (newItem && newItem[this.valueKey] !== this.selected[this.valueKey]) {
+    if (
+      this.selected &&
+      newItem &&
+      newItem[this.valueKey] !== this.selected[this.valueKey]
+    ) {
       const index = fetchedItems.findIndex((item) => {
         return item[this.valueKey] === this.selected[this.valueKey];
       });
@@ -144,10 +184,7 @@ export default class TembaList extends RapidElement {
 
     // save our results
     this.items = fetchedItems;
-
-    // const nextRefresh = this.getNextRefresh
-    // ? this.getNextRefresh(fetchedItems[0]) || DEFAULT_REFRESH
-    // : DEFAULT_REFRESH;
+    this.loading = false;
   }
 
   private handleScrollThreshold(event: CustomEvent) {
@@ -179,6 +216,7 @@ export default class TembaList extends RapidElement {
       ?visible=${true}
       ?block=${true}
       valueKey=${this.valueKey}
+      ?loading=${this.loading}
       .renderOption=${this.renderOption}
       .renderOptionDetail=${this.renderOptionDetail}
       @temba-scroll-threshold=${this.handleScrollThreshold}

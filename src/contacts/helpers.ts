@@ -1,11 +1,11 @@
 import axios, { AxiosResponse, CancelTokenSource } from "axios";
 import { Contact } from "../interfaces";
-import { getUrl } from "../utils";
+import { fetchResults, getUrl, postUrl } from "../utils";
 
 export const SCROLL_THRESHOLD = 100;
-export const SIMULATED_WEB_SLOWNESS = 500;
-export const MAX_CHAT_REFRESH = 15000;
-export const MIN_CHAT_REFRESH = 1000;
+export const SIMULATED_WEB_SLOWNESS = 0;
+export const MAX_CHAT_REFRESH = 10000;
+export const MIN_CHAT_REFRESH = 500;
 
 export interface EventGroup {
   type: string;
@@ -99,37 +99,44 @@ export interface ContactHistoryPage {
   events: ContactEvent[];
 }
 
-let cancelToken: CancelTokenSource = undefined;
-
-export const getContactDisplayName = (contact: Contact) => {
-  if (contact.name) {
-    return contact.name;
-  }
-  if (contact.urns.length > 0) {
-    return contact.urns[0].split(":")[1];
-  }
-  return "****";
+export const closeTicket = (uuid: string): Promise<AxiosResponse> => {
+  const formData = new FormData();
+  formData.append("status", "C");
+  return postUrl(`/ticket/update/${uuid}/?_format=json`, formData);
 };
 
+export const fetchContact = (endpoint: string): Promise<Contact> => {
+  return new Promise<Contact>((resolve, reject) => {
+    fetchResults(endpoint).then((contacts: Contact[]) => {
+      if (contacts && contacts.length === 1) {
+        resolve(contacts[0]);
+      } else {
+        reject("No contact found");
+      }
+    });
+  });
+};
+
+let pendingRequests: CancelTokenSource[] = [];
+
 export const fetchContactHistory = (
+  reset: boolean,
   endpoint: string,
   before: number = undefined,
   after: number = undefined,
   limit: number = undefined
 ): Promise<ContactHistoryPage> => {
-  // make sure we cancel any previous request
-  if (cancelToken) {
-    cancelToken.cancel();
+  if (reset) {
+    pendingRequests.forEach((token) => {
+      token.cancel();
+    });
+    pendingRequests = [];
   }
 
-  const CancelToken = axios.CancelToken;
-
   return new Promise<ContactHistoryPage>((resolve, reject) => {
-    if (cancelToken) {
-      cancelToken.cancel();
-    }
-
-    cancelToken = CancelToken.source();
+    const CancelToken = axios.CancelToken;
+    const cancelToken = CancelToken.source();
+    pendingRequests.push(cancelToken);
 
     let url = endpoint;
     if (before) {
@@ -140,12 +147,16 @@ export const fetchContactHistory = (
       url += `&after=${after}`;
     }
 
-    window.setTimeout(() => {
-      getUrl(url, cancelToken.token)
-        .then((response: AxiosResponse) => {
-          resolve(response.data as ContactHistoryPage);
-        })
-        .catch((error) => reject(error));
-    }, SIMULATED_WEB_SLOWNESS);
+    getUrl(url, cancelToken.token)
+      .then((response: AxiosResponse) => {
+        pendingRequests = pendingRequests.filter((token: CancelTokenSource) => {
+          token.token !== response.config.cancelToken;
+        });
+
+        resolve(response.data as ContactHistoryPage);
+      })
+      .catch((error) => {
+        // canceled
+      });
   });
 };

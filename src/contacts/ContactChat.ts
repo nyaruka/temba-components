@@ -6,10 +6,9 @@ import {
   TemplateResult,
 } from "lit-element";
 import RapidElement from "../RapidElement";
-import ContactDetails from "../contacts/ContactDetails";
-import VectorIcon from "../vectoricon/VectorIcon";
-import { Contact, CustomEventType } from "../interfaces";
+import { Contact, ContactTicket, CustomEventType } from "../interfaces";
 import {
+  closeTicket,
   ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
@@ -27,16 +26,27 @@ import {
   UpdateResultEvent,
   WebhookEvent,
 } from "./helpers";
-import { getClasses, oxfordFn, postUrl, throttle, timeSince } from "../utils";
+import {
+  getClasses,
+  getUrl,
+  oxfordFn,
+  postForm,
+  postUrl,
+  throttle,
+  timeSince,
+} from "../utils";
 import TextInput from "../textinput/TextInput";
 
 @customElement("temba-contact-chat")
 export default class ContactChat extends RapidElement {
   @property({ type: Object })
-  contact: Contact;
+  ticket: ContactTicket = null;
 
   @property({ type: String })
   endpoint: string;
+
+  @property({ type: String })
+  contactsEndpoint: string = "/api/v2/contacts.json";
 
   @property({ type: Array })
   eventGroups: EventGroup[] = [];
@@ -54,7 +64,7 @@ export default class ContactChat extends RapidElement {
   complete: boolean = false;
 
   @property({ type: Boolean })
-  showDetails: boolean = true;
+  showDetails: boolean = false;
 
   @property({ type: Boolean })
   debug: boolean = false;
@@ -67,6 +77,7 @@ export default class ContactChat extends RapidElement {
   refreshTimeout: any = null;
   nextBefore: number;
   nextAfter: number;
+  empty = false;
 
   static get styles() {
     return css`
@@ -77,31 +88,21 @@ export default class ContactChat extends RapidElement {
 
         height: 100%;
         border-radius: 0.5rem;
-        background-color: #fff;
+        
         flex-grow: 1;
         width: 100%;
         display: block;
-        overflow: hidden;
+        background: #f2f2f2;
+        overflow:hidden;
       }
 
-      temba-contact-details {
-        padding-right: 1em;
-        padding-top: 1em;
-        padding-left: .5em;
-        flex-basis: 16em;
-        flex-grow: 0;
-        flex-shrink: 0;
-        transition: margin 200ms ease-in-out;
-      }
-
-      temba-contact-details.hidden {
-        margin-right:-17.5em;
-      }
 
       .chat-wrapper {
         display: flex;
         flex-direction: column;
         height: 100%;
+        background: #fff;
+        
       }
 
       .events {
@@ -111,6 +112,7 @@ export default class ContactChat extends RapidElement {
         margin-bottom: 1;
         display: flex;
         flex-direction: column;
+        // min-width:80%
       }
 
       .grouping {
@@ -341,22 +343,84 @@ export default class ContactChat extends RapidElement {
         z-index: 1000;
       }
 
-      temba-button[name="Send"] {
+      #send-button {
         margin-top: 1em;
         margin-right: 2px;
         --button-y: 2px;
       }
 
-      .detail-slider {
+
+      .toolbar {
         position: relative;
-        width: 0.5em;
+        width: 2em;
         background: #f2f2f2;
-        transition: background 200ms ease-in-out;
+        transition: all 200ms ease-in;
+        z-index: 10;
+        box-shadow: -7px 0px 7px 1px rgba(0, 0, 0, 0.05);
+        flex-shrink: 0;
+        border-top-right-radius: 0.5em;
+        border-bottom-right-radius: 0.5em;
+        padding: .5em 0;
+        
       }
 
-      .detail-slider:hover {
-        // background: #e2e2e2;
+      .toolbar temba-icon {
+        display: block;
+        width: 1em;
+        margin: 0 auto;
+        fill: rgb(90,90,90);
+      }
+
+      .toolbar.closed {
+        box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, 0);
+      }
+
+      .toolbar:hover {
+        // background: #d2d2d2;
         // cursor: pointer;
+      }
+
+      temba-contact-details {
+        // margin-right: -2em;
+        // padding-right: 3em;
+        // padding-top: 1em;
+        // padding-left: 1em;
+        flex-basis: 16em;
+        flex-grow: 0;
+        flex-shrink: 0;
+        transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05);
+        z-index: 5;
+        // width: 18em;
+        // margin-top:6px;
+        // border-top-right-radius: 0.5em;
+        margin-right: -2.5em;
+
+
+      }
+
+      temba-contact-details.hidden {
+        margin-right: -16em;
+
+      }
+
+      @media only screen and (max-width: 768px) {
+        temba-contact-details {
+          flex-basis: 10em; 
+          flex-shrink: 0;
+        }
+
+        temba-contact-details.hidden {
+          margin-right: -14em;
+        }
+      }
+
+      #close-button, #open-button {
+        margin-top: 1em;
+      }
+
+      #details-button {
+        margin-top: .25em;
+        transform: rotate(180deg);
       }
     `;
   }
@@ -376,6 +440,10 @@ export default class ContactChat extends RapidElement {
     }
     return "verbose";
   };
+
+  constructor() {
+    super();
+  }
 
   private getEventGroups(events: ContactEvent[]): EventGroup[] {
     const grouped: EventGroup[] = [];
@@ -416,28 +484,29 @@ export default class ContactChat extends RapidElement {
   }
 
   public refresh(): void {
-    this.scheduleRefresh(true);
+    this.scheduleRefresh(500);
   }
 
-  private scheduleRefresh(now = false) {
-    let refreshWait = 0;
+  private scheduleRefresh(wait: number = -1) {
+    let refreshWait = wait;
 
-    if (!now) {
+    if (wait === -1) {
       const lastEventTime = this.getLastEventTime();
       refreshWait = Math.max(
-        Math.min(new Date().getTime() - lastEventTime, MAX_CHAT_REFRESH),
+        Math.min((new Date().getTime() - lastEventTime) / 2, MAX_CHAT_REFRESH),
         MIN_CHAT_REFRESH
       );
     }
 
     // cancel any outstanding timeout
-    if (now && this.refreshTimeout) {
+    if (wait > -1 && this.refreshTimeout) {
       window.clearTimeout(this.refreshTimeout);
     }
 
     this.refreshTimeout = window.setTimeout(() => {
       if (this.refreshing) {
         this.scheduleRefresh();
+        this.refreshing = false;
       } else {
         this.refreshing = true;
       }
@@ -454,10 +523,17 @@ export default class ContactChat extends RapidElement {
     }
   }
 
+  private reset() {
+    this.endpoint = null;
+    this.eventGroups = [];
+    this.fetching = false;
+    this.complete = false;
+    this.nextBefore = null;
+    this.nextAfter = null;
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
-
-    const lastEndpoint = this.endpoint;
 
     // fire an event if we get a new event
     if (changedProperties.has("mostRecentEvent")) {
@@ -465,23 +541,31 @@ export default class ContactChat extends RapidElement {
     }
 
     // if we don't have an endpoint infer one
-    if (changedProperties.has("contact")) {
-      this.eventGroups = [];
-      this.fetching = false;
-      this.complete = false;
-      this.nextBefore = null;
-      this.nextAfter = null;
-      this.endpoint = `/contact/history/${this.contact.uuid}/?_format=json`;
+    if (changedProperties.has("ticket")) {
+      if (this.ticket == null) {
+        this.reset();
+      } else {
+        const endpoint = `/contact/history/${this.ticket.contact.uuid}/?_format=json`;
+        if (this.endpoint !== endpoint) {
+          this.reset();
+          this.endpoint = endpoint;
+        }
+      }
     }
 
-    if (changedProperties.has("refreshing") && this.refreshing) {
+    if (
+      changedProperties.has("refreshing") &&
+      this.refreshing &&
+      this.endpoint
+    ) {
       const after = (this.getLastEventTime() - 1) * 1000;
       let forceOpen = false;
-      fetchContactHistory(this.endpoint, null, after).then(
-        (results: ContactHistoryPage) => {
-          if (lastEndpoint !== this.endpoint) {
-            return;
-          }
+
+      fetchContactHistory(false, this.endpoint, null, after)
+        .then((results: ContactHistoryPage) => {
+          // if (lastEndpoint !== this.endpoint) {
+          // return;
+          // }
 
           if (results.events && results.events.length > 0) {
             this.updateMostRecent(results.events[0]);
@@ -528,10 +612,12 @@ export default class ContactChat extends RapidElement {
             this.eventGroups = [...previousGroups, ...grouped];
           }
           this.refreshing = false;
-
           this.scheduleRefresh();
-        }
-      );
+        })
+        .catch((error) => {
+          this.refreshing = false;
+          this.scheduleRefresh();
+        });
     }
 
     if (changedProperties.has("fetching") && this.fetching) {
@@ -542,47 +628,45 @@ export default class ContactChat extends RapidElement {
         this.nextBefore = new Date().getTime() * 1000 - 1000;
       }
 
-      fetchContactHistory(this.endpoint, this.nextBefore, this.nextAfter).then(
-        (results: ContactHistoryPage) => {
-          if (lastEndpoint !== this.endpoint) {
-            return;
-          }
-
-          // see if we have a new event
-          if (results.events && results.events.length > 0) {
-            this.updateMostRecent(results.events[0]);
-          }
-
-          let forceOpen = false;
-          const fetchedEvents = results.events.reverse();
-
-          // reflow our last event group in case it merges with our new groups
-          if (this.eventGroups.length > 0) {
-            const sliced = this.eventGroups.splice(0, 1)[0];
-            forceOpen = sliced.open;
-            fetchedEvents.push(...sliced.events);
-          }
-
-          const grouped = this.getEventGroups(fetchedEvents);
-          if (grouped.length) {
-            if (forceOpen) {
-              grouped[grouped.length - 1].open = forceOpen;
-            }
-
-            this.eventGroups = [...grouped, ...this.eventGroups];
-          }
-
-          if (results.next_before === this.nextBefore) {
-            this.complete = true;
-          }
-
-          this.nextBefore = results.next_before;
-          this.nextAfter = results.next_after;
-          this.fetching = false;
-
-          this.scheduleRefresh();
+      fetchContactHistory(
+        this.empty,
+        this.endpoint,
+        this.nextBefore,
+        this.nextAfter
+      ).then((results: ContactHistoryPage) => {
+        // see if we have a new event
+        if (results.events && results.events.length > 0) {
+          this.updateMostRecent(results.events[0]);
         }
-      );
+
+        let forceOpen = false;
+        const fetchedEvents = results.events.reverse();
+
+        // reflow our last event group in case it merges with our new groups
+        if (this.eventGroups.length > 0) {
+          const sliced = this.eventGroups.splice(0, 1)[0];
+          forceOpen = sliced.open;
+          fetchedEvents.push(...sliced.events);
+        }
+
+        const grouped = this.getEventGroups(fetchedEvents);
+        if (grouped.length) {
+          if (forceOpen) {
+            grouped[grouped.length - 1].open = forceOpen;
+          }
+
+          this.eventGroups = [...grouped, ...this.eventGroups];
+        }
+
+        if (results.next_before === this.nextBefore) {
+          this.complete = true;
+        }
+
+        this.nextBefore = results.next_before;
+        this.nextAfter = results.next_after;
+        this.fetching = false;
+        this.empty = false;
+      });
     }
 
     if (changedProperties.has("refreshing") && !this.refreshing) {
@@ -611,8 +695,9 @@ export default class ContactChat extends RapidElement {
       }
     }
 
-    if (changedProperties.has("endpoint")) {
+    if (changedProperties.has("endpoint") && this.endpoint) {
       this.fetching = true;
+      this.empty = true;
     }
   }
 
@@ -633,7 +718,7 @@ export default class ContactChat extends RapidElement {
                 ${event.recipient_count > 1
                   ? html`<temba-icon
                         size="1"
-                        name="bullhorn"
+                        name="megaphone"
                         style="display:inline-block;margin-right:2px;margin-bottom:-3px"
                       ></temba-icon>
                       ${event.recipient_count} contacts • `
@@ -647,7 +732,7 @@ export default class ContactChat extends RapidElement {
 
   public renderFlowEvent(event: FlowEvent): TemplateResult {
     const verb = event.type === Events.FLOW_ENTERED ? "Started" : "Completed";
-    const icon = event.type === Events.FLOW_ENTERED ? "flow" : "checkmark";
+    const icon = event.type === Events.FLOW_ENTERED ? "flow" : "check";
     return html`
       <temba-icon name="${icon}"></temba-icon>
       <div class="description">
@@ -661,7 +746,7 @@ export default class ContactChat extends RapidElement {
 
   public renderResultEvent(event: UpdateResultEvent): TemplateResult {
     return html`
-      <temba-icon name="bars"></temba-icon>
+      <temba-icon name="flow"></temba-icon>
       <div class="description">
         Updated
         <div class="attn">${event.name}</div>
@@ -673,7 +758,7 @@ export default class ContactChat extends RapidElement {
 
   public renderUpdateEvent(event: UpdateFieldEvent): TemplateResult {
     return html`
-      <temba-icon name="vcard"></temba-icon>
+      <temba-icon name="contact"></temba-icon>
       <div class="description">
         Updated
         <div class="attn">${event.field.name}</div>
@@ -685,7 +770,10 @@ export default class ContactChat extends RapidElement {
 
   public renderErrorMessage(event: ErrorMessageEvent): TemplateResult {
     return html`
-      <temba-icon name="warning"></temba-icon>
+      <temba-icon
+        name="alert-triangle"
+        style="fill:var(--color-error)"
+      ></temba-icon>
       <div class="description">
         ${event.text}
         ${event.type === Events.FAILURE
@@ -701,7 +789,7 @@ export default class ContactChat extends RapidElement {
         class="${event.status === "success" ? "" : "failed"}"
         style="display: flex"
       >
-        <temba-icon name="cloud-upload"></temba-icon>
+        <temba-icon name="external-link"></temba-icon>
         <div class="description">
           ${event.status === "success"
             ? html`Successfully called ${event.url}`
@@ -713,7 +801,7 @@ export default class ContactChat extends RapidElement {
 
   public renderContactGroupsEvent(event: ContactGroupsEvent): TemplateResult {
     return html`
-      <temba-icon name="users-2"></temba-icon>
+      <temba-icon name="users"></temba-icon>
       <div class="description">
         Added to
         ${oxfordFn(
@@ -755,7 +843,10 @@ export default class ContactChat extends RapidElement {
         return this.renderWebhookEvent(event as WebhookEvent);
     }
 
-    return html`<temba-icon name="warning"></temba-icon>
+    return html`<temba-icon
+        name="alert-triangle"
+        style="fill:var(--color-error)"
+      ></temba-icon>
       <div class="description">render missing: ${event.type}</div>`;
   }
 
@@ -774,7 +865,7 @@ export default class ContactChat extends RapidElement {
   private handleEventScroll(event: MouseEvent) {
     const events = this.getDiv(".events");
     if (events.scrollTop <= SCROLL_THRESHOLD) {
-      if (!this.fetching && !this.complete) {
+      if (this.eventGroups.length > 0 && !this.fetching && !this.complete) {
         this.fetching = true;
       }
     }
@@ -803,16 +894,65 @@ export default class ContactChat extends RapidElement {
     }
   }
 
+  private handleClose(event: MouseEvent) {
+    postForm(`/ticket/update/${this.ticket.uuid}/?_format=json`, {
+      status: "C",
+    })
+      .then((response) => {
+        this.fireCustomEvent(CustomEventType.ContentChanged, {
+          ticket: { uuid: this.ticket.uuid, status: "C" },
+        });
+      })
+      .catch((response: any) => {
+        console.error(response.errors);
+      });
+  }
+
+  private handleOpen(event: MouseEvent) {
+    postForm(`/ticket/update/${this.ticket.uuid}/?_format=json`, {
+      status: "O",
+    })
+      .then((response) => {
+        this.fireCustomEvent(CustomEventType.ContentChanged, {
+          ticket: { uuid: this.ticket.uuid, status: "O" },
+        });
+      })
+      .catch((response: any) => {
+        console.error(response.errors);
+      });
+  }
+
+  private refreshEvents() {
+    setTimeout(() => {
+      const events = this.getDiv(".events");
+      events.scrollTop = events.scrollHeight;
+      this.refreshing = true;
+    }, 500);
+  }
+
   private handleSend(event: MouseEvent) {
     postUrl(`/api/v2/broadcasts.json`, {
-      contacts: [this.contact.uuid],
+      contacts: [this.ticket.contact.uuid],
       text: this.currentChat,
     })
       .then((response) => {
-        const events = this.getDiv(".events");
         this.currentChat = "";
-        events.scrollTop = events.scrollHeight;
-        this.refreshing = true;
+        if (this.ticket.status === "C") {
+          // if we are closed, reopen us
+          postForm(`/ticket/update/${this.ticket.uuid}/?_format=json`, {
+            status: "O",
+          }).then(() => {
+            this.ticket.status = "O";
+            this.fireCustomEvent(CustomEventType.ContentChanged, {
+              ticket: { uuid: this.ticket.uuid, status: "O" },
+              focus: true,
+            });
+            this.requestUpdate("ticket");
+            this.scheduleRefresh(500);
+          });
+        } else {
+          this.scheduleRefresh(500);
+        }
       })
       .catch(() => {
         // error message dialog?
@@ -833,8 +973,8 @@ export default class ContactChat extends RapidElement {
 
   public render(): TemplateResult {
     return html`
-      <div style="display: flex; height: 100%">
-        <div style="flex-grow: 2; margin-right: 0em; min-width:400px">
+      <div style="display: flex; height: 100%;">
+        <div style="flex-grow: 1; margin-right: 0em;">
           <div class="chat-wrapper">
             <div class="events" @scroll=${throttle(this.handleEventScroll, 50)}>
               ${this.fetching
@@ -878,31 +1018,67 @@ export default class ContactChat extends RapidElement {
                 }
               )}
             </div>
+            ${this.ticket
+              ? html` <div class="chatbox">
+                  <temba-textinput
+                    textarea
+                    @change=${this.handleChatChange}
+                    .value=${this.currentChat}
+                  ></temba-textinput>
 
-            <div class="chatbox">
-              <temba-textinput
-                textarea
-                @change=${this.handleChatChange}
-                .value=${this.currentChat}
-              ></temba-textinput>
-
-              <div
-                style="display:flex; align-items: flex-end; flex-direction: column"
-              >
-                <temba-button
-                  name="Send"
-                  ?disabled=${this.currentChat.length === 0 ? true : false}
-                  @click=${this.handleSend}
-                ></temba-button>
-              </div>
-            </div>
+                  <div
+                    style="display:flex; align-items: flex-end; flex-direction: column"
+                  >
+                    <temba-button
+                      id="send-button"
+                      name="${this.ticket && this.ticket.status === "C"
+                        ? "Send and Reopen"
+                        : "Send"}"
+                      ?disabled=${this.currentChat.length === 0 ? true : false}
+                      @click=${this.handleSend}
+                    ></temba-button>
+                  </div>
+                </div>`
+              : null}
           </div>
         </div>
-        <div class="detail-slider" @click=${this.handleDetailSlider}></div>
-        <!--temba-contact-details
-          class="${this.showDetails ? "" : "hidden"}"
-          .contact=${this.contact}
-        ></temba-contact-details-->
+        ${this.ticket
+          ? html`<temba-contact-details
+              style="z-index: 10"
+              class="${this.showDetails ? "" : "hidden"}"
+              .ticket="${this.ticket}"
+              .visible=${this.showDetails}
+              endpoint="${this.contactsEndpoint}?uuid=${this.ticket.contact
+                .uuid}"
+            ></temba-contact-details>`
+          : null}
+
+        <div class="toolbar ${this.showDetails ? "" : "closed"}">
+          ${this.ticket
+            ? html`
+                <temba-icon
+                  id="details-button"
+                  name="${this.showDetails ? "chevrons-left" : "sidebar"}"
+                  @click="${this.handleDetailSlider}"
+                  clickable
+                ></temba-icon>
+
+                ${this.ticket.status !== "C"
+                  ? html`<temba-icon
+                      id="close-button"
+                      name="check"
+                      @click="${this.handleClose}"
+                      clickable
+                    ></temba-icon>`
+                  : html`<temba-icon
+                      id="open-button"
+                      name="inbox"
+                      @click="${this.handleOpen}"
+                      clickable
+                    ></temba-icon>`}
+              `
+            : null}
+        </div>
       </div>
     `;
   }

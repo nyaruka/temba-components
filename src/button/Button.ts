@@ -61,7 +61,7 @@ export default class Button extends LitElement {
       }
 
       .button-container.disabled-button {
-        background: rgb(0, 0, 0, 0.05);
+        background: rgba(0, 0, 0, 0.05);
         color: rgba(255, 255, 255, 0.45);
         cursor: default;
       }
@@ -72,6 +72,7 @@ export default class Button extends LitElement {
 
       .button-container.disabled-button:hover .button-mask {
         box-shadow: 0 0 0px 1px var(--color-button-disabled);
+        background: rgba(0, 0, 0, 0.05);
       }
 
       .button-container.active-button .button-mask {
@@ -160,7 +161,12 @@ export default class Button extends LitElement {
   href: string;
 
   private handleClick(evt: MouseEvent) {
-    if (this.href) {
+    if (this.disabled) {
+      evt.preventDefault();
+      evt.stopPropagation();
+    }
+
+    if (this.href && !this.disabled) {
       this.ownerDocument.location.href = this.href;
       evt.preventDefault();
       evt.stopPropagation();

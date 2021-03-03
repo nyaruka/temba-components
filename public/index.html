@@ -18,21 +18,54 @@
     <script language="javascript">
       
       function handleContactChange(event) {
-        var contact = event.target.value;
+        var ticket = event.target.value;
         var chat = document.querySelector("temba-contact-chat");
-        chat.contact = contact;
+        chat.ticket = ticket;
       }
       
       function handleContactHistoryUpdate(event) {
         // tell our list to refresh since we know things happened
-        var contacts = document.querySelector("temba-contacts");
-        contacts.refresh();
+        var tickets = document.querySelector("temba-tickets");
+        tickets.refresh();
       }
 
       function handleTicketsRefreshed(event) {
         // tell our chat to refresh since we know things are new in our list
         var chat = document.querySelector("temba-contact-chat");
-          chat.refresh();
+        chat.refresh();
+      }
+
+      function handleFilterChanged(event) {
+        var tickets = document.querySelector("temba-tickets");
+        var chat = document.querySelector("temba-contact-chat");
+
+        // if we have auto selecting, don't clear the chat
+        if (!tickets.nextSelection) {
+          chat.ticket = null;
+        }
+
+        var filter = event.target.values[0].value;
+        if (filter === "O") {
+          tickets.endpoint = "/contact/tickets/?_format=json&folder=open"
+        } else {
+          tickets.endpoint = "/contact/tickets/?_format=json&folder=closed"
+        }
+      }
+
+      function handleTicketChanged(event) {
+        var ticket = event.detail.ticket;
+        var focus = event.detail.focus;
+
+        var filter = document.querySelector('temba-select[name="ticket-filter"]');
+        var tickets = document.querySelector("temba-tickets");
+
+        if (focus) {
+          tickets.setNextSelection(ticket.uuid);
+          filter.setSelection(ticket.status);
+        } else {
+          // no focus, just refresh
+          tickets.refresh();
+        }
       }
     
     </script>
@@ -45,6 +78,12 @@
     />
 
     <style>
+
+      temba-select[name='ticket-filter'] {
+        margin-bottom: 0.5em;
+        margin-top: -0.4em;
+      }
+
       .example {
         padding: 20px;
         border: 1px solid #e6e6e6;
@@ -61,8 +100,26 @@
         --color-text-dark: #555;
       }
 
-    </style>
+      .ticket-list {
+        flex-basis: 300px; 
+        flex-grow: 0; 
+        flex-shrink: 0;
+        transition: all 200ms ease-in;
+      }
 
+      @media only screen and (max-width: 1024px) {
+        .ticket-list {
+          flex-basis: 200px; 
+        }
+      }
+
+      @media only screen and (max-width: 768px) {
+        .ticket-list {
+          flex-basis: 125px; 
+        }
+      }
+
+    </style>
     <temba-store
       completions="/mr/docs/en-us/completion.json"
       functions="/mr/docs/en-us/functions.json"
@@ -70,6 +127,29 @@
       globals="/api/v2/globals.json"
     ></temba-store>
 
+    <div class="flex-col">
+      <div class="flex" style="height:100vh">
+    
+        <div class="ticket-list m-4 mr-2 flex flex-col">
+
+            <temba-select name="ticket-filter" onchange="handleFilterChanged(event)">
+              <temba-option name="Open" value="O"></temba-option>
+              <temba-option name="Closed" value="C"></temba-option>
+            </temba-select>
+
+
+          <div class="flex flex-grow">
+            <temba-tickets endpoint="/contact/tickets/?_format=json&folder=open" @temba-refreshed="handleTicketsRefreshed(event)" onchange="handleContactChange(event)"></temba-tickets>
+          </div>
+
+        </div>
+    
+        <div class="flex-grow flex-col h-full py-4 pb-4 pr-4">
+          <temba-contact-chat @temba-refreshed="handleContactHistoryUpdate(event)" @temba-content-changed="handleTicketChanged(event)"></temba-contact-chat>
+        </div>
+      
+      </div>
+    </div>
 
     <!--
     <div class="flex-col">
@@ -385,18 +465,6 @@
     </div>
       -->
 
-    <div class="flex-col">
-      <div class="flex" style="height:100vh">
-        <div style="flex-basis: 300px; flex-grow: 0; flex-shrink: 0;" class="m-4 mr-2">
-          <temba-contacts endpoint="/contact/tickets/?_format=json" @temba-refreshed="handleTicketsRefreshed(event)" onchange="handleContactChange(event)"></temba-contacts>  
-        </div>
-        
-        <div class="flex-grow flex-col h-full py-4 pb-4 pr-4">
-          <temba-contact-chat @temba-refreshed="handleContactHistoryUpdate(event)"></temba-contact-chat>
-        </div>
-      
-      </div>
-    </div>
 
 
     <!--
