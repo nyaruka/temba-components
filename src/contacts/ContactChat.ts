@@ -109,10 +109,10 @@ export default class ContactChat extends RapidElement {
         padding: 1em;
         flex-grow: 1;
         overflow-y: scroll;
+        overflow-x: hidden;
         margin-bottom: 1;
         display: flex;
         flex-direction: column;
-        // min-width:80%
       }
 
       .grouping {
@@ -131,15 +131,13 @@ export default class ContactChat extends RapidElement {
         padding-bottom: 0;
         margin-top: 0;
         margin-bottom: 0;
+        transition: all 300ms cubic-bezier(0.68, -0.55, 0.265, 1.05), color 0.1ms;
+        color: #efefef;
       }
 
       .grouping.verbose > .event, .grouping.verbose > pre {
-        max-height: 0px;
-        padding-top: 0;
-        padding-bottom: 0;
-        margin-top: 0;
-        margin-bottom: 0;        
         opacity: 0;
+        transition: all 200ms linear;
       }
 
       .event-count {
@@ -149,16 +147,16 @@ export default class ContactChat extends RapidElement {
         text-align: center;
         border: 2px solid #f9f9f9;
         background: #fff;
-        margin: auto;
+        margin: 0 auto;
         display: table;
         padding: 3px 10px;
         font-weight: 400;
         color: #777;
         border-radius: 6px;
         cursor: pointer;
-        transition: all 200ms ease-in-out;
-        transform: scale(.9);
+        transition: all 300ms cubic-bezier(0.68, -0.55, 0.265, 1.05);
         min-width: 0%;
+        opacity: 1;
       }
 
       .event-count:hover {
@@ -166,21 +164,20 @@ export default class ContactChat extends RapidElement {
         min-width: 50%;
         background: #f9f9f9;
         color: #333;
-        transform: scale(1);
       }
 
       .expanded .event-count {
-        display: none;
+        opacity:0;
+        margin-top:-30px;
       }
 
       .grouping.flows {
         
         margin: 2em 1em;
 
-        // padding-top: 0.5em;
 
         border: 1px solid #f2f2f2;
-        border-radius: 6px;
+        border-radius: 0.5em;
         padding: 0.5em 1em;
       }
 
@@ -195,15 +192,19 @@ export default class ContactChat extends RapidElement {
       }
 
       .grouping.verbose.expanded {
-        background: #f9f9f9;
+        background: #444;
+        color: #efefef;
         max-height: 1000px;
         border-top: 1px solid #f1f1f1;
         padding:2em;
-        margin: 0 -1em;
+        margin: -1em 1em;
+        margin-bottom: 0;
+        border-radius: 0.5em;
         padding-bottom: 1em;
-        box-shadow: inset 0px 11px 8px -15px #CCC, inset 0px -11px 8px -15px #CCC; 
-        transition: all 200ms ease-in-out;
+        box-shadow: inset 0px 11px 4px -15px #000, inset 0px -11px 4px -15px #000; 
+        
       }
+
 
       .grouping.verbose.expanded .event, .grouping.verbose.expanded pre {
         max-height: 500px;
@@ -211,6 +212,19 @@ export default class ContactChat extends RapidElement {
         opacity: 1;
         transition: all 200ms ease-in-out;
       }
+
+      .grouping-close-button {
+        opacity:0;
+        float:right;
+        margin-top:-1em;
+        margin-right:-1em;
+        fill: #f2f2f2;
+      }
+
+      .grouping.verbose.expanded:hover .grouping-close-button {
+        opacity:1;
+      }
+
 
       .grouping.messages {
         display: flex;
@@ -327,7 +341,9 @@ export default class ContactChat extends RapidElement {
 
       .attn {
         display: inline-block;
-        font-weight: 400;
+        font-weight: 500;
+        color: #fff;
+        margin: 0px 2px;
       }
 
       a {
@@ -378,27 +394,13 @@ export default class ContactChat extends RapidElement {
         box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, .01);
       }
 
-      .toolbar:hover {
-        // background: #d2d2d2;
-        // cursor: pointer;
-      }
-
       temba-contact-details {
-        // margin-right: -2em;
-        // padding-right: 3em;
-        // padding-top: 1em;
-        // padding-left: 1em;
         flex-basis: 16em;
         flex-grow: 0;
         flex-shrink: 0;
         transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05);
         z-index: 5;
-        // width: 18em;
-        // margin-top:6px;
-        // border-top-right-radius: 0.5em;
         margin-right: -2.5em;
-
-
       }
 
       temba-contact-details.hidden {
@@ -566,10 +568,6 @@ export default class ContactChat extends RapidElement {
 
       fetchContactHistory(false, this.endpoint, null, after)
         .then((results: ContactHistoryPage) => {
-          // if (lastEndpoint !== this.endpoint) {
-          // return;
-          // }
-
           if (results.events && results.events.length > 0) {
             this.updateMostRecent(results.events[0]);
           }
@@ -748,6 +746,9 @@ export default class ContactChat extends RapidElement {
   }
 
   public renderResultEvent(event: UpdateResultEvent): TemplateResult {
+    if (event.name.startsWith("_")) {
+      return null;
+    }
     return html`
       <temba-icon name="flow"></temba-icon>
       <div class="description">
@@ -755,6 +756,10 @@ export default class ContactChat extends RapidElement {
         <div class="attn">${event.name}</div>
         to
         <div class="attn">${event.value}</div>
+        ${event.category
+          ? html`with category
+              <div class="attn">${event.category}</div>`
+          : null}
       </div>
     `;
   }
@@ -858,16 +863,24 @@ export default class ContactChat extends RapidElement {
       <div class="description">render missing: ${event.type}</div>`;
   }
 
-  private handleEventGroupClick(event: MouseEvent) {
+  private handleEventGroupShow(event: MouseEvent) {
     const grouping = event.currentTarget as HTMLDivElement;
-    if (grouping.classList.contains("verbose")) {
-      const groupIndex = parseInt(grouping.getAttribute("data-group-index"));
-      const eventGroup = this.eventGroups[
-        this.eventGroups.length - groupIndex - 1
-      ];
-      eventGroup.open = true;
-      this.requestUpdate("eventGroups");
-    }
+    const groupIndex = parseInt(grouping.getAttribute("data-group-index"));
+    const eventGroup = this.eventGroups[
+      this.eventGroups.length - groupIndex - 1
+    ];
+    eventGroup.open = true;
+    this.requestUpdate("eventGroups");
+  }
+
+  private handleEventGroupHide(event: MouseEvent) {
+    const grouping = event.currentTarget as HTMLDivElement;
+    const groupIndex = parseInt(grouping.getAttribute("data-group-index"));
+    const eventGroup = this.eventGroups[
+      this.eventGroups.length - groupIndex - 1
+    ];
+    eventGroup.open = false;
+    this.requestUpdate("eventGroups");
   }
 
   private handleEventScroll(event: MouseEvent) {
@@ -892,7 +905,7 @@ export default class ContactChat extends RapidElement {
     }
 
     if (this.currentChat === "__debug") {
-      this.debug = true;
+      this.debug = !this.debug;
       this.currentChat = "";
     }
 
@@ -999,18 +1012,29 @@ export default class ContactChat extends RapidElement {
                     expanded: eventGroup.open,
                   });
 
-                  return html`<div
-                    @click=${this.handleEventGroupClick}
-                    data-group-index="${groupIndex}"
-                    class="${classes}"
-                  >
+                  return html`<div class="${classes}">
                     ${grouping === "verbose"
-                      ? html`<div class="event-count">
+                      ? html`<div
+                          class="event-count"
+                          @click=${this.handleEventGroupShow}
+                          data-group-index="${groupIndex}"
+                        >
                           ${eventGroup.events.length}
                           ${eventGroup.events.length === 1
                             ? html`event`
                             : html`events`}
                         </div>`
+                      : null}
+                    ${grouping === "verbose"
+                      ? html`
+                          <temba-icon
+                            @click=${this.handleEventGroupHide}
+                            data-group-index="${groupIndex}"
+                            class="grouping-close-button"
+                            name="x"
+                            clickable
+                          ></temba-icon>
+                        `
                       : null}
                     ${eventGroup.events.map((event: ContactEvent) => {
                       return html`
