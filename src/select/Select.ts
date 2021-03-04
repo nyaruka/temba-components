@@ -1011,9 +1011,10 @@ export default class Select extends FormElement {
     window.setTimeout(() => {
       for (const child of this.children) {
         if (child.tagName === "TEMBA-OPTION") {
-          const name = child.getAttribute("name");
-          const value = child.getAttribute("value");
-          const option = { name, value };
+          const option: any = {};
+          for (let attribute of child.attributes) {
+            option[attribute.name] = attribute.value;
+          }
           this.staticOptions.push(option);
 
           if (
@@ -1044,7 +1045,16 @@ export default class Select extends FormElement {
   }
 
   private renderSelectedItemDefault(option: any): TemplateResult {
-    return html` <div class="option-name">${this.getName(option)}</div> `;
+    return html`
+      <div class="option-name" style="display:flex">
+        ${option.icon
+          ? html`<temba-icon
+              name="${option.icon}"
+              style="margin-right:0.5em; fill: var(--color-text-dark)"
+            ></temba-icon>`
+          : null}<span>${this.getName(option)}</span>
+      </div>
+    `;
   }
 
   public serializeValue(value: any): string {

@@ -39,16 +39,6 @@ export default class VectorIcon extends LitElement {
         padding-bottom: 0.2em;
       }
 
-      :host([id="bullhorn"]),
-      :host([name="bullhorn"]) {
-        padding-bottom: 0.1em;
-      }
-
-      :host([id="warning"]),
-      :host([name="warning"]) {
-        fill: var(--color-error);
-      }
-
       svg {
         display: block;
         fill: var(--icon-color);
@@ -93,7 +83,6 @@ export default class VectorIcon extends LitElement {
       <svg style="height:${this.size}em;width:${
       this.size
     }em;" class="${getClasses({ spin: this.spin, clickable: this.clickable })}">
-    
         <use href="/sitestatic/icons/symbol-defs.svg?#icon-${
           this.lastName || this.name || this.id
         }"></i>

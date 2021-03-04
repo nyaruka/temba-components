@@ -290,7 +290,15 @@ export default class Options extends RapidElement {
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html`${option.prefix}${this.getName(option)}`;
+    return html`<div style="display:flex; align-items:flex-start">
+      ${option.icon
+        ? html`<temba-icon
+            name="${option.icon}"
+            style="margin-right:0.5em; fill: var(--color-text-dark);"
+          ></temba-icon>`
+        : null}
+      <div style="flex-grow:1">${option.prefix}${this.getName(option)}</div>
+    </div>`;
   }
 
   private renderOptionDetailDefault(

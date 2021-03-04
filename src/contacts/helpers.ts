@@ -80,6 +80,7 @@ export interface UpdateResultEvent extends ContactEvent {
 
 export interface ContactGroupsEvent extends ContactEvent {
   groups_added: ObjectReference[];
+  groups_removed: ObjectReference[];
 }
 
 export interface WebhookEvent extends ContactEvent {

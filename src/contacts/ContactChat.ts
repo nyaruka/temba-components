@@ -257,8 +257,11 @@ export default class ContactChat extends RapidElement {
         fill: rgba(1, 193, 175, 1);
       }
 
-      .contact_groups_changed {
+      .contact_groups_changed .added {
         fill: #309c42;
+      }
+      .contact_groups_changed .removed {
+        fill: var(--color-error);
       }
 
       .event.error .description, .event.failure .description {
@@ -353,8 +356,8 @@ export default class ContactChat extends RapidElement {
       .toolbar {
         position: relative;
         width: 2em;
-        background: #f2f2f2;
-        transition: all 200ms ease-in;
+        background: #fff;
+        transition: all 600ms ease-in;
         z-index: 10;
         box-shadow: -7px 0px 7px 1px rgba(0, 0, 0, 0.05);
         flex-shrink: 0;
@@ -372,7 +375,7 @@ export default class ContactChat extends RapidElement {
       }
 
       .toolbar.closed {
-        box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, 0);
+        box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, .01);
       }
 
       .toolbar:hover {
@@ -405,12 +408,12 @@ export default class ContactChat extends RapidElement {
 
       @media only screen and (max-width: 768px) {
         temba-contact-details {
-          flex-basis: 10em; 
+          flex-basis: 12em; 
           flex-shrink: 0;
         }
 
         temba-contact-details.hidden {
-          margin-right: -14em;
+          margin-right: -12em;
         }
       }
 
@@ -719,7 +722,7 @@ export default class ContactChat extends RapidElement {
                   ? html`<temba-icon
                         size="1"
                         name="megaphone"
-                        style="display:inline-block;margin-right:2px;margin-bottom:-3px"
+                        style="display:inline-block;"
                       ></temba-icon>
                       ${event.recipient_count} contacts • `
                   : null}
@@ -800,12 +803,17 @@ export default class ContactChat extends RapidElement {
   }
 
   public renderContactGroupsEvent(event: ContactGroupsEvent): TemplateResult {
+    const groups = event.groups_added || event.groups_removed;
+    const added = !!event.groups_added;
     return html`
-      <temba-icon name="users"></temba-icon>
+      <temba-icon
+        name="users"
+        class="${getClasses({ added: added, removed: !added })}"
+      ></temba-icon>
       <div class="description">
-        Added to
+        ${added ? "Added to" : "Removed from"}
         ${oxfordFn(
-          event.groups_added,
+          groups,
           (group: ObjectReference) =>
             html`<a target="_" href="/contact/filter/${group.uuid}"
               >${group.name}</a
