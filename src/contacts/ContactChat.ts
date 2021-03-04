@@ -12,24 +12,31 @@ import {
   ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
+  EmailSentEvent,
   ErrorMessageEvent,
   EventGroup,
   Events,
   fetchContactHistory,
   FlowEvent,
+  LabelsAddedEvent,
   MAX_CHAT_REFRESH,
   MIN_CHAT_REFRESH,
   MsgEvent,
+  NameChangedEvent,
   ObjectReference,
   SCROLL_THRESHOLD,
+  TicketOpenedEvent,
   UpdateFieldEvent,
   UpdateResultEvent,
+  URNsChangedEvent,
   WebhookEvent,
 } from "./helpers";
 import {
   getClasses,
   getUrl,
+  oxford,
   oxfordFn,
+  oxfordNamed,
   postForm,
   postUrl,
   throttle,
@@ -133,7 +140,11 @@ export default class ContactChat extends RapidElement {
         margin-bottom: 0;
         transition: all 300ms cubic-bezier(0.68, -0.55, 0.265, 1.05), color 0.1ms;
         color: #efefef;
+
+        --color-link-primary: rgba(38, 166, 230, 1);
       }
+
+      
 
       .grouping.verbose > .event, .grouping.verbose > pre {
         opacity: 0;
@@ -197,7 +208,7 @@ export default class ContactChat extends RapidElement {
         max-height: 1000px;
         border-top: 1px solid #f1f1f1;
         padding:2em;
-        margin: -1em 1em;
+        margin: -0.5em 1em;
         margin-bottom: 0;
         border-radius: 0.5em;
         padding-bottom: 1em;
@@ -219,6 +230,7 @@ export default class ContactChat extends RapidElement {
         margin-top:-1em;
         margin-right:-1em;
         fill: #f2f2f2;
+        transition: opacity 200ms ease-in;
       }
 
       .grouping.verbose.expanded:hover .grouping-close-button {
@@ -266,9 +278,16 @@ export default class ContactChat extends RapidElement {
         color: var(--color-error);
       }
 
+      .input_labels_added,
+      .contact_name_changed,
       .contact_field_changed,
+      .contact_urns_changed,
       .run_result_changed {
         fill: rgba(1, 193, 175, 1);
+      }
+
+      .email_sent {
+        fill: #8e5ea7;
       }
 
       .contact_groups_changed .added {
@@ -288,10 +307,15 @@ export default class ContactChat extends RapidElement {
       }
 
       .flow_exited,
+      .flow_entered,
+      .ticket_opened {
+        fill: rgba(223, 65, 159, 1);
+      }
+
+      .flow_exited,
       .flow_entered {
         align-self: center;
         max-width: 80%;
-        fill: rgba(223, 65, 159, 1);
         display: flex;
         flex-direction: row;
       }
@@ -448,6 +472,54 @@ export default class ContactChat extends RapidElement {
 
   constructor() {
     super();
+  }
+
+  public renderEvent(event: ContactEvent): TemplateResult {
+    switch (event.type) {
+      case Events.MESSAGE_CREATED:
+      case Events.MESSAGE_RECEIVED:
+      case Events.BROADCAST_CREATED:
+        return this.renderMsgEvent(event as MsgEvent);
+
+      case Events.FLOW_ENTERED:
+      case Events.FLOW_EXITED:
+        return this.renderFlowEvent(event as FlowEvent);
+
+      case Events.RUN_RESULT_CHANGED:
+        return this.renderResultEvent(event as UpdateResultEvent);
+
+      case Events.CONTACT_FIELD_CHANGED:
+        return this.renderUpdateEvent(event as UpdateFieldEvent);
+
+      case Events.CONTACT_NAME_CHANGED:
+        return this.renderNameChanged(event as NameChangedEvent);
+
+      case Events.CONTACT_URNS_CHANGED:
+        return this.renderContactURNsChanged(event as URNsChangedEvent);
+
+      case Events.EMAIL_SENT:
+        return this.renderEmailSent(event as EmailSentEvent);
+
+      case Events.INPUT_LABELS_ADDED:
+        return this.renderLabelsAdded(event as LabelsAddedEvent);
+
+      case Events.TICKET_OPENED:
+        return this.renderTicketOpened(event as TicketOpenedEvent);
+
+      case Events.ERROR:
+      case Events.FAILURE:
+        return this.renderErrorMessage(event as ErrorMessageEvent);
+      case Events.CONTACT_GROUPS_CHANGED:
+        return this.renderContactGroupsEvent(event as ContactGroupsEvent);
+      case Events.WEBHOOK_CALLED:
+        return this.renderWebhookEvent(event as WebhookEvent);
+    }
+
+    return html`<temba-icon
+        name="alert-triangle"
+        style="fill:var(--color-error)"
+      ></temba-icon>
+      <div class="description">render missing: ${event.type}</div>`;
   }
 
   private getEventGroups(events: ContactEvent[]): EventGroup[] {
@@ -678,6 +750,7 @@ export default class ContactChat extends RapidElement {
         const distanceFromBottom =
           events.scrollHeight - events.scrollTop - this.lastHeight;
         if (distanceFromBottom < 150) {
+          console.log("scrolling down...");
           events.scrollTo({ top: events.scrollHeight, behavior: "smooth" });
         }
       }
@@ -776,6 +849,69 @@ export default class ContactChat extends RapidElement {
     `;
   }
 
+  public renderNameChanged(event: NameChangedEvent): TemplateResult {
+    return html`
+      <temba-icon name="contact"></temba-icon>
+      <div class="description">
+        Updated
+        <div class="attn">Name</div>
+        to
+        <div class="attn">${event.name}</div>
+      </div>
+    `;
+  }
+
+  public renderContactURNsChanged(event: URNsChangedEvent): TemplateResult {
+    return html`
+      <temba-icon name="contact"></temba-icon>
+      <div class="description">
+        Updated
+        <div class="attn">URNs</div>
+        to
+        <div class="attn">
+          ${oxfordFn(
+            event.urns,
+            (urn: string) => urn.split(":")[1].split("?")[0]
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  public renderEmailSent(event: EmailSentEvent): TemplateResult {
+    return html`
+      <temba-icon name="mail"></temba-icon>
+      <div class="description">
+        Email sent to
+        <div class="attn">${oxford(event.to, "and")}</div>
+        with subject
+        <div class="attn">${event.subject}</div>
+      </div>
+    `;
+  }
+
+  public renderLabelsAdded(event: LabelsAddedEvent): TemplateResult {
+    return html`
+      <temba-icon name="tag"></temba-icon>
+      <div class="description">
+        Message labeled with
+        <div class="attn">${oxfordNamed(event.labels, "and")}</div>
+      </div>
+    `;
+  }
+
+  public renderTicketOpened(event: TicketOpenedEvent): TemplateResult {
+    return html`
+      <temba-icon name="inbox"></temba-icon>
+      <div class="description">
+        Opened ticket on
+        <div class="attn">${event.ticket.ticketer.name}</div>
+        with subject
+        <div class="attn">${event.ticket.subject}</div>
+      </div>
+    `;
+  }
+
   public renderErrorMessage(event: ErrorMessageEvent): TemplateResult {
     return html`
       <temba-icon
@@ -829,38 +965,6 @@ export default class ContactChat extends RapidElement {
           : null}
       </div>
     `;
-  }
-
-  public renderEvent(event: ContactEvent): TemplateResult {
-    switch (event.type) {
-      case Events.MESSAGE_CREATED:
-      case Events.MESSAGE_RECEIVED:
-      case Events.BROADCAST_CREATED:
-        return this.renderMsgEvent(event as MsgEvent);
-
-      case Events.FLOW_ENTERED:
-      case Events.FLOW_EXITED:
-        return this.renderFlowEvent(event as FlowEvent);
-
-      case Events.RUN_RESULT_CHANGED:
-        return this.renderResultEvent(event as UpdateResultEvent);
-      case Events.CONTACT_FIELD_CHANGED:
-        return this.renderUpdateEvent(event as UpdateFieldEvent);
-
-      case Events.ERROR:
-      case Events.FAILURE:
-        return this.renderErrorMessage(event as ErrorMessageEvent);
-      case Events.CONTACT_GROUPS_CHANGED:
-        return this.renderContactGroupsEvent(event as ContactGroupsEvent);
-      case Events.WEBHOOK_CALLED:
-        return this.renderWebhookEvent(event as WebhookEvent);
-    }
-
-    return html`<temba-icon
-        name="alert-triangle"
-        style="fill:var(--color-error)"
-      ></temba-icon>
-      <div class="description">render missing: ${event.type}</div>`;
   }
 
   private handleEventGroupShow(event: MouseEvent) {

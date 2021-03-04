@@ -37,9 +37,13 @@ export enum Events {
   RUN_RESULT_CHANGED = "run_result_changed",
   CONTACT_FIELD_CHANGED = "contact_field_changed",
   CONTACT_GROUPS_CHANGED = "contact_groups_changed",
+  CONTACT_NAME_CHANGED = "contact_name_changed",
+  CONTACT_URNS_CHANGED = "contact_urns_changed",
   CAMPAIGN_FIRED = "campaign_fired",
   WEBHOOK_CALLED = "webhook_called",
-
+  EMAIL_SENT = "email_sent",
+  INPUT_LABELS_ADDED = "input_labels_added",
+  TICKET_OPENED = "ticket_opened",
   ERROR = "error",
   FAILURE = "failure",
 }
@@ -60,6 +64,34 @@ export interface MsgEvent extends ContactEvent {
 export interface FlowEvent extends ContactEvent {
   flow: ObjectReference;
   status: string;
+}
+
+export interface EmailSentEvent extends ContactEvent {
+  to: string[];
+  subject: string;
+  body: string;
+}
+
+export interface URNsChangedEvent extends ContactEvent {
+  urns: string[];
+}
+
+export interface TicketOpenedEvent extends ContactEvent {
+  ticket: {
+    uuid: string;
+    ticketer: ObjectReference;
+    subject: string;
+    body: string;
+    external_id: string;
+  };
+}
+
+export interface LabelsAddedEvent extends ContactEvent {
+  labels: ObjectReference[];
+}
+
+export interface NameChangedEvent extends ContactEvent {
+  name: string;
 }
 
 export interface UpdateFieldEvent extends ContactEvent {

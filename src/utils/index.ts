@@ -429,27 +429,47 @@ export const throttle = (fn: Function, millis: number) => {
   };
 };
 
-export interface NamedOjbect {
+export interface NamedObject {
   name: string;
 }
 
-export const oxford = (items: any[], joiner: string = "and") => {
-  const beginning = items.splice(0, items.length - 1);
+export const oxford = (items: any[], joiner: string = "and"): any => {
   if (items.length === 1) {
     return items[0];
   }
 
   if (items.length === 2) {
+    // TemplateResults get a different treatment
+    if (items[0].type === "html") {
+      return html`${items[0]} ${joiner} ${items[1]}`;
+    }
     return items.join(" " + joiner + " ");
+  }
+
+  // TemplateResults get a different treatment
+  if (items[0].type === "html") {
+    return items.map((tr: TemplateResult, idx: number) => {
+      if (idx < items.length - 1) {
+        return html`${tr}, `;
+      }
+      return html`${joiner} ${tr}`;
+    });
   }
 
   return items.join(", ") + joiner + items[items.length - 1];
 };
 
-export const oxfordFn = (items: any[], fn: (item: any) => TemplateResult) => {
-  return oxford(items.map(fn));
+export const oxfordFn = (
+  items: any[],
+  fn: (item: any) => any,
+  joiner: string = "and"
+): any => {
+  return oxford(items.map(fn), joiner);
 };
 
-export const oxfordNamed = (items: NamedOjbect[], joiner: string = "and") => {
-  return oxford(items.map((value) => value.name));
+export const oxfordNamed = (
+  items: NamedObject[],
+  joiner: string = "and"
+): any => {
+  return oxfordFn(items, (value: any) => value.name, joiner);
 };
