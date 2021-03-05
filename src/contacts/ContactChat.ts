@@ -79,7 +79,7 @@ export default class ContactChat extends RapidElement {
   @property({ attribute: false, type: Object })
   mostRecentEvent: ContactEvent;
 
-  lastHeight: number = undefined;
+  lastHeight: number = 0;
   lastRefreshAdded: number;
   refreshTimeout: any = null;
   nextBefore: number;
@@ -117,7 +117,6 @@ export default class ContactChat extends RapidElement {
         flex-grow: 1;
         overflow-y: scroll;
         overflow-x: hidden;
-        margin-bottom: 1;
         display: flex;
         flex-direction: column;
       }
@@ -138,17 +137,17 @@ export default class ContactChat extends RapidElement {
         padding-bottom: 0;
         margin-top: 0;
         margin-bottom: 0;
-        transition: all 300ms cubic-bezier(0.68, -0.55, 0.265, 1.05), color 0.1ms;
         color: #efefef;
-
         --color-link-primary: rgba(38, 166, 230, 1);
       }
 
-      
-
       .grouping.verbose > .event, .grouping.verbose > pre {
+        max-height: 0px;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: 0;
+        margin-bottom: 0;     
         opacity: 0;
-        transition: all 200ms linear;
       }
 
       .event-count {
@@ -165,7 +164,6 @@ export default class ContactChat extends RapidElement {
         color: #777;
         border-radius: 6px;
         cursor: pointer;
-        transition: all 300ms cubic-bezier(0.68, -0.55, 0.265, 1.05);
         min-width: 0%;
         opacity: 1;
       }
@@ -182,11 +180,8 @@ export default class ContactChat extends RapidElement {
         margin-top:-30px;
       }
 
-      .grouping.flows {
-        
+      .grouping.flows {        
         margin: 2em 1em;
-
-
         border: 1px solid #f2f2f2;
         border-radius: 0.5em;
         padding: 0.5em 1em;
@@ -202,20 +197,36 @@ export default class ContactChat extends RapidElement {
         word-wrap: break-word; 
       }
 
+      .grouping.verbose.closing {
+        opacity: 0 !important;
+        padding: 0 !important;
+        background: #f9f9f9 !important;
+        max-height: 1px !important;
+        border-top: 1px solid #f9f9f9 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        
+      }
+
+      .grouping.verbose.closing .event, .grouping.verbose.closing pre {
+        max-height: 0px;
+      }
+
       .grouping.verbose.expanded {
+        transition: all 300ms cubic-bezier(0.68, -0.55, 0.265, 1.05), color 0.1ms;
         background: #444;
         color: #efefef;
         max-height: 1000px;
         border-top: 1px solid #f1f1f1;
         padding:2em;
-        margin: -0.5em 1em;
+        margin: 0em 1em;
         margin-bottom: 0;
         border-radius: 0.5em;
         padding-bottom: 1em;
         box-shadow: inset 0px 11px 4px -15px #000, inset 0px -11px 4px -15px #000; 
-        
       }
-
 
       .grouping.verbose.expanded .event, .grouping.verbose.expanded pre {
         max-height: 500px;
@@ -399,7 +410,7 @@ export default class ContactChat extends RapidElement {
         background: #fff;
         transition: all 600ms ease-in;
         z-index: 10;
-        box-shadow: -7px 0px 7px 1px rgba(0, 0, 0, 0.05);
+        box-shadow: -2px 0px 7px 2px rgba(0, 0, 0, 0.05);
         flex-shrink: 0;
         border-top-right-radius: 0.5em;
         border-bottom-right-radius: 0.5em;
@@ -535,6 +546,7 @@ export default class ContactChat extends RapidElement {
         }
         eventGroup = {
           open: false,
+          closing: false,
           events: [event],
           type: currentEventGroupType,
         };
@@ -695,6 +707,8 @@ export default class ContactChat extends RapidElement {
 
     if (changedProperties.has("fetching") && this.fetching) {
       const events = this.getDiv(".events");
+
+      // console.log("fetching, saving last height", events.scrollHeight);
       this.lastHeight = events.scrollHeight;
 
       if (!this.nextBefore) {
@@ -750,7 +764,6 @@ export default class ContactChat extends RapidElement {
         const distanceFromBottom =
           events.scrollHeight - events.scrollTop - this.lastHeight;
         if (distanceFromBottom < 150) {
-          console.log("scrolling down...");
           events.scrollTo({ top: events.scrollHeight, behavior: "smooth" });
         }
       }
@@ -758,13 +771,17 @@ export default class ContactChat extends RapidElement {
 
     if (changedProperties.has("fetching") && !this.fetching) {
       const events = this.getDiv(".events");
+
       if (events.scrollHeight > this.lastHeight) {
-        events.scrollTop =
+        const scrollTop =
           events.scrollTop + events.scrollHeight - this.lastHeight;
+        console.log("Scrolling to", scrollTop);
+
+        events.scrollTop = scrollTop;
       }
 
       // scroll to the bottom if it's our first fetch
-      if (this.lastHeight === 0) {
+      if (!this.lastHeight) {
         events.scrollTop = events.scrollHeight;
       }
     }
@@ -805,8 +822,19 @@ export default class ContactChat extends RapidElement {
   }
 
   public renderFlowEvent(event: FlowEvent): TemplateResult {
-    const verb = event.type === Events.FLOW_ENTERED ? "Started" : "Completed";
-    const icon = event.type === Events.FLOW_ENTERED ? "flow" : "check";
+    let verb = "Interrupted";
+    let icon = "x-octagon";
+
+    if (event.status !== "I") {
+      if (event.type === Events.FLOW_ENTERED) {
+        verb = "Started";
+        icon = "flow";
+      } else {
+        verb = "Completed";
+        icon = "check";
+      }
+    }
+
     return html`
       <temba-icon name="${icon}"></temba-icon>
       <div class="description">
@@ -983,8 +1011,17 @@ export default class ContactChat extends RapidElement {
     const eventGroup = this.eventGroups[
       this.eventGroups.length - groupIndex - 1
     ];
-    eventGroup.open = false;
+
+    // mark us as closing
+    eventGroup.closing = true;
     this.requestUpdate("eventGroups");
+
+    // after our animation, close it up for real
+    setTimeout(() => {
+      eventGroup.closing = false;
+      eventGroup.open = false;
+      this.requestUpdate("eventGroups");
+    }, 300);
   }
 
   private handleEventScroll(event: MouseEvent) {
@@ -1005,6 +1042,14 @@ export default class ContactChat extends RapidElement {
 
     if (this.currentChat === "__refresh") {
       this.refreshing = true;
+      this.currentChat = "";
+    }
+
+    if (this.currentChat === "__scroll") {
+      const events = this.getDiv(".events");
+      console.log("scrollHeight", events.scrollHeight);
+      console.log("scrollTop", events.scrollTop);
+      console.log("lastHeight", this.lastHeight);
       this.currentChat = "";
     }
 
@@ -1114,6 +1159,7 @@ export default class ContactChat extends RapidElement {
                     grouping: true,
                     [grouping]: true,
                     expanded: eventGroup.open,
+                    closing: eventGroup.closing,
                   });
 
                   return html`<div class="${classes}">

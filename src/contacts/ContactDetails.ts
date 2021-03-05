@@ -34,8 +34,8 @@ export default class ContactDetails extends RapidElement {
   static get styles() {
     return css`
       :host {
-        box-shadow: inset 7px 0 14px -7px rgba(0, 0, 0, 0.15);
-        background: #e9e9e9;
+        box-shadow: inset 7px 0 3px -7px rgba(0, 0, 0, 0.1);
+        background: #f9f9f9;
         display: block;
         height: 100%;
       }
@@ -59,7 +59,7 @@ export default class ContactDetails extends RapidElement {
       }
 
       .contact > .name {
-        box-shadow: inset 7px 0 14px -7px rgba(0, 0, 0, 0.15);
+        box-shadow: inset 7px 0 3px -7px rgba(0, 0, 0, 0.1);
 
         font-size: 18px;
         font-weight: 400;
@@ -69,8 +69,8 @@ export default class ContactDetails extends RapidElement {
         padding: 0.75em;
         padding-right: 1em;
         margin-bottom: 0.5em;
-        background: #ccc;
-        color: #333;
+        background: #444;
+        color: #f2f2f2;
       }
 
       .group-label {
@@ -87,7 +87,7 @@ export default class ContactDetails extends RapidElement {
         font-size: 0.75rem;
         font-weight: 400;
         border-radius: 9999px;
-        background-color: #fafafa;
+        background-color: #f1f1f1;
         color: rgba(0, 0, 0, 0.5);
         letter-spacing: 0.025em;
         white-space: nowrap;

@@ -11,6 +11,7 @@ export interface EventGroup {
   type: string;
   events: ContactEvent[];
   open: boolean;
+  closing: boolean;
 }
 
 export interface ObjectReference {
