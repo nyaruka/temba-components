@@ -62,6 +62,12 @@ export default class TicketList extends FormElement {
               <div
                 style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
               >
+                ${ticket.contact.last_msg.direction === "I"
+                  ? html`<temba-icon
+                      name="user"
+                      style="display:inline-block;margin-bottom:-1px;fill:rgba(0,0,0,.6)"
+                    ></temba-icon>`
+                  : null}
                 ${ticket.contact.last_msg.text}
               </div>
             `

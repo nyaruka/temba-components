@@ -380,7 +380,7 @@ export default class ContactChat extends RapidElement {
         margin-right: 0.75em;
       }
 
-      temba-textinput {
+      temba-completion {
         --textarea-height: 75px;
       }
 
@@ -1141,7 +1141,7 @@ export default class ContactChat extends RapidElement {
       .finally(() => {
         // refocus our chatbox
         const chatbox = this.shadowRoot.querySelector(
-          "temba-textinput"
+          "temba-completion"
         ) as TextInput;
 
         chatbox.click();
@@ -1213,11 +1213,11 @@ export default class ContactChat extends RapidElement {
             </div>
             ${this.ticket
               ? html` <div class="chatbox">
-                  <temba-textinput
+                  <temba-completion
                     textarea
                     @change=${this.handleChatChange}
                     .value=${this.currentChat}
-                  ></temba-textinput>
+                  ></temba-completion>
 
                   <div
                     style="display:flex; align-items: flex-end; flex-direction: column"

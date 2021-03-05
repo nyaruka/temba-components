@@ -24,6 +24,7 @@ export interface ContactTicket {
     created_on: Date;
     last_seen_on: Date;
     last_msg: Msg;
+    direction: string;
   };
 }
 

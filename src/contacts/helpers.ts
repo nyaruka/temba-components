@@ -26,6 +26,8 @@ export interface Msg {
   quick_replies: string[];
   urn: string;
   id: number;
+  direction: string;
+  type: string;
 }
 
 export enum Events {
