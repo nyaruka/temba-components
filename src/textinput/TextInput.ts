@@ -155,6 +155,9 @@ export default class TextInput extends FormElement {
   @property()
   onBlur: any;
 
+  @property({ type: Boolean })
+  disabled = false;
+
   counterElement: CharCount = null;
   cursorStart = -1;
   cursorEnd = -1;
@@ -251,15 +254,24 @@ export default class TextInput extends FormElement {
   }
 
   private handleChange(update: any): void {
+    if (this.disabled) {
+      return
+    }
     this.updateValue(update.target.value);
     this.fireEvent("change");
   }
 
   private handleDateClick(): void {
+    if (this.disabled) {
+      return
+    }
     (this.shadowRoot.querySelector(".datepicker") as any).open();
   }
 
   private handleContainerClick(): void {
+    if (this.disabled) {
+      return
+    }
     const input: any = this.shadowRoot.querySelector(".textinput");
     if (input) {
       input.focus();
@@ -271,6 +283,9 @@ export default class TextInput extends FormElement {
   }
 
   private handleInput(update: any): void {
+    if (this.disabled) {
+      return
+    }
     this.updateValue(update.target.value);
     this.setValues([this.value]);
     this.fireEvent("input");
@@ -389,6 +404,7 @@ export default class TextInput extends FormElement {
         }}
         placeholder=${this.placeholder}
         value="${this.value}"
+        .disabled=${this.disabled}
       />
     `;
     if (this.textarea) {
@@ -401,6 +417,7 @@ export default class TextInput extends FormElement {
           @input=${this.handleInput}
           @blur=${this.blur}
           .value=${this.value}
+          .disabled=${this.disabled}
         ></textarea>
       `;
     }
@@ -419,6 +436,7 @@ export default class TextInput extends FormElement {
           readonly="true"
           placeholder=${this.placeholder}
           .value="${this.value}"
+          .disabled=${this.disabled}
         />
         <lit-flatpickr
           class="datepicker hidden"
@@ -438,6 +456,7 @@ export default class TextInput extends FormElement {
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         .hideLabel=${this.hideLabel}
+        .disabled=${this.disabled}
       >
         <div
           class="input-container"

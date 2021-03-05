@@ -568,6 +568,8 @@ export default class Select extends FormElement {
 
     if (tabbed) {
       this.fetchExpressions();
+    } else if (this.input.indexOf("(") === -1) {
+      this.addInputAsValue();
     }
   }
 
@@ -866,6 +868,39 @@ export default class Select extends FormElement {
     this.requestUpdate("input");
   }
 
+  private addInputAsValue() {
+    const ele = this.shadowRoot.querySelector(".searchbox") as HTMLInputElement;
+    const expression = {
+      name: ele.value,
+      value: ele.value,
+      expression: true,
+    };
+
+    if (this.multi) {
+      if (
+        !this.values.find((option) => {
+          return (
+            option.expression &&
+            option.value &&
+            expression.value &&
+            option.value.toLowerCase().trim() ==
+              expression.value.toLowerCase().trim()
+          );
+        })
+      ) {
+        this.addValue(expression);
+      }
+    } else {
+      this.setValue(expression);
+    }
+    this.input = "";
+    if (!this.multi) {
+      this.blur();
+    }
+
+    this.fireEvent("change");
+  }
+
   private handleKeyDown(evt: KeyboardEvent) {
     // if we are completing an expression, select it
     if (
@@ -874,39 +909,7 @@ export default class Select extends FormElement {
       this.completionOptions.length === 0 &&
       this.input.indexOf("@") > -1
     ) {
-      const ele = this.shadowRoot.querySelector(
-        ".searchbox"
-      ) as HTMLInputElement;
-      const expression = {
-        name: ele.value,
-        value: ele.value,
-        expression: true,
-      };
-
-      if (this.multi) {
-        if (
-          !this.values.find((option) => {
-            return (
-              option.expression &&
-              option.value &&
-              expression.value &&
-              option.value.toLowerCase().trim() ==
-                expression.value.toLowerCase().trim()
-            );
-          })
-        ) {
-          this.addValue(expression);
-        }
-      } else {
-        this.setValue(expression);
-      }
-      this.input = "";
-
-      if (!this.multi) {
-        this.blur();
-      }
-
-      this.fireEvent("change");
+      this.addInputAsValue();
     }
 
     // see if we should open our options on a key event
