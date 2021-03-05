@@ -241,7 +241,7 @@ export default class ContactChat extends RapidElement {
       .grouping-close-button {
         opacity:0;
         float:right;
-        margin-top:-1em;
+        margin-top:-1em !important;
         margin-right:-1em;
         fill: #f2f2f2;
         transition: opacity 200ms ease-in;
