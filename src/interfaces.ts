@@ -9,6 +9,7 @@ export interface URN {
 export interface Group {
   name: string;
   uuid: string;
+  is_dynamic?: boolean;
 }
 
 export interface ContactTicket {

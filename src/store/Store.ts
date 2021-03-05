@@ -3,7 +3,7 @@ import { CompletionSchema, KeyedAssets } from "../completion/helpers";
 import { AxiosResponse } from "axios";
 import { getUrl, getAssets, Asset } from "../utils";
 import { CompletionOption } from "../completion/Completion";
-import { ContactField } from "./interfaces";
+import { ContactField, ContactGroup } from "./interfaces";
 
 @customElement("temba-store")
 export default class Store extends LitElement {
@@ -32,6 +32,7 @@ export default class Store extends LitElement {
   private keyedAssets: KeyedAssets = {};
 
   private fields: { [key: string]: ContactField } = {};
+  private groups: { [uuid: string]: ContactGroup } = {};
 
   public firstUpdated(changedProperties: Map<string, any>) {
     if (this.completionsEndpoint) {
@@ -61,6 +62,14 @@ export default class Store extends LitElement {
         this.keyedAssets["globals"] = assets.map((asset: Asset) => asset.key);
       });
     }
+
+    if (this.groupsEndpoint) {
+      getAssets(this.groupsEndpoint).then((groups: any[]) => {
+        groups.forEach((group: any) => {
+          this.groups[group.uuid] = group;
+        });
+      });
+    }
   }
 
   public setKeyedAssets(name: string, values: string[]): void {
@@ -85,5 +94,13 @@ export default class Store extends LitElement {
 
   public getContactField(key: string): ContactField {
     return this.fields[key];
+  }
+
+  public isDynamicGroup(uuid: string): boolean {
+    const group = this.groups[uuid];
+    if (group && group.query) {
+      return true;
+    }
+    return false;
   }
 }

@@ -73,6 +73,13 @@ export default class ContactDetails extends RapidElement {
         color: #f2f2f2;
       }
 
+      .group-label temba-icon {
+        display: inline-block;
+        fill: var(--color-text-dark);
+        margin-bottom: -2px;
+        margin-right: 4px;
+      }
+
       .group-label {
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -161,11 +168,28 @@ export default class ContactDetails extends RapidElement {
     if (changes.has("endpoint")) {
       this.flow = null;
       this.expandFields = false;
+
+      const store: Store = document.querySelector("temba-store");
+
       fetchContact(this.endpoint).then((contact: Contact) => {
         this.contact = contact;
         this.fields = Object.keys(this.contact.fields).filter(
           (key: string) => !!this.contact.fields[key]
         );
+
+        this.contact.groups.forEach((group: Group) => {
+          group.is_dynamic = store.isDynamicGroup(group.uuid);
+        });
+
+        this.contact.groups.sort((a: Group, b: Group) => {
+          if (a.is_dynamic) {
+            return -1;
+          }
+          if (b.is_dynamic) {
+            return 1;
+          }
+          return a.name.localeCompare(b.name);
+        });
       });
     }
   }
@@ -193,7 +217,13 @@ export default class ContactDetails extends RapidElement {
         <div class="wrapper">
           <div>
             ${this.contact.groups.map((group: Group) => {
-              return html`<div class="group-label">${group.name}</div>`;
+              return html`<a href="/contact/filter/${group.uuid}/" target="_"
+                ><div class="group-label" style="cursor:pointer">
+                  ${group.is_dynamic
+                    ? html`<temba-icon name="atom"></temba-icon>`
+                    : null}${group.name}
+                </div></a
+              >`;
             })}
           </div>
           ${this.fields.length > 0

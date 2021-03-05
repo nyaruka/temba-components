@@ -141,6 +141,10 @@ export default class ContactChat extends RapidElement {
         --color-link-primary: rgba(38, 166, 230, 1);
       }
 
+      .grouping.verbose temba-icon {
+        margin-top: 3px;
+      }
+
       .grouping.verbose > .event, .grouping.verbose > pre {
         max-height: 0px;
         padding-top: 0;
@@ -207,7 +211,6 @@ export default class ContactChat extends RapidElement {
         padding-bottom: 0 !important;
         margin-top: 0 !important;
         margin-bottom: 0 !important;
-        
       }
 
       .grouping.verbose.closing .event, .grouping.verbose.closing pre {
