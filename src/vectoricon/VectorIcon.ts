@@ -4,46 +4,88 @@ import {
   LitElement,
   TemplateResult,
   html,
-  css
+  css,
 } from "lit-element";
+import { getClasses } from "../utils";
 
 @customElement("temba-icon")
 export default class VectorIcon extends LitElement {
+  @property({ type: String })
+  name: string;
+
+  // same as name but without implicit coloring
+  @property({ type: String })
+  id: string;
+
+  @property({ type: Number })
+  size: number = 1;
+
+  @property({ type: Boolean })
+  spin: boolean;
+
+  @property({ type: Boolean })
+  clickable: boolean;
+
   static get styles() {
     return css`
       :host {
-        display: inline-block;
-        --icon-color: var(--color-text);
+        margin: auto;
+        --icon-color: var(--text-color);
+        --icon-color-hover: var(--icon-color);
       }
 
-      .fas {
-        transition: transform ease-in-out 150ms;
-        color: var(--icon-color);
+      :host([id="flow"]),
+      :host([name="flow"]) {
+        padding-bottom: 0.2em;
+      }
+
+      svg {
+        display: block;
+        fill: var(--icon-color);
+        transform: rotate(360deg);
+        transition: transform 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          fill 100ms ease-in-out;
+      }
+
+      svg.clickable:hover {
+        cursor: pointer;
+        fill: var(--color-link-primary);
+      }
+
+      .spin {
+        transform: rotate(0deg);
       }
     `;
   }
 
   constructor() {
     super();
-    const fontEl = document.createElement("link");
-    fontEl.rel = "stylesheet";
-    fontEl.href = "https://use.fontawesome.com/releases/v5.0.13/css/all.css";
-    document.head.appendChild(fontEl);
   }
 
-  @property({ type: String })
-  name: string;
+  lastName: string;
 
-  @property({ type: Number })
-  size: number = 16;
-
-  @property({ type: String })
-  hoverColor: string = "#666";
+  public updated(changes: Map<string, any>) {
+    super.updated(changes);
+    if (changes.has("name")) {
+      this.lastName = changes.get("name");
+      if (this.lastName) {
+        this.spin = !this.spin;
+        setTimeout(() => {
+          this.lastName = null;
+          this.requestUpdate();
+        }, 300);
+      }
+    }
+  }
 
   public render(): TemplateResult {
     return html`
-      <span style="font-size: ${this.size}px;">
-        <i class="fas fa-${this.name}"></i>
+      <svg style="height:${this.size}em;width:${
+      this.size
+    }em;" class="${getClasses({ spin: this.spin, clickable: this.clickable })}">
+        <use href="/sitestatic/icons/symbol-defs.svg?#icon-${
+          this.lastName || this.name || this.id
+        }"></i>
       </span>
     `;
   }

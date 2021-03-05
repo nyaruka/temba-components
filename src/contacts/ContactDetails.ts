@@ -5,31 +5,66 @@ import {
   property,
   TemplateResult,
 } from "lit-element";
-import { Group } from "../interfaces";
+import { Contact, ContactTicket, Group } from "../interfaces";
 import RapidElement from "../RapidElement";
-import { isDate, timeSince } from "../utils";
+import { fetchResults, isDate, timeSince } from "../utils";
 import Button from "../button/Button";
+import Store from "../store/Store";
+import { fetchContact } from "./helpers";
 
 @customElement("temba-contact-details")
 export default class ContactDetails extends RapidElement {
+  // display name comes from the tickets endpoint
   @property({ type: Object })
-  contact: any;
+  ticket: ContactTicket;
+
+  @property({ attribute: false, type: Object })
+  contact: Contact;
 
   @property({ attribute: false })
   flow: any = null;
 
+  // the fields with values for this contact
+  @property({ type: Array })
+  fields: string[] = [];
+
+  @property({ type: String })
+  endpoint: string;
+
   static get styles() {
     return css`
       :host {
-        background: #f2f2f2;
+        box-shadow: inset 14px 0 7px -14px rgba(0, 0, 0, 0.15);
+        background: #f9f9f9;
         display: block;
         height: 100%;
-        padding: 1.5em;
+      }
+
+      .wrapper {
+        padding-right: 3.5em;
+        padding-left: 1em;
+      }
+
+      a {
+        color: var(--color-link-primary);
+      }
+
+      .field-links {
+        font-size: 0.8em;
       }
 
       .contact > .name {
         font-size: 18px;
         font-weight: 400;
+        padding: 0.75em;
+        padding-right: 1em;
+      }
+
+      .group-label temba-icon {
+        display: inline-block;
+        fill: var(--color-text-dark);
+        margin-bottom: -2px;
+        margin-right: 4px;
       }
 
       .group-label {
@@ -46,18 +81,15 @@ export default class ContactDetails extends RapidElement {
         font-size: 0.75rem;
         font-weight: 400;
         border-radius: 9999px;
-        background-color: rgba(0, 0, 0, 0.05);
+        background-color: #f1f1f1;
         color: rgba(0, 0, 0, 0.5);
         letter-spacing: 0.025em;
         white-space: nowrap;
         text-align: center;
         margin-right: 6px;
         margin-top: 6px;
-      }
-
-      .group-label::before {
-        // content: "\ebeb";
-        // font-family: "temba";
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .start-flow {
@@ -70,19 +102,29 @@ export default class ContactDetails extends RapidElement {
         padding: 0px;
       }
 
-      .fields {
-        background: white;
-        padding: 0.5em;
+      .fields-wrapper {
         margin-top: 1em;
+        background: #fff;
         border-radius: 0.5em;
-        padding: 0.5em;
+        overflow: hidden;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
       }
 
+      .fields {
+        padding: 1em;
+        max-height: 200px;
+        border-radius: 0.5em;
+        overflow-y: auto;
+        -webkit-mask-image: -webkit-radial-gradient(white, black);
+      }
+
       .field {
+        border-radius: 0.5em;
+
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        margin-bottom: 0.3em;
       }
 
       .field .name {
@@ -90,9 +132,11 @@ export default class ContactDetails extends RapidElement {
         font-weight: 400;
         color: #666;
         font-size: 0.9em;
+        word-break: break-word;
       }
       .field .value {
         font-size: 0.8em;
+        word-break: break-word;
       }
 
       temba-button {
@@ -105,8 +149,32 @@ export default class ContactDetails extends RapidElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("contact")) {
+    if (changes.has("endpoint")) {
       this.flow = null;
+      this.expandFields = false;
+
+      const store: Store = document.querySelector("temba-store");
+
+      fetchContact(this.endpoint).then((contact: Contact) => {
+        this.contact = contact;
+        this.fields = Object.keys(this.contact.fields).filter(
+          (key: string) => !!this.contact.fields[key]
+        );
+
+        this.contact.groups.forEach((group: Group) => {
+          group.is_dynamic = store.isDynamicGroup(group.uuid);
+        });
+
+        this.contact.groups.sort((a: Group, b: Group) => {
+          if (a.is_dynamic) {
+            return -1;
+          }
+          if (b.is_dynamic) {
+            return 1;
+          }
+          return a.name.localeCompare(b.name);
+        });
+      });
     }
   }
 
@@ -114,42 +182,84 @@ export default class ContactDetails extends RapidElement {
     this.flow = evt.detail.selected as any;
   }
 
+  private handleExpandFields(): void {
+    this.expandFields = true;
+  }
+
+  private handleHideFields(): void {
+    this.expandFields = false;
+  }
+
+  @property({ type: Boolean })
+  expandFields: boolean = false;
+
   public render(): TemplateResult {
+    const store: Store = document.querySelector("temba-store");
     if (this.contact) {
       return html`<div class="contact">
-        <div class="name">${this.contact.name}</div>
-        <div>
-          ${this.contact.groups.map((group: Group) => {
-            return html`<div class="group-label">${group.name}</div>`;
-          })}
-        </div>
-        <div class="fields">
-          ${Object.keys(this.contact.fields).map((key: string) => {
-            let value = this.contact.fields[key];
+        <div class="name">${this.contact.name || this.ticket.contact.name}</div>
+        <div class="wrapper">
+          <div>
+            ${this.contact.groups.map((group: Group) => {
+              return html`<a href="/contact/filter/${group.uuid}/" target="_"
+                ><div class="group-label" style="cursor:pointer">
+                  ${group.is_dynamic
+                    ? html`<temba-icon name="atom"></temba-icon>`
+                    : null}${group.name}
+                </div></a
+              >`;
+            })}
+          </div>
+          ${this.fields.length > 0
+            ? html` <div class="fields-wrapper">
+                <div class="fields">
+                  ${this.fields
+                    .slice(0, this.expandFields ? 255 : 3)
+                    .map((key: string) => {
+                      let value = this.contact.fields[key];
 
-            if (value) {
-              if (isDate(value)) {
-                value = timeSince(new Date(value));
-              }
-              return html`<div class="field">
-                <div class="name">
-                  ${key.charAt(0).toUpperCase() + key.substring(1)}
+                      if (value) {
+                        if (isDate(value)) {
+                          value = timeSince(new Date(value));
+                        }
+                        return html`<div class="field">
+                          <div class="name">
+                            ${store.getContactField(key).label}
+                          </div>
+                          <div class="value">${value}</div>
+                        </div>`;
+                      }
+                    })}
+
+                  <div class="field-links">
+                    ${this.fields.length > 3
+                      ? !this.expandFields
+                        ? html`<a href="#" @click="${this.handleExpandFields}"
+                            >more</a
+                          >`
+                        : html`<a href="#" @click="${this.handleHideFields}"
+                            >less</a
+                          >`
+                      : null}
+                  </div>
                 </div>
-                <div class="value">${value}</div>
-              </div>`;
-            }
-          })}
-        </div>
+              </div>`
+            : null}
 
-        <div class="actions">
-          <div class="start-flow">
-            <temba-select
-              endpoint="/api/v2/flows.json?archived=false"
-              placeholder="Start Flow"
-              flavor="small"
-              .values=${this.flow ? [this.flow] : []}
-              @temba-selection=${this.handleFlowChanged}
-            ></temba-select>
+          <div class="actions">
+            ${false
+              ? html`
+                  <div class="start-flow">
+                    <temba-select
+                      endpoint="/api/v2/flows.json?archived=false"
+                      placeholder="Start Flow"
+                      flavor="small"
+                      .values=${this.flow ? [this.flow] : []}
+                      @temba-selection=${this.handleFlowChanged}
+                    ></temba-select>
+                  </div>
+                `
+              : null}
           </div>
         </div>
       </div>`;

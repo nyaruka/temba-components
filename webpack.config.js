@@ -13,6 +13,7 @@ const configs = [
 ];
 
 module.exports = configs.map((config) => {
+
   const legacy = config.output.filename.indexOf("legacy") === 0;
   const prefix = legacy ? "legacy/" : "";
   // const outputChunkFilename = `${prefix}${'chunk-[id].js'}`;
@@ -44,6 +45,7 @@ module.exports = configs.map((config) => {
     },
     devtool: mode !== "production" ? "inline-source-map" : false,
   });
+
 
   if (mode === "production") {
     conf["entry"] = path.resolve(__dirname, "./src/temba-components.js");

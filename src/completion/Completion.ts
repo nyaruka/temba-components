@@ -259,9 +259,9 @@ export default class Completion extends FormElement {
   public render(): TemplateResult {
     const anchorStyles = this.anchorPosition
       ? {
-        top: `${this.anchorPosition.top}px`,
-        left: `${this.anchorPosition.left}px`,
-      }
+          top: `${this.anchorPosition.top}px`,
+          left: `${this.anchorPosition.left}px`,
+        }
       : {};
 
     return html`
@@ -297,12 +297,12 @@ export default class Completion extends FormElement {
             ?visible=${this.options.length > 0}
           >
             ${this.currentFunction
-        ? html`
+              ? html`
                   <div class="current-fn">
                     ${renderCompletionOption(this.currentFunction, true)}
                   </div>
                 `
-        : null}
+              : null}
             <div class="footer">Tab to complete, enter to select</div>
           </temba-options>
         </div>

@@ -110,7 +110,7 @@ export const getAssets = async (url: string): Promise<Asset[]> => {
   return assets;
 };
 
-export const getHeaders = (pjax: boolean) => {
+export const getHeaders = (pjax: boolean = false) => {
   const csrf = getCookie("csrftoken");
   const headers: any = csrf ? { "X-CSRFToken": csrf } : {};
 
@@ -120,6 +120,9 @@ export const getHeaders = (pjax: boolean) => {
   if (pjax) {
     headers["X-PJAX"] = "true";
   }
+
+  // we should update smartmin to look for ajax markers for json
+  headers["X-FORMAX"] = "true";
 
   return headers;
 };
@@ -142,6 +145,45 @@ export const postUrl = (
   pjax: boolean = false
 ): Promise<AxiosResponse> => {
   return axios.post(url, payload, { headers: getHeaders(pjax) });
+};
+
+export interface FormResponse {
+  success: boolean;
+  results: any;
+}
+
+export const postFormData = (
+  url: string,
+  formData: FormData
+): Promise<FormResponse> => {
+  return new Promise<any>((resolve, reject) => {
+    axios
+      .post(url, formData, {
+        headers: getHeaders(),
+        params: { _format: "json" },
+      })
+      .then((response: AxiosResponse) => {
+        if (response.data.status !== "success") {
+          reject({ errors: response.data.errors });
+        } else {
+          resolve({ success: true, results: response.data.results });
+        }
+      })
+      .catch((reason) => {
+        reject(reason);
+      });
+  });
+};
+
+export const postForm = (
+  url: string,
+  payload: any | FormData
+): Promise<FormResponse> => {
+  const formData = new FormData();
+  Object.keys(payload).forEach((key: string) => {
+    formData.append(key, payload[key]);
+  });
+  return postFormData(url, formData);
 };
 
 /**
@@ -291,19 +333,34 @@ export const isElementVisible = (el: any, holder: any) => {
     : bottom < holderRect.bottom;
 };
 
+const HOUR = 3600;
+const DAY = HOUR * 24;
+const WEEK = DAY * 7;
+const MONTH = DAY * 30;
+
 export const timeSince = (date: Date) => {
   const now = new Date();
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
+
   if (secondsPast < 60) {
-    return Math.round(secondsPast) + "s";
+    return "just now";
   }
-  if (secondsPast < 3600) {
+
+  if (secondsPast < HOUR) {
     return Math.round(secondsPast / 60) + "m";
   }
-  if (secondsPast <= 86400) {
-    return Math.round(secondsPast / 3600) + "h";
+
+  if (secondsPast <= DAY) {
+    return Math.round(secondsPast / HOUR) + "h";
   }
-  if (secondsPast > 86400) {
+
+  if (secondsPast <= MONTH) {
+    return Math.round(secondsPast / DAY) + "d";
+  }
+
+  if (secondsPast < MONTH * 6) {
+    return Math.round(secondsPast / MONTH) + "mth";
+  } else {
     const day = date.getDate();
     const month = date
       .toDateString()
@@ -327,4 +384,92 @@ export const isDate = (value: string): boolean => {
   // value = value.split("+")[0];
   dateFormat = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
   return dateFormat.test(value);
+};
+
+export const debounce = (
+  fn: Function,
+  millis: number,
+  immediate: boolean = false
+) => {
+  let timeout: any;
+  return function () {
+    const context = this;
+    const args = arguments;
+
+    const later = function () {
+      timeout = null;
+      if (!immediate) {
+        fn.apply(context, args);
+      }
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, millis);
+    if (callNow) {
+      fn.apply(context, args);
+    }
+  };
+};
+
+export const throttle = (fn: Function, millis: number) => {
+  let ready: boolean = true;
+  return function () {
+    const context = this;
+    const args = arguments;
+
+    if (!ready) {
+      return;
+    }
+
+    ready = false;
+    fn.apply(context, args);
+    setTimeout(() => {
+      ready = true;
+    }, millis);
+  };
+};
+
+export interface NamedObject {
+  name: string;
+}
+
+export const oxford = (items: any[], joiner: string = "and"): any => {
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  if (items.length === 2) {
+    // TemplateResults get a different treatment
+    if (items[0].type === "html") {
+      return html`${items[0]} ${joiner} ${items[1]}`;
+    }
+    return items.join(" " + joiner + " ");
+  }
+
+  // TemplateResults get a different treatment
+  if (items[0].type === "html") {
+    return items.map((tr: TemplateResult, idx: number) => {
+      if (idx < items.length - 1) {
+        return html`${tr}, `;
+      }
+      return html`${joiner} ${tr}`;
+    });
+  }
+
+  return items.join(", ") + joiner + items[items.length - 1];
+};
+
+export const oxfordFn = (
+  items: any[],
+  fn: (item: any) => any,
+  joiner: string = "and"
+): any => {
+  return oxford(items.map(fn), joiner);
+};
+
+export const oxfordNamed = (
+  items: NamedObject[],
+  joiner: string = "and"
+): any => {
+  return oxfordFn(items, (value: any) => value.name, joiner);
 };

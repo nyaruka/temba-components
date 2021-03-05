@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "uuid": "a763ceb7-01fb-4796-91ab-440d34e9b969",
+      "name": "Ben Haggerty",
+      "modified_on": "2021-02-18T18:53:57.532Z",
+      "last_msg": {
+        "text": "Hey guys, I have a question",
+        "direction": "I",
+        "type": "I",
+        "created_on": "2021-02-18T18:53:57.265Z",
+        "sender": null
+      }
+    }
+  ],
+  "next": null
+}

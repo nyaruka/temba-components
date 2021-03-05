@@ -1,4 +1,5 @@
 import { CompletionOption } from "./completion/Completion";
+import { Msg } from "./contacts/helpers";
 
 export interface URN {
   scheme: string;
@@ -8,6 +9,23 @@ export interface URN {
 export interface Group {
   name: string;
   uuid: string;
+  is_dynamic?: boolean;
+}
+
+export interface ContactTicket {
+  name: string;
+  uuid: string;
+  status: string;
+
+  contact: {
+    uuid: string;
+    name: string;
+    modified_on: Date;
+    created_on: Date;
+    last_seen_on: Date;
+    last_msg: Msg;
+    direction: string;
+  };
 }
 
 export interface Contact {
@@ -52,8 +70,10 @@ export enum CustomEventType {
   Loaded = "temba-loaded",
   Canceled = "temba-canceled",
   CursorChanged = "temba-cursor-changed",
+  Refreshed = "temba-refreshed",
   Selection = "temba-selection",
   ButtonClicked = "temba-button-clicked",
   DialogHidden = "temba-dialog-hidden",
   ScrollThreshold = "temba-scroll-threshold",
+  ContentChanged = "temba-content-changed",
 }

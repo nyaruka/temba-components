@@ -8,8 +8,15 @@ import {
 import { CustomEventType } from "../interfaces";
 import RapidElement, { EventHandler } from "../RapidElement";
 import { styleMap } from "lit-html/directives/style-map.js";
-import { getClasses, getScrollParent, isElementVisible } from "../utils";
-
+import {
+  debounce,
+  getClasses,
+  getScrollParent,
+  isElementVisible,
+  throttle,
+} from "../utils";
+import { repeat } from "lit-html/directives/repeat.js";
+import { cache } from "lit-html/directives/cache.js";
 @customElement("temba-options")
 export default class Options extends RapidElement {
   static get styles() {
@@ -88,6 +95,11 @@ export default class Options extends RapidElement {
         max-height: inherit;
         height: 100%;
       }
+
+      temba-loading {
+        align-self: center;
+        margin-top: 0.025em;
+      }
     `;
   }
 
@@ -133,6 +145,12 @@ export default class Options extends RapidElement {
   @property({ type: String })
   nameKey: string = "name";
 
+  @property({ type: String })
+  valueKey: string = "value";
+
+  @property({ type: Boolean })
+  loading: boolean = false;
+
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
     option[this.nameKey || "name"];
@@ -158,16 +176,21 @@ export default class Options extends RapidElement {
   scrollParent: HTMLElement = null;
 
   public firstUpdated() {
-    this.scrollParent = getScrollParent(this);
-    this.calculatePosition = this.calculatePosition.bind(this);
-    if (this.scrollParent) {
-      this.scrollParent.addEventListener("scroll", this.calculatePosition);
+    if (!this.block) {
+      this.scrollParent = getScrollParent(this);
+      this.calculatePosition = this.calculatePosition.bind(this);
+      if (this.scrollParent) {
+        this.scrollParent.addEventListener("scroll", this.calculatePosition);
+      }
+      this.calculatePosition();
     }
   }
 
   public disconnectedCallback() {
-    if (this.scrollParent) {
-      this.scrollParent.removeEventListener("scroll", this.calculatePosition);
+    if (!this.block) {
+      if (this.scrollParent) {
+        this.scrollParent.removeEventListener("scroll", this.calculatePosition);
+      }
     }
   }
 
@@ -184,25 +207,25 @@ export default class Options extends RapidElement {
 
     // if our cursor changed, lets make sure our scrollbox is showing it
     if (changedProperties.has("cursorIndex")) {
-      const focusedEle = this.shadowRoot.querySelector(
-        ".focused"
+      const focusedOption = this.shadowRoot.querySelector(
+        `div[data-option-index="${this.cursorIndex}"]`
       ) as HTMLDivElement;
 
-      if (focusedEle) {
+      if (focusedOption) {
         const scrollBox = this.shadowRoot.querySelector(".options");
         const scrollBoxRect = scrollBox.getBoundingClientRect();
         const scrollBoxHeight = scrollBoxRect.height;
-        const focusedEleHeight = focusedEle.getBoundingClientRect().height;
+        const focusedEleHeight = focusedOption.getBoundingClientRect().height;
 
         if (
-          focusedEle.offsetTop + focusedEleHeight >
+          focusedOption.offsetTop + focusedEleHeight >
           scrollBox.scrollTop + scrollBoxHeight - 5
         ) {
           const scrollTo =
-            focusedEle.offsetTop - scrollBoxHeight + focusedEleHeight + 5;
+            focusedOption.offsetTop - scrollBoxHeight + focusedEleHeight + 5;
           scrollBox.scrollTop = scrollTo;
-        } else if (focusedEle.offsetTop < scrollBox.scrollTop) {
-          const scrollTo = focusedEle.offsetTop - 5;
+        } else if (focusedOption.offsetTop < scrollBox.scrollTop) {
+          const scrollTo = focusedOption.offsetTop - 5;
           scrollBox.scrollTop = scrollTo;
         }
       }
@@ -214,14 +237,18 @@ export default class Options extends RapidElement {
       const previousCount = prevOptions ? prevOptions.length : 0;
       const newCount = this.options ? this.options.length : 0;
 
-      // if our option size is shrinking, reset our cursor
       if (
+        this.cursorIndex === -1 ||
         newCount < previousCount ||
         (previousCount === 0 &&
           newCount > 0 &&
           !changedProperties.has("cursorIndex"))
       ) {
         this.setCursor(0);
+
+        if (this.block) {
+          this.handleSelection(false);
+        }
       }
 
       // if on initial load we don't have enough options to load, trigger a scroll
@@ -263,7 +290,15 @@ export default class Options extends RapidElement {
     option: any,
     selected: boolean
   ): TemplateResult {
-    return html`${option.prefix}${this.getName(option)}`;
+    return html`<div style="display:flex; align-items:flex-start">
+      ${option.icon
+        ? html`<temba-icon
+            name="${option.icon}"
+            style="margin-right:0.5em; fill: var(--color-text-dark);"
+          ></temba-icon>`
+        : null}
+      <div style="flex-grow:1">${option.prefix}${this.getName(option)}</div>
+    </div>`;
   }
 
   private renderOptionDetailDefault(
@@ -273,9 +308,17 @@ export default class Options extends RapidElement {
     return html` ${option.detail} `;
   }
 
-  private handleSelection(tabbed: boolean = false) {
-    const selected = this.options[this.cursorIndex];
-    this.fireCustomEvent(CustomEventType.Selection, { selected, tabbed });
+  private handleSelection(tabbed: boolean = false, index: number = -1) {
+    if (index === -1) {
+      index = this.cursorIndex;
+    }
+
+    const selected = this.options[index];
+    this.fireCustomEvent(CustomEventType.Selection, {
+      selected,
+      tabbed,
+      index,
+    });
   }
 
   private moveCursor(direction: number): void {
@@ -286,15 +329,14 @@ export default class Options extends RapidElement {
     this.setCursor(newIndex);
   }
 
-  private setCursor(newIndex: number): void {
-    if (newIndex !== this.cursorIndex) {
-      this.cursorIndex = newIndex;
-      this.fireCustomEvent(CustomEventType.CursorChanged, { index: newIndex });
-      if (this.block) {
-        this.handleSelection(false);
-      }
+  setCursor: (index: number) => void = throttle((index: number) => {
+    if (index !== this.cursorIndex) {
+      this.cursorIndex = index;
+      this.fireCustomEvent(CustomEventType.CursorChanged, {
+        index,
+      });
     }
-  }
+  }, 50);
 
   private handleKeyDown(evt: KeyboardEvent) {
     if (this.block && !this.isFocused()) {
@@ -305,6 +347,7 @@ export default class Options extends RapidElement {
       if ((evt.ctrlKey && evt.key === "n") || evt.key === "ArrowDown") {
         this.moveCursor(1);
         evt.preventDefault();
+        evt.stopPropagation();
         if (this.block) {
           this.handleSelection(false);
         }
@@ -382,51 +425,44 @@ export default class Options extends RapidElement {
     }
   }
 
-  private handleClick(evt: MouseEvent) {
-    if (!this.block) {
-      if (this.visible) {
-        evt.preventDefault();
-        evt.stopPropagation();
-        this.handleSelection(false);
-      }
-    }
-  }
-
   public getEventHandlers(): EventHandler[] {
     return [
-      { event: "click", method: this.handleClick, isDocument: false },
-      { event: "keydown", method: this.handleKeyDown, isDocument: true },
-      { event: "scroll", method: this.calculatePosition, isDocument: true },
+      {
+        event: "keydown",
+        method: this.handleKeyDown,
+        isDocument: true,
+      },
+      {
+        event: "scroll",
+        method: this.calculatePosition,
+        isDocument: true,
+      },
     ];
   }
 
   private handleMouseMove(evt: MouseEvent) {
-    const index = (evt.currentTarget as HTMLElement).getAttribute(
-      "data-option-index"
-    );
-
-    if (index) {
-      if (!this.block) {
-        if (Math.abs(evt.movementX) + Math.abs(evt.movementY) > 0) {
-          const indexNum = parseInt(index, 10);
-          if (indexNum !== this.cursorIndex) {
-            this.setCursor(indexNum);
-          }
-        }
+    if (!this.block) {
+      if (Math.abs(evt.movementX) + Math.abs(evt.movementY) > 0) {
+        const index = (evt.currentTarget as HTMLElement).getAttribute(
+          "data-option-index"
+        );
+        this.setCursor(parseInt(index));
       }
     }
   }
 
   private handleOptionClick(evt: MouseEvent) {
-    if (this.block) {
-      const index = (evt.currentTarget as HTMLElement).getAttribute(
-        "data-option-index"
-      );
+    evt.preventDefault();
+    evt.stopPropagation();
 
-      if (index) {
-        this.setCursor(parseInt(index));
-        this.handleSelection(false);
-      }
+    const index = (evt.currentTarget as HTMLElement).getAttribute(
+      "data-option-index"
+    );
+
+    if (index) {
+      const newIndex = parseInt(index);
+      this.setCursor(newIndex);
+      this.handleSelection(false, newIndex);
     }
   }
 
@@ -460,28 +496,43 @@ export default class Options extends RapidElement {
       options: true,
     });
 
+    const options = this.options || [];
+
+    let body = html`<div
+      style="padding: 1em;
+      margin-bottom: 1;
+      display: flex;
+      flex-direction: column;"
+    >
+      <temba-loading></temba-loading>
+    </div>`;
+    if (!this.loading) {
+      body = html`${repeat(
+        options,
+        (option) => option[this.valueKey],
+        (option, index) =>
+          html`<div
+            data-option-index="${index}"
+            @mousemove=${this.handleMouseMove}
+            @click=${this.handleOptionClick}
+            class="option ${index === this.cursorIndex ? "focused" : ""}"
+          >
+            ${renderOption(option, index === this.cursorIndex)}
+          </div>`
+      )}`;
+    }
+
     return html`
       <div
         class="options-container ${classes}"
         style=${styleMap(containerStyle)}
       >
         <div
-          @scroll=${this.handleInnerScroll}
+          @scroll=${throttle(this.handleInnerScroll, 100)}
           class="${classesInner}"
           style=${styleMap(optionsStyle)}
         >
-          ${(this.options || []).map(
-            (option: any, index: number) => html`
-              <div
-                data-option-index="${index}"
-                @mousemove=${this.handleMouseMove}
-                @click=${this.handleOptionClick}
-                class="option ${index == this.cursorIndex ? "focused" : ""}"
-              >
-                ${renderOption(option, index == this.cursorIndex)}
-              </div>
-            `
-          )}
+          ${body}
         </div>
         <slot></slot>
       </div>

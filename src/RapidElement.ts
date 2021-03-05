@@ -8,6 +8,8 @@ export interface EventHandler {
 }
 
 export default class RapidElement extends LitElement {
+  private eles: { [selector: string]: HTMLDivElement } = {};
+
   public getEventHandlers(): EventHandler[] {
     return [];
   }
@@ -53,6 +55,35 @@ export default class RapidElement extends LitElement {
     this.dispatchEvent(event);
   }
 
+  public dispatchEvent(event: any): any {
+    super.dispatchEvent(event);
+
+    const ele = event.target;
+    if (ele) {
+      const eventFire =
+        (ele as any)["@" + event.type] || (ele as any)["-" + event.type];
+      if (eventFire) {
+        eventFire(event);
+      } else {
+        // lookup events with @ prefix and try to invoke them
+        const func = new Function(
+          "event",
+          `with(document) {
+          with(this) {
+            let handler = ${
+              ele.getAttribute("@" + event.type) ||
+              ele.getAttribute("-" + event.type)
+            };
+            if(typeof attr === 'function') { 
+              handler(event) ;
+            }
+          }
+        }`
+        );
+        func.call(ele, event);
+      }
+    }
+  }
   public closestElement(selector: string, base: Element = this) {
     function __closestFrom(el: Element | Window | Document): Element {
       if (!el || el === document || el === window) return null;
@@ -63,5 +94,16 @@ export default class RapidElement extends LitElement {
         : __closestFrom(((el as Element).getRootNode() as ShadowRoot).host);
     }
     return __closestFrom(base);
+  }
+
+  public getDiv(selector: string) {
+    let ele = this.eles[selector];
+    if (ele) {
+      return ele;
+    }
+
+    ele = this.shadowRoot.querySelector(selector);
+    this.eles[selector] = ele;
+    return ele;
   }
 }

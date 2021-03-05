@@ -52,14 +52,14 @@ export const getOptions = (select: Select): Options => {
 };
 
 export const clickOption = async (select: Select, index: number) => {
-  const options = getOptions(select);
+  var clock = sinon.useFakeTimers();
 
-  // key down to our option
-  const event = new KeyboardEvent("keydown", { key: "ArrowDown" });
-  for (let i = 0; i < index; i++) {
-    document.dispatchEvent(event);
-  }
-  options.click();
+  const options = getOptions(select);
+  const option = options.shadowRoot.querySelector(
+    `[data-option-index="${index}"]`
+  ) as HTMLDivElement;
+  option.click();
+  clock.tick(50);
 };
 
 export const openAndClick = async (select: Select, index: number) => {
