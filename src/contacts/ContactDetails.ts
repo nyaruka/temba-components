@@ -34,7 +34,7 @@ export default class ContactDetails extends RapidElement {
   static get styles() {
     return css`
       :host {
-        box-shadow: inset 7px 0 3px -7px rgba(0, 0, 0, 0.1);
+        box-shadow: inset 14px 0 7px -14px rgba(0, 0, 0, 0.15);
         background: #f9f9f9;
         display: block;
         height: 100%;
@@ -53,24 +53,11 @@ export default class ContactDetails extends RapidElement {
         font-size: 0.8em;
       }
 
-      .contact {
-        // border-top-right-radius: 0.5em;
-        // overflow: hidden;
-      }
-
       .contact > .name {
-        box-shadow: inset 7px 0 3px -7px rgba(0, 0, 0, 0.1);
-
         font-size: 18px;
         font-weight: 400;
-        // margin-top: -0.75em;
-        // margin-left: -0.75em;
-        // margin-right: -2em;
         padding: 0.75em;
         padding-right: 1em;
-        margin-bottom: 0.5em;
-        background: #444;
-        color: #f2f2f2;
       }
 
       .group-label temba-icon {
@@ -103,11 +90,6 @@ export default class ContactDetails extends RapidElement {
         margin-top: 6px;
         user-select: none;
         -webkit-user-select: none;
-      }
-
-      .group-label::before {
-        // content: "\ebeb";
-        // font-family: "temba";
       }
 
       .start-flow {
@@ -150,9 +132,11 @@ export default class ContactDetails extends RapidElement {
         font-weight: 400;
         color: #666;
         font-size: 0.9em;
+        word-break: break-word;
       }
       .field .value {
         font-size: 0.8em;
+        word-break: break-word;
       }
 
       temba-button {
@@ -262,17 +246,21 @@ export default class ContactDetails extends RapidElement {
               </div>`
             : null}
 
-          <!--div class="actions">
-          <div class="start-flow">
-            <temba-select
-              endpoint="/api/v2/flows.json?archived=false"
-              placeholder="Start Flow"
-              flavor="small"
-              .values=${this.flow ? [this.flow] : []}
-              @temba-selection=${this.handleFlowChanged}
-            ></temba-select>
+          <div class="actions">
+            ${false
+              ? html`
+                  <div class="start-flow">
+                    <temba-select
+                      endpoint="/api/v2/flows.json?archived=false"
+                      placeholder="Start Flow"
+                      flavor="small"
+                      .values=${this.flow ? [this.flow] : []}
+                      @temba-selection=${this.handleFlowChanged}
+                    ></temba-select>
+                  </div>
+                `
+              : null}
           </div>
-        </div-->
         </div>
       </div>`;
     }

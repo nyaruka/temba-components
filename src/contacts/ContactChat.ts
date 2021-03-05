@@ -90,7 +90,7 @@ export default class ContactChat extends RapidElement {
     return css`
       :host {
         --event-padding: 0.5em 1em;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
 
         height: 100%;
@@ -139,6 +139,7 @@ export default class ContactChat extends RapidElement {
         margin-bottom: 0;
         color: #efefef;
         --color-link-primary: rgba(38, 166, 230, 1);
+        
       }
 
       .grouping.verbose temba-icon {
@@ -170,6 +171,12 @@ export default class ContactChat extends RapidElement {
         cursor: pointer;
         min-width: 0%;
         opacity: 1;
+        transition: all 300ms ease-in, opacity 0.1ms, margin-top 0ms;
+      }
+
+      .closing .grouping-close-button {
+        opacity: 0 !important;
+        transition: none !important;
       }
 
       .event-count:hover {
@@ -410,10 +417,10 @@ export default class ContactChat extends RapidElement {
       .toolbar {
         position: relative;
         width: 2em;
-        background: #fff;
+        background: #f2f2f2;
         transition: all 600ms ease-in;
         z-index: 10;
-        box-shadow: -2px 0px 7px 2px rgba(0, 0, 0, 0.05);
+        box-shadow: -1px 0px 6px 1px rgba(0, 0, 0, 0.1);
         flex-shrink: 0;
         border-top-right-radius: 0.5em;
         border-bottom-right-radius: 0.5em;
@@ -429,7 +436,8 @@ export default class ContactChat extends RapidElement {
       }
 
       .toolbar.closed {
-        box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, .01);
+        box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, .0);
+        
       }
 
       temba-contact-details {
