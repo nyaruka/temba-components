@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link
+    href="/sitestatic/css/temba-components.css"
+    rel="stylesheet"
+    type="text/css"
+  />
+
+  <link
+    href="/sitestatic/css/tailwind.css"
+    rel="stylesheet"
+    type="text/css"
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+    rel="stylesheet"
+  />
+
+  <style>
+    html {
+        --color-text-dark: #555 !important;
+      }
+      
+      temba-select[name='ticket-filter'] {
+        margin-bottom: 0.5em;
+        margin-top: -0.4em;
+      }
+
+      .ticket-list {
+        flex-basis: 300px; 
+        flex-grow: 0; 
+        flex-shrink: 0;
+        transition: all 200ms ease-in;
+      }
+
+      @media only screen and (max-width: 1024px) {
+        .ticket-list {
+          flex-basis: 200px; 
+        }
+      }
+
+      @media only screen and (max-width: 768px) {
+        .ticket-list {
+          flex-basis: 125px; 
+        }
+      }
+
+  </style>
+  <script type="module">
+    import '../out-tsc/temba-modules.js';
+  </script>
+
+  <script language="javascript">
+  
+    function handleContactChange(event) {
+      var ticket = event.target.value;
+      var chat = document.querySelector("temba-contact-chat");
+      chat.ticket = ticket;
+    }
+    
+    function handleContactHistoryUpdate(event) {
+      // tell our list to refresh since we know things happened
+      var tickets = document.querySelector("temba-tickets");
+      tickets.refresh();
+    }
+
+    function handleTicketsRefreshed(event) {
+      // tell our chat to refresh since we know things are new in our list
+      var chat = document.querySelector("temba-contact-chat");
+      chat.refresh();
+    }
+
+    function handleFilterChanged(event) {
+      var tickets = document.querySelector("temba-tickets");
+      var chat = document.querySelector("temba-contact-chat");
+
+      // if we have auto selecting, don't clear the chat
+      if (!tickets.nextSelection) {
+        chat.ticket = null;
+      }
+
+      var filter = event.target.values[0].value;
+      if (filter === "O") {
+        tickets.endpoint = "/contact/tickets/?_format=json&folder=open"
+      } else {
+        tickets.endpoint = "/contact/tickets/?_format=json&folder=closed"
+      }
+    }
+
+    function handleTicketChanged(event) {
+      var ticket = event.detail.ticket;
+      var focus = event.detail.focus;
+
+      var filter = document.querySelector('temba-select[name="ticket-filter"]');
+      var tickets = document.querySelector("temba-tickets");
+
+      if (focus) {
+        tickets.setNextSelection(ticket.uuid);
+        filter.setSelection(ticket.status);
+      } else {
+        // no focus, just refresh
+        tickets.refresh();
+      }
+    }
+
+</script>
+ 
+
+</head>
+<body>
+
+  <temba-store
+    completions="/mr/docs/en-us/completion.json"
+    functions="/mr/docs/en-us/functions.json"
+    fields="/api/v2/fields.json"
+    globals="/api/v2/globals.json"
+    groups="/api/v2/groups.json"
+  ></temba-store>
+
+  <div class="flex-col">
+    <div class="flex" style="height:100vh">
+  
+      <div class="ticket-list m-4 mr-2 flex flex-col">
+
+          <temba-select name="ticket-filter" onchange="handleFilterChanged(event)">
+            <temba-option name="Open" value="O" icon="inbox"></temba-option>
+            <temba-option name="Closed" value="C" icon="check"></temba-option>
+          </temba-select>
+
+
+        <div class="flex flex-grow">
+          <temba-tickets endpoint="/contact/tickets/?_format=json&folder=open" @temba-refreshed="handleTicketsRefreshed(event)" onchange="handleContactChange(event)"></temba-tickets>
+        </div>
+
+      </div>
+  
+      <div class="flex-grow flex-col h-full py-4 pb-4 pr-4">
+        <temba-contact-chat @temba-refreshed="handleContactHistoryUpdate(event)" @temba-content-changed="handleTicketChanged(event)"></temba-contact-chat>
+      </div>
+    
+    </div>
+  </div>
+</body>
+</html>

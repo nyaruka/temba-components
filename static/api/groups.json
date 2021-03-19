@@ -1,0 +1,461 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
+      "name": "Empty",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "fe782b0f-7cd8-41b9-88c3-9556bbabc01e",
+      "name": "My Missing Group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "2ab97b37-66fe-41ef-af63-be571943d742",
+      "name": "hey ho",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "23155115-9ea9-48a2-8196-9048becb3012",
+      "name": "My Doo",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
+      "name": "Reporters Group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "df1e0363-77ce-4ec0-be06-de5cc0ca27c7",
+      "name": "my dog",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "fe340775-8405-4984-845c-9674668f36db",
+      "name": "hey there",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "1194ce92-af22-4b61-b47d-89022f12c90e",
+      "name": "test",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "b9c04add-6265-4dbb-a491-277273707a89",
+      "name": "heep",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "148d7d29-2391-462e-834f-6009f03dcc06",
+      "name": "help",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "2501c14e-1714-44eb-9054-1a1d361b2953",
+      "name": "bloop",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "cc7540c9-6330-4c6b-952a-60da501ea34c",
+      "name": "meep",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "b13e01ec-6c83-4349-b153-a2e48d0fd394",
+      "name": "aaaa",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "bf1a785d-1ed4-4dfe-b2bc-9826c3f4d09e",
+      "name": "my new group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "e469ed98-1105-48ee-85c1-b068f4382105",
+      "name": "this group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "7e9bbac3-3b3b-4624-98dc-d803fe1651e5",
+      "name": "hello",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "3b980c25-fa59-4bb0-80cf-83593ab7063a",
+      "name": "binksy",
+      "query": null,
+      "status": "ready",
+      "count": 3
+    },
+    {
+      "uuid": "d86561c4-d55d-492f-9ab0-2c2bea0dc874",
+      "name": "binks",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "1afa9dc0-bdb3-41bb-9775-74f1f5d88b86",
+      "name": "dinks",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "b3cbbe34-5d5f-407d-b580-3b2ca9685b04",
+      "name": "beep",
+      "query": null,
+      "status": "ready",
+      "count": 4
+    },
+    {
+      "uuid": "2287162b-3ac5-47d6-90c5-fff29c0b81d6",
+      "name": "testing this out",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "d67b02da-d6f8-4726-97c1-8ee44f523b7a",
+      "name": "this is a new group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "50c14517-c9df-4e74-960f-29ca8d632a21",
+      "name": "my contact group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "e6dce1fa-ef95-40b4-8bcd-564b65e23e25",
+      "name": "tonk",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "d6ef5c52-d9c3-4e72-b394-3622523560c3",
+      "name": "tink",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "d6bcf908-5d4f-4a83-991b-6b22e774ede1",
+      "name": "dink",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "a0a93723-5c32-4ce6-909b-6ae51f458685",
+      "name": "find",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "d64b5828-550c-492f-98f0-d7d6119d75da",
+      "name": "zzz if you're not first you're last",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "fa596957-8e52-493b-b743-996939824162",
+      "name": "Autopal Borrowers Balance (3) 2",
+      "query": null,
+      "status": "ready",
+      "count": 998
+    },
+    {
+      "uuid": "d4296fdb-d90f-459f-acd3-55112d3fa107",
+      "name": "Autopal Borrowers Balance (3)",
+      "query": null,
+      "status": "ready",
+      "count": 996
+    },
+    {
+      "uuid": "5b714f8f-3994-45a0-8750-357788f34fd8",
+      "name": "Contacts 6",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "3816370b-cb64-422e-9ab6-2db7bfc662f4",
+      "name": "Contacts 5",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "7e5d414e-664c-4f27-9f3f-f86e1a946a9b",
+      "name": "Contact Export 17 Unesco Nigeria 2",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "27454bea-8784-40d3-9226-037baf5cc31b",
+      "name": "Contacts 2 3",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "8c3afb1c-2ac3-4857-a098-f62e28104220",
+      "name": "Contact Export 17 Unesco Nigeria",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "60649afb-5ece-4974-accc-54e5d9905348",
+      "name": "Contacts 4",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "1e77bcd1-5d29-4be3-97f5-25560cbf3d69",
+      "name": "Contacts 2 2",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "d195e5de-f743-4099-907a-8e716f61a25d",
+      "name": "Contacts 3",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "88939a6c-ef74-4a8f-b1d4-b546eb341ad1",
+      "name": "Contacts 2",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "012b7e81-7c17-40b1-a560-035ca020225e",
+      "name": "Contacts",
+      "query": null,
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "2d26927d-df0f-4399-8955-08bbec9e9510",
+      "name": "Empty Group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "66e7a094-22ea-441d-91c4-283d8168e8e4",
+      "name": "The Poots",
+      "query": "name ~ \"poots\" OR name ~ \"dave\"",
+      "status": "ready",
+      "count": 1028
+    },
+    {
+      "uuid": "7e0de6cc-e6a9-47cd-a9b4-c08f33d597e7",
+      "name": "Cathies",
+      "query": "name ~ \"cathy\" OR name ~ \"dave\"",
+      "status": "ready",
+      "count": 1097
+    },
+    {
+      "uuid": "bb2149b2-19ef-4fe2-9fd4-d7dd190133de",
+      "name": "Tiger Owners",
+      "query": "tel ~ 123123",
+      "status": "ready",
+      "count": 1
+    },
+    {
+      "uuid": "44aa1430-9541-4424-8e6f-f9bb8804f0c3",
+      "name": "Men",
+      "query": "gender = \"M\"",
+      "status": "ready",
+      "count": 1947
+    },
+    {
+      "uuid": "a023ec42-a5e0-46a4-a58b-04aa70e4541b",
+      "name": "Over 30",
+      "query": "age > 30",
+      "status": "ready",
+      "count": 3050
+    },
+    {
+      "uuid": "3da236a9-9eed-4db3-a18e-cfb58030c249",
+      "name": "Daves",
+      "query": "name ~ \"dave\"",
+      "status": "ready",
+      "count": 558
+    },
+    {
+      "uuid": "a881c17e-1c3d-4690-ae5d-b09d7afce751",
+      "name": "An empty group",
+      "query": null,
+      "status": "ready",
+      "count": 3
+    },
+    {
+      "uuid": "713294f8-7b2f-4085-bb8a-1a73e9aab010",
+      "name": "Another group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "2388a980-895c-4ad2-aa6b-8b277b38e9e2",
+      "name": "Fredas",
+      "query": "name ~ \"freda\"",
+      "status": "ready",
+      "count": 585
+    },
+    {
+      "uuid": "c7686017-8067-496c-9742-67c70f8b2a06",
+      "name": "More Groups",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "c251795b-4883-46e7-82a1-579a017e1de1",
+      "name": "a new groupss",
+      "query": null,
+      "status": "ready",
+      "count": 3
+    },
+    {
+      "uuid": "37a71055-6559-4ca5-9650-b49f92d0e97c",
+      "name": "boom",
+      "query": null,
+      "status": "ready",
+      "count": 3
+    },
+    {
+      "uuid": "10659ca2-c3bf-4093-a5cb-2bdb899c90b1",
+      "name": "Female Daves",
+      "query": "gender = \"F\" AND name ~ \"Dave\"",
+      "status": "ready",
+      "count": 239
+    },
+    {
+      "uuid": "2956776e-2ffc-40c5-b90c-81ad8166fca0",
+      "name": "CoronaBots",
+      "query": null,
+      "status": "ready",
+      "count": 4
+    },
+    {
+      "uuid": "b344c90c-6fb9-4780-b736-6ce155b05885",
+      "name": "My Empty Group",
+      "query": null,
+      "status": "ready",
+      "count": 0
+    },
+    {
+      "uuid": "ec05d996-de96-4bb7-b899-43bf6c6a1d2a",
+      "name": "Districts",
+      "query": "(district = \"Faskari\" OR district = \"Zuru\") OR district = \"Anka\"",
+      "status": "ready",
+      "count": 48
+    },
+    {
+      "uuid": "b0764c75-d127-476d-a289-f6c2f386a78e",
+      "name": "Unregistered",
+      "query": "joined = \"\"",
+      "status": "ready",
+      "count": 2001
+    },
+    {
+      "uuid": "94e3ff12-9206-4ce8-87ab-934a864a1819",
+      "name": "Youth",
+      "query": "age <= 18",
+      "status": "ready",
+      "count": 174
+    },
+    {
+      "uuid": "773e8f9e-763d-499d-bcb1-29033583d1cb",
+      "name": "Testers",
+      "query": null,
+      "status": "ready",
+      "count": 489
+    },
+    {
+      "uuid": "7721e314-6736-4486-8ba0-ee76863c1e8a",
+      "name": "Drivers",
+      "query": null,
+      "status": "ready",
+      "count": 1014
+    },
+    {
+      "uuid": "53001dcd-3a37-4e91-92ec-ea0316355d23",
+      "name": "Teachers",
+      "query": null,
+      "status": "ready",
+      "count": 1513
+    },
+    {
+      "uuid": "fd44d497-5d2d-42d5-b020-bdbd90b5458e",
+      "name": "Doctors",
+      "query": null,
+      "status": "ready",
+      "count": 1989
+    },
+    {
+      "uuid": "1085bab0-5a4d-4a04-a44c-dba53809e5c1",
+      "name": "Farmers",
+      "query": null,
+      "status": "ready",
+      "count": 2535
+    },
+    {
+      "uuid": "ecf14ec4-5c9f-4e6b-84f8-9b0f191f92b6",
+      "name": "Reporters",
+      "query": null,
+      "status": "ready",
+      "count": 4768
+    }
+  ]
+}
