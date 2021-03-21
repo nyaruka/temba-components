@@ -1054,9 +1054,9 @@ export class ContactChat extends RapidElement {
 
     if (this.currentChat === '__scroll') {
       const events = this.getDiv('.events');
-      console.log('scrollHeight', events.scrollHeight);
-      console.log('scrollTop', events.scrollTop);
-      console.log('lastHeight', this.lastHeight);
+      // console.log('scrollHeight', events.scrollHeight);
+      // console.log('scrollTop', events.scrollTop);
+      // console.log('lastHeight', this.lastHeight);
       this.currentChat = '';
     }
 
