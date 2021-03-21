@@ -339,7 +339,6 @@ export class AliasEditor extends LitElement {
   }
 
   private getOptions(response: WebResponse) {
-    console.log(response);
     return response.json.filter((option: any) => option.level > 0);
   }
 
@@ -393,7 +392,6 @@ export class AliasEditor extends LitElement {
     return html`
       <div id="left-column">
         <div class="search">
-          arst
           <temba-select
             placeholder="Search"
             endpoint="${this.getEndpoint()}boundaries/${this.path[0].osm_id}/?"

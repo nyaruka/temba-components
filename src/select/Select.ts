@@ -705,7 +705,6 @@ export class Select extends FormElement {
   public fetchOptions(query: string, page: number = 0) {
     this.completionOptions = [];
 
-    console.log('fetchOptions', query);
     if (!this.fetching) {
       this.fetching = true;
 
@@ -754,8 +753,6 @@ export class Select extends FormElement {
           url = this.next;
         }
 
-        console.log(url);
-
         if (this.cache && !this.tags && this.lruCache.has(url)) {
           const cache = this.lruCache.get(url);
           if (page === 0 && !this.next) {
@@ -793,10 +790,8 @@ export class Select extends FormElement {
         } else {
           // this.cancelToken.token
 
-          console.log('fetching ', url);
           this.httpComplete = getUrl(url)
             .then((response: WebResponse) => {
-              console.log(response);
               const results = this.getOptions(response).filter(
                 (option: any) => {
                   return this.isMatch(option, q);
@@ -835,7 +830,6 @@ export class Select extends FormElement {
               // cancelled
               this.fetching = false;
               console.error(reason);
-              console.log('failed to fetch');
             });
         }
       } else {
