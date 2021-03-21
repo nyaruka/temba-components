@@ -1,5 +1,5 @@
-import { LitElement } from "lit-element";
-import { CustomEventType } from "./interfaces";
+import { LitElement } from 'lit-element';
+import { CustomEventType } from './interfaces';
 
 export interface EventHandler {
   event: string;
@@ -7,7 +7,7 @@ export interface EventHandler {
   isDocument?: boolean;
 }
 
-export default class RapidElement extends LitElement {
+export class RapidElement extends LitElement {
   private eles: { [selector: string]: HTMLDivElement } = {};
 
   public getEventHandlers(): EventHandler[] {
@@ -52,6 +52,7 @@ export default class RapidElement extends LitElement {
       bubbles: true,
       composed: true,
     });
+
     this.dispatchEvent(event);
   }
 
@@ -61,18 +62,18 @@ export default class RapidElement extends LitElement {
     const ele = event.target;
     if (ele) {
       const eventFire =
-        (ele as any)["@" + event.type] || (ele as any)["-" + event.type];
+        (ele as any)['@' + event.type] || (ele as any)['-' + event.type];
       if (eventFire) {
         eventFire(event);
       } else {
         // lookup events with @ prefix and try to invoke them
         const func = new Function(
-          "event",
+          'event',
           `with(document) {
           with(this) {
             let handler = ${
-              ele.getAttribute("@" + event.type) ||
-              ele.getAttribute("-" + event.type)
+              ele.getAttribute('@' + event.type) ||
+              ele.getAttribute('-' + event.type)
             };
             if(typeof attr === 'function') { 
               handler(event) ;
@@ -103,7 +104,9 @@ export default class RapidElement extends LitElement {
     }
 
     ele = this.shadowRoot.querySelector(selector);
-    this.eles[selector] = ele;
+    if (ele) {
+      this.eles[selector] = ele;
+    }
     return ele;
   }
 }

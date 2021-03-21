@@ -1,9 +1,9 @@
-import { getInputHTML } from "./TextInput.test";
-import moxios from "moxios";
-import sinon from "sinon";
-import { assertScreenshot } from "../../test/utils";
-import TextInput from "./TextInput";
-import { assert, fixture } from "@open-wc/testing";
+import { getInputHTML } from './TextInput.test';
+import moxios from 'moxios';
+import sinon from 'sinon';
+import { assertScreenshot } from '../../test/utils';
+import { TextInput } from './TextInput';
+import { assert, fixture } from '@open-wc/testing';
 
 const closedClip = {
   y: 70,
@@ -22,7 +22,7 @@ const clip = (height: number = 55) => {
   deviceScaleFactor: 2,
 });
 
-describe("temba-textinput-screenshots", () => {
+describe('temba-textinput-screenshots', () => {
   var clock: any;
   beforeEach(async function () {
     clock = sinon.useFakeTimers();
@@ -34,15 +34,15 @@ describe("temba-textinput-screenshots", () => {
     moxios.uninstall();
   });
 
-  it("should render input", async () => {
+  it('should render input', async () => {
     const input: TextInput = await fixture(getInputHTML());
     assert.instanceOf(input, TextInput);
-    await assertScreenshot("textinput", clip());
+    await assertScreenshot('textinput', clip());
   });
 
-  it("should render textarea", async () => {
-    const input: TextInput = await fixture(getInputHTML("hello", true));
+  it('should render textarea', async () => {
+    const input: TextInput = await fixture(getInputHTML('hello', true));
     assert.instanceOf(input, TextInput);
-    await assertScreenshot("textinput-textarea", clip(70));
+    await assertScreenshot('textinput-textarea', clip(70));
   });
 });

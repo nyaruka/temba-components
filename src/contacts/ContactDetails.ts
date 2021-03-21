@@ -4,16 +4,15 @@ import {
   html,
   property,
   TemplateResult,
-} from "lit-element";
-import { Contact, ContactTicket, Group } from "../interfaces";
-import RapidElement from "../RapidElement";
-import { fetchResults, isDate, timeSince } from "../utils";
-import Button from "../button/Button";
-import Store from "../store/Store";
-import { fetchContact } from "./helpers";
+} from 'lit-element';
+import { Contact, ContactTicket, Group } from '../interfaces';
+import { RapidElement } from '../RapidElement';
+import { fetchResults, isDate, timeSince } from '../utils';
+import { Button } from '../button/Button';
+import { Store } from '../store/Store';
+import { fetchContact } from './helpers';
 
-@customElement("temba-contact-details")
-export default class ContactDetails extends RapidElement {
+export class ContactDetails extends RapidElement {
   // display name comes from the tickets endpoint
   @property({ type: Object })
   ticket: ContactTicket;
@@ -149,11 +148,11 @@ export default class ContactDetails extends RapidElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("endpoint")) {
+    if (changes.has('endpoint')) {
       this.flow = null;
       this.expandFields = false;
 
-      const store: Store = document.querySelector("temba-store");
+      const store: Store = document.querySelector('temba-store');
 
       fetchContact(this.endpoint).then((contact: Contact) => {
         this.contact = contact;
@@ -194,7 +193,7 @@ export default class ContactDetails extends RapidElement {
   expandFields: boolean = false;
 
   public render(): TemplateResult {
-    const store: Store = document.querySelector("temba-store");
+    const store: Store = document.querySelector('temba-store');
     if (this.contact) {
       return html`<div class="contact">
         <div class="name">${this.contact.name || this.ticket.contact.name}</div>

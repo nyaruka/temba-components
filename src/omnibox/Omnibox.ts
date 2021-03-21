@@ -4,15 +4,15 @@ import {
   html,
   css,
   property,
-} from "lit-element";
-import RapidElement from "../RapidElement";
-import { styleMap } from "lit-html/directives/style-map.js";
-import "fa-icons";
+} from 'lit-element';
+import { RapidElement } from '../RapidElement';
+import { styleMap } from 'lit-html/directives/style-map.js';
+import 'fa-icons';
 
 enum OmniType {
-  Group = "group",
-  Contact = "contact",
-  Urn = "urn",
+  Group = 'group',
+  Contact = 'contact',
+  Urn = 'urn',
 }
 
 interface OmniOption {
@@ -26,13 +26,12 @@ interface OmniOption {
 }
 
 const postNameStyle = {
-  color: "var(--color-text-dark)",
-  padding: "0px 6px",
-  fontSize: "12px",
+  color: 'var(--color-text-dark)',
+  padding: '0px 6px',
+  fontSize: '12px',
 };
 
-@customElement("temba-omnibox")
-export default class Omnibox extends RapidElement {
+export class Omnibox extends RapidElement {
   static get styles() {
     return css`
       temba-select:focus {
@@ -67,14 +66,14 @@ export default class Omnibox extends RapidElement {
   errors: string[];
 
   @property()
-  placeholder: string = "Select recipients";
+  placeholder: string = 'Select recipients';
 
   /** An option in the drop down */
   private renderOption(option: OmniOption, selected: boolean): TemplateResult {
     return html`
       <div style="display:flex;">
         <div style="margin-right: 8px">
-          ${this.getIcon(option, true, 14, "")}
+          ${this.getIcon(option, true, 14, '')}
         </div>
         <div style="flex: 1">${option.name}</div>
         <div
@@ -112,7 +111,7 @@ export default class Omnibox extends RapidElement {
         style="flex:1 1 auto; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
       >
         <div style="align-self: center; padding: 0px 7px; color: #bbb">
-          ${this.getIcon(option, false, 12, "")}
+          ${this.getIcon(option, false, 12, '')}
         </div>
         <div
           class="name"
@@ -147,7 +146,7 @@ export default class Omnibox extends RapidElement {
     }
 
     if (option.type === OmniType.Contact) {
-      const style = asOption ? "margin: 0 1px;" : "margin-bottom: 0px;";
+      const style = asOption ? 'margin: 0 1px;' : 'margin-bottom: 0px;';
 
       return html`
         <fa-icon
@@ -162,17 +161,17 @@ export default class Omnibox extends RapidElement {
 
   private getEndpoint() {
     const endpoint = this.endpoint;
-    let types = "&types=";
+    let types = '&types=';
     if (this.groups) {
-      types += "g";
+      types += 'g';
     }
 
     if (this.contacts) {
-      types += "c";
+      types += 'c';
     }
 
     if (this.urns) {
-      types += "u";
+      types += 'u';
     }
 
     return endpoint + types;
@@ -183,7 +182,7 @@ export default class Omnibox extends RapidElement {
     if (this.urns) {
       const num = parseFloat(input);
       if (!isNaN(num) && isFinite(num)) {
-        return { id: "tel:" + input, name: input, type: "urn" };
+        return { id: 'tel:' + input, name: input, type: 'urn' };
       }
     }
   }

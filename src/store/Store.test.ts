@@ -6,16 +6,15 @@ import {
   fixtureSync,
   oneEvent,
   waitUntil,
-} from "@open-wc/testing";
-import Store from "./Store";
-import sinon from "sinon";
-import { CompletionSchema } from "../completion/helpers";
-import moxios from "moxios";
+} from '@open-wc/testing';
+import { Store } from './Store';
+import sinon from 'sinon';
+import moxios from 'moxios';
 
-import completion from "../../test-assets/store/completion.json";
-import functions from "../../test-assets/store/functions.json";
-import globals from "../../test-assets/store/globals.json";
-import fields from "../../test-assets/store/fields.json";
+import completion from '../../test-assets/store/completion.json';
+import functions from '../../test-assets/store/functions.json';
+import globals from '../../test-assets/store/globals.json';
+import fields from '../../test-assets/store/fields.json';
 
 const createStore = async (def: string): Promise<Store> => {
   return await fixture(def);
@@ -24,22 +23,22 @@ const createStore = async (def: string): Promise<Store> => {
 beforeEach(function () {
   moxios.install();
 
-  moxios.stubRequest("/completion.json", {
+  moxios.stubRequest('/completion.json', {
     status: 200,
     responseText: JSON.stringify(completion),
   });
 
-  moxios.stubRequest("/functions.json", {
+  moxios.stubRequest('/functions.json', {
     status: 200,
     responseText: JSON.stringify(functions),
   });
 
-  moxios.stubRequest("/globals.json", {
+  moxios.stubRequest('/globals.json', {
     status: 200,
     responseText: JSON.stringify(globals),
   });
 
-  moxios.stubRequest("/fields.json", {
+  moxios.stubRequest('/fields.json', {
     status: 200,
     responseText: JSON.stringify(fields),
   });
@@ -49,27 +48,27 @@ afterEach(function () {
   moxios.uninstall();
 });
 
-describe("temba-store", () => {
-  it("is defined", async () => {
-    const store = await createStore("<temba-store></temba-store>");
+describe('temba-store', () => {
+  it('is defined', async () => {
+    const store = await createStore('<temba-store></temba-store>');
     assert.instanceOf(store, Store);
   });
 
-  it("completion schema", async () => {
+  it('completion schema', async () => {
     const store: Store = await fixture(
       "<temba-store completions='/completion.json'></temba-store>"
     );
     assert.equal(store.getCompletionSchema().types.length, 13);
   });
 
-  it("function list", async () => {
+  it('function list', async () => {
     const store: Store = await fixture(
       "<temba-store functions='/functions.json'></temba-store>"
     );
     assert.equal(store.getFunctions().length, 74);
   });
 
-  it("globals", async () => {
+  it('globals', async () => {
     const store: Store = await fixture(
       "<temba-store globals='/globals.json'></temba-store>"
     );
@@ -81,7 +80,7 @@ describe("temba-store", () => {
     assert.equal(store.getKeyedAssets().globals.length, 2);
   });
 
-  it("fields", async () => {
+  it('fields', async () => {
     const store: Store = await fixture(
       "<temba-store fields='/fields.json'></temba-store>"
     );

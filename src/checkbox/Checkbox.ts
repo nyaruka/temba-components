@@ -1,19 +1,13 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  css,
-  property,
-} from "lit-element";
-import FormElement from "../FormElement";
-import "fa-icons";
+import { TemplateResult, html, css, property } from 'lit-element';
+import { FormElement } from '../FormElement';
+import 'fa-icons';
 
-@customElement("temba-checkbox")
-export default class Checkbox extends FormElement {
+export class Checkbox extends FormElement {
   static get styles() {
     return css`
       :host {
         color: var(--color-text);
+        display: inline-block;
       }
 
       temba-field {
@@ -35,6 +29,7 @@ export default class Checkbox extends FormElement {
         font-weight: 300;
         font-size: 14px;
         line-height: 19px;
+        flex-grow: 1;
       }
 
       .far {
@@ -49,7 +44,7 @@ export default class Checkbox extends FormElement {
   }
 
   @property({ type: String })
-  name: string;
+  name: string = '';
 
   @property({ type: Boolean })
   checked: boolean;
@@ -57,13 +52,16 @@ export default class Checkbox extends FormElement {
   @property({ type: Boolean })
   disabled = false;
 
+  @property({ type: String })
+  fontPrefix = '/sitestatic';
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("checked")) {
+    if (changes.has('checked')) {
       if (this.checked) {
         this.setValue(1);
       } else {
-        this.setValue("");
+        this.setValue('');
       }
     }
   }
@@ -84,12 +82,16 @@ export default class Checkbox extends FormElement {
           <fa-icon
             class="far fa-check-square"
             size="16px"
-            path-prefix="/sitestatic"
+            path-prefix="${this.fontPrefix}"
           >
           </fa-icon>
         `
       : html`
-          <fa-icon class="far fa-square" size="16px" path-prefix="/sitestatic">
+          <fa-icon
+            class="far fa-square"
+            size="16px"
+            path-prefix="${this.fontPrefix}"
+          >
           </fa-icon>
         `;
 
@@ -103,7 +105,7 @@ export default class Checkbox extends FormElement {
         .disabled=${this.disabled}
         @click=${this.handleClick}
       >
-        <div class="checkbox-container ${this.disabled ? "disabled" : ""}">
+        <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
           ${icon}
           ${this.label
             ? html`<div class="checkbox-label">${this.label}</div>`

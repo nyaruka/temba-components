@@ -1,8 +1,8 @@
-import { fixture, expect, assert } from "@open-wc/testing";
-import Modax from "./Modax";
-import moxios from "moxios";
-import sinon from "sinon";
-import Button from "../button/Button";
+import { fixture, expect, assert } from '@open-wc/testing';
+import { Modax } from './Modax';
+import moxios from 'moxios';
+import sinon from 'sinon';
+import { Button } from '../button/Button';
 
 const getModaxHTML = (hideOnClick = false) => {
   return `
@@ -12,15 +12,15 @@ const getModaxHTML = (hideOnClick = false) => {
 
 const getButtons = (modax: Modax, type: string = null) => {
   return modax.shadowRoot
-    .querySelector("temba-dialog")
+    .querySelector('temba-dialog')
     .shadowRoot.querySelectorAll(
-      type ? `temba-button[${type}='']` : "temba-button"
+      type ? `temba-button[${type}='']` : 'temba-button'
     );
 };
 
 const clickPrimary = async (modax: Modax) => {
-  const primary = getButtons(modax, "primary")[0] as Button;
-  expect(primary).not.equals(undefined, "Missing primary button");
+  const primary = getButtons(modax, 'primary')[0] as Button;
+  expect(primary).not.equals(undefined, 'Missing primary button');
 
   primary.click();
   await clock.tick(1);
@@ -37,7 +37,7 @@ const open = async (selector: string) => {
 };
 
 var clock: any;
-describe("temba-modax", () => {
+describe('temba-modax', () => {
   beforeEach(function () {
     clock = sinon.useFakeTimers();
     moxios.install();
@@ -48,12 +48,12 @@ describe("temba-modax", () => {
     clock.restore();
   });
 
-  it("can be created", async () => {
+  it('can be created', async () => {
     const modax: Modax = await fixture(getModaxHTML());
     assert.instanceOf(modax, Modax);
   });
 
-  it("opens", async () => {
+  it('opens', async () => {
     moxios.stubRequest(/endpoint.*/, {
       status: 200,
       // responseText: JSON.stringify(colorResponse),
@@ -61,26 +61,26 @@ describe("temba-modax", () => {
 
     const modax: Modax = await fixture(getModaxHTML());
     expect(modax.open).to.equal(false);
-    await click("temba-modax");
+    await click('temba-modax');
     expect(modax.open).to.equal(true);
   });
 
-  it("fetches", async () => {
+  it('fetches', async () => {
     moxios.stubRequest(/endpoint.*/, {
       status: 200,
-      responseText: "Hello World",
+      responseText: 'Hello World',
     });
 
     const modax: Modax = await fixture(getModaxHTML());
-    await click("temba-modax");
+    await click('temba-modax');
     expect(modax.open).equals(true);
 
     // Now our body should have our endpoint text
-    expect(modax.shadowRoot.innerHTML).to.contain("Hello World");
+    expect(modax.shadowRoot.innerHTML).to.contain('Hello World');
   });
 
-  it("closes after redirect", async () => {
-    moxios.stubOnce("GET", /endpoint.*/, {
+  it('closes after redirect', async () => {
+    moxios.stubOnce('GET', /endpoint.*/, {
       status: 200,
       responseText: "<input type='submit' name='Submit' value='Submit'/>",
     });
@@ -88,24 +88,25 @@ describe("temba-modax", () => {
     const modax: Modax = await fixture(getModaxHTML());
 
     // we can't hijack the entire browser during our tests
-    modax.updateLocation = (location: Location) => {
+    modax.updateLocation = (location: string) => {
       // console.log("updating location", location);
     };
 
-    await open("temba-modax");
+    await open('temba-modax');
     expect(modax.open).equals(true);
 
-    const primary = getButtons(modax, "primary")[0] as Button;
-    expect(primary).not.equals(undefined, "Missing primary button");
+    const primary = getButtons(modax, 'primary')[0] as Button;
+    expect(primary).not.equals(undefined, 'Missing primary button');
 
-    moxios.stubOnce("POST", /endpoint.*/, {
+    moxios.stubOnce('POST', /endpoint.*/, {
       status: 200,
       headers: {
-        "Temba-Success": "/redirect",
+        'Temba-Success': '/redirect',
       },
     });
 
     await clickPrimary(modax);
-    expect(modax.open).equals(false, "Modal still visible");
+
+    expect(modax.open).equals(false, 'Modal still visible');
   });
 });

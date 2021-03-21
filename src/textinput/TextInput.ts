@@ -1,20 +1,13 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  css,
-  property,
-} from "lit-element";
-import { ifDefined } from "lit-html/directives/if-defined";
-import { styleMap } from "lit-html/directives/style-map.js";
-import FormElement from "../FormElement";
-import "lit-flatpickr";
-import Modax from "../dialog/Modax";
-import { sanitize } from "./helpers";
-import CharCount from "../charcount/CharCount";
+import { TemplateResult, html, css, property } from 'lit-element';
+import { ifDefined } from 'lit-html/directives/if-defined';
+import { styleMap } from 'lit-html/directives/style-map.js';
+import { FormElement } from '../FormElement';
+import 'lit-flatpickr';
+import { Modax } from '../dialog/Modax';
+import { sanitize } from './helpers';
+import { CharCount } from '../charcount/CharCount';
 
-@customElement("temba-textinput")
-export default class TextInput extends FormElement {
+export class TextInput extends FormElement {
   static get styles() {
     return css`
       .input-container {
@@ -116,13 +109,13 @@ export default class TextInput extends FormElement {
   datetimepicker: boolean;
 
   @property({ type: String })
-  placeholder: string = "";
+  placeholder: string = '';
 
   @property({ type: String })
-  value: string = "";
+  value: string = '';
 
   @property({ type: String })
-  name: string = "";
+  name: string = '';
 
   @property({ type: Boolean })
   password: boolean;
@@ -165,10 +158,10 @@ export default class TextInput extends FormElement {
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
 
-    this.inputElement = this.shadowRoot.querySelector(".textinput");
-    this.dateElement = this.shadowRoot.querySelector(".datepicker");
+    this.inputElement = this.shadowRoot.querySelector('.textinput');
+    this.dateElement = this.shadowRoot.querySelector('.datepicker');
 
-    if (changes.has("counter")) {
+    if (changes.has('counter')) {
       let root = this.getParentModax() as any;
       if (root) {
         root = root.shadowRoot;
@@ -184,7 +177,7 @@ export default class TextInput extends FormElement {
       const picker = this.dateElement;
       window.setTimeout(() => {
         this.dateElement.set(
-          "onValueUpdate",
+          'onValueUpdate',
           (dates: Date[], formattedDate: string) => {
             this.inputElement.value = picker.formatDate(
               dates[0],
@@ -209,9 +202,9 @@ export default class TextInput extends FormElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("value")) {
+    if (changes.has('value')) {
       this.setValues([this.value]);
-      this.fireEvent("change");
+      this.fireEvent('change');
 
       if (this.cursorStart > -1 && this.cursorEnd > -1) {
         this.inputElement.setSelectionRange(this.cursorStart, this.cursorEnd);
@@ -255,28 +248,28 @@ export default class TextInput extends FormElement {
 
   private handleChange(update: any): void {
     if (this.disabled) {
-      return
+      return;
     }
     this.updateValue(update.target.value);
-    this.fireEvent("change");
+    this.fireEvent('change');
   }
 
   private handleDateClick(): void {
     if (this.disabled) {
-      return
+      return;
     }
-    (this.shadowRoot.querySelector(".datepicker") as any).open();
+    (this.shadowRoot.querySelector('.datepicker') as any).open();
   }
 
   private handleContainerClick(): void {
     if (this.disabled) {
-      return
+      return;
     }
-    const input: any = this.shadowRoot.querySelector(".textinput");
+    const input: any = this.shadowRoot.querySelector('.textinput');
     if (input) {
       input.focus();
     } else {
-      const datepicker: any = this.shadowRoot.querySelector(".datepicker");
+      const datepicker: any = this.shadowRoot.querySelector('.datepicker');
       datepicker.open();
       datepicker.focus();
     }
@@ -284,11 +277,11 @@ export default class TextInput extends FormElement {
 
   private handleInput(update: any): void {
     if (this.disabled) {
-      return
+      return;
     }
     this.updateValue(update.target.value);
     this.setValues([this.value]);
-    this.fireEvent("input");
+    this.fireEvent('input');
   }
 
   /** we just return the value since it should be a string */
@@ -310,7 +303,7 @@ export default class TextInput extends FormElement {
         return null;
       }
 
-      if (parent.tagName == "TEMBA-MODAX") {
+      if (parent.tagName == 'TEMBA-MODAX') {
         return parent as Modax;
       }
     }
@@ -330,7 +323,7 @@ export default class TextInput extends FormElement {
         return null;
       }
 
-      if (parent.tagName === "FORM") {
+      if (parent.tagName === 'FORM') {
         return parent as HTMLFormElement;
       }
     }
@@ -344,7 +337,7 @@ export default class TextInput extends FormElement {
   // TODO make this a formelement and have contactsearch set the root
   public render(): TemplateResult {
     const containerStyle = {
-      height: `${this.textarea ? "100%" : "auto"}`,
+      height: `${this.textarea ? '100%' : 'auto'}`,
     };
 
     const clear =
@@ -361,7 +354,7 @@ export default class TextInput extends FormElement {
       <input
         class="textinput"
         name=${this.name}
-        type="${this.password ? "password" : "text"}"
+        type="${this.password ? 'password' : 'text'}"
         maxlength="${ifDefined(this.maxlength)}"
         @change=${this.handleChange}
         @input=${this.handleInput}
@@ -370,7 +363,7 @@ export default class TextInput extends FormElement {
           if (e.keyCode == 13) {
             if (!this.ignoreSubmit) {
               this.value = this.values[0];
-              this.fireEvent("change");
+              this.fireEvent('change');
 
               const input = this;
               input.blur();
@@ -425,7 +418,7 @@ export default class TextInput extends FormElement {
     if (this.datepicker || this.datetimepicker) {
       input = html`
         <input
-          class="textinput withdate ${this.loading ? "loading" : ""}"
+          class="textinput withdate ${this.loading ? 'loading' : ''}"
           name=${this.name}
           type="text"
           @click=${this.handleDateClick}
@@ -441,8 +434,8 @@ export default class TextInput extends FormElement {
         <lit-flatpickr
           class="datepicker hidden"
           altInput
-          altFormat="${this.datepicker ? "F j, Y" : "F j, Y h:i K"}"
-          dateFormat="${this.datepicker ? "Y-m-d" : "Y-m-d H:i"}"
+          altFormat="${this.datepicker ? 'F j, Y' : 'F j, Y h:i K'}"
+          dateFormat="${this.datepicker ? 'Y-m-d' : 'Y-m-d H:i'}"
           ?enableTime=${this.datetimepicker}
         ></lit-flatpickr>
       `;

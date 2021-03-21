@@ -1,9 +1,9 @@
-import moxios from "moxios";
-import sinon from "sinon";
-import { assertScreenshot } from "../../test/utils";
-import { fixture } from "@open-wc/testing";
-import { colors } from "../select/Select.test";
-import Options from "./Options";
+import moxios from 'moxios';
+import sinon from 'sinon';
+import { assertScreenshot } from '../../test/utils';
+import { fixture } from '@open-wc/testing';
+import { colors } from '../select/Select.test';
+import { Options } from './Options';
 
 const closedClip = {
   y: 70,
@@ -26,17 +26,17 @@ export const getOptionsHTML = (attrs: any = {}): string => {
   return `
     <temba-options ${Object.keys(attrs)
       .map((name: string) => `${name}='${attrs[name]}'`)
-      .join(" ")}>
+      .join(' ')}>
     </temba-select>`;
 };
 
-describe("temba-options-screenshots", () => {
-  it("renders block mode", async () => {
+describe('temba-options-screenshots', () => {
+  it('renders block mode', async () => {
     const ele: Options = await fixture(
       getOptionsHTML({ block: true, visible: true })
     );
     ele.options = colors;
 
-    await assertScreenshot("options-block", clip(110));
+    await assertScreenshot('options-block', clip(110));
   });
 });

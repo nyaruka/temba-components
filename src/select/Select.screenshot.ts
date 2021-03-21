@@ -5,13 +5,13 @@ import {
   openAndClick,
   colors,
   clickOption,
-} from "./Select.test";
-import moxios from "moxios";
-import sinon from "sinon";
-import { assertScreenshot } from "../../test/utils";
-import { fixture } from "@open-wc/testing";
-import completion from "../../test-assets/store/completion.json";
-import functions from "../../test-assets/store/functions.json";
+} from './Select.test';
+import moxios from 'moxios';
+import sinon from 'sinon';
+import { assertScreenshot } from '../../test/utils';
+import { fixture } from '@open-wc/testing';
+import completion from '../../test-assets/store/completion.json';
+import functions from '../../test-assets/store/functions.json';
 
 const closedClip = {
   y: 70,
@@ -31,12 +31,12 @@ const clip = (height: number = 55) => {
 });
 
 const loadStore = async () => {
-  moxios.stubRequest("/completion.json", {
+  moxios.stubRequest('/completion.json', {
     status: 200,
     responseText: JSON.stringify(completion),
   });
 
-  moxios.stubRequest("/functions.json", {
+  moxios.stubRequest('/functions.json', {
     status: 200,
     responseText: JSON.stringify(functions),
   });
@@ -48,7 +48,7 @@ const loadStore = async () => {
 
 const pause = 500;
 
-describe("temba-select-screenshots", () => {
+describe('temba-select-screenshots', () => {
   var clock: any;
   beforeEach(async function () {
     clock = sinon.useFakeTimers();
@@ -60,37 +60,37 @@ describe("temba-select-screenshots", () => {
     moxios.uninstall();
   });
 
-  it("should look ready for selection", async () => {
+  it('should look ready for selection', async () => {
     await createSelect(getSelectHTML(), pause);
-    await assertScreenshot("select", clip());
+    await assertScreenshot('select', clip());
   });
 
-  it("should show open list with placeholder text", async () => {
+  it('should show open list with placeholder text', async () => {
     const select = await createSelect(getSelectHTML(), pause);
     await open(select);
-    await assertScreenshot("select-open", clip(160));
+    await assertScreenshot('select-open', clip(160));
   });
 
-  it("should show single selected option", async () => {
+  it('should show single selected option', async () => {
     const select = await createSelect(getSelectHTML(), pause);
 
     // select the first option
     await openAndClick(select, 0);
-    await assertScreenshot("select-selected", clip());
+    await assertScreenshot('select-selected', clip());
   });
 
-  it("should look the same with search enabled", async () => {
+  it('should look the same with search enabled', async () => {
     await createSelect(
       getSelectHTML(colors, {
-        placeholder: "Select a color",
+        placeholder: 'Select a color',
         searchable: true,
       }),
       pause
     );
-    await assertScreenshot("select-search", clip());
+    await assertScreenshot('select-search', clip());
   });
 
-  it("should look the same with search enabled and selection made", async () => {
+  it('should look the same with search enabled and selection made', async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true }),
       pause
@@ -98,10 +98,10 @@ describe("temba-select-screenshots", () => {
 
     // select the first option
     await openAndClick(select, 1);
-    await assertScreenshot("select-search-selected", clip());
+    await assertScreenshot('select-search-selected', clip());
   });
 
-  it("should show focus for the selected option", async () => {
+  it('should show focus for the selected option', async () => {
     const select = await createSelect(
       getSelectHTML(colors, { searchable: true }),
       pause
@@ -112,13 +112,13 @@ describe("temba-select-screenshots", () => {
 
     // now open and look at focus
     await open(select);
-    await assertScreenshot("select-search-selected-open", clip(160));
+    await assertScreenshot('select-search-selected-open', clip(160));
   });
 
-  it("should show search with existing selection", async () => {
+  it('should show search with existing selection', async () => {
     const select = await createSelect(
       getSelectHTML(colors, {
-        placeholder: "Select a color",
+        placeholder: 'Select a color',
         searchable: true,
       }),
       pause
@@ -129,16 +129,16 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     // now lets do a search, we should see our selection (green) and one other (red)
-    await typeInto("temba-select", "re");
+    await typeInto('temba-select', 're', false);
     await open(select);
 
-    await assertScreenshot("select-search-selected-open-query", clip(130));
+    await assertScreenshot('select-search-selected-open-query', clip(130));
   });
 
-  it("should show search with existing multiple selection", async () => {
+  it('should show search with existing multiple selection', async () => {
     const select = await createSelect(
       getSelectHTML(colors, {
-        placeholder: "Select a color",
+        placeholder: 'Select a color',
         searchable: true,
         multi: true,
       }),
@@ -151,17 +151,17 @@ describe("temba-select-screenshots", () => {
     await open(select);
 
     // now lets do a search, we should see our selection (green) and one other (red)
-    await typeInto("temba-select", "re");
+    await typeInto('temba-select', 're', false);
     await open(select);
 
     // should have two things selected and active query and no matching options
     await assertScreenshot(
-      "select-search-multi-selected-open-query",
+      'select-search-multi-selected-open-query',
       clip(130)
     );
   });
 
-  it("should allow expressions", async () => {
+  it('should allow expressions', async () => {
     await loadStore();
 
     const select = await createSelect(
@@ -169,32 +169,32 @@ describe("temba-select-screenshots", () => {
       pause
     );
 
-    await typeInto("temba-select", "@cont");
+    await typeInto('temba-select', '@cont', false);
     await open(select);
 
-    await assertScreenshot("select-expression", clip(130));
+    await assertScreenshot('select-expression', clip(130));
   });
 
-  it("should show functions", async () => {
+  it('should show functions', async () => {
     await loadStore();
 
     const select = await createSelect(
       getSelectHTML(colors, {
-        placeholder: "Select a color",
+        placeholder: 'Select a color',
         searchable: true,
-        expressions: "session",
+        expressions: 'session',
       }),
       pause
     );
 
-    await typeInto("temba-select", "look at @(max(m");
+    await typeInto('temba-select', 'look at @(max(m', false);
     await open(select);
 
-    await assertScreenshot("select-expression-function", clip(250));
+    await assertScreenshot('select-expression-function', clip(250));
   });
 
-  it("can select expression completion as value", async () => {
-    moxios.stubRequest("/completion.json", {
+  it('can select expression completion as value', async () => {
+    moxios.stubRequest('/completion.json', {
       status: 200,
       responseText: JSON.stringify(completion),
     });
@@ -204,23 +204,23 @@ describe("temba-select-screenshots", () => {
     const select = await createSelect(
       getSelectHTML(colors, {
         multi: true,
-        placeholder: "Select a color",
+        placeholder: 'Select a color',
         searchable: true,
-        expressions: "session",
+        expressions: 'session',
       }),
       pause
     );
 
-    await typeInto("temba-select", "@con");
+    await typeInto('temba-select', '@con', false);
     await openAndClick(select, 0);
-    await assertScreenshot("select-expression-selected", clip());
+    await assertScreenshot('select-expression-selected', clip());
   });
 
-  it("shows clear option", async () => {
+  it('shows clear option', async () => {
     const select = await createSelect(
       getSelectHTML(colors, { clearable: true })
     );
     await openAndClick(select, 0);
-    await assertScreenshot("select-clearable", clip());
+    await assertScreenshot('select-clearable', clip());
   });
 });

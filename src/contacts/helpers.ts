@@ -1,6 +1,5 @@
-import axios, { AxiosResponse, CancelTokenSource } from "axios";
-import { Contact } from "../interfaces";
-import { fetchResults, getUrl, postUrl } from "../utils";
+import { Contact } from '../interfaces';
+import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
 
 export const SCROLL_THRESHOLD = 100;
 export const SIMULATED_WEB_SLOWNESS = 0;
@@ -31,24 +30,24 @@ export interface Msg {
 }
 
 export enum Events {
-  MESSAGE_CREATED = "msg_created",
-  MESSAGE_RECEIVED = "msg_received",
-  BROADCAST_CREATED = "broadcast_created",
+  MESSAGE_CREATED = 'msg_created',
+  MESSAGE_RECEIVED = 'msg_received',
+  BROADCAST_CREATED = 'broadcast_created',
 
-  FLOW_ENTERED = "flow_entered",
-  FLOW_EXITED = "flow_exited",
-  RUN_RESULT_CHANGED = "run_result_changed",
-  CONTACT_FIELD_CHANGED = "contact_field_changed",
-  CONTACT_GROUPS_CHANGED = "contact_groups_changed",
-  CONTACT_NAME_CHANGED = "contact_name_changed",
-  CONTACT_URNS_CHANGED = "contact_urns_changed",
-  CAMPAIGN_FIRED = "campaign_fired",
-  WEBHOOK_CALLED = "webhook_called",
-  EMAIL_SENT = "email_sent",
-  INPUT_LABELS_ADDED = "input_labels_added",
-  TICKET_OPENED = "ticket_opened",
-  ERROR = "error",
-  FAILURE = "failure",
+  FLOW_ENTERED = 'flow_entered',
+  FLOW_EXITED = 'flow_exited',
+  RUN_RESULT_CHANGED = 'run_result_changed',
+  CONTACT_FIELD_CHANGED = 'contact_field_changed',
+  CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
+  CONTACT_NAME_CHANGED = 'contact_name_changed',
+  CONTACT_URNS_CHANGED = 'contact_urns_changed',
+  CAMPAIGN_FIRED = 'campaign_fired',
+  WEBHOOK_CALLED = 'webhook_called',
+  EMAIL_SENT = 'email_sent',
+  INPUT_LABELS_ADDED = 'input_labels_added',
+  TICKET_OPENED = 'ticket_opened',
+  ERROR = 'error',
+  FAILURE = 'failure',
 }
 
 export interface ContactEvent {
@@ -135,9 +134,9 @@ export interface ContactHistoryPage {
   events: ContactEvent[];
 }
 
-export const closeTicket = (uuid: string): Promise<AxiosResponse> => {
+export const closeTicket = (uuid: string): Promise<WebResponse> => {
   const formData = new FormData();
-  formData.append("status", "C");
+  formData.append('status', 'C');
   return postUrl(`/ticket/update/${uuid}/?_format=json`, formData);
 };
 
@@ -147,13 +146,13 @@ export const fetchContact = (endpoint: string): Promise<Contact> => {
       if (contacts && contacts.length === 1) {
         resolve(contacts[0]);
       } else {
-        reject("No contact found");
+        reject('No contact found');
       }
     });
   });
 };
 
-let pendingRequests: CancelTokenSource[] = [];
+// let pendingRequests: CancelTokenSource[] = [];
 
 export const fetchContactHistory = (
   reset: boolean,
@@ -163,16 +162,16 @@ export const fetchContactHistory = (
   limit: number = undefined
 ): Promise<ContactHistoryPage> => {
   if (reset) {
-    pendingRequests.forEach((token) => {
+    /* pendingRequests.forEach(token => {
       token.cancel();
     });
-    pendingRequests = [];
+    pendingRequests = [];*/
   }
 
   return new Promise<ContactHistoryPage>((resolve, reject) => {
-    const CancelToken = axios.CancelToken;
-    const cancelToken = CancelToken.source();
-    pendingRequests.push(cancelToken);
+    // const CancelToken = axios.CancelToken;
+    // const cancelToken = CancelToken.source();
+    // pendingRequests.push(cancelToken);
 
     let url = endpoint;
     if (before) {
@@ -183,15 +182,15 @@ export const fetchContactHistory = (
       url += `&after=${after}`;
     }
 
-    getUrl(url, cancelToken.token)
-      .then((response: AxiosResponse) => {
-        pendingRequests = pendingRequests.filter((token: CancelTokenSource) => {
-          token.token !== response.config.cancelToken;
-        });
+    getUrl(url)
+      .then((response: WebResponse) => {
+        // pendingRequests = pendingRequests.filter((token: CancelTokenSource) => {
+        // token.token !== response.config.cancelToken;
+        // });
 
-        resolve(response.data as ContactHistoryPage);
+        resolve(response.json as ContactHistoryPage);
       })
-      .catch((error) => {
+      .catch(error => {
         // canceled
       });
   });

@@ -1,5 +1,32 @@
-import { CompletionOption } from "./completion/Completion";
-import { Msg } from "./contacts/helpers";
+export interface ObjectReference {
+  uuid: string;
+  name: string;
+}
+
+export interface ContactField {
+  key: string;
+  label: string;
+  value_type: string;
+}
+
+export interface ContactGroup {
+  uuid: string;
+  count: number;
+  name: string;
+  query?: string;
+  status: string;
+}
+
+export interface Msg {
+  text: string;
+  status: string;
+  channel: ObjectReference;
+  quick_replies: string[];
+  urn: string;
+  id: number;
+  direction: string;
+  type: string;
+}
 
 export interface URN {
   scheme: string;
@@ -20,7 +47,6 @@ export interface ContactTicket {
   contact: {
     uuid: string;
     name: string;
-    modified_on: Date;
     created_on: Date;
     last_seen_on: Date;
     last_msg: Msg;
@@ -59,6 +85,21 @@ export interface Position {
   left: number;
 }
 
+export interface FunctionExample {
+  template: string;
+  output: string;
+}
+
+export interface CompletionOption {
+  name?: string;
+  summary: string;
+
+  // functions
+  signature?: string;
+  detail?: string;
+  examples?: FunctionExample[];
+}
+
 export interface CompletionResult {
   anchorPosition: Position;
   query: string;
@@ -66,14 +107,41 @@ export interface CompletionResult {
   currentFunction: CompletionOption;
 }
 
+export interface FunctionExample {
+  template: string;
+  output: string;
+}
+
+export interface CompletionProperty {
+  key: string;
+  help: string;
+  type: string;
+}
+
+export interface CompletionType {
+  name: string;
+
+  key_source?: string;
+  property_template?: CompletionProperty;
+  properties?: CompletionProperty[];
+}
+
+export interface CompletionSchema {
+  types: CompletionType[];
+  root: CompletionProperty[];
+  root_no_session: CompletionProperty[];
+}
+
+export type KeyedAssets = { [assetType: string]: string[] };
+
 export enum CustomEventType {
-  Loaded = "temba-loaded",
-  Canceled = "temba-canceled",
-  CursorChanged = "temba-cursor-changed",
-  Refreshed = "temba-refreshed",
-  Selection = "temba-selection",
-  ButtonClicked = "temba-button-clicked",
-  DialogHidden = "temba-dialog-hidden",
-  ScrollThreshold = "temba-scroll-threshold",
-  ContentChanged = "temba-content-changed",
+  Loaded = 'temba-loaded',
+  Canceled = 'temba-canceled',
+  CursorChanged = 'temba-cursor-changed',
+  Refreshed = 'temba-refreshed',
+  Selection = 'temba-selection',
+  ButtonClicked = 'temba-button-clicked',
+  DialogHidden = 'temba-dialog-hidden',
+  ScrollThreshold = 'temba-scroll-threshold',
+  ContentChanged = 'temba-content-changed',
 }

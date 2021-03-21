@@ -1,7 +1,4 @@
-import axios, { AxiosResponse, CancelToken, AxiosRequestConfig } from "axios";
-import { html, TemplateResult } from "lit-html";
-import { notEqual } from "lit-element";
-const dynamicTemplate = require("es6-dynamic-template");
+import { html, TemplateResult } from 'lit-html';
 
 export interface Asset {
   key?: string;
@@ -18,9 +15,9 @@ export interface ResultsPage {
 }
 
 /** Get the value for a named cookie */
-export const getCookie = (name: string): string => {
-  for (const cookie of document.cookie.split(";")) {
-    const idx = cookie.indexOf("=");
+export const getHTTPCookie = (name: string): string => {
+  for (const cookie of document.cookie.split(';')) {
+    const idx = cookie.indexOf('=');
     let key = cookie.substr(0, idx);
     let value = cookie.substr(idx + 1);
 
@@ -47,9 +44,9 @@ export const getClasses = (map: ClassMap): string => {
     }
   });
 
-  let result = classNames.join(" ");
+  let result = classNames.join(' ');
   if (result.trim().length > 0) {
-    result = " " + result;
+    result = ' ' + result;
   }
   return result;
 };
@@ -57,13 +54,13 @@ export const getClasses = (map: ClassMap): string => {
 export const fetchResultsPage = (url: string): Promise<ResultsPage> => {
   return new Promise<ResultsPage>((resolve, reject) => {
     getUrl(url)
-      .then((response: AxiosResponse) => {
+      .then((response: WebResponse) => {
         resolve({
-          results: response.data.results,
-          next: response.data.next,
+          results: response.json.results,
+          next: response.json.next,
         });
       })
-      .catch((error) => reject(error));
+      .catch(error => reject(error));
   });
 };
 
@@ -76,7 +73,9 @@ export const fetchResults = async (url: string): Promise<any[]> => {
   let pageUrl = url;
   while (pageUrl) {
     const resultsPage = await fetchResultsPage(pageUrl);
-    results = results.concat(resultsPage.results);
+    if (resultsPage.results) {
+      results = results.concat(resultsPage.results);
+    }
     pageUrl = resultsPage.next;
   }
   return results;
@@ -85,13 +84,13 @@ export const fetchResults = async (url: string): Promise<any[]> => {
 export const getAssetPage = (url: string): Promise<AssetPage> => {
   return new Promise<AssetPage>((resolve, reject) => {
     getUrl(url)
-      .then((response: AxiosResponse) => {
+      .then((response: WebResponse) => {
         resolve({
-          assets: response.data.results,
-          next: response.data.next,
+          assets: response.json.results,
+          next: response.json.next,
         });
       })
-      .catch((error) => reject(error));
+      .catch(error => reject(error));
   });
 };
 
@@ -111,66 +110,124 @@ export const getAssets = async (url: string): Promise<Asset[]> => {
 };
 
 export const getHeaders = (pjax: boolean = false) => {
-  const csrf = getCookie("csrftoken");
-  const headers: any = csrf ? { "X-CSRFToken": csrf } : {};
+  const csrf = getHTTPCookie('csrftoken');
+  const headers: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
   // mark us as ajax
-  headers["X-Requested-With"] = "XMLHttpRequest";
+  headers['X-Requested-With'] = 'XMLHttpRequest';
 
   if (pjax) {
-    headers["X-PJAX"] = "true";
+    headers['X-PJAX'] = 'true';
   }
 
   // we should update smartmin to look for ajax markers for json
-  headers["X-FORMAX"] = "true";
+  headers['X-FORMAX'] = 'true';
 
   return headers;
 };
 
+export interface WebResponse {
+  json: any;
+  body?: string;
+  status: number;
+  url?: string;
+  headers: Headers;
+}
+
+// this.cancelToken.token
 export const getUrl = (
   url: string,
-  cancelToken: CancelToken = null,
+  cancelToken: any = null,
   pjax: boolean = false
-): Promise<AxiosResponse> => {
-  const config: AxiosRequestConfig = { headers: getHeaders(pjax) };
+): Promise<WebResponse> => {
   if (cancelToken) {
-    config.cancelToken = cancelToken;
+    // config.cancelToken = cancelToken;
   }
-  return axios.get(url, config);
+
+  return new Promise<WebResponse>((resolve, reject) => {
+    const options = {
+      method: 'GET',
+      headers: getHeaders(pjax),
+    };
+
+    fetch(url, options)
+      .then(response => {
+        response.text().then((body: string) => {
+          let json = {};
+          try {
+            json = JSON.parse(body);
+          } catch (err) {}
+          resolve({
+            body,
+            json,
+            status: response.status,
+            headers: response.headers,
+          });
+        });
+      })
+      .catch(error => {
+        reject(error);
+      });
+  });
 };
 
 export const postUrl = (
   url: string,
   payload: any,
-  pjax: boolean = false
-): Promise<AxiosResponse> => {
-  return axios.post(url, payload, { headers: getHeaders(pjax) });
-};
+  pjax: boolean = false,
+  contentType = null
+): Promise<WebResponse> => {
+  const headers = getHeaders(pjax);
+  if (contentType) {
+    headers['Content-Type'] = contentType;
+  }
+  //   headers['Content-Type'] = contentType;
+  const options = {
+    method: 'POST',
+    headers,
+    body: payload,
+  };
 
-export interface FormResponse {
-  success: boolean;
-  results: any;
-}
+  return new Promise<WebResponse>((resolve, reject) => {
+    fetch(url, options)
+      .then(async response => {
+        response.text().then((body: string) => {
+          let json = {};
+          try {
+            json = JSON.parse(body);
+          } catch (err) {}
+          resolve({
+            body,
+            json,
+            status: response.status,
+            headers: response.headers,
+          });
+        });
+      })
+      .catch(error => {
+        reject(error);
+      });
+  });
+};
 
 export const postFormData = (
   url: string,
   formData: FormData
-): Promise<FormResponse> => {
-  return new Promise<any>((resolve, reject) => {
-    axios
-      .post(url, formData, {
-        headers: getHeaders(),
-        params: { _format: "json" },
-      })
-      .then((response: AxiosResponse) => {
-        if (response.data.status !== "success") {
-          reject({ errors: response.data.errors });
-        } else {
-          resolve({ success: true, results: response.data.results });
+): Promise<WebResponse> => {
+  return new Promise<WebResponse>((resolve, reject) => {
+    postUrl(url, formData, true)
+      .then(response => {
+        if (response.status >= 200 && response.status < 300) {
+          if (response.json.status === 'success' || response.status === 201) {
+            resolve(response);
+          } else {
+            reject({ errors: response.json.errors });
+          }
         }
+        reject('Server failure');
       })
-      .catch((reason) => {
-        reject(reason);
+      .catch(err => {
+        reject(err);
       });
   });
 };
@@ -178,7 +235,7 @@ export const postFormData = (
 export const postForm = (
   url: string,
   payload: any | FormData
-): Promise<FormResponse> => {
+): Promise<WebResponse> => {
   const formData = new FormData();
   Object.keys(payload).forEach((key: string) => {
     formData.append(key, payload[key]);
@@ -241,14 +298,14 @@ export const fillTemplate = (
   replacements: { [key: string]: string | number }
 ): TemplateResult => {
   for (const key in replacements) {
-    const className = key + "-replaced";
+    const className = key + '-replaced';
     replacements[
       key
     ] = `<span class="${className}">${replacements[key]}</span>`;
   }
 
-  const templateDiv = document.createElement("div");
-  templateDiv.innerHTML = dynamicTemplate(template, replacements);
+  const templateDiv = document.createElement('div');
+  // templateDiv.innerHTML = dynamicTemplate(template, replacements);
   return html` ${templateDiv} `;
 };
 
@@ -270,20 +327,20 @@ export const serialize = function (form: any) {
     if (
       !field.name ||
       field.disabled ||
-      field.type === "file" ||
-      field.type === "reset" ||
-      field.type === "submit" ||
-      field.type === "button"
+      field.type === 'file' ||
+      field.type === 'reset' ||
+      field.type === 'submit' ||
+      field.type === 'button'
     )
       continue;
 
     // If a multi-select, get all selections
-    if (field.type === "select-multiple") {
+    if (field.type === 'select-multiple') {
       for (var n = 0; n < field.options.length; n++) {
         if (!field.options[n].selected) continue;
         serialized.push(
           encodeURIComponent(field.name) +
-            "=" +
+            '=' +
             encodeURIComponent(field.options[n].value)
         );
       }
@@ -291,16 +348,15 @@ export const serialize = function (form: any) {
 
     // Convert field data to a query string
     else if (
-      (field.type !== "checkbox" && field.type !== "radio") ||
+      (field.type !== 'checkbox' && field.type !== 'radio') ||
       field.checked
     ) {
       serialized.push(
-        encodeURIComponent(field.name) + "=" + encodeURIComponent(field.value)
+        encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value)
       );
     }
   }
-
-  return serialized.join("&");
+  return serialized.join('&');
 };
 
 export const getScrollParent = (node: any): any => {
@@ -310,7 +366,7 @@ export const getScrollParent = (node: any): any => {
     const overflowY = isElement && window.getComputedStyle(parent).overflowY;
     const isScrollable =
       overflowY &&
-      !(overflowY.includes("hidden") || overflowY.includes("visible"));
+      !(overflowY.includes('hidden') || overflowY.includes('visible'));
 
     if (!parent) {
       return null;
@@ -343,42 +399,42 @@ export const timeSince = (date: Date) => {
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (secondsPast < 60) {
-    return "just now";
+    return 'just now';
   }
 
   if (secondsPast < HOUR) {
-    return Math.round(secondsPast / 60) + "m";
+    return Math.round(secondsPast / 60) + 'm';
   }
 
   if (secondsPast <= DAY) {
-    return Math.round(secondsPast / HOUR) + "h";
+    return Math.round(secondsPast / HOUR) + 'h';
   }
 
   if (secondsPast <= MONTH) {
-    return Math.round(secondsPast / DAY) + "d";
+    return Math.round(secondsPast / DAY) + 'd';
   }
 
   if (secondsPast < MONTH * 6) {
-    return Math.round(secondsPast / MONTH) + "mth";
+    return Math.round(secondsPast / MONTH) + 'mth';
   } else {
     const day = date.getDate();
     const month = date
       .toDateString()
       .match(/ [a-zA-Z]*/)[0]
-      .replace(" ", "");
+      .replace(' ', '');
     const year =
-      date.getFullYear() == now.getFullYear() ? "" : " " + date.getFullYear();
-    return day + " " + month + year;
+      date.getFullYear() == now.getFullYear() ? '' : ' ' + date.getFullYear();
+    return day + ' ' + month + year;
   }
 };
 
 export const isDate = (value: string): boolean => {
   let dateFormat;
-  if (toString.call(value) === "[object Date]") {
+  if (toString.call(value) === '[object Date]') {
     return true;
   }
-  if (typeof value.replace === "function") {
-    value.replace(/^\s+|\s+$/gm, "");
+  if (typeof value.replace === 'function') {
+    value.replace(/^\s+|\s+$/gm, '');
   }
 
   // value = value.split("+")[0];
@@ -433,21 +489,21 @@ export interface NamedObject {
   name: string;
 }
 
-export const oxford = (items: any[], joiner: string = "and"): any => {
+export const oxford = (items: any[], joiner: string = 'and'): any => {
   if (items.length === 1) {
     return items[0];
   }
 
   if (items.length === 2) {
     // TemplateResults get a different treatment
-    if (items[0].type === "html") {
+    if (items[0].type === 'html') {
       return html`${items[0]} ${joiner} ${items[1]}`;
     }
-    return items.join(" " + joiner + " ");
+    return items.join(' ' + joiner + ' ');
   }
 
   // TemplateResults get a different treatment
-  if (items[0].type === "html") {
+  if (items[0].type === 'html') {
     return items.map((tr: TemplateResult, idx: number) => {
       if (idx < items.length - 1) {
         return html`${tr}, `;
@@ -456,20 +512,20 @@ export const oxford = (items: any[], joiner: string = "and"): any => {
     });
   }
 
-  return items.join(", ") + joiner + items[items.length - 1];
+  return items.join(', ') + joiner + items[items.length - 1];
 };
 
 export const oxfordFn = (
   items: any[],
   fn: (item: any) => any,
-  joiner: string = "and"
+  joiner: string = 'and'
 ): any => {
   return oxford(items.map(fn), joiner);
 };
 
 export const oxfordNamed = (
   items: NamedObject[],
-  joiner: string = "and"
+  joiner: string = 'and'
 ): any => {
   return oxfordFn(items, (value: any) => value.name, joiner);
 };

@@ -5,11 +5,10 @@ import {
   TemplateResult,
   html,
   css,
-} from "lit-element";
-import { getClasses } from "../utils";
+} from 'lit-element';
+import { getClasses } from '../utils';
 
-@customElement("temba-icon")
-export default class VectorIcon extends LitElement {
+export class VectorIcon extends LitElement {
   @property({ type: String })
   name: string;
 
@@ -34,8 +33,8 @@ export default class VectorIcon extends LitElement {
         --icon-color-hover: var(--icon-color);
       }
 
-      :host([id="flow"]),
-      :host([name="flow"]) {
+      :host([id='flow']),
+      :host([name='flow']) {
         padding-bottom: 0.2em;
       }
 
@@ -66,8 +65,8 @@ export default class VectorIcon extends LitElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("name")) {
-      this.lastName = changes.get("name");
+    if (changes.has('name')) {
+      this.lastName = changes.get('name');
       if (this.lastName) {
         this.spin = !this.spin;
         setTimeout(() => {

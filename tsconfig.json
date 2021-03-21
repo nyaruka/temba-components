@@ -1,36 +1,23 @@
-{
-  /* "awesomeTypescriptLoaderOptions": {
-    "forkChecker": true,
-    "useWebpackText": true,
-    "transpileOnly": false
-  },*/
+  {
   "compilerOptions": {
-    "experimentalDecorators": true,
-    "target": "esnext",
-    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": false,
-    // "inlineSourceMap": true,
-    "sourceMap": true,
-    "noImplicitAny": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "es2018",
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
+    "noEmitOnError": true,
+    "lib": ["es2017", "dom", "dom.iterable"],
+    "strict": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "outDir": "out-tsc",
+    "sourceMap": true,
+    "inlineSources": true,
+    "rootDir": "./",
     "declaration": false,
     "noEmit": false,
-    "isolatedModules": false,
-    "outDir": "./test",
-    "plugins": [
-      {
-        "name": "ts-lit-plugin",
-        "strict": true
-      }
-    ]
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts"]
 }

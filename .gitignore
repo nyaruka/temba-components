@@ -1,5 +1,22 @@
-node_modules/
-build/
-coverage/
-target/screenshots
-target/diff
+## editors
+/.idea
+/.vscode
+
+## system files
+.DS_Store
+
+## npm
+/node_modules/
+/npm-debug.log
+
+## testing
+/coverage/
+/screenshots/test
+
+## temp folders
+/.tmp/
+
+# build
+/_site/
+/dist/
+/out-tsc/
