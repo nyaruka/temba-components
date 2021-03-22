@@ -50,7 +50,7 @@ export class TicketList extends FormElement {
       <div style="display: flex-col;">
         <div style="display:flex;	align-items: center;">
           <div style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em">
-            hi ${ticket.contact.name}
+            ${ticket.contact.name}
           </div>
           <div style="font-size: 11px">
             ${timeSince(new Date(ticket.contact.last_seen_on))}
