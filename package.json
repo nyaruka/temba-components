@@ -13,7 +13,7 @@
     "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --open --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
     "build": "rimraf dist && tsc && rollup -c rollup.config.js",
-    "dev": "yarn build && rimraf /Users/eric/code/nyaruka/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist /Users/eric/code/nyaruka/rapidpro/node_modules/@nyaruka/temba-components/",
+    "dev": "yarn build && cp -R ./dist/* ../rapidpro/node_modules/@nyaruka/temba-components/dist/",
     "prepublish": "tsc",
     "lint:eslint": "eslint --ext .ts,.html . --ignore-path .gitignore",
     "format:eslint": "eslint --ext .ts,.html . --fix --ignore-path .gitignore",
@@ -45,6 +45,8 @@
     "@open-wc/demoing-storybook": "^2.0.0",
     "@open-wc/eslint-config": "^4.0.0",
     "@open-wc/testing": "^2.0.0",
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@types/leaflet": "1.4.4",
     "@types/node": "13.11.1",
     "@types/remarkable": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "^2.20.0",
@@ -79,7 +81,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged && yarn build"
     }
   },
   "lint-staged": {

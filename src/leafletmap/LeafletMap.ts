@@ -8,7 +8,7 @@ import {
   map as createMap,
   Path,
 } from 'leaflet';
-import { css, customElement, html, LitElement, property } from 'lit-element';
+import { css, html, LitElement, property } from 'lit-element';
 
 import { FeatureProperties } from '../interfaces';
 import { getUrl, WebResponse } from '../utils';
