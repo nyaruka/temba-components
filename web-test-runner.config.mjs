@@ -6,6 +6,8 @@ import dynamicpixelmatch from 'dynamicpixelmatch';
 import pixelmatch from 'pixelmatch';
 import sizeOf from 'image-size';
 
+import rimraf from "rimraf";
+
 const SCREENSHOTS = 'screenshots';
 const DIFF = 'diff';
 const TEST = "test";
@@ -23,17 +25,6 @@ const fileExists = (filename) => {
     });
   });
 };
-
-const removeDir = (toRemove) => {
-  return new Promise((resolve, reject) => {
-    fs.rm(toRemove, { recursive: true, force: true }, (err) => {
-      if (err) {
-        reject(err);
-      }
-      resolve(`${toRemove} is deleted!`);
-    });
-  });
-}
 
 const ensureExists = function (mydir) {
   return new Promise((resolve, reject) => {
@@ -138,8 +129,9 @@ const wireScreenshots = async (page, context) => {
   // clear out any past tests
   const diffs = path.resolve(SCREENSHOTS, DIFF);
   const tests = path.resolve(SCREENSHOTS, TEST);
-  await removeDir(diffs);
-  await removeDir(tests);
+
+  rimraf.sync(diffs);
+  rimraf.sync(tests);
 
   await page.exposeFunction("matchPageSnapshot", (filename, clip, excluded, threshold) =>{
 
