@@ -1,7 +1,7 @@
 import { fixture } from '@open-wc/testing';
 import { Options } from '../src/options/Options';
-import { assertScreenshot, getClip } from './utils';
-import './utils';
+import { assertScreenshot, getClip } from './utils.test';
+import './utils.test';
 
 const colors = [
   { name: 'Red', value: '0' },

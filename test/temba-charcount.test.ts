@@ -1,7 +1,7 @@
 import { assert, fixture } from '@open-wc/testing';
 import { CharCount } from '../src/charcount/CharCount';
-import { assertScreenshot, getClip } from './utils';
-import './utils';
+import { assertScreenshot, getClip } from './utils.test';
+import './utils.test';
 
 const parentNode = document.createElement('div');
 parentNode.setAttribute('style', ' width: 250px;');

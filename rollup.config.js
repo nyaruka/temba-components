@@ -2,6 +2,7 @@ import merge from 'deepmerge';
 import { createSpaConfig } from '@open-wc/building-rollup';
 import packageJson from './package.json';
 import commonjs from '@rollup/plugin-commonjs';
+import copy from 'rollup-plugin-copy';
 
 const baseConfig = createSpaConfig({
 
@@ -45,6 +46,11 @@ const rollupConfig = merge(baseConfig, {
     commonjs({
       include: 'node_modules/**'
     }), 
+    copy({
+      targets: [
+        { src: 'static/icons/symbol-defs.svg', dest: 'dist/static/icons/' },
+      ]
+    })
   ]
 })
 

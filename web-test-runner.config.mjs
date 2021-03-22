@@ -259,7 +259,6 @@ export default {
             // mock a module in your own code
             // './out-tsc/src/utils/index.js': 'out-tsc/test/server.js',
             // './src/utils': './test/server'
-            // './src/utils': './test/server',
           },
         },
       },

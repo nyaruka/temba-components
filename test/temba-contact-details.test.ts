@@ -1,6 +1,6 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { ContactDetails } from '../src/contacts/ContactDetails';
-import './utils';
+import './utils.test';
 export const getHTML = () => {
   return `<temba-contact-details></temba-contact-details>`;
 };

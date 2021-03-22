@@ -1,6 +1,6 @@
 import { assert, fixture } from '@open-wc/testing';
 import { Store } from '../src/store/Store';
-import './utils';
+import './utils.test';
 
 const createStore = async (def: string): Promise<Store> => {
   const store = (await fixture(def)) as Store;

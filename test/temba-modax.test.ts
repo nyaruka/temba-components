@@ -8,9 +8,9 @@ import {
   getClip,
   mockGET,
   mockPOST,
-} from './utils';
+} from './utils.test';
 
-import './utils';
+import './utils.test';
 
 var clock: any;
 

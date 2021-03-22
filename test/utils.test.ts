@@ -7,8 +7,6 @@ interface Clip {
   height: number;
 }
 
-declare const __karma__: any;
-
 import { stub } from 'sinon';
 import { expect } from '@open-wc/testing';
 

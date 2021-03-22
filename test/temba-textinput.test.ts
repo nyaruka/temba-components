@@ -1,7 +1,7 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { TextInput } from '../src/textinput/TextInput';
-import { assertScreenshot, getClip } from './utils';
-import './utils';
+import { assertScreenshot, getClip } from './utils.test';
+import './utils.test';
 
 export const getInputHTML = (
   text: string = 'hello',

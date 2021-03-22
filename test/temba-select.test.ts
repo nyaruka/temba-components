@@ -2,10 +2,10 @@ import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Options } from '../src/options/Options';
 import { Select } from '../src/select/Select';
-import { assertScreenshot, checkTimers, getClip } from './utils';
+import { assertScreenshot, checkTimers, getClip } from './utils.test';
 import { range } from '../src/utils';
 import { Store } from '../src/store/Store';
-import './utils';
+import './utils.test';
 
 var clock: any;
 
