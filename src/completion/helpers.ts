@@ -10,8 +10,9 @@ import {
   KeyedAssets,
 } from '../interfaces';
 import { Store } from '../store/Store';
+import { Remarkable } from 'remarkable';
 
-// import marked from 'marked';
+const md = new Remarkable();
 
 const messageParser = new ExcellentParser('@', [
   'contact',
@@ -36,9 +37,8 @@ const sessionParser = new ExcellentParser('@', [
   'resume',
 ]);
 
-export const markedRender = directive((contents: string) => (part: Part) => {
-  // part.setValue(unsafeHTML(marked(contents)));
-  part.setValue(contents);
+export const renderMarkdown = directive((contents: string) => (part: Part) => {
+  part.setValue(unsafeHTML(md.render(contents)));
 });
 
 export const renderCompletionOption = (
@@ -61,7 +61,7 @@ export const renderCompletionOption = (
               >
                 ${args}
               </div>
-              <div class="detail">${markedRender(option.summary)}</div>
+              <div class="detail">${renderMarkdown(option.summary)}</div>
             `
           : null}
       </div>

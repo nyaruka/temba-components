@@ -36,6 +36,7 @@
     "lit-flatpickr": "^0.2.2",
     "lit-html": "^1.0.0",
     "marked": "0.7.0",
+    "remarkable": "^2.0.1",
     "serialize-javascript": "^3.0.0"
   },
   "devDependencies": {
@@ -44,6 +45,7 @@
     "@open-wc/eslint-config": "^4.0.0",
     "@open-wc/testing": "^2.0.0",
     "@types/node": "13.11.1",
+    "@types/remarkable": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "^2.20.0",
     "@typescript-eslint/parser": "^2.20.0",
     "@web/dev-server": "^0.0.12",

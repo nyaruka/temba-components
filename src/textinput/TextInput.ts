@@ -179,12 +179,14 @@ export class TextInput extends FormElement {
         this.dateElement.set(
           'onValueUpdate',
           (dates: Date[], formattedDate: string) => {
-            this.inputElement.value = picker.formatDate(
-              dates[0],
-              picker.altFormat
-            );
-            this.setValue(formattedDate);
-            this.inputElement.blur();
+            if (dates.length > 0) {
+              this.inputElement.value = picker.formatDate(
+                dates[0],
+                picker.altFormat
+              );
+              this.setValue(formattedDate);
+              this.inputElement.blur();
+            }
           }
         );
 
