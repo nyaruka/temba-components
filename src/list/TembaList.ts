@@ -4,16 +4,15 @@ import {
   html,
   property,
   TemplateResult,
-} from "lit-element";
-import { SIMULATED_WEB_SLOWNESS } from "../contacts/helpers";
-import { CustomEventType } from "../interfaces";
-import RapidElement from "../RapidElement";
-import { fetchResultsPage, ResultsPage } from "../utils";
+} from 'lit-element';
+import { SIMULATED_WEB_SLOWNESS } from '../contacts/helpers';
+import { CustomEventType } from '../interfaces';
+import { RapidElement } from '../RapidElement';
+import { fetchResultsPage, ResultsPage } from '../utils';
 
 const DEFAULT_REFRESH = 10000;
 
-@customElement("temba-list")
-export default class TembaList extends RapidElement {
+export class TembaList extends RapidElement {
   @property({ type: Array, attribute: false })
   items: any[] = [];
 
@@ -30,7 +29,7 @@ export default class TembaList extends RapidElement {
   tabIndex: number = 1;
 
   @property({ type: String })
-  valueKey: string = "id";
+  valueKey: string = 'id';
 
   @property({ type: Boolean })
   loading: boolean = false;
@@ -55,7 +54,7 @@ export default class TembaList extends RapidElement {
 
   // changes to the refresh key force a refresh
   @property({ type: String })
-  refreshKey: string = "0";
+  refreshKey: string = '0';
 
   // our next page from our endpoint
   nextPage: string = null;
@@ -84,14 +83,14 @@ export default class TembaList extends RapidElement {
     this.handleSelection.bind(this);
 
     setInterval(() => {
-      this.refreshKey = "default_" + new Date().getTime();
+      this.refreshKey = 'default_' + new Date().getTime();
     }, DEFAULT_REFRESH);
   }
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has("endpoint") && this.endpoint) {
+    if (changedProperties.has('endpoint') && this.endpoint) {
       this.loading = true;
       window.setTimeout(() => {
         this.fetchItems();
@@ -99,8 +98,8 @@ export default class TembaList extends RapidElement {
     }
 
     if (
-      changedProperties.has("refreshKey") &&
-      !changedProperties.has("endpoint")
+      changedProperties.has('refreshKey') &&
+      !changedProperties.has('endpoint')
     ) {
       this.fetchItems().then(() => {
         if (this.nextSelection) {
@@ -110,11 +109,11 @@ export default class TembaList extends RapidElement {
       });
     }
 
-    if (changedProperties.has("mostRecentItem")) {
+    if (changedProperties.has('mostRecentItem')) {
       this.fireCustomEvent(CustomEventType.Refreshed);
     }
 
-    if (changedProperties.has("cursorIndex")) {
+    if (changedProperties.has('cursorIndex')) {
       this.selected = this.items[this.cursorIndex];
     }
   }
@@ -125,12 +124,12 @@ export default class TembaList extends RapidElement {
   }
 
   private setSelection(value: string) {
-    const index = this.items.findIndex((item) => {
+    const index = this.items.findIndex(item => {
       return item[this.valueKey] === value;
     });
     this.cursorIndex = index;
     this.selected = this.items[index];
-    const evt = new Event("change", { bubbles: true });
+    const evt = new Event('change', { bubbles: true });
     this.dispatchEvent(evt);
   }
 
@@ -176,7 +175,7 @@ export default class TembaList extends RapidElement {
       newItem &&
       newItem[this.valueKey] !== this.selected[this.valueKey]
     ) {
-      const index = fetchedItems.findIndex((item) => {
+      const index = fetchedItems.findIndex(item => {
         return item[this.valueKey] === this.selected[this.valueKey];
       });
       this.cursorIndex = index;
@@ -207,7 +206,7 @@ export default class TembaList extends RapidElement {
     this.selected = selected;
     this.cursorIndex = index;
 
-    const evt = new Event("change", { bubbles: true });
+    const evt = new Event('change', { bubbles: true });
     this.dispatchEvent(evt);
   }
 

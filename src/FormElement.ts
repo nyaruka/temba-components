@@ -1,23 +1,23 @@
-import RapidElement from "./RapidElement";
-import { property } from "lit-element";
+import { RapidElement } from './RapidElement';
+import { property } from 'lit-element';
 
 /**
  * FormElement is a component that appends a hidden input (outside of
  * its own shadow) with its value to be included in forms.
  */
-export default class FormElement extends RapidElement {
+export class FormElement extends RapidElement {
   private hiddenInputs: HTMLInputElement[] = [];
 
-  @property({ type: String, attribute: "help_text" })
+  @property({ type: String, attribute: 'help_text' })
   helpText: string;
 
-  @property({ type: Boolean, attribute: "help_always" })
+  @property({ type: Boolean, attribute: 'help_always' })
   helpAlways: boolean;
 
-  @property({ type: Boolean, attribute: "widget_only" })
+  @property({ type: Boolean, attribute: 'widget_only' })
   widgetOnly: boolean;
 
-  @property({ type: Boolean, attribute: "hide_label" })
+  @property({ type: Boolean, attribute: 'hide_label' })
   hideLabel: boolean;
 
   @property({ type: String })
@@ -30,7 +30,7 @@ export default class FormElement extends RapidElement {
   values: any[] = [];
 
   @property({ type: String })
-  value: string = "";
+  value: string = '';
 
   @property({ attribute: false })
   inputRoot: HTMLElement = this;
@@ -41,27 +41,27 @@ export default class FormElement extends RapidElement {
 
   public setValues(values: any[]) {
     this.values = values;
-    this.requestUpdate("values");
+    this.requestUpdate('values');
   }
 
   public addValue(value: any) {
     this.values.push(value);
-    this.requestUpdate("values");
+    this.requestUpdate('values');
   }
 
   public removeValue(valueToRemove: any) {
     this.values = this.values.filter((value: any) => value !== valueToRemove);
-    this.requestUpdate("values");
+    this.requestUpdate('values');
   }
 
   public popValue() {
     this.values.pop();
-    this.requestUpdate("values");
+    this.requestUpdate('values');
   }
 
   public clear() {
     this.values = [];
-    this.requestUpdate("values");
+    this.requestUpdate('values');
   }
 
   public serializeValue(value: any): string {
@@ -74,10 +74,10 @@ export default class FormElement extends RapidElement {
     }
 
     for (const value of this.values) {
-      const ele = document.createElement("input");
-      ele.setAttribute("type", "hidden");
-      ele.setAttribute("name", this.getAttribute("name"));
-      ele.setAttribute("value", this.serializeValue(value));
+      const ele = document.createElement('input');
+      ele.setAttribute('type', 'hidden');
+      ele.setAttribute('name', this.getAttribute('name'));
+      ele.setAttribute('value', this.serializeValue(value));
       this.hiddenInputs.push(ele);
       this.inputRoot.parentElement.appendChild(ele);
     }
@@ -87,7 +87,7 @@ export default class FormElement extends RapidElement {
     super.updated(changedProperties);
 
     // if our cursor changed, lets make sure our scrollbox is showing it
-    if (changedProperties.has("values")) {
+    if (changedProperties.has('values')) {
       this.updateInputs();
     }
   }

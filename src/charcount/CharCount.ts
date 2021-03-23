@@ -1,23 +1,16 @@
-import {
-  css,
-  customElement,
-  html,
-  property,
-  TemplateResult,
-} from "lit-element";
-import RapidElement from "../RapidElement";
-import { split } from "split-sms";
-import { getExtendedCharacters } from "./helpers";
+import { css, html, property, TemplateResult } from 'lit-element';
+import { RapidElement } from '../RapidElement';
+import { splitSMS } from '../sms';
+import { getExtendedCharacters } from './helpers';
 
-@customElement("temba-charcount")
-export default class CharCount extends RapidElement {
+export class CharCount extends RapidElement {
   static get styles() {
     return css`
       :host {
         overflow: auto;
       }
       :host::after {
-        content: "";
+        content: '';
         clear: both;
         display: table;
       }
@@ -25,7 +18,7 @@ export default class CharCount extends RapidElement {
       .counter {
         float: right;
         text-align: right;
-        height: 12px;
+        position: relative;
       }
 
       .extended {
@@ -37,11 +30,9 @@ export default class CharCount extends RapidElement {
       .extended-char {
         border: 1px solid #e6e6e6;
         border-radius: var(--curvature-widget);
-        padding: 0px 4px;
+        padding: 4px;
         text-align: center;
         line-height: 20px;
-        width: 14px;
-        height: 20px;
         margin-right: 4px;
       }
 
@@ -58,8 +49,10 @@ export default class CharCount extends RapidElement {
         transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33) 200ms;
         visibility: hidden;
         margin-top: 5px;
-        left: -150px;
+        right: 0px;
         text-align: left;
+        position: absolute;
+        z-index: 1000;
       }
 
       .fine-print {
@@ -78,11 +71,9 @@ export default class CharCount extends RapidElement {
       }
 
       .note {
-        font-weight: 400;
-        line-height: 12px;
-        font-size: 9px;
+        font-weight: 600;
         display: inline-block;
-        margin-right: 4px;
+        margin-right: 2px;
       }
 
       .counts {
@@ -132,20 +123,21 @@ export default class CharCount extends RapidElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has("text")) {
+    if (changes.has('text')) {
       this.updateSegments();
     }
   }
 
   private updateSegments() {
-    const sms = split(this.text);
+    const sms = splitSMS(this.text);
     this.count = sms.length;
     this.segments = sms.parts.length;
     this.extended = getExtendedCharacters(this.text);
+    this.count = this.text.length;
   }
 
   public render(): TemplateResult {
-    const hasExpressions = this.text && this.text.indexOf("@") > -1;
+    const hasExpressions = this.text && this.text.indexOf('@') > -1;
 
     let segments = html`.`;
     if (this.segments > 1) {
@@ -188,7 +180,7 @@ export default class CharCount extends RapidElement {
         : null;
 
     return html`<div class="counter${
-      extended ? " attention" : ""
+      extended ? ' attention' : ''
     }"><div class="counts">${this.count}${
       this.segments > 1 || hasExpressions
         ? html`<div class="segments">

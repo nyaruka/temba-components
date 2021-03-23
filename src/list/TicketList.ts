@@ -4,14 +4,13 @@ import {
   html,
   property,
   TemplateResult,
-} from "lit-element";
-import TembaList from "../list/TembaList";
-import FormElement from "../FormElement";
-import { timeSince } from "../utils";
-import { ContactTicket } from "../interfaces";
+} from 'lit-element';
+import { TembaList } from '../list/TembaList';
+import { FormElement } from '../FormElement';
+import { timeSince } from '../utils';
+import { ContactTicket } from '../interfaces';
 
-@customElement("temba-tickets")
-export default class TicketList extends FormElement {
+export class TicketList extends FormElement {
   @property({ type: String })
   endpoint: string;
 
@@ -30,7 +29,7 @@ export default class TicketList extends FormElement {
   }
 
   public refresh(): void {
-    this.refreshKey = "requested_" + new Date().getTime();
+    this.refreshKey = 'requested_' + new Date().getTime();
   }
 
   public setNextSelection(value: string) {
@@ -39,7 +38,7 @@ export default class TicketList extends FormElement {
 
   private handleChange(event: Event) {
     this.value = (event.target as TembaList).selected;
-    this.dispatchEvent(new Event("change"));
+    this.dispatchEvent(new Event('change'));
   }
 
   /** An option in the drop down */
@@ -54,7 +53,7 @@ export default class TicketList extends FormElement {
             ${ticket.contact.name}
           </div>
           <div style="font-size: 11px">
-            ${timeSince(new Date(ticket.contact.modified_on))}
+            ${timeSince(new Date(ticket.contact.last_seen_on))}
           </div>
         </div>
         ${ticket.contact.last_msg
@@ -62,7 +61,7 @@ export default class TicketList extends FormElement {
               <div
                 style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
               >
-                ${ticket.contact.last_msg.direction === "I"
+                ${ticket.contact.last_msg.direction === 'I'
                   ? html`<temba-icon
                       name="user"
                       style="display:inline-block;margin-bottom:-1px;fill:rgba(0,0,0,.6)"

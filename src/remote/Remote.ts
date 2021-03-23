@@ -4,10 +4,10 @@ import {
   html,
   property,
   TemplateResult,
-} from "lit-element";
-import RapidElement from "../RapidElement";
+} from 'lit-element';
+import { RapidElement } from '../RapidElement';
 
-@customElement("temba-remote")
+@customElement('temba-remote')
 export default class Remote extends RapidElement {
   @property({ type: String })
   endpoint: string;
@@ -20,7 +20,7 @@ export default class Remote extends RapidElement {
     super.updated(changes);
 
     // our endpoint changed fetch the latest
-    if (changes.has("endpoint")) {
+    if (changes.has('endpoint')) {
     }
   }
 

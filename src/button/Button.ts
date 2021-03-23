@@ -1,15 +1,7 @@
-import {
-  LitElement,
-  TemplateResult,
-  html,
-  css,
-  customElement,
-  property,
-} from "lit-element";
-import { getClasses } from "../utils";
+import { LitElement, TemplateResult, html, css, property } from 'lit-element';
+import { getClasses } from '../utils';
 
-@customElement("temba-button")
-export default class Button extends LitElement {
+export class Button extends LitElement {
   static get styles() {
     return css`
       :host {
@@ -175,7 +167,7 @@ export default class Button extends LitElement {
 
   private handleKeyUp(event: KeyboardEvent): void {
     this.active = false;
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       this.click();
     }
   }
@@ -201,14 +193,14 @@ export default class Button extends LitElement {
       <div
         class="button-container 
           ${getClasses({
-          "primary-button":
+          'primary-button':
             this.primary ||
             (!this.primary && !this.secondary && !this.attention),
-          "secondary-button": this.secondary,
-          "disabled-button": this.disabled,
-          "active-button": this.active,
-          "attention-button": this.attention,
-          "destructive-button": this.destructive,
+          'secondary-button': this.secondary,
+          'disabled-button': this.disabled,
+          'active-button': this.active,
+          'attention-button': this.attention,
+          'destructive-button': this.destructive,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}

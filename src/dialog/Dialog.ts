@@ -1,19 +1,17 @@
-import { customElement, property } from "lit-element/lib/decorators";
-import { TemplateResult, html, css } from "lit-element";
-import Button from "../button/Button";
-import RapidElement from "../RapidElement";
-import Shadowless from "../shadowless/Shadowless";
-import { CustomEventType } from "../interfaces";
-import { styleMap } from "lit-html/directives/style-map.js";
-import { getClasses } from "../utils";
+import { property } from 'lit-element/lib/decorators';
+import { TemplateResult, html, css } from 'lit-element';
+import { Button } from '../button/Button';
+import { RapidElement } from '../RapidElement';
+import { CustomEventType } from '../interfaces';
+import { styleMap } from 'lit-html/directives/style-map.js';
+import { getClasses } from '../utils';
 
-@customElement("temba-dialog")
-export default class Dialog extends RapidElement {
+export class Dialog extends RapidElement {
   static get widths(): { [size: string]: string } {
     return {
-      small: "400px",
-      medium: "600px",
-      large: "655px",
+      small: '400px',
+      medium: '600px',
+      large: '655px',
     };
   }
 
@@ -23,6 +21,7 @@ export default class Dialog extends RapidElement {
         position: absolute;
         z-index: 10000;
         font-family: var(--font-family);
+        --transition-speed: 250ms;
       }
 
       .flex {
@@ -50,15 +49,16 @@ export default class Dialog extends RapidElement {
         position: fixed;
         top: 0px;
         left: 0px;
-        transition: opacity linear 100ms;
+        transition: opacity linear calc(var(--transitions-speed) / 2ms);
         pointer-events: none;
       }
 
       .dialog-container {
         margin-top: -10000px;
         position: relative;
-        transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33) 250ms,
-          opacity ease-in-out 200ms;
+        transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33)
+            var(--transition-speed),
+          opacity ease-in-out calc(var(--transition-speed) - 50ms);
         border-radius: var(--curvature);
         box-shadow: 0px 0px 2px 4px rgba(0, 0, 0, 0.06);
         overflow: hidden;
@@ -129,7 +129,8 @@ export default class Dialog extends RapidElement {
         margin: auto;
         margin-top: 30px;
         width: 154px;
-        transition: opacity 1000ms ease-in 500ms;
+        transition: opacity calc(var(--transition-speed) * 5ms) ease-in
+          calc(var(--transition-speed * 2));
         visibility: hidden;
       }
 
@@ -167,16 +168,16 @@ export default class Dialog extends RapidElement {
   hideOnClick: boolean;
 
   @property()
-  size: string = "medium";
+  size: string = 'medium';
 
   @property({ type: String })
-  primaryButtonName: string = "Ok";
+  primaryButtonName: string = 'Ok';
 
   @property({ type: String })
-  cancelButtonName: string = "Cancel";
+  cancelButtonName: string = 'Cancel';
 
   @property()
-  submittingName: string = "Saving";
+  submittingName: string = 'Saving';
 
   @property()
   animationEnd: boolean;
@@ -194,8 +195,8 @@ export default class Dialog extends RapidElement {
   }
 
   public updated(changedProperties: Map<string, any>) {
-    if (changedProperties.has("open")) {
-      const body = document.querySelector("body");
+    if (changedProperties.has('open')) {
+      const body = document.querySelector('body');
 
       if (this.open) {
         this.animationEnd = true;
@@ -205,23 +206,23 @@ export default class Dialog extends RapidElement {
         }, 400);
 
         this.scrollOffset = -document.documentElement.scrollTop;
-        body.style.position = "fixed";
-        body.style.overflowY = "scroll";
-        body.style.top = this.scrollOffset + "px";
-        body.style.width = "100%";
+        body.style.position = 'fixed';
+        body.style.overflowY = 'scroll';
+        body.style.top = this.scrollOffset + 'px';
+        body.style.width = '100%';
       } else {
-        body.style.position = "";
-        body.style.overflowY = "";
-        body.style.width = "";
-        window.scrollTo(0, parseInt(this.scrollOffset || "0") * -1);
+        body.style.position = '';
+        body.style.overflowY = '';
+        body.style.width = '';
+        window.scrollTo(0, parseInt(this.scrollOffset || '0') * -1);
       }
 
       // make sure our buttons aren't in progress on show
       if (this.open) {
         this.shadowRoot
-          .querySelectorAll("temba-button")
+          .querySelectorAll('temba-button')
           .forEach((button: Button) => (button.disabled = false));
-        const inputs = this.querySelectorAll("textarea,input");
+        const inputs = this.querySelectorAll('textarea,input');
         if (inputs.length > 0) {
           window.setTimeout(() => {
             const input = inputs[0] as any;
@@ -273,7 +274,7 @@ export default class Dialog extends RapidElement {
   }
 
   private handleKeyUp(event: KeyboardEvent) {
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       this.clickCancel();
     }
   }
@@ -281,7 +282,7 @@ export default class Dialog extends RapidElement {
   private handleClickMask(event: MouseEvent) {
     if (this.hideOnClick) {
       const id = (event.target as HTMLElement).id;
-      if (id === "dialog-mask" || id === "dialog-bg") {
+      if (id === 'dialog-mask' || id === 'dialog-bg') {
         this.fireCustomEvent(CustomEventType.DialogHidden);
         this.clickCancel();
       }
@@ -307,10 +308,10 @@ export default class Dialog extends RapidElement {
         id="dialog-mask"
         @click=${this.handleClickMask}
         class="dialog-mask ${getClasses({
-          "dialog-open": this.open,
-          "dialog-loading": this.loading,
-          "dialog-animation-end": this.animationEnd,
-          "dialog-ready": this.ready,
+          'dialog-open': this.open,
+          'dialog-loading': this.loading,
+          'dialog-animation-end': this.animationEnd,
+          'dialog-ready': this.ready,
         })}"
         style=${styleMap(maskStyle)}
       >

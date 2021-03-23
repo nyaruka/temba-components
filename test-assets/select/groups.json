@@ -1,5 +1,5 @@
 {
-  "next": "/groups.json?cursor=SECOND_PAGE",
+  "next": "/test-assets/select/groups_2.json",
   "previous": null,
   "results": [
     {

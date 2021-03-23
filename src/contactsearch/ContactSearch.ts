@@ -4,15 +4,13 @@ import {
   html,
   property,
   css,
-} from "lit-element";
-import RapidElement from "../RapidElement";
-import axios, { CancelTokenSource, AxiosResponse } from "axios";
-import { getUrl, plural, fillTemplate } from "../utils";
-import TextInput from "../textinput/TextInput";
-import "../alert/Alert";
-import { Contact } from "../interfaces";
-import { styleMap } from "lit-html/directives/style-map";
-import FormElement from "../FormElement";
+} from 'lit-element';
+import { getUrl, plural, fillTemplate, WebResponse } from '../utils';
+import { TextInput } from '../textinput/TextInput';
+import '../alert/Alert';
+import { Contact } from '../interfaces';
+import { styleMap } from 'lit-html/directives/style-map';
+import { FormElement } from '../FormElement';
 
 const QUEIT_MILLIS = 1000;
 
@@ -24,8 +22,7 @@ interface SummaryResponse {
   error?: string;
 }
 
-@customElement("temba-contact-search")
-export default class ContactSearch extends FormElement {
+export class ContactSearch extends FormElement {
   static get styles() {
     return css`
       :host {
@@ -104,7 +101,7 @@ export default class ContactSearch extends FormElement {
     `;
   }
 
-  private cancelToken: CancelTokenSource;
+  // private cancelToken: CancelTokenSource;
 
   @property({ type: Boolean })
   fetching: boolean;
@@ -113,16 +110,16 @@ export default class ContactSearch extends FormElement {
   endpoint: string;
 
   @property({ type: String })
-  placeholder: string = "";
+  placeholder: string = '';
 
   @property({ type: String })
-  name: string = "";
+  name: string = '';
 
   @property({ type: String })
-  query: string = "";
+  query: string = '';
 
-  @property({ type: String, attribute: "matches-text" })
-  matchesText: string = "";
+  @property({ type: String, attribute: 'matches-text' })
+  matchesText: string = '';
 
   @property({ attribute: false })
   summary: SummaryResponse;
@@ -132,7 +129,7 @@ export default class ContactSearch extends FormElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has("query")) {
+    if (changedProperties.has('query')) {
       this.fetching = !!this.query;
 
       // clear our summary on any change
@@ -150,14 +147,14 @@ export default class ContactSearch extends FormElement {
   }
 
   public fetchSummary(query: string): any {
-    const CancelToken = axios.CancelToken;
-    this.cancelToken = CancelToken.source();
+    // const CancelToken = axios.CancelToken;
+    // this.cancelToken = CancelToken.source();
 
     const url = this.endpoint + query;
 
-    getUrl(url, this.cancelToken.token).then((response: AxiosResponse) => {
+    getUrl(url).then((response: WebResponse) => {
       if (response.status === 200) {
-        this.summary = response.data as SummaryResponse;
+        this.summary = response.json as SummaryResponse;
         this.fetching = false;
       }
     });
@@ -189,7 +186,7 @@ export default class ContactSearch extends FormElement {
             <tr class="header">
               <td colspan="2"></td>
               ${fields.map(
-                (field) => html` <td class="field-header">${field.label}</td> `
+                field => html` <td class="field-header">${field.label}</td> `
               )}
               <td></td>
               <td class="field-header created-on">Created On</td>
@@ -201,9 +198,9 @@ export default class ContactSearch extends FormElement {
                   <td class="urn">${(contact as any).primary_urn_formatted}</td>
                   <td class="name">${contact.name}</td>
                   ${fields.map(
-                    (field) => html`
+                    field => html`
                       <td class="field">
-                        ${((contact as any).fields[field.uuid] || { text: "" })
+                        ${((contact as any).fields[field.uuid] || { text: '' })
                           .text}
                       </td>
                     `
@@ -237,7 +234,7 @@ export default class ContactSearch extends FormElement {
       }
     }
 
-    const loadingStyle = this.fetching ? { opacity: "1" } : {};
+    const loadingStyle = this.fetching ? { opacity: '1' } : {};
 
     return html`
       <temba-textinput

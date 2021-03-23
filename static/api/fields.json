@@ -1,0 +1,1241 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "key": "missing_field",
+      "label": "Missing Field",
+      "value_type": "text"
+    },
+    {
+      "key": "missing",
+      "label": "Missing",
+      "value_type": "text"
+    },
+    {
+      "key": "retries",
+      "label": "Retries",
+      "value_type": "numeric"
+    },
+    {
+      "key": "zzz_im_last",
+      "label": "zzz im last",
+      "value_type": "text"
+    },
+    {
+      "key": "create_this_one",
+      "label": "create this one",
+      "value_type": "text"
+    },
+    {
+      "key": "some_new_field",
+      "label": "Some new field",
+      "value_type": "text"
+    },
+    {
+      "key": "bleep",
+      "label": "bleep",
+      "value_type": "text"
+    },
+    {
+      "key": "blarp",
+      "label": "blarp",
+      "value_type": "text"
+    },
+    {
+      "key": "a_crazy_thing",
+      "label": "a crazy thing",
+      "value_type": "text"
+    },
+    {
+      "key": "this_beep",
+      "label": "this beep",
+      "value_type": "text"
+    },
+    {
+      "key": "beep",
+      "label": "Beep",
+      "value_type": "text"
+    },
+    {
+      "key": "meep",
+      "label": "Meep",
+      "value_type": "text"
+    },
+    {
+      "key": "this_new_test",
+      "label": "this new test",
+      "value_type": "text"
+    },
+    {
+      "key": "this_is_a_test_field",
+      "label": "This is a test field",
+      "value_type": "text"
+    },
+    {
+      "key": "this_new_field",
+      "label": "This New Field",
+      "value_type": "text"
+    },
+    {
+      "key": "a_newly_named_field",
+      "label": "A newly named field",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_199",
+      "label": "Contact Field 199",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_198",
+      "label": "Contact Field 198",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_197",
+      "label": "Contact Field 197",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_196",
+      "label": "Contact Field 196",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_195",
+      "label": "Contact Field 195",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_194",
+      "label": "Contact Field 194",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_193",
+      "label": "Contact Field 193",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_192",
+      "label": "Contact Field 192",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_191",
+      "label": "Contact Field 191",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_190",
+      "label": "Contact Field 190",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_189",
+      "label": "Contact Field 189",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_188",
+      "label": "Contact Field 188",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_187",
+      "label": "Contact Field 187",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_186",
+      "label": "Contact Field 186",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_185",
+      "label": "Contact Field 185",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_184",
+      "label": "Contact Field 184",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_183",
+      "label": "Contact Field 183",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_182",
+      "label": "Contact Field 182",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_181",
+      "label": "Contact Field 181",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_180",
+      "label": "Contact Field 180",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_179",
+      "label": "Contact Field 179",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_178",
+      "label": "Contact Field 178",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_177",
+      "label": "Contact Field 177",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_176",
+      "label": "Contact Field 176",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_175",
+      "label": "Contact Field 175",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_174",
+      "label": "Contact Field 174",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_173",
+      "label": "Contact Field 173",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_172",
+      "label": "Contact Field 172",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_171",
+      "label": "Contact Field 171",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_170",
+      "label": "Contact Field 170",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_169",
+      "label": "Contact Field 169",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_168",
+      "label": "Contact Field 168",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_167",
+      "label": "Contact Field 167",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_166",
+      "label": "Contact Field 166",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_165",
+      "label": "Contact Field 165",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_164",
+      "label": "Contact Field 164",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_163",
+      "label": "Contact Field 163",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_162",
+      "label": "Contact Field 162",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_161",
+      "label": "Contact Field 161",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_160",
+      "label": "Contact Field 160",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_159",
+      "label": "Contact Field 159",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_158",
+      "label": "Contact Field 158",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_157",
+      "label": "Contact Field 157",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_156",
+      "label": "Contact Field 156",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_155",
+      "label": "Contact Field 155",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_154",
+      "label": "Contact Field 154",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_153",
+      "label": "Contact Field 153",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_152",
+      "label": "Contact Field 152",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_151",
+      "label": "Contact Field 151",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_150",
+      "label": "Contact Field 150",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_149",
+      "label": "Contact Field 149",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_148",
+      "label": "Contact Field 148",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_147",
+      "label": "Contact Field 147",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_146",
+      "label": "Contact Field 146",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_145",
+      "label": "Contact Field 145",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_144",
+      "label": "Contact Field 144",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_142",
+      "label": "Contact Field 142",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_141",
+      "label": "Contact Field 141",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_140",
+      "label": "Contact Field 140",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_139",
+      "label": "Contact Field 139",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_138",
+      "label": "Contact Field 138",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_137",
+      "label": "Contact Field 137",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_136",
+      "label": "Contact Field 136",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_135",
+      "label": "Contact Field 135",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_134",
+      "label": "Contact Field 134",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_133",
+      "label": "Contact Field 133",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_132",
+      "label": "Contact Field 132",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_131",
+      "label": "Contact Field 131",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_130",
+      "label": "Contact Field 130",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_129",
+      "label": "Contact Field 129",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_128",
+      "label": "Contact Field 128",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_127",
+      "label": "Contact Field 127",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_126",
+      "label": "Contact Field 126",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_125",
+      "label": "Contact Field 125",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_124",
+      "label": "Contact Field 124",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_123",
+      "label": "Contact Field 123",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_122",
+      "label": "Contact Field 122",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_121",
+      "label": "Contact Field 121",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_120",
+      "label": "Contact Field 120",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_119",
+      "label": "Contact Field 119",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_118",
+      "label": "Contact Field 118",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_117",
+      "label": "Contact Field 117",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_116",
+      "label": "Contact Field 116",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_115",
+      "label": "Contact Field 115",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_114",
+      "label": "Contact Field 114",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_113",
+      "label": "Contact Field 113",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_112",
+      "label": "Contact Field 112",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_111",
+      "label": "Contact Field 111",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_110",
+      "label": "Contact Field 110",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_109",
+      "label": "Contact Field 109",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_108",
+      "label": "Contact Field 108",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_107",
+      "label": "Contact Field 107",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_106",
+      "label": "Contact Field 106",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_105",
+      "label": "Contact Field 105",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_104",
+      "label": "Contact Field 104",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_103",
+      "label": "Contact Field 103",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_102",
+      "label": "Contact Field 102",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_101",
+      "label": "Contact Field 101",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_100",
+      "label": "Contact Field 100",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_99",
+      "label": "Contact Field 99",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_98",
+      "label": "Contact Field 98",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_97",
+      "label": "Contact Field 97",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_96",
+      "label": "Contact Field 96",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_95",
+      "label": "Contact Field 95",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_94",
+      "label": "Contact Field 94",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_93",
+      "label": "Contact Field 93",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_92",
+      "label": "Contact Field 92",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_91",
+      "label": "Contact Field 91",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_90",
+      "label": "Contact Field 90",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_89",
+      "label": "Contact Field 89",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_88",
+      "label": "Contact Field 88",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_87",
+      "label": "Contact Field 87",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_86",
+      "label": "Contact Field 86",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_85",
+      "label": "Contact Field 85",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_84",
+      "label": "Contact Field 84",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_83",
+      "label": "Contact Field 83",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_82",
+      "label": "Contact Field 82",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_81",
+      "label": "Contact Field 81",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_80",
+      "label": "Contact Field 80",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_79",
+      "label": "Contact Field 79",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_78",
+      "label": "Contact Field 78",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_77",
+      "label": "Contact Field 77",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_76",
+      "label": "Contact Field 76",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_75",
+      "label": "Contact Field 75",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_74",
+      "label": "Contact Field 74",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_73",
+      "label": "Contact Field 73",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_72",
+      "label": "Contact Field 72",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_71",
+      "label": "Contact Field 71",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_70",
+      "label": "Contact Field 70",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_69",
+      "label": "Contact Field 69",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_68",
+      "label": "Contact Field 68",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_67",
+      "label": "Contact Field 67",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_66",
+      "label": "Contact Field 66",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_65",
+      "label": "Contact Field 65",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_64",
+      "label": "Contact Field 64",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_63",
+      "label": "Contact Field 63",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_62",
+      "label": "Contact Field 62",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_61",
+      "label": "Contact Field 61",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_60",
+      "label": "Contact Field 60",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_59",
+      "label": "Contact Field 59",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_58",
+      "label": "Contact Field 58",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_57",
+      "label": "Contact Field 57",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_56",
+      "label": "Contact Field 56",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_55",
+      "label": "Contact Field 55",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_54",
+      "label": "Contact Field 54",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_53",
+      "label": "Contact Field 53",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_52",
+      "label": "Contact Field 52",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_51",
+      "label": "Contact Field 51",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_50",
+      "label": "Contact Field 50",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_49",
+      "label": "Contact Field 49",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_48",
+      "label": "Contact Field 48",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_47",
+      "label": "Contact Field 47",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_46",
+      "label": "Contact Field 46",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_45",
+      "label": "Contact Field 45",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_44",
+      "label": "Contact Field 44",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_43",
+      "label": "Contact Field 43",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_42",
+      "label": "Contact Field 42",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_41",
+      "label": "Contact Field 41",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_40",
+      "label": "Contact Field 40",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_39",
+      "label": "Contact Field 39",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_38",
+      "label": "Contact Field 38",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_37",
+      "label": "Contact Field 37",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_36",
+      "label": "Contact Field 36",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_35",
+      "label": "Contact Field 35",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_34",
+      "label": "Contact Field 34",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_33",
+      "label": "Contact Field 33",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_32",
+      "label": "Contact Field 32",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_31",
+      "label": "Contact Field 31",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_30",
+      "label": "Contact Field 30",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_29",
+      "label": "Contact Field 29",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_28",
+      "label": "Contact Field 28",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_27",
+      "label": "Contact Field 27",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_26",
+      "label": "Contact Field 26",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_25",
+      "label": "Contact Field 25",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_24",
+      "label": "Contact Field 24",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_23",
+      "label": "Contact Field 23",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_22",
+      "label": "Contact Field 22",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_21",
+      "label": "Contact Field 21",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_20",
+      "label": "Contact Field 20",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_19",
+      "label": "Contact Field 19",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_18",
+      "label": "Contact Field 18",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_17",
+      "label": "Contact Field 17",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_16",
+      "label": "Contact Field 16",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_15",
+      "label": "Contact Field 15",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_14",
+      "label": "Contact Field 14",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_13",
+      "label": "Contact Field 13",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_12",
+      "label": "Contact Field 12",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_11",
+      "label": "Contact Field 11",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_10",
+      "label": "Contact Field 10",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_9",
+      "label": "Contact Field 9",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_8",
+      "label": "Contact Field 8",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_7",
+      "label": "Contact Field 7",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_6",
+      "label": "Contact Field 6",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_5",
+      "label": "Contact Field 5",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_4",
+      "label": "Contact Field 4",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_3",
+      "label": "Contact Field 3",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_2",
+      "label": "Contact Field 2",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_1",
+      "label": "Contact Field 1",
+      "value_type": "text"
+    },
+    {
+      "key": "contact_field_0",
+      "label": "Contact Field 0",
+      "value_type": "text"
+    },
+    {
+      "key": "immigrationfinal_payment_date",
+      "label": "Immigrationfinal-Payment-Date",
+      "value_type": "text"
+    },
+    {
+      "key": "emergencyfinal_payment_date",
+      "label": "Emergencyfinal-Payment-Date",
+      "value_type": "text"
+    },
+    {
+      "key": "new_renewalfinal_payment_date",
+      "label": "New-Renewalfinal-Payment-Date",
+      "value_type": "text"
+    },
+    {
+      "key": "businessfinal_payment_date",
+      "label": "Businessfinal-Payment-Date",
+      "value_type": "text"
+    },
+    {
+      "key": "emergencypayoff",
+      "label": "Emergencypayoff",
+      "value_type": "text"
+    },
+    {
+      "key": "immigrationpayoff",
+      "label": "Immigrationpayoff",
+      "value_type": "text"
+    },
+    {
+      "key": "new_renewalpayoff",
+      "label": "New-Renewalpayoff",
+      "value_type": "text"
+    },
+    {
+      "key": "businesspayoff",
+      "label": "Businesspayoff",
+      "value_type": "text"
+    },
+    {
+      "key": "emergencyloan_amount",
+      "label": "Emergencyloan-Amount",
+      "value_type": "text"
+    },
+    {
+      "key": "immigrationloan_amount",
+      "label": "Immigrationloan-Amount",
+      "value_type": "text"
+    },
+    {
+      "key": "new_renewalloan_amount",
+      "label": "New-Renewalloan-Amount",
+      "value_type": "text"
+    },
+    {
+      "key": "businessloan_amount",
+      "label": "Businessloan-Amount",
+      "value_type": "text"
+    },
+    {
+      "key": "immigrationpayment",
+      "label": "Immigrationpayment",
+      "value_type": "text"
+    },
+    {
+      "key": "new_renewalpayment",
+      "label": "New-Renewalpayment",
+      "value_type": "text"
+    },
+    {
+      "key": "emergencypayment",
+      "label": "Emergencypayment",
+      "value_type": "text"
+    },
+    {
+      "key": "businesspayment",
+      "label": "Businesspayment",
+      "value_type": "text"
+    },
+    {
+      "key": "borrower_payment_method",
+      "label": "Borrower Payment Method",
+      "value_type": "text"
+    },
+    {
+      "key": "rating",
+      "label": "Rating",
+      "value_type": "text"
+    },
+    {
+      "key": "bonus",
+      "label": "Bonus",
+      "value_type": "text"
+    },
+    {
+      "key": "last_message",
+      "label": "Last Message",
+      "value_type": "datetime"
+    },
+    {
+      "key": "my_new_field",
+      "label": "my new field",
+      "value_type": "text"
+    },
+    {
+      "key": "cv_opt_in",
+      "label": "CV Opt In",
+      "value_type": "text"
+    },
+    {
+      "key": "bar",
+      "label": "Bar",
+      "value_type": "text"
+    },
+    {
+      "key": "blerg",
+      "label": "Blerg",
+      "value_type": "text"
+    },
+    {
+      "key": "unhcr_number",
+      "label": "Unhcr Number",
+      "value_type": "text"
+    },
+    {
+      "key": "unhcr_case_file_family_adultminor_5",
+      "label": "Unhcr Case File Family Adultminor 5",
+      "value_type": "text"
+    },
+    {
+      "key": "email_address",
+      "label": "UNHCR Family Size",
+      "value_type": "text"
+    },
+    {
+      "key": "conversion",
+      "label": "Conversion",
+      "value_type": "text"
+    },
+    {
+      "key": "district",
+      "label": "District",
+      "value_type": "district"
+    },
+    {
+      "key": "joined",
+      "label": "Joined On",
+      "value_type": "datetime"
+    },
+    {
+      "key": "age",
+      "label": "Age",
+      "value_type": "numeric"
+    },
+    {
+      "key": "gender",
+      "label": "Gender",
+      "value_type": "text"
+    }
+  ]
+}

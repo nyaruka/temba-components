@@ -1,3 +1,15 @@
+#mocha {
+  display:none;
+}
+
+temba-dialog, temba-modax {
+  --transition-speed: 0ms !important;
+}
+
+body {
+  padding: 20px;
+}
+
 html input {
   font-weight: 300;
 }

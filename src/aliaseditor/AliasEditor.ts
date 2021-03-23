@@ -1,22 +1,11 @@
-import { AxiosResponse } from "axios";
-import {
-  css,
-  customElement,
-  html,
-  LitElement,
-  property,
-  TemplateResult
-} from "lit-element";
-import { FeatureProperties } from "../interfaces";
-import { getUrl, postUrl } from "../utils";
-import autosize from "autosize";
-import Button from "../button/Button";
-import TextInput from "../textinput/TextInput";
-import { styleMap } from "lit-html/directives/style-map.js";
-import FormElement from "../FormElement";
+import { css, html, LitElement, property, TemplateResult } from 'lit-element';
+import { FeatureProperties } from '../interfaces';
+import { getUrl, postUrl, WebResponse } from '../utils';
+import { TextInput } from '../textinput/TextInput';
+import { styleMap } from 'lit-html/directives/style-map.js';
+import { FormElement } from '../FormElement';
 
-@customElement("alias-editor")
-export default class AliasEditor extends LitElement {
+export class AliasEditor extends LitElement {
   static get styles() {
     return css`
       :host {
@@ -163,7 +152,7 @@ export default class AliasEditor extends LitElement {
   }
 
   public updated(changedProperties: Map<string, any>) {
-    if (changedProperties.has("osmId")) {
+    if (changedProperties.has('osmId')) {
       // going up the tree doesn't require a fetch
       const newPath = [];
       for (let feature of this.path) {
@@ -180,22 +169,12 @@ export default class AliasEditor extends LitElement {
   }
 
   private fetchFeature() {
-    getUrl(this.getEndpoint() + "boundaries/" + this.osmId + "/").then(
-      (response: AxiosResponse) => {
-        this.path = response.data as FeatureProperties[];
+    getUrl(this.getEndpoint() + 'boundaries/' + this.osmId + '/').then(
+      (response: WebResponse) => {
+        this.path = response.json as FeatureProperties[];
         this.hideAliasDialog();
       }
     );
-  }
-
-  /*
-   Makes sure our textarea grows with us
-   */
-  private fireTextareaAutosize(): void {
-    window.setTimeout(() => {
-      autosize(this.shadowRoot.querySelector("textarea"));
-      autosize.update(this.shadowRoot.querySelector("textarea"));
-    }, 0);
   }
 
   private handleMapClicked(feature: FeatureProperties): void {
@@ -212,8 +191,12 @@ export default class AliasEditor extends LitElement {
   private handleSearchSelection(evt: CustomEvent) {
     const selection = evt.detail.selected as FeatureProperties;
     this.showAliasDialog(selection);
-    const select = this.shadowRoot.querySelector("temba-select") as FormElement;
+    const select = this.shadowRoot.querySelector('temba-select') as FormElement;
     select.clear();
+  }
+
+  private isMatch(option: any, query: string) {
+    return `${option.name} ${option.aliases}`.toLowerCase().indexOf(query) > -1;
   }
 
   private renderFeature(
@@ -238,7 +221,7 @@ export default class AliasEditor extends LitElement {
           class="level-${feature.level}"
         >
           <div
-            class="feature-name ${clickable ? "clickable" : ""}"
+            class="feature-name ${clickable ? 'clickable' : ''}"
             @click=${() => {
               if (clickable) {
                 this.handlePlaceClicked(feature);
@@ -249,7 +232,7 @@ export default class AliasEditor extends LitElement {
           </div>
 
           <div class="aliases">
-            ${feature.aliases.split("\n").map((alias: string) =>
+            ${feature.aliases.split('\n').map((alias: string) =>
               alias.trim().length > 0
                 ? html`
                     <temba-label
@@ -281,7 +264,7 @@ export default class AliasEditor extends LitElement {
                     />
                   </div>
                 `
-              : ""}
+              : ''}
           </div>
         </div>
       </div>
@@ -307,64 +290,61 @@ export default class AliasEditor extends LitElement {
       }
     );
 
-    return html`
-      ${renderedFeature} ${renderedChildren}
-    `;
+    return html` ${renderedFeature} ${renderedChildren} `;
   }
 
   public showAliasDialog(feature: FeatureProperties) {
     this.editFeatureAliases = feature.aliases;
     this.editFeature = feature;
-    const aliasDialog = this.shadowRoot.getElementById("alias-dialog");
+    const aliasDialog = this.shadowRoot.getElementById('alias-dialog');
     if (aliasDialog) {
-      this.fireTextareaAutosize();
-      aliasDialog.setAttribute("open", "");
+      aliasDialog.setAttribute('open', '');
     }
   }
 
   public hideAliasDialog() {
-    const aliasDialog = this.shadowRoot.getElementById("alias-dialog");
+    const aliasDialog = this.shadowRoot.getElementById('alias-dialog');
     this.editFeature = null;
     this.editFeatureAliases = null;
     if (aliasDialog) {
-      aliasDialog.removeAttribute("open");
+      aliasDialog.removeAttribute('open');
     }
 
     this.requestUpdate();
   }
 
   private getEndpoint(): string {
-    return this.endpoint + (!this.endpoint.endsWith("/") ? "/" : "");
+    return this.endpoint + (!this.endpoint.endsWith('/') ? '/' : '');
   }
 
   private handleDialogClick(evt: CustomEvent) {
     const button = evt.detail.button;
-    if (button.name === "Save") {
+    if (button.name === 'Save') {
       const textarea = this.shadowRoot.getElementById(
         this.editFeature.osm_id
       ) as TextInput;
       const aliases = textarea.inputElement.value;
       const payload = { osm_id: this.editFeature.osm_id, aliases };
       postUrl(
-        this.getEndpoint() + "boundaries/" + this.editFeature.osm_id + "/",
+        this.getEndpoint() + 'boundaries/' + this.editFeature.osm_id + '/',
         payload
-      ).then((response: AxiosResponse) => {
+      ).then(response => {
         this.fetchFeature();
       });
     }
 
-    if (button.name === "Cancel") {
+    if (button.name === 'Cancel') {
       this.hideAliasDialog();
     }
   }
 
-  private getOptions(response: AxiosResponse) {
-    return response.data.filter((option: any) => option.level > 0);
+  private getOptions(response: WebResponse) {
+    return response.json.filter((option: any) => option.level > 0);
   }
 
   private getOptionsComplete(
     newestOptions: FeatureProperties[],
-    response: AxiosResponse
+    response: WebResponse
   ) {
     return newestOptions.length === 0;
   }
@@ -374,11 +354,11 @@ export default class AliasEditor extends LitElement {
     selected: boolean
   ): TemplateResult {
     const labelStyles = {
-      marginTop: "3px",
-      marginRight: "3px"
+      marginTop: '3px',
+      marginRight: '3px',
     };
 
-    const aliasList = option.aliases.split("\n");
+    const aliasList = option.aliases.split('\n');
     const aliases = aliasList.map((alias: string) =>
       alias.trim().length > 0
         ? html`
@@ -389,7 +369,7 @@ export default class AliasEditor extends LitElement {
         : null
     );
     return html`
-      <div class="path">${option.path.replace(/>/gi, "‣")}</div>
+      <div class="path">${option.path.replace(/>/gi, '‣')}</div>
       <div class="aliases">${aliases}</div>
     `;
   }
@@ -418,7 +398,9 @@ export default class AliasEditor extends LitElement {
             .renderOptionDetail=${this.renderOptionDetail}
             .getOptions=${this.getOptions}
             .isComplete=${this.getOptionsComplete}
+            .isMatch=${this.isMatch}
             @temba-selection=${this.handleSearchSelection.bind(this)}
+            queryParam="q"
             searchable
           ></temba-select>
         </div>
