@@ -2,15 +2,16 @@ temba-components is a suite of ui widgets used by various RapidPro projects.
 
 Some of the components:
 
-- temba-select - Advanced select widget with support for remote fetching and filtering. Also supports multi selection with the ability to enter expressions.
-- temba-completion - Completion widget for completing RP-style expressions
-- temba-textinput - Standard text field with baked in support for date picking
-- temba-charcount - SMS segment counter attachable to elements for monitoring
-- temba-store - In page cache for RP core data types
-- temba-options - Generic option list with configurable rendering, remote list paging, and keyboard support. Used by temba-select, temba-completion, and temba-list
-- temba-list - Block rendered option list
-- temba-dialog - Basic modal
-- temba-modax - Fancier modal that fetches and submits html rendered forms and is triggered by a slot element
+- `<temba-select/>` Advanced select widget with support for remote fetching and filtering. Also supports multi selection with the ability to enter expressions.
+
+- `<temba-completion/>` Completion widget for completing RP-style expressions
+- `<temba-textinput/>` - Standard text field with baked in support for date picking
+- `<temba-charcount/>` - SMS segment counter attachable to elements for monitoring
+- `<temba-store/>` - In page cache for RP core data types
+- `<temba-options/>` - Generic option list with configurable rendering, remote list paging, and keyboard support. Used by temba-select, temba-completion, and temba-list
+- `<temba-list/>` - Block rendered option list
+- `<temba-dialog/>` - Basic modal
+- `<temba-modax/>` - Fancier modal that fetches and submits html rendered forms and is triggered by a slot element
 - .. and many more
 
 ## Install
@@ -31,8 +32,8 @@ To view the interactive demo, use start.
 
 ## Testing
 
-All tests live under /test. When running tests, some tests capture screenshots for pixel
-comparision under /screenshots.
+All tests live under [/test](test). When running tests, some tests capture screenshots for pixel
+comparision under [/screenshots](screenshots/truth).
 
 ```bash
 % yarn test
