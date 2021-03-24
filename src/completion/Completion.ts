@@ -78,6 +78,9 @@ export class Completion extends FormElement {
   @property({ type: Boolean })
   session: boolean;
 
+  @property({ type: Boolean })
+  submitOnEnter: boolean = false;
+
   @property({ type: Object })
   anchorPosition: Position = { left: 0, top: 0 };
 
@@ -212,6 +215,14 @@ export class Completion extends FormElement {
     }
   }
 
+  public click() {
+    super.click();
+    const input = this.shadowRoot.querySelector('temba-textinput') as TextInput;
+    if (input) {
+      input.click();
+    }
+  }
+
   public render(): TemplateResult {
     const anchorStyles = this.anchorPosition
       ? {
@@ -241,7 +252,7 @@ export class Completion extends FormElement {
             @blur=${this.handleOptionCanceled}
             .value=${this.value}
             ?textarea=${this.textarea}
-            ?ignoreSubmit=${true}
+            ?submitOnEnter=${this.submitOnEnter}
           >
           </temba-textinput>
           <temba-options

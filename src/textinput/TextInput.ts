@@ -143,7 +143,7 @@ export class TextInput extends FormElement {
   loading: boolean = true;
 
   @property({ type: Boolean })
-  ignoreSubmit: boolean = false;
+  submitOnEnter: boolean = true;
 
   @property()
   onBlur: any;
@@ -362,12 +362,21 @@ export class TextInput extends FormElement {
         @input=${this.handleInput}
         @blur=${this.blur}
         @keydown=${(e: KeyboardEvent) => {
-          if (e.keyCode == 13) {
-            if (!this.ignoreSubmit) {
+          if (e.key === 'Enter') {
+            const input = this;
+
+            if (this.submitOnEnter) {
+              const parentModax = input.getParentModax();
+              const parentForm = !parentModax ? input.getParentForm() : null;
+
               this.value = this.values[0];
               this.fireEvent('change');
 
-              const input = this;
+              // if we don't have something to submit then bail
+              if (!parentModax && !parentForm) {
+                return false;
+              }
+
               input.blur();
 
               // look for a form to submit
@@ -375,6 +384,8 @@ export class TextInput extends FormElement {
                 // first, look for a modax that contains us
                 const modax = input.getParentModax();
                 if (modax) {
+                  input.blur();
+
                   modax.submit();
                 } else {
                   // otherwise, just look for a vanilla submit button
@@ -398,7 +409,7 @@ export class TextInput extends FormElement {
           }
         }}
         placeholder=${this.placeholder}
-        value="${this.value}"
+        .value="${this.value}"
         .disabled=${this.disabled}
       />
     `;

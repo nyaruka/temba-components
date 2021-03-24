@@ -43,6 +43,7 @@ import {
   timeSince,
 } from '../utils';
 import { TextInput } from '../textinput/TextInput';
+import { Completion } from '../completion/Completion';
 
 export class ContactChat extends RapidElement {
   @property({ type: Object })
@@ -380,7 +381,7 @@ export class ContactChat extends RapidElement {
       }
 
       temba-completion {
-        --textarea-height: 75px;
+        --textarea-height: 2em;
       }
 
       .attn {
@@ -646,6 +647,16 @@ export class ContactChat extends RapidElement {
           this.reset();
           this.endpoint = endpoint;
         }
+      }
+
+      // focus our completion on load
+      const completion = this.shadowRoot.querySelector(
+        'temba-completion'
+      ) as Completion;
+      if (completion) {
+        window.setTimeout(() => {
+          completion.click();
+        }, 0);
       }
     }
 
@@ -1107,7 +1118,7 @@ export class ContactChat extends RapidElement {
     }, 500);
   }
 
-  private handleSend(event: MouseEvent) {
+  private handleSend(event: Event) {
     postForm(`/api/v2/broadcasts.json`, {
       contacts: [this.ticket.contact.uuid],
       text: this.currentChat,
@@ -1131,17 +1142,11 @@ export class ContactChat extends RapidElement {
           this.scheduleRefresh(500);
         }
       })
-      .catch(() => {
+      .catch(err => {
         // error message dialog?
+        console.error(err);
       })
-      .finally(() => {
-        // refocus our chatbox
-        const chatbox = this.shadowRoot.querySelector(
-          'temba-completion'
-        ) as TextInput;
-
-        chatbox.click();
-      });
+      .finally(() => {});
   }
 
   private handleDetailSlider(): void {
@@ -1210,23 +1215,15 @@ export class ContactChat extends RapidElement {
             ${this.ticket
               ? html` <div class="chatbox">
                   <temba-completion
-                    textarea
                     @change=${this.handleChatChange}
                     .value=${this.currentChat}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        this.handleSend(e);
+                      }
+                    }}
+                    textarea
                   ></temba-completion>
-
-                  <div
-                    style="display:flex; align-items: flex-end; flex-direction: column"
-                  >
-                    <temba-button
-                      id="send-button"
-                      name="${this.ticket && this.ticket.status === 'C'
-                        ? 'Send and Reopen'
-                        : 'Send'}"
-                      ?disabled=${this.currentChat.length === 0 ? true : false}
-                      @click=${this.handleSend}
-                    ></temba-button>
-                  </div>
                 </div>`
               : null}
           </div>
