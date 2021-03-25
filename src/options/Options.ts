@@ -24,7 +24,6 @@ export class Options extends RapidElement {
     return css`
       .options-container {
         visibility: hidden;
-        position: fixed;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg-focused);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
@@ -34,6 +33,19 @@ export class Options extends RapidElement {
         border-radius: var(--curvature-widget);
         overflow: hidden;
         margin-top: var(--options-margin-top);
+      }
+
+      .anchored {
+        position: fixed;
+      }
+
+      :host([block]) .options-container {
+        border: none;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+          0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        height: 100%;
+        z-index: 9000;
+        visibility: visible;
       }
 
       .options {
@@ -81,15 +93,6 @@ export class Options extends RapidElement {
 
       :host([block]) {
         position: relative;
-      }
-
-      :host([block]) .options-container {
-        position: relative;
-        border: none;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-          0 1px 2px 0 rgba(0, 0, 0, 0.03);
-        height: 100%;
-        z-index: 9000;
       }
 
       :host([block]) .options {
@@ -492,13 +495,16 @@ export class Options extends RapidElement {
       'margin-top': `${vertical}px`,
     };
 
-    const optionsStyle = {
-      width: `${this.width}px`,
-    };
+    const optionsStyle = {};
+    if (this.width) {
+      optionsStyle['width'] = `${this.width}px`;
+    }
 
     const classes = getClasses({
+      'options-container': true,
       show: this.visible,
       top: this.poppedTop,
+      anchored: !this.block,
     });
 
     const classesInner = getClasses({
@@ -508,10 +514,7 @@ export class Options extends RapidElement {
     const options = this.options || [];
 
     return html`
-      <div
-        class="options-container ${classes}"
-        style=${styleMap(containerStyle)}
-      >
+      <div class=${classes} style=${styleMap(containerStyle)}>
         <div
           @scroll=${throttle(this.handleInnerScroll, 100)}
           class="${classesInner}"
