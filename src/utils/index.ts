@@ -1,4 +1,5 @@
 import { html, TemplateResult } from 'lit-html';
+import { SIMULATED_WEB_SLOWNESS } from '../contacts/helpers';
 
 export interface Asset {
   key?: string;
@@ -132,23 +133,24 @@ export interface WebResponse {
   status: number;
   url?: string;
   headers: Headers;
+  controller?: AbortController;
 }
 
 // this.cancelToken.token
 export const getUrl = (
   url: string,
-  cancelToken: any = null,
+  controller: AbortController = null,
   pjax: boolean = false
 ): Promise<WebResponse> => {
-  if (cancelToken) {
-    // config.cancelToken = cancelToken;
-  }
-
   return new Promise<WebResponse>((resolve, reject) => {
     const options = {
       method: 'GET',
       headers: getHeaders(pjax),
     };
+
+    if (controller) {
+      options['signal'] = controller.signal;
+    }
 
     fetch(url, options)
       .then(response => {
@@ -162,6 +164,7 @@ export const getUrl = (
             json,
             status: response.status,
             headers: response.headers,
+            controller,
           });
         });
       })

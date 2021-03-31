@@ -152,7 +152,7 @@ export const fetchContact = (endpoint: string): Promise<Contact> => {
   });
 };
 
-// let pendingRequests: CancelTokenSource[] = [];
+let pendingRequests: AbortController[] = [];
 
 export const fetchContactHistory = (
   reset: boolean,
@@ -162,16 +162,15 @@ export const fetchContactHistory = (
   limit: number = undefined
 ): Promise<ContactHistoryPage> => {
   if (reset) {
-    /* pendingRequests.forEach(token => {
-      token.cancel();
+    pendingRequests.forEach(controller => {
+      controller.abort();
     });
-    pendingRequests = [];*/
+    pendingRequests = [];
   }
 
   return new Promise<ContactHistoryPage>((resolve, reject) => {
-    // const CancelToken = axios.CancelToken;
-    // const cancelToken = CancelToken.source();
-    // pendingRequests.push(cancelToken);
+    const controller = new AbortController();
+    pendingRequests.push(controller);
 
     let url = endpoint;
     if (before) {
@@ -182,12 +181,14 @@ export const fetchContactHistory = (
       url += `&after=${after}`;
     }
 
-    getUrl(url)
+    getUrl(url, controller)
       .then((response: WebResponse) => {
-        // pendingRequests = pendingRequests.filter((token: CancelTokenSource) => {
-        // token.token !== response.config.cancelToken;
-        // });
-
+        // on success, remove our abort controller
+        pendingRequests = pendingRequests.filter(
+          (controller: AbortController) => {
+            return response.controller === controller;
+          }
+        );
         resolve(response.json as ContactHistoryPage);
       })
       .catch(error => {
