@@ -12,9 +12,12 @@ import { Store } from '../store/Store';
 import { fetchContact } from './helpers';
 
 export class ContactDetails extends RapidElement {
-  // display name comes from the tickets endpoint
-  @property({ type: Object })
-  ticket: ContactTicket;
+  // optional display name
+  @property({ type: String })
+  name: string;
+
+  @property({ type: String })
+  uuid: string;
 
   @property({ attribute: false, type: Object })
   contact: Contact;
@@ -199,7 +202,7 @@ export class ContactDetails extends RapidElement {
     const store: Store = document.querySelector('temba-store');
     if (this.contact) {
       return html`<div class="contact">
-        <div class="name">${this.contact.name || this.ticket.contact.name}</div>
+        <div class="name">${this.name || this.contact.name}</div>
         <div class="wrapper">
           ${this.showGroups
             ? html`<div>
@@ -223,7 +226,6 @@ export class ContactDetails extends RapidElement {
                     .slice(0, this.expandFields ? 255 : 3)
                     .map((key: string) => {
                       let value = this.contact.fields[key];
-
                       if (value) {
                         if (isDate(value)) {
                           value = timeSince(new Date(value));

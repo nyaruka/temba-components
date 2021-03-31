@@ -1,0 +1,273 @@
+{
+  "has_older": true,
+  "recent_only": false,
+  "next_before": 1617135091567814,
+  "next_after": 1609359091567814,
+  "start_date": "2019-09-22",
+  "events": [
+    {
+      "type": "msg_created",
+      "created_on": "2021-03-31T00:30:00.585471+00:00",
+      "msg": {
+        "uuid": "70e2e0bb-418a-410c-b90f-10374a0c8caf",
+        "id": 1485,
+        "urn": "tel:+250788123123",
+        "text": "Hey John, just checking in on you",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "status": "W",
+      "logs_url": "/channels/channellog/read/1479/"
+    },
+    {
+      "type": "flow_exited",
+      "created_on": "2021-03-30T22:20:35.573809+00:00",
+      "flow": {
+        "uuid": "d076d716-8071-417e-b188-d9746db223a1",
+        "name": "Favorites"
+      },
+      "status": "C"
+    },
+    {
+      "type": "run_result_changed",
+      "created_on": "2021-03-30T15:20:35.573533-07:00",
+      "step_uuid": "6b384ebe-5831-4bef-9db9-fef4941c84c5",
+      "name": "Result",
+      "value": "0",
+      "category": "Failure",
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "error",
+      "created_on": "2021-03-30T15:20:35.573515-07:00",
+      "step_uuid": "6b384ebe-5831-4bef-9db9-fef4941c84c5",
+      "text": "DTOne API request failed: Account not found. Please enter a correct login and password (995)",
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "airtime_transferred",
+      "created_on": "2021-03-30T22:20:35.573511+00:00",
+      "sender": "tel:123456",
+      "recipient": "tel:+250788123123?channel=8a81e9e0-10a0-4319-9b00-ce723cfa8303&id=9951&priority=1000",
+      "currency": null,
+      "desired_amount": "0.00",
+      "actual_amount": "0.00",
+      "logs_url": "/airtimetransfer/read/2/"
+    },
+    {
+      "type": "msg_created",
+      "created_on": "2021-03-30T22:20:33.924847+00:00",
+      "msg": {
+        "uuid": "37507bdd-9087-4782-828d-ad5c17c14f72",
+        "id": 1484,
+        "urn": "tel:+250788123123",
+        "text": "No problem, we are all done then!",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "status": "W",
+      "logs_url": "/channels/channellog/read/1478/"
+    },
+    {
+      "type": "run_result_changed",
+      "created_on": "2021-03-30T15:20:33.924827-07:00",
+      "step_uuid": "9f1a43c1-cbc8-4513-a223-18180f28a95a",
+      "name": "Name",
+      "value": "no",
+      "category": "Other",
+      "input": "no",
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "msg_received",
+      "created_on": "2021-03-30T22:20:33.801814+00:00",
+      "msg": {
+        "uuid": "b872ae96-28b1-4858-95c5-b7b662ccd08c",
+        "id": 1483,
+        "urn": "tel:+250788123123",
+        "text": "no",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "msg_type": "F",
+      "logs_url": "/channels/channellog/read/1477/"
+    },
+    {
+      "type": "msg_created",
+      "created_on": "2021-03-30T22:20:31.933653+00:00",
+      "msg": {
+        "uuid": "c095a764-590a-4359-ba2a-c626f4e9baeb",
+        "id": 1482,
+        "urn": "tel:+250788123123",
+        "text": "Mmmmm... delicious Primus. If only they made blue Primus! Do you want to set your name?",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "status": "W",
+      "logs_url": "/channels/channellog/read/1476/"
+    },
+    {
+      "type": "run_result_changed",
+      "created_on": "2021-03-30T15:20:31.933494-07:00",
+      "step_uuid": "5959d883-93f4-4996-beb9-c153f5605f90",
+      "name": "Beer",
+      "value": "primus",
+      "category": "Primus",
+      "input": "primus",
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "msg_received",
+      "created_on": "2021-03-30T22:20:31.656303+00:00",
+      "msg": {
+        "uuid": "925995ad-fa5f-4f01-b8f1-050703f333e0",
+        "id": 1481,
+        "urn": "tel:+250788123123",
+        "text": "primus",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "msg_type": "F",
+      "logs_url": "/channels/channellog/read/1475/"
+    },
+    {
+      "type": "msg_created",
+      "created_on": "2021-03-30T22:20:29.397529+00:00",
+      "msg": {
+        "uuid": "9f0b200a-6e24-451d-a7cb-06ef2518d1e5",
+        "id": 1480,
+        "urn": "tel:+250788123123",
+        "text": "Good choice, I like Blue too! What is your favorite beer?",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "status": "W",
+      "logs_url": "/channels/channellog/read/1474/"
+    },
+    {
+      "type": "run_result_changed",
+      "created_on": "2021-03-30T15:20:29.397464-07:00",
+      "step_uuid": "5b46790e-fedc-4594-9c02-aa0812ff3488",
+      "name": "Color",
+      "value": "blue",
+      "category": "Blue",
+      "input": "blue",
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "msg_received",
+      "created_on": "2021-03-30T22:20:29.277186+00:00",
+      "msg": {
+        "uuid": "a702b6a6-3035-433b-9029-1a8dfa0c0194",
+        "id": 1479,
+        "urn": "tel:+250788123123",
+        "text": "blue",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "msg_type": "F",
+      "logs_url": "/channels/channellog/read/1473/"
+    },
+    {
+      "type": "run_result_changed",
+      "created_on": "2021-03-30T15:20:26.704509-07:00",
+      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
+      "name": "A new result",
+      "value": "Some Value",
+      "category": "",
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "contact_groups_changed",
+      "created_on": "2021-03-30T15:20:26.704497-07:00",
+      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
+      "groups_removed": [
+        {
+          "uuid": "b13e01ec-6c83-4349-b153-a2e48d0fd394",
+          "name": "aaaa"
+        }
+      ],
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "contact_groups_changed",
+      "created_on": "2021-03-30T15:20:26.704495-07:00",
+      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
+      "groups_added": [
+        {
+          "uuid": "b13e01ec-6c83-4349-b153-a2e48d0fd394",
+          "name": "aaaa"
+        }
+      ],
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "input_labels_added",
+      "created_on": "2021-03-30T15:20:26.704494-07:00",
+      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
+      "input_uuid": "89109a8c-2895-46b7-aa44-170570de7d6a",
+      "labels": [
+        {
+          "uuid": "825e2cef-2465-4467-a315-f10a83b6d8aa",
+          "name": "A label"
+        }
+      ],
+      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+    },
+    {
+      "type": "msg_created",
+      "created_on": "2021-03-30T22:20:26.704491+00:00",
+      "msg": {
+        "uuid": "eef09c0f-24dc-426c-8050-50795dca8e8b",
+        "id": 1478,
+        "urn": "tel:+250788123123",
+        "text": "What is your favorite color?",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "status": "W",
+      "logs_url": "/channels/channellog/read/1472/"
+    },
+    {
+      "type": "flow_entered",
+      "created_on": "2021-03-30T22:20:26.704467+00:00",
+      "flow": {
+        "uuid": "d076d716-8071-417e-b188-d9746db223a1",
+        "name": "Favorites"
+      },
+      "logs_url": null
+    },
+    {
+      "type": "msg_received",
+      "created_on": "2021-03-30T22:20:26.557388+00:00",
+      "msg": {
+        "uuid": "89109a8c-2895-46b7-aa44-170570de7d6a",
+        "id": 1477,
+        "urn": "tel:+250788123123",
+        "text": "fav",
+        "channel": {
+          "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
+          "name": "SMS Channel"
+        }
+      },
+      "msg_type": "F",
+      "logs_url": "/channels/channellog/read/1471/"
+    }
+  ]
+}

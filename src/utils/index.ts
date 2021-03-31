@@ -394,8 +394,16 @@ const DAY = HOUR * 24;
 const WEEK = DAY * 7;
 const MONTH = DAY * 30;
 
+export class Stubbable {
+  public getCurrentDate() {
+    return new Date();
+  }
+}
+
+export const stubbable = new Stubbable();
+
 export const timeSince = (date: Date) => {
-  const now = new Date();
+  const now = stubbable.getCurrentDate();
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (secondsPast < 60) {

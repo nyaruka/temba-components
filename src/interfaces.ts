@@ -50,8 +50,6 @@ export interface ContactTicket {
     name: string;
     created_on: Date;
     last_seen_on: Date;
-    last_msg: Msg;
-    direction: string;
   };
 }
 
@@ -67,6 +65,9 @@ export interface Contact {
   modified_on: Date;
   created_on: Date;
   last_seen_on: Date;
+
+  last_msg?: Msg;
+  direction?: string;
 }
 
 export interface FeatureProperties {
