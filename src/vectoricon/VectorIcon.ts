@@ -39,7 +39,6 @@ export class VectorIcon extends LitElement {
       }
 
       svg {
-        display: block;
         fill: var(--icon-color);
         transform: rotate(360deg);
         transition: transform 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55),

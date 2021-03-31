@@ -249,7 +249,7 @@ export class ContactChat extends RapidElement {
         opacity: 0;
         float: right;
         margin-top: -1em !important;
-        margin-right: -1em;
+        margin-right: -1em !important;
         fill: #f2f2f2;
         transition: opacity 200ms ease-in;
       }
@@ -349,25 +349,55 @@ export class ContactChat extends RapidElement {
         flex-grow: 1;
       }
 
-      .details {
-        --icon-color: rgba(0, 0, 0, 0.4);
-        font-size: 75%;
-        color: rgba(0, 0, 0, 0.4);
-        padding-top: 0.3em;
-        padding-right: 3px;
+      .msg-summary {
         display: flex;
+        line-height: 0.5;
+
+        font-size: 80%;
+        color: rgba(0, 0, 0, 0.6);
+        padding: 6px 3px;
+      }
+
+      .msg-summary temba-icon[name='log'] {
+        --icon-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .msg-summary temba-icon[name='log']:hover {
+        --icon-color: var(--color-link-primary-hover);
+        cursor: pointer;
+      }
+
+      .msg-summary temba-icon.error[name='log'] {
+        --icon-color: rgba(var(--error-rgb), 0.75);
+      }
+
+      .msg-summary temba-icon.error[name='log']:hover {
+        --icon-color: var(--color-error);
+        cursor: pointer;
+      }
+
+      .msg-summary temba-icon[name='megaphone'] {
+        --icon-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .msg-summary temba-icon {
+        padding: 0px 2px;
       }
 
       .time {
-        --icon-color: rgba(0, 0, 0, 0.4);
-        font-size: 75%;
-        color: rgba(0, 0, 0, 0.4);
+        padding: 0.3em 1px;
+      }
+
+      .status {
         padding: 0.3em 3px;
       }
 
-      .event.msg_created .time,
-      .event.broadcast_created .time {
-        text-align: right;
+      .separator {
+        padding: 0.3em 3px;
+      }
+
+      .recipients {
+        padding: 0.3em 3px;
       }
 
       .chatbox {
@@ -376,7 +406,7 @@ export class ContactChat extends RapidElement {
         border-top: 3px solid #e1e1e1;
       }
 
-      temba-icon {
+      .verbose temba-icon {
         margin-right: 0.75em;
       }
 
@@ -435,6 +465,14 @@ export class ContactChat extends RapidElement {
 
       .toolbar.closed {
         box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, 0);
+      }
+
+      .icon-link {
+        display: inline !important;
+      }
+
+      temba-icon[name='alert-triangle'] {
+        --icon-color: var(--color-error);
       }
 
       temba-contact-details {
@@ -811,12 +849,53 @@ export class ContactChat extends RapidElement {
   }
 
   public renderMsgEvent(event: MsgEvent): TemplateResult {
+    const isInbound = event.type === Events.MESSAGE_RECEIVED;
+    const isError = event.status === 'E' || event.status === 'F';
+
+    if (true) {
+      return html`<div style="display:flex;flex-direction:column">
+        <div class="msg">${event.msg.text}</div>
+        <div
+          class="msg-summary"
+          style="flex-direction:row${isInbound ? '-reverse' : ''}"
+        >
+          <div style="flex-grow:1"></div>
+          ${event.logs_url
+            ? html`
+                <a class="icon-link" target="_logs" href="${event.logs_url}">
+                  <temba-icon
+                    name="log"
+                    class="${isError ? 'error' : ''}"
+                  ></temba-icon
+                ></a>
+              `
+            : isError
+            ? html`<temba-icon
+                title="Message delivery error"
+                name="alert-triangle"
+              ></temba-icon>`
+            : null}
+          ${event.recipient_count > 1
+            ? html`<temba-icon size="1" name="megaphone"></temba-icon>
+                <div class="recipients">${event.recipient_count} contacts</div>
+                <div class="separator">•</div>`
+            : null}
+          <div class="time">${timeSince(new Date(event.created_on))}</div>
+        </div>
+      </div>`;
+    }
+
     return html`
       ${event.type === Events.MESSAGE_RECEIVED
         ? html`
-            <div>
+            <div style="display:flex;flex-direction:column">
               <div class="msg">${event.msg.text}</div>
-              <div class="time">${timeSince(new Date(event.created_on))}</div>
+
+              <div style="display:flex;flex-direction:row-reverse">
+                <div class="status">sent</div>
+                <div class="">•</div>
+                <div class="time">${timeSince(new Date(event.created_on))}</div>
+              </div>
             </div>
           `
         : html`
@@ -1072,8 +1151,10 @@ export class ContactChat extends RapidElement {
     }
 
     if (this.currentChat === '__debug') {
-      this.debug = !this.debug;
+      chat.value = '';
       this.currentChat = '';
+      this.debug = !this.debug;
+      this.requestUpdate();
     }
 
     if (this.currentChat === '__clear') {

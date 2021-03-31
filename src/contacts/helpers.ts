@@ -59,6 +59,7 @@ export interface MsgEvent extends ContactEvent {
   msg: Msg;
   status: string;
   logs_url: string;
+  msg_type: string;
 
   recipient_count?: number;
 }
