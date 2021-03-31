@@ -406,8 +406,13 @@ export class ContactChat extends RapidElement {
         border-top: 3px solid #e1e1e1;
       }
 
-      .verbose temba-icon {
+      .verbose temba-icon,
+      .flows temba-icon {
         margin-right: 0.75em;
+      }
+
+      temba-icon[name='check'] {
+        margin-top: 3px;
       }
 
       temba-completion {
