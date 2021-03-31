@@ -7,8 +7,7 @@ import {
 } from 'lit-element';
 import { Contact, ContactTicket, Group } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { fetchResults, isDate, timeSince } from '../utils';
-import { Button } from '../button/Button';
+import { isDate, timeSince } from '../utils';
 import { Store } from '../store/Store';
 import { fetchContact } from './helpers';
 
@@ -156,9 +155,10 @@ export class ContactDetails extends RapidElement {
 
       fetchContact(this.endpoint).then((contact: Contact) => {
         this.contact = contact;
-        this.fields = Object.keys(this.contact.fields).filter(
-          (key: string) => !!this.contact.fields[key]
-        );
+        this.fields = Object.keys(this.contact.fields).filter((key: string) => {
+          const hasField = !!this.contact.fields[key];
+          return hasField && store.getContactField(key).pinned;
+        });
 
         this.contact.groups.forEach((group: Group) => {
           group.is_dynamic = store.isDynamicGroup(group.uuid);
@@ -192,23 +192,30 @@ export class ContactDetails extends RapidElement {
   @property({ type: Boolean })
   expandFields: boolean = false;
 
+  @property({ type: Boolean })
+  showGroups: boolean = false;
+
   public render(): TemplateResult {
     const store: Store = document.querySelector('temba-store');
     if (this.contact) {
       return html`<div class="contact">
         <div class="name">${this.contact.name || this.ticket.contact.name}</div>
         <div class="wrapper">
-          <div>
-            ${this.contact.groups.map((group: Group) => {
-              return html`<a href="/contact/filter/${group.uuid}/" target="_"
-                ><div class="group-label" style="cursor:pointer">
-                  ${group.is_dynamic
-                    ? html`<temba-icon name="atom"></temba-icon>`
-                    : null}${group.name}
-                </div></a
-              >`;
-            })}
-          </div>
+          ${this.showGroups
+            ? html`<div>
+                ${this.contact.groups.map((group: Group) => {
+                  return html`<a
+                    href="/contact/filter/${group.uuid}/"
+                    target="_"
+                    ><div class="group-label" style="cursor:pointer">
+                      ${group.is_dynamic
+                        ? html`<temba-icon name="atom"></temba-icon>`
+                        : null}${group.name}
+                    </div></a
+                  >`;
+                })}
+              </div>`
+            : html``}
           ${this.fields.length > 0
             ? html` <div class="fields-wrapper">
                 <div class="fields">
