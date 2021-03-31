@@ -21,7 +21,7 @@ jobs:
         if: failure()
         with:
           name: screenshots
-          path: target/
+          path: screenshots/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.4
         with:
