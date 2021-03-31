@@ -31,7 +31,7 @@ const getHistoryClip = (ele: ContactHistory) => {
 
 // stub our current date for consistent screenshots
 sinon.stub(stubbable, 'getCurrentDate').callsFake(() => {
-  return new Date('March 31, 2021');
+  return new Date('2021-03-31T00:00:00.000-00:00');
 });
 
 describe('temba-contact-history', () => {
