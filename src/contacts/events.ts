@@ -304,7 +304,8 @@ export const getEventStyles = () => {
     }
 
     .verbose temba-icon,
-    .flows temba-icon {
+    .flows temba-icon,
+    .tickets temba-icon {
       margin-right: 0.75em;
     }
 
@@ -350,6 +351,8 @@ export const getEventGroupType = (event: ContactEvent) => {
     case Events.MESSAGE_CREATED:
     case Events.MESSAGE_RECEIVED:
       return 'messages';
+    case Events.TICKET_OPENED:
+      return 'tickets';
   }
   return 'verbose';
 };
@@ -505,9 +508,7 @@ export const renderTicketOpened = (
   return html`
     <temba-icon name="inbox"></temba-icon>
     <div class="description">
-      Opened ticket on
-      <div class="attn">${event.ticket.ticketer.name}</div>
-      with subject
+      Opened ticket with subject
       <div class="attn">${event.ticket.subject}</div>
     </div>
   `;

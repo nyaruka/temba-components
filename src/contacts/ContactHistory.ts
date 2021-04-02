@@ -3,7 +3,7 @@ import { html, TemplateResult } from 'lit-html';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { getClasses, throttle } from '../utils';
-import { ContactChat } from './ContactChat';
+import ResizeObserver from 'resize-observer-polyfill';
 import {
   getEventGroupType,
   getEventStyles,
@@ -43,6 +43,10 @@ import {
   WebhookEvent,
 } from './helpers';
 
+const isStickyEvent = (event: ContactEvent) => {
+  return event.type === Events.TICKET_OPENED;
+};
+
 export class ContactHistory extends RapidElement {
   public httpComplete: Promise<void | ContactHistoryPage>;
 
@@ -59,6 +63,7 @@ export class ContactHistory extends RapidElement {
         overflow-x: hidden;
         display: flex;
         flex-direction: column;
+        align-items: stretch;
       }
 
       temba-loading {
@@ -66,6 +71,45 @@ export class ContactHistory extends RapidElement {
         margin-top: 0.025em;
         position: absolute;
         z-index: 1000;
+      }
+
+      .sticky-bin {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        margin: -1em;
+        z-index: 10000;
+        border-top-left-radius: var(--curvature);
+        overflow: hidden;
+        background: rgba(40, 40, 40, 0.9);
+        color: #fff;
+        box-shadow: 0 3px 10px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      .sticky-bin temba-icon {
+        margin-right: 0.75em;
+      }
+
+      .sticky {
+        display: flex;
+        margin: 1em -2em;
+        padding: 1em 2em;
+        color: #fff;
+        background: rgba(40, 40, 40, 0.9);
+      }
+
+      .sticky.pinned {
+        visibility: hidden;
+      }
+
+      .sticky-bin .event {
+        margin: 0;
+        padding: 1em 2em;
+        border-radius: 0px;
+      }
+
+      .sticky .event {
+        margin-bottom: 0;
       }
     `;
   }
@@ -100,6 +144,19 @@ export class ContactHistory extends RapidElement {
   lastRefreshAdded: number;
   refreshTimeout: any = null;
   empty = false;
+
+  public firstUpdated(changedProperties: Map<string, any>) {
+    super.firstUpdated(changedProperties);
+    const stickyBin = this.getDiv('.sticky-bin');
+    const resizer = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const eventContainer = entry.contentRect;
+        stickyBin.style.width =
+          eventContainer.width + eventContainer.left + 15 + 'px';
+      }
+    });
+    resizer.observe(this);
+  }
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
@@ -338,6 +395,8 @@ export class ContactHistory extends RapidElement {
     this.complete = false;
     this.nextBefore = null;
     this.nextAfter = null;
+
+    this.getDiv('.sticky-bin').innerHTML = '';
   }
 
   private handleEventGroupShow(event: MouseEvent) {
@@ -371,6 +430,32 @@ export class ContactHistory extends RapidElement {
 
   private handleEventScroll(event: MouseEvent) {
     const events = this.shadowRoot.host;
+
+    // check if any of our sticky elements are off the screen
+    const stickies = this.shadowRoot.querySelectorAll('.sticky');
+    const stickyBin = this.getDiv('.sticky-bin');
+
+    stickies.forEach((sticky: HTMLDivElement) => {
+      const scrollBoundary = this.scrollTop + stickyBin.clientHeight + 136;
+
+      if (!sticky.classList.contains('pinned')) {
+        const eventElement = sticky.firstElementChild as HTMLDivElement;
+
+        if (scrollBoundary > sticky.offsetTop) {
+          sticky.style.height = eventElement.clientHeight + 'px';
+          sticky.classList.add('pinned');
+          (sticky as any).eventElement = eventElement;
+          stickyBin.appendChild(eventElement);
+        }
+      } else {
+        const eventElement = (sticky as any).eventElement;
+        if (scrollBoundary < sticky.offsetTop + sticky.offsetHeight) {
+          sticky.appendChild(eventElement);
+          sticky.classList.remove('pinned');
+        }
+      }
+    });
+
     if (events.scrollTop <= SCROLL_THRESHOLD) {
       if (this.eventGroups.length > 0 && !this.fetching && !this.complete) {
         this.fetching = true;
@@ -461,6 +546,7 @@ export class ContactHistory extends RapidElement {
       ${this.fetching
         ? html`<temba-loading units="5" size="10"></temba-loading>`
         : html`<div style="height:2em"></div>`}
+      <div class="sticky-bin"></div>
       ${this.eventGroups.map((eventGroup: EventGroup, index: number) => {
         const grouping = getEventGroupType(eventGroup.events[0]);
         const groupIndex = this.eventGroups.length - index - 1;
@@ -495,12 +581,18 @@ export class ContactHistory extends RapidElement {
               `
             : null}
           ${eventGroup.events.map((event: ContactEvent) => {
-            return html`
+            const renderedEvent = html`
               <div class="event ${event.type}">${this.renderEvent(event)}</div>
               ${this.debug
                 ? html`<pre>${JSON.stringify(event, null, 2)}</pre>`
                 : null}
             `;
+
+            if (isStickyEvent(event)) {
+              return html`<div class="sticky">${renderedEvent}</div>`;
+            }
+
+            return renderedEvent;
           })}
         </div>`;
       })}

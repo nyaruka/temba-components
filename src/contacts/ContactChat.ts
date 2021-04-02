@@ -1,7 +1,7 @@
 import { css, html, property, TemplateResult } from 'lit-element';
 import { RapidElement } from '../RapidElement';
 import { Contact } from '../interfaces';
-import { postForm } from '../utils';
+import { postForm, postJSON, postUrl } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
@@ -40,6 +40,8 @@ export class ContactChat extends RapidElement {
         flex-direction: column;
         height: 100%;
         background: #fff;
+        overflow: hidden;
+        border-radius: var(--curvature);
       }
 
       .chatbox {
@@ -200,7 +202,7 @@ export class ContactChat extends RapidElement {
   }
 
   private handleSend(event: Event) {
-    postForm(`/api/v2/broadcasts.json`, {
+    postJSON(`/api/v2/broadcasts.json`, {
       contacts: [this.contact.uuid],
       text: this.currentChat,
     })
@@ -225,6 +227,7 @@ export class ContactChat extends RapidElement {
           this.scheduleRefresh(500);
         }
         */
+        this.refresh();
       })
       .catch(err => {
         // error message dialog?
@@ -253,6 +256,8 @@ export class ContactChat extends RapidElement {
                       @keydown=${(e: KeyboardEvent) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           this.handleSend(e);
+                          e.preventDefault();
+                          e.stopPropagation();
                         }
                       }}
                       textarea

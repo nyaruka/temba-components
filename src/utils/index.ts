@@ -171,6 +171,10 @@ export const getUrl = (
   });
 };
 
+export const postJSON = (url: string, payload: any): Promise<WebResponse> => {
+  return postUrl(url, JSON.stringify(payload), false, 'application/json');
+};
+
 export const postUrl = (
   url: string,
   payload: any,

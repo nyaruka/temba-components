@@ -1,37 +1,11 @@
-import {
-  css,
-  customElement,
-  html,
-  property,
-  TemplateResult,
-} from 'lit-element';
-import { Contact, ContactTicket, Group } from '../interfaces';
+import { css, html, property, TemplateResult } from 'lit-element';
+import { Contact, Group } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { isDate, timeSince } from '../utils';
 import { Store } from '../store/Store';
 import { fetchContact } from './helpers';
 
 export class ContactDetails extends RapidElement {
-  // optional display name
-  @property({ type: String })
-  name: string;
-
-  @property({ type: String })
-  uuid: string;
-
-  @property({ attribute: false, type: Object })
-  contact: Contact;
-
-  @property({ attribute: false })
-  flow: any = null;
-
-  // the fields with values for this contact
-  @property({ type: Array })
-  fields: string[] = [];
-
-  @property({ type: String })
-  endpoint: string;
-
   static get styles() {
     return css`
       :host {
@@ -148,6 +122,35 @@ export class ContactDetails extends RapidElement {
     `;
   }
 
+  // optional display name
+  @property({ type: String })
+  name: string;
+
+  @property({ type: String })
+  uuid: string;
+
+  @property({ attribute: false, type: Object })
+  contact: Contact;
+
+  @property({ attribute: false })
+  flow: any = null;
+
+  // the fields with values for this contact
+  @property({ type: Array })
+  fields: string[] = [];
+
+  @property({ type: String })
+  endpoint: string;
+
+  @property({ type: Boolean })
+  expandFields: boolean = false;
+
+  @property({ type: Boolean })
+  showGroups: boolean = false;
+
+  @property({ type: Boolean })
+  showFlows: boolean = false;
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
     if (changes.has('endpoint')) {
@@ -191,12 +194,6 @@ export class ContactDetails extends RapidElement {
   private handleHideFields(): void {
     this.expandFields = false;
   }
-
-  @property({ type: Boolean })
-  expandFields: boolean = false;
-
-  @property({ type: Boolean })
-  showGroups: boolean = false;
 
   public render(): TemplateResult {
     const store: Store = document.querySelector('temba-store');
@@ -255,7 +252,7 @@ export class ContactDetails extends RapidElement {
             : null}
 
           <div class="actions">
-            ${false
+            ${this.showGroups
               ? html`
                   <div class="start-flow">
                     <temba-select
