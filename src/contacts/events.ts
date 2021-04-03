@@ -1,23 +1,7 @@
 import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
+import { Msg, ObjectReference, Ticket } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
-import {
-  ContactEvent,
-  ContactGroupsEvent,
-  EmailSentEvent,
-  ErrorMessageEvent,
-  Events,
-  FlowEvent,
-  LabelsAddedEvent,
-  MsgEvent,
-  NameChangedEvent,
-  ObjectReference,
-  TicketOpenedEvent,
-  UpdateFieldEvent,
-  UpdateResultEvent,
-  URNsChangedEvent,
-  WebhookEvent,
-} from './helpers';
 
 export const getEventStyles = () => {
   return css`
@@ -169,6 +153,7 @@ export const getEventStyles = () => {
     .event {
       margin-bottom: 1em;
       border-radius: 6px;
+      flex-grow: 1;
     }
 
     .msg {
@@ -236,6 +221,21 @@ export const getEventStyles = () => {
       fill: rgba(223, 65, 159, 1);
     }
 
+    .ticket_opened temba-icon.clickable[name='check'] {
+      fill: rgba(220, 220, 220, 1);
+    }
+
+    .ticket_opened temba-icon {
+    }
+
+    .closed {
+      color: var(--color-text);
+    }
+
+    .closed .attn {
+      color: var(--color-text);
+    }
+
     .flow_exited,
     .flow_entered {
       align-self: center;
@@ -244,8 +244,14 @@ export const getEventStyles = () => {
       flex-direction: row;
     }
 
+    .flow_exited temba-icon,
+    .flow_entered temba-icon {
+      margin-top: 5px;
+    }
+
     .event {
       display: flex;
+      align-items: center;
     }
 
     .event .description {
@@ -320,6 +326,16 @@ export const getEventStyles = () => {
       margin: 0px 2px;
     }
 
+    .subtext {
+      font-size: 80%;
+    }
+
+    .body-pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 90%;
+    }
+
     a {
       color: var(--color-link-primary);
     }
@@ -338,6 +354,118 @@ export const getEventStyles = () => {
     }
   `;
 };
+
+export interface EventGroup {
+  type: string;
+  events: ContactEvent[];
+  open: boolean;
+  closing: boolean;
+}
+
+export enum Events {
+  MESSAGE_CREATED = 'msg_created',
+  MESSAGE_RECEIVED = 'msg_received',
+  BROADCAST_CREATED = 'broadcast_created',
+
+  FLOW_ENTERED = 'flow_entered',
+  FLOW_EXITED = 'flow_exited',
+  RUN_RESULT_CHANGED = 'run_result_changed',
+  CONTACT_FIELD_CHANGED = 'contact_field_changed',
+  CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
+  CONTACT_NAME_CHANGED = 'contact_name_changed',
+  CONTACT_URNS_CHANGED = 'contact_urns_changed',
+  CAMPAIGN_FIRED = 'campaign_fired',
+  WEBHOOK_CALLED = 'webhook_called',
+  EMAIL_SENT = 'email_sent',
+  INPUT_LABELS_ADDED = 'input_labels_added',
+  TICKET_OPENED = 'ticket_opened',
+  ERROR = 'error',
+  FAILURE = 'failure',
+}
+
+export interface ContactEvent {
+  type: string;
+  created_on: string;
+}
+
+export interface MsgEvent extends ContactEvent {
+  msg: Msg;
+  status: string;
+  logs_url: string;
+  msg_type: string;
+  recipient_count?: number;
+}
+
+export interface FlowEvent extends ContactEvent {
+  flow: ObjectReference;
+  status: string;
+}
+
+export interface EmailSentEvent extends ContactEvent {
+  to: string[];
+  subject: string;
+  body: string;
+}
+
+export interface URNsChangedEvent extends ContactEvent {
+  urns: string[];
+}
+
+export interface TicketOpenedEvent extends ContactEvent {
+  ticket: {
+    uuid: string;
+    ticketer: ObjectReference;
+    subject: string;
+    body: string;
+    external_id?: string;
+  };
+}
+
+export interface LabelsAddedEvent extends ContactEvent {
+  labels: ObjectReference[];
+}
+
+export interface NameChangedEvent extends ContactEvent {
+  name: string;
+}
+
+export interface UpdateFieldEvent extends ContactEvent {
+  field: { key: string; name: string };
+  value: { text: string };
+}
+
+export interface ErrorMessageEvent extends ContactEvent {
+  text: string;
+}
+
+export interface UpdateResultEvent extends ContactEvent {
+  name: string;
+  value: string;
+  category: string;
+  input: string;
+}
+
+export interface ContactGroupsEvent extends ContactEvent {
+  groups_added: ObjectReference[];
+  groups_removed: ObjectReference[];
+}
+
+export interface WebhookEvent extends ContactEvent {
+  status: string;
+  status_code: number;
+  elapsed_ms: number;
+  logs_url: string;
+  url: string;
+}
+
+export interface ContactHistoryPage {
+  has_older: boolean;
+  recent_only: boolean;
+  next_before: number;
+  next_after: number;
+  start_date: Date;
+  events: ContactEvent[];
+}
 
 export const getEventGroupType = (event: ContactEvent) => {
   if (!event) {
@@ -403,7 +531,7 @@ export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
       icon = 'flow';
     } else {
       verb = 'Completed';
-      icon = 'check';
+      icon = 'chevrons-down';
     }
   }
 
@@ -503,15 +631,47 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
 };
 
 export const renderTicketOpened = (
-  event: TicketOpenedEvent
+  event: TicketOpenedEvent,
+  handleClose?: (uuid: string) => void,
+  ticket?: Ticket
 ): TemplateResult => {
-  return html`
-    <temba-icon name="inbox"></temba-icon>
-    <div class="description">
-      Opened ticket with subject
-      <div class="attn">${event.ticket.subject}</div>
-    </div>
-  `;
+  const closed = ticket && ticket.status === 'closed' ? true : false;
+  if (closed) {
+    const opened = new Date(event.created_on);
+    const closed = new Date(ticket.closed_on);
+    return html`
+      <temba-icon size="2" name="check"></temba-icon>
+      <div class="closed" style="flex-grow:1;">
+        Closed
+        <div class="attn">${event.ticket.subject}</div>
+        <div class="subtext">
+          ${ticket.closed_on
+            ? html`Opened ${opened.toLocaleString()}, took ${timeSince(closed)}`
+            : timeSince(opened)}
+        </div>
+      </div>
+    `;
+  } else {
+    return html`
+      <temba-icon size="1.5" name="inbox"></temba-icon>
+      <div style="flex-grow:1;">
+        Opened
+        <div class="attn">${event.ticket.subject}</div>
+        <div class="subtext">${timeSince(new Date(event.created_on))}</div>
+      </div>
+      <div>
+        <temba-icon
+          class="clickable"
+          size="1.5"
+          name="check"
+          @click=${() => {
+            handleClose(event.ticket.uuid);
+          }}
+          ?clickable=${open}
+        />
+      </div>
+    `;
+  }
 };
 
 export const renderErrorMessage = (

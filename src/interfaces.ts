@@ -1,3 +1,25 @@
+export interface Ticket {
+  uuid: string;
+  subject: string;
+  body?: string;
+  closed_on: string;
+  opened_on: string;
+  status: string;
+  contact: ObjectReference;
+  ticketer: ObjectReference;
+}
+
+export interface Msg {
+  text: string;
+  status: string;
+  channel: ObjectReference;
+  quick_replies: string[];
+  urn: string;
+  id: number;
+  direction: string;
+  type: string;
+}
+
 export interface ObjectReference {
   uuid: string;
   name: string;

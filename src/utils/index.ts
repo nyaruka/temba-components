@@ -1,6 +1,9 @@
 import { html, TemplateResult } from 'lit-html';
+import { ContactField, Ticket } from '../interfaces';
 
-export interface Asset {
+export type Asset = KeyedAsset & Ticket & ContactField;
+
+interface KeyedAsset {
   key?: string;
 }
 

@@ -285,20 +285,6 @@ export class ContactChat extends RapidElement {
                   @click="${this.handleDetailSlider}"
                   clickable
                 ></temba-icon>
-
-                ${this.id !== 'C'
-                  ? html`<temba-icon
-                      id="close-button"
-                      name="check"
-                      @click="${this.handleClose}"
-                      clickable
-                    ></temba-icon>`
-                  : html`<temba-icon
-                      id="open-button"
-                      name="inbox"
-                      @click="${this.handleOpen}"
-                      clickable
-                    ></temba-icon>`}
               `
             : null}
         </div>

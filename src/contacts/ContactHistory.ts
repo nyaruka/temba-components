@@ -1,12 +1,23 @@
 import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { getClasses, throttle } from '../utils';
+import { getAssets, getClasses, postForm, throttle } from '../utils';
 import ResizeObserver from 'resize-observer-polyfill';
 import {
+  ContactEvent,
+  ContactGroupsEvent,
+  ContactHistoryPage,
+  EmailSentEvent,
+  ErrorMessageEvent,
+  EventGroup,
+  Events,
+  FlowEvent,
   getEventGroupType,
   getEventStyles,
+  LabelsAddedEvent,
+  MsgEvent,
+  NameChangedEvent,
   renderContactGroupsEvent,
   renderContactURNsChanged,
   renderEmailSent,
@@ -19,36 +30,36 @@ import {
   renderTicketOpened,
   renderUpdateEvent,
   renderWebhookEvent,
-} from './events';
-import {
-  ContactEvent,
-  ContactGroupsEvent,
-  ContactHistoryPage,
-  EmailSentEvent,
-  ErrorMessageEvent,
-  EventGroup,
-  Events,
-  fetchContactHistory,
-  FlowEvent,
-  LabelsAddedEvent,
-  MAX_CHAT_REFRESH,
-  MIN_CHAT_REFRESH,
-  MsgEvent,
-  NameChangedEvent,
-  SCROLL_THRESHOLD,
   TicketOpenedEvent,
   UpdateFieldEvent,
   UpdateResultEvent,
   URNsChangedEvent,
   WebhookEvent,
+} from './events';
+import {
+  fetchContactHistory,
+  MAX_CHAT_REFRESH,
+  MIN_CHAT_REFRESH,
+  SCROLL_THRESHOLD,
 } from './helpers';
-
-const isStickyEvent = (event: ContactEvent) => {
-  return event.type === Events.TICKET_OPENED;
-};
 
 export class ContactHistory extends RapidElement {
   public httpComplete: Promise<void | ContactHistoryPage>;
+
+  private getStickyId = (event: ContactEvent) => {
+    if (event.type === Events.TICKET_OPENED) {
+      const ticket = this.getTicket(event as TicketOpenedEvent);
+      if (ticket && ticket.status === 'open') {
+        return ticket.uuid;
+      }
+    }
+  };
+
+  private getTicket(event: TicketOpenedEvent) {
+    return (this.tickets || []).find(
+      ticket => ticket.uuid === (event as TicketOpenedEvent).ticket.uuid
+    );
+  }
 
   static get styles() {
     return css`
@@ -81,8 +92,10 @@ export class ContactHistory extends RapidElement {
         z-index: 10000;
         border-top-left-radius: var(--curvature);
         overflow: hidden;
+
         background: rgba(40, 40, 40, 0.9);
         color: #fff;
+
         box-shadow: 0 3px 10px 0 rgba(0, 0, 0, 0.3);
       }
 
@@ -138,6 +151,9 @@ export class ContactHistory extends RapidElement {
   @property({ attribute: false, type: Object })
   mostRecentEvent: ContactEvent;
 
+  @property({ type: Array })
+  tickets: Ticket[] = null;
+
   nextBefore: number;
   nextAfter: number;
   lastHeight: number = 0;
@@ -147,12 +163,15 @@ export class ContactHistory extends RapidElement {
 
   public firstUpdated(changedProperties: Map<string, any>) {
     super.firstUpdated(changedProperties);
+
+    this.handleClose = this.handleClose.bind(this);
+
     const stickyBin = this.getDiv('.sticky-bin');
     const resizer = new ResizeObserver(entries => {
       for (let entry of entries) {
         const eventContainer = entry.contentRect;
         stickyBin.style.width =
-          eventContainer.width + eventContainer.left + 15 + 'px';
+          eventContainer.width + eventContainer.left + 14 + 'px';
       }
     });
     resizer.observe(this);
@@ -175,6 +194,7 @@ export class ContactHistory extends RapidElement {
         if (this.endpoint !== endpoint) {
           this.reset();
           this.endpoint = endpoint;
+          this.refreshTickets();
         }
       }
     }
@@ -244,10 +264,7 @@ export class ContactHistory extends RapidElement {
 
     if (changedProperties.has('fetching') && this.fetching) {
       const events = this.shadowRoot.host;
-
-      // console.log("fetching, saving last height", events.scrollHeight);
       this.lastHeight = events.scrollHeight;
-
       if (!this.nextBefore) {
         this.nextBefore = new Date().getTime() * 1000 - 1000;
       }
@@ -313,7 +330,6 @@ export class ContactHistory extends RapidElement {
         const scrollTop =
           events.scrollTop + events.scrollHeight - this.lastHeight;
         // console.log('Scrolling to', scrollTop);
-
         events.scrollTop = scrollTop;
       }
 
@@ -327,6 +343,32 @@ export class ContactHistory extends RapidElement {
       this.fetching = true;
       this.empty = true;
     }
+
+    // when our tickets change, make sure we don't have any manual pins
+    if (changedProperties.has('tickets')) {
+      const stickyBin = this.getDiv('.sticky-bin');
+
+      const closedTickets = (this.tickets || []).filter(
+        ticket => ticket && ticket.status === 'closed'
+      );
+
+      for (let closed of closedTickets) {
+        const child = stickyBin.querySelector(
+          `[data-sticky-id="${closed.uuid}"]`
+        );
+        if (child) {
+          stickyBin.removeChild(child);
+        }
+      }
+    }
+  }
+
+  private refreshTickets() {
+    getAssets(`/api/v2/tickets.json?contact=${this.uuid}`).then(
+      (tickets: Ticket[]) => {
+        this.tickets = tickets.reverse();
+      }
+    );
   }
 
   public refresh(): void {
@@ -389,14 +431,19 @@ export class ContactHistory extends RapidElement {
   }
 
   private reset() {
+    // clear out our sticky bin which we manipulated manually
+    const stickyBin = this.getDiv('.sticky-bin');
+    while (stickyBin.childElementCount > 0) {
+      stickyBin.removeChild(stickyBin.firstElementChild);
+    }
+
     this.endpoint = null;
+    this.tickets = null;
     this.eventGroups = [];
     this.fetching = false;
     this.complete = false;
     this.nextBefore = null;
     this.nextAfter = null;
-
-    this.getDiv('.sticky-bin').innerHTML = '';
   }
 
   private handleEventGroupShow(event: MouseEvent) {
@@ -513,7 +560,9 @@ export class ContactHistory extends RapidElement {
         return renderLabelsAdded(event as LabelsAddedEvent);
 
       case Events.TICKET_OPENED:
-        return renderTicketOpened(event as TicketOpenedEvent);
+        const ticketOpened = event as TicketOpenedEvent;
+        const ticket = this.getTicket(ticketOpened);
+        return renderTicketOpened(ticketOpened, this.handleClose, ticket);
 
       case Events.ERROR:
       case Events.FAILURE:
@@ -531,6 +580,22 @@ export class ContactHistory extends RapidElement {
       <div class="description">render missing: ${event.type}</div>`;
   }
 
+  private handleClose(uuid: string) {
+    this.httpComplete = postForm(`/ticket/update/${uuid}/?_format=json`, {
+      status: 'C',
+    })
+      .then(response => {
+        this.refreshTickets();
+        this.refresh();
+        this.fireCustomEvent(CustomEventType.ContentChanged, {
+          ticket: { uuid, status: 'C' },
+        });
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
   public getEventHandlers() {
     return [
       {
@@ -540,62 +605,99 @@ export class ContactHistory extends RapidElement {
     ];
   }
 
-  // @scroll=${throttle(this.handleEventScroll, 50)}
   public render(): TemplateResult {
+    // render our older tickets as faux-events
+    const unfetchedTickets =
+      this.eventGroups.length > 0 && this.tickets
+        ? this.tickets.map((ticket: Ticket) => {
+            if (ticket && ticket.status === 'open') {
+              const opened = new Date(ticket.opened_on).getTime() * 1000;
+              if (opened < this.nextBefore) {
+                const ticketOpenedEvent = {
+                  type: Events.TICKET_OPENED,
+                  ticket: {
+                    uuid: ticket.uuid,
+                    subject: ticket.subject,
+                    body: ticket.body,
+                    ticketer: ticket.ticketer,
+                  },
+                  created_on: ticket.opened_on,
+                };
+
+                const renderedEvent = renderTicketOpened(
+                  ticketOpenedEvent,
+                  this.handleClose,
+                  ticket
+                );
+                return html`<div class="event ${Events.TICKET_OPENED}">
+                  ${renderedEvent}
+                </div>`;
+              }
+            }
+          })
+        : null;
+
     return html`
       ${this.fetching
         ? html`<temba-loading units="5" size="10"></temba-loading>`
         : html`<div style="height:2em"></div>`}
-      <div class="sticky-bin"></div>
-      ${this.eventGroups.map((eventGroup: EventGroup, index: number) => {
-        const grouping = getEventGroupType(eventGroup.events[0]);
-        const groupIndex = this.eventGroups.length - index - 1;
+      <div class="sticky-bin">${unfetchedTickets}</div>
+      ${this.tickets
+        ? this.eventGroups.map((eventGroup: EventGroup, index: number) => {
+            const grouping = getEventGroupType(eventGroup.events[0]);
+            const groupIndex = this.eventGroups.length - index - 1;
 
-        const classes = getClasses({
-          grouping: true,
-          [grouping]: true,
-          expanded: eventGroup.open,
-          closing: eventGroup.closing,
-        });
+            const classes = getClasses({
+              grouping: true,
+              [grouping]: true,
+              expanded: eventGroup.open,
+              closing: eventGroup.closing,
+            });
 
-        return html`<div class="${classes}">
-          ${grouping === 'verbose'
-            ? html`<div
-                class="event-count"
-                @click=${this.handleEventGroupShow}
-                data-group-index="${groupIndex}"
-              >
-                ${eventGroup.events.length}
-                ${eventGroup.events.length === 1 ? html`event` : html`events`}
-              </div>`
-            : null}
-          ${grouping === 'verbose'
-            ? html`
-                <temba-icon
-                  @click=${this.handleEventGroupHide}
-                  data-group-index="${groupIndex}"
-                  class="grouping-close-button"
-                  name="x"
-                  clickable
-                ></temba-icon>
-              `
-            : null}
-          ${eventGroup.events.map((event: ContactEvent) => {
-            const renderedEvent = html`
-              <div class="event ${event.type}">${this.renderEvent(event)}</div>
-              ${this.debug
-                ? html`<pre>${JSON.stringify(event, null, 2)}</pre>`
+            return html`<div class="${classes}">
+              ${grouping === 'verbose'
+                ? html`<div
+                    class="event-count"
+                    @click=${this.handleEventGroupShow}
+                    data-group-index="${groupIndex}"
+                  >
+                    ${eventGroup.events.length}
+                    ${eventGroup.events.length === 1
+                      ? html`event`
+                      : html`events`}
+                  </div>`
                 : null}
-            `;
+              ${grouping === 'verbose'
+                ? html`
+                    <temba-icon
+                      @click=${this.handleEventGroupHide}
+                      data-group-index="${groupIndex}"
+                      class="grouping-close-button"
+                      name="x"
+                      clickable
+                    ></temba-icon>
+                  `
+                : null}
+              ${eventGroup.events.map((event: ContactEvent) => {
+                const stickyId = this.getStickyId(event);
+                const renderedEvent = html`
+                  <div class="event ${event.type}" data-sticky-id="${stickyId}">
+                    ${this.renderEvent(event)}
+                  </div>
+                  ${this.debug
+                    ? html`<pre>${JSON.stringify(event, null, 2)}</pre>`
+                    : null}
+                `;
 
-            if (isStickyEvent(event)) {
-              return html`<div class="sticky">${renderedEvent}</div>`;
-            }
+                if (stickyId) {
+                  return html`<div class="sticky">${renderedEvent}</div>`;
+                }
 
-            return renderedEvent;
-          })}
-        </div>`;
-      })}
+                return renderedEvent;
+              })}
+            </div>`;
+          })
+        : null}
     `;
   }
 }
