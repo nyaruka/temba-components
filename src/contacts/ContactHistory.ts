@@ -48,17 +48,19 @@ export class ContactHistory extends RapidElement {
 
   private getStickyId = (event: ContactEvent) => {
     if (event.type === Events.TICKET_OPENED) {
-      const ticket = this.getTicket(event as TicketOpenedEvent);
+      const ticket = this.getTicketForEvent(event as TicketOpenedEvent);
       if (ticket && ticket.status === 'open') {
         return ticket.uuid;
       }
     }
   };
 
-  private getTicket(event: TicketOpenedEvent) {
-    return (this.tickets || []).find(
-      ticket => ticket.uuid === (event as TicketOpenedEvent).ticket.uuid
-    );
+  private getTicketForEvent(event: TicketOpenedEvent) {
+    return this.getTicket((event as TicketOpenedEvent).ticket.uuid);
+  }
+
+  private getTicket(uuid: string) {
+    return (this.tickets || []).find(ticket => ticket.uuid === uuid);
   }
 
   static get styles() {
@@ -156,6 +158,9 @@ export class ContactHistory extends RapidElement {
 
   @property({ type: Array })
   tickets: Ticket[] = null;
+
+  @property({ type: Object })
+  currentTicket: Ticket = null;
 
   nextBefore: number;
   nextAfter: number;
@@ -478,7 +483,7 @@ export class ContactHistory extends RapidElement {
     }, 300);
   }
 
-  private handleEventScroll(event: MouseEvent) {
+  private handleScroll(event: MouseEvent) {
     const events = this.shadowRoot.host;
 
     // check if any of our sticky elements are off the screen
@@ -496,12 +501,43 @@ export class ContactHistory extends RapidElement {
           sticky.classList.add('pinned');
           (sticky as any).eventElement = eventElement;
           stickyBin.appendChild(eventElement);
+          const uuid = eventElement.getAttribute('data-sticky-id');
+          const ticket = this.getTicket(uuid);
+          if (ticket) {
+            if (
+              !this.currentTicket ||
+              this.currentTicket.uuid !== ticket.uuid
+            ) {
+              this.currentTicket === ticket;
+              this.fireCustomEvent(CustomEventType.ContextChanged, {
+                context: ticket,
+              });
+            }
+          }
         }
       } else {
         const eventElement = (sticky as any).eventElement;
         if (scrollBoundary < sticky.offsetTop + sticky.offsetHeight) {
           sticky.appendChild(eventElement);
           sticky.classList.remove('pinned');
+
+          const uuid = eventElement.getAttribute('data-sticky-id');
+
+          let previousTicket = null;
+          for (let ticket of this.tickets) {
+            if (ticket.uuid === uuid) {
+              break;
+            }
+            previousTicket = ticket;
+          }
+          if (
+            !this.currentTicket ||
+            this.currentTicket.uuid !== previousTicket.uuid
+          ) {
+            this.fireCustomEvent(CustomEventType.ContextChanged, {
+              context: previousTicket,
+            });
+          }
         }
       }
     });
@@ -564,7 +600,7 @@ export class ContactHistory extends RapidElement {
 
       case Events.TICKET_OPENED:
         const ticketOpened = event as TicketOpenedEvent;
-        const ticket = this.getTicket(ticketOpened);
+        const ticket = this.getTicketForEvent(ticketOpened);
         return renderTicketOpened(ticketOpened, this.handleClose, ticket);
 
       case Events.ERROR:
@@ -603,7 +639,7 @@ export class ContactHistory extends RapidElement {
     return [
       {
         event: 'scroll',
-        method: throttle(this.handleEventScroll, 50),
+        method: throttle(this.handleScroll, 50),
       },
     ];
   }
