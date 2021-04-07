@@ -93,10 +93,8 @@ export class ContactHistory extends RapidElement {
         border-top-left-radius: var(--curvature);
         overflow: hidden;
 
-        background: rgba(40, 40, 40, 0.9);
-        color: #fff;
-
-        box-shadow: 0 3px 10px 0 rgba(0, 0, 0, 0.3);
+        background: rgba(240, 240, 240, 0.95);
+        box-shadow: 0px 3px 3px 0px rgba(0, 0, 0, 0.15);
       }
 
       .sticky-bin temba-icon {
@@ -107,8 +105,7 @@ export class ContactHistory extends RapidElement {
         display: flex;
         margin: 1em -2em;
         padding: 1em 2em;
-        color: #fff;
-        background: rgba(40, 40, 40, 0.9);
+        background: rgba(240, 240, 240, 0.8);
       }
 
       .sticky.pinned {
@@ -119,10 +116,16 @@ export class ContactHistory extends RapidElement {
         margin: 0;
         padding: 1em 2em;
         border-radius: 0px;
+        border-bottom: 1px solid rgba(220, 220, 220, 1);
       }
 
       .sticky .event {
         margin-bottom: 0;
+      }
+
+      .sticky .attn,
+      .sticky-bin .attn {
+        color: var(--color-text);
       }
     `;
   }

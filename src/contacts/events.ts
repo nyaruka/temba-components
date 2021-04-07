@@ -222,7 +222,7 @@ export const getEventStyles = () => {
     }
 
     .ticket_opened temba-icon.clickable[name='check'] {
-      fill: rgba(220, 220, 220, 1);
+      fill: rgba(180, 180, 180, 1);
     }
 
     .ticket_opened temba-icon {

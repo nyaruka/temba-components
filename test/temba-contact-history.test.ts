@@ -40,6 +40,11 @@ describe('temba-contact-history', () => {
       /\/contact\/history\/1234\/.*/,
       '/test-assets/contacts/history.json'
     );
+
+    mockGET(
+      /\/api\/v2\/tickets\.json\?contact=1234/,
+      '/test-assets/api/tickets.json'
+    );
   });
   afterEach(() => {});
 
