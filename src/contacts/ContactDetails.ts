@@ -1,9 +1,9 @@
 import { css, html, property, TemplateResult } from 'lit-element';
-import { Contact, Group } from '../interfaces';
+import { Contact, Group, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { isDate, timeSince } from '../utils';
+import { isDate, timeSince, truncate } from '../utils';
 import { Store } from '../store/Store';
-import { fetchContact } from './helpers';
+import { BODY_SNIPPET_LENGTH, fetchContact } from './helpers';
 
 export class ContactDetails extends RapidElement {
   static get styles() {
@@ -86,6 +86,15 @@ export class ContactDetails extends RapidElement {
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
       }
 
+      .body-wrapper {
+        overflow: hidden;
+      }
+
+      .body {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
       .fields {
         padding: 1em;
         max-height: 200px;
@@ -146,10 +155,16 @@ export class ContactDetails extends RapidElement {
   expandFields: boolean = false;
 
   @property({ type: Boolean })
+  expandBody: boolean = false;
+
+  @property({ type: Boolean })
   showGroups: boolean = false;
 
   @property({ type: Boolean })
   showFlows: boolean = false;
+
+  @property({ type: Object })
+  ticket: Ticket = null;
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
@@ -195,8 +210,27 @@ export class ContactDetails extends RapidElement {
     this.expandFields = false;
   }
 
+  private handleExpandBody(): void {
+    this.expandBody = true;
+  }
+
+  private handleHideBody(): void {
+    this.expandBody = false;
+  }
+
   public render(): TemplateResult {
     const store: Store = document.querySelector('temba-store');
+
+    let body = this.ticket ? this.ticket.body : null;
+    const showBodyToggle = body ? body.length > BODY_SNIPPET_LENGTH : false;
+    if (
+      !this.expandBody &&
+      this.ticket &&
+      this.ticket.body.length > BODY_SNIPPET_LENGTH
+    ) {
+      body = truncate(this.ticket.body, BODY_SNIPPET_LENGTH);
+    }
+
     if (this.contact) {
       return html`<div class="contact">
         <div class="name">${this.name || this.contact.name}</div>
@@ -216,6 +250,22 @@ export class ContactDetails extends RapidElement {
                 })}
               </div>`
             : html``}
+          ${body
+            ? html`<div class="body-wrapper">
+                <div class="body">${body}</div>
+                <div class="field-links">
+                  ${showBodyToggle
+                    ? !this.expandBody
+                      ? html`<a href="#" @click="${this.handleExpandBody}"
+                          >more</a
+                        >`
+                      : html`<a href="#" @click="${this.handleHideBody}"
+                          >less</a
+                        >`
+                    : null}
+                </div>
+              </div>`
+            : null}
           ${this.fields.length > 0
             ? html` <div class="fields-wrapper">
                 <div class="fields">

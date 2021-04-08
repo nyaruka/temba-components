@@ -1,24 +1,12 @@
 import { css, html, property, TemplateResult } from 'lit-element';
 import { RapidElement } from '../RapidElement';
-import { Contact } from '../interfaces';
+import { Contact, Ticket } from '../interfaces';
 import { postForm, postJSON, postUrl } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 
 export class ContactChat extends RapidElement {
-  @property({ type: Object })
-  contact: Contact = null;
-
-  @property({ type: String })
-  contactsEndpoint: string = '/api/v2/contacts.json';
-
-  @property({ type: String })
-  currentChat: string = '';
-
-  @property({ type: Boolean })
-  showDetails: boolean = false;
-
   public static get styles() {
     return css`
       :host {
@@ -129,6 +117,21 @@ export class ContactChat extends RapidElement {
     `;
   }
 
+  @property({ type: Object })
+  contact: Contact = null;
+
+  @property({ type: String })
+  contactsEndpoint: string = '/api/v2/contacts.json';
+
+  @property({ type: String })
+  currentChat: string = '';
+
+  @property({ type: Boolean })
+  showDetails: boolean = false;
+
+  @property({ type: Object })
+  currentTicket: Ticket = null;
+
   constructor() {
     super();
   }
@@ -166,39 +169,6 @@ export class ContactChat extends RapidElement {
 
     const chat = event.currentTarget as TextInput;
     this.currentChat = chat.value;
-
-    if (this.currentChat === '__debug') {
-    }
-  }
-
-  private handleClose(event: MouseEvent) {
-    /* postForm(`/ticket/update/${this.ticket.uuid}/?_format=json`, {
-      status: 'C',
-    })
-      .then(response => {
-        this.fireCustomEvent(CustomEventType.ContentChanged, {
-          ticket: { uuid: this.ticket.uuid, status: 'C' },
-        });
-      })
-      .catch((response: any) => {
-        console.error(response.errors);
-      });*/
-  }
-
-  private handleOpen(event: MouseEvent) {
-    /*
-    postForm(`/ticket/update/${this.ticket.uuid}/?_format=json`, {
-      status: 'O',
-    })
-      .then(response => {
-        this.fireCustomEvent(CustomEventType.ContentChanged, {
-          ticket: { uuid: this.ticket.uuid, status: 'O' },
-        });
-      })
-      .catch((response: any) => {
-        console.error(response.errors);
-      });
-      */
   }
 
   private handleSend(event: Event) {
@@ -208,25 +178,6 @@ export class ContactChat extends RapidElement {
     })
       .then(response => {
         this.currentChat = '';
-
-        /* 
-        if (this.ticket.status === 'C') {
-          // if we are closed, reopen us
-          postForm(`/ticket/update/${this.ticket.uuid}/?_format=json`, {
-            status: 'O',
-          }).then(() => {
-            this.ticket.status = 'O';
-            this.fireCustomEvent(CustomEventType.ContentChanged, {
-              ticket: { uuid: this.ticket.uuid, status: 'O' },
-              focus: true,
-            });
-            this.requestUpdate('ticket');
-            this.scheduleRefresh(500);
-          });
-        } else {
-          this.scheduleRefresh(500);
-        }
-        */
         this.refresh();
       })
       .catch(err => {
@@ -240,6 +191,10 @@ export class ContactChat extends RapidElement {
     this.showDetails = !this.showDetails;
   }
 
+  private handleTicketChanged(event: CustomEvent): void {
+    this.currentTicket = event.detail.context;
+  }
+
   public render(): TemplateResult {
     return html`
       <div style="display: flex; height: 100%;">
@@ -248,6 +203,7 @@ export class ContactChat extends RapidElement {
             ${this.contact
               ? html` <temba-contact-history
                     uuid=${this.contact.uuid}
+                    @temba-context-changed=${this.handleTicketChanged}
                   ></temba-contact-history>
                   <div class="chatbox">
                     <temba-completion
@@ -271,7 +227,9 @@ export class ContactChat extends RapidElement {
               style="z-index: 10"
               class="${this.showDetails ? '' : 'hidden'}"
               .uuid="${this.contact.uuid}"
+              .name="${this.contact.name}"
               .visible=${this.showDetails}
+              .ticket=${this.currentTicket}
               endpoint="${this.contactsEndpoint}?uuid=${this.contact.uuid}"
             ></temba-contact-details>`
           : null}

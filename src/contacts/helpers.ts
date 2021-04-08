@@ -6,6 +6,7 @@ export const SCROLL_THRESHOLD = 100;
 export const SIMULATED_WEB_SLOWNESS = 0;
 export const MAX_CHAT_REFRESH = 10000;
 export const MIN_CHAT_REFRESH = 500;
+export const BODY_SNIPPET_LENGTH = 250;
 
 export const closeTicket = (uuid: string): Promise<WebResponse> => {
   const formData = new FormData();

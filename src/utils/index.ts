@@ -504,6 +504,14 @@ export interface NamedObject {
   name: string;
 }
 
+export const truncate = (input: string, max: number): string => {
+  if (input.length > max) {
+    return input.substring(0, max) + '...';
+  }
+
+  return input;
+};
+
 export const oxford = (items: any[], joiner: string = 'and'): any => {
   if (items.length === 1) {
     return items[0];
