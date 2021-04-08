@@ -42,7 +42,7 @@ describe('temba-contact-history', () => {
     );
 
     mockGET(
-      /\/api\/v2\/tickets\.json\?contact=1234/,
+      /\/api\/v2\/tickets\.json\?ticketer_type=internal&contact=1234/,
       '/test-assets/api/tickets.json'
     );
   });

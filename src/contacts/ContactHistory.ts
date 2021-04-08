@@ -372,11 +372,11 @@ export class ContactHistory extends RapidElement {
   }
 
   private refreshTickets() {
-    getAssets(`/api/v2/tickets.json?contact=${this.uuid}`).then(
-      (tickets: Ticket[]) => {
-        this.tickets = tickets.reverse();
-      }
-    );
+    getAssets(
+      `/api/v2/tickets.json?ticketer_type=internal&contact=${this.uuid}`
+    ).then((tickets: Ticket[]) => {
+      this.tickets = tickets.reverse();
+    });
   }
 
   public refresh(): void {
@@ -616,7 +616,7 @@ export class ContactHistory extends RapidElement {
         name="alert-triangle"
         style="fill:var(--color-error)"
       ></temba-icon>
-      <div class="description">render missing: ${event.type}</div>`;
+      <div class="description">${event.type}</div>`;
   }
 
   private handleClose(uuid: string) {
@@ -719,8 +719,12 @@ export class ContactHistory extends RapidElement {
                 : null}
               ${eventGroup.events.map((event: ContactEvent) => {
                 const stickyId = this.getStickyId(event);
+                const isSticky = !!stickyId;
                 const renderedEvent = html`
-                  <div class="event ${event.type}" data-sticky-id="${stickyId}">
+                  <div
+                    class="event ${event.type} ${isSticky ? 'has-sticky' : ''}"
+                    ?data-sticky-id="${stickyId}"
+                  >
                     ${this.renderEvent(event)}
                   </div>
                   ${this.debug

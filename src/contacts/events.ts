@@ -37,6 +37,10 @@ export const getEventStyles = () => {
       opacity: 0;
     }
 
+    .grouping.verbose .attn {
+      color: #fff;
+    }
+
     .event-count {
       position: relative;
       top: -1.2em;
@@ -232,7 +236,7 @@ export const getEventStyles = () => {
       color: var(--color-text);
     }
 
-    .closed .attn {
+    .attn {
       color: var(--color-text);
     }
 
@@ -322,7 +326,6 @@ export const getEventStyles = () => {
     .attn {
       display: inline-block;
       font-weight: 500;
-      color: #fff;
       margin: 0px 2px;
     }
 
@@ -480,7 +483,9 @@ export const getEventGroupType = (event: ContactEvent) => {
     case Events.MESSAGE_RECEIVED:
       return 'messages';
     case Events.TICKET_OPENED:
-      return 'tickets';
+      if ((event as TicketOpenedEvent).ticket.ticketer.name === 'Internal') {
+        return 'tickets';
+      }
   }
   return 'verbose';
 };
@@ -653,22 +658,28 @@ export const renderTicketOpened = (
     `;
   } else {
     return html`
-      <temba-icon size="1.5" name="inbox"></temba-icon>
+      <temba-icon size="${ticket ? '1.5' : '1'}" name="inbox"></temba-icon>
       <div style="flex-grow:1;">
         Opened
-        <div class="attn">${event.ticket.subject}</div>
+        <div class="attn">
+          ${event.ticket.subject}${!ticket
+            ? html` on ${event.ticket.ticketer.name}`
+            : null}
+        </div>
         <div class="subtext">${timeSince(new Date(event.created_on))}</div>
       </div>
       <div>
-        <temba-icon
-          class="clickable"
-          size="1.5"
-          name="check"
-          @click=${() => {
-            handleClose(event.ticket.uuid);
-          }}
-          ?clickable=${open}
-        />
+        ${ticket
+          ? html` <temba-icon
+              class="clickable"
+              size="1.5"
+              name="check"
+              @click=${() => {
+                handleClose(event.ticket.uuid);
+              }}
+              ?clickable=${open}
+            />`
+          : null}
       </div>
     `;
   }
