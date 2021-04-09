@@ -61,8 +61,7 @@ export class RapidElement extends LitElement {
 
     const ele = event.target;
     if (ele) {
-      const eventFire =
-        (ele as any)['@' + event.type] || (ele as any)['-' + event.type];
+      const eventFire = (ele as any)['-' + event.type];
       if (eventFire) {
         eventFire(event);
       } else {
@@ -71,11 +70,8 @@ export class RapidElement extends LitElement {
           'event',
           `with(document) {
           with(this) {
-            let handler = ${
-              ele.getAttribute('@' + event.type) ||
-              ele.getAttribute('-' + event.type)
-            };
-            if(typeof attr === 'function') { 
+            let handler = ${ele.getAttribute('-' + event.type)};
+            if(typeof handler === 'function') { 
               handler(event) ;
             }
           }

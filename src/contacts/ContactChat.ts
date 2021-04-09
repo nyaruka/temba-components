@@ -191,7 +191,7 @@ export class ContactChat extends RapidElement {
     this.showDetails = !this.showDetails;
   }
 
-  private handleTicketChanged(event: CustomEvent): void {
+  private handleCurrentTicketChanged(event: CustomEvent): void {
     this.currentTicket = event.detail.context;
   }
 
@@ -203,7 +203,7 @@ export class ContactChat extends RapidElement {
             ${this.contact
               ? html` <temba-contact-history
                     uuid=${this.contact.uuid}
-                    @temba-context-changed=${this.handleTicketChanged}
+                    @temba-context-changed=${this.handleCurrentTicketChanged}
                   ></temba-contact-history>
                   <div class="chatbox">
                     <temba-completion

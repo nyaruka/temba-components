@@ -723,7 +723,7 @@ export class ContactHistory extends RapidElement {
                 const renderedEvent = html`
                   <div
                     class="event ${event.type} ${isSticky ? 'has-sticky' : ''}"
-                    ?data-sticky-id="${stickyId}"
+                    data-sticky-id="${stickyId}"
                   >
                     ${this.renderEvent(event)}
                   </div>
