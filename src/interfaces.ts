@@ -1,3 +1,25 @@
+export interface Ticket {
+  uuid: string;
+  subject: string;
+  body?: string;
+  closed_on: string;
+  opened_on: string;
+  status: string;
+  contact: ObjectReference;
+  ticketer: ObjectReference;
+}
+
+export interface Msg {
+  text: string;
+  status: string;
+  channel: ObjectReference;
+  quick_replies: string[];
+  urn: string;
+  id: number;
+  direction: string;
+  type: string;
+}
+
 export interface ObjectReference {
   uuid: string;
   name: string;
@@ -7,6 +29,7 @@ export interface ContactField {
   key: string;
   label: string;
   value_type: string;
+  pinned: boolean;
 }
 
 export interface ContactGroup {
@@ -49,8 +72,6 @@ export interface ContactTicket {
     name: string;
     created_on: Date;
     last_seen_on: Date;
-    last_msg: Msg;
-    direction: string;
   };
 }
 
@@ -66,6 +87,9 @@ export interface Contact {
   modified_on: Date;
   created_on: Date;
   last_seen_on: Date;
+
+  last_msg?: Msg;
+  direction?: string;
 }
 
 export interface FeatureProperties {
@@ -144,4 +168,5 @@ export enum CustomEventType {
   DialogHidden = 'temba-dialog-hidden',
   ScrollThreshold = 'temba-scroll-threshold',
   ContentChanged = 'temba-content-changed',
+  ContextChanged = 'temba-context-changed',
 }

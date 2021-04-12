@@ -1,9 +1,9 @@
 import { fixture, assert } from '@open-wc/testing';
-import { TicketList } from '../src/list/TicketList';
+import { ContactList } from '../src/list/ContactList';
 import './utils.test';
 
 export const getHTML = () => {
-  return `<temba-tickets></temba-tickets>`;
+  return `<temba-contacts></temba-contacts>`;
 };
 
 describe('temba-ticket-list', () => {
@@ -11,7 +11,7 @@ describe('temba-ticket-list', () => {
   afterEach(() => {});
 
   it('can be created', async () => {
-    const tickets: TicketList = await fixture(getHTML());
-    assert.instanceOf(tickets, TicketList);
+    const tickets: ContactList = await fixture(getHTML());
+    assert.instanceOf(tickets, ContactList);
   });
 });

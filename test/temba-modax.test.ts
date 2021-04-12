@@ -2,13 +2,7 @@ import { fixture, expect, assert } from '@open-wc/testing';
 import { Button } from '../src/button/Button';
 import { Modax } from '../src/dialog/Modax';
 import { useFakeTimers } from 'sinon';
-import {
-  assertScreenshot,
-  checkTimers,
-  getClip,
-  mockGET,
-  mockPOST,
-} from './utils.test';
+import { assertScreenshot, checkTimers, getClip, mockPOST } from './utils.test';
 
 import './utils.test';
 
@@ -111,7 +105,7 @@ describe('temba-modax', () => {
     expect(primary.name).equals('Save Everything');
 
     // click the submit button
-    mockPOST('/test-assets/modax/form.html', '', {
+    mockPOST(/\/test-assets\/modax\/form\.html/, '', {
       'Temba-Success': '/newpage',
     });
     await clickPrimary(modax);

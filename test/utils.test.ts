@@ -10,8 +10,15 @@ interface Clip {
 import { stub } from 'sinon';
 import { expect } from '@open-wc/testing';
 
+export interface CodeMock {
+  endpoint: RegExp;
+  body: string;
+  headers: any;
+}
+
 var fetchStub;
-var responses = {};
+const gets: CodeMock[] = [];
+const posts: CodeMock[] = [];
 var normalFetch;
 
 before(async () => {
@@ -24,25 +31,34 @@ after(() => {
   (window.fetch as any).restore();
 });
 
-const getResponse = (endpoint, options) => {
+const getResponse = (endpoint: string, options) => {
   // check if our path has been mocked in code
-  const codeMock = responses[`${endpoint}_${options.method}`];
+  const mocks = options.method === 'GET' ? gets : posts;
+  const codeMock = mocks.find(mock => mock.endpoint.test(endpoint));
+
   if (codeMock) {
-    return typeof codeMock.body === 'string'
-      ? createResponse(codeMock)
-      : createJSONResponse(codeMock);
+    if (typeof codeMock.body === 'string') {
+      // see if we are being mocked to a file
+      if (codeMock.body.startsWith('/')) {
+        endpoint = codeMock.body;
+      } else {
+        return createResponse(codeMock);
+      }
+    } else {
+      return createJSONResponse(codeMock);
+    }
   }
 
   // otherwise fetch over http
   return normalFetch(endpoint, options);
 };
 
-export const mockGET = (endpoint: string, body: any, headers: {} = {}) => {
-  responses[endpoint + '_GET'] = { body, headers };
+export const mockGET = (endpoint: RegExp, body: any, headers: {} = {}) => {
+  gets.push({ endpoint, body, headers });
 };
 
-export const mockPOST = (endpoint: string, body: any, headers: {} = {}) => {
-  responses[endpoint + '_POST'] = { body, headers };
+export const mockPOST = (endpoint: RegExp, body: any, headers: {} = {}) => {
+  posts.push({ endpoint, body, headers });
 };
 
 const createResponse = mocked => {
@@ -149,4 +165,14 @@ export const getClip = (ele: HTMLElement) => {
   };
 
   return newClip;
+};
+
+export const getHTML = (tag: string, attrs: any = {}) => {
+  return `<${tag} ${getHTMLAttrs(attrs)}></${tag}>`;
+};
+
+export const getHTMLAttrs = (attrs: any = {}) => {
+  return Object.keys(attrs)
+    .map((name: string) => `${name}='${attrs[name]}'`)
+    .join(' ');
 };

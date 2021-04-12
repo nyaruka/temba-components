@@ -1,6 +1,6 @@
 import { fixture } from '@open-wc/testing';
 import { Options } from '../src/options/Options';
-import { assertScreenshot, getClip } from './utils.test';
+import { assertScreenshot, getClip, getHTML } from './utils.test';
 import './utils.test';
 
 const colors = [
@@ -10,11 +10,7 @@ const colors = [
 ];
 
 export const getOptionsHTML = (attrs: any = {}): string => {
-  return `
-    <temba-options ${Object.keys(attrs)
-      .map((name: string) => `${name}='${attrs[name]}'`)
-      .join(' ')}>
-    </temba-select>`;
+  return getHTML('temba-options', attrs);
 };
 
 export const createOptions = async (def: string) => {

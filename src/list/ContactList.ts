@@ -5,12 +5,12 @@ import {
   property,
   TemplateResult,
 } from 'lit-element';
-import { TembaList } from '../list/TembaList';
+import { TembaList } from './TembaList';
 import { FormElement } from '../FormElement';
 import { timeSince } from '../utils';
-import { ContactTicket } from '../interfaces';
+import { Contact } from '../interfaces';
 
-export class TicketList extends FormElement {
+export class ContactList extends FormElement {
   @property({ type: String })
   endpoint: string;
 
@@ -41,33 +41,29 @@ export class TicketList extends FormElement {
     this.dispatchEvent(new Event('change'));
   }
 
-  /** An option in the drop down */
-  private renderOption(
-    ticket: ContactTicket,
-    selected: boolean
-  ): TemplateResult {
+  private renderOption(contact: Contact, selected: boolean): TemplateResult {
     return html`
       <div style="display: flex-col;">
         <div style="display:flex;	align-items: center;">
           <div style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em">
-            ${ticket.contact.name}
+            ${contact.name}
           </div>
           <div style="font-size: 11px">
-            ${timeSince(new Date(ticket.contact.last_seen_on))}
+            ${timeSince(new Date(contact.last_seen_on))}
           </div>
         </div>
-        ${ticket.contact.last_msg
+        ${contact.last_msg
           ? html`
               <div
                 style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
               >
-                ${ticket.contact.last_msg.direction === 'I'
+                ${contact.last_msg.direction === 'I'
                   ? html`<temba-icon
                       name="user"
                       style="display:inline-block;margin-bottom:-1px;fill:rgba(0,0,0,.6)"
                     ></temba-icon>`
                   : null}
-                ${ticket.contact.last_msg.text}
+                ${contact.last_msg.text}
               </div>
             `
           : null}

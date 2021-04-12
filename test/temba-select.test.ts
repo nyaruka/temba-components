@@ -283,17 +283,6 @@ describe('temba-select', () => {
       await typeInto('temba-select', 're', false);
       await open(select);
       await forPages(select, 1);
-
-      // await clock.tick(1000);
-      // await select.httpComplete;
-      // await select.updateComplete;
-      // await waitFor(0);
-      // await clock.tick(1000);
-
-      // checkTimers(clock);
-
-      // await waitFor(1000);
-
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot('select/searching', getClipWithOptions(select));

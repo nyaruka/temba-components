@@ -1,7 +1,10 @@
 import { html, TemplateResult } from 'lit-html';
+import { ContactField, Ticket } from '../interfaces';
 import { SIMULATED_WEB_SLOWNESS } from '../contacts/helpers';
 
-export interface Asset {
+export type Asset = KeyedAsset & Ticket & ContactField;
+
+interface KeyedAsset {
   key?: string;
 }
 
@@ -121,9 +124,6 @@ export const getHeaders = (pjax: boolean = false) => {
     headers['X-PJAX'] = 'true';
   }
 
-  // we should update smartmin to look for ajax markers for json
-  headers['X-FORMAX'] = 'true';
-
   return headers;
 };
 
@@ -172,6 +172,10 @@ export const getUrl = (
         reject(error);
       });
   });
+};
+
+export const postJSON = (url: string, payload: any): Promise<WebResponse> => {
+  return postUrl(url, JSON.stringify(payload), false, 'application/json');
 };
 
 export const postUrl = (
@@ -397,11 +401,22 @@ const DAY = HOUR * 24;
 const WEEK = DAY * 7;
 const MONTH = DAY * 30;
 
-export const timeSince = (date: Date) => {
-  const now = new Date();
+export class Stubbable {
+  public getCurrentDate() {
+    return new Date();
+  }
+}
+
+export const stubbable = new Stubbable();
+
+export const timeSince = (date: Date, compareDate = null) => {
+  const now = compareDate || stubbable.getCurrentDate();
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (secondsPast < 60) {
+    if (compareDate) {
+      return secondsPast + 's';
+    }
     return 'just now';
   }
 
@@ -491,6 +506,14 @@ export const throttle = (fn: Function, millis: number) => {
 export interface NamedObject {
   name: string;
 }
+
+export const truncate = (input: string, max: number): string => {
+  if (input.length > max) {
+    return input.substring(0, max) + '...';
+  }
+
+  return input;
+};
 
 export const oxford = (items: any[], joiner: string = 'and'): any => {
   if (items.length === 1) {
