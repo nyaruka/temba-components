@@ -124,9 +124,6 @@ export const getHeaders = (pjax: boolean = false) => {
     headers['X-PJAX'] = 'true';
   }
 
-  // we should update smartmin to look for ajax markers for json
-  headers['X-FORMAX'] = 'true';
-
   return headers;
 };
 
@@ -412,11 +409,14 @@ export class Stubbable {
 
 export const stubbable = new Stubbable();
 
-export const timeSince = (date: Date) => {
-  const now = stubbable.getCurrentDate();
+export const timeSince = (date: Date, compareDate = null) => {
+  const now = compareDate || stubbable.getCurrentDate();
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (secondsPast < 60) {
+    if (compareDate) {
+      return secondsPast + 's';
+    }
     return 'just now';
   }
 

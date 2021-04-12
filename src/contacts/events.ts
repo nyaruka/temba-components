@@ -172,12 +172,14 @@ export const getEventStyles = () => {
     }
 
     .event.msg_created,
-    .event.broadcast_created {
+    .event.broadcast_created,
+    .event.ivr_created {
       align-self: flex-end;
     }
 
     .event.msg_created .msg,
-    .event.broadcast_created .msg {
+    .event.broadcast_created .msg,
+    .event.ivr_created .msg {
       background: rgb(231, 243, 255);
     }
 
@@ -194,6 +196,7 @@ export const getEventStyles = () => {
     .contact_name_changed,
     .contact_field_changed,
     .contact_urns_changed,
+    .contact_language_changed,
     .run_result_changed {
       fill: rgba(1, 193, 175, 1);
     }
@@ -214,14 +217,25 @@ export const getEventStyles = () => {
       color: var(--color-error);
     }
 
+    .description.error {
+      color: var(--color-error);
+    }
+
     .info {
       border: 1px solid rgba(100, 100, 100, 0.2);
       background: rgba(10, 10, 10, 0.02);
     }
 
+    .channel_event {
+      fill: rgb(230, 230, 230);
+    }
+
+    .airtime_transferred,
     .flow_exited,
     .flow_entered,
-    .ticket_opened {
+    .ticket_opened,
+    .call_started,
+    .campaign_fired {
       fill: rgba(223, 65, 159, 1);
     }
 
@@ -369,6 +383,7 @@ export enum Events {
   MESSAGE_CREATED = 'msg_created',
   MESSAGE_RECEIVED = 'msg_received',
   BROADCAST_CREATED = 'broadcast_created',
+  IVR_CREATED = 'ivr_created',
 
   FLOW_ENTERED = 'flow_entered',
   FLOW_EXITED = 'flow_exited',
@@ -378,7 +393,11 @@ export enum Events {
   CONTACT_NAME_CHANGED = 'contact_name_changed',
   CONTACT_URNS_CHANGED = 'contact_urns_changed',
   CAMPAIGN_FIRED = 'campaign_fired',
+  CHANNEL_EVENT = 'channel_event',
+  CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
   WEBHOOK_CALLED = 'webhook_called',
+  AIRTIME_TRANSFERRED = 'airtime_transferred',
+  CALL_STARTED = 'call_started',
   EMAIL_SENT = 'email_sent',
   INPUT_LABELS_ADDED = 'input_labels_added',
   TICKET_OPENED = 'ticket_opened',
@@ -389,6 +408,17 @@ export enum Events {
 export interface ContactEvent {
   type: string;
   created_on: string;
+}
+
+export interface ChannelEvent extends ContactEvent {
+  channel_event_type: string;
+  duration: number;
+}
+
+export interface ContactLanguageChangedEvent extends ContactEvent {
+  language: string;
+  step_uuid: string;
+  session_uuid: string;
 }
 
 export interface MsgEvent extends ContactEvent {
@@ -461,6 +491,26 @@ export interface WebhookEvent extends ContactEvent {
   url: string;
 }
 
+export interface AirtimeTransferredEvent extends ContactEvent {
+  sender: string;
+  recipient: string;
+  currency: string;
+  desired_amount: string;
+  actual_amount: string;
+  logs_url: string;
+}
+
+export interface CallStartedEvent extends ContactEvent {}
+export interface CampaignFiredEvent extends ContactEvent {
+  campaign: { id: number; name: string };
+  campaign_event: {
+    id: number;
+    offset_display: string;
+    relative_to: { key: string; name: string };
+  };
+  fired_result: string;
+}
+
 export interface ContactHistoryPage {
   has_older: boolean;
   recent_only: boolean;
@@ -481,6 +531,7 @@ export const getEventGroupType = (event: ContactEvent) => {
     case Events.BROADCAST_CREATED:
     case Events.MESSAGE_CREATED:
     case Events.MESSAGE_RECEIVED:
+    case Events.IVR_CREATED:
       return 'messages';
     case Events.TICKET_OPENED:
       if ((event as TicketOpenedEvent).ticket.ticketer.name === 'Internal') {
@@ -493,7 +544,6 @@ export const getEventGroupType = (event: ContactEvent) => {
 export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
   const isError = event.status === 'E' || event.status === 'F';
-
   return html`<div style="display:flex;flex-direction:column">
     <div class="msg">${event.msg.text}</div>
     <div
@@ -603,10 +653,10 @@ export const renderContactURNsChanged = (
       Updated
       <div class="attn">URNs</div>
       to
-      <div class="attn">
         ${oxfordFn(
           event.urns,
-          (urn: string) => urn.split(':')[1].split('?')[0]
+          (urn: string) =>
+            html`<div class="attn">${urn.split(':')[1].split('?')[0]}</div>`
         )}
       </div>
     </div>
@@ -651,7 +701,8 @@ export const renderTicketOpened = (
         <div class="attn">${event.ticket.subject}</div>
         <div class="subtext">
           ${ticket.closed_on
-            ? html`Opened ${opened.toLocaleString()}, took ${timeSince(closed)}`
+            ? html`Opened ${opened.toLocaleString()}, took
+              ${timeSince(opened, closed)}`
             : timeSince(opened)}
         </div>
       </div>
@@ -716,6 +767,91 @@ export const renderWebhookEvent = (event: WebhookEvent): TemplateResult => {
       </div>
     </div>
   `;
+};
+
+export const renderAirtimeTransferredEvent = (
+  event: AirtimeTransferredEvent
+): TemplateResult => {
+  if (parseFloat(event.actual_amount) === 0) {
+    return html`<temba-icon
+        name="alert-triangle"
+        style="fill:var(--color-error)"
+      ></temba-icon>
+      <div class="description error">Airtime transfer failed</div>`;
+  }
+
+  return html`<temba-icon name="dollar-sign"></temba-icon>
+    <div class="description">
+      Transferred
+      <div class="attn">${event.actual_amount} ${event.currency}</div>
+      of airtime
+    </div>`;
+};
+
+export const renderCallStartedEvent = (
+  event: CallStartedEvent
+): TemplateResult => {
+  return html`<temba-icon name="phone"></temba-icon>
+    <div class="description">Call Started</div>`;
+};
+
+export const renderContactLanguageChangedEvent = (
+  event: ContactLanguageChangedEvent
+): TemplateResult => {
+  return html`<temba-icon name="contact"></temba-icon>
+    <div class="description">Language updated to ${event.language}</div>`;
+};
+
+export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
+  let eventMessage = '';
+  let icon = 'phone';
+
+  if (event.channel_event_type === 'mt_miss') {
+    eventMessage = 'Missed outgoing call';
+    icon = 'phone-missed';
+  } else if (event.channel_event_type === 'mo_miss') {
+    eventMessage = 'Missed incoming call';
+    icon = 'phone-missed';
+  } else if (event.channel_event_type === 'new_conversation') {
+    eventMessage = 'Started Conversation';
+    icon = 'zap';
+  } else if (event.channel_event_type === 'welcome_message') {
+    eventMessage = 'Welcome Message Sent';
+    icon = 'zap';
+  } else if (event.channel_event_type === 'referral') {
+    eventMessage = 'Referred';
+    icon = 'zap';
+  } else if (event.channel_event_type === 'follow') {
+    eventMessage = 'Followed';
+    icon = 'zap';
+  } else if (event.channel_event_type === 'stop_contact') {
+    eventMessage = 'Stopped';
+    icon = 'x-octagon';
+  } else if (event.channel_event_type === 'mt_call') {
+    eventMessage = 'Outgoing Phone Call';
+  } else if (event.channel_event_type == 'mo_call') {
+    eventMessage = 'Incoming Phone call';
+  }
+
+  return html`<temba-icon name="${icon}"></temba-icon>
+    <div class="description">${eventMessage}</div>`;
+};
+
+export const renderCampaignFiredEvent = (
+  event: CampaignFiredEvent
+): TemplateResult => {
+  return html`<temba-icon name="campaign"></temba-icon>
+    <div class="description">
+      Campaign
+      <a href="/campaign/read/${event.campaign.id}" target="_"
+        >${event.campaign.name}</a
+      >
+      ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
+      <a href="/campaignevent/read/${event.campaign_event.id}" target="_">
+        ${event.campaign_event.offset_display}
+        ${event.campaign_event.relative_to.name}</a
+      >
+    </div>`;
 };
 
 export const renderContactGroupsEvent = (

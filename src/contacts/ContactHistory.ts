@@ -2,12 +2,17 @@ import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { CustomEventType, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { getAssets, getClasses, postForm, throttle } from '../utils';
+import { getAssets, getClasses, postForm, postJSON, throttle } from '../utils';
 import ResizeObserver from 'resize-observer-polyfill';
 import {
+  AirtimeTransferredEvent,
+  CallStartedEvent,
+  CampaignFiredEvent,
+  ChannelEvent,
   ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
+  ContactLanguageChangedEvent,
   EmailSentEvent,
   ErrorMessageEvent,
   EventGroup,
@@ -18,7 +23,12 @@ import {
   LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
+  renderAirtimeTransferredEvent,
+  renderCallStartedEvent,
+  renderCampaignFiredEvent,
+  renderChannelEvent,
   renderContactGroupsEvent,
+  renderContactLanguageChangedEvent,
   renderContactURNsChanged,
   renderEmailSent,
   renderErrorMessage,
@@ -571,6 +581,7 @@ export class ContactHistory extends RapidElement {
 
   public renderEvent(event: ContactEvent): TemplateResult {
     switch (event.type) {
+      case Events.IVR_CREATED:
       case Events.MESSAGE_CREATED:
       case Events.MESSAGE_RECEIVED:
       case Events.BROADCAST_CREATED:
@@ -610,6 +621,18 @@ export class ContactHistory extends RapidElement {
         return renderContactGroupsEvent(event as ContactGroupsEvent);
       case Events.WEBHOOK_CALLED:
         return renderWebhookEvent(event as WebhookEvent);
+      case Events.AIRTIME_TRANSFERRED:
+        return renderAirtimeTransferredEvent(event as AirtimeTransferredEvent);
+      case Events.CALL_STARTED:
+        return renderCallStartedEvent(event as CallStartedEvent);
+      case Events.CAMPAIGN_FIRED:
+        return renderCampaignFiredEvent(event as CampaignFiredEvent);
+      case Events.CHANNEL_EVENT:
+        return renderChannelEvent(event as ChannelEvent);
+      case Events.CONTACT_LANGUAGE_CHANGED:
+        return renderContactLanguageChangedEvent(
+          event as ContactLanguageChangedEvent
+        );
     }
 
     return html`<temba-icon
@@ -620,8 +643,8 @@ export class ContactHistory extends RapidElement {
   }
 
   private handleClose(uuid: string) {
-    this.httpComplete = postForm(`/ticket/update/${uuid}/?_format=json`, {
-      status: 'C',
+    this.httpComplete = postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
+      status: 'closed',
     })
       .then(response => {
         this.refreshTickets();
