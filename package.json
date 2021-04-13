@@ -15,6 +15,7 @@
     "build": "rimraf dist && tsc && rollup -c rollup.config.js",
     "dev": "yarn build && cp -R ./dist/* ../rapidpro/node_modules/@nyaruka/temba-components/dist/",
     "prepublish": "tsc",
+    "postversion": "git push --tags && git push origin main",
     "lint:eslint": "eslint --ext .ts,.html . --ignore-path .gitignore",
     "format:eslint": "eslint --ext .ts,.html . --fix --ignore-path .gitignore",
     "lint:prettier": "prettier \"**/*.js\" \"**/*.ts\" --check --ignore-path .gitignore",
