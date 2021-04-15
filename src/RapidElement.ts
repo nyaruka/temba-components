@@ -37,8 +37,8 @@ export class RapidElement extends LitElement {
     super.disconnectedCallback();
   }
 
-  public fireEvent(type: string): void {
-    this.dispatchEvent(
+  public fireEvent(type: string): any {
+    return this.dispatchEvent(
       new Event(type, {
         bubbles: true,
         composed: true,
@@ -46,29 +46,28 @@ export class RapidElement extends LitElement {
     );
   }
 
-  public fireCustomEvent(type: CustomEventType, detail: any = {}): void {
+  public fireCustomEvent(type: CustomEventType, detail: any = {}): any {
     const event = new CustomEvent(type, {
       detail,
       bubbles: true,
       composed: true,
     });
 
-    this.dispatchEvent(event);
+    return this.dispatchEvent(event);
   }
 
   public dispatchEvent(event: any): any {
-    super.dispatchEvent(event);
-
-    const ele = event.target;
-    if (ele) {
-      const eventFire = (ele as any)['-' + event.type];
-      if (eventFire) {
-        eventFire(event);
-      } else {
-        // lookup events with @ prefix and try to invoke them
-        const func = new Function(
-          'event',
-          `with(document) {
+    if (!super.dispatchEvent(event)) {
+      const ele = event.target;
+      if (ele) {
+        const eventFire = (ele as any)['-' + event.type];
+        if (eventFire) {
+          return eventFire(event);
+        } else {
+          // lookup events with @ prefix and try to invoke them
+          const func = new Function(
+            'event',
+            `with(document) {
           with(this) {
             let handler = ${ele.getAttribute('-' + event.type)};
             if(typeof handler === 'function') { 
@@ -76,8 +75,9 @@ export class RapidElement extends LitElement {
             }
           }
         }`
-        );
-        func.call(ele, event);
+          );
+          return func.call(ele, event);
+        }
       }
     }
   }
