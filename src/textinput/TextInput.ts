@@ -409,7 +409,7 @@ export class TextInput extends FormElement {
           }
         }}
         placeholder=${this.placeholder}
-        .value="${this.value}"
+        value="${this.value}"
         .disabled=${this.disabled}
       />
     `;
