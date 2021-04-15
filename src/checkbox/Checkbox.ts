@@ -63,6 +63,8 @@ export class Checkbox extends FormElement {
       } else {
         this.setValue('');
       }
+
+      this.fireEvent('change');
     }
   }
 
@@ -70,10 +72,14 @@ export class Checkbox extends FormElement {
     return value;
   }
 
-  private handleClick(event: MouseEvent): void {
+  private handleClick(event?: MouseEvent): void {
     if (!this.disabled) {
       this.checked = !this.checked;
     }
+  }
+
+  public click(): void {
+    this.handleClick();
   }
 
   public render(): TemplateResult {
