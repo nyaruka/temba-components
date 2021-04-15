@@ -22,4 +22,26 @@ describe('temba-checkbox', () => {
     expect(el.checked).to.equal(true);
     await assertScreenshot('checkbox/checked', getClip(el));
   });
+
+  it('fires change event on click', async () => {
+    return new Promise<void>(async (resolve, reject) => {
+      const checkbox: Checkbox = await fixture(html`
+        <temba-checkbox label="My Checkbox"></temba-checkbox>
+      `);
+
+      checkbox.addEventListener('change', () => {
+        resolve();
+      });
+
+      click('temba-checkbox');
+    });
+  });
+
+  it('checks via click method', async () => {
+    const checkbox: Checkbox = await fixture(html`
+      <temba-checkbox label="My Checkbox"></temba-checkbox>
+    `);
+    checkbox.click();
+    expect(checkbox.checked).to.equal(true);
+  });
 });
