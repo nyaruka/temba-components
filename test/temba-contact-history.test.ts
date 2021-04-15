@@ -16,7 +16,17 @@ export const createHistory = async (def: string) => {
     'style',
     'width: 500px;height:750px;display:flex;flex-direction:column'
   );
-  return (await fixture(def, { parentNode })) as ContactHistory;
+  const history = (await fixture(def, { parentNode })) as ContactHistory;
+
+  // let history fetch start and wait for it
+  await waitFor(0);
+  await history.httpComplete;
+
+  // wait for scroll update
+  await waitFor(0);
+  await history.httpComplete;
+
+  return history;
 };
 
 const getHistoryHTML = (attrs: any = {}) =>
@@ -60,14 +70,12 @@ describe('temba-contact-history', () => {
       })
     );
 
-    await history.httpComplete;
-
     // scrolling to the bottom should move us 417
     const top = history.scrollHeight - history.getBoundingClientRect().height;
-    expect(top).to.equal(417);
+    expect(top).to.equal(432);
 
     // make sure we actually scrolled to there
-    expect(history.scrollTop).to.equal(top);
+    expect(history.scrollTop).to.equal(top - 6);
 
     await assertScreenshot('contacts/history', getHistoryClip(history));
   });
@@ -78,8 +86,6 @@ describe('temba-contact-history', () => {
         uuid: '1234',
       })
     );
-
-    await history.httpComplete;
 
     const groups = [2, 6];
     for (const idx of groups) {
