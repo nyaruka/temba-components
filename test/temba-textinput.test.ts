@@ -3,16 +3,10 @@ import { TextInput } from '../src/textinput/TextInput';
 import { assertScreenshot, getClip } from './utils.test';
 import './utils.test';
 
-export const getInputHTML = (
-  text: string = 'hello',
-  textarea: boolean = false,
-  gsm: boolean = false,
-  disabled: boolean = false
-) => {
-  return `<temba-textinput value="${text}"
-    ${textarea ? 'textarea' : ''}
-    ${gsm ? 'gsm' : ''}
-    ${disabled ? 'disabled' : ''}
+export const getInputHTML = (attrs: any = { value: 'hello world' }) => {
+  return `<temba-textinput ${Object.keys(attrs)
+    .map((name: string) => `${name}='${attrs[name]}'`)
+    .join(' ')}
   ></temba-textinput>`;
 };
 
@@ -30,23 +24,34 @@ describe('temba-textinput', () => {
   it('can be created', async () => {
     const input: TextInput = await createInput(getInputHTML());
     assert.instanceOf(input, TextInput);
-  });
-
-  it('should render input', async () => {
-    const input: TextInput = await createInput(getInputHTML());
-    assert.instanceOf(input, TextInput);
     await assertScreenshot('textinput/input', getClip(input));
   });
 
+  it('should focus inputs on click', async () => {
+    const input: TextInput = await createInput(getInputHTML());
+    await click('temba-textinput');
+    await assertScreenshot('textinput/input-focused', getClip(input));
+  });
+
   it('should render textarea', async () => {
-    const input: TextInput = await createInput(getInputHTML('hello', true));
+    const input: TextInput = await createInput(
+      getInputHTML({ value: 'hello world', textarea: true })
+    );
     assert.instanceOf(input, TextInput);
     await assertScreenshot('textinput/textarea', getClip(input));
   });
 
+  it('should focus textarea on click', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({ value: 'hello world', textarea: true })
+    );
+    await click('temba-textinput');
+    await assertScreenshot('textinput/textarea-focused', getClip(input));
+  });
+
   it('takes internal input changes', async () => {
     const input: TextInput = await createInput(
-      getInputHTML('hello world', false, false, false)
+      getInputHTML({ value: 'hello world' })
     );
 
     // trigger a change on our internal widget
@@ -67,7 +72,7 @@ describe('temba-textinput', () => {
 
   it('does not take internal input changes for disabled', async () => {
     const input: TextInput = await createInput(
-      getInputHTML('hello world', false, false, true)
+      getInputHTML({ value: 'hello world', disabled: true })
     );
 
     // trigger a change on our internal widget
@@ -84,11 +89,12 @@ describe('temba-textinput', () => {
 
     // should be reflected on our main input
     expect(input.value).to.equal('hello world');
+    await assertScreenshot('textinput/input-disabled', getClip(input));
   });
 
   it('takes internal textarea changes', async () => {
     const input: TextInput = await createInput(
-      getInputHTML('hello world', true, false, false)
+      getInputHTML({ value: 'hello world', textarea: true })
     );
 
     // trigger a change on our internal widget
@@ -109,7 +115,7 @@ describe('temba-textinput', () => {
 
   it('does not take internal textarea changes for disabled', async () => {
     const input: TextInput = await fixture(
-      getInputHTML('hello world', true, false, true)
+      getInputHTML({ value: 'hello world', textarea: true, disabled: true })
     );
 
     // trigger a change on our internal widget
@@ -130,7 +136,7 @@ describe('temba-textinput', () => {
 
   it("doesn't advance cursor on GSM character replacement", async () => {
     const input: TextInput = await createInput(
-      getInputHTML('hello world', true, true)
+      getInputHTML({ value: 'hello world', textarea: true, gsm: true })
     );
     input.value = 'Let’s try some text with a funny tick.';
 
@@ -142,5 +148,47 @@ describe('temba-textinput', () => {
     expect(input.value).to.equal(
       "Let's try some text with a funny replaced tick."
     );
+  });
+
+  it("doesn't move cursor to the end on insert in input", async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({ value: 'hello world' })
+    );
+
+    // focus our widget, move back a few spots and insert some text
+    await click('temba-textinput');
+    await pressKey('ArrowLeft', 5);
+    await type('sad, sad ');
+
+    expect(input.value).to.equal('hello sad, sad world');
+    await assertScreenshot('textinput/input-inserted', getClip(input));
+  });
+
+  it('shows form attributes', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({
+        name: 'message',
+        value: 'hello world',
+        label: 'Your Message',
+        help_text: 'Enter your message here',
+      })
+    );
+    await assertScreenshot('textinput/input-form', getClip(input));
+  });
+
+  it('updates input value', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({
+        value: 'hello world',
+      })
+    );
+
+    input.value = 'Updated by attribute change';
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLInputElement;
+
+    await assertScreenshot('textinput/input-updated', getClip(input));
+    expect(widget.value).to.equal('Updated by attribute change');
   });
 });
