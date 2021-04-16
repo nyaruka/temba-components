@@ -26,7 +26,8 @@
     "test": "tsc && web-test-runner --node-resolve --coverage",
     "test:watch": "web-test-runner --node-resolve --watch",
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
-    "storybook:build": "build-storybook"
+    "storybook:build": "build-storybook",
+    "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md"
   },
   "dependencies": {
     "fa-icons": "^0.2.0",
@@ -56,6 +57,7 @@
     "@web/dev-server": "^0.0.12",
     "@web/test-runner": "^0.7.41",
     "@web/test-runner-puppeteer": "^0.9.3",
+    "auto-changelog": "^1.16.2",
     "concurrently": "^5.1.0",
     "deepmerge": "^4.2.2",
     "dynamicpixelmatch": "^0.0.2",
