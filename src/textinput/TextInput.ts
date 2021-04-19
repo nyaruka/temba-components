@@ -155,11 +155,20 @@ export class TextInput extends FormElement {
   cursorStart = -1;
   cursorEnd = -1;
 
+  public constructor() {
+    super();
+  }
+
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
 
-    this.inputElement = this.shadowRoot.querySelector('.textinput');
     this.dateElement = this.shadowRoot.querySelector('.datepicker');
+    if (this.dateElement) {
+      this.onDateUpdated = this.onDateUpdated.bind(this);
+      this.onDateReady = this.onDateReady.bind(this);
+    }
+
+    this.inputElement = this.shadowRoot.querySelector('.textinput');
 
     if (changes.has('counter')) {
       let root = this.getParentModax() as any;
@@ -171,34 +180,6 @@ export class TextInput extends FormElement {
       }
       this.counterElement = root.querySelector(this.counter);
       this.counterElement.text = this.value;
-    }
-
-    if (this.dateElement) {
-      const picker = this.dateElement;
-      window.setTimeout(() => {
-        this.dateElement.set(
-          'onValueUpdate',
-          (dates: Date[], formattedDate: string) => {
-            if (dates.length > 0) {
-              this.inputElement.value = picker.formatDate(
-                dates[0],
-                picker.altFormat
-              );
-              this.setValue(formattedDate);
-              this.inputElement.blur();
-            }
-          }
-        );
-
-        if (this.value) {
-          this.inputElement.value = picker.formatDate(
-            picker.parseDate(this.value),
-            picker.altFormat
-          );
-          this.dateElement.setDate(this.value);
-        }
-        this.loading = false;
-      }, 300);
     }
   }
 
@@ -214,6 +195,32 @@ export class TextInput extends FormElement {
         this.cursorEnd = -1;
       }
     }
+  }
+
+  private onDateUpdated(dates: Date[], formattedDate: string) {
+    if (dates.length > 0) {
+      this.inputElement.value = this.dateElement.formatDate(
+        dates[0],
+        this.dateElement.altFormat
+      );
+
+      this.setValue(formattedDate);
+      this.inputElement.blur();
+    }
+  }
+
+  private onDateReady() {
+    window.setTimeout(() => {
+      if (this.value) {
+        this.inputElement.value = this.dateElement.formatDate(
+          this.dateElement.parseDate(this.value),
+          this.dateElement.altFormat
+        );
+        this.dateElement.setDate(this.value);
+      }
+
+      this.loading = false;
+    }, 0);
   }
 
   private handleClear(event: any): void {
@@ -260,20 +267,20 @@ export class TextInput extends FormElement {
     if (this.disabled) {
       return;
     }
-    (this.shadowRoot.querySelector('.datepicker') as any).open();
+
+    this.dateElement.open();
+    this.dateElement.focus();
   }
 
   private handleContainerClick(): void {
     if (this.disabled) {
       return;
     }
-    const input: any = this.shadowRoot.querySelector('.textinput');
-    if (input) {
-      input.focus();
+
+    if (this.inputElement) {
+      this.inputElement.focus();
     } else {
-      const datepicker: any = this.shadowRoot.querySelector('.datepicker');
-      datepicker.open();
-      datepicker.focus();
+      this.handleDateClick();
     }
   }
 
@@ -449,6 +456,8 @@ export class TextInput extends FormElement {
           altInput
           altFormat="${this.datepicker ? 'F j, Y' : 'F j, Y h:i K'}"
           dateFormat="${this.datepicker ? 'Y-m-d' : 'Y-m-d H:i'}"
+          .onValueUpdate=${this.onDateUpdated}
+          .onReady=${this.onDateReady}
           ?enableTime=${this.datetimepicker}
         ></lit-flatpickr>
       `;

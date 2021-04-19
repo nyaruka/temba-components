@@ -30,9 +30,12 @@ const baseConfig = createSpaConfig({
           html = html.replace(/(<\/body>.*)/is, "");
         }
 
+
         if (args.htmlFileName === 'templates/components-head.html') {
           html = html.replace(/(.*<head>)/is, "");
           html = html.replace(/(<\/head>.*)/is, "");
+          html = html.replace('as="script"', '');
+          html = html.replace('<link rel="preload"', '<link rel="modulepreload"');
         }
 
         return html.replace('="../', '="{{STATIC_URL}}@nyaruka/temba-components/dist/');
