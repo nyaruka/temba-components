@@ -246,4 +246,31 @@ describe('temba-textinput', () => {
 
     await assertScreenshot('textinput/date-initialized', clip);
   });
+
+  it('updates on date selection', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({
+        datepicker: true,
+        placeholder: 'Select a date',
+        value: '2020-04-20',
+      })
+    );
+
+    // open our picker
+    await waitFor(500);
+    await click('temba-textinput');
+    await waitFor(500);
+
+    // click on a new date
+    const newDate = document.querySelectorAll(
+      ".flatpickr-day[aria-label='April 21, 2020']"
+    )[1] as HTMLSpanElement;
+    newDate.click();
+
+    // make sure it updated
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLInputElement;
+    expect(widget.value).to.equal('April 21, 2020');
+  });
 });
