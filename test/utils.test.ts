@@ -31,6 +31,17 @@ after(() => {
   (window.fetch as any).restore();
 });
 
+export const getAttributes = (attrs: any = {}) => {
+  return `${Object.keys(attrs)
+    .map((name: string) => {
+      if (typeof attrs[name] === 'boolean' && attrs[name]) {
+        return name;
+      }
+      return `${name}='${attrs[name]}'`;
+    })
+    .join(' ')}`;
+};
+
 const getResponse = (endpoint: string, options) => {
   // check if our path has been mocked in code
   const mocks = options.method === 'GET' ? gets : posts;

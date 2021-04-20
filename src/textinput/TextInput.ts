@@ -2,10 +2,10 @@ import { TemplateResult, html, css, property } from 'lit-element';
 import { ifDefined } from 'lit-html/directives/if-defined';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { FormElement } from '../FormElement';
-import 'lit-flatpickr';
 import { Modax } from '../dialog/Modax';
 import { sanitize } from './helpers';
 import { CharCount } from '../charcount/CharCount';
+import 'lit-flatpickr';
 
 export class TextInput extends FormElement {
   static get styles() {
@@ -447,9 +447,9 @@ export class TextInput extends FormElement {
             e.preventDefault();
           }}
           readonly="true"
-          placeholder=${this.placeholder}
+          placeholder="${this.placeholder}"
           .value="${this.value}"
-          .disabled=${this.disabled}
+          ?disabled=${this.disabled}
         />
         <lit-flatpickr
           class="datepicker hidden"
@@ -466,8 +466,8 @@ export class TextInput extends FormElement {
     return html`
       <temba-field
         name=${this.name}
-        .label=${this.label}
-        .helpText=${this.helpText}
+        .label="${this.label}"
+        .helpText="${this.helpText}"
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         .hideLabel=${this.hideLabel}

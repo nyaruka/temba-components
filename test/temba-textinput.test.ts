@@ -1,13 +1,10 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { TextInput } from '../src/textinput/TextInput';
-import { assertScreenshot, getClip } from './utils.test';
+import { assertScreenshot, getAttributes, getClip } from './utils.test';
 import './utils.test';
 
 export const getInputHTML = (attrs: any = { value: 'hello world' }) => {
-  return `<temba-textinput ${Object.keys(attrs)
-    .map((name: string) => `${name}='${attrs[name]}'`)
-    .join(' ')}
-  ></temba-textinput>`;
+  return `<temba-textinput ${getAttributes(attrs)}></temba-textinput>`;
 };
 
 export const createInput = async (def: string, delay: number = 0) => {
@@ -25,6 +22,19 @@ describe('temba-textinput', () => {
     const input: TextInput = await createInput(getInputHTML());
     assert.instanceOf(input, TextInput);
     await assertScreenshot('textinput/input', getClip(input));
+  });
+
+  it('shows placeholder', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({ placeholder: 'Enter some text' })
+    );
+
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLInputElement;
+
+    expect(widget.placeholder).to.equal('Enter some text');
+    await assertScreenshot('textinput/input-placeholder', getClip(input));
   });
 
   it('should focus inputs on click', async () => {
@@ -190,5 +200,50 @@ describe('temba-textinput', () => {
 
     await assertScreenshot('textinput/input-updated', getClip(input));
     expect(widget.value).to.equal('Updated by attribute change');
+  });
+
+  it('shows datepicker placeholder in a form', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({
+        name: 'Date',
+        label: 'Your Date',
+        datepicker: true,
+        placeholder: 'Select a date',
+        help_text: 'Dates can be helpful',
+      })
+    );
+
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLInputElement;
+    expect(widget.placeholder).to.equal('Select a date');
+    await assertScreenshot('textinput/date-form', getClip(input));
+  });
+
+  it('shows initialized date', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({
+        datepicker: true,
+        placeholder: 'Select a date',
+        value: '2020-04-20',
+      })
+    );
+
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLInputElement;
+    expect(widget.value).to.equal('2020-04-20');
+
+    await waitFor(500);
+    await click('temba-textinput');
+    await waitFor(500);
+
+    let clip = getClip(input);
+
+    // account for the portaled date picker
+    clip.height += 325;
+    clip.width += 55;
+
+    await assertScreenshot('textinput/date-initialized', clip);
   });
 });
