@@ -151,7 +151,7 @@ const wireScreenshots = async (page, context) => {
         const dimensions = sizeOf(truthFile);
         let { width, height} = dimensions;
 
-        // we should have a device ration of 2
+        // we should have a device ratio of 2
         width /= 2;
         height /= 2;
 

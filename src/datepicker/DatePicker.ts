@@ -67,7 +67,7 @@ export default class DatePicker extends FormElement {
   public render(): TemplateResult {
     return html`
       <lit-flatpickr
-      class="textinput"
+        class="textinput"
         id="my-date-picker"
         altInput
         altFormat="F j, Y"
