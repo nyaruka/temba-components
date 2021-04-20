@@ -5,7 +5,7 @@ import {
   property,
   TemplateResult,
 } from 'lit-element';
-import { SIMULATED_WEB_SLOWNESS } from '../contacts/helpers';
+import { reset } from 'sinon';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { fetchResultsPage, ResultsPage } from '../utils';
@@ -61,6 +61,7 @@ export class TembaList extends RapidElement {
 
   pages: number = 0;
   clearRefreshTimeout: any;
+  pending: AbortController[] = [];
 
   static get styles() {
     return css`
@@ -87,14 +88,23 @@ export class TembaList extends RapidElement {
     }, DEFAULT_REFRESH);
   }
 
+  private reset(): void {
+    this.nextSelection = null;
+    this.selected = null;
+    this.nextPage = null;
+    this.cursorIndex = 0;
+    this.mostRecentItem = null;
+    this.items = [];
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
     if (changedProperties.has('endpoint') && this.endpoint) {
+      this.reset();
+
       this.loading = true;
-      window.setTimeout(() => {
-        this.fetchItems();
-      }, SIMULATED_WEB_SLOWNESS);
+      this.fetchItems();
     }
 
     if (
@@ -134,30 +144,48 @@ export class TembaList extends RapidElement {
   }
 
   private async fetchItems() {
-    let endpoint = this.endpoint;
+    // cancel any outstanding requests
+    while (this.pending.length > 0) {
+      const pending = this.pending.pop();
+      pending.abort();
+    }
 
+    let endpoint = this.endpoint;
     let pagesToFetch = this.pages || 1;
-    this.pages = 0;
-    this.nextPage = null;
+    let pages = this.pages | 0;
+    let nextPage = null;
 
     let fetchedItems: any[] = [];
 
     while (pagesToFetch > 0 && endpoint) {
-      const page = await fetchResultsPage(endpoint);
+      const controller = new AbortController();
+      this.pending.push(controller);
 
-      // sanitize our options if necessary
-      if (this.sanitizeOption) {
-        page.results.forEach(this.sanitizeOption);
+      try {
+        const page = await fetchResultsPage(endpoint, controller);
+
+        // sanitize our options if necessary
+        if (this.sanitizeOption) {
+          page.results.forEach(this.sanitizeOption);
+        }
+
+        fetchedItems = fetchedItems.concat(page.results);
+
+        // save our next pages
+        nextPage = page.next;
+        endpoint = this.nextPage;
+        pagesToFetch--;
+        pages++;
+      } catch (error) {
+        // aborted
+        reset();
+        return;
       }
 
-      fetchedItems = fetchedItems.concat(page.results);
-
-      // save our next pages
-      this.nextPage = page.next;
-      endpoint = this.nextPage;
-      pagesToFetch--;
-      this.pages++;
+      this.nextPage = nextPage;
     }
+
+    this.pages = pages;
 
     const topItem = fetchedItems[0];
     if (
@@ -184,6 +212,7 @@ export class TembaList extends RapidElement {
     // save our results
     this.items = fetchedItems;
     this.loading = false;
+    this.pending = [];
   }
 
   private handleScrollThreshold(event: CustomEvent) {

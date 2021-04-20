@@ -1,6 +1,7 @@
 import { html, TemplateResult } from 'lit-html';
 import { ContactField, Ticket } from '../interfaces';
 import { SIMULATED_WEB_SLOWNESS } from '../contacts/helpers';
+import { control } from 'leaflet';
 
 export type Asset = KeyedAsset & Ticket & ContactField;
 
@@ -55,9 +56,12 @@ export const getClasses = (map: ClassMap): string => {
   return result;
 };
 
-export const fetchResultsPage = (url: string): Promise<ResultsPage> => {
+export const fetchResultsPage = (
+  url: string,
+  controller: AbortController = null
+): Promise<ResultsPage> => {
   return new Promise<ResultsPage>((resolve, reject) => {
-    getUrl(url)
+    getUrl(url, controller)
       .then((response: WebResponse) => {
         resolve({
           results: response.json.results,
