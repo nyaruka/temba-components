@@ -382,11 +382,11 @@ export class ContactHistory extends RapidElement {
   }
 
   private refreshTickets() {
-    getAssets(
-      `/api/v2/tickets.json?ticketer_type=internal&contact=${this.uuid}`
-    ).then((tickets: Ticket[]) => {
-      this.tickets = tickets.reverse();
-    });
+    getAssets(`/api/v2/tickets.json?contact=${this.uuid}`).then(
+      (tickets: Ticket[]) => {
+        this.tickets = tickets.reverse();
+      }
+    );
   }
 
   public refresh(): void {

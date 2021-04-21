@@ -127,7 +127,7 @@ export class ContactChat extends RapidElement {
   currentChat: string = '';
 
   @property({ type: Boolean })
-  showDetails: boolean = false;
+  showDetails: boolean = true;
 
   @property({ type: Object })
   currentTicket: Ticket = null;

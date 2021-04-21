@@ -534,9 +534,7 @@ export const getEventGroupType = (event: ContactEvent) => {
     case Events.IVR_CREATED:
       return 'messages';
     case Events.TICKET_OPENED:
-      if ((event as TicketOpenedEvent).ticket.ticketer.name === 'Internal') {
-        return 'tickets';
-      }
+      return 'tickets';
   }
   return 'verbose';
 };
@@ -586,7 +584,7 @@ export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
       icon = 'flow';
     } else {
       verb = 'Completed';
-      icon = 'chevrons-down';
+      icon = 'flow';
     }
   }
 
@@ -708,8 +706,17 @@ export const renderTicketOpened = (
       </div>
     `;
   } else {
+    let icon = 'inbox';
+    if (ticket) {
+      if (ticket.ticketer.name.indexOf('Email') > -1) {
+        icon = 'mail';
+      } else if (ticket.ticketer.name.indexOf('Zendesk') > -1) {
+        icon = 'zendesk';
+      }
+    }
+
     return html`
-      <temba-icon size="${ticket ? '1.5' : '1'}" name="inbox"></temba-icon>
+      <temba-icon size="${ticket ? '1.5' : '1'}" name="${icon}"></temba-icon>
       <div style="flex-grow:1;">
         Opened
         <div class="attn">
@@ -721,15 +728,17 @@ export const renderTicketOpened = (
       </div>
       <div>
         ${ticket
-          ? html` <temba-icon
-              class="clickable"
-              size="1.5"
-              name="check"
-              @click=${() => {
-                handleClose(event.ticket.uuid);
-              }}
-              ?clickable=${open}
-            />`
+          ? html`
+              <temba-icon
+                class="clickable"
+                size="1.5"
+                name="check"
+                @click=${() => {
+                  handleClose(event.ticket.uuid);
+                }}
+                ?clickable=${open}
+              />
+            `
           : null}
       </div>
     `;
