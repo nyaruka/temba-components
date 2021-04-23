@@ -113,6 +113,10 @@ export class ContactHistory extends RapidElement {
         margin-right: 0.75em;
       }
 
+      .sticky-bin temba-icon[name='check'] {
+        margin-right: 0;
+      }
+
       .sticky {
         display: flex;
         margin: 1em -2em;

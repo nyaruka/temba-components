@@ -1,17 +1,19 @@
-import { fixture, assert } from '@open-wc/testing';
+import { assert } from '@open-wc/testing';
 import { VectorIcon } from '../src/vectoricon/VectorIcon';
 import './utils.test';
+import { getComponent } from './utils.test';
 
-export const getHTML = (name: string) => {
-  return `<temba-icon name=${name}></temba-icon>`;
+const TAG = 'temba-icon';
+const getIcon = async (attrs: any = {}) => {
+  return (await getComponent(TAG, attrs)) as VectorIcon;
 };
 
-describe('temba-icon', () => {
+describe(TAG, () => {
   beforeEach(() => {});
   afterEach(() => {});
 
   it('can be created', async () => {
-    const icon: VectorIcon = await fixture(getHTML('checkmark'));
+    const icon = await getIcon({ name: 'checkmark' });
     assert.instanceOf(icon, VectorIcon);
   });
 });

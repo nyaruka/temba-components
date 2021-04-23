@@ -8,7 +8,7 @@ interface Clip {
 }
 
 import { stub } from 'sinon';
-import { expect } from '@open-wc/testing';
+import { expect, fixture } from '@open-wc/testing';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -20,6 +20,24 @@ var fetchStub;
 const gets: CodeMock[] = [];
 const posts: CodeMock[] = [];
 var normalFetch;
+
+export const getComponent = async (
+  tag,
+  attrs: any = {},
+  slot = '',
+  width = 250,
+  style = ''
+) => {
+  const spec = `<${tag} ${getAttributes(attrs)}>${slot}</${tag}>`;
+
+  if (width > 0) {
+    const parentNode = document.createElement('div');
+    parentNode.setAttribute('style', `width: ${width}px;${style}`);
+    return await fixture(spec, { parentNode });
+  }
+
+  return await fixture(spec);
+};
 
 before(async () => {
   normalFetch = window.fetch;

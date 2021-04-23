@@ -240,7 +240,7 @@ export const getEventStyles = () => {
     }
 
     .ticket_opened temba-icon.clickable[name='check'] {
-      fill: rgba(180, 180, 180, 1);
+      fill: rgba(100, 100, 100, 1);
     }
 
     .ticket_opened temba-icon {
@@ -729,15 +729,17 @@ export const renderTicketOpened = (
       <div>
         ${ticket
           ? html`
-              <temba-icon
-                class="clickable"
-                size="1.5"
-                name="check"
-                @click=${() => {
-                  handleClose(event.ticket.uuid);
-                }}
-                ?clickable=${open}
-              />
+              <temba-tip text="Resolve" position="left">
+                <temba-icon
+                  class="clickable"
+                  size="1.5"
+                  name="check"
+                  @click=${() => {
+                    handleClose(event.ticket.uuid);
+                  }}
+                  ?clickable=${open}
+                />
+              </temba-tip>
             `
           : null}
       </div>
