@@ -39,7 +39,7 @@ export class ContactChat extends RapidElement {
       }
 
       temba-completion {
-        --textarea-height: 2em;
+        --textarea-height: 2.5em;
       }
 
       a {
@@ -51,10 +51,11 @@ export class ContactChat extends RapidElement {
         color: var(--color-link-primary-hover);
       }
 
-      #send-button {
-        margin-top: 1em;
-        margin-right: 2px;
-        --button-y: 2px;
+      temba-button#send-button {
+        --button-y: 1px;
+        --button-x: 12px;
+        margin-top: 0.8em;
+        float: right;
       }
 
       .toolbar {
@@ -211,13 +212,22 @@ export class ContactChat extends RapidElement {
                       .value=${this.currentChat}
                       @keydown=${(e: KeyboardEvent) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
-                          this.handleSend(e);
-                          e.preventDefault();
-                          e.stopPropagation();
+                          const chat = e.target as Completion;
+                          if (!chat.hasVisibleOptions()) {
+                            this.handleSend(e);
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
                         }
                       }}
                       textarea
                     ></temba-completion>
+                    <temba-button
+                      id="send-button"
+                      name="Send"
+                      @click=${this.handleSend}
+                      ?disabled=${this.currentChat.trim().length === 0}
+                    ></temba-button>
                   </div>`
               : null}
           </div>

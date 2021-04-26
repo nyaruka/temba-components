@@ -378,8 +378,9 @@ export class Options extends RapidElement {
         evt.key === 'Tab' ||
         (this.spaceSelect && evt.key === ' ')
       ) {
-        this.handleSelection(evt.key === 'Tab');
         evt.preventDefault();
+        evt.stopPropagation();
+        this.handleSelection(evt.key === 'Tab');
       }
 
       if (evt.key === 'Escape') {
@@ -514,7 +515,7 @@ export class Options extends RapidElement {
     const options = this.options || [];
 
     return html`
-      <div class=${classes} style=${styleMap(containerStyle)}>
+      <div id="wrapper" class=${classes} style=${styleMap(containerStyle)}>
         <div
           @scroll=${throttle(this.handleInnerScroll, 100)}
           class="${classesInner}"

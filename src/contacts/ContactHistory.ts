@@ -93,7 +93,7 @@ export class ContactHistory extends RapidElement {
         align-self: center;
         margin-top: 0.025em;
         position: absolute;
-        z-index: 1000;
+        z-index: 250;
       }
 
       .sticky-bin {
@@ -101,7 +101,7 @@ export class ContactHistory extends RapidElement {
         flex-direction: column;
         position: fixed;
         margin: -1em;
-        z-index: 10000;
+        z-index: 500;
         border-top-left-radius: var(--curvature);
         overflow: hidden;
 
