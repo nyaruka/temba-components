@@ -101,7 +101,7 @@ export class ContactHistory extends RapidElement {
         flex-direction: column;
         position: fixed;
         margin: -1em;
-        z-index: 500;
+        z-index: 1;
         border-top-left-radius: var(--curvature);
         overflow: hidden;
 

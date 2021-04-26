@@ -39,14 +39,14 @@ const getTopClip = (ele: HTMLElement) => {
 
 const getBottomClip = (ele: HTMLElement) => {
   const clip = getClip(ele);
-  clip.height += 28;
+  clip.height += 35;
   clip.width += 30;
   clip.x -= 15;
   return clip;
 };
 
 const getTarget = () => {
-  return "<div style='line-height:0px;font-size:14px;width:0px;height:0px'>👱‍♀️</div>";
+  return "<div style='line-height:0px;font-size:14px;background:green;display:flex'>👱‍♀️</div>";
 };
 
 describe(TAG, () => {

@@ -9,23 +9,31 @@ export class Tip extends RapidElement {
   static get styles() {
     return css`
       .tip {
+        transition: opacity 300ms ease-in-out;
+        margin: 0px;
         position: fixed;
-        transition: opacity 100ms ease-in-out 5ms;
         opacity: 0;
-
         background: #fff;
         padding: 4px 8px;
         pointer-events: none;
-
         border-radius: var(--curvature-widget);
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2),
-          0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        box-shadow: 0 1px 10px 10px rgba(0, 0, 0, 0.035),
+          0 1px 3px 0px rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+        z-index: 10000;
       }
+
+      .tip.hide-on-change {
+        transition: none;
+      }
+
       .show {
         opacity: 1;
       }
 
       .slot {
+        display: flex;
+        flex-direction: column;
       }
 
       .arrow {
@@ -61,6 +69,9 @@ export class Tip extends RapidElement {
   @property({ type: String })
   position: string = 'auto';
 
+  @property({ type: Boolean })
+  hideOnChange: boolean;
+
   @property({ type: Number, attribute: false })
   top: number;
 
@@ -82,8 +93,12 @@ export class Tip extends RapidElement {
   public firstUpdated() {}
 
   public updated(changed: Map<string, any>) {
-    if (changed.has('visible') && this.visible) {
+    if ((changed.has('visible') || changed.has('text')) && this.visible) {
       this.calculatePosition();
+    }
+
+    if (changed.has('text') && this.hideOnChange) {
+      this.visible = false;
     }
   }
 
@@ -102,7 +117,7 @@ export class Tip extends RapidElement {
       this.arrowTop = 0;
 
       if (tipSide === 'left') {
-        this.left = anchorBounds.left - tipBounds.width - 12;
+        this.left = anchorBounds.left - tipBounds.width - 16;
         this.top = getMiddle(anchorBounds, tipBounds);
 
         // position our arrow
@@ -134,11 +149,16 @@ export class Tip extends RapidElement {
     }
   }
 
+  lastEnter: number = 0;
+
   private handleMouseEnter() {
-    this.visible = true;
+    this.lastEnter = window.setTimeout(() => {
+      this.visible = true;
+    }, 600);
   }
 
   private handleMouseLeave() {
+    window.clearTimeout(this.lastEnter);
     this.visible = false;
   }
 
@@ -161,6 +181,7 @@ export class Tip extends RapidElement {
       tip: true,
       show: this.visible,
       top: this.poppedTop,
+      'hide-on-change': this.hideOnChange,
     });
 
     return html`

@@ -42,12 +42,30 @@ export class VectorIcon extends LitElement {
         fill: var(--icon-color);
         transform: rotate(360deg);
         transition: transform 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
-          fill 100ms ease-in-out;
+          fill 100ms ease-in-out,
+          background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          padding 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          margin 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
       }
 
-      svg.clickable:hover {
+      .clickable:hover {
         cursor: pointer;
         fill: var(--color-link-primary);
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        border-radius: 999px;
+        transition: background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          padding 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          margin 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .wrapper.clickable:hover {
+        padding: 0.35em;
+        margin: -0.35em;
       }
 
       .spin {
@@ -78,13 +96,18 @@ export class VectorIcon extends LitElement {
 
   public render(): TemplateResult {
     return html`
-      <svg style="height:${this.size}em;width:${
-      this.size
-    }em;" class="${getClasses({ spin: this.spin, clickable: this.clickable })}">
-        <use href="/sitestatic/icons/symbol-defs.svg?#icon-${
-          this.lastName || this.name || this.id
-        }"></i>
-      </span>
+      <div class="wrapper ${getClasses({ clickable: this.clickable })}">
+        <svg
+          style="height:${this.size}em;width:${this.size}em;"
+          class="${getClasses({ spin: this.spin })}"
+        >
+          <use
+            href="/sitestatic/icons/symbol-defs.svg?#icon-${this.lastName ||
+            this.name ||
+            this.id}"
+          />
+        </svg>
+      </div>
     `;
   }
 }
