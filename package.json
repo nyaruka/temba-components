@@ -13,7 +13,7 @@
     "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --open --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
     "build": "rimraf dist && tsc && rollup -c rollup.config.js",
-    "dev": "yarn build && cp -R ./dist/* ../rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
+    "dev": "yarn build && cp -R ./dist/* ../rapidpro/node_modules/@nyaruka/temba-components/dist/",
     "prepublish": "tsc",
     "postversion": "git push --tags && git push origin main",
     "lint:eslint": "eslint --ext .ts,.html . --ignore-path .gitignore",

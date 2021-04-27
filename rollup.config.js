@@ -52,14 +52,7 @@ const rollupConfig = merge(baseConfig, {
     copy({
       targets: [
         { src: 'static/icons/symbol-defs.svg', dest: 'dist/static/icons/' },
-        { 
-          src: 'dist/*.js', 
-          dest: 'dist/', 
-          rename: ()=>"index.js"
-        },
-        
-      ],
-      hook: "writeBundle",
+      ]
     })
   ]
 })
