@@ -150,11 +150,17 @@ export class Completion extends FormElement {
         evt.key === 'Tab' ||
         evt.key.startsWith('Control')
       ) {
+        evt.stopPropagation();
+        evt.preventDefault();
         return;
       }
 
       this.executeQuery(evt.currentTarget as TextInput);
     }
+  }
+
+  public hasVisibleOptions() {
+    return this.options.length > 0;
   }
 
   private executeQuery(ele: TextInput) {

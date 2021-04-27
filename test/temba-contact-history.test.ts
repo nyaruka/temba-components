@@ -52,7 +52,7 @@ describe('temba-contact-history', () => {
     );
 
     mockGET(
-      /\/api\/v2\/tickets\.json\?ticketer_type=internal&contact=1234/,
+      /\/api\/v2\/tickets\.json\?contact=1234/,
       '/test-assets/api/tickets.json'
     );
   });
@@ -70,9 +70,11 @@ describe('temba-contact-history', () => {
       })
     );
 
-    // scrolling to the bottom should move us 417
+    await waitFor(500);
+
+    // we should have scrolled to the bottom
     const top = history.scrollHeight - history.getBoundingClientRect().height;
-    expect(top).to.equal(432);
+    expect(top).to.equal(429);
 
     // make sure we actually scrolled to there
     expect(history.scrollTop).to.equal(top - 6);

@@ -93,7 +93,7 @@ export class ContactHistory extends RapidElement {
         align-self: center;
         margin-top: 0.025em;
         position: absolute;
-        z-index: 1000;
+        z-index: 250;
       }
 
       .sticky-bin {
@@ -101,7 +101,7 @@ export class ContactHistory extends RapidElement {
         flex-direction: column;
         position: fixed;
         margin: -1em;
-        z-index: 10000;
+        z-index: 1;
         border-top-left-radius: var(--curvature);
         overflow: hidden;
 
@@ -111,6 +111,10 @@ export class ContactHistory extends RapidElement {
 
       .sticky-bin temba-icon {
         margin-right: 0.75em;
+      }
+
+      .sticky-bin temba-icon[name='check'] {
+        margin-right: 0;
       }
 
       .sticky {
@@ -382,11 +386,11 @@ export class ContactHistory extends RapidElement {
   }
 
   private refreshTickets() {
-    getAssets(
-      `/api/v2/tickets.json?ticketer_type=internal&contact=${this.uuid}`
-    ).then((tickets: Ticket[]) => {
-      this.tickets = tickets.reverse();
-    });
+    getAssets(`/api/v2/tickets.json?contact=${this.uuid}`).then(
+      (tickets: Ticket[]) => {
+        this.tickets = tickets.reverse();
+      }
+    );
   }
 
   public refresh(): void {

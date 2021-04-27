@@ -39,7 +39,7 @@ export class ContactChat extends RapidElement {
       }
 
       temba-completion {
-        --textarea-height: 2em;
+        --textarea-height: 2.5em;
       }
 
       a {
@@ -51,10 +51,11 @@ export class ContactChat extends RapidElement {
         color: var(--color-link-primary-hover);
       }
 
-      #send-button {
-        margin-top: 1em;
-        margin-right: 2px;
-        --button-y: 2px;
+      temba-button#send-button {
+        --button-y: 1px;
+        --button-x: 12px;
+        margin-top: 0.8em;
+        float: right;
       }
 
       .toolbar {
@@ -68,13 +69,13 @@ export class ContactChat extends RapidElement {
         border-top-right-radius: 0.5em;
         border-bottom-right-radius: 0.5em;
         padding: 0.5em 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
       .toolbar temba-icon {
-        display: block;
-        width: 1em;
-        margin: 0 auto;
-        fill: rgb(90, 90, 90);
+        fill: rgb(60, 60, 60);
       }
 
       .toolbar.closed {
@@ -127,7 +128,7 @@ export class ContactChat extends RapidElement {
   currentChat: string = '';
 
   @property({ type: Boolean })
-  showDetails: boolean = false;
+  showDetails: boolean = true;
 
   @property({ type: Object })
   currentTicket: Ticket = null;
@@ -211,13 +212,22 @@ export class ContactChat extends RapidElement {
                       .value=${this.currentChat}
                       @keydown=${(e: KeyboardEvent) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
-                          this.handleSend(e);
-                          e.preventDefault();
-                          e.stopPropagation();
+                          const chat = e.target as Completion;
+                          if (!chat.hasVisibleOptions()) {
+                            this.handleSend(e);
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
                         }
                       }}
                       textarea
                     ></temba-completion>
+                    <temba-button
+                      id="send-button"
+                      name="Send"
+                      @click=${this.handleSend}
+                      ?disabled=${this.currentChat.trim().length === 0}
+                    ></temba-button>
                   </div>`
               : null}
           </div>
@@ -237,12 +247,19 @@ export class ContactChat extends RapidElement {
         <div class="toolbar ${this.showDetails ? '' : 'closed'}">
           ${this.contact
             ? html`
-                <temba-icon
-                  id="details-button"
-                  name="${this.showDetails ? 'chevrons-left' : 'sidebar'}"
-                  @click="${this.handleDetailSlider}"
-                  clickable
-                ></temba-icon>
+                <temba-tip
+                  style="margin-top:5px"
+                  text="${this.showDetails ? 'Hide Details' : 'Show Details'}"
+                  position="left"
+                  hideOnChange
+                >
+                  <temba-icon
+                    id="details-button"
+                    name="${this.showDetails ? 'chevrons-left' : 'sidebar'}"
+                    @click="${this.handleDetailSlider}"
+                    clickable
+                  ></temba-icon>
+                </temba-tip>
               `
             : null}
         </div>

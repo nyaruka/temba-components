@@ -13,6 +13,7 @@ export class ContactDetails extends RapidElement {
         background: #f9f9f9;
         display: block;
         height: 100%;
+        position: relative;
       }
 
       .wrapper {

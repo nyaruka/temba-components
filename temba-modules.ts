@@ -19,6 +19,7 @@ import { ContactSearch } from './src/contactsearch/ContactSearch';
 import { VectorIcon } from './src/vectoricon/VectorIcon';
 import { Alert } from './src/alert/Alert';
 import { Omnibox } from './src/omnibox/Omnibox';
+import { Tip } from './src/tip/Tip';
 
 window.customElements.define('temba-alert', Alert);
 window.customElements.define('temba-store', Store);
@@ -30,6 +31,7 @@ window.customElements.define('temba-options', Options);
 window.customElements.define('temba-loading', Loading);
 window.customElements.define('temba-button', Button);
 window.customElements.define('temba-omnibox', Omnibox);
+window.customElements.define('temba-tip', Tip);
 
 window.customElements.define('temba-field', FormField);
 window.customElements.define('temba-dialog', Dialog);

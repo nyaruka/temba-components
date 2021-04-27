@@ -240,7 +240,7 @@ export const getEventStyles = () => {
     }
 
     .ticket_opened temba-icon.clickable[name='check'] {
-      fill: rgba(180, 180, 180, 1);
+      fill: rgba(100, 100, 100, 1);
     }
 
     .ticket_opened temba-icon {
@@ -304,11 +304,13 @@ export const getEventStyles = () => {
     }
 
     .msg-summary temba-icon[name='megaphone'] {
-      --icon-color: rgba(0, 0, 0, 0.5);
+      --icon-color: rgba(90, 90, 90, 0.5);
     }
 
-    .msg-summary temba-icon {
-      padding: 0px 2px;
+    .msg-summary * {
+      display: flex;
+      margin-right: 1px;
+      margin-left: 1px;
     }
 
     .time {
@@ -320,7 +322,7 @@ export const getEventStyles = () => {
     }
 
     .separator {
-      padding: 0.3em 3px;
+      padding: 0.3em 0px;
     }
 
     .recipients {
@@ -360,10 +362,6 @@ export const getEventStyles = () => {
     a:hover {
       text-decoration: underline;
       color: var(--color-link-primary-hover);
-    }
-
-    .icon-link {
-      display: inline !important;
     }
 
     temba-icon[name='alert-triangle'] {
@@ -534,9 +532,7 @@ export const getEventGroupType = (event: ContactEvent) => {
     case Events.IVR_CREATED:
       return 'messages';
     case Events.TICKET_OPENED:
-      if ((event as TicketOpenedEvent).ticket.ticketer.name === 'Internal') {
-        return 'tickets';
-      }
+      return 'tickets';
   }
   return 'verbose';
 };
@@ -586,7 +582,7 @@ export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
       icon = 'flow';
     } else {
       verb = 'Completed';
-      icon = 'chevrons-down';
+      icon = 'flow';
     }
   }
 
@@ -708,8 +704,17 @@ export const renderTicketOpened = (
       </div>
     `;
   } else {
+    let icon = 'inbox';
+    if (ticket) {
+      if (ticket.ticketer.name.indexOf('Email') > -1) {
+        icon = 'mail';
+      } else if (ticket.ticketer.name.indexOf('Zendesk') > -1) {
+        icon = 'zendesk';
+      }
+    }
+
     return html`
-      <temba-icon size="${ticket ? '1.5' : '1'}" name="inbox"></temba-icon>
+      <temba-icon size="${ticket ? '1.5' : '1'}" name="${icon}"></temba-icon>
       <div style="flex-grow:1;">
         Opened
         <div class="attn">
@@ -719,19 +724,21 @@ export const renderTicketOpened = (
         </div>
         <div class="subtext">${timeSince(new Date(event.created_on))}</div>
       </div>
-      <div>
-        ${ticket
-          ? html` <temba-icon
-              class="clickable"
-              size="1.5"
-              name="check"
-              @click=${() => {
-                handleClose(event.ticket.uuid);
-              }}
-              ?clickable=${open}
-            />`
-          : null}
-      </div>
+      ${ticket
+        ? html`
+            <temba-tip text="Resolve" position="left" style="width:1.5em">
+              <temba-icon
+                class="clickable"
+                size="1.5"
+                name="check"
+                @click=${() => {
+                  handleClose(event.ticket.uuid);
+                }}
+                ?clickable=${open}
+              />
+            </temba-tip>
+          `
+        : null}
     `;
   }
 };
