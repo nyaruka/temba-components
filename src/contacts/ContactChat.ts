@@ -144,7 +144,10 @@ export class ContactChat extends RapidElement {
   }
 
   public refresh(): void {
-    this.getContactHistory().refresh();
+    const contactHistory = this.getContactHistory();
+    if (contactHistory) {
+      contactHistory.refresh();
+    }
   }
 
   public updated(changedProperties: Map<string, any>) {
