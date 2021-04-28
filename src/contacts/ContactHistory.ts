@@ -176,6 +176,8 @@ export class ContactHistory extends RapidElement {
   @property({ type: Object })
   currentTicket: Ticket = null;
 
+  ticketEvents: { [uuid: string]: TicketOpenedEvent } = {};
+
   nextBefore: number;
   nextAfter: number;
   lastHeight: number = 0;
@@ -201,6 +203,13 @@ export class ContactHistory extends RapidElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    // fire an event when our current ticket changes
+    if (changedProperties.has('currentTicket')) {
+      this.fireCustomEvent(CustomEventType.ContextChanged, {
+        context: this.currentTicket,
+      });
+    }
 
     // fire an event if we get a new event
     if (changedProperties.has('mostRecentEvent')) {
@@ -234,6 +243,14 @@ export class ContactHistory extends RapidElement {
           if (results.events && results.events.length > 0) {
             this.updateMostRecent(results.events[0]);
           }
+
+          // keep track of any ticket events
+          results.events.forEach((event: ContactEvent) => {
+            if (event.type === Events.TICKET_OPENED) {
+              const ticketEvent = event as TicketOpenedEvent;
+              this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
+            }
+          });
 
           let fetchedEvents = results.events.reverse();
 
@@ -300,6 +317,14 @@ export class ContactHistory extends RapidElement {
         // see if we have a new event
         if (results.events && results.events.length > 0) {
           this.updateMostRecent(results.events[0]);
+
+          // keep track of any ticket events
+          results.events.forEach((event: ContactEvent) => {
+            if (event.type === Events.TICKET_OPENED) {
+              const ticketEvent = event as TicketOpenedEvent;
+              this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
+            }
+          });
         }
 
         let forceOpen = false;
@@ -351,7 +376,6 @@ export class ContactHistory extends RapidElement {
       if (events.scrollHeight > this.lastHeight) {
         const scrollTop =
           events.scrollTop + events.scrollHeight - this.lastHeight;
-        // console.log('Scrolling to', scrollTop);
         events.scrollTop = scrollTop;
       }
 
@@ -382,6 +406,18 @@ export class ContactHistory extends RapidElement {
           stickyBin.removeChild(child);
         }
       }
+      if (!this.currentTicket) {
+        this.updateCurrentTicket();
+      }
+    }
+  }
+
+  private updateCurrentTicket() {
+    const openTickets = (this.tickets || []).filter(
+      ticket => ticket && ticket.status === 'open'
+    );
+    if (openTickets.length > 0) {
+      this.currentTicket = openTickets[openTickets.length - 1];
     }
   }
 
@@ -459,8 +495,10 @@ export class ContactHistory extends RapidElement {
       stickyBin.removeChild(stickyBin.firstElementChild);
     }
 
+    this.currentTicket = null;
     this.endpoint = null;
     this.tickets = null;
+    this.ticketEvents = {};
     this.eventGroups = [];
     this.fetching = false;
     this.complete = false;
@@ -522,10 +560,7 @@ export class ContactHistory extends RapidElement {
               !this.currentTicket ||
               this.currentTicket.uuid !== ticket.uuid
             ) {
-              this.currentTicket === ticket;
-              this.fireCustomEvent(CustomEventType.ContextChanged, {
-                context: ticket,
-              });
+              this.currentTicket = ticket;
             }
           }
         }
@@ -537,20 +572,24 @@ export class ContactHistory extends RapidElement {
 
           const uuid = eventElement.getAttribute('data-sticky-id');
 
-          let previousTicket = null;
+          let previousTicket: Ticket = null;
           for (let ticket of this.tickets) {
             if (ticket.uuid === uuid) {
               break;
             }
             previousTicket = ticket;
           }
+
           if (
-            !this.currentTicket ||
-            this.currentTicket.uuid !== previousTicket.uuid
+            previousTicket &&
+            (!this.currentTicket ||
+              this.currentTicket.uuid !== previousTicket.uuid)
           ) {
-            this.fireCustomEvent(CustomEventType.ContextChanged, {
-              context: previousTicket,
-            });
+            if (previousTicket.status === 'open') {
+              this.currentTicket = previousTicket;
+            } else {
+              this.currentTicket = null;
+            }
           }
         }
       }
@@ -656,6 +695,7 @@ export class ContactHistory extends RapidElement {
         this.fireCustomEvent(CustomEventType.ContentChanged, {
           ticket: { uuid, status: 'C' },
         });
+        this.updateCurrentTicket();
       })
       .catch((response: any) => {
         console.error(response);
@@ -671,6 +711,11 @@ export class ContactHistory extends RapidElement {
     ];
   }
 
+  /** Check if a ticket event is no longer represented in a session */
+  private isPurged(ticket: Ticket): boolean {
+    return !this.ticketEvents[ticket.uuid];
+  }
+
   public render(): TemplateResult {
     // render our older tickets as faux-events
     const unfetchedTickets =
@@ -678,7 +723,7 @@ export class ContactHistory extends RapidElement {
         ? this.tickets.map((ticket: Ticket) => {
             if (ticket && ticket.status === 'open') {
               const opened = new Date(ticket.opened_on).getTime() * 1000;
-              if (opened < this.nextBefore) {
+              if (opened < this.nextBefore || this.isPurged(ticket)) {
                 const ticketOpenedEvent = {
                   type: Events.TICKET_OPENED,
                   ticket: {

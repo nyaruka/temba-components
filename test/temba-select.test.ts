@@ -282,7 +282,7 @@ describe('temba-select', () => {
 
       await typeInto('temba-select', 're', false);
       await open(select);
-      await forPages(select, 1);
+      await forPages(select, 2);
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot('select/searching', getClipWithOptions(select));

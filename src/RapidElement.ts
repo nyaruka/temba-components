@@ -57,17 +57,17 @@ export class RapidElement extends LitElement {
   }
 
   public dispatchEvent(event: any): any {
-    if (!super.dispatchEvent(event)) {
-      const ele = event.target;
-      if (ele) {
-        const eventFire = (ele as any)['-' + event.type];
-        if (eventFire) {
-          return eventFire(event);
-        } else {
-          // lookup events with @ prefix and try to invoke them
-          const func = new Function(
-            'event',
-            `with(document) {
+    super.dispatchEvent(event);
+    const ele = event.target;
+    if (ele) {
+      // lookup events with - prefix and try to invoke them
+      const eventFire = (ele as any)['-' + event.type];
+      if (eventFire) {
+        return eventFire(event);
+      } else {
+        const func = new Function(
+          'event',
+          `with(document) {
           with(this) {
             let handler = ${ele.getAttribute('-' + event.type)};
             if(typeof handler === 'function') { 
@@ -75,12 +75,12 @@ export class RapidElement extends LitElement {
             }
           }
         }`
-          );
-          return func.call(ele, event);
-        }
+        );
+        return func.call(ele, event);
       }
     }
   }
+
   public closestElement(selector: string, base: Element = this) {
     function __closestFrom(el: Element | Window | Document): Element {
       if (!el || el === document || el === window) return null;
