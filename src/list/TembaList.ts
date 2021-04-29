@@ -133,9 +133,23 @@ export class TembaList extends RapidElement {
     this.nextSelection = value;
   }
 
+  private getValue(obj: any): any {
+    if (!obj) {
+      return null;
+    }
+
+    const path = this.valueKey.split('.');
+    let current = obj;
+    while (path.length > 0) {
+      const key = path.shift();
+      current = current[key];
+    }
+    return current;
+  }
+
   private setSelection(value: string) {
     const index = this.items.findIndex(item => {
-      return item[this.valueKey] === value;
+      return this.getValue(item) === value;
     });
     this.cursorIndex = index;
     this.selected = this.items[index];
@@ -201,12 +215,21 @@ export class TembaList extends RapidElement {
     if (
       this.selected &&
       newItem &&
-      newItem[this.valueKey] !== this.selected[this.valueKey]
+      this.getValue(newItem) !== this.getValue(this.selected)
     ) {
       const index = fetchedItems.findIndex(item => {
-        return item[this.valueKey] === this.selected[this.valueKey];
+        return this.getValue(item) === this.getValue(this.selected);
       });
-      this.cursorIndex = index;
+
+      if (index > -1) {
+        this.cursorIndex = index;
+      } else if (this.cursorIndex === -1) {
+        this.cursorIndex = 0;
+      }
+    }
+
+    if (this.cursorIndex === -1) {
+      this.cursorIndex = 0;
     }
 
     // save our results
@@ -243,7 +266,6 @@ export class TembaList extends RapidElement {
     return html`<temba-options
       ?visible=${true}
       ?block=${true}
-      valueKey=${this.valueKey}
       ?loading=${this.loading}
       .renderOption=${this.renderOption}
       .renderOptionDetail=${this.renderOptionDetail}
