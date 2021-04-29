@@ -90,8 +90,11 @@ export interface Contact {
 
   last_msg?: Msg;
   direction?: string;
-  ticket_uuid?: string;
-  ticket_closed_on?: string;
+  ticket: {
+    uuid: string;
+    subject: string;
+    closed_on?: string;
+  };
 }
 
 export interface FeatureProperties {

@@ -1,6 +1,6 @@
 import { css, html, property, TemplateResult } from 'lit-element';
 import { RapidElement } from '../RapidElement';
-import { Contact, Ticket } from '../interfaces';
+import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { postForm, postJSON, postUrl } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
@@ -38,6 +38,15 @@ export class ContactChat extends RapidElement {
         border-top: 3px solid #e1e1e1;
       }
 
+      .closed-footer {
+        padding: 1em;
+        background: #f2f2f2;
+        border-top: 3px solid #e1e1e1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
       temba-completion {
         --textarea-height: 2.5em;
       }
@@ -56,6 +65,11 @@ export class ContactChat extends RapidElement {
         --button-x: 12px;
         margin-top: 0.8em;
         float: right;
+      }
+
+      temba-button#reopen-button {
+        --button-y: 1px;
+        --button-x: 12px;
       }
 
       .toolbar {
@@ -175,6 +189,22 @@ export class ContactChat extends RapidElement {
     this.currentChat = chat.value;
   }
 
+  private handleReopen(event: Event) {
+    const uuid = this.contact.ticket.uuid;
+    postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
+      status: 'open',
+    })
+      .then(response => {
+        this.refresh();
+        this.fireCustomEvent(CustomEventType.ContentChanged, {
+          ticket: { uuid, status: 'O' },
+        });
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
   private handleSend(event: Event) {
     postJSON(`/api/v2/broadcasts.json`, {
       contacts: [this.contact.uuid],
@@ -207,32 +237,44 @@ export class ContactChat extends RapidElement {
             ${this.contact
               ? html` <temba-contact-history
                     .uuid=${this.contact.uuid}
-                    .ticket=${this.contact.ticket_uuid}
-                    .endDate=${this.contact.ticket_closed_on}
+                    .ticket=${this.contact.ticket.uuid}
+                    .endDate=${this.contact.ticket.closed_on}
                     @temba-context-changed=${this.handleCurrentTicketChanged}
                   ></temba-contact-history>
-                  <div class="chatbox">
-                    <temba-completion
-                      @change=${this.handleChatChange}
-                      .value=${this.currentChat}
-                      @keydown=${(e: KeyboardEvent) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          const chat = e.target as Completion;
-                          if (!chat.hasVisibleOptions()) {
-                            this.handleSend(e);
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }
-                        }
-                      }}
-                      textarea
-                    ></temba-completion>
-                    <temba-button
-                      id="send-button"
-                      name="Send"
-                      @click=${this.handleSend}
-                      ?disabled=${this.currentChat.trim().length === 0}
-                    ></temba-button>
+
+                  ${
+                    this.contact.ticket.closed_on
+                      ? html`<div class="closed-footer">
+                          <temba-button
+                            id="reopen-button"
+                            name="Reopen"
+                            @click=${this.handleReopen}
+                          ></temba-button>
+                        </div>`
+                      : html` <div class="chatbox">
+                          <temba-completion
+                            @change=${this.handleChatChange}
+                            .value=${this.currentChat}
+                            @keydown=${(e: KeyboardEvent) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                const chat = e.target as Completion;
+                                if (!chat.hasVisibleOptions()) {
+                                  this.handleSend(e);
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
+                              }
+                            }}
+                            textarea
+                          ></temba-completion>
+                          <temba-button
+                            id="send-button"
+                            name="Send"
+                            @click=${this.handleSend}
+                            ?disabled=${this.currentChat.trim().length === 0}
+                          ></temba-button>
+                        </div>`
+                  }
                   </div>`
               : null}
           </div>

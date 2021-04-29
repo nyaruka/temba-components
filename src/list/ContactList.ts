@@ -49,10 +49,18 @@ export class ContactList extends FormElement {
             ${contact.name}
           </div>
           <div style="font-size: 11px">
-            ${timeSince(new Date(contact.last_seen_on))}
+            ${timeSince(
+              new Date(contact.ticket.closed_on || contact.last_seen_on)
+            )}
           </div>
         </div>
-        ${contact.last_msg
+        ${contact.ticket.closed_on
+          ? html`<div
+              style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+            >
+              ${contact.ticket.subject}
+            </div>`
+          : contact.last_msg
           ? html`
               <div
                 style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
@@ -75,7 +83,7 @@ export class ContactList extends FormElement {
     return html`
       <temba-list
         @change=${this.handleChange.bind(this)}
-        valueKey="uuid"
+        valueKey="ticket.uuid"
         .nextSelection="${this.nextSelection}"
         .endpoint="${this.endpoint}"
         .refreshKey=${this.refreshKey}

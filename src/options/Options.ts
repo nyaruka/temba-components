@@ -149,9 +149,6 @@ export class Options extends RapidElement {
   @property({ type: String })
   nameKey: string = 'name';
 
-  @property({ type: String })
-  valueKey: string = 'value';
-
   @property({ type: Boolean })
   loading: boolean = false;
 
@@ -242,6 +239,10 @@ export class Options extends RapidElement {
           scrollBox.scrollTop = scrollTo;
         }
       }
+
+      this.fireCustomEvent(CustomEventType.CursorChanged, {
+        index: this.cursorIndex,
+      });
     }
 
     if (changedProperties.has('options')) {
@@ -257,7 +258,13 @@ export class Options extends RapidElement {
           newCount > 0 &&
           !changedProperties.has('cursorIndex'))
       ) {
-        this.setCursor(0);
+        if (!this.block) {
+          this.cursorIndex = 0;
+        } else {
+          if (this.cursorIndex >= newCount) {
+            this.cursorIndex = newCount - 1;
+          }
+        }
 
         if (this.block) {
           this.handleSelection(false);
@@ -347,9 +354,6 @@ export class Options extends RapidElement {
   ) {
     if (index !== this.cursorIndex) {
       this.cursorIndex = index;
-      this.fireCustomEvent(CustomEventType.CursorChanged, {
-        index,
-      });
     }
   },
   50);
