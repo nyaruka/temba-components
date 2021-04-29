@@ -206,7 +206,9 @@ export class ContactChat extends RapidElement {
           <div class="chat-wrapper">
             ${this.contact
               ? html` <temba-contact-history
-                    uuid=${this.contact.uuid}
+                    .uuid=${this.contact.uuid}
+                    .ticket=${this.contact.ticket_uuid}
+                    .endDate=${this.contact.ticket_closed_on}
                     @temba-context-changed=${this.handleCurrentTicketChanged}
                   ></temba-contact-history>
                   <div class="chatbox">

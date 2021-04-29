@@ -37,10 +37,11 @@ import {
   renderMsgEvent,
   renderNameChanged,
   renderResultEvent,
+  renderTicketClosed,
   renderTicketOpened,
   renderUpdateEvent,
   renderWebhookEvent,
-  TicketOpenedEvent,
+  TicketEvent,
   UpdateFieldEvent,
   UpdateResultEvent,
   URNsChangedEvent,
@@ -58,15 +59,15 @@ export class ContactHistory extends RapidElement {
 
   private getStickyId = (event: ContactEvent) => {
     if (event.type === Events.TICKET_OPENED) {
-      const ticket = this.getTicketForEvent(event as TicketOpenedEvent);
+      const ticket = this.getTicketForEvent(event as TicketEvent);
       if (ticket && ticket.status === 'open') {
         return ticket.uuid;
       }
     }
   };
 
-  private getTicketForEvent(event: TicketOpenedEvent) {
-    return this.getTicket((event as TicketOpenedEvent).ticket.uuid);
+  private getTicketForEvent(event: TicketEvent) {
+    return this.getTicket((event as TicketEvent).ticket.uuid);
   }
 
   private getTicket(uuid: string) {
@@ -170,13 +171,19 @@ export class ContactHistory extends RapidElement {
   @property({ attribute: false, type: Object })
   mostRecentEvent: ContactEvent;
 
+  @property({ type: String })
+  ticket: string = null;
+
+  @property({ type: String })
+  endDate: string = null;
+
   @property({ type: Array })
   tickets: Ticket[] = null;
 
   @property({ type: Object })
   currentTicket: Ticket = null;
 
-  ticketEvents: { [uuid: string]: TicketOpenedEvent } = {};
+  ticketEvents: { [uuid: string]: TicketEvent } = {};
 
   nextBefore: number;
   nextAfter: number;
@@ -221,13 +228,25 @@ export class ContactHistory extends RapidElement {
       if (this.uuid == null) {
         this.reset();
       } else {
-        const endpoint = `/contact/history/${this.uuid}/?_format=json`;
+        let endpoint = `/contact/history/${this.uuid}/?_format=json`;
+
         if (this.endpoint !== endpoint) {
           this.reset();
+
+          if (this.endDate) {
+            const before = new Date(this.endDate);
+            this.nextBefore = before.getTime() * 1000 + 1000;
+          }
+
           this.endpoint = endpoint;
           this.refreshTickets();
         }
       }
+    }
+
+    if (changedProperties.has('ticket')) {
+      this.endpoint = null;
+      this.requestUpdate('uuid');
     }
 
     if (
@@ -247,7 +266,7 @@ export class ContactHistory extends RapidElement {
           // keep track of any ticket events
           results.events.forEach((event: ContactEvent) => {
             if (event.type === Events.TICKET_OPENED) {
-              const ticketEvent = event as TicketOpenedEvent;
+              const ticketEvent = event as TicketEvent;
               this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
             }
           });
@@ -321,7 +340,7 @@ export class ContactHistory extends RapidElement {
           // keep track of any ticket events
           results.events.forEach((event: ContactEvent) => {
             if (event.type === Events.TICKET_OPENED) {
-              const ticketEvent = event as TicketOpenedEvent;
+              const ticketEvent = event as TicketEvent;
               this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
             }
           });
@@ -422,11 +441,14 @@ export class ContactHistory extends RapidElement {
   }
 
   private refreshTickets() {
-    getAssets(`/api/v2/tickets.json?contact=${this.uuid}`).then(
-      (tickets: Ticket[]) => {
-        this.tickets = tickets.reverse();
-      }
-    );
+    let url = `/api/v2/tickets.json?contact=${this.uuid}`;
+    if (this.ticket) {
+      url = `${url}&ticket=${this.ticket}`;
+    }
+
+    getAssets(url).then((tickets: Ticket[]) => {
+      this.tickets = tickets.reverse();
+    });
   }
 
   public refresh(): void {
@@ -437,7 +459,7 @@ export class ContactHistory extends RapidElement {
     const grouped: EventGroup[] = [];
     let eventGroup: EventGroup = undefined;
     for (const event of events) {
-      const currentEventGroupType = getEventGroupType(event);
+      const currentEventGroupType = getEventGroupType(event, this.ticket);
       // see if we need a new event group
       if (!eventGroup || eventGroup.type !== currentEventGroupType) {
         // we have a new type, save our last group
@@ -653,9 +675,22 @@ export class ContactHistory extends RapidElement {
         return renderLabelsAdded(event as LabelsAddedEvent);
 
       case Events.TICKET_OPENED:
-        const ticketOpened = event as TicketOpenedEvent;
+        const ticketOpened = event as TicketEvent;
+        const activeTicket =
+          !this.ticket || ticketOpened.ticket.uuid === this.ticket;
+
+        let closeHandler = null;
         const ticket = this.getTicketForEvent(ticketOpened);
-        return renderTicketOpened(ticketOpened, this.handleClose, ticket);
+        if (activeTicket && ticket && ticket.status === 'open') {
+          closeHandler = this.handleClose;
+        }
+
+        return renderTicketOpened(ticketOpened, closeHandler, activeTicket);
+
+      case Events.TICKET_CLOSED:
+        const ticketClosed = event as TicketEvent;
+        const active = !this.ticket || ticketClosed.ticket.uuid === this.ticket;
+        return renderTicketClosed(ticketClosed, active);
 
       case Events.ERROR:
       case Events.FAILURE:
@@ -738,7 +773,7 @@ export class ContactHistory extends RapidElement {
                 const renderedEvent = renderTicketOpened(
                   ticketOpenedEvent,
                   this.handleClose,
-                  ticket
+                  true
                 );
                 return html`<div class="event ${Events.TICKET_OPENED}">
                   ${renderedEvent}
@@ -755,7 +790,10 @@ export class ContactHistory extends RapidElement {
       <div class="sticky-bin">${unfetchedTickets}</div>
       ${this.tickets
         ? this.eventGroups.map((eventGroup: EventGroup, index: number) => {
-            const grouping = getEventGroupType(eventGroup.events[0]);
+            const grouping = getEventGroupType(
+              eventGroup.events[0],
+              this.ticket
+            );
             const groupIndex = this.eventGroups.length - index - 1;
 
             const classes = getClasses({

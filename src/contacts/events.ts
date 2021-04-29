@@ -2,6 +2,7 @@ import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { Msg, ObjectReference, Ticket } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
+import { closeTicket } from './helpers';
 
 export const getEventStyles = () => {
   return css`
@@ -234,6 +235,7 @@ export const getEventStyles = () => {
     .flow_exited,
     .flow_entered,
     .ticket_opened,
+    .ticket_closed,
     .call_started,
     .campaign_fired {
       fill: rgba(223, 65, 159, 1);
@@ -246,8 +248,13 @@ export const getEventStyles = () => {
     .ticket_opened temba-icon {
     }
 
-    .closed {
+    .ticket_closed .active {
       color: var(--color-text);
+    }
+
+    .ticket_opened .inactive .subtext,
+    .ticket_closed .inactive .subtext {
+      display: none;
     }
 
     .attn {
@@ -399,6 +406,7 @@ export enum Events {
   EMAIL_SENT = 'email_sent',
   INPUT_LABELS_ADDED = 'input_labels_added',
   TICKET_OPENED = 'ticket_opened',
+  TICKET_CLOSED = 'ticket_closed',
   ERROR = 'error',
   FAILURE = 'failure',
 }
@@ -442,13 +450,15 @@ export interface URNsChangedEvent extends ContactEvent {
   urns: string[];
 }
 
-export interface TicketOpenedEvent extends ContactEvent {
+export interface TicketEvent extends ContactEvent {
   ticket: {
     uuid: string;
     ticketer: ObjectReference;
     subject: string;
     body: string;
     external_id?: string;
+    closed_on?: string;
+    opened_on?: string;
   };
 }
 
@@ -518,7 +528,7 @@ export interface ContactHistoryPage {
   events: ContactEvent[];
 }
 
-export const getEventGroupType = (event: ContactEvent) => {
+export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   if (!event) {
     return 'messages';
   }
@@ -532,7 +542,10 @@ export const getEventGroupType = (event: ContactEvent) => {
     case Events.IVR_CREATED:
       return 'messages';
     case Events.TICKET_OPENED:
-      return 'tickets';
+    case Events.TICKET_CLOSED:
+      if (!ticket || (event as TicketEvent).ticket.uuid === ticket) {
+        return 'tickets';
+      }
   }
   return 'verbose';
 };
@@ -681,66 +694,69 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
   `;
 };
 
-export const renderTicketOpened = (
-  event: TicketOpenedEvent,
-  handleClose?: (uuid: string) => void,
-  ticket?: Ticket
+export const renderTicketClosed = (
+  event: TicketEvent,
+  activeTicket: boolean
 ): TemplateResult => {
-  const closed = ticket && ticket.status === 'closed' ? true : false;
-  if (closed) {
-    const opened = new Date(event.created_on);
-    const closed = new Date(ticket.closed_on);
-    return html`
-      <temba-icon size="2" name="check"></temba-icon>
-      <div class="closed" style="flex-grow:1;">
-        Closed
-        <div class="attn">${event.ticket.subject}</div>
-        <div class="subtext">
-          ${ticket.closed_on
-            ? html`Opened ${opened.toLocaleString()}, took
-              ${timeSince(opened, closed)}`
-            : timeSince(opened)}
-        </div>
+  const opened = new Date(event.ticket.opened_on);
+  return html`
+    <temba-icon size="${activeTicket ? '2' : '1'}" name="check"></temba-icon>
+    <div
+      class="closed ${activeTicket ? 'active' : 'inactive'}"
+      style="flex-grow:1;"
+    >
+      Closed
+      <div class="attn">${event.ticket.subject}</div>
+      <div class="subtext">
+        ${event.ticket.closed_on
+          ? html`Opened ${opened.toLocaleString()}, took
+            ${timeSince(opened, closed)}`
+          : timeSince(opened)}
       </div>
-    `;
-  } else {
-    let icon = 'inbox';
-    if (ticket) {
-      if (ticket.ticketer.name.indexOf('Email') > -1) {
-        icon = 'mail';
-      } else if (ticket.ticketer.name.indexOf('Zendesk') > -1) {
-        icon = 'zendesk';
-      }
-    }
+    </div>
+  `;
+};
 
-    return html`
-      <temba-icon size="${ticket ? '1.5' : '1'}" name="${icon}"></temba-icon>
-      <div style="flex-grow:1;">
-        Opened
-        <div class="attn">
-          ${event.ticket.subject}${!ticket
-            ? html` on ${event.ticket.ticketer.name}`
-            : null}
-        </div>
-        <div class="subtext">${timeSince(new Date(event.created_on))}</div>
-      </div>
-      ${ticket
-        ? html`
-            <temba-tip text="Resolve" position="left" style="width:1.5em">
-              <temba-icon
-                class="clickable"
-                size="1.5"
-                name="check"
-                @click=${() => {
-                  handleClose(event.ticket.uuid);
-                }}
-                ?clickable=${open}
-              />
-            </temba-tip>
-          `
-        : null}
-    `;
+export const renderTicketOpened = (
+  event: TicketEvent,
+  handleClose: (uuid: string) => void,
+  activeTicket: boolean
+): TemplateResult => {
+  let icon = 'inbox';
+
+  if (event.ticket.ticketer.name.indexOf('Email') > -1) {
+    icon = 'mail';
+  } else if (event.ticket.ticketer.name.indexOf('Zendesk') > -1) {
+    icon = 'zendesk';
   }
+
+  return html`
+    <temba-icon
+      size="${activeTicket ? '1.5' : '1'}"
+      name="${icon}"
+    ></temba-icon>
+
+    <div class="${activeTicket ? 'active' : 'inactive'}" style="flex-grow:1;">
+      Opened
+      <div class="attn">${event.ticket.subject}</div>
+      <div class="subtext">${timeSince(new Date(event.created_on))}</div>
+    </div>
+    ${activeTicket && handleClose
+      ? html`
+          <temba-tip text="Resolve" position="left" style="width:1.5em">
+            <temba-icon
+              class="clickable"
+              size="1.5"
+              name="check"
+              @click=${() => {
+                handleClose(event.ticket.uuid);
+              }}
+              ?clickable=${open}
+            />
+          </temba-tip>
+        `
+      : null}
+  `;
 };
 
 export const renderErrorMessage = (

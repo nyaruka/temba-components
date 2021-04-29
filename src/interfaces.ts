@@ -84,12 +84,14 @@ export interface Contact {
   lang: string;
   fields: { [key: string]: string };
   groups: Group[];
-  modified_on: Date;
-  created_on: Date;
-  last_seen_on: Date;
+  modified_on: string;
+  created_on: string;
+  last_seen_on: string;
 
   last_msg?: Msg;
   direction?: string;
+  ticket_uuid?: string;
+  ticket_closed_on?: string;
 }
 
 export interface FeatureProperties {
