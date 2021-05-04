@@ -20,7 +20,7 @@ export class TembaList extends RapidElement {
   selected: any;
 
   @property({ type: Number })
-  cursorIndex: number;
+  cursorIndex: number = -1;
 
   @property({ type: String })
   endpoint: string;
@@ -63,6 +63,9 @@ export class TembaList extends RapidElement {
   clearRefreshTimeout: any;
   pending: AbortController[] = [];
 
+  // http promise to monitor for completeness
+  public httpComplete: Promise<void>;
+
   static get styles() {
     return css`
       :host {
@@ -92,7 +95,7 @@ export class TembaList extends RapidElement {
     this.nextSelection = null;
     this.selected = null;
     this.nextPage = null;
-    this.cursorIndex = 0;
+    this.cursorIndex = -1;
     this.mostRecentItem = null;
     this.items = [];
   }
@@ -104,14 +107,14 @@ export class TembaList extends RapidElement {
       this.reset();
 
       this.loading = true;
-      this.fetchItems();
+      this.httpComplete = this.fetchItems();
     }
 
     if (
       changedProperties.has('refreshKey') &&
       !changedProperties.has('endpoint')
     ) {
-      this.fetchItems().then(() => {
+      this.httpComplete = this.fetchItems().then(() => {
         if (this.nextSelection) {
           this.setSelection(this.nextSelection);
           this.nextSelection = null;
@@ -124,7 +127,11 @@ export class TembaList extends RapidElement {
     }
 
     if (changedProperties.has('cursorIndex')) {
-      this.selected = this.items[this.cursorIndex];
+      if (this.cursorIndex > -1) {
+        this.selected = this.items[this.cursorIndex];
+        const evt = new Event('change', { bubbles: true });
+        this.dispatchEvent(evt);
+      }
     }
   }
 
@@ -157,7 +164,7 @@ export class TembaList extends RapidElement {
     this.dispatchEvent(evt);
   }
 
-  private async fetchItems() {
+  private async fetchItems(): Promise<void> {
     // cancel any outstanding requests
     while (this.pending.length > 0) {
       const pending = this.pending.pop();
@@ -183,7 +190,9 @@ export class TembaList extends RapidElement {
           page.results.forEach(this.sanitizeOption);
         }
 
-        fetchedItems = fetchedItems.concat(page.results);
+        if (page.results) {
+          fetchedItems = fetchedItems.concat(page.results);
+        }
 
         // save our next pages
         nextPage = page.next;
@@ -236,6 +245,8 @@ export class TembaList extends RapidElement {
     this.items = fetchedItems;
     this.loading = false;
     this.pending = [];
+
+    return Promise.resolve();
   }
 
   private handleScrollThreshold(event: CustomEvent) {
@@ -257,9 +268,6 @@ export class TembaList extends RapidElement {
 
     this.selected = selected;
     this.cursorIndex = index;
-
-    const evt = new Event('change', { bubbles: true });
-    this.dispatchEvent(evt);
   }
 
   public render(): TemplateResult {

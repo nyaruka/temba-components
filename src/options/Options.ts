@@ -517,7 +517,6 @@ export class Options extends RapidElement {
     });
 
     const options = this.options || [];
-
     return html`
       <div id="wrapper" class=${classes} style=${styleMap(containerStyle)}>
         <div
@@ -534,22 +533,19 @@ export class Options extends RapidElement {
               >
                 <temba-loading></temba-loading>
               </div>`
-            : options.map(
-                (option, index) =>
-                  html`<div
-                    data-option-index="${index}"
-                    @mousemove=${this.handleMouseMove}
-                    @click=${this.handleOptionClick}
-                    class="option ${index === this.cursorIndex
-                      ? 'focused'
-                      : ''}"
-                  >
-                    ${this.resolvedRenderOption(
-                      option,
-                      index === this.cursorIndex
-                    )}
-                  </div>`
-              )}
+            : options.map((option, index) => {
+                return html`<div
+                  data-option-index="${index}"
+                  @mousemove=${this.handleMouseMove}
+                  @click=${this.handleOptionClick}
+                  class="option ${index === this.cursorIndex ? 'focused' : ''}"
+                >
+                  ${this.resolvedRenderOption(
+                    option,
+                    index === this.cursorIndex
+                  )}
+                </div>`;
+              })}
         </div>
         <slot></slot>
       </div>
