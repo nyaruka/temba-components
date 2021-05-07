@@ -257,11 +257,7 @@ export class AliasEditor extends LitElement {
                       evt.stopPropagation();
                     }}
                   >
-                    <fa-icon
-                      class="fas fa-pencil-alt"
-                      size="12px"
-                      path-prefix="/sitestatic"
-                    />
+                    <temba-icon name="edit" path-prefix="/sitestatic" />
                   </div>
                 `
               : ''}

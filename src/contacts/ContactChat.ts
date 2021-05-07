@@ -305,6 +305,7 @@ export class ContactChat extends RapidElement {
                     name="${this.showDetails ? 'chevrons-left' : 'sidebar'}"
                     @click="${this.handleDetailSlider}"
                     clickable
+                    animatechange="spin"
                   ></temba-icon>
                 </temba-tip>
               `

@@ -36,7 +36,12 @@ export class FormElement extends RapidElement {
   inputRoot: HTMLElement = this;
 
   public setValue(value: any) {
-    this.setValues([value]);
+    if (!value) {
+      this.setValues([]);
+    } else {
+      this.setValues([value]);
+    }
+    this.value = value;
   }
 
   public setValues(values: any[]) {

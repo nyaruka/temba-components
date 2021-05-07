@@ -7,7 +7,6 @@ import {
 } from 'lit-element';
 import { RapidElement } from '../RapidElement';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import 'fa-icons';
 
 enum OmniType {
   Group = 'group',
@@ -72,9 +71,7 @@ export class Omnibox extends RapidElement {
   private renderOption(option: OmniOption, selected: boolean): TemplateResult {
     return html`
       <div style="display:flex;">
-        <div style="margin-right: 8px">
-          ${this.getIcon(option, true, 14, '')}
-        </div>
+        <div style="margin-right: 8px">${this.getIcon(option)}</div>
         <div style="flex: 1">${option.name}</div>
         <div
           style="background: rgba(50, 50, 50, 0.15); margin-left: 5px; display: flex; align-items: center; border-radius: 4px"
@@ -111,7 +108,7 @@ export class Omnibox extends RapidElement {
         style="flex:1 1 auto; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
       >
         <div style="align-self: center; padding: 0px 7px; color: #bbb">
-          ${this.getIcon(option, false, 12, '')}
+          ${this.getIcon(option)}
         </div>
         <div
           class="name"
@@ -128,34 +125,13 @@ export class Omnibox extends RapidElement {
     `;
   }
 
-  private getIcon(
-    option: OmniOption,
-    asOption: boolean,
-    size: number = 14,
-    styles: any
-  ): TemplateResult {
+  private getIcon(option: OmniOption): TemplateResult {
     if (option.type === OmniType.Group) {
-      return html`
-        <fa-icon
-          class="fas user-friends"
-          size="${size}px"
-          style="margin-bottom: -2px;"
-          path-prefix="/sitestatic"
-        />
-      `;
+      return html` <temba-icon name="users" /> `;
     }
 
     if (option.type === OmniType.Contact) {
-      const style = asOption ? 'margin: 0 1px;' : 'margin-bottom: 0px;';
-
-      return html`
-        <fa-icon
-          class="fas user"
-          size="${size - 3}px"
-          style="${style}"
-          path-prefix="/sitestatic"
-        />
-      `;
+      return html` <temba-icon name="user" /> `;
     }
   }
 

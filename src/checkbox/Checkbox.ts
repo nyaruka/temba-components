@@ -1,6 +1,5 @@
 import { TemplateResult, html, css, property } from 'lit-element';
 import { FormElement } from '../FormElement';
-import 'fa-icons';
 
 export class Checkbox extends FormElement {
   static get styles() {
@@ -83,23 +82,10 @@ export class Checkbox extends FormElement {
   }
 
   public render(): TemplateResult {
-    const icon = this.checked
-      ? html`
-          <fa-icon
-            class="far fa-check-square"
-            size="16px"
-            path-prefix="${this.fontPrefix}"
-          >
-          </fa-icon>
-        `
-      : html`
-          <fa-icon
-            class="far fa-square"
-            size="16px"
-            path-prefix="${this.fontPrefix}"
-          >
-          </fa-icon>
-        `;
+    const icon = html`<temba-icon
+      name="${this.checked ? 'check-' : ''}square"
+      animatechange="pulse"
+    />`;
 
     return html`
       <temba-field

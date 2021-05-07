@@ -9,12 +9,6 @@
   />
 
   <link
-    href="/sitestatic/css/tailwind.css"
-    rel="stylesheet"
-    type="text/css"
-  />
-
-  <link
     href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
     rel="stylesheet"
   />
@@ -27,7 +21,7 @@
     }
   </style>
   <script type="module">
-    import '../out-tsc/temba-components.js';
+    import '../out-tsc/temba-modules.js';
   </script>
  
 </head>
@@ -40,6 +34,13 @@
       groups="/static/api/groups.json"
   ></temba-store>
 
+  <div class="example">
+    <temba-omnibox
+      endpoint="/contact/omnibox/?v=2"
+      groups
+      contacts
+    ></temba-omnibox>
+</div>
   <div class="example">
     <temba-checkbox label="you betcha" checked></temba-checkbox>
   </div>
@@ -59,6 +60,32 @@
       <temba-option name="Blue" value="2"></temba-option>
     </temba-select>
   </div>
+
+  <div class="example">
+    <temba-select  placeholder='Select a color' clearable>
+      <temba-option name="Red" value="0"></temba-option>
+      <temba-option name="Green" value="1"></temba-option>
+      <temba-option name="Blue" value="2"></temba-option>
+    </temba-select>
+  </div>
+
+  <div class="example">
+    <temba-select placeholder='Select a color' expressions="message" values='[{"name":"Red","value":"0"}]' searchable multi disabled>
+      <temba-option name="Red" value="0"></temba-option>
+      <temba-option name="Green" value="1"></temba-option>
+      <temba-option name="Blue" value="2"></temba-option>
+    </temba-select>
+  </div>
+
+
+  <div class="example">
+    <temba-select name="Color" label="Color" help_text="I'm not really enabled at the moment" placeholder='Select a color' expressions="message" values='[{"name":"Red","value":"0"}]' searchable multi disabled>
+      <temba-option name="Red" value="0"></temba-option>
+      <temba-option name="Green" value="1"></temba-option>
+      <temba-option name="Blue" value="2"></temba-option>
+    </temba-select>
+  </div>
+
 
   <div class="example">
     <temba-textinput
