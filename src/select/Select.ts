@@ -27,19 +27,10 @@ export class Select extends FormElement {
         outline: none;
 
         position: relative;
-        --arrow-icon-color: var(--color-text-dark-secondary);
-
+        --icon-color: var(--color-text-dark-secondary);
         --temba-select-selected-padding: 9px;
         --temba-select-selected-line-height: 16px;
         --temba-select-selected-font-size: 13px;
-      }
-
-      .clear-icon {
-        color: var(--color-text-dark-secondary);
-        cursor: pointer;
-        margin: auto;
-        padding-right: 6px;
-        line-height: 1;
       }
 
       :host:focus {
@@ -76,21 +67,6 @@ export class Select extends FormElement {
         cursor: text;
       }
 
-      .arrow-icon {
-        transition: all linear 150ms;
-        cursor: pointer;
-        margin-right: 8px;
-        margin-top: 1px;
-      }
-
-      .arrow-icon.open {
-        --arrow-icon-color: var(--color-text-dark-secondary);
-      }
-
-      .rotated {
-        transform: rotate(180deg);
-      }
-
       .select-container {
         display: flex;
         flex-direction: row;
@@ -106,8 +82,9 @@ export class Select extends FormElement {
           0 1px 2px 0 rgba(0, 0, 0, 0.02);
       }
 
-      .select-container:hover {
-        --arrow-icon-color: #777;
+      .select-container:hover temba-icon[name='chevron-down'],
+      .select-container:hover .clear-button {
+        --icon-color: var(--color-text-dark);
       }
 
       .select-container:focus {
@@ -154,6 +131,10 @@ export class Select extends FormElement {
 
       .multi.empty .selected {
         padding: var(--temba-select-selected-padding);
+      }
+
+      .disabled .selected .selected-item {
+        color: #ccc;
       }
 
       .selected .selected-item {
@@ -595,6 +576,10 @@ export class Select extends FormElement {
 
   public open(): void {
     this.requestUpdate('input');
+  }
+
+  public isOpen(): boolean {
+    return this.visibleOptions.length > 0;
   }
 
   public setOptions(options: any[]): void {
@@ -1091,10 +1076,10 @@ export class Select extends FormElement {
 
     const clear =
       this.clearable && this.values.length > 0 && !this.multi
-        ? html`<fa-icon
-            class="fa times clear-icon"
-            size="14px"
-            path-prefix="/sitestatic"
+        ? html`<temba-icon
+            name="x"
+            size="1.1"
+            class="clear-button"
             @click=${this.handleClear}
           />`
         : null;
@@ -1109,6 +1094,7 @@ export class Select extends FormElement {
       'search-input': this.input.length > 0,
       'no-search-input': this.input.length === 0,
       [this.flavor]: this.flavor !== null,
+      disabled: this.disabled,
     });
 
     const anchorStyles = this.anchorPosition
@@ -1143,6 +1129,7 @@ export class Select extends FormElement {
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         .hideErrors=${this.hideErrors}
+        ?disabled=${this.disabled}
       >
       
         <div
@@ -1164,19 +1151,14 @@ export class Select extends FormElement {
                       ? html`
                           <div
                             class="remove-item"
+                            style="margin-top:1px"
                             @click=${(evt: MouseEvent) => {
                               evt.preventDefault();
                               evt.stopPropagation();
                               this.handleRemoveSelection(selected);
                             }}
                           >
-                            <fa-icon
-                              class="fas times"
-                              size="12px"
-                              style="margin-bottom:-2px; fill: var(--color-overlay-dark)"
-                              }
-                              path-prefix="/sitestatic"
-                            />
+                            <temba-icon name="x" size="1" />
                           </div>
                         `
                       : null}
@@ -1192,14 +1174,15 @@ export class Select extends FormElement {
 
           ${
             !this.tags
-              ? html`<div class="right-side" @click=${this.handleArrowClick}>
-                  <fa-icon
-                    class="fa chevron-down ${this.visibleOptions.length > 0
-                      ? 'open'
-                      : ''} arrow-icon"
-                    size="14px"
-                    style="fill: var(--arrow-icon-color)"
-                    path-prefix="/sitestatic"
+              ? html`<div
+                  class="right-side"
+                  style="display:block;margin-right:5px"
+                  @click=${this.handleArrowClick}
+                >
+                  <temba-icon
+                    size="1.5"
+                    name="chevron-down"
+                    class="${this.visibleOptions.length > 0 ? 'open' : ''}"
                   />
                 </div>`
               : null

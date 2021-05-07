@@ -943,11 +943,6 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@fortawesome/fontawesome-free@^5.12.1":
-  version "5.15.3"
-  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-free/-/fontawesome-free-5.15.3.tgz#c36ffa64a2a239bf948541a97b6ae8d729e09a9a"
-  integrity sha512-rFnSUN/QOtnOAgqFRooTA3H57JLDm0QEG/jPdk+tLQNL/eWd+Aok8g3qCI+Q1xuDPWpGW/i9JySpJVsq8Q0s9w==
-
 "@hapi/address@2.x.x":
   version "2.1.4"
   resolved "https://registry.yarnpkg.com/@hapi/address/-/address-2.1.4.tgz#5d67ed43f3fd41a69d4b9ff7b56e7c0d1d0a81e5"
@@ -4426,14 +4421,6 @@ extract-zip@^2.0.0:
     yauzl "^2.10.0"
   optionalDependencies:
     "@types/yauzl" "^2.9.1"
-
-fa-icons@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/fa-icons/-/fa-icons-0.2.0.tgz#d693a5c90383f3aac718b12aad36d71f4d27c99b"
-  integrity sha512-HxGOWM8gpYiilRnsOykLNyt65aC+pmJ2ulxGaWvDRsLWU9DzvN8zNoz6EIlRKJ7ytvvqpOORhxIYRndaKn36nA==
-  dependencies:
-    "@fortawesome/fontawesome-free" "^5.12.1"
-    lit-element "^2.2.1"
 
 fast-deep-equal@^3.1.1:
   version "3.1.3"

@@ -50,7 +50,7 @@ export const open = async (select: Select) => {
 };
 
 export const clear = (select: Select) => {
-  (select.shadowRoot.querySelector('.clear-icon') as HTMLDivElement).click();
+  (select.shadowRoot.querySelector('.clear-button') as HTMLDivElement).click();
 };
 
 export const getOptions = (select: Select): Options => {
@@ -142,6 +142,37 @@ describe('temba-select', () => {
   it('can be created', async () => {
     const select = await createSelect('<temba-select></temba-select>');
     assert.instanceOf(select, Select);
+  });
+
+  it('can be disabled', async () => {
+    const select = await createSelect(
+      getSelectHTML(colors, { disabled: true })
+    );
+
+    expect(select.disabled).to.equal(true);
+    await assertScreenshot('select/disabled', getClip(select));
+  });
+
+  it('can be disabled with selection', async () => {
+    const select = await createSelect(
+      getSelectHTML(colors, { disabled: true, value: '0' })
+    );
+
+    expect(select.disabled).to.equal(true);
+    await assertScreenshot('select/disabled-selection', getClip(select));
+  });
+
+  it('can be disabled with multi selection', async () => {
+    const select = await createSelect(getSelectHTML(colors, { multi: true }));
+
+    await openAndClick(select, 0);
+    select.disabled = true;
+    expect(select.disabled).to.equal(true);
+
+    // make sure we can't select anymore
+    await open(select);
+    expect(select.isOpen()).to.equal(false);
+    await assertScreenshot('select/disabled-multi-selection', getClip(select));
   });
 
   it('can be created with temba-option tags', async () => {
@@ -364,7 +395,7 @@ describe('temba-select', () => {
       await openAndClick(select, 0);
       expect(select.values[0].name).to.equal('Red');
 
-      // await assertScreenshot('select/selection-clearable', getClip(select));
+      await assertScreenshot('select/selection-clearable', getClip(select));
 
       clear(select);
       expect(select.values.length).to.equal(0);

@@ -26,7 +26,7 @@ export class TextInput extends FormElement {
       }
 
       .clear-icon {
-        color: var(--color-text-dark-secondary);
+        --icon-color: var(--color-text-dark-secondary);
         cursor: pointer;
         margin: auto;
         padding-right: 10px;
@@ -34,7 +34,7 @@ export class TextInput extends FormElement {
       }
 
       .clear-icon:hover {
-        color: var(--color-text-dark);
+        --icon-color: var(--color-text-dark);
       }
 
       .hidden {
@@ -226,7 +226,7 @@ export class TextInput extends FormElement {
   private handleClear(event: any): void {
     event.stopPropagation();
     event.preventDefault();
-    this.value = null;
+    this.setValue(null);
   }
 
   private updateValue(value: string): void {
@@ -351,10 +351,9 @@ export class TextInput extends FormElement {
 
     const clear =
       this.clearable && this.inputElement && this.inputElement.value
-        ? html`<fa-icon
-            class="fa times clear-icon"
-            size="14px"
-            path-prefix="/sitestatic"
+        ? html`<temba-icon
+            name="x"
+            class="clear-icon"
             @click=${this.handleClear}
           />`
         : null;
