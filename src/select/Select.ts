@@ -27,7 +27,7 @@ export class Select extends FormElement {
         outline: none;
 
         position: relative;
-        --icon-color: var(--color-text-dark-secondary);
+        --icon-color: var(--color-text-dark);
         --temba-select-selected-padding: 9px;
         --temba-select-selected-line-height: 16px;
         --temba-select-selected-font-size: 13px;
@@ -1033,7 +1033,7 @@ export class Select extends FormElement {
         ${option.icon
           ? html`<temba-icon
               name="${option.icon}"
-              style="margin-right:0.5em; fill: var(--color-text-dark)"
+              style="margin-right:0.5em;"
             ></temba-icon>`
           : null}<span>${this.getName(option)}</span>
       </div>
