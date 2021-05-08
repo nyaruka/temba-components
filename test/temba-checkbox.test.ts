@@ -15,7 +15,10 @@ describe('temba-checkbox', () => {
 
   it('can select by clicking on the label', async () => {
     const el: Checkbox = await fixture(html`
-      <temba-checkbox label="My Checkbox"></temba-checkbox>
+      <temba-checkbox
+        label="My Checkbox"
+        animatechange="false"
+      ></temba-checkbox>
     `);
 
     (el.shadowRoot.querySelector('.checkbox-label') as HTMLDivElement).click();

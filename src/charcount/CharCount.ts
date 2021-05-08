@@ -8,7 +8,9 @@ export class CharCount extends RapidElement {
     return css`
       :host {
         overflow: auto;
+        --transition-speed: 200ms;
       }
+
       :host::after {
         content: '';
         clear: both;
@@ -46,7 +48,8 @@ export class CharCount extends RapidElement {
         opacity: 0.3;
         transform: scale(0.7);
         box-shadow: var(--shadow);
-        transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33) 200ms;
+        transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33)
+          var(--transition-speed);
         visibility: hidden;
         margin-top: 5px;
         right: 0px;
