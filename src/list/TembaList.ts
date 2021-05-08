@@ -246,6 +246,8 @@ export class TembaList extends RapidElement {
     this.loading = false;
     this.pending = [];
 
+    this.requestUpdate('cursorIndex');
+
     return Promise.resolve();
   }
 

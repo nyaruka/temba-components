@@ -38,6 +38,7 @@ export class Checkbox extends FormElement {
 
       .disabled {
         cursor: not-allowed;
+        --icon-color: #ccc;
       }
     `;
   }
@@ -51,8 +52,11 @@ export class Checkbox extends FormElement {
   @property({ type: Boolean })
   disabled = false;
 
+  @property({ type: Number })
+  size = 1.2;
+
   @property({ type: String })
-  fontPrefix = '/sitestatic';
+  animateChange: string = 'pulse';
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
@@ -84,7 +88,8 @@ export class Checkbox extends FormElement {
   public render(): TemplateResult {
     const icon = html`<temba-icon
       name="${this.checked ? 'check-' : ''}square"
-      animatechange="pulse"
+      size="${this.size}"
+      animatechange="${this.animateChange}"
     />`;
 
     return html`
@@ -94,7 +99,7 @@ export class Checkbox extends FormElement {
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         .helpAlways=${true}
-        .disabled=${this.disabled}
+        ?disabled=${this.disabled}
         @click=${this.handleClick}
       >
         <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
