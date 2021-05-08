@@ -27,10 +27,14 @@ export class Select extends FormElement {
         outline: none;
 
         position: relative;
-        --icon-color: var(--color-text-dark);
+        --icon-color: var(--color-text-dark-secondary);
         --temba-select-selected-padding: 9px;
         --temba-select-selected-line-height: 16px;
         --temba-select-selected-font-size: 13px;
+      }
+
+      temba-options {
+        --icon-color: var(--color-text-dark);
       }
 
       :host:focus {
@@ -142,6 +146,7 @@ export class Select extends FormElement {
         overflow: hidden;
         color: var(--color-widget-text);
         line-height: var(--temba-select-selected-line-height);
+        --icon-color: var(--color-text-dark);
       }
 
       .multi .selected .selected-item {

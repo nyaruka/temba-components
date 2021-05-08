@@ -66,7 +66,7 @@ export class FormField extends LitElement {
       }
 
       .disabled {
-        opacity: 0.4 !important;
+        opacity: 0.6 !important;
         pointer-events: none !important;
       }
     `;

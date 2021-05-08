@@ -163,7 +163,9 @@ describe('temba-select', () => {
   });
 
   it('can be disabled with multi selection', async () => {
-    const select = await createSelect(getSelectHTML(colors, { multi: true }));
+    const select = await createSelect(
+      getSelectHTML(colors, { placeholder: 'Select a color', multi: true })
+    );
 
     await openAndClick(select, 0);
     select.disabled = true;

@@ -38,6 +38,7 @@ export class Checkbox extends FormElement {
 
       .disabled {
         cursor: not-allowed;
+        --icon-color: #ccc;
       }
     `;
   }
