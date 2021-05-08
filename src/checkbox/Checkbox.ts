@@ -55,6 +55,9 @@ export class Checkbox extends FormElement {
   @property({ type: Number })
   size = 1.2;
 
+  @property({ type: String })
+  animateChange: string = 'pulse';
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
     if (changes.has('checked')) {
@@ -86,7 +89,7 @@ export class Checkbox extends FormElement {
     const icon = html`<temba-icon
       name="${this.checked ? 'check-' : ''}square"
       size="${this.size}"
-      animatechange="pulse"
+      animatechange="${this.animateChange}"
     />`;
 
     return html`
