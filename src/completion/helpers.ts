@@ -33,6 +33,7 @@ const sessionParser = new ExcellentParser('@', [
   'parent',
   'node',
   'webhook',
+  'ticket',
   'trigger',
   'resume',
 ]);
@@ -55,7 +56,7 @@ export const renderCompletionOption = (
         <div style="display:inline-block;margin-right: 5px">ƒ</div>
         <div style="display:inline-block">${name}</div>
         ${selected
-          ? html`
+        ? html`
               <div
                 style="display:inline-block; font-weight: 300; font-size: 85%"
               >
@@ -63,7 +64,7 @@ export const renderCompletionOption = (
               </div>
               <div class="detail">${renderMarkdown(option.summary)}</div>
             `
-          : null}
+        : null}
       </div>
     `;
   }
@@ -72,8 +73,8 @@ export const renderCompletionOption = (
     <div>
       <div style="${selected ? 'font-weight: 400' : ''}">${option.name}</div>
       ${selected
-        ? html` <div style="font-size: 85%">${option.summary}</div> `
-        : null}
+      ? html` <div style="font-size: 85%">${option.summary}</div> `
+      : null}
     </div>
   `;
 };
