@@ -138,10 +138,6 @@ export class Select extends FormElement {
         padding: var(--temba-select-selected-padding);
       }
 
-      .disabled .selected .selected-item {
-        color: #ccc;
-      }
-
       .selected .selected-item {
         display: flex;
         overflow: hidden;
@@ -399,7 +395,7 @@ export class Select extends FormElement {
   clearable: boolean;
 
   @property({ type: String })
-  flavor: string;
+  flavor = 'default';
 
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
@@ -952,10 +948,6 @@ export class Select extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
-    if (this.disabled) {
-      return;
-    }
-
     this.focused = true;
 
     if ((event.target as any).tagName !== 'INPUT') {

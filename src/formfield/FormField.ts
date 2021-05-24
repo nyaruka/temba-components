@@ -101,7 +101,7 @@ export class FormField extends LitElement {
 
     if (this.widgetOnly) {
       return html`
-        <slot></slot>
+        <div class="${this.disabled ? 'disabled' : ''}"><slot></slot></div>
         ${errors}
       `;
     }
