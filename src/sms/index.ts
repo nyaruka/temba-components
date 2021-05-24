@@ -12,21 +12,21 @@ export const UNICODE = 'Unicode';
 export const GSM = 'GSM';
 
 function calculateRemaining(parts, singleBytes, multiBytes, charBytes) {
-  var max = parts.length === 1 ? singleBytes : multiBytes;
+  const max = parts.length === 1 ? singleBytes : multiBytes;
   return (max - parts[parts.length - 1].bytes) / charBytes;
 }
 
 export const splitSMS = function (message: string, options: any = {}) {
-  var characterset = options && options.characterset;
+  const characterset = options && options.characterset;
 
   options = {
     summary: options && options.summary,
   };
 
-  var isGsm =
+  const isGsm =
     (characterset === undefined && validateMessage(message)) ||
     characterset === GSM;
-  var splitResult, singleBytes, multiBytes, charBytes;
+  let splitResult, singleBytes, multiBytes, charBytes;
 
   if (isGsm) {
     splitResult = gsmSplit(message, options);
@@ -40,7 +40,7 @@ export const splitSMS = function (message: string, options: any = {}) {
     charBytes = 2;
   }
 
-  var remainingInPart = calculateRemaining(
+  const remainingInPart = calculateRemaining(
     splitResult.parts,
     singleBytes,
     multiBytes,

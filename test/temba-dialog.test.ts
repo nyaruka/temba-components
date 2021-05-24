@@ -2,7 +2,6 @@ import { assert, expect, fixture } from '@open-wc/testing';
 import sinon from 'sinon';
 import { Dialog } from '../src/dialog/Dialog';
 import { assertScreenshot, getClip } from './utils.test';
-import './utils.test';
 
 const getDialogClip = (dialog: Dialog) => {
   return getClip(
@@ -47,9 +46,6 @@ const close = async (dialog: Dialog) => {
 };
 
 describe('temba-dialog', () => {
-  beforeEach(function () {});
-  afterEach(function () {});
-
   it('can be created', async () => {
     const dialog: Dialog = await fixture(getDialogHTML());
     assert.instanceOf(dialog, Dialog);

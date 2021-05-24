@@ -40,17 +40,6 @@ export interface ContactGroup {
   status: string;
 }
 
-export interface Msg {
-  text: string;
-  status: string;
-  channel: ObjectReference;
-  quick_replies: string[];
-  urn: string;
-  id: number;
-  direction: string;
-  type: string;
-}
-
 export interface URN {
   scheme: string;
   path: string;
@@ -134,11 +123,6 @@ export interface CompletionResult {
   query: string;
   options: CompletionOption[];
   currentFunction: CompletionOption;
-}
-
-export interface FunctionExample {
-  template: string;
-  output: string;
 }
 
 export interface CompletionProperty {

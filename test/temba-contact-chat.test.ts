@@ -6,9 +6,6 @@ import './utils.test';
 const getChatHTML = (attrs: any = {}) => getHTML('temba-contact-chat', attrs);
 
 describe('temba-contact-chat', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const chat: ContactChat = await fixture(getChatHTML());
     assert.instanceOf(chat, ContactChat);

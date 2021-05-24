@@ -14,7 +14,7 @@ jobs:
       - name: Screenshot Tests
         run: |
           yarn install
-          yarn screenshots
+          yarn test
         env:
           CI: true
       - uses: actions/upload-artifact@v2

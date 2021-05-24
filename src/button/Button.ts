@@ -172,13 +172,13 @@ export class Button extends LitElement {
     }
   }
 
-  private handleMouseDown(event: MouseEvent): void {
+  private handleMouseDown(): void {
     if (!this.disabled && !this.submitting) {
       this.active = true;
     }
   }
 
-  private handleMouseUp(event: MouseEvent): void {
+  private handleMouseUp(): void {
     this.active = false;
   }
 

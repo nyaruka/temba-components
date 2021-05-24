@@ -1,9 +1,13 @@
 import { assert } from '@open-wc/testing';
 import { Tip } from '../src/tip/Tip';
-import './utils.test';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-tip';
+
+const getTarget = () => {
+  return "<div style='line-height:0px;font-size:14px;background:green;display:flex'>👱‍♀️</div>";
+};
+
 const getTip = async (
   attrs: { text?: string; position?: string; visible?: boolean } = {},
   slot = getTarget()
@@ -45,14 +49,7 @@ const getBottomClip = (ele: HTMLElement) => {
   return clip;
 };
 
-const getTarget = () => {
-  return "<div style='line-height:0px;font-size:14px;background:green;display:flex'>👱‍♀️</div>";
-};
-
 describe(TAG, () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const icon = await getTip({ text: 'Resolve' });
     assert.instanceOf(icon, Tip);

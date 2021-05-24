@@ -48,13 +48,13 @@ export default class DatePicker extends FormElement {
   }
 
   @property({ type: String })
-  placeholder: string = '';
+  placeholder = '';
 
   @property({ type: String })
-  value: string = '';
+  value = '';
 
   @property({ type: String })
-  name: string = '';
+  name = '';
 
   @property({ type: Object })
   inputElement: HTMLInputElement;

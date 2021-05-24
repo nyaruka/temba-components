@@ -7,9 +7,6 @@ export const getHTML = () => {
 };
 
 describe('temba-omnibox', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const omnibox: Omnibox = await fixture(getHTML());
     assert.instanceOf(omnibox, Omnibox);

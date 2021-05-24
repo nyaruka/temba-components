@@ -4,12 +4,12 @@ import {
   html,
   css,
   customElement,
-  property
-} from "lit-element";
-import { getClasses } from "../utils";
-import { styleMap } from "lit-html/directives/style-map.js";
+  property,
+} from 'lit-element';
+import { getClasses } from '../utils';
+import { styleMap } from 'lit-html/directives/style-map';
 
-@customElement("temba-label")
+@customElement('temba-label')
 export default class Label extends LitElement {
   static get styles() {
     return css`
@@ -91,7 +91,7 @@ export default class Label extends LitElement {
       this.backgroundColor && this.textColor
         ? {
             background: `${this.backgroundColor}`,
-            color: `${this.textColor}`
+            color: `${this.textColor}`,
           }
         : {};
 
@@ -102,7 +102,7 @@ export default class Label extends LitElement {
           primary: this.primary,
           secondary: this.secondary,
           light: this.light,
-          dark: this.dark
+          dark: this.dark,
         })}"
         style=${styleMap(labelStyle)}
       >

@@ -1,7 +1,7 @@
 import { css, html, property, TemplateResult } from 'lit-element';
 import { RapidElement } from '../RapidElement';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { postForm, postJSON, postUrl } from '../utils';
+import { postJSON } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
@@ -136,13 +136,13 @@ export class ContactChat extends RapidElement {
   contact: Contact = null;
 
   @property({ type: String })
-  contactsEndpoint: string = '/api/v2/contacts.json';
+  contactsEndpoint = '/api/v2/contacts.json';
 
   @property({ type: String })
-  currentChat: string = '';
+  currentChat = '';
 
   @property({ type: Boolean })
-  showDetails: boolean = true;
+  showDetails = true;
 
   @property({ type: Object })
   currentTicket: Ticket = null;
@@ -189,12 +189,12 @@ export class ContactChat extends RapidElement {
     this.currentChat = chat.value;
   }
 
-  private handleReopen(event: Event) {
+  private handleReopen() {
     const uuid = this.contact.ticket.uuid;
     postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
       status: 'open',
     })
-      .then(response => {
+      .then(() => {
         this.refresh();
         this.fireCustomEvent(CustomEventType.ContentChanged, {
           ticket: { uuid, status: 'O' },
@@ -205,20 +205,19 @@ export class ContactChat extends RapidElement {
       });
   }
 
-  private handleSend(event: Event) {
+  private handleSend() {
     postJSON(`/api/v2/broadcasts.json`, {
       contacts: [this.contact.uuid],
       text: this.currentChat,
     })
-      .then(response => {
+      .then(() => {
         this.currentChat = '';
         this.refresh();
       })
       .catch(err => {
         // error message dialog?
         console.error(err);
-      })
-      .finally(() => {});
+      });
   }
 
   private handleDetailSlider(): void {
@@ -259,7 +258,7 @@ export class ContactChat extends RapidElement {
                               if (e.key === 'Enter' && !e.shiftKey) {
                                 const chat = e.target as Completion;
                                 if (!chat.hasVisibleOptions()) {
-                                  this.handleSend(e);
+                                  this.handleSend();
                                   e.preventDefault();
                                   e.stopPropagation();
                                 }

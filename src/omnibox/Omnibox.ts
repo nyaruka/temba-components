@@ -1,12 +1,6 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  css,
-  property,
-} from 'lit-element';
+import { TemplateResult, html, css, property } from 'lit-element';
 import { RapidElement } from '../RapidElement';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { styleMap } from 'lit-html/directives/style-map';
 
 enum OmniType {
   Group = 'group',
@@ -50,13 +44,13 @@ export class Omnibox extends RapidElement {
   name: string;
 
   @property({ type: Boolean })
-  groups: boolean = false;
+  groups = false;
 
   @property({ type: Boolean })
-  contacts: boolean = false;
+  contacts = false;
 
   @property({ type: Boolean })
-  urns: boolean = false;
+  urns = false;
 
   @property({ type: Array })
   value: OmniOption[] = [];
@@ -65,10 +59,10 @@ export class Omnibox extends RapidElement {
   errors: string[];
 
   @property()
-  placeholder: string = 'Select recipients';
+  placeholder = 'Select recipients';
 
   /** An option in the drop down */
-  private renderOption(option: OmniOption, selected: boolean): TemplateResult {
+  private renderOption(option: OmniOption): TemplateResult {
     return html`
       <div style="display:flex;">
         <div style="margin-right: 8px">${this.getIcon(option)}</div>
@@ -76,16 +70,13 @@ export class Omnibox extends RapidElement {
         <div
           style="background: rgba(50, 50, 50, 0.15); margin-left: 5px; display: flex; align-items: center; border-radius: 4px"
         >
-          ${this.getPostName(option, selected)}
+          ${this.getPostName(option)}
         </div>
       </div>
     `;
   }
 
-  private getPostName(
-    option: OmniOption,
-    selected: boolean = false
-  ): TemplateResult {
+  private getPostName(option: OmniOption): TemplateResult {
     const style = { ...postNameStyle };
 
     if (option.urn && option.type === OmniType.Contact) {

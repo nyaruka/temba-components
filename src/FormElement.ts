@@ -30,7 +30,7 @@ export class FormElement extends RapidElement {
   values: any[] = [];
 
   @property({ type: String })
-  value: string = '';
+  value = '';
 
   @property({ attribute: false })
   inputRoot: HTMLElement = this;

@@ -56,33 +56,33 @@
   <script language="javascript">
   
     function handleContactChange(event) {
-      var ticket = event.target.value;
-      var chat = document.querySelector("temba-contact-chat");
+      const ticket = event.target.value;
+      const chat = document.querySelector("temba-contact-chat");
       chat.ticket = ticket;
     }
     
     function handleContactHistoryUpdate(event) {
       // tell our list to refresh since we know things happened
-      var tickets = document.querySelector("temba-tickets");
+      const tickets = document.querySelector("temba-tickets");
       tickets.refresh();
     }
 
     function handleTicketsRefreshed(event) {
       // tell our chat to refresh since we know things are new in our list
-      var chat = document.querySelector("temba-contact-chat");
+      const chat = document.querySelector("temba-contact-chat");
       chat.refresh();
     }
 
     function handleFilterChanged(event) {
-      var tickets = document.querySelector("temba-tickets");
-      var chat = document.querySelector("temba-contact-chat");
+      const tickets = document.querySelector("temba-tickets");
+      const chat = document.querySelector("temba-contact-chat");
 
       // if we have auto selecting, don't clear the chat
       if (!tickets.nextSelection) {
         chat.ticket = null;
       }
 
-      var filter = event.target.values[0].value;
+      const filter = event.target.values[0].value;
       if (filter === "O") {
         tickets.endpoint = "/contact/tickets/?_format=json&folder=open"
       } else {
@@ -91,11 +91,11 @@
     }
 
     function handleTicketChanged(event) {
-      var ticket = event.detail.ticket;
-      var focus = event.detail.focus;
+      const ticket = event.detail.ticket;
+      const focus = event.detail.focus;
 
-      var filter = document.querySelector('temba-select[name="ticket-filter"]');
-      var tickets = document.querySelector("temba-tickets");
+      const filter = document.querySelector('temba-select[name="ticket-filter"]');
+      const tickets = document.querySelector("temba-tickets");
 
       if (focus) {
         tickets.setNextSelection(ticket.uuid);

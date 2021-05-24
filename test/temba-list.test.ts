@@ -1,8 +1,7 @@
 import { assert, expect } from '@open-wc/testing';
 import sinon from 'sinon';
 import { TembaList } from '../src/list/TembaList';
-import './utils.test';
-import { assertScreenshot, getClip, getComponent, getHTML } from './utils.test';
+import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-list';
 const getList = async (attrs: any = {}) => {
@@ -15,9 +14,6 @@ const getList = async (attrs: any = {}) => {
 };
 
 describe('temba-list', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const list: TembaList = await getList();
     assert.instanceOf(list, TembaList);

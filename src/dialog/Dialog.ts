@@ -3,7 +3,7 @@ import { TemplateResult, html, css } from 'lit-element';
 import { Button } from '../button/Button';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { styleMap } from 'lit-html/directives/style-map';
 import { getClasses } from '../utils';
 
 export class Dialog extends RapidElement {
@@ -168,16 +168,16 @@ export class Dialog extends RapidElement {
   hideOnClick: boolean;
 
   @property()
-  size: string = 'medium';
+  size = 'medium';
 
   @property({ type: String })
-  primaryButtonName: string = 'Ok';
+  primaryButtonName = 'Ok';
 
   @property({ type: String })
-  cancelButtonName: string = 'Cancel';
+  cancelButtonName = 'Cancel';
 
   @property()
-  submittingName: string = 'Saving';
+  submittingName = 'Saving';
 
   @property()
   animationEnd: boolean;
@@ -295,7 +295,7 @@ export class Dialog extends RapidElement {
     const maskStyle = { height: `${height + 100}px` };
     const dialogStyle = { width: Dialog.widths[this.size] };
 
-    let header = this.header
+    const header = this.header
       ? html`
           <div class="dialog-header">
             <div class="header-text">${this.header}</div>

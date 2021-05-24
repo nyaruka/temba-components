@@ -56,7 +56,7 @@ export const renderCompletionOption = (
         <div style="display:inline-block;margin-right: 5px">ƒ</div>
         <div style="display:inline-block">${name}</div>
         ${selected
-        ? html`
+          ? html`
               <div
                 style="display:inline-block; font-weight: 300; font-size: 85%"
               >
@@ -64,7 +64,7 @@ export const renderCompletionOption = (
               </div>
               <div class="detail">${renderMarkdown(option.summary)}</div>
             `
-        : null}
+          : null}
       </div>
     `;
   }
@@ -73,8 +73,8 @@ export const renderCompletionOption = (
     <div>
       <div style="${selected ? 'font-weight: 400' : ''}">${option.name}</div>
       ${selected
-      ? html` <div style="font-size: 85%">${option.summary}</div> `
-      : null}
+        ? html` <div style="font-size: 85%">${option.summary}</div> `
+        : null}
     </div>
   `;
 };
@@ -169,7 +169,7 @@ export const getCompletions = (
 };
 
 export const getOffset = (el: HTMLElement) => {
-  var rect = el.getBoundingClientRect(),
+  const rect = el.getBoundingClientRect(),
     scrollLeft = window.pageXOffset || document.documentElement.scrollLeft,
     scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   return { top: rect.top + scrollTop, left: rect.left + scrollLeft };
@@ -177,7 +177,7 @@ export const getOffset = (el: HTMLElement) => {
 
 export const getVerticalScroll = (ele: Node) => {
   let current = ele;
-  let verticalScroll = 0;
+  const verticalScroll = 0;
   while (current) {
     current = current.parentNode;
   }
@@ -192,6 +192,38 @@ export const getCompletionName = (option: CompletionOption): string => {
 
 export const getCompletionSignature = (option: CompletionOption): string => {
   return option.signature.substr(option.signature.indexOf('('));
+};
+
+/**
+ * Determines the pixel position of position inside a textarea or input
+ * TODO: Explore somethign like contenteditable to avoid this madness
+ * see: https://jh3y.medium.com/how-to-where-s-the-caret-getting-the-xy-position-of-the-caret-a24ba372990a
+ */
+const getCursorXY = (input, selectionPoint) => {
+  const { offsetLeft: inputX, offsetTop: inputY } = input;
+  const div = document.createElement('div');
+  const copyStyle = getComputedStyle(input);
+  for (const prop of copyStyle) {
+    div.style[prop] = copyStyle[prop];
+  }
+  div.style.position = 'relative';
+  const swap = '.';
+  const inputValue =
+    input.tagName === 'INPUT' ? input.value.replace(/ /g, swap) : input.value;
+  const textContent = inputValue.substr(0, selectionPoint);
+  div.textContent = textContent;
+  if (input.tagName === 'TEXTAREA') div.style.height = 'auto';
+  if (input.tagName === 'INPUT') div.style.width = 'auto';
+  const span = document.createElement('span');
+  span.textContent = inputValue.substr(selectionPoint) || '.';
+  div.appendChild(span);
+  document.body.appendChild(div);
+  const { offsetLeft: spanX, offsetTop: spanY } = span;
+  document.body.removeChild(div);
+  return {
+    left: inputX + spanX,
+    top: inputY + spanY,
+  };
 };
 
 export const updateInputElementWithCompletion = (
@@ -211,7 +243,7 @@ export const updateInputElementWithCompletion = (
   const queryLength = currentQuery.length;
 
   if (ele) {
-    let value = ele.value;
+    const value = ele.value;
     const insertionPoint = ele.selectionStart - queryLength;
 
     // strip out our query
@@ -251,7 +283,6 @@ export const executeCompletionQuery = (
     return result;
   }
 
-  let currentFunction: CompletionOption = null;
   const cursor = ele.selectionStart;
   const input = ele.value.substring(0, cursor);
 
@@ -270,7 +301,7 @@ export const executeCompletionQuery = (
       if (functionQuery) {
         const fns = getFunctions(store.getFunctions(), functionQuery);
         if (fns.length > 0) {
-          currentFunction = fns[0];
+          result.currentFunction = fns[0];
         }
       }
     }
@@ -296,7 +327,7 @@ export const executeCompletionQuery = (
           i++;
         }
 
-        var caret = getCursorXY(ele, currentExpression.start + i);
+        const caret = getCursorXY(ele, currentExpression.start + i);
 
         result.anchorPosition = {
           left: caret.left - 2 - ele.scrollLeft,
@@ -328,36 +359,4 @@ export const executeCompletionQuery = (
     result.query = '';
   }
   return result;
-};
-
-/**
- * Determines the pixel position of position inside a textarea or input
- * TODO: Explore somethign like contenteditable to avoid this madness
- * see: https://jh3y.medium.com/how-to-where-s-the-caret-getting-the-xy-position-of-the-caret-a24ba372990a
- */
-const getCursorXY = (input, selectionPoint) => {
-  const { offsetLeft: inputX, offsetTop: inputY } = input;
-  const div = document.createElement('div');
-  const copyStyle = getComputedStyle(input);
-  for (const prop of copyStyle) {
-    div.style[prop] = copyStyle[prop];
-  }
-  div.style.position = 'relative';
-  const swap = '.';
-  const inputValue =
-    input.tagName === 'INPUT' ? input.value.replace(/ /g, swap) : input.value;
-  const textContent = inputValue.substr(0, selectionPoint);
-  div.textContent = textContent;
-  if (input.tagName === 'TEXTAREA') div.style.height = 'auto';
-  if (input.tagName === 'INPUT') div.style.width = 'auto';
-  const span = document.createElement('span');
-  span.textContent = inputValue.substr(selectionPoint) || '.';
-  div.appendChild(span);
-  document.body.appendChild(div);
-  const { offsetLeft: spanX, offsetTop: spanY } = span;
-  document.body.removeChild(div);
-  return {
-    left: inputX + spanX,
-    top: inputY + spanY,
-  };
 };

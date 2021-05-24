@@ -1,11 +1,5 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  property,
-  css,
-} from 'lit-element';
-import { getUrl, plural, fillTemplate, WebResponse } from '../utils';
+import { TemplateResult, html, property, css } from 'lit-element';
+import { getUrl, fillTemplate, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import '../alert/Alert';
 import { Contact } from '../interfaces';
@@ -110,16 +104,16 @@ export class ContactSearch extends FormElement {
   endpoint: string;
 
   @property({ type: String })
-  placeholder: string = '';
+  placeholder = '';
 
   @property({ type: String })
-  name: string = '';
+  name = '';
 
   @property({ type: String })
-  query: string = '';
+  query = '';
 
   @property({ type: String, attribute: 'matches-text' })
-  matchesText: string = '';
+  matchesText = '';
 
   @property({ attribute: false })
   summary: SummaryResponse;

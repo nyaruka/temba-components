@@ -1,4 +1,4 @@
-import { Contact, Msg, ObjectReference } from '../interfaces';
+import { Contact } from '../interfaces';
 import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
 import { ContactHistoryPage } from './events';
 
@@ -32,8 +32,7 @@ export const fetchContactHistory = (
   reset: boolean,
   endpoint: string,
   before: number = undefined,
-  after: number = undefined,
-  limit: number = undefined
+  after: number = undefined
 ): Promise<ContactHistoryPage> => {
   if (reset) {
     pendingRequests.forEach(controller => {
@@ -42,7 +41,7 @@ export const fetchContactHistory = (
     pendingRequests = [];
   }
 
-  return new Promise<ContactHistoryPage>((resolve, reject) => {
+  return new Promise<ContactHistoryPage>(resolve => {
     const controller = new AbortController();
     pendingRequests.push(controller);
 
@@ -65,7 +64,7 @@ export const fetchContactHistory = (
         );
         resolve(response.json as ContactHistoryPage);
       })
-      .catch(error => {
+      .catch(() => {
         // canceled
       });
   });

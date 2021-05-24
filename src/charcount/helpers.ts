@@ -5,20 +5,6 @@ export const MAX_UNICODE_MULTI = 67;
 
 export const COMPLETION_HELP = 'Tab to complete, enter to select';
 
-export const getExtendedCharacters = (text: string): string[] => {
-    const extended : { [ch: string] : boolean } = {}
-    for (const ch of text) {
-        if (!isGSM(ch)) {
-            extended[ch] = true;
-        }
-    }
-    return Object.keys(extended);
-}
-
-export const isGSM = (char: string): boolean => {
-    return GSM.hasOwnProperty(char);
-}
-
 export const GSM: { [key: string]: number } = {
   // char: charCode
   0: 48,
@@ -157,5 +143,20 @@ export const GSM: { [key: string]: number } = {
   Φ: 934,
   Ψ: 936,
   Ω: 937,
-  '€': 8364
+  '€': 8364,
+};
+
+export const isGSM = (char: string): boolean => {
+  // eslint-disable-next-line no-prototype-builtins
+  return GSM.hasOwnProperty(char);
+};
+
+export const getExtendedCharacters = (text: string): string[] => {
+  const extended: { [ch: string]: boolean } = {};
+  for (const ch of text) {
+    if (!isGSM(ch)) {
+      extended[ch] = true;
+    }
+  }
+  return Object.keys(extended);
 };

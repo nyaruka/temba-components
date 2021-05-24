@@ -54,7 +54,10 @@ const isValidStart = (
  */
 export const isWordChar = (ch: string | 0): boolean => {
   return (
-    (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_'
+    (ch >= 'a' && ch <= 'z') ||
+    (ch >= 'A' && ch <= 'Z') ||
+    (ch >= '0' && ch <= '9') ||
+    ch === '_'
   );
 };
 
@@ -254,15 +257,21 @@ export default class ExcellentParser {
       const nextNextCh = pos < text.length - 2 ? text[pos + 2] : 0;
 
       if (state === STATE_BODY) {
-        if (ch === this.expressionPrefix && (isWordChar(nextCh) || nextCh === '(')) {
+        if (
+          ch === this.expressionPrefix &&
+          (isWordChar(nextCh) || nextCh === '(')
+        ) {
           state = STATE_PREFIX;
           currentExpression = {
             start: pos,
             end: null,
             text: ch,
-            closed: false
+            closed: false,
           };
-        } else if (ch === this.expressionPrefix && nextCh === this.expressionPrefix) {
+        } else if (
+          ch === this.expressionPrefix &&
+          nextCh === this.expressionPrefix
+        ) {
           state = STATE_ESCAPED_PREFIX;
         }
       } else if (state === STATE_PREFIX) {
@@ -313,10 +322,20 @@ export default class ExcellentParser {
         }
       }
 
-      if (currentExpression != null && (currentExpression.end != null || nextCh === 0)) {
+      if (
+        currentExpression != null &&
+        (currentExpression.end != null || nextCh === 0)
+      ) {
         const allowIncomplete = nextCh === 0; // if we're at the end of the input, allow incomplete expressions
-        if (isValidStart(currentExpression.text, this.allowedTopLevels, allowIncomplete)) {
-          currentExpression.closed = currentExpression.text[1] === '(' && parenthesesLevel === 0;
+        if (
+          isValidStart(
+            currentExpression.text,
+            this.allowedTopLevels,
+            allowIncomplete
+          )
+        ) {
+          currentExpression.closed =
+            currentExpression.text[1] === '(' && parenthesesLevel === 0;
           currentExpression.end = pos + 1;
           expressions.push(currentExpression);
         }

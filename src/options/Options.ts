@@ -1,13 +1,7 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  property,
-  css,
-} from 'lit-element';
+import { TemplateResult, html, property, css } from 'lit-element';
 import { CustomEventType } from '../interfaces';
 import { RapidElement, EventHandler } from '../RapidElement';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { styleMap } from 'lit-html/directives/style-map';
 import {
   getClasses,
   getScrollParent,
@@ -117,10 +111,10 @@ export class Options extends RapidElement {
   width: number;
 
   @property({ type: Number })
-  marginHorizontal: number = 0;
+  marginHorizontal = 0;
 
   @property({ type: Number })
-  marginVertical: number = 7;
+  marginVertical = 7;
 
   @property({ type: Object })
   anchorTo: HTMLElement;
@@ -135,7 +129,7 @@ export class Options extends RapidElement {
   scrollPct = 75;
 
   @property({ type: Number })
-  cursorIndex: number = -1;
+  cursorIndex = -1;
 
   @property({ type: Array })
   options: any[];
@@ -147,10 +141,10 @@ export class Options extends RapidElement {
   spaceSelect: boolean;
 
   @property({ type: String })
-  nameKey: string = 'name';
+  nameKey = 'name';
 
   @property({ type: Boolean })
-  loading: boolean = false;
+  loading = false;
 
   @property({ attribute: false })
   getName: { (option: any): string } = function (option: any) {
@@ -306,10 +300,7 @@ export class Options extends RapidElement {
     }
   }
 
-  private renderOptionNameDefault(
-    option: any,
-    selected: boolean
-  ): TemplateResult {
+  private renderOptionNameDefault(option: any): TemplateResult {
     return html`<div style="display:flex; align-items:flex-start">
       ${option.icon
         ? html`<temba-icon
@@ -321,14 +312,11 @@ export class Options extends RapidElement {
     </div>`;
   }
 
-  private renderOptionDetailDefault(
-    option: any,
-    selected: boolean
-  ): TemplateResult {
+  private renderOptionDetailDefault(option: any): TemplateResult {
     return html` ${option.detail} `;
   }
 
-  private handleSelection(tabbed: boolean = false, index: number = -1) {
+  private handleSelection(tabbed = false, index = -1) {
     if (index === -1) {
       index = this.cursorIndex;
     }

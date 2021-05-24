@@ -21,15 +21,15 @@ export const gsmSplit = function (message, options) {
     };
   }
 
-  var messages = [];
-  var length = 0;
-  var bytes = 0;
-  var totalBytes = 0;
-  var totalLength = 0;
-  var messagePart = '';
+  const messages = [];
+  let length = 0;
+  let bytes = 0;
+  let totalBytes = 0;
+  let totalLength = 0;
+  let messagePart = '';
 
   function bank() {
-    var msg = {
+    const msg = {
       content: options.summary ? undefined : messagePart,
       length: length,
       bytes: bytes,
@@ -43,8 +43,8 @@ export const gsmSplit = function (message, options) {
     messagePart = '';
   }
 
-  for (var i = 0, count = message.length; i < count; i++) {
-    var c = message.charAt(i);
+  for (let i = 0, count = message.length; i < count; i++) {
+    let c = message.charAt(i);
 
     if (!validateCharacter(c)) {
       if (isHighSurrogate(c.charCodeAt(0))) {

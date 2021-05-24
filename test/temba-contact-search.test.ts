@@ -7,9 +7,6 @@ export const getHTML = () => {
 };
 
 describe('temba-contact-search', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const search: ContactSearch = await fixture(getHTML());
     assert.instanceOf(search, ContactSearch);

@@ -1,8 +1,7 @@
 import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
-import { Msg, ObjectReference, Ticket } from '../interfaces';
+import { Msg, ObjectReference } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
-import { closeTicket } from './helpers';
 
 export const getEventStyles = () => {
   return css`
@@ -508,7 +507,7 @@ export interface AirtimeTransferredEvent extends ContactEvent {
   logs_url: string;
 }
 
-export interface CallStartedEvent extends ContactEvent {}
+export type CallStartedEvent = ContactEvent;
 export interface CampaignFiredEvent extends ContactEvent {
   campaign: { id: number; name: string };
   campaign_event: {
@@ -811,9 +810,7 @@ export const renderAirtimeTransferredEvent = (
     </div>`;
 };
 
-export const renderCallStartedEvent = (
-  event: CallStartedEvent
-): TemplateResult => {
+export const renderCallStartedEvent = (): TemplateResult => {
   return html`<temba-icon name="phone"></temba-icon>
     <div class="description">Call Started</div>`;
 };
