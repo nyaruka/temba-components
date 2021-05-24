@@ -2,11 +2,10 @@ import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { CustomEventType, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { getAssets, getClasses, postForm, postJSON, throttle } from '../utils';
+import { getAssets, getClasses, postJSON, throttle } from '../utils';
 import ResizeObserver from 'resize-observer-polyfill';
 import {
   AirtimeTransferredEvent,
-  CallStartedEvent,
   CampaignFiredEvent,
   ChannelEvent,
   ContactEvent,
@@ -154,19 +153,19 @@ export class ContactHistory extends RapidElement {
   eventGroups: EventGroup[] = [];
 
   @property({ type: Boolean })
-  refreshing: boolean = false;
+  refreshing = false;
 
   @property({ type: Boolean })
-  fetching: boolean = false;
+  fetching = false;
 
   @property({ type: Boolean })
-  complete: boolean = false;
+  complete = false;
 
   @property({ type: String })
   endpoint: string;
 
   @property({ type: Boolean })
-  debug: boolean = false;
+  debug = false;
 
   @property({ attribute: false, type: Object })
   mostRecentEvent: ContactEvent;
@@ -187,7 +186,7 @@ export class ContactHistory extends RapidElement {
 
   nextBefore: number;
   nextAfter: number;
-  lastHeight: number = 0;
+  lastHeight = 0;
   lastRefreshAdded: number;
   refreshTimeout: any = null;
   empty = false;
@@ -199,7 +198,7 @@ export class ContactHistory extends RapidElement {
 
     const stickyBin = this.getDiv('.sticky-bin');
     const resizer = new ResizeObserver(entries => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const eventContainer = entry.contentRect;
         stickyBin.style.width =
           eventContainer.width + eventContainer.left + 14 + 'px';
@@ -228,7 +227,7 @@ export class ContactHistory extends RapidElement {
       if (this.uuid == null) {
         this.reset();
       } else {
-        let endpoint = `/contact/history/${this.uuid}/?_format=json`;
+        const endpoint = `/contact/history/${this.uuid}/?_format=json`;
 
         if (this.endpoint !== endpoint) {
           this.reset();
@@ -314,7 +313,7 @@ export class ContactHistory extends RapidElement {
           this.refreshing = false;
           this.scheduleRefresh();
         })
-        .catch(error => {
+        .catch(() => {
           this.refreshing = false;
           this.scheduleRefresh();
         });
@@ -417,7 +416,7 @@ export class ContactHistory extends RapidElement {
         ticket => ticket && ticket.status === 'closed'
       );
 
-      for (let closed of closedTickets) {
+      for (const closed of closedTickets) {
         const child = stickyBin.querySelector(
           `[data-sticky-id="${closed.uuid}"]`
         );
@@ -484,7 +483,7 @@ export class ContactHistory extends RapidElement {
     return grouped;
   }
 
-  private scheduleRefresh(wait: number = -1) {
+  private scheduleRefresh(wait = -1) {
     let refreshWait = wait;
 
     if (wait === -1) {
@@ -557,7 +556,7 @@ export class ContactHistory extends RapidElement {
     }, 300);
   }
 
-  private handleScroll(event: MouseEvent) {
+  private handleScroll() {
     const events = this.shadowRoot.host;
 
     // check if any of our sticky elements are off the screen
@@ -595,7 +594,7 @@ export class ContactHistory extends RapidElement {
           const uuid = eventElement.getAttribute('data-sticky-id');
 
           let previousTicket: Ticket = null;
-          for (let ticket of this.tickets) {
+          for (const ticket of this.tickets) {
             if (ticket.uuid === uuid) {
               break;
             }
@@ -674,7 +673,7 @@ export class ContactHistory extends RapidElement {
       case Events.INPUT_LABELS_ADDED:
         return renderLabelsAdded(event as LabelsAddedEvent);
 
-      case Events.TICKET_OPENED:
+      case Events.TICKET_OPENED: {
         const ticketOpened = event as TicketEvent;
         const activeTicket =
           !this.ticket || ticketOpened.ticket.uuid === this.ticket;
@@ -686,12 +685,13 @@ export class ContactHistory extends RapidElement {
         }
 
         return renderTicketOpened(ticketOpened, closeHandler, activeTicket);
+      }
 
-      case Events.TICKET_CLOSED:
+      case Events.TICKET_CLOSED: {
         const ticketClosed = event as TicketEvent;
         const active = !this.ticket || ticketClosed.ticket.uuid === this.ticket;
         return renderTicketClosed(ticketClosed, active);
-
+      }
       case Events.ERROR:
       case Events.FAILURE:
         return renderErrorMessage(event as ErrorMessageEvent);
@@ -702,7 +702,7 @@ export class ContactHistory extends RapidElement {
       case Events.AIRTIME_TRANSFERRED:
         return renderAirtimeTransferredEvent(event as AirtimeTransferredEvent);
       case Events.CALL_STARTED:
-        return renderCallStartedEvent(event as CallStartedEvent);
+        return renderCallStartedEvent();
       case Events.CAMPAIGN_FIRED:
         return renderCampaignFiredEvent(event as CampaignFiredEvent);
       case Events.CHANNEL_EVENT:
@@ -724,7 +724,7 @@ export class ContactHistory extends RapidElement {
     this.httpComplete = postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
       status: 'closed',
     })
-      .then(response => {
+      .then(() => {
         this.refreshTickets();
         this.refresh();
         this.fireCustomEvent(CustomEventType.ContentChanged, {
@@ -767,6 +767,7 @@ export class ContactHistory extends RapidElement {
                     body: ticket.body,
                     ticketer: ticket.ticketer,
                   },
+                  // eslint-disable-next-line @typescript-eslint/camelcase
                   created_on: ticket.opened_on,
                 };
 

@@ -1,4 +1,4 @@
-import { fixture, expect, assert } from '@open-wc/testing';
+import { fixture, assert } from '@open-wc/testing';
 import { ContactDetails } from '../src/contacts/ContactDetails';
 import './utils.test';
 export const getHTML = () => {
@@ -6,9 +6,6 @@ export const getHTML = () => {
 };
 
 describe('temba-contact-details', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const ele: ContactDetails = await fixture(getHTML());
     assert.instanceOf(ele, ContactDetails);

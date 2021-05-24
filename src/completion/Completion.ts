@@ -79,7 +79,7 @@ export class Completion extends FormElement {
   session: boolean;
 
   @property({ type: Boolean })
-  submitOnEnter: boolean = false;
+  submitOnEnter = false;
 
   @property({ type: Object })
   anchorPosition: Position = { left: 0, top: 0 };
@@ -88,7 +88,7 @@ export class Completion extends FormElement {
   currentFunction: CompletionOption;
 
   @property({ type: String })
-  placeholder: string = '';
+  placeholder = '';
 
   @property({ attribute: false })
   textInputElement: TextInput;
@@ -100,10 +100,10 @@ export class Completion extends FormElement {
   options: any[] = [];
 
   @property({ type: String })
-  name: string = '';
+  name = '';
 
   @property({ type: String })
-  value: string = '';
+  value = '';
 
   @property({ type: Boolean })
   textarea: boolean;
@@ -117,7 +117,7 @@ export class Completion extends FormElement {
   private hiddenElement: HTMLInputElement;
   private query: string;
 
-  public firstUpdated(changedProperties: Map<string, any>) {
+  public firstUpdated() {
     this.textInputElement = this.shadowRoot.querySelector(
       'temba-textinput'
     ) as TextInput;
@@ -196,7 +196,7 @@ export class Completion extends FormElement {
     this.fireEvent('change');
   }
 
-  private handleOptionCanceled(evt: CustomEvent) {
+  private handleOptionCanceled() {
     // delay in case we are actively selecting
     window.setTimeout(() => {
       this.options = [];

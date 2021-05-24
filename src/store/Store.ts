@@ -39,7 +39,7 @@ export class Store extends LitElement {
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;
 
-  public firstUpdated(changedProperties: Map<string, any>) {
+  public firstUpdated() {
     const fetches = [];
     if (this.completionsEndpoint) {
       fetches.push(

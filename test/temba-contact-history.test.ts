@@ -1,7 +1,7 @@
 import { fixture, assert, expect } from '@open-wc/testing';
 import sinon from 'sinon';
 import { ContactHistory } from '../src/contacts/ContactHistory';
-import { stubbable, Stubbable } from '../src/utils';
+import { stubbable } from '../src/utils';
 import {
   assertScreenshot,
   getClip,
@@ -56,7 +56,6 @@ describe('temba-contact-history', () => {
       '/test-assets/api/tickets.json'
     );
   });
-  afterEach(() => {});
 
   it('can be created', async () => {
     const history = await createHistory(getHistoryHTML());
@@ -91,7 +90,7 @@ describe('temba-contact-history', () => {
 
     const groups = [2, 6];
     for (const idx of groups) {
-      let group = history.shadowRoot.querySelector(
+      const group = history.shadowRoot.querySelector(
         `[data-group-index='${idx}']`
       ) as HTMLDivElement;
       group.click();

@@ -1,13 +1,12 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { TextInput } from '../src/textinput/TextInput';
 import { assertScreenshot, getAttributes, getClip } from './utils.test';
-import './utils.test';
 
 export const getInputHTML = (attrs: any = { value: 'hello world' }) => {
   return `<temba-textinput ${getAttributes(attrs)}></temba-textinput>`;
 };
 
-export const createInput = async (def: string, delay: number = 0) => {
+export const createInput = async (def: string) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', 'width: 250px;');
   const input: TextInput = await fixture(def, { parentNode });
@@ -15,9 +14,6 @@ export const createInput = async (def: string, delay: number = 0) => {
 };
 
 describe('temba-textinput', () => {
-  beforeEach(function () {});
-  afterEach(function () {});
-
   it('can be created', async () => {
     const input: TextInput = await createInput(getInputHTML());
     assert.instanceOf(input, TextInput);
@@ -180,6 +176,7 @@ describe('temba-textinput', () => {
         name: 'message',
         value: 'hello world',
         label: 'Your Message',
+        // eslint-disable-next-line @typescript-eslint/camelcase
         help_text: 'Enter your message here',
       })
     );
@@ -209,6 +206,7 @@ describe('temba-textinput', () => {
         label: 'Your Date',
         datepicker: true,
         placeholder: 'Select a date',
+        // eslint-disable-next-line @typescript-eslint/camelcase
         help_text: 'Dates can be helpful',
       })
     );
@@ -238,7 +236,7 @@ describe('temba-textinput', () => {
     await click('temba-textinput');
     await waitFor(500);
 
-    let clip = getClip(input);
+    const clip = getClip(input);
 
     // account for the portaled date picker
     clip.height += 325;

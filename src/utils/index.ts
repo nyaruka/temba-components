@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
 import { ContactField, Ticket } from '../interfaces';
-import { SIMULATED_WEB_SLOWNESS } from '../contacts/helpers';
-import { control } from 'leaflet';
 
 export type Asset = KeyedAsset & Ticket & ContactField;
+
+export const DATE_FORMAT = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
 
 interface KeyedAsset {
   key?: string;
@@ -18,7 +19,6 @@ export interface ResultsPage {
   results: any[];
   next: string;
 }
-
 /** Get the value for a named cookie */
 export const getHTTPCookie = (name: string): string => {
   for (const cookie of document.cookie.split(';')) {
@@ -35,6 +35,58 @@ export const getHTTPCookie = (name: string): string => {
     }
   }
   return null;
+};
+
+export const getHeaders = (pjax = false) => {
+  const csrf = getHTTPCookie('csrftoken');
+  const headers: any = csrf ? { 'X-CSRFToken': csrf } : {};
+
+  // mark us as ajax
+  headers['X-Requested-With'] = 'XMLHttpRequest';
+
+  if (pjax) {
+    headers['X-PJAX'] = 'true';
+  }
+
+  return headers;
+};
+
+export const getUrl = (
+  url: string,
+  controller: AbortController = null,
+  pjax = false
+): Promise<WebResponse> => {
+  return new Promise<WebResponse>((resolve, reject) => {
+    const options = {
+      method: 'GET',
+      headers: getHeaders(pjax),
+    };
+
+    if (controller) {
+      options['signal'] = controller.signal;
+    }
+
+    fetch(url, options)
+      .then(response => {
+        response.text().then((body: string) => {
+          let json = {};
+          try {
+            json = JSON.parse(body);
+            // eslint-disable-next-line no-empty
+          } catch (err) {}
+          resolve({
+            body,
+            json,
+            status: response.status,
+            headers: response.headers,
+            controller,
+          });
+        });
+      })
+      .catch(error => {
+        reject(error);
+      });
+  });
 };
 
 export type ClassMap = {
@@ -74,7 +126,7 @@ export const fetchResultsPage = (
 
 export const fetchResults = async (url: string): Promise<any[]> => {
   if (!url) {
-    return new Promise<any[]>((resolve, reject) => resolve([]));
+    return new Promise<any[]>(resolve => resolve([]));
   }
 
   let results: any[] = [];
@@ -104,7 +156,7 @@ export const getAssetPage = (url: string): Promise<AssetPage> => {
 
 export const getAssets = async (url: string): Promise<Asset[]> => {
   if (!url) {
-    return new Promise<Asset[]>((resolve, reject) => resolve([]));
+    return new Promise<Asset[]>(resolve => resolve([]));
   }
 
   let assets: Asset[] = [];
@@ -117,20 +169,6 @@ export const getAssets = async (url: string): Promise<Asset[]> => {
   return assets;
 };
 
-export const getHeaders = (pjax: boolean = false) => {
-  const csrf = getHTTPCookie('csrftoken');
-  const headers: any = csrf ? { 'X-CSRFToken': csrf } : {};
-
-  // mark us as ajax
-  headers['X-Requested-With'] = 'XMLHttpRequest';
-
-  if (pjax) {
-    headers['X-PJAX'] = 'true';
-  }
-
-  return headers;
-};
-
 export interface WebResponse {
   json: any;
   body?: string;
@@ -140,52 +178,10 @@ export interface WebResponse {
   controller?: AbortController;
 }
 
-// this.cancelToken.token
-export const getUrl = (
-  url: string,
-  controller: AbortController = null,
-  pjax: boolean = false
-): Promise<WebResponse> => {
-  return new Promise<WebResponse>((resolve, reject) => {
-    const options = {
-      method: 'GET',
-      headers: getHeaders(pjax),
-    };
-
-    if (controller) {
-      options['signal'] = controller.signal;
-    }
-
-    fetch(url, options)
-      .then(response => {
-        response.text().then((body: string) => {
-          let json = {};
-          try {
-            json = JSON.parse(body);
-          } catch (err) {}
-          resolve({
-            body,
-            json,
-            status: response.status,
-            headers: response.headers,
-            controller,
-          });
-        });
-      })
-      .catch(error => {
-        reject(error);
-      });
-  });
-};
-
-export const postJSON = (url: string, payload: any): Promise<WebResponse> => {
-  return postUrl(url, JSON.stringify(payload), false, 'application/json');
-};
-
 export const postUrl = (
   url: string,
   payload: any,
-  pjax: boolean = false,
+  pjax = false,
   contentType = null
 ): Promise<WebResponse> => {
   const headers = getHeaders(pjax);
@@ -206,6 +202,7 @@ export const postUrl = (
           let json = {};
           try {
             json = JSON.parse(body);
+            // eslint-disable-next-line no-empty
           } catch (err) {}
           resolve({
             body,
@@ -219,6 +216,10 @@ export const postUrl = (
         reject(error);
       });
   });
+};
+
+export const postJSON = (url: string, payload: any): Promise<WebResponse> => {
+  return postUrl(url, JSON.stringify(payload), false, 'application/json');
 };
 
 export const postFormData = (
@@ -264,7 +265,7 @@ export const renderIf = (predicate: boolean | any) => (
 };
 
 export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
         r: parseInt(result[1], 16),
@@ -347,7 +348,7 @@ export const serialize = function (form: any) {
 
     // If a multi-select, get all selections
     if (field.type === 'select-multiple') {
-      for (var n = 0; n < field.options.length; n++) {
+      for (let n = 0; n < field.options.length; n++) {
         if (!field.options[n].selected) continue;
         serialized.push(
           encodeURIComponent(field.name) +
@@ -402,7 +403,6 @@ export const isElementVisible = (el: any, holder: any) => {
 
 const HOUR = 3600;
 const DAY = HOUR * 24;
-const WEEK = DAY * 7;
 const MONTH = DAY * 30;
 
 export class Stubbable {
@@ -451,7 +451,6 @@ export const timeSince = (date: Date, compareDate = null) => {
 };
 
 export const isDate = (value: string): boolean => {
-  let dateFormat;
   if (toString.call(value) === '[object Date]') {
     return true;
   }
@@ -460,20 +459,13 @@ export const isDate = (value: string): boolean => {
   }
 
   // value = value.split("+")[0];
-  dateFormat = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
-  return dateFormat.test(value);
+  return DATE_FORMAT.test(value);
 };
 
-export const debounce = (
-  fn: Function,
-  millis: number,
-  immediate: boolean = false
-) => {
+export const debounce = (fn: Function, millis: number, immediate = false) => {
   let timeout: any;
-  return function () {
+  return function (...args: any) {
     const context = this;
-    const args = arguments;
-
     const later = function () {
       timeout = null;
       if (!immediate) {
@@ -490,11 +482,9 @@ export const debounce = (
 };
 
 export const throttle = (fn: Function, millis: number) => {
-  let ready: boolean = true;
-  return function () {
+  let ready = true;
+  return function (...args: any) {
     const context = this;
-    const args = arguments;
-
     if (!ready) {
       return;
     }
@@ -519,7 +509,7 @@ export const truncate = (input: string, max: number): string => {
   return input;
 };
 
-export const oxford = (items: any[], joiner: string = 'and'): any => {
+export const oxford = (items: any[], joiner = 'and'): any => {
   if (items.length === 1) {
     return items[0];
   }
@@ -548,14 +538,11 @@ export const oxford = (items: any[], joiner: string = 'and'): any => {
 export const oxfordFn = (
   items: any[],
   fn: (item: any) => any,
-  joiner: string = 'and'
+  joiner = 'and'
 ): any => {
   return oxford(items.map(fn), joiner);
 };
 
-export const oxfordNamed = (
-  items: NamedObject[],
-  joiner: string = 'and'
-): any => {
+export const oxfordNamed = (items: NamedObject[], joiner = 'and'): any => {
   return oxfordFn(items, (value: any) => value.name, joiner);
 };

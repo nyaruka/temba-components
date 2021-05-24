@@ -1,10 +1,4 @@
-import {
-  css,
-  customElement,
-  html,
-  property,
-  TemplateResult,
-} from 'lit-element';
+import { css, html, property, TemplateResult } from 'lit-element';
 import { TembaList } from './TembaList';
 import { FormElement } from '../FormElement';
 import { timeSince } from '../utils';
@@ -41,7 +35,7 @@ export class ContactList extends FormElement {
     this.dispatchEvent(new Event('change'));
   }
 
-  private renderOption(contact: Contact, selected: boolean): TemplateResult {
+  private renderOption(contact: Contact): TemplateResult {
     return html`
       <div style="display: flex-col;">
         <div style="display:flex;	align-items: center;">

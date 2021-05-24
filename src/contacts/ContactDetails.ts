@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { css, html, property, TemplateResult } from 'lit-element';
 import { Contact, Group, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -153,16 +154,16 @@ export class ContactDetails extends RapidElement {
   endpoint: string;
 
   @property({ type: Boolean })
-  expandFields: boolean = false;
+  expandFields = false;
 
   @property({ type: Boolean })
-  expandBody: boolean = false;
+  expandBody = false;
 
   @property({ type: Boolean })
-  showGroups: boolean = false;
+  showGroups = false;
 
   @property({ type: Boolean })
-  showFlows: boolean = false;
+  showFlows = false;
 
   @property({ type: Object })
   ticket: Ticket = null;

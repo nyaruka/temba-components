@@ -64,10 +64,10 @@ export class Tip extends RapidElement {
   text: string;
 
   @property({ type: Boolean })
-  visible: boolean = false;
+  visible = false;
 
   @property({ type: String })
-  position: string = 'auto';
+  position = 'auto';
 
   @property({ type: Boolean })
   hideOnChange: boolean;
@@ -89,8 +89,6 @@ export class Tip extends RapidElement {
   arrowTop: number;
   arrowLeft: number;
   arrowDirection: string;
-
-  public firstUpdated() {}
 
   public updated(changed: Map<string, any>) {
     if ((changed.has('visible') || changed.has('text')) && this.visible) {
@@ -149,7 +147,7 @@ export class Tip extends RapidElement {
     }
   }
 
-  lastEnter: number = 0;
+  lastEnter = 0;
 
   private handleMouseEnter() {
     this.lastEnter = window.setTimeout(() => {

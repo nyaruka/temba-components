@@ -1,11 +1,4 @@
-import {
-  css,
-  customElement,
-  html,
-  LitElement,
-  property,
-  TemplateResult,
-} from 'lit-element';
+import { css, html, LitElement, property, TemplateResult } from 'lit-element';
 
 export class Alert extends LitElement {
   static get styles() {
@@ -37,7 +30,7 @@ export class Alert extends LitElement {
   }
 
   @property({ type: String })
-  level: string = 'info';
+  level = 'info';
 
   public render(): TemplateResult {
     return html`

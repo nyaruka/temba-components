@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/camelcase */
 // '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ\x20!"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà\f^{}\\[~]|€'
-var GSM_charCodes = [
+const GSM_charCodes = [
   10,
   12,
   13,
@@ -140,13 +141,13 @@ var GSM_charCodes = [
 ];
 
 // '\f|^€{}[~]\\'
-var GSMe_charCodes = [12, 91, 92, 93, 94, 123, 124, 125, 126, 8364];
+const GSMe_charCodes = [12, 91, 92, 93, 94, 123, 124, 125, 126, 8364];
 
 function existsInArray(code, array) {
-  var len = array.length;
-  var i = 0;
+  const len = array.length;
+  let i = 0;
   while (i < len) {
-    var e = array[i];
+    const e = array[i];
     if (code === e) return true;
     i++;
   }
@@ -154,18 +155,18 @@ function existsInArray(code, array) {
 }
 
 export function validateCharacter(character) {
-  var code = character.charCodeAt(0);
+  const code = character.charCodeAt(0);
   return existsInArray(code, GSM_charCodes);
 }
 
 export function validateMessage(message) {
-  for (var i = 0; i < message.length; i++) {
+  for (let i = 0; i < message.length; i++) {
     if (!validateCharacter(message.charAt(i))) return false;
   }
   return true;
 }
 
 export function validateExtendedCharacter(character) {
-  var code = character.charCodeAt(0);
+  const code = character.charCodeAt(0);
   return existsInArray(code, GSMe_charCodes);
 }

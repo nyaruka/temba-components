@@ -4,11 +4,9 @@ import { Modax } from '../src/dialog/Modax';
 import { useFakeTimers } from 'sinon';
 import { assertScreenshot, checkTimers, getClip, mockPOST } from './utils.test';
 
-import './utils.test';
+let clock: any;
 
-var clock: any;
-
-const getModaxHTML = (endpoint: string, hideOnClick = false): string => {
+const getModaxHTML = (endpoint: string): string => {
   return `
       <temba-modax header="Hello Modax" endpoint="${endpoint}">
         <div>Open Me</div>
@@ -98,7 +96,8 @@ describe('temba-modax', () => {
     );
 
     // we don't want to hijack the browser during our tests
-    modax.updateLocation = (location: string) => {};
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    modax.updateLocation = () => {};
 
     await open(modax);
     const primary = getButtons(modax, 'primary')[0] as Button;

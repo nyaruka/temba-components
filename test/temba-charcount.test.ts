@@ -1,7 +1,6 @@
-import { assert, fixture } from '@open-wc/testing';
+import { fixture } from '@open-wc/testing';
 import { CharCount } from '../src/charcount/CharCount';
 import { assertScreenshot, getClip } from './utils.test';
-import './utils.test';
 
 const parentNode = document.createElement('div');
 parentNode.setAttribute('style', ' width: 250px;');
@@ -49,7 +48,7 @@ describe('temba-charcount', () => {
     const page = window as any;
 
     // make room for our summary in the screenshot
-    let clip = getClip(counter);
+    const clip = getClip(counter);
     clip.height = 250;
 
     // move our mouse over the count to show the summary

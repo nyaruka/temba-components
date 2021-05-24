@@ -1,7 +1,7 @@
-const fs = require("fs");
-const path = require("path");
-var mkdirp = require("mkdirp");
-let templates = "";
+const fs = require('fs');
+const path = require('path');
+var mkdirp = require('mkdirp');
+let templates = '';
 
 function CreateIncludesPlugin(options) {
   // where we will put our django templates
@@ -13,24 +13,24 @@ function getScript(filename, nomodule) {
     '<script src="{{STATIC_URL}}@nyaruka/temba-components/build/' +
     filename +
     '"' +
-    (nomodule ? ' nomodule="">' : ">") +
-    "</script>\n"
+    (nomodule ? ' nomodule="">' : '>') +
+    '</script>\n'
   );
 }
 
 CreateIncludesPlugin.prototype.apply = function (compiler) {
-  let loaderFile = "";
+  let loaderFile = '';
   const bodyScripts = [];
 
   compiler.plugin(
-    "emit",
+    'emit',
     function (compilation, callback) {
       Object.keys(compilation.assets).forEach(function (filename) {
         // The loader file is responsible for bringing in polyfills as
         // necessary. It references files that need to be located
         // inside our static directory
-        if (filename.startsWith("loader.")) {
-          loaderFile = "prefixed." + filename;
+        if (filename.startsWith('loader.')) {
+          loaderFile = 'prefixed.' + filename;
           let loaderSource = compilation.assets[filename].source();
 
           loaderSource = loaderSource.replace(
@@ -52,10 +52,13 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
         }
 
         // our main components file, it'll be included in the head of our template
-        if (filename.startsWith("temba-components") && filename.endsWith(".js")) {
-          mkdirp(templates).then((err) => {
+        if (
+          filename.startsWith('temba-components') &&
+          filename.endsWith('.js')
+        ) {
+          mkdirp(templates).then(err => {
             fs.writeFileSync(
-              path.resolve(templates, "components-head.html"),
+              path.resolve(templates, 'components-head.html'),
               '<link rel="preload" href="{{STATIC_URL}}@nyaruka/temba-components/build/' +
                 filename +
                 '" as="script"></link>'
@@ -65,9 +68,9 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
 
         // we have some polyfills that are always present in our body, keep track of those here
         if (
-          filename.indexOf(".js.map") === -1 &&
-          (filename.startsWith("polyfills/core-js") ||
-            filename.startsWith("polyfills/regenerator"))
+          filename.indexOf('.js.map') === -1 &&
+          (filename.startsWith('polyfills/core-js') ||
+            filename.startsWith('polyfills/regenerator'))
         ) {
           bodyScripts.push(filename);
         }
@@ -75,9 +78,9 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
 
       // our main body template has a couple universal polyfills and our dynamic loader for any remaining
       // ones the current browser might need
-      mkdirp(templates).then((err) => {
+      mkdirp(templates).then(err => {
         fs.writeFileSync(
-          path.resolve(templates, "components-body.html"),
+          path.resolve(templates, 'components-body.html'),
           getScript(bodyScripts[0], true) +
             getScript(bodyScripts[1], true) +
             getScript(loaderFile, false)
@@ -87,13 +90,13 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
     }.bind(this)
   );
 
-  compiler.plugin("done", function () {
-    console.log("\x1b[36m%s\x1b[0m", "Generated templates in " + templates);
+  compiler.plugin('done', function () {
+    console.log('\x1b[36m%s\x1b[0m', 'Generated templates in ' + templates);
     console.log(
-      "\x1b[36m%s\x1b[0m",
-      "Generated static includes in " +
+      '\x1b[36m%s\x1b[0m',
+      'Generated static includes in ' +
         compiler.options.output.path +
-        "/components"
+        '/components'
     );
   });
 };

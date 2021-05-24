@@ -19,15 +19,15 @@ export const unicodeSplit = function (message, options) {
     };
   }
 
-  var messages = [];
-  var length = 0;
-  var bytes = 0;
-  var totalBytes = 0;
-  var totalLength = 0;
-  var partStart = 0;
+  const messages = [];
+  let length = 0;
+  let bytes = 0;
+  let totalBytes = 0;
+  let totalLength = 0;
+  let partStart = 0;
 
   function bank(partEnd = undefined) {
-    var msg = {
+    const msg = {
       content: options.summary
         ? undefined
         : partEnd
@@ -46,9 +46,9 @@ export const unicodeSplit = function (message, options) {
     bytes = 0;
   }
 
-  for (var i = 0, count = message.length; i < count; i++) {
-    var code = message.charCodeAt(i);
-    var highSurrogate = isHighSurrogate(code);
+  for (let i = 0, count = message.length; i < count; i++) {
+    const code = message.charCodeAt(i);
+    const highSurrogate = isHighSurrogate(code);
 
     if (highSurrogate) {
       if (bytes === 132) bank(i - 1);

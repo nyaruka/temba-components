@@ -1,25 +1,24 @@
-import { customElement, property } from "lit-element/lib/decorators";
-import { TemplateResult, html, css } from "lit-element";
-import { LitElement } from "lit-element";
+import { customElement, property } from 'lit-element/lib/decorators';
+import { TemplateResult, LitElement } from 'lit-element';
 
-@customElement("temba-shadowless")
+@customElement('temba-shadowless')
 export default class Shadowless extends LitElement {
   createRenderRoot() {
     for (const child of this.childNodes) {
-      if ((child as any).className == "content") {
+      if ((child as any).className == 'content') {
         return child;
       }
     }
 
-    const root = document.createElement("div");
-    root.className = "content";
+    const root = document.createElement('div');
+    root.className = 'content';
     this.appendChild(root);
     return root as any;
   }
 
   createRenderRoots() {
-    const root = document.createElement("div");
-    root.className = "content";
+    const root = document.createElement('div');
+    root.className = 'content';
     this.appendChild(root);
     return root;
   }

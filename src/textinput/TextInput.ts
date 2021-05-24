@@ -1,6 +1,6 @@
 import { TemplateResult, html, css, property } from 'lit-element';
 import { ifDefined } from 'lit-html/directives/if-defined';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { styleMap } from 'lit-html/directives/style-map';
 import { FormElement } from '../FormElement';
 import { Modax } from '../dialog/Modax';
 import { sanitize } from './helpers';
@@ -109,13 +109,13 @@ export class TextInput extends FormElement {
   datetimepicker: boolean;
 
   @property({ type: String })
-  placeholder: string = '';
+  placeholder = '';
 
   @property({ type: String })
-  value: string = '';
+  value = '';
 
   @property({ type: String })
-  name: string = '';
+  name = '';
 
   @property({ type: Boolean })
   password: boolean;
@@ -140,10 +140,10 @@ export class TextInput extends FormElement {
 
   // if we are still loading
   @property({ type: Boolean })
-  loading: boolean = true;
+  loading = true;
 
   @property({ type: Boolean })
-  submitOnEnter: boolean = true;
+  submitOnEnter = true;
 
   @property()
   onBlur: any;
@@ -299,7 +299,7 @@ export class TextInput extends FormElement {
   }
 
   public getParentModax(): Modax {
-    var parent = this as HTMLElement;
+    let parent = this as HTMLElement;
 
     while (parent) {
       if (parent.parentElement) {
@@ -319,7 +319,7 @@ export class TextInput extends FormElement {
   }
 
   public getParentForm(): HTMLFormElement {
-    var parent = this as HTMLElement;
+    let parent = this as HTMLElement;
 
     while (parent) {
       if (parent.parentElement) {
@@ -369,6 +369,7 @@ export class TextInput extends FormElement {
         @blur=${this.blur}
         @keydown=${(e: KeyboardEvent) => {
           if (e.key === 'Enter') {
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
             const input = this;
 
             if (this.submitOnEnter) {
@@ -398,7 +399,7 @@ export class TextInput extends FormElement {
                   const form = input.getParentForm();
 
                   if (form) {
-                    var submitButton = form.querySelector(
+                    const submitButton = form.querySelector(
                       "input[type='submit']"
                     ) as HTMLInputElement;
                     if (submitButton) {

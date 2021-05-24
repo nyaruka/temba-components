@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css, property } from 'lit-element';
 import { getUrl, getClasses, fetchResults, WebResponse } from '../utils';
 import '../options/Options';
@@ -308,25 +309,25 @@ export class Select extends FormElement {
   }
 
   @property({ type: Boolean })
-  multi: boolean = false;
+  multi = false;
 
   @property({ type: Boolean })
-  searchOnFocus: boolean = false;
+  searchOnFocus = false;
 
   @property({ type: String })
-  placeholder: string = '';
+  placeholder = '';
 
   @property()
-  name: string = '';
+  name = '';
 
   @property()
   endpoint: string;
 
   @property({ type: String })
-  nameKey: string = 'name';
+  nameKey = 'name';
 
   @property({ type: String })
-  valueKey: string = 'value';
+  valueKey = 'value';
 
   @property({ attribute: false })
   currentFunction: CompletionOption;
@@ -335,7 +336,7 @@ export class Select extends FormElement {
   queryParam: string = null;
 
   @property({ type: String })
-  input: string = '';
+  input = '';
 
   @property({ type: Array })
   visibleOptions: any[] = [];
@@ -344,31 +345,31 @@ export class Select extends FormElement {
   completionOptions: CompletionOption[] = [];
 
   @property({ type: Number })
-  quietMillis: number = 0;
+  quietMillis = 0;
 
   @property({ type: Boolean })
   fetching: boolean;
 
   @property({ type: Boolean })
-  searchable: boolean = false;
+  searchable = false;
 
   @property({ type: String })
   expressions: string;
 
   @property({ type: Boolean })
-  cache: boolean = true;
+  cache = true;
 
   @property({ type: String })
-  cacheKey: string = '';
+  cacheKey = '';
 
   @property({ type: Boolean })
-  focused: boolean = false;
+  focused = false;
 
   @property({ type: Boolean })
-  disabled: boolean = false;
+  disabled = false;
 
   @property({ attribute: false })
-  selectedIndex: number = -1;
+  selectedIndex = -1;
 
   @property({ type: Number })
   cursorIndex: number;
@@ -383,7 +384,7 @@ export class Select extends FormElement {
   anchorPosition: Position = { left: 0, top: 0 };
 
   @property({ type: Boolean })
-  tags: boolean = false;
+  tags = false;
 
   @property({ type: Boolean, attribute: 'space_select' })
   spaceSelect: boolean;
@@ -575,7 +576,7 @@ export class Select extends FormElement {
     this.fireEvent('change');
   }
 
-  private createArbitraryOptionDefault(input: string, options: any[]): any {
+  private createArbitraryOptionDefault(): any {
     return null;
   }
 
@@ -692,7 +693,7 @@ export class Select extends FormElement {
     }
   }
 
-  public fetchOptions(query: string, page: number = 0) {
+  public fetchOptions(query: string, page = 0) {
     this.completionOptions = [];
 
     if (!this.fetching) {
@@ -703,7 +704,7 @@ export class Select extends FormElement {
       // this.cancelToken.cancel();
       // }
 
-      let options: any = [...this.staticOptions];
+      const options: any = [...this.staticOptions];
       const q = (query || '').trim().toLowerCase();
 
       if (this.tags && q) {
@@ -829,7 +830,7 @@ export class Select extends FormElement {
     }
   }
 
-  private handleFocus(evt: any): void {
+  private handleFocus(): void {
     if (!this.focused && this.visibleOptions.length === 0) {
       this.focused = true;
       if (this.searchOnFocus) {
@@ -838,7 +839,7 @@ export class Select extends FormElement {
     }
   }
 
-  private handleBlur(evt: any) {
+  private handleBlur() {
     this.focused = false;
     if (this.visibleOptions.length > 0) {
       this.input = '';
@@ -942,8 +943,6 @@ export class Select extends FormElement {
     this.input = ele.value;
   }
 
-  private handleKeyUp(evt: KeyboardEvent) {}
-
   private handleCancel() {
     this.visibleOptions = [];
   }
@@ -1000,7 +999,7 @@ export class Select extends FormElement {
       for (const child of this.children) {
         if (child.tagName === 'TEMBA-OPTION') {
           const option: any = {};
-          for (let attribute of child.attributes) {
+          for (const attribute of child.attributes) {
             option[attribute.name] = attribute.value;
           }
           this.staticOptions.push(option);

@@ -1,7 +1,6 @@
 import { fixture, assert } from '@open-wc/testing';
 import { Alert } from '../src/alert/Alert';
 
-import './utils.test';
 import { assertScreenshot, getClip } from './utils.test';
 
 export const createAlert = async (level: string, body: string) => {
@@ -13,9 +12,6 @@ export const createAlert = async (level: string, body: string) => {
 };
 
 describe('temba-alert', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('shows info', async () => {
     const alert = await createAlert('info', 'Here is some info');
     assert.instanceOf(alert, Alert);

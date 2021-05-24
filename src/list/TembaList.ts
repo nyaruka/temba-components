@@ -1,10 +1,4 @@
-import {
-  css,
-  customElement,
-  html,
-  property,
-  TemplateResult,
-} from 'lit-element';
+import { css, html, property, TemplateResult } from 'lit-element';
 import { reset } from 'sinon';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -20,19 +14,19 @@ export class TembaList extends RapidElement {
   selected: any;
 
   @property({ type: Number })
-  cursorIndex: number = -1;
+  cursorIndex = -1;
 
   @property({ type: String })
   endpoint: string;
 
   @property({ type: Number })
-  tabIndex: number = 1;
+  tabIndex = 1;
 
   @property({ type: String })
-  valueKey: string = 'id';
+  valueKey = 'id';
 
   @property({ type: Boolean })
-  loading: boolean = false;
+  loading = false;
 
   @property({ type: String })
   nextSelection: string;
@@ -54,12 +48,12 @@ export class TembaList extends RapidElement {
 
   // changes to the refresh key force a refresh
   @property({ type: String })
-  refreshKey: string = '0';
+  refreshKey = '0';
 
   // our next page from our endpoint
   nextPage: string = null;
 
-  pages: number = 0;
+  pages = 0;
   clearRefreshTimeout: any;
   pending: AbortController[] = [];
 
@@ -251,7 +245,7 @@ export class TembaList extends RapidElement {
     return Promise.resolve();
   }
 
-  private handleScrollThreshold(event: CustomEvent) {
+  private handleScrollThreshold() {
     if (this.nextPage) {
       fetchResultsPage(this.nextPage).then((page: ResultsPage) => {
         if (this.sanitizeOption) {

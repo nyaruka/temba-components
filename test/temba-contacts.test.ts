@@ -7,9 +7,6 @@ export const getHTML = () => {
 };
 
 describe('temba-ticket-list', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const tickets: ContactList = await fixture(getHTML());
     assert.instanceOf(tickets, ContactList);

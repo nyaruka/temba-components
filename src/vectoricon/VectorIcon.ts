@@ -1,11 +1,4 @@
-import {
-  customElement,
-  property,
-  LitElement,
-  TemplateResult,
-  html,
-  css,
-} from 'lit-element';
+import { property, LitElement, TemplateResult, html, css } from 'lit-element';
 
 import { getClasses } from '../utils';
 
@@ -18,7 +11,7 @@ export class VectorIcon extends LitElement {
   id: string;
 
   @property({ type: Number })
-  size: number = 1;
+  size = 1;
 
   @property({ type: Boolean })
   clickable: boolean;
@@ -27,7 +20,7 @@ export class VectorIcon extends LitElement {
   animateChange: string;
 
   @property({ type: Number })
-  animationDuration: number = 200;
+  animationDuration = 200;
 
   @property({ type: Number, attribute: false })
   steps = 2;

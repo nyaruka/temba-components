@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { css, html, LitElement, property, TemplateResult } from 'lit-element';
 import { FeatureProperties } from '../interfaces';
 import { getUrl, postUrl, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { styleMap } from 'lit-html/directives/style-map';
 import { FormElement } from '../FormElement';
 
 export class AliasEditor extends LitElement {
@@ -155,7 +156,7 @@ export class AliasEditor extends LitElement {
     if (changedProperties.has('osmId')) {
       // going up the tree doesn't require a fetch
       const newPath = [];
-      for (let feature of this.path) {
+      for (const feature of this.path) {
         newPath.push(feature);
         if (feature.osm_id === this.osmId) {
           this.path = [...newPath];
@@ -324,7 +325,7 @@ export class AliasEditor extends LitElement {
       postUrl(
         this.getEndpoint() + 'boundaries/' + this.editFeature.osm_id + '/',
         payload
-      ).then(response => {
+      ).then(() => {
         this.fetchFeature();
       });
     }
@@ -338,17 +339,11 @@ export class AliasEditor extends LitElement {
     return response.json.filter((option: any) => option.level > 0);
   }
 
-  private getOptionsComplete(
-    newestOptions: FeatureProperties[],
-    response: WebResponse
-  ) {
+  private getOptionsComplete(newestOptions: FeatureProperties[]) {
     return newestOptions.length === 0;
   }
 
-  private renderOptionDetail(
-    option: FeatureProperties,
-    selected: boolean
-  ): TemplateResult {
+  private renderOptionDetail(option: FeatureProperties): TemplateResult {
     const labelStyles = {
       marginTop: '3px',
       marginRight: '3px',

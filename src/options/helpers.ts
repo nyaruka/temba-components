@@ -4,23 +4,23 @@ export const getScrollParent = (element: HTMLElement) => {
     return window;
   }
   let style = getComputedStyle(element);
-  const excludeStaticParent = style.position === "absolute";
+  const excludeStaticParent = style.position === 'absolute';
   const overflowRegex = /(auto|scroll)/;
 
-  if (style.position === "fixed") {
+  if (style.position === 'fixed') {
     return window;
   }
 
   let parent = element.parentElement;
 
   while (parent) {
-    if (parent.tagName === "BODY") {
+    if (parent.tagName === 'BODY') {
       break;
     }
 
     style = getComputedStyle(parent);
 
-    if (excludeStaticParent && style.position === "static") {
+    if (excludeStaticParent && style.position === 'static') {
       parent = parent.parentElement;
       continue;
     }

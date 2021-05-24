@@ -1,3 +1,4 @@
+/* eslint-disable no-empty-pattern */
 // declare module 'fetch-mock/esm/client';
 
 declare function typeInto(selector: string, text: string, replace: boolean);

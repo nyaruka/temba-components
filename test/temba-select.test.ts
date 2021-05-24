@@ -5,9 +5,8 @@ import { Select } from '../src/select/Select';
 import { assertScreenshot, checkTimers, getClip } from './utils.test';
 import { range } from '../src/utils';
 import { Store } from '../src/store/Store';
-import './utils.test';
 
-var clock: any;
+let clock: any;
 
 const colors = [
   { name: 'Red', value: '0' },
@@ -15,7 +14,7 @@ const colors = [
   { name: 'Blue', value: '2' },
 ];
 
-export const createSelect = async (def: string, delay: number = 0) => {
+export const createSelect = async (def: string, delay = 0) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', 'width: 250px;');
 
@@ -92,8 +91,8 @@ export const getSelectHTML = (
   return selectHTML;
 };
 
-export const forPages = async (select: Select, pages: number = 1) => {
-  for (let i in range(0, pages * 3 + 1)) {
+export const forPages = async (select: Select, pages = 1) => {
+  for (const _ in range(0, pages * 3 + 1)) {
     await select.httpComplete;
     await select.updateComplete;
   }
@@ -192,7 +191,7 @@ describe('temba-select', () => {
   });
 
   it('shows options when opened', async () => {
-    var select = await createSelect(getSelectHTML());
+    const select = await createSelect(getSelectHTML());
     await open(select);
     const options = getOptions(select);
     assert.instanceOf(options, Options);

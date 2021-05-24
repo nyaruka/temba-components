@@ -1,6 +1,5 @@
 import { assert } from '@open-wc/testing';
 import { VectorIcon } from '../src/vectoricon/VectorIcon';
-import './utils.test';
 import { getComponent } from './utils.test';
 
 const TAG = 'temba-icon';
@@ -9,9 +8,6 @@ const getIcon = async (attrs: any = {}) => {
 };
 
 describe(TAG, () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const icon = await getIcon({ name: 'checkmark' });
     assert.instanceOf(icon, VectorIcon);

@@ -77,16 +77,16 @@ export class Modax extends RapidElement {
   }
 
   @property({ type: String })
-  header: string = '';
+  header = '';
 
   @property({ type: String })
   endpoint: string;
 
   @property({ type: Boolean, reflect: true })
-  open: boolean = false;
+  open = false;
 
   @property({ type: Boolean })
-  fetching: boolean = false;
+  fetching = false;
 
   @property({ type: Boolean })
   submitting: boolean;
@@ -207,7 +207,7 @@ export class Modax extends RapidElement {
     for (let i = scripts.length - 1; i >= 0; i--) {
       // for (let i = 0; i < scripts.length; i++) {
       const script = this.ownerDocument.createElement('script');
-      var code = scripts[i].innerText;
+      const code = scripts[i].innerText;
 
       if (scripts[i].src) {
         script.src = scripts[i].src;
@@ -215,6 +215,7 @@ export class Modax extends RapidElement {
         script.async = true;
 
         // TODO: track and fire event once all scripts are loaded
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         script.onload = function () {};
         toAdd.push(script);
       } else if (code) {

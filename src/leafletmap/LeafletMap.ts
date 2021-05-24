@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { Feature, Geometry } from 'geojson';
 import {
   GeoJSON,
@@ -58,7 +59,7 @@ export class LeafletMap extends LitElement {
   feature: FeatureProperties;
 
   @property()
-  osmId: string = '';
+  osmId = '';
 
   @property()
   endpoint = '';

@@ -44,7 +44,7 @@ export class Checkbox extends FormElement {
   }
 
   @property({ type: String })
-  name: string = '';
+  name = '';
 
   @property({ type: Boolean })
   checked: boolean;
@@ -56,7 +56,7 @@ export class Checkbox extends FormElement {
   size = 1.2;
 
   @property({ type: String })
-  animateChange: string = 'pulse';
+  animateChange = 'pulse';
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
@@ -75,7 +75,7 @@ export class Checkbox extends FormElement {
     return value;
   }
 
-  private handleClick(event?: MouseEvent): void {
+  private handleClick(): void {
     if (!this.disabled) {
       this.checked = !this.checked;
     }

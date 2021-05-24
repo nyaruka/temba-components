@@ -7,9 +7,6 @@ export const getHTML = () => {
 };
 
 describe('temba-completion', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
-
   it('can be created', async () => {
     const completion: Completion = await fixture(getHTML());
     assert.instanceOf(completion, Completion);

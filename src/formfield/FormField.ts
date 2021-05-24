@@ -1,11 +1,4 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  css,
-  property,
-  LitElement,
-} from 'lit-element';
+import { TemplateResult, html, css, property, LitElement } from 'lit-element';
 
 /**
  * A small wrapper to display labels and help text in a smartmin style.
@@ -73,28 +66,28 @@ export class FormField extends LitElement {
   }
 
   @property({ type: Boolean, attribute: 'hide_label' })
-  hideLabel: boolean = false;
+  hideLabel = false;
 
   @property({ type: Boolean, attribute: 'widget_only' })
-  widgetOnly: boolean = false;
+  widgetOnly = false;
 
   @property({ type: Array, attribute: false })
   errors: string[] = [];
 
   @property({ type: Boolean })
-  hideErrors: boolean = false;
+  hideErrors = false;
 
   @property({ type: String, attribute: 'help_text' })
-  helpText: string = '';
+  helpText = '';
 
   @property({ type: Boolean, attribute: 'help_always' })
-  helpAlways: boolean = true;
+  helpAlways = true;
 
   @property({ type: String })
-  label: string = '';
+  label = '';
 
   @property({ type: String })
-  name: string = '';
+  name = '';
 
   @property({ type: Boolean })
   disabled = false;

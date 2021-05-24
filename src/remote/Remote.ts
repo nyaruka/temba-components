@@ -18,10 +18,6 @@ export default class Remote extends RapidElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-
-    // our endpoint changed fetch the latest
-    if (changes.has('endpoint')) {
-    }
   }
 
   public render(): TemplateResult {

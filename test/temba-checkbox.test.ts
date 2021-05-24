@@ -1,7 +1,6 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { Checkbox } from '../src/checkbox/Checkbox.js';
-import { assertScreenshot, getClip } from './utils.test.js';
-import './utils.test';
+import { Checkbox } from '../src/checkbox/Checkbox';
+import { assertScreenshot, getClip } from './utils.test';
 
 describe('temba-checkbox', () => {
   it('renders default checkbox', async () => {
@@ -27,7 +26,8 @@ describe('temba-checkbox', () => {
   });
 
   it('fires change event on click', async () => {
-    return new Promise<void>(async (resolve, reject) => {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise<void>(async resolve => {
       const checkbox: Checkbox = await fixture(html`
         <temba-checkbox label="My Checkbox"></temba-checkbox>
       `);
