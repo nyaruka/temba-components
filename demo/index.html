@@ -21,7 +21,7 @@
     }
   </style>
   <script type="module">
-    import '../out-tsc/temba-modules.js';
+    import '../out-tsc/temba-modules.js';    
   </script>
  
 </head>
@@ -87,11 +87,19 @@
   </div>
 
   <div class="example">
-    <temba-select name="Color" label="Color" help_text="I'm not really enabled at the moment" placeholder='Select a color' expressions="message" disabled>
+    <script>
+      function toggleSelect(evt) {
+        document.getElementById("select-toggle").disabled = !evt.currentTarget.checked;
+      }
+    </script>
+    <div style="display:flex;align-items: center;">
+    <temba-checkbox onchange="toggleSelect(event)"></temba-checkbox>
+    <temba-select style="margin-left:10px" id="select-toggle" placeholder='Select a color' expressions="message">
       <temba-option name="Red" value="0"></temba-option>
       <temba-option name="Green" value="1"></temba-option>
       <temba-option name="Blue" value="2"></temba-option>
     </temba-select>
+    </div>
   </div>
 
   <div class="example">
