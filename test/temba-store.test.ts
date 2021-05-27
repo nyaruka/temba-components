@@ -16,16 +16,10 @@ describe('temba-store', () => {
 
   it('completion schema', async () => {
     const store: Store = await createStore(
-      "<temba-store completions='/test-assets/store/completion.json'></temba-store>"
+      "<temba-store completion='/test-assets/store/editor.json'></temba-store>"
     );
-    assert.equal(store.getCompletionSchema().types.length, 13);
-  });
-
-  it('function list', async () => {
-    const store: Store = await createStore(
-      "<temba-store functions='/test-assets/store/functions.json'></temba-store>"
-    );
-    assert.equal(store.getFunctions().length, 74);
+    assert.equal(store.getCompletionSchema().types.length, 16);
+    assert.equal(store.getFunctions().length, 80);
   });
 
   it('globals', async () => {

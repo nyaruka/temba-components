@@ -9,11 +9,8 @@ import {
 } from '../interfaces';
 
 export class Store extends LitElement {
-  @property({ type: String, attribute: 'completions' })
-  completionsEndpoint: string;
-
-  @property({ type: String, attribute: 'functions' })
-  functionsEndpoint: string;
+  @property({ type: String, attribute: 'completion' })
+  completionEndpoint: string;
 
   @property({ type: String, attribute: 'fields' })
   fieldsEndpoint: string;
@@ -41,18 +38,11 @@ export class Store extends LitElement {
 
   public firstUpdated() {
     const fetches = [];
-    if (this.completionsEndpoint) {
+    if (this.completionEndpoint) {
       fetches.push(
-        getUrl(this.completionsEndpoint).then(response => {
-          this.schema = response.json as CompletionSchema;
-        })
-      );
-    }
-
-    if (this.functionsEndpoint) {
-      fetches.push(
-        getUrl(this.functionsEndpoint).then(response => {
-          this.fnOptions = response.json as CompletionOption[];
+        getUrl(this.completionEndpoint).then(response => {
+          this.schema = response.json['context'] as CompletionSchema;
+          this.fnOptions = response.json['functions'] as CompletionOption[];
         })
       );
     }
