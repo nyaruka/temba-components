@@ -122,7 +122,7 @@ const getClipWithOptions = (select: Select) => {
 
 const loadStore = async () => {
   const store: Store = await fixture(
-    "<temba-store functions='/test-assets/store/functions.json' completions='/test-assets/store/completion.json'></temba-store>"
+    "<temba-store completion='/test-assets/store/editor.json'></temba-store>"
   );
   await store.httpComplete;
   return store;
@@ -383,7 +383,7 @@ describe('temba-select', () => {
       await clock.tick(400);
       await select.httpComplete;
 
-      assert.equal(select.completionOptions.length, 12);
+      assert.equal(select.completionOptions.length, 14);
       await assertScreenshot('select/expressions', getClipWithOptions(select));
     });
 
