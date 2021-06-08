@@ -1,3 +1,10 @@
+export interface User {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
 export interface Ticket {
   uuid: string;
   subject: string;
@@ -18,6 +25,7 @@ export interface Msg {
   id: number;
   direction: string;
   type: string;
+  created_by?: User;
 }
 
 export interface ObjectReference {
@@ -158,4 +166,5 @@ export enum CustomEventType {
   ScrollThreshold = 'temba-scroll-threshold',
   ContentChanged = 'temba-content-changed',
   ContextChanged = 'temba-context-changed',
+  Submitted = 'temba-submitted',
 }

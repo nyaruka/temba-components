@@ -22,6 +22,7 @@ export class Dialog extends RapidElement {
         z-index: 10000;
         font-family: var(--font-family);
         --transition-speed: 250ms;
+        background: white;
       }
 
       .flex {
@@ -63,6 +64,7 @@ export class Dialog extends RapidElement {
         box-shadow: 0px 0px 2px 4px rgba(0, 0, 0, 0.06);
         overflow: hidden;
         transform: scale(0.7);
+        background: white;
       }
 
       .dialog-body {
@@ -98,8 +100,8 @@ export class Dialog extends RapidElement {
         font-size: 20px;
         padding: 12px 20px;
         font-weight: 300;
-        color: var(--color-text-light);
-        background: var(--color-primary-dark);
+        color: var(--header-text);
+        background: var(--header-bg);
       }
 
       .dialog-footer {
@@ -167,6 +169,9 @@ export class Dialog extends RapidElement {
   @property({ type: Boolean })
   hideOnClick: boolean;
 
+  @property({ type: Boolean })
+  noFocus: boolean;
+
   @property()
   size = 'medium';
 
@@ -205,30 +210,31 @@ export class Dialog extends RapidElement {
           this.animationEnd = false;
         }, 400);
 
+        const scrollbarWidth = window.outerWidth - body.clientWidth;
         this.scrollOffset = -document.documentElement.scrollTop;
         body.style.position = 'fixed';
         body.style.overflowY = 'scroll';
         body.style.top = this.scrollOffset + 'px';
         body.style.width = '100%';
+        body.style.overflowY = 'hidden';
+        body.style.paddingRight = scrollbarWidth + 'px';
       } else {
         body.style.position = '';
         body.style.overflowY = '';
         body.style.width = '';
+        body.style.marginRight = '';
+        body.style.paddingRight = '0px';
         window.scrollTo(0, parseInt(this.scrollOffset || '0') * -1);
       }
 
       // make sure our buttons aren't in progress on show
-      if (this.open) {
+      if (this.open && !changedProperties.get('open')) {
         this.shadowRoot
           .querySelectorAll('temba-button')
           .forEach((button: Button) => (button.disabled = false));
-        const inputs = this.querySelectorAll('textarea,input');
-        if (inputs.length > 0) {
-          window.setTimeout(() => {
-            const input = inputs[0] as any;
-            input.click();
-            input.focus();
-          }, 100);
+
+        if (!this.noFocus) {
+          this.focusFirstInput();
         }
       } else {
         window.setTimeout(() => {
@@ -236,6 +242,21 @@ export class Dialog extends RapidElement {
         }, 400);
       }
     }
+  }
+
+  public focusFirstInput(): void {
+    window.setTimeout(() => {
+      let input = this.querySelector(
+        'temba-textinput, temba-completion, input, textarea'
+      ) as any;
+      if (input) {
+        input = input.textInputElement || input.inputElement || input;
+        if (!input.readOnly) {
+          input.focus();
+          input.click();
+        }
+      }
+    }, 100);
   }
 
   public handleClick(evt: MouseEvent) {
@@ -289,6 +310,14 @@ export class Dialog extends RapidElement {
     }
   }
 
+  public show(): void {
+    this.open = true;
+  }
+
+  public hide(): void {
+    this.open = false;
+  }
+
   public render(): TemplateResult {
     const height = this.getDocumentHeight();
 
@@ -333,7 +362,7 @@ export class Dialog extends RapidElement {
           >
             ${header}
             <div class="dialog-body" @keypress=${this.handleKeyUp}>
-              ${this.body ? this.body : html` <slot></slot> `}
+              ${this.body ? this.body : html`<slot></slot>`}
               <temba-loading units="6" size="8"></temba-loading>
             </div>
 

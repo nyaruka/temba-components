@@ -22,6 +22,7 @@ import {
   LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
+  NoteEvent,
   renderAirtimeTransferredEvent,
   renderCallStartedEvent,
   renderCampaignFiredEvent,
@@ -35,6 +36,7 @@ import {
   renderLabelsAdded,
   renderMsgEvent,
   renderNameChanged,
+  renderNoteCreated,
   renderResultEvent,
   renderTicketClosed,
   renderTicketOpened,
@@ -672,6 +674,9 @@ export class ContactHistory extends RapidElement {
 
       case Events.INPUT_LABELS_ADDED:
         return renderLabelsAdded(event as LabelsAddedEvent);
+
+      case Events.NOTE_CREATED:
+        return renderNoteCreated(event as NoteEvent);
 
       case Events.TICKET_OPENED: {
         const ticketOpened = event as TicketEvent;

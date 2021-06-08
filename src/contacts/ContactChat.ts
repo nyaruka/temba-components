@@ -5,6 +5,8 @@ import { postJSON } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
+import { Dialog } from '../dialog/Dialog';
+import { Modax } from '../dialog/Modax';
 
 export class ContactChat extends RapidElement {
   public static get styles() {
@@ -36,6 +38,8 @@ export class ContactChat extends RapidElement {
         padding: 1em;
         background: #f2f2f2;
         border-top: 3px solid #e1e1e1;
+        display: flex;
+        flex-direction: column;
       }
 
       .closed-footer {
@@ -64,7 +68,7 @@ export class ContactChat extends RapidElement {
         --button-y: 1px;
         --button-x: 12px;
         margin-top: 0.8em;
-        float: right;
+        align-self: flex-end;
       }
 
       temba-button#reopen-button {
@@ -90,6 +94,7 @@ export class ContactChat extends RapidElement {
 
       .toolbar temba-icon {
         fill: rgb(60, 60, 60);
+        margin-bottom: 0.5em;
       }
 
       .toolbar.closed {
@@ -129,6 +134,12 @@ export class ContactChat extends RapidElement {
         margin-top: 0.25em;
         transform: rotate(180deg);
       }
+
+      #note-dialog {
+        --header-bg: rgb(255, 249, 194);
+        --header-text: #555;
+        --textarea-height: 5em;
+      }
     `;
   }
 
@@ -140,6 +151,9 @@ export class ContactChat extends RapidElement {
 
   @property({ type: String })
   currentChat = '';
+
+  @property({ type: String })
+  currentNote = '';
 
   @property({ type: Boolean })
   showDetails = true;
@@ -170,13 +184,19 @@ export class ContactChat extends RapidElement {
     // if we don't have an endpoint infer one
     if (changedProperties.has('contact')) {
       // focus our completion on load
-      const completion = this.shadowRoot.querySelector(
-        'temba-completion'
-      ) as Completion;
-      if (completion) {
-        window.setTimeout(() => {
-          completion.click();
-        }, 0);
+      const prevContact = changedProperties.get('contact');
+      if (
+        !prevContact ||
+        this.contact.ticket.uuid !== prevContact.ticket.uuid
+      ) {
+        const completion = this.shadowRoot.querySelector(
+          'temba-completion'
+        ) as Completion;
+        if (completion) {
+          window.setTimeout(() => {
+            completion.click();
+          }, 0);
+        }
       }
     }
   }
@@ -228,6 +248,12 @@ export class ContactChat extends RapidElement {
     this.currentTicket = event.detail.context;
   }
 
+  private handleShowNoteDialog(): void {
+    const dialog = this.shadowRoot.getElementById('note-dialog') as Dialog;
+    this.currentNote = '';
+    dialog.show();
+  }
+
   public render(): TemplateResult {
     return html`
       <div style="display: flex; height: 100%;">
@@ -265,7 +291,8 @@ export class ContactChat extends RapidElement {
                               }
                             }}
                             textarea
-                          ></temba-completion>
+                          >
+                          </temba-completion>
                           <temba-button
                             id="send-button"
                             name="Send"
@@ -307,10 +334,36 @@ export class ContactChat extends RapidElement {
                     animatechange="spin"
                   ></temba-icon>
                 </temba-tip>
+
+                <temba-tip
+                  style="margin-top:5px"
+                  text="Add Note"
+                  position="left"
+                >
+                  <temba-icon
+                    id="add-note-button"
+                    name="edit"
+                    @click="${() => {
+                      (this.shadowRoot.getElementById(
+                        'note-dialog'
+                      ) as Modax).open = true;
+                    }}"
+                    clickable
+                  ></temba-icon>
+                </temba-tip>
               `
             : null}
         </div>
       </div>
+
+      ${this.contact
+        ? html`<temba-modax
+            header="Add Note"
+            id="note-dialog"
+            @temba-submitted=${this.refresh}
+            endpoint="/contact/note/${this.contact.uuid}/"
+          />`
+        : null}
     `;
   }
 }
