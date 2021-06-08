@@ -1,14 +1,16 @@
 import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
-import { Msg, ObjectReference } from '../interfaces';
+import { Msg, ObjectReference, User } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
 
 export const getEventStyles = () => {
   return css`
     .grouping {
-      padding: 2em;
+      padding: 0 2em;
       margin: 0 -1em;
-      padding-bottom: 1em;
+    }
+
+    .grouping.notes {
     }
 
     .grouping.verbose {
@@ -18,7 +20,7 @@ export const getEventStyles = () => {
       padding-top: 0;
       padding-bottom: 0;
       margin-top: 0;
-      margin-bottom: 0;
+      margin-bottom: 1.5em;
       color: #efefef;
       --color-link-primary: rgba(38, 166, 230, 1);
     }
@@ -79,7 +81,10 @@ export const getEventStyles = () => {
     }
 
     .grouping.flows {
-      margin: 2em 1em;
+      margin-left: 1em;
+      margin-right: 1em;
+      margin-bottom: 1.5em;
+
       border: 1px solid #f2f2f2;
       border-radius: 0.5em;
       padding: 0.5em 1em;
@@ -121,8 +126,8 @@ export const getEventStyles = () => {
       max-height: 1000px;
       border-top: 1px solid #f1f1f1;
       padding: 2em;
-      margin: 0em 1em;
-      margin-bottom: 0;
+      margin-left: 1em;
+      margin-right: 1em;
       border-radius: 0.5em;
       padding-bottom: 1em;
       box-shadow: inset 0px 11px 4px -15px #000, inset 0px -11px 4px -15px #000;
@@ -149,7 +154,8 @@ export const getEventStyles = () => {
       opacity: 1;
     }
 
-    .grouping.messages {
+    .grouping.messages,
+    .grouping.notes {
       display: flex;
       flex-direction: column;
     }
@@ -173,7 +179,8 @@ export const getEventStyles = () => {
 
     .event.msg_created,
     .event.broadcast_created,
-    .event.ivr_created {
+    .event.ivr_created,
+    .event.note_created {
       align-self: flex-end;
     }
 
@@ -224,6 +231,26 @@ export const getEventStyles = () => {
     .info {
       border: 1px solid rgba(100, 100, 100, 0.2);
       background: rgba(10, 10, 10, 0.02);
+    }
+
+    .note_created {
+      max-width: 300px;
+    }
+
+    .note-summary {
+      display: flex;
+      flex-direction: row;
+      line-height: 0.5;
+      font-size: 80%;
+      color: rgba(0, 0, 0, 0.6);
+      padding: 8px 3px;
+    }
+
+    .note_created .description {
+      border: 1px solid rgba(100, 100, 100, 0.1);
+      background: rgb(255, 249, 194);
+      padding: var(--event-padding);
+      border-radius: 8px;
     }
 
     .channel_event {
@@ -373,8 +400,27 @@ export const getEventStyles = () => {
     temba-icon[name='alert-triangle'] {
       --icon-color: var(--color-error);
     }
+
+    .avatar {
+      border-radius: 9999px;
+      text-align: center;
+      padding: 6px;
+      width: 20px;
+      border: 1px solid #ddd;
+      background: #eee;
+      font-weight: 400;
+      color: #999;
+    }
+
+    .flow {
+      fill: #ddd;
+      background: #fff;
+      border: 1px solid #e6e6e6;
+    }
   `;
 };
+
+const FLOW_USER_ID = -1;
 
 export interface EventGroup {
   type: string;
@@ -404,6 +450,7 @@ export enum Events {
   CALL_STARTED = 'call_started',
   EMAIL_SENT = 'email_sent',
   INPUT_LABELS_ADDED = 'input_labels_added',
+  NOTE_CREATED = 'note_created',
   TICKET_OPENED = 'ticket_opened',
   TICKET_CLOSED = 'ticket_closed',
   ERROR = 'error',
@@ -432,6 +479,7 @@ export interface MsgEvent extends ContactEvent {
   logs_url: string;
   msg_type: string;
   recipient_count?: number;
+  created_by?: User;
 }
 
 export interface FlowEvent extends ContactEvent {
@@ -518,6 +566,11 @@ export interface CampaignFiredEvent extends ContactEvent {
   fired_result: string;
 }
 
+export interface NoteEvent extends ContactEvent {
+  text: string;
+  created_by: User;
+}
+
 export interface ContactHistoryPage {
   has_older: boolean;
   recent_only: boolean;
@@ -532,6 +585,8 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
     return 'messages';
   }
   switch (event.type) {
+    case Events.NOTE_CREATED:
+      return 'notes';
     case Events.FLOW_ENTERED:
     case Events.FLOW_EXITED:
       return 'flows';
@@ -549,38 +604,66 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   return 'verbose';
 };
 
+export const renderAvatar = (user: User) => {
+  if (user.id === FLOW_USER_ID) {
+    return html`<temba-tip text="Automated message" position="top"
+      ><div class="avatar flow" style="margin-left:10px">
+        <temba-icon size="1.5" name="flow" /></div
+    ></temba-tip>`;
+  } else {
+    return html`<temba-tip
+      text="${user.first_name + ' ' + user.last_name}"
+      position="top"
+      ><div class="avatar" style="margin-left:10px">
+        ${user.first_name[0] + user.last_name[0]}
+      </div>
+      <temba-tip></temba-tip
+    ></temba-tip>`;
+  }
+};
+
 export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
   const isError = event.status === 'E' || event.status === 'F';
-  return html`<div style="display:flex;flex-direction:column">
-    <div class="msg">${event.msg.text}</div>
-    <div
-      class="msg-summary"
-      style="flex-direction:row${isInbound ? '-reverse' : ''}"
-    >
-      <div style="flex-grow:1"></div>
-      ${event.logs_url
-        ? html`
-            <a class="icon-link" target="_logs" href="${event.logs_url}">
-              <temba-icon
-                name="log"
-                class="${isError ? 'error' : ''}"
-              ></temba-icon
-            ></a>
-          `
-        : isError
-        ? html`<temba-icon
-            title="Message delivery error"
-            name="alert-triangle"
-          ></temba-icon>`
-        : null}
-      ${event.recipient_count > 1
-        ? html`<temba-icon size="1" name="megaphone"></temba-icon>
-            <div class="recipients">${event.recipient_count} contacts</div>
-            <div class="separator">•</div>`
-        : null}
-      <div class="time">${timeSince(new Date(event.created_on))}</div>
+  return html` <div style="display:flex;align-items:flex-start">
+    <div style="display:flex;flex-direction:column">
+      <div class="msg">${event.msg.text}</div>
+      <div
+        class="msg-summary"
+        style="flex-direction:row${isInbound ? '-reverse' : ''}"
+      >
+        <div style="flex-grow:1"></div>
+        ${event.logs_url
+          ? html`
+              <a class="icon-link" target="_logs" href="${event.logs_url}">
+                <temba-icon
+                  name="log"
+                  class="${isError ? 'error' : ''}"
+                ></temba-icon
+              ></a>
+            `
+          : isError
+          ? html`<temba-icon
+              title="Message delivery error"
+              name="alert-triangle"
+            ></temba-icon>`
+          : null}
+        ${event.recipient_count > 1
+          ? html`<temba-icon size="1" name="megaphone"></temba-icon>
+              <div class="recipients">${event.recipient_count} contacts</div>
+              <div class="separator">•</div>`
+          : null}
+        <div class="time">${timeSince(new Date(event.created_on))}</div>
+      </div>
     </div>
+
+    ${!isInbound
+      ? html`
+          ${event.msg.created_by
+            ? renderAvatar(event.msg.created_by)
+            : renderAvatar({ id: FLOW_USER_ID })}
+        `
+      : null}
   </div>`;
 };
 
@@ -691,6 +774,19 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
       <div class="attn">${oxfordNamed(event.labels, 'and')}</div>
     </div>
   `;
+};
+
+export const renderNoteCreated = (event: NoteEvent): TemplateResult => {
+  return html`<div style="display:flex;align-items:flex-start">
+    <div style="display:flex;flex-direction:column">
+      <div class="description">${event.text}</div>
+      <div class="note-summary">
+        <div style="flex-grow:1"></div>
+        <div class="time">${timeSince(new Date(event.created_on))}</div>
+      </div>
+    </div>
+    ${renderAvatar(event.created_by)}
+  </div>`;
 };
 
 export const renderTicketClosed = (

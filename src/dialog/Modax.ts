@@ -4,6 +4,7 @@ import { RapidElement } from '../RapidElement';
 import { getUrl, serialize, postUrl, WebResponse } from '../utils';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html';
 import { CustomEventType } from '../interfaces';
+import { Dialog } from './Dialog';
 
 export class Modax extends RapidElement {
   static get styles() {
@@ -31,6 +32,7 @@ export class Modax extends RapidElement {
         padding: 20px;
         display: block;
         position: relative;
+        background: var(--body-bg);
       }
 
       .modax-body.submitting:before {
@@ -118,26 +120,6 @@ export class Modax extends RapidElement {
     this.open = true;
   }
 
-  private focusFirstInput(): void {
-    window.setTimeout(() => {
-      let input = this.shadowRoot.querySelector(
-        'temba-textinput, temba-completion'
-      ) as any;
-
-      if (input) {
-        input = input.textInputElement
-          ? input.textInputElement.inputElement
-          : input.inputElement;
-
-        if (input) {
-          if (!input.readOnly) {
-            input.click();
-          }
-        }
-      }
-    }, 100);
-  }
-
   public updated(changes: Map<string, any>) {
     super.updated(changes);
 
@@ -156,8 +138,9 @@ export class Modax extends RapidElement {
       }
     }
 
-    if (changes.has('body') && this.open && this.body) {
-      this.focusFirstInput();
+    if (changes.has('body') && this.open && this.body && !this.fetching) {
+      const dialog = this.shadowRoot.querySelector('temba-dialog') as Dialog;
+      dialog.focusFirstInput();
     }
   }
 
@@ -251,27 +234,11 @@ export class Modax extends RapidElement {
         this.setBody(response.body);
         this.updatePrimaryButton();
         this.fetching = false;
-        if (this.onLoaded) {
-          window.setTimeout(() => {
-            const fn = new Function(this.onLoaded);
-            // const fn = eval(this.onLoaded);
-            fn(
-              new CustomEvent('loaded', {
-                detail: { body: this.getBody() },
-                bubbles: true,
-                composed: true,
-              })
-            );
-          }, 0);
-        } else {
-          this.dispatchEvent(
-            new CustomEvent(CustomEventType.Loaded, {
-              detail: { body: this.getBody() },
-              bubbles: true,
-              composed: true,
-            })
-          );
-        }
+        window.setTimeout(() => {
+          this.fireCustomEvent(CustomEventType.Loaded, {
+            body: this.getBody(),
+          });
+        }, 0);
       }
     );
   }
@@ -304,18 +271,10 @@ export class Modax extends RapidElement {
 
           if (redirect) {
             if (redirect === 'hide') {
-              this.open = false;
-              if (this.onSubmitted) {
-                window.setTimeout(() => {
-                  const fn = new Function(this.onSubmitted);
-                  fn(
-                    new CustomEvent('submitted', {
-                      bubbles: true,
-                      composed: true,
-                    })
-                  );
-                }, 0);
-              }
+              window.setTimeout(() => {
+                this.open = false;
+                this.fireCustomEvent(CustomEventType.Submitted);
+              }, 0);
             } else {
               this.updateLocation(redirect);
               this.open = false;
@@ -372,6 +331,7 @@ export class Modax extends RapidElement {
         ?loading=${this.fetching}
         ?submitting=${this.submitting}
         ?destructive=${this.isDestructive()}
+        ?noFocus=${true}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >

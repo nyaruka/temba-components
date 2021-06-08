@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
+import { Button } from '../button/Button';
+import { Dialog } from '../dialog/Dialog';
 import { ContactField, Ticket } from '../interfaces';
 
 export type Asset = KeyedAsset & Ticket & ContactField;
@@ -545,4 +547,8 @@ export const oxfordFn = (
 
 export const oxfordNamed = (items: NamedObject[], joiner = 'and'): any => {
   return oxfordFn(items, (value: any) => value.name, joiner);
+};
+
+export const getDialog = (button: Button): Dialog => {
+  return (button.getRootNode() as ShadowRoot).host as Dialog;
 };
