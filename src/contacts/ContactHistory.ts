@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { CustomEventType, Ticket } from '../interfaces';
@@ -22,7 +23,6 @@ import {
   LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
-  NoteEvent,
   renderAirtimeTransferredEvent,
   renderCallStartedEvent,
   renderCampaignFiredEvent,
@@ -675,27 +675,26 @@ export class ContactHistory extends RapidElement {
       case Events.INPUT_LABELS_ADDED:
         return renderLabelsAdded(event as LabelsAddedEvent);
 
-      case Events.NOTE_CREATED:
-        return renderNoteCreated(event as NoteEvent);
+      case Events.TICKET_NOTE_ADDED:
+        return renderNoteCreated(event as TicketEvent);
 
       case Events.TICKET_OPENED: {
-        const ticketOpened = event as TicketEvent;
+        const ticketEvent = event as TicketEvent;
         const activeTicket =
-          !this.ticket || ticketOpened.ticket.uuid === this.ticket;
+          !this.ticket || ticketEvent.ticket.uuid === this.ticket;
 
         let closeHandler = null;
-        const ticket = this.getTicketForEvent(ticketOpened);
+        const ticket = this.getTicketForEvent(ticketEvent);
         if (activeTicket && ticket && ticket.status === 'open') {
           closeHandler = this.handleClose;
         }
-
-        return renderTicketOpened(ticketOpened, closeHandler, activeTicket);
+        return renderTicketOpened(ticketEvent, closeHandler, activeTicket);
       }
 
       case Events.TICKET_CLOSED: {
-        const ticketClosed = event as TicketEvent;
-        const active = !this.ticket || ticketClosed.ticket.uuid === this.ticket;
-        return renderTicketClosed(ticketClosed, active);
+        const ticketEvent = event as TicketEvent;
+        const active = !this.ticket || ticketEvent.ticket.uuid === this.ticket;
+        return renderTicketClosed(ticketEvent, active);
       }
       case Events.ERROR:
       case Events.FAILURE:
@@ -781,7 +780,7 @@ export class ContactHistory extends RapidElement {
                   this.handleClose,
                   true
                 );
-                return html`<div class="event ${Events.TICKET_OPENED}">
+                return html`<div class="event ticket_opened">
                   ${renderedEvent}
                 </div>`;
               }
