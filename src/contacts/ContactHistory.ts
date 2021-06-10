@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { CustomEventType, Ticket } from '../interfaces';
@@ -22,7 +23,6 @@ import {
   LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
-  NoteEvent,
   renderAirtimeTransferredEvent,
   renderCallStartedEvent,
   renderCampaignFiredEvent,
@@ -59,7 +59,7 @@ export class ContactHistory extends RapidElement {
   public httpComplete: Promise<void | ContactHistoryPage>;
 
   private getStickyId = (event: ContactEvent) => {
-    if (event.type === Events.TICKET_OPENED) {
+    if ((event as any).ticket_event_type === 'O') {
       const ticket = this.getTicketForEvent(event as TicketEvent);
       if (ticket && ticket.status === 'open') {
         return ticket.uuid;
@@ -266,7 +266,7 @@ export class ContactHistory extends RapidElement {
 
           // keep track of any ticket events
           results.events.forEach((event: ContactEvent) => {
-            if (event.type === Events.TICKET_OPENED) {
+            if ((event as any).ticket_event_type === 'O') {
               const ticketEvent = event as TicketEvent;
               this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
             }
@@ -340,7 +340,7 @@ export class ContactHistory extends RapidElement {
 
           // keep track of any ticket events
           results.events.forEach((event: ContactEvent) => {
-            if (event.type === Events.TICKET_OPENED) {
+            if ((event as any).ticket_event_type === 'O') {
               const ticketEvent = event as TicketEvent;
               this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
             }
@@ -675,28 +675,30 @@ export class ContactHistory extends RapidElement {
       case Events.INPUT_LABELS_ADDED:
         return renderLabelsAdded(event as LabelsAddedEvent);
 
-      case Events.NOTE_CREATED:
-        return renderNoteCreated(event as NoteEvent);
+      case Events.TICKET_EVENT:
+        {
+          const ticketEvent = event as TicketEvent;
+          if (ticketEvent.ticket_event_type === 'O') {
+            const activeTicket =
+              !this.ticket || ticketEvent.ticket.uuid === this.ticket;
 
-      case Events.TICKET_OPENED: {
-        const ticketOpened = event as TicketEvent;
-        const activeTicket =
-          !this.ticket || ticketOpened.ticket.uuid === this.ticket;
+            let closeHandler = null;
+            const ticket = this.getTicketForEvent(ticketEvent);
+            if (activeTicket && ticket && ticket.status === 'open') {
+              closeHandler = this.handleClose;
+            }
 
-        let closeHandler = null;
-        const ticket = this.getTicketForEvent(ticketOpened);
-        if (activeTicket && ticket && ticket.status === 'open') {
-          closeHandler = this.handleClose;
+            return renderTicketOpened(ticketEvent, closeHandler, activeTicket);
+          } else if (ticketEvent.ticket_event_type === 'C') {
+            const active =
+              !this.ticket || ticketEvent.ticket.uuid === this.ticket;
+            return renderTicketClosed(ticketEvent, active);
+          } else if (ticketEvent.ticket_event_type === 'N') {
+            return renderNoteCreated(ticketEvent);
+          }
         }
+        break;
 
-        return renderTicketOpened(ticketOpened, closeHandler, activeTicket);
-      }
-
-      case Events.TICKET_CLOSED: {
-        const ticketClosed = event as TicketEvent;
-        const active = !this.ticket || ticketClosed.ticket.uuid === this.ticket;
-        return renderTicketClosed(ticketClosed, active);
-      }
       case Events.ERROR:
       case Events.FAILURE:
         return renderErrorMessage(event as ErrorMessageEvent);
@@ -765,7 +767,8 @@ export class ContactHistory extends RapidElement {
               const opened = new Date(ticket.opened_on).getTime() * 1000;
               if (opened < this.nextBefore || this.isPurged(ticket)) {
                 const ticketOpenedEvent = {
-                  type: Events.TICKET_OPENED,
+                  type: Events.TICKET_EVENT,
+                  ticket_event_type: 'O',
                   ticket: {
                     uuid: ticket.uuid,
                     subject: ticket.subject,
@@ -781,7 +784,7 @@ export class ContactHistory extends RapidElement {
                   this.handleClose,
                   true
                 );
-                return html`<div class="event ${Events.TICKET_OPENED}">
+                return html`<div class="event ${Events.TICKET_EVENT}">
                   ${renderedEvent}
                 </div>`;
               }

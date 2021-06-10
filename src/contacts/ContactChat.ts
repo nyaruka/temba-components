@@ -335,33 +335,35 @@ export class ContactChat extends RapidElement {
                   ></temba-icon>
                 </temba-tip>
 
-                <temba-tip
-                  style="margin-top:5px"
-                  text="Add Note"
-                  position="left"
-                >
-                  <temba-icon
-                    id="add-note-button"
-                    name="edit"
-                    @click="${() => {
-                      (this.shadowRoot.getElementById(
-                        'note-dialog'
-                      ) as Modax).open = true;
-                    }}"
-                    clickable
-                  ></temba-icon>
-                </temba-tip>
+                ${this.currentTicket
+                  ? html`<temba-tip
+                      style="margin-top:5px"
+                      text="Add Note"
+                      position="left"
+                    >
+                      <temba-icon
+                        id="add-note-button"
+                        name="edit"
+                        @click="${() => {
+                          (this.shadowRoot.getElementById(
+                            'note-dialog'
+                          ) as Modax).open = true;
+                        }}"
+                        clickable
+                      ></temba-icon>
+                    </temba-tip>`
+                  : null}
               `
             : null}
         </div>
       </div>
 
-      ${this.contact
+      ${this.currentTicket
         ? html`<temba-modax
             header="Add Note"
             id="note-dialog"
             @temba-submitted=${this.refresh}
-            endpoint="/contact/note/${this.contact.uuid}/"
+            endpoint="/ticket/note/${this.currentTicket.uuid}/"
           />`
         : null}
     `;

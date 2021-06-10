@@ -180,7 +180,7 @@ export const getEventStyles = () => {
     .event.msg_created,
     .event.broadcast_created,
     .event.ivr_created,
-    .event.note_created {
+    .notes .event.ticket_event {
       align-self: flex-end;
     }
 
@@ -233,11 +233,11 @@ export const getEventStyles = () => {
       background: rgba(10, 10, 10, 0.02);
     }
 
-    .note_created {
+    .notes .ticket_event {
       max-width: 300px;
     }
 
-    .note-summary {
+    .notes .note-summary {
       display: flex;
       flex-direction: row;
       line-height: 0.5;
@@ -246,7 +246,7 @@ export const getEventStyles = () => {
       padding: 8px 3px;
     }
 
-    .note_created .description {
+    .notes .ticket_event .description {
       border: 1px solid rgba(100, 100, 100, 0.1);
       background: rgb(255, 249, 194);
       padding: var(--event-padding);
@@ -260,26 +260,21 @@ export const getEventStyles = () => {
     .airtime_transferred,
     .flow_exited,
     .flow_entered,
-    .ticket_opened,
-    .ticket_closed,
+    .ticket_event,
     .call_started,
     .campaign_fired {
       fill: rgba(223, 65, 159, 1);
     }
 
-    .ticket_opened temba-icon.clickable[name='check'] {
+    .ticket_event temba-icon.clickable[name='check'] {
       fill: rgba(100, 100, 100, 1);
     }
 
-    .ticket_opened temba-icon {
-    }
-
-    .ticket_closed .active {
+    .ticket_event .active {
       color: var(--color-text);
     }
 
-    .ticket_opened .inactive .subtext,
-    .ticket_closed .inactive .subtext {
+    .ticket_event .inactive .subtext {
       display: none;
     }
 
@@ -434,7 +429,6 @@ export enum Events {
   MESSAGE_RECEIVED = 'msg_received',
   BROADCAST_CREATED = 'broadcast_created',
   IVR_CREATED = 'ivr_created',
-
   FLOW_ENTERED = 'flow_entered',
   FLOW_EXITED = 'flow_exited',
   RUN_RESULT_CHANGED = 'run_result_changed',
@@ -451,8 +445,7 @@ export enum Events {
   EMAIL_SENT = 'email_sent',
   INPUT_LABELS_ADDED = 'input_labels_added',
   NOTE_CREATED = 'note_created',
-  TICKET_OPENED = 'ticket_opened',
-  TICKET_CLOSED = 'ticket_closed',
+  TICKET_EVENT = 'ticket_event',
   ERROR = 'error',
   FAILURE = 'failure',
 }
@@ -498,6 +491,8 @@ export interface URNsChangedEvent extends ContactEvent {
 }
 
 export interface TicketEvent extends ContactEvent {
+  ticket_event_type: string;
+  note?: string;
   ticket: {
     uuid: string;
     ticketer: ObjectReference;
@@ -507,6 +502,7 @@ export interface TicketEvent extends ContactEvent {
     closed_on?: string;
     opened_on?: string;
   };
+  created_by?: User;
 }
 
 export interface LabelsAddedEvent extends ContactEvent {
@@ -566,11 +562,6 @@ export interface CampaignFiredEvent extends ContactEvent {
   fired_result: string;
 }
 
-export interface NoteEvent extends ContactEvent {
-  text: string;
-  created_by: User;
-}
-
 export interface ContactHistoryPage {
   has_older: boolean;
   recent_only: boolean;
@@ -585,8 +576,14 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
     return 'messages';
   }
   switch (event.type) {
-    case Events.NOTE_CREATED:
-      return 'notes';
+    case Events.TICKET_EVENT:
+      if ((event as TicketEvent).ticket_event_type === 'N') {
+        return 'notes';
+      }
+      if (!ticket || (event as TicketEvent).ticket.uuid === ticket) {
+        return 'tickets';
+      }
+      break;
     case Events.FLOW_ENTERED:
     case Events.FLOW_EXITED:
       return 'flows';
@@ -595,11 +592,6 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
     case Events.MESSAGE_RECEIVED:
     case Events.IVR_CREATED:
       return 'messages';
-    case Events.TICKET_OPENED:
-    case Events.TICKET_CLOSED:
-      if (!ticket || (event as TicketEvent).ticket.uuid === ticket) {
-        return 'tickets';
-      }
   }
   return 'verbose';
 };
@@ -776,10 +768,10 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
   `;
 };
 
-export const renderNoteCreated = (event: NoteEvent): TemplateResult => {
+export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
   return html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
-      <div class="description">${event.text}</div>
+      <div class="description">${event.note}</div>
       <div class="note-summary">
         <div style="flex-grow:1"></div>
         <div class="time">${timeSince(new Date(event.created_on))}</div>
