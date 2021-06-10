@@ -180,7 +180,7 @@ export const getEventStyles = () => {
     .event.msg_created,
     .event.broadcast_created,
     .event.ivr_created,
-    .notes .event.ticket_event {
+    .notes .event.ticket_note_added {
       align-self: flex-end;
     }
 
@@ -233,7 +233,7 @@ export const getEventStyles = () => {
       background: rgba(10, 10, 10, 0.02);
     }
 
-    .notes .ticket_event {
+    .notes .ticket_note_added {
       max-width: 300px;
     }
 
@@ -246,7 +246,7 @@ export const getEventStyles = () => {
       padding: 8px 3px;
     }
 
-    .notes .ticket_event .description {
+    .notes .ticket_note_added .description {
       border: 1px solid rgba(100, 100, 100, 0.1);
       background: rgb(255, 249, 194);
       padding: var(--event-padding);
@@ -260,21 +260,22 @@ export const getEventStyles = () => {
     .airtime_transferred,
     .flow_exited,
     .flow_entered,
-    .ticket_event,
+    .ticket_opened,
+    .ticket_closed,
     .call_started,
     .campaign_fired {
       fill: rgba(223, 65, 159, 1);
     }
 
-    .ticket_event temba-icon.clickable[name='check'] {
+    .ticket_opened temba-icon.clickable[name='check'] {
       fill: rgba(100, 100, 100, 1);
     }
 
-    .ticket_event .active {
+    .ticket_opened .active {
       color: var(--color-text);
     }
 
-    .ticket_event .inactive .subtext {
+    .ticket_closed .inactive .subtext {
       display: none;
     }
 
@@ -445,7 +446,10 @@ export enum Events {
   EMAIL_SENT = 'email_sent',
   INPUT_LABELS_ADDED = 'input_labels_added',
   NOTE_CREATED = 'note_created',
-  TICKET_EVENT = 'ticket_event',
+  TICKET_NOTE_ADDED = 'ticket_note_added',
+  TICKET_CLOSED = 'ticket_closed',
+  TICKET_OPENED = 'ticket_opened',
+  TICKET_REOPENED = 'ticket_reopened',
   ERROR = 'error',
   FAILURE = 'failure',
 }
@@ -491,7 +495,6 @@ export interface URNsChangedEvent extends ContactEvent {
 }
 
 export interface TicketEvent extends ContactEvent {
-  ticket_event_type: string;
   note?: string;
   ticket: {
     uuid: string;
@@ -576,10 +579,11 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
     return 'messages';
   }
   switch (event.type) {
-    case Events.TICKET_EVENT:
-      if ((event as TicketEvent).ticket_event_type === 'N') {
-        return 'notes';
-      }
+    case Events.TICKET_NOTE_ADDED:
+      return 'notes';
+
+    case Events.TICKET_OPENED:
+    case Events.TICKET_CLOSED:
       if (!ticket || (event as TicketEvent).ticket.uuid === ticket) {
         return 'tickets';
       }

@@ -59,7 +59,7 @@ export class ContactHistory extends RapidElement {
   public httpComplete: Promise<void | ContactHistoryPage>;
 
   private getStickyId = (event: ContactEvent) => {
-    if ((event as any).ticket_event_type === 'O') {
+    if (event.type === Events.TICKET_OPENED) {
       const ticket = this.getTicketForEvent(event as TicketEvent);
       if (ticket && ticket.status === 'open') {
         return ticket.uuid;
@@ -266,7 +266,7 @@ export class ContactHistory extends RapidElement {
 
           // keep track of any ticket events
           results.events.forEach((event: ContactEvent) => {
-            if ((event as any).ticket_event_type === 'O') {
+            if (event.type === Events.TICKET_OPENED) {
               const ticketEvent = event as TicketEvent;
               this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
             }
@@ -340,7 +340,7 @@ export class ContactHistory extends RapidElement {
 
           // keep track of any ticket events
           results.events.forEach((event: ContactEvent) => {
-            if ((event as any).ticket_event_type === 'O') {
+            if (event.type === Events.TICKET_OPENED) {
               const ticketEvent = event as TicketEvent;
               this.ticketEvents[ticketEvent.ticket.uuid] = ticketEvent;
             }
@@ -675,30 +675,27 @@ export class ContactHistory extends RapidElement {
       case Events.INPUT_LABELS_ADDED:
         return renderLabelsAdded(event as LabelsAddedEvent);
 
-      case Events.TICKET_EVENT:
-        {
-          const ticketEvent = event as TicketEvent;
-          if (ticketEvent.ticket_event_type === 'O') {
-            const activeTicket =
-              !this.ticket || ticketEvent.ticket.uuid === this.ticket;
+      case Events.TICKET_NOTE_ADDED:
+        return renderNoteCreated(event as TicketEvent);
 
-            let closeHandler = null;
-            const ticket = this.getTicketForEvent(ticketEvent);
-            if (activeTicket && ticket && ticket.status === 'open') {
-              closeHandler = this.handleClose;
-            }
+      case Events.TICKET_OPENED: {
+        const ticketEvent = event as TicketEvent;
+        const activeTicket =
+          !this.ticket || ticketEvent.ticket.uuid === this.ticket;
 
-            return renderTicketOpened(ticketEvent, closeHandler, activeTicket);
-          } else if (ticketEvent.ticket_event_type === 'C') {
-            const active =
-              !this.ticket || ticketEvent.ticket.uuid === this.ticket;
-            return renderTicketClosed(ticketEvent, active);
-          } else if (ticketEvent.ticket_event_type === 'N') {
-            return renderNoteCreated(ticketEvent);
-          }
+        let closeHandler = null;
+        const ticket = this.getTicketForEvent(ticketEvent);
+        if (activeTicket && ticket && ticket.status === 'open') {
+          closeHandler = this.handleClose;
         }
-        break;
+        return renderTicketOpened(ticketEvent, closeHandler, activeTicket);
+      }
 
+      case Events.TICKET_CLOSED: {
+        const ticketEvent = event as TicketEvent;
+        const active = !this.ticket || ticketEvent.ticket.uuid === this.ticket;
+        return renderTicketClosed(ticketEvent, active);
+      }
       case Events.ERROR:
       case Events.FAILURE:
         return renderErrorMessage(event as ErrorMessageEvent);
@@ -767,8 +764,7 @@ export class ContactHistory extends RapidElement {
               const opened = new Date(ticket.opened_on).getTime() * 1000;
               if (opened < this.nextBefore || this.isPurged(ticket)) {
                 const ticketOpenedEvent = {
-                  type: Events.TICKET_EVENT,
-                  ticket_event_type: 'O',
+                  type: Events.TICKET_OPENED,
                   ticket: {
                     uuid: ticket.uuid,
                     subject: ticket.subject,
@@ -784,7 +780,7 @@ export class ContactHistory extends RapidElement {
                   this.handleClose,
                   true
                 );
-                return html`<div class="event ${Events.TICKET_EVENT}">
+                return html`<div class="event ticket_opened">
                   ${renderedEvent}
                 </div>`;
               }
