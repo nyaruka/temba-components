@@ -87,6 +87,10 @@ html input {
     --color-info: #c0d9eb;
     --color-warning: #fff6c0;
     --color-error: rgb(var(--error-rgb));
+
+    --icon-color: var(--text-color);
+    --icon-color-hover: var(--icon-color);
+
     --font-size: 14px;
     --button-font-size: 1.125rem;
   

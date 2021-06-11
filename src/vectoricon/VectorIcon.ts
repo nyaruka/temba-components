@@ -35,8 +35,6 @@ export class VectorIcon extends LitElement {
     return css`
       :host {
         margin: auto;
-        --icon-color: var(--text-color);
-        --icon-color-hover: var(--icon-color);
       }
 
       :host([id='flow']),
