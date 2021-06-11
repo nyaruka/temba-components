@@ -80,8 +80,6 @@ export class ContactHistory extends RapidElement {
       ${getEventStyles()}
 
       :host {
-        --transition-speed: 250ms;
-        --event-padding: 0.5em 1em;
         padding: 1em;
         flex-grow: 1;
         overflow-y: scroll;

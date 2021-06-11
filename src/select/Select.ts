@@ -26,12 +26,8 @@ export class Select extends FormElement {
         display: inline;
         line-height: normal;
         outline: none;
-
         position: relative;
         --icon-color: var(--color-text-dark-secondary);
-        --temba-select-selected-padding: 9px;
-        --temba-select-selected-line-height: 16px;
-        --temba-select-selected-font-size: 13px;
       }
 
       temba-options {

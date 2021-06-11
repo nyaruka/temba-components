@@ -111,6 +111,15 @@ html {
   font-weight: 300;
   font-family: var(--font-family);
 
+  --icon-color: var(--text-color);
+  --icon-color-hover: var(--icon-color);
+  --event-padding: 0.5em 1em;
+  --help-text-margin-left: 4px;
+  --help-text-margin-top: 0px;
+  --temba-select-selected-padding: 9px;
+  --temba-select-selected-line-height: 16px;
+  --temba-select-selected-font-size: 13px;
+
   --button-y: 6px;  
   --button-x: 14px;
 }

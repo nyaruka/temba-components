@@ -9,8 +9,6 @@ export class FormField extends LitElement {
     return css`
       :host {
         font-family: var(--font-family);
-        --help-text-margin-left: 4px;
-        --help-text-margin-top: 0px;
       }
 
       label {
