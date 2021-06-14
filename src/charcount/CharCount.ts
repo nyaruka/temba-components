@@ -8,7 +8,6 @@ export class CharCount extends RapidElement {
     return css`
       :host {
         overflow: auto;
-        --transition-speed: 200ms;
       }
 
       :host::after {

@@ -10,7 +10,6 @@ export class Modax extends RapidElement {
   static get styles() {
     return css`
       :host {
-        --transition-speed: 200ms;
       }
 
       fieldset {

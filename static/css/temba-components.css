@@ -87,6 +87,15 @@ html input {
     --color-info: #c0d9eb;
     --color-warning: #fff6c0;
     --color-error: rgb(var(--error-rgb));
+
+    --icon-color: var(--text-color);
+    --icon-color-hover: var(--icon-color);
+    --transition-speed: 200ms;
+    --event-padding: 0.5em 1em;
+    --temba-select-selected-padding: 9px;
+    --temba-select-selected-line-height: 16px;
+    --temba-select-selected-font-size: 13px;
+    
     --font-size: 14px;
     --button-font-size: 1.125rem;
   

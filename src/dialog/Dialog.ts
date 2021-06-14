@@ -21,7 +21,6 @@ export class Dialog extends RapidElement {
         position: absolute;
         z-index: 10000;
         font-family: var(--font-family);
-        --transition-speed: 250ms;
         background: white;
       }
 
