@@ -246,7 +246,7 @@ export class Dialog extends RapidElement {
   public focusFirstInput(): void {
     window.setTimeout(() => {
       let input = this.querySelector(
-        'temba-textinput, temba-completion, input, textarea'
+        'temba-textinput, temba-completion, input[type="text"], textarea'
       ) as any;
       if (input) {
         input = input.textInputElement || input.inputElement || input;
