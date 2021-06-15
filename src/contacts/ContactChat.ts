@@ -187,7 +187,7 @@ export class ContactChat extends RapidElement {
       const prevContact = changedProperties.get('contact');
       if (
         !prevContact ||
-        this.contact.ticket.uuid !== prevContact.ticket.uuid
+        (this.contact && this.contact.ticket.uuid !== prevContact.ticket.uuid)
       ) {
         const completion = this.shadowRoot.querySelector(
           'temba-completion'

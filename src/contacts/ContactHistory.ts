@@ -40,6 +40,7 @@ import {
   renderResultEvent,
   renderTicketClosed,
   renderTicketOpened,
+  renderTicketReopened,
   renderUpdateEvent,
   renderWebhookEvent,
   TicketEvent,
@@ -101,10 +102,9 @@ export class ContactHistory extends RapidElement {
         flex-direction: column;
         position: fixed;
         margin: -1em;
-        z-index: 1;
+        z-index: 2;
         border-top-left-radius: var(--curvature);
         overflow: hidden;
-
         background: rgba(240, 240, 240, 0.95);
         box-shadow: 0px 3px 3px 0px rgba(0, 0, 0, 0.15);
       }
@@ -378,7 +378,6 @@ export class ContactHistory extends RapidElement {
     if (changedProperties.has('refreshing') && !this.refreshing) {
       if (this.lastRefreshAdded > 0) {
         const events = this.shadowRoot.host;
-
         // if we are near the bottom, push us to the bottom to show new stuff
         const distanceFromBottom =
           events.scrollHeight - events.scrollTop - this.lastHeight;
@@ -676,6 +675,11 @@ export class ContactHistory extends RapidElement {
       case Events.TICKET_NOTE_ADDED:
         return renderNoteCreated(event as TicketEvent);
 
+      case Events.TICKET_REOPENED: {
+        const ticketEvent = event as TicketEvent;
+        const active = !this.ticket || ticketEvent.ticket.uuid === this.ticket;
+        return renderTicketReopened(ticketEvent, active);
+      }
       case Events.TICKET_OPENED: {
         const ticketEvent = event as TicketEvent;
         const activeTicket =
@@ -833,6 +837,7 @@ export class ContactHistory extends RapidElement {
               ${eventGroup.events.map((event: ContactEvent) => {
                 const stickyId = this.getStickyId(event);
                 const isSticky = !!stickyId;
+
                 const renderedEvent = html`
                   <div
                     class="event ${event.type} ${isSticky ? 'has-sticky' : ''}"
