@@ -113,6 +113,7 @@ export class ContactHistory extends RapidElement {
       }
 
       .new-messages {
+        pointer-events: none;
         margin: 0 auto;
         margin-top: 0em;
         margin-bottom: -2.5em;
