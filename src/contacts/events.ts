@@ -23,6 +23,12 @@ export const getEventStyles = () => {
       margin-bottom: 1.5em;
       color: #efefef;
       --color-link-primary: rgba(38, 166, 230, 1);
+      pointer-events: none;
+    }
+
+    .grouping.verbose.expanded,
+    .grouping.verbose .event-count {
+      pointer-events: auto;
     }
 
     .grouping.verbose temba-icon {
@@ -68,6 +74,11 @@ export const getEventStyles = () => {
       transition: none !important;
     }
 
+    .event-count {
+      z-index: 1;
+      margin-bottom: 1em;
+    }
+
     .event-count:hover {
       padding: 3px 10px;
       min-width: 50%;
@@ -77,7 +88,9 @@ export const getEventStyles = () => {
 
     .expanded .event-count {
       opacity: 0;
-      margin-top: -30px;
+      margin-top: -42px;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .grouping.flows {
@@ -93,6 +106,10 @@ export const getEventStyles = () => {
     .grouping.flows .event {
       margin: 0;
       padding: 0;
+    }
+
+    .grouping.tickets {
+      margin-bottom: 2em;
     }
 
     pre {
@@ -261,10 +278,15 @@ export const getEventStyles = () => {
     .flow_exited,
     .flow_entered,
     .ticket_opened,
+    .ticket_reopened,
     .ticket_closed,
     .call_started,
     .campaign_fired {
       fill: rgba(223, 65, 159, 1);
+    }
+
+    .ticket_opened {
+      padding: 0em 1em;
     }
 
     .ticket_opened temba-icon.clickable[name='check'] {
@@ -584,6 +606,7 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
 
     case Events.TICKET_OPENED:
     case Events.TICKET_CLOSED:
+    case Events.TICKET_REOPENED:
       if (!ticket || (event as TicketEvent).ticket.uuid === ticket) {
         return 'tickets';
       }
@@ -601,7 +624,7 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
 };
 
 export const renderAvatar = (user: User) => {
-  if (user.id === FLOW_USER_ID) {
+  if (user.id === FLOW_USER_ID || !user || !user.first_name) {
     return html`<temba-tip text="Automated message" position="top"
       ><div class="avatar flow" style="margin-left:10px">
         <temba-icon size="1.5" name="flow" /></div
@@ -791,7 +814,7 @@ export const renderTicketClosed = (
 ): TemplateResult => {
   const opened = new Date(event.ticket.opened_on);
   return html`
-    <temba-icon size="${activeTicket ? '2' : '1'}" name="check"></temba-icon>
+    <temba-icon size="${activeTicket ? '1.5' : '1'}" name="check"></temba-icon>
     <div
       class="closed ${activeTicket ? 'active' : 'inactive'}"
       style="flex-grow:1;"
@@ -808,19 +831,44 @@ export const renderTicketClosed = (
   `;
 };
 
-export const renderTicketOpened = (
-  event: TicketEvent,
-  handleClose: (uuid: string) => void,
-  activeTicket: boolean
-): TemplateResult => {
+const getTicketIcon = (event: TicketEvent) => {
   let icon = 'inbox';
-
   if (event.ticket.ticketer.name.indexOf('Email') > -1) {
     icon = 'mail';
   } else if (event.ticket.ticketer.name.indexOf('Zendesk') > -1) {
     icon = 'zendesk';
   }
+  return icon;
+};
 
+export const renderTicketReopened = (
+  event: TicketEvent,
+  activeTicket: boolean
+): TemplateResult => {
+  const reopened = new Date(event.created_on);
+  const icon = getTicketIcon(event);
+  return html`
+    <temba-icon
+      size="${activeTicket ? '1.5' : '1'}"
+      name="${icon}"
+    ></temba-icon>
+    <div
+      class="reopened ${activeTicket ? 'active' : 'inactive'}"
+      style="flex-grow:1;"
+    >
+      Reopened
+      <div class="attn">${event.ticket.subject}</div>
+      <div class="subtext">${timeSince(reopened)}</div>
+    </div>
+  `;
+};
+
+export const renderTicketOpened = (
+  event: TicketEvent,
+  handleClose: (uuid: string) => void,
+  activeTicket: boolean
+): TemplateResult => {
+  const icon = getTicketIcon(event);
   return html`
     <temba-icon
       size="${activeTicket ? '1.5' : '1'}"

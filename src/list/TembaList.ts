@@ -19,6 +19,9 @@ export class TembaList extends RapidElement {
   @property({ type: String })
   endpoint: string;
 
+  @property({ type: Object, attribute: false })
+  nextSelection: any;
+
   @property({ type: Number })
   tabIndex = 1;
 
@@ -27,9 +30,6 @@ export class TembaList extends RapidElement {
 
   @property({ type: Boolean })
   loading = false;
-
-  @property({ type: String })
-  nextSelection: string;
 
   @property({ attribute: false })
   getNextRefresh: (firstOption: any) => any;
@@ -86,7 +86,6 @@ export class TembaList extends RapidElement {
   }
 
   private reset(): void {
-    this.nextSelection = null;
     this.selected = null;
     this.nextPage = null;
     this.cursorIndex = -1;
@@ -108,12 +107,7 @@ export class TembaList extends RapidElement {
       changedProperties.has('refreshKey') &&
       !changedProperties.has('endpoint')
     ) {
-      this.httpComplete = this.fetchItems().then(() => {
-        if (this.nextSelection) {
-          this.setSelection(this.nextSelection);
-          this.nextSelection = null;
-        }
-      });
+      this.fetchItems();
     }
 
     if (changedProperties.has('mostRecentItem')) {
@@ -127,11 +121,6 @@ export class TembaList extends RapidElement {
         this.dispatchEvent(evt);
       }
     }
-  }
-
-  /** performs setSelection but is deferred until after the next fetch */
-  private setNextSelection(value: string) {
-    this.nextSelection = value;
   }
 
   private getValue(obj: any): any {
@@ -148,7 +137,7 @@ export class TembaList extends RapidElement {
     return current;
   }
 
-  private setSelection(value: string) {
+  public setSelection(value: string) {
     const index = this.items.findIndex(item => {
       return this.getValue(item) === value;
     });
@@ -156,6 +145,19 @@ export class TembaList extends RapidElement {
     this.selected = this.items[index];
     const evt = new Event('change', { bubbles: true });
     this.dispatchEvent(evt);
+  }
+
+  public getSelection(): any {
+    return this.selected;
+  }
+
+  public refresh(): void {
+    this.refreshKey = 'requested_' + new Date().getTime();
+  }
+
+  public setEndpoint(endpoint: string, nextSelection: any = null) {
+    this.endpoint = endpoint;
+    this.nextSelection = nextSelection;
   }
 
   private async fetchItems(): Promise<void> {
@@ -216,6 +218,7 @@ export class TembaList extends RapidElement {
     const newItem = fetchedItems[this.cursorIndex];
 
     if (
+      !this.nextSelection &&
       this.selected &&
       newItem &&
       this.getValue(newItem) !== this.getValue(this.selected)
@@ -231,14 +234,19 @@ export class TembaList extends RapidElement {
       }
     }
 
-    if (this.cursorIndex === -1) {
-      this.cursorIndex = 0;
-    }
-
     // save our results
     this.items = fetchedItems;
     this.loading = false;
     this.pending = [];
+
+    if (this.nextSelection) {
+      this.setSelection(this.nextSelection);
+      this.nextSelection = false;
+    } else {
+      if (this.cursorIndex === -1) {
+        this.cursorIndex = 0;
+      }
+    }
 
     this.requestUpdate('cursorIndex');
 

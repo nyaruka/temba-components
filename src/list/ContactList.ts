@@ -1,19 +1,9 @@
-import { css, html, property, TemplateResult } from 'lit-element';
+import { css, html, TemplateResult } from 'lit-element';
 import { TembaList } from './TembaList';
-import { FormElement } from '../FormElement';
 import { timeSince } from '../utils';
 import { Contact } from '../interfaces';
 
-export class ContactList extends FormElement {
-  @property({ type: String })
-  endpoint: string;
-
-  @property({ type: String })
-  refreshKey: string;
-
-  @property({ type: String })
-  nextSelection: string;
-
+export class ContactList extends TembaList {
   static get styles() {
     return css`
       :host {
@@ -22,67 +12,48 @@ export class ContactList extends FormElement {
     `;
   }
 
-  public refresh(): void {
-    this.refreshKey = 'requested_' + new Date().getTime();
-  }
+  constructor() {
+    super();
 
-  public setNextSelection(value: string) {
-    this.nextSelection = value;
-  }
-
-  private handleChange(event: Event) {
-    this.value = (event.target as TembaList).selected;
-    this.dispatchEvent(new Event('change'));
-  }
-
-  private renderOption(contact: Contact): TemplateResult {
-    return html`
-      <div style="display: flex-col;">
-        <div style="display:flex;	align-items: center;">
-          <div style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em">
-            ${contact.name}
-          </div>
-          <div style="font-size: 11px">
-            ${timeSince(
-              new Date(contact.ticket.closed_on || contact.last_seen_on)
-            )}
-          </div>
-        </div>
-        ${contact.ticket.closed_on
-          ? html`<div
-              style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+    this.valueKey = 'ticket.uuid';
+    this.renderOption = (contact: Contact): TemplateResult => {
+      return html`
+        <div style="display: flex-col;">
+          <div style="display:flex;	align-items: center;">
+            <div
+              style="flex: 1; font-weight:400; color:#333; margin-top: 0.4em"
             >
-              ${contact.ticket.subject}
-            </div>`
-          : contact.last_msg
-          ? html`
-              <div
+              ${contact.name}
+            </div>
+            <div style="font-size: 11px">
+              ${timeSince(
+                new Date(contact.ticket.closed_on || contact.last_seen_on)
+              )}
+            </div>
+          </div>
+          ${contact.ticket.closed_on
+            ? html`<div
                 style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
               >
-                ${contact.last_msg.direction === 'I'
-                  ? html`<temba-icon
-                      name="user"
-                      style="display:inline-block;margin-bottom:-1px;fill:rgba(0,0,0,.6)"
-                    ></temba-icon>`
-                  : null}
-                ${contact.last_msg.text}
-              </div>
-            `
-          : null}
-      </div>
-    `;
-  }
-
-  public render(): TemplateResult {
-    return html`
-      <temba-list
-        @change=${this.handleChange.bind(this)}
-        valueKey="ticket.uuid"
-        .nextSelection="${this.nextSelection}"
-        .endpoint="${this.endpoint}"
-        .refreshKey=${this.refreshKey}
-        .renderOption=${this.renderOption.bind(this)}
-      ></temba-list>
-    `;
+                ${contact.ticket.subject}
+              </div>`
+            : contact.last_msg
+            ? html`
+                <div
+                  style="font-size: 11px; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+                >
+                  ${contact.last_msg.direction === 'I'
+                    ? html`<temba-icon
+                        name="user"
+                        style="display:inline-block;margin-bottom:-1px;fill:rgba(0,0,0,.6)"
+                      ></temba-icon>`
+                    : null}
+                  ${contact.last_msg.text}
+                </div>
+              `
+            : null}
+        </div>
+      `;
+    };
   }
 }
