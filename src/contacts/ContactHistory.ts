@@ -81,13 +81,20 @@ export class ContactHistory extends RapidElement {
       ${getEventStyles()}
 
       :host {
-        padding: 1em;
         flex-grow: 1;
-        overflow-y: scroll;
-        overflow-x: hidden;
+        flex-direction: column;
         display: flex;
         flex-direction: column;
-        align-items: stretch;
+        align-items: items-stretch;
+      }
+
+      .events {
+        height: 200px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        flex-grow: 1;
+        border-top-left-radius: var(--curvature);
+        padding-top: 1em;
       }
 
       temba-loading {
@@ -95,13 +102,42 @@ export class ContactHistory extends RapidElement {
         margin-top: 0.025em;
         position: absolute;
         z-index: 250;
+        padding-top: 1em;
+      }
+
+      .new-messages-container {
+        display: flex;
+        z-index: 1;
+        background: pink;
+        margin-bottom: 0px;
+      }
+
+      .new-messages {
+        margin: 0 auto;
+        margin-top: 0em;
+        margin-bottom: -2.5em;
+        padding: 0.25em 1em;
+        border-radius: var(--curvature);
+        background: var(--color-primary-dark);
+        color: var(--color-text-light);
+        opacity: 0;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease-in-out;
+        box-shadow: rgb(0 0 0 / 15%) 0px 3px 3px 0px;
+      }
+
+      .new-messages.expanded {
+        margin-top: -2.5em;
+        margin-bottom: 0.5em;
+        pointer-events: auto;
+        opacity: 1;
+        pointer: cursor;
       }
 
       .sticky-bin {
         display: flex;
         flex-direction: column;
         position: fixed;
-        margin: -1em;
         z-index: 2;
         border-top-left-radius: var(--curvature);
         overflow: hidden;
@@ -167,6 +203,9 @@ export class ContactHistory extends RapidElement {
   @property({ type: Boolean })
   debug = false;
 
+  @property({ type: Boolean })
+  showMessageAlert = false;
+
   @property({ attribute: false, type: Object })
   mostRecentEvent: ContactEvent;
 
@@ -201,7 +240,7 @@ export class ContactHistory extends RapidElement {
       for (const entry of entries) {
         const eventContainer = entry.contentRect;
         stickyBin.style.width =
-          eventContainer.width + eventContainer.left + 14 + 'px';
+          eventContainer.width + eventContainer.left - 16 + 'px';
       }
     });
     resizer.observe(this);
@@ -320,8 +359,6 @@ export class ContactHistory extends RapidElement {
     }
 
     if (changedProperties.has('fetching') && this.fetching) {
-      const events = this.shadowRoot.host;
-      this.lastHeight = events.scrollHeight;
       if (!this.nextBefore) {
         this.nextBefore = new Date().getTime() * 1000 - 1000;
       }
@@ -377,20 +414,38 @@ export class ContactHistory extends RapidElement {
 
     if (changedProperties.has('refreshing') && !this.refreshing) {
       if (this.lastRefreshAdded > 0) {
-        const events = this.shadowRoot.host;
+        const events = this.getEventsPane();
         // if we are near the bottom, push us to the bottom to show new stuff
-        const distanceFromBottom =
-          events.scrollHeight - events.scrollTop - this.lastHeight;
-        if (distanceFromBottom < 150) {
-          events.scrollTo({ top: events.scrollHeight, behavior: 'smooth' });
+        if (this.lastHeight > 0) {
+          const addedHeight = events.scrollHeight - this.lastHeight;
+
+          const distanceFromBottom =
+            events.scrollHeight -
+            events.scrollTop -
+            addedHeight -
+            events.clientHeight;
+
+          if (distanceFromBottom < 500) {
+            this.scrollToBottom();
+          } else {
+            this.showMessageAlert = true;
+          }
+        }
+
+        if (this.eventGroups.length > 0) {
+          this.lastHeight = events.scrollHeight;
         }
       }
     }
 
-    if (changedProperties.has('fetching') && !this.fetching) {
-      const events = this.shadowRoot.host;
+    if (
+      changedProperties.has('fetching') &&
+      !this.fetching &&
+      changedProperties.get('fetching') !== undefined
+    ) {
+      const events = this.getEventsPane();
 
-      if (events.scrollHeight > this.lastHeight) {
+      if (this.lastHeight && events.scrollHeight > this.lastHeight) {
         const scrollTop =
           events.scrollTop + events.scrollHeight - this.lastHeight;
         events.scrollTop = scrollTop;
@@ -398,7 +453,12 @@ export class ContactHistory extends RapidElement {
 
       // scroll to the bottom if it's our first fetch
       if (!this.lastHeight) {
-        events.scrollTop = events.scrollHeight;
+        this.scrollToBottom();
+      }
+
+      // don't record our scroll height until we have history
+      if (this.eventGroups.length > 0) {
+        this.lastHeight = events.scrollHeight;
       }
     }
 
@@ -447,6 +507,19 @@ export class ContactHistory extends RapidElement {
     getAssets(url).then((tickets: Ticket[]) => {
       this.tickets = tickets.reverse();
     });
+  }
+
+  public getEventsPane() {
+    return this.getDiv('.events');
+  }
+
+  public scrollToBottom(smooth = false) {
+    const events = this.getEventsPane();
+    events.scrollTo({
+      top: events.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+    this.showMessageAlert = false;
   }
 
   public refresh(): void {
@@ -524,6 +597,7 @@ export class ContactHistory extends RapidElement {
     this.complete = false;
     this.nextBefore = null;
     this.nextAfter = null;
+    this.lastHeight = 0;
   }
 
   private handleEventGroupShow(event: MouseEvent) {
@@ -556,18 +630,16 @@ export class ContactHistory extends RapidElement {
   }
 
   private handleScroll() {
-    const events = this.shadowRoot.host;
+    const events = this.getEventsPane();
 
     // check if any of our sticky elements are off the screen
-    const stickies = this.shadowRoot.querySelectorAll('.sticky');
+    const stickies = this.getEventsPane().querySelectorAll('.sticky');
     const stickyBin = this.getDiv('.sticky-bin');
 
     stickies.forEach((sticky: HTMLDivElement) => {
-      const scrollBoundary = this.scrollTop + stickyBin.clientHeight + 136;
-
+      const scrollBoundary = events.scrollTop + stickyBin.clientHeight + 136;
       if (!sticky.classList.contains('pinned')) {
         const eventElement = sticky.firstElementChild as HTMLDivElement;
-
         if (scrollBoundary > sticky.offsetTop) {
           sticky.style.height = eventElement.clientHeight + 'px';
           sticky.classList.add('pinned');
@@ -591,7 +663,6 @@ export class ContactHistory extends RapidElement {
           sticky.classList.remove('pinned');
 
           const uuid = eventElement.getAttribute('data-sticky-id');
-
           let previousTicket: Ticket = null;
           for (const ticket of this.tickets) {
             if (ticket.uuid === uuid) {
@@ -791,74 +862,91 @@ export class ContactHistory extends RapidElement {
         : null;
 
     return html`
+      <div class="sticky-bin">${unfetchedTickets}</div>
       ${this.fetching
         ? html`<temba-loading units="5" size="10"></temba-loading>`
-        : html`<div style="height:2em"></div>`}
-      <div class="sticky-bin">${unfetchedTickets}</div>
-      ${this.tickets
-        ? this.eventGroups.map((eventGroup: EventGroup, index: number) => {
-            const grouping = getEventGroupType(
-              eventGroup.events[0],
-              this.ticket
-            );
-            const groupIndex = this.eventGroups.length - index - 1;
+        : html`<div style="height:0em"></div>`}
+      <div class="events" @scroll=${this.handleScroll}>
+        ${this.tickets
+          ? this.eventGroups.map((eventGroup: EventGroup, index: number) => {
+              const grouping = getEventGroupType(
+                eventGroup.events[0],
+                this.ticket
+              );
+              const groupIndex = this.eventGroups.length - index - 1;
 
-            const classes = getClasses({
-              grouping: true,
-              [grouping]: true,
-              expanded: eventGroup.open,
-              closing: eventGroup.closing,
-            });
+              const classes = getClasses({
+                grouping: true,
+                [grouping]: true,
+                expanded: eventGroup.open,
+                closing: eventGroup.closing,
+              });
 
-            return html`<div class="${classes}">
-              ${grouping === 'verbose'
-                ? html`<div
-                    class="event-count"
-                    @click=${this.handleEventGroupShow}
-                    data-group-index="${groupIndex}"
-                  >
-                    ${eventGroup.events.length}
-                    ${eventGroup.events.length === 1
-                      ? html`event`
-                      : html`events`}
-                  </div>`
-                : null}
-              ${grouping === 'verbose'
-                ? html`
-                    <temba-icon
-                      @click=${this.handleEventGroupHide}
+              return html`<div class="${classes}">
+                ${grouping === 'verbose'
+                  ? html`<div
+                      class="event-count"
+                      @click=${this.handleEventGroupShow}
                       data-group-index="${groupIndex}"
-                      class="grouping-close-button"
-                      name="x"
-                      clickable
-                    ></temba-icon>
-                  `
-                : null}
-              ${eventGroup.events.map((event: ContactEvent) => {
-                const stickyId = this.getStickyId(event);
-                const isSticky = !!stickyId;
+                    >
+                      ${eventGroup.events.length}
+                      ${eventGroup.events.length === 1
+                        ? html`event`
+                        : html`events`}
+                    </div>`
+                  : null}
+                ${grouping === 'verbose'
+                  ? html`
+                      <temba-icon
+                        @click=${this.handleEventGroupHide}
+                        data-group-index="${groupIndex}"
+                        class="grouping-close-button"
+                        name="x"
+                        clickable
+                      ></temba-icon>
+                    `
+                  : null}
+                ${eventGroup.events.map((event: ContactEvent) => {
+                  const stickyId = this.getStickyId(event);
+                  const isSticky = !!stickyId;
 
-                const renderedEvent = html`
-                  <div
-                    class="event ${event.type} ${isSticky ? 'has-sticky' : ''}"
-                    data-sticky-id="${stickyId}"
-                  >
-                    ${this.renderEvent(event)}
-                  </div>
-                  ${this.debug
-                    ? html`<pre>${JSON.stringify(event, null, 2)}</pre>`
-                    : null}
-                `;
+                  const renderedEvent = html`
+                    <div
+                      class="event ${event.type} ${isSticky
+                        ? 'has-sticky'
+                        : ''}"
+                      data-sticky-id="${stickyId}"
+                    >
+                      ${this.renderEvent(event)}
+                    </div>
+                    ${this.debug
+                      ? html`<pre>${JSON.stringify(event, null, 2)}</pre>`
+                      : null}
+                  `;
 
-                if (stickyId) {
-                  return html`<div class="sticky">${renderedEvent}</div>`;
-                }
+                  if (stickyId) {
+                    return html`<div class="sticky">${renderedEvent}</div>`;
+                  }
 
-                return renderedEvent;
-              })}
-            </div>`;
-          })
-        : null}
+                  return renderedEvent;
+                })}
+              </div>`;
+            })
+          : null}
+      </div>
+
+      <div class="new-messages-container">
+        <div
+          @click=${() => {
+            this.scrollToBottom(true);
+          }}
+          class="new-messages ${getClasses({
+            expanded: this.showMessageAlert,
+          })}"
+        >
+          New Messages
+        </div>
+      </div>
     `;
   }
 }

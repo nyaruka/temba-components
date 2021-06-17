@@ -23,6 +23,12 @@ export const getEventStyles = () => {
       margin-bottom: 1.5em;
       color: #efefef;
       --color-link-primary: rgba(38, 166, 230, 1);
+      pointer-events: none;
+    }
+
+    .grouping.verbose.expanded,
+    .grouping.verbose .event-count {
+      pointer-events: auto;
     }
 
     .grouping.verbose temba-icon {
@@ -103,7 +109,7 @@ export const getEventStyles = () => {
     }
 
     .grouping.tickets {
-      margin-bottom: 1em;
+      margin-bottom: 2em;
     }
 
     pre {
@@ -277,6 +283,10 @@ export const getEventStyles = () => {
     .call_started,
     .campaign_fired {
       fill: rgba(223, 65, 159, 1);
+    }
+
+    .ticket_opened {
+      padding: 0em 1em;
     }
 
     .ticket_opened temba-icon.clickable[name='check'] {

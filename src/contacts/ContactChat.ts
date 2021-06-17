@@ -40,6 +40,7 @@ export class ContactChat extends RapidElement {
         border-top: 3px solid #e1e1e1;
         display: flex;
         flex-direction: column;
+        z-index: 3;
       }
 
       .closed-footer {
@@ -171,9 +172,12 @@ export class ContactChat extends RapidElement {
     ) as ContactHistory;
   }
 
-  public refresh(): void {
+  public refresh(scrollToBottom = false): void {
     const contactHistory = this.getContactHistory();
     if (contactHistory) {
+      if (scrollToBottom) {
+        contactHistory.scrollToBottom();
+      }
       contactHistory.refresh();
     }
   }
@@ -232,7 +236,7 @@ export class ContactChat extends RapidElement {
     })
       .then(() => {
         this.currentChat = '';
-        this.refresh();
+        this.refresh(true);
       })
       .catch(err => {
         // error message dialog?
