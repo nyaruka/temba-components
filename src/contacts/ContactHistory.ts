@@ -454,7 +454,9 @@ export class ContactHistory extends RapidElement {
 
       // scroll to the bottom if it's our first fetch
       if (!this.lastHeight) {
-        this.scrollToBottom();
+        window.setTimeout(() => {
+          this.scrollToBottom();
+        }, 0);
       }
 
       // don't record our scroll height until we have history

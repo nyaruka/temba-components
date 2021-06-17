@@ -77,7 +77,7 @@ describe('temba-contact-history', () => {
     expect(top).to.equal(156);
 
     // make sure we actually scrolled to there
-    expect(events.scrollTop).to.equal(top - 6);
+    expect(events.scrollTop).to.equal(top);
 
     await assertScreenshot('contacts/history', getHistoryClip(history));
   });
