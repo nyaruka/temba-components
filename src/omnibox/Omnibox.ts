@@ -1,6 +1,6 @@
 import { TemplateResult, html, css, property } from 'lit-element';
-import { RapidElement } from '../RapidElement';
 import { styleMap } from 'lit-html/directives/style-map';
+import { RapidElement } from '../RapidElement';
 
 enum OmniType {
   Group = 'group',
@@ -60,6 +60,24 @@ export class Omnibox extends RapidElement {
 
   @property()
   placeholder = 'Select recipients';
+
+  @property({ type: Boolean })
+  disabled = false;
+
+  @property({ type: String, attribute: 'help_text' })
+  helpText: string;
+
+  @property({ type: Boolean, attribute: 'help_always' })
+  helpAlways: boolean;
+
+  @property({ type: Boolean, attribute: 'widget_only' })
+  widgetOnly: boolean;
+
+  @property({ type: Boolean, attribute: 'hide_label' })
+  hideLabel: boolean;
+
+  @property({ type: String })
+  label: string;
 
   /** An option in the drop down */
   private renderOption(option: OmniOption): TemplateResult {
@@ -155,7 +173,14 @@ export class Omnibox extends RapidElement {
   }
 
   public render(): TemplateResult {
-    return html`
+    return html` <temba-field
+      name=${this.name}
+      .label=${this.label}
+      .helpText=${this.helpText}
+      .errors=${this.errors}
+      .widgetOnly=${this.widgetOnly}
+      ?disabled=${this.disabled}
+    >
       <temba-select
         name=${this.name}
         endpoint=${this.getEndpoint()}
@@ -171,6 +196,6 @@ export class Omnibox extends RapidElement {
         searchOnFocus
         multi
       ></temba-select>
-    `;
+    </temba-field>`;
   }
 }
