@@ -344,7 +344,7 @@ export class ContactChat extends RapidElement {
                 </temba-tip>
 
                 ${this.currentTicket
-                  ? html` <temba-tip
+                  ? html`<temba-tip
                         style="margin-top:5px"
                         text="Assign"
                         position="left"
@@ -353,14 +353,10 @@ export class ContactChat extends RapidElement {
                           id="assign-button"
                           name="user"
                           @click="${() => {
-                            console.log('clicked assign!');
                             const modax = this.shadowRoot.getElementById(
                               'assign-dialog'
                             ) as Modax;
                             modax.open = true;
-                            // (this.shadowRoot.getElementById(
-                            //'assign-dialog'
-                            // ) as Modax).open = true;
                           }}"
                           clickable
                         ></temba-icon>
@@ -374,7 +370,6 @@ export class ContactChat extends RapidElement {
                           id="add-note-button"
                           name="edit"
                           @click="${() => {
-                            console.log('clicked note!');
                             const note = this.shadowRoot.getElementById(
                               'note-dialog'
                             ) as Modax;
