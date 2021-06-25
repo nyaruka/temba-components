@@ -5,7 +5,6 @@ import { postJSON } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
-import { Dialog } from '../dialog/Dialog';
 import { Modax } from '../dialog/Modax';
 
 export class ContactChat extends RapidElement {
@@ -136,7 +135,8 @@ export class ContactChat extends RapidElement {
         transform: rotate(180deg);
       }
 
-      #note-dialog {
+      #note-dialog,
+      #assign-dialog {
         --header-bg: rgb(255, 249, 194);
         --header-text: #555;
         --textarea-height: 5em;
@@ -161,6 +161,9 @@ export class ContactChat extends RapidElement {
 
   @property({ type: Object })
   currentTicket: Ticket = null;
+
+  @property({ type: Number })
+  agent = -1;
 
   constructor() {
     super();
@@ -233,6 +236,7 @@ export class ContactChat extends RapidElement {
     postJSON(`/api/v2/broadcasts.json`, {
       contacts: [this.contact.uuid],
       text: this.currentChat,
+      ticket: this.currentTicket.uuid,
     })
       .then(() => {
         this.currentChat = '';
@@ -244,18 +248,17 @@ export class ContactChat extends RapidElement {
       });
   }
 
+  private handleTicketAssigned() {
+    this.refresh();
+    this.getContactHistory().checkForAgentTakeEvent(this.agent);
+  }
+
   private handleDetailSlider(): void {
     this.showDetails = !this.showDetails;
   }
 
   private handleCurrentTicketChanged(event: CustomEvent): void {
     this.currentTicket = event.detail.context;
-  }
-
-  private handleShowNoteDialog(): void {
-    const dialog = this.shadowRoot.getElementById('note-dialog') as Dialog;
-    this.currentNote = '';
-    dialog.show();
   }
 
   public render(): TemplateResult {
@@ -268,6 +271,7 @@ export class ContactChat extends RapidElement {
                     .uuid=${this.contact.uuid}
                     .ticket=${this.contact.ticket.uuid}
                     .endDate=${this.contact.ticket.closed_on}
+                    .agent=${this.agent}
                     @temba-context-changed=${this.handleCurrentTicketChanged}
                   ></temba-contact-history>
 
@@ -340,22 +344,45 @@ export class ContactChat extends RapidElement {
                 </temba-tip>
 
                 ${this.currentTicket
-                  ? html`<temba-tip
-                      style="margin-top:5px"
-                      text="Add Note"
-                      position="left"
-                    >
-                      <temba-icon
-                        id="add-note-button"
-                        name="edit"
-                        @click="${() => {
-                          (this.shadowRoot.getElementById(
-                            'note-dialog'
-                          ) as Modax).open = true;
-                        }}"
-                        clickable
-                      ></temba-icon>
-                    </temba-tip>`
+                  ? html` <temba-tip
+                        style="margin-top:5px"
+                        text="Assign"
+                        position="left"
+                      >
+                        <temba-icon
+                          id="assign-button"
+                          name="user"
+                          @click="${() => {
+                            console.log('clicked assign!');
+                            const modax = this.shadowRoot.getElementById(
+                              'assign-dialog'
+                            ) as Modax;
+                            modax.open = true;
+                            // (this.shadowRoot.getElementById(
+                            //'assign-dialog'
+                            // ) as Modax).open = true;
+                          }}"
+                          clickable
+                        ></temba-icon>
+                      </temba-tip>
+                      <temba-tip
+                        style="margin-top:5px"
+                        text="Add Note"
+                        position="left"
+                      >
+                        <temba-icon
+                          id="add-note-button"
+                          name="edit"
+                          @click="${() => {
+                            console.log('clicked note!');
+                            const note = this.shadowRoot.getElementById(
+                              'note-dialog'
+                            ) as Modax;
+                            note.open = true;
+                          }}"
+                          clickable
+                        ></temba-icon>
+                      </temba-tip>`
                   : null}
               `
             : null}
@@ -364,11 +391,17 @@ export class ContactChat extends RapidElement {
 
       ${this.currentTicket
         ? html`<temba-modax
-            header="Add Note"
-            id="note-dialog"
-            @temba-submitted=${this.refresh}
-            endpoint="/ticket/note/${this.currentTicket.uuid}/"
-          />`
+              header="Add Note"
+              id="note-dialog"
+              @temba-submitted=${this.refresh}
+              endpoint="/ticket/note/${this.currentTicket.uuid}/"
+            ></temba-modax>
+            <temba-modax
+              header="Assign Ticket"
+              id="assign-dialog"
+              @temba-submitted=${this.handleTicketAssigned}
+              endpoint="/ticket/assign/${this.currentTicket.uuid}/"
+            /></temba-modax>`
         : null}
     `;
   }

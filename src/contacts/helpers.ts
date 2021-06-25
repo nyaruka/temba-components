@@ -1,4 +1,4 @@
-import { Contact } from '../interfaces';
+import { Contact, User } from '../interfaces';
 import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
 import { ContactHistoryPage } from './events';
 
@@ -31,6 +31,7 @@ let pendingRequests: AbortController[] = [];
 export const fetchContactHistory = (
   reset: boolean,
   endpoint: string,
+  ticket: string,
   before: number = undefined,
   after: number = undefined
 ): Promise<ContactHistoryPage> => {
@@ -54,6 +55,10 @@ export const fetchContactHistory = (
       url += `&after=${after}`;
     }
 
+    if (ticket) {
+      url += `&ticket=${ticket}`;
+    }
+
     getUrl(url, controller)
       .then((response: WebResponse) => {
         // on success, remove our abort controller
@@ -68,4 +73,16 @@ export const fetchContactHistory = (
         // canceled
       });
   });
+};
+
+export const getDisplayName = (user: User) => {
+  if (user.first_name && user.last_name) {
+    return `${user.first_name} ${user.last_name}`;
+  }
+
+  if (user.first_name) {
+    return user.first_name;
+  }
+
+  return user.email;
 };

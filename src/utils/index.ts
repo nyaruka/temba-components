@@ -415,31 +415,41 @@ export class Stubbable {
 
 export const stubbable = new Stubbable();
 
-export const timeSince = (date: Date, compareDate = null) => {
+export const timeSince = (
+  date: Date,
+  options: { compareDate?: Date; hideRecentText?: boolean; suffix?: string } = {
+    suffix: '',
+  }
+) => {
+  const { compareDate, hideRecentText, suffix } = options;
   const now = compareDate || stubbable.getCurrentDate();
   const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (secondsPast < 60) {
     if (compareDate) {
-      return secondsPast + 's';
+      return secondsPast + 's' + suffix;
+    }
+
+    if (!hideRecentText && suffix) {
+      return suffix;
     }
     return 'just now';
   }
 
   if (secondsPast < HOUR) {
-    return Math.round(secondsPast / 60) + 'm';
+    return Math.round(secondsPast / 60) + 'm' + suffix;
   }
 
   if (secondsPast <= DAY) {
-    return Math.round(secondsPast / HOUR) + 'h';
+    return Math.round(secondsPast / HOUR) + 'h' + suffix;
   }
 
   if (secondsPast <= MONTH) {
-    return Math.round(secondsPast / DAY) + 'd';
+    return Math.round(secondsPast / DAY) + 'd' + suffix;
   }
 
   if (secondsPast < MONTH * 6) {
-    return Math.round(secondsPast / MONTH) + 'mth';
+    return Math.round(secondsPast / MONTH) + 'mth' + suffix;
   } else {
     const day = date.getDate();
     const month = date
