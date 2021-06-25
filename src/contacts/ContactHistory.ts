@@ -3,7 +3,7 @@ import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { CustomEventType, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { getAssets, getClasses, postJSON, throttle } from '../utils';
+import { Asset, getAssets, getClasses, postJSON, throttle } from '../utils';
 import ResizeObserver from 'resize-observer-polyfill';
 import {
   AirtimeTransferredEvent,
@@ -38,9 +38,9 @@ import {
   renderNameChanged,
   renderNoteCreated,
   renderResultEvent,
-  renderTicketClosed,
+  renderTicketAction,
+  renderTicketAssigned,
   renderTicketOpened,
-  renderTicketReopened,
   renderUpdateEvent,
   renderWebhookEvent,
   TicketEvent,
@@ -186,6 +186,9 @@ export class ContactHistory extends RapidElement {
   @property({ type: String })
   uuid: string;
 
+  @property({ type: Number })
+  agent: number;
+
   @property({ type: Array })
   eventGroups: EventGroup[] = [];
 
@@ -296,7 +299,7 @@ export class ContactHistory extends RapidElement {
       const after = (this.getLastEventTime() - 1) * 1000;
       let forceOpen = false;
 
-      fetchContactHistory(false, this.endpoint, null, after)
+      fetchContactHistory(false, this.endpoint, this.ticket, null, after)
         .then((results: ContactHistoryPage) => {
           if (results.events && results.events.length > 0) {
             this.updateMostRecent(results.events[0]);
@@ -367,6 +370,7 @@ export class ContactHistory extends RapidElement {
       this.httpComplete = fetchContactHistory(
         this.empty,
         this.endpoint,
+        this.ticket,
         this.nextBefore,
         this.nextAfter
       ).then((results: ContactHistoryPage) => {
@@ -521,6 +525,13 @@ export class ContactHistory extends RapidElement {
       behavior: smooth ? 'smooth' : 'auto',
     });
     this.showMessageAlert = false;
+
+    window.setTimeout(() => {
+      events.scrollTo({
+        top: events.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    }, 0);
   }
 
   public refresh(): void {
@@ -720,7 +731,7 @@ export class ContactHistory extends RapidElement {
       case Events.MESSAGE_CREATED:
       case Events.MESSAGE_RECEIVED:
       case Events.BROADCAST_CREATED:
-        return renderMsgEvent(event as MsgEvent);
+        return renderMsgEvent(event as MsgEvent, this.agent);
 
       case Events.FLOW_ENTERED:
       case Events.FLOW_EXITED:
@@ -744,14 +755,6 @@ export class ContactHistory extends RapidElement {
       case Events.INPUT_LABELS_ADDED:
         return renderLabelsAdded(event as LabelsAddedEvent);
 
-      case Events.TICKET_NOTE_ADDED:
-        return renderNoteCreated(event as TicketEvent);
-
-      case Events.TICKET_REOPENED: {
-        const ticketEvent = event as TicketEvent;
-        const active = !this.ticket || ticketEvent.ticket.uuid === this.ticket;
-        return renderTicketReopened(ticketEvent, active);
-      }
       case Events.TICKET_OPENED: {
         const ticketEvent = event as TicketEvent;
         const activeTicket =
@@ -762,14 +765,19 @@ export class ContactHistory extends RapidElement {
         if (activeTicket && ticket && ticket.status === 'open') {
           closeHandler = this.handleClose;
         }
-        return renderTicketOpened(ticketEvent, closeHandler, activeTicket);
+        return renderTicketOpened(ticketEvent, closeHandler);
       }
+      case Events.TICKET_NOTE_ADDED:
+        return renderNoteCreated(event as TicketEvent, this.agent);
 
-      case Events.TICKET_CLOSED: {
-        const ticketEvent = event as TicketEvent;
-        const active = !this.ticket || ticketEvent.ticket.uuid === this.ticket;
-        return renderTicketClosed(ticketEvent, active);
+      case Events.TICKET_ASSIGNED:
+        return renderTicketAssigned(event as TicketEvent);
+      case Events.TICKET_REOPENED: {
+        return renderTicketAction(event as TicketEvent, 'reopened');
       }
+      case Events.TICKET_CLOSED:
+        return renderTicketAction(event as TicketEvent, 'closed');
+
       case Events.ERROR:
       case Events.FAILURE:
         return renderErrorMessage(event as ErrorMessageEvent);
@@ -815,6 +823,23 @@ export class ContactHistory extends RapidElement {
       });
   }
 
+  public checkForAgentTakeEvent(agent: number) {
+    if (this.currentTicket) {
+      this.httpComplete = getAssets(
+        `/api/v2/tickets.json?ticket=${this.currentTicket.uuid}`
+      ).then((assets: Asset[]) => {
+        if (assets.length === 1) {
+          const ticket = assets[0] as Ticket;
+          if (ticket.assignee && ticket.assignee.id === agent) {
+            this.fireCustomEvent(CustomEventType.ContentChanged, {
+              ticket: { uuid: this.currentTicket.uuid, took: true },
+            });
+          }
+        }
+      });
+    }
+  }
+
   public getEventHandlers() {
     return [
       {
@@ -827,6 +852,27 @@ export class ContactHistory extends RapidElement {
   /** Check if a ticket event is no longer represented in a session */
   private isPurged(ticket: Ticket): boolean {
     return !this.ticketEvents[ticket.uuid];
+  }
+
+  private renderEventContainer(event: ContactEvent) {
+    const stickyId = this.getStickyId(event);
+    const isSticky = !!stickyId;
+
+    const renderedEvent = html`
+      <div
+        class="event ${event.type} ${isSticky ? 'has-sticky' : ''}"
+        data-sticky-id="${stickyId}"
+      >
+        ${this.renderEvent(event)}
+      </div>
+      ${this.debug ? html`<pre>${JSON.stringify(event, null, 2)}</pre>` : null}
+    `;
+
+    if (stickyId) {
+      return html`<div class="sticky">${renderedEvent}</div>`;
+    }
+
+    return renderedEvent;
   }
 
   public render(): TemplateResult {
@@ -851,8 +897,7 @@ export class ContactHistory extends RapidElement {
 
                 const renderedEvent = renderTicketOpened(
                   ticketOpenedEvent,
-                  this.handleClose,
-                  true
+                  this.handleClose
                 );
                 return html`<div class="event ticket_opened">
                   ${renderedEvent}
@@ -908,28 +953,19 @@ export class ContactHistory extends RapidElement {
                     `
                   : null}
                 ${eventGroup.events.map((event: ContactEvent) => {
-                  const stickyId = this.getStickyId(event);
-                  const isSticky = !!stickyId;
+                  if (
+                    event.type === Events.TICKET_ASSIGNED &&
+                    (event as TicketEvent).note
+                  ) {
+                    const noteEvent = { ...event };
+                    noteEvent.type = Events.TICKET_NOTE_ADDED;
 
-                  const renderedEvent = html`
-                    <div
-                      class="event ${event.type} ${isSticky
-                        ? 'has-sticky'
-                        : ''}"
-                      data-sticky-id="${stickyId}"
-                    >
-                      ${this.renderEvent(event)}
-                    </div>
-                    ${this.debug
-                      ? html`<pre>${JSON.stringify(event, null, 2)}</pre>`
-                      : null}
-                  `;
-
-                  if (stickyId) {
-                    return html`<div class="sticky">${renderedEvent}</div>`;
+                    return html`${this.renderEventContainer(
+                      noteEvent
+                    )}${this.renderEventContainer(event)}`;
+                  } else {
+                    return this.renderEventContainer(event);
                   }
-
-                  return renderedEvent;
                 })}
               </div>`;
             })

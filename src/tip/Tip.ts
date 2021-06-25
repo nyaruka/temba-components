@@ -19,7 +19,7 @@ export class Tip extends RapidElement {
         border-radius: var(--curvature-widget);
         box-shadow: 0 1px 10px 10px rgba(0, 0, 0, 0.035),
           0 1px 3px 0px rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-
+        font-size: 14px;
         z-index: 10000;
       }
 

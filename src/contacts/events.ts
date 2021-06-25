@@ -2,15 +2,13 @@ import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { Msg, ObjectReference, User } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
+import { getDisplayName } from './helpers';
 
 export const getEventStyles = () => {
   return css`
     .grouping {
       padding: 0 2em;
       margin: 0 -1em;
-    }
-
-    .grouping.notes {
     }
 
     .grouping.verbose {
@@ -172,7 +170,7 @@ export const getEventStyles = () => {
     }
 
     .grouping.messages,
-    .grouping.notes {
+    .grouping.tickets {
       display: flex;
       flex-direction: column;
     }
@@ -186,7 +184,7 @@ export const getEventStyles = () => {
     .msg {
       padding: var(--event-padding);
       border-radius: 8px;
-      border: 1px solid rgba(100, 100, 100, 0.1);
+      border: 2px solid rgba(100, 100, 100, 0.1);
       max-width: 300px;
     }
 
@@ -197,7 +195,7 @@ export const getEventStyles = () => {
     .event.msg_created,
     .event.broadcast_created,
     .event.ivr_created,
-    .notes .event.ticket_note_added {
+    .tickets .event.ticket_note_added {
       align-self: flex-end;
     }
 
@@ -250,11 +248,11 @@ export const getEventStyles = () => {
       background: rgba(10, 10, 10, 0.02);
     }
 
-    .notes .ticket_note_added {
+    .tickets .ticket_note_added {
       max-width: 300px;
     }
 
-    .notes .note-summary {
+    .tickets .note-summary {
       display: flex;
       flex-direction: row;
       line-height: 0.5;
@@ -263,8 +261,8 @@ export const getEventStyles = () => {
       padding: 8px 3px;
     }
 
-    .notes .ticket_note_added .description {
-      border: 1px solid rgba(100, 100, 100, 0.1);
+    .tickets .ticket_note_added .description {
+      border: 2px solid rgba(100, 100, 100, 0.1);
       background: rgb(255, 249, 194);
       padding: var(--event-padding);
       border-radius: 8px;
@@ -419,21 +417,29 @@ export const getEventStyles = () => {
       --icon-color: var(--color-error);
     }
 
-    .avatar {
-      border-radius: 9999px;
-      text-align: center;
-      padding: 6px;
-      width: 20px;
-      border: 1px solid #ddd;
-      background: #eee;
-      font-weight: 400;
-      color: #999;
-    }
-
     .flow {
       fill: #ddd;
       background: #fff;
-      border: 1px solid #e6e6e6;
+      width: 18px;
+      height: 18px;
+      padding-top: 4px;
+      padding-left: 9px;
+      border: 0px solid #f3f3f3;
+    }
+
+    .assigned {
+      color: #777;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .assigned .attn {
+      color: #777;
     }
   `;
 };
@@ -468,6 +474,7 @@ export enum Events {
   EMAIL_SENT = 'email_sent',
   INPUT_LABELS_ADDED = 'input_labels_added',
   NOTE_CREATED = 'note_created',
+  TICKET_ASSIGNED = 'ticket_assigned',
   TICKET_NOTE_ADDED = 'ticket_note_added',
   TICKET_CLOSED = 'ticket_closed',
   TICKET_OPENED = 'ticket_opened',
@@ -518,6 +525,7 @@ export interface URNsChangedEvent extends ContactEvent {
 
 export interface TicketEvent extends ContactEvent {
   note?: string;
+  assignee?: User;
   ticket: {
     uuid: string;
     ticketer: ObjectReference;
@@ -601,9 +609,8 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
     return 'messages';
   }
   switch (event.type) {
+    case Events.TICKET_ASSIGNED:
     case Events.TICKET_NOTE_ADDED:
-      return 'notes';
-
     case Events.TICKET_OPENED:
     case Events.TICKET_CLOSED:
     case Events.TICKET_REOPENED:
@@ -623,25 +630,42 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   return 'verbose';
 };
 
-export const renderAvatar = (user: User) => {
+export const renderAvatar = (user: User, agent = -1) => {
+  const current = user && user.id === agent;
   if (user.id === FLOW_USER_ID || !user || !user.first_name) {
     return html`<temba-tip text="Automated message" position="top"
-      ><div class="avatar flow" style="margin-left:10px">
-        <temba-icon size="1.5" name="flow" /></div
+      ><div class="avatar flow" style="margin-top:0.5em">
+        <temba-icon size="1" name="activity" /></div
     ></temba-tip>`;
   } else {
     return html`<temba-tip
       text="${user.first_name + ' ' + user.last_name}"
       position="top"
-      ><div class="avatar" style="margin-left:10px">
+    >
+      <div
+        class="avatar"
+        style="
+          border-radius: 9999px; 
+          display:flex;
+          align-items:center;
+          border: 2px solid rgba(0,0,0,.05);
+          background: ${current ? 'var(--color-primary-dark)' : '#eee'};
+          color: ${current ? '#fff' : '#999'} ;
+          font-weight: 400;
+          padding: 0.5em;
+          line-height:1.2em;
+        "
+      >
         ${user.first_name[0] + user.last_name[0]}
       </div>
-      <temba-tip></temba-tip
-    ></temba-tip>`;
+    </temba-tip>`;
   }
 };
 
-export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
+export const renderMsgEvent = (
+  event: MsgEvent,
+  agent: number
+): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
   const isError = event.status === 'E' || event.status === 'F';
   return html` <div style="display:flex;align-items:flex-start">
@@ -677,11 +701,13 @@ export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
     </div>
 
     ${!isInbound
-      ? html`
+      ? html`<div style="margin-left:0.8em;margin-top:0.3em">
           ${event.msg.created_by
-            ? renderAvatar(event.msg.created_by)
+            ? html`<div style="font-size:0.8em">
+                ${renderAvatar(event.msg.created_by, agent)}
+              </div>`
             : renderAvatar({ id: FLOW_USER_ID })}
-        `
+        </div>`
       : null}
   </div>`;
 };
@@ -795,7 +821,10 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
   `;
 };
 
-export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
+export const renderNoteCreated = (
+  event: TicketEvent,
+  agent: number
+): TemplateResult => {
   return html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
       <div class="description">${event.note}</div>
@@ -804,28 +833,21 @@ export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
         <div class="time">${timeSince(new Date(event.created_on))}</div>
       </div>
     </div>
-    ${renderAvatar(event.created_by)}
+    <div style="margin-left:0.8em;margin-top:0.3em;font-size:0.8em">
+      ${renderAvatar(event.created_by, agent)}
+    </div>
   </div>`;
 };
 
-export const renderTicketClosed = (
-  event: TicketEvent,
-  activeTicket: boolean
-): TemplateResult => {
-  const opened = new Date(event.ticket.opened_on);
+export const renderTicketClosed = (event: TicketEvent): TemplateResult => {
+  const closed = new Date(event.ticket.opened_on);
   return html`
-    <temba-icon size="${activeTicket ? '1.5' : '1'}" name="check"></temba-icon>
-    <div
-      class="closed ${activeTicket ? 'active' : 'inactive'}"
-      style="flex-grow:1;"
-    >
-      Closed
-      <div class="attn">${event.ticket.subject}</div>
-      <div class="subtext">
-        ${event.ticket.closed_on
-          ? html`Opened ${opened.toLocaleString()}, took
-            ${timeSince(opened, closed)}`
-          : timeSince(opened)}
+    <div class="assigned active">
+      <div style="text-align:center">
+        ${getDisplayName(event.created_by)} closed this ticket
+      </div>
+      <div class="subtext" style="justify-content:center">
+        ${timeSince(closed, { hideRecentText: true, suffix: ' ago' })}
       </div>
     </div>
   `;
@@ -841,46 +863,56 @@ const getTicketIcon = (event: TicketEvent) => {
   return icon;
 };
 
-export const renderTicketReopened = (
+export const renderTicketAction = (
   event: TicketEvent,
-  activeTicket: boolean
+  action: string
 ): TemplateResult => {
   const reopened = new Date(event.created_on);
-  const icon = getTicketIcon(event);
   return html`
-    <temba-icon
-      size="${activeTicket ? '1.5' : '1'}"
-      name="${icon}"
-    ></temba-icon>
-    <div
-      class="reopened ${activeTicket ? 'active' : 'inactive'}"
-      style="flex-grow:1;"
-    >
-      Reopened
-      <div class="attn">${event.ticket.subject}</div>
-      <div class="subtext">${timeSince(reopened)}</div>
+    <div class="assigned active">
+      <div style="text-align:center">
+        ${getDisplayName(event.created_by)} ${action} this ticket
+      </div>
+      <div class="subtext" style="justify-content:center">
+        ${timeSince(reopened, { hideRecentText: true, suffix: ' ago' })}
+      </div>
+    </div>
+  `;
+};
+
+export const renderTicketAssigned = (event: TicketEvent): TemplateResult => {
+  const created = new Date(event.created_on);
+  return html`
+    <div class="assigned active">
+      <div style="text-align:center">
+        ${event.assignee
+          ? event.assignee.id === event.created_by.id
+            ? html`${getDisplayName(event.created_by)} took this ticket`
+            : html`${getDisplayName(event.created_by)} assigned this ticket to
+                <div class="attn">${getDisplayName(event.assignee)}</div>`
+          : html`${getDisplayName(event.created_by)} unassigned this ticket`}
+      </div>
+      <div class="subtext" style="justify-content:center">
+        ${timeSince(created, { hideRecentText: true, suffix: ' ago' })}
+      </div>
     </div>
   `;
 };
 
 export const renderTicketOpened = (
   event: TicketEvent,
-  handleClose: (uuid: string) => void,
-  activeTicket: boolean
+  handleClose: (uuid: string) => void
 ): TemplateResult => {
   const icon = getTicketIcon(event);
   return html`
-    <temba-icon
-      size="${activeTicket ? '1.5' : '1'}"
-      name="${icon}"
-    ></temba-icon>
+    <temba-icon size="1.5" name="${icon}"></temba-icon>
 
-    <div class="${activeTicket ? 'active' : 'inactive'}" style="flex-grow:1;">
+    <div class="active" style="flex-grow:1;">
       Opened
       <div class="attn">${event.ticket.subject}</div>
       <div class="subtext">${timeSince(new Date(event.created_on))}</div>
     </div>
-    ${activeTicket && handleClose
+    ${handleClose
       ? html`
           <temba-tip text="Resolve" position="left" style="width:1.5em">
             <temba-icon

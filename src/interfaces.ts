@@ -14,6 +14,7 @@ export interface Ticket {
   status: string;
   contact: ObjectReference;
   ticketer: ObjectReference;
+  assignee?: User;
 }
 
 export interface Msg {
@@ -91,6 +92,7 @@ export interface Contact {
     uuid: string;
     subject: string;
     closed_on?: string;
+    assignee?: User;
   };
 }
 

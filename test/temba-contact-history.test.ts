@@ -74,10 +74,10 @@ describe('temba-contact-history', () => {
     // we should have scrolled to the bottom
     const events = history.shadowRoot.querySelector('.events');
     const top = events.scrollHeight - events.getBoundingClientRect().height;
-    expect(top).to.equal(156);
+    expect(top).to.equal(174);
 
     // make sure we actually scrolled to there
-    expect(events.scrollTop).to.equal(top - 6);
+    expect(events.scrollTop).to.equal(top);
 
     await assertScreenshot('contacts/history', getHistoryClip(history));
   });
