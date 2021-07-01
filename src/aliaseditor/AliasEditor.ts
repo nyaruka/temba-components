@@ -324,7 +324,7 @@ export class AliasEditor extends LitElement {
       const payload = { osm_id: this.editFeature.osm_id, aliases };
       postUrl(
         this.getEndpoint() + 'boundaries/' + this.editFeature.osm_id + '/',
-        payload
+        JSON.stringify(payload)
       ).then(() => {
         this.fetchFeature();
       });
