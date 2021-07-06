@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { css, html, LitElement, property, TemplateResult } from 'lit-element';
 import { FeatureProperties } from '../interfaces';
-import { getUrl, postUrl, WebResponse } from '../utils';
+import { getUrl, postJSON, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { styleMap } from 'lit-html/directives/style-map';
 import { FormElement } from '../FormElement';
@@ -322,7 +322,7 @@ export class AliasEditor extends LitElement {
       ) as TextInput;
       const aliases = textarea.inputElement.value;
       const payload = { osm_id: this.editFeature.osm_id, aliases };
-      postUrl(
+      postJSON(
         this.getEndpoint() + 'boundaries/' + this.editFeature.osm_id + '/',
         payload
       ).then(() => {
