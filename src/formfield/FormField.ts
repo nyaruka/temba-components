@@ -16,14 +16,14 @@ export class FormField extends LitElement {
         margin-left: 4px;
         display: block;
         font-weight: 400;
-        font-size: 13px;
+        font-size: var(--label-size);
         letter-spacing: 0.05em;
         line-height: normal;
         color: #777;
       }
 
       .help-text {
-        font-size: 11px;
+        font-size: var(--help-text-size);
         line-height: normal;
         color: var(--color-text-help);
         margin-left: var(--help-text-margin-left);

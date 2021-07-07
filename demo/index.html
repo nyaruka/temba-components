@@ -19,6 +19,7 @@
       padding: 10px;
       max-width: 500px;
     }
+
   </style>
   <script type="module">
     import '../out-tsc/temba-modules.js';    
@@ -36,8 +37,8 @@
 
   <div class="example">
     <temba-omnibox
-      placeholder='Select a color'
-      label="Hi there friends"
+      placeholder='Contacts or Groups'
+      label="Recipients"
       help_text="This is the helpful friendly book"
       endpoint="/contact/omnibox/?v=2"
       groups
@@ -56,13 +57,7 @@
     <temba-completion value="you complete me @cont"></temba-completion>    
   </div>
 
-  <div class="example">
-    <temba-select placeholder='Select a color' expressions="message" searchable multi>
-      <temba-option name="Red" value="0"></temba-option>
-      <temba-option name="Green" value="1"></temba-option>
-      <temba-option name="Blue" value="2"></temba-option>
-    </temba-select>
-  </div>
+
 
   <div class="example">
     <temba-select  placeholder='Select a color' clearable>
