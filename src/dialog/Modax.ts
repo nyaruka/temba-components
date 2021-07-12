@@ -19,8 +19,7 @@ export class Modax extends RapidElement {
       }
 
       .control-group {
-        margin-bottom: 12px;
-        display: block;
+        margin-bottom: var(--control-margin-bottom);
       }
 
       .form-actions {
