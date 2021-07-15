@@ -1016,12 +1016,12 @@ export class Select extends FormElement {
 
   private renderSelectedItemDefault(option: any): TemplateResult {
     return html`
-      <div class="option-name" style="display:flex;">
+      <div class="option-name" style="display:flex">
         ${option.icon
           ? html`<temba-icon
               name="${option.icon}"
-              style="margin-right:0.5em;-webkit-transform: scale(1); transform: scale(1)"
-            ></temba-icon> `
+              style="margin-right:0.5em;"
+            ></temba-icon>`
           : null}<span>${this.getName(option)}</span>
       </div>
     `;
