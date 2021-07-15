@@ -43,6 +43,9 @@ export class VectorIcon extends LitElement {
       }
 
       svg {
+        -webkit-transform: scale(1);
+        transform: scale(1);
+
         fill: var(--icon-color);
         transition: fill 100ms ease-in-out,
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),

@@ -751,9 +751,6 @@ export class Select extends FormElement {
           return;
         }
 
-        // const CancelToken = axios.CancelToken;
-        // this.cancelToken = CancelToken.source();
-
         // if we are searchable, but doing it locally, fetch all the options
         if (this.searchable && !this.queryParam) {
           fetchResults(url).then((results: any) => {
@@ -771,8 +768,6 @@ export class Select extends FormElement {
             }
           });
         } else {
-          // this.cancelToken.token
-
           this.httpComplete = getUrl(url)
             .then((response: WebResponse) => {
               const results = this.getOptions(response).filter(
