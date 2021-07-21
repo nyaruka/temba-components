@@ -40,9 +40,13 @@ export const getComponent = async (
 ) => {
   const spec = `<${tag} ${getAttributes(attrs)}>${slot}</${tag}>`;
 
-  if (width > 0) {
+  if (width > 0 || style) {
     const parentNode = document.createElement('div');
-    parentNode.setAttribute('style', `width: ${width}px;${style}`);
+    if (width > 0) {
+      parentNode.setAttribute('style', `width: ${width}px;${style}`);
+    } else {
+      parentNode.setAttribute('style', `${style}`);
+    }
     return await fixture(spec, { parentNode });
   }
 

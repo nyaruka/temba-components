@@ -814,7 +814,7 @@ export class ContactHistory extends RapidElement {
         this.refreshTickets();
         this.refresh();
         this.fireCustomEvent(CustomEventType.ContentChanged, {
-          ticket: { uuid, status: 'C' },
+          ticket: { uuid, status: 'closed' },
         });
         this.updateCurrentTicket();
       })
