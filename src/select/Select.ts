@@ -998,21 +998,21 @@ export class Select extends FormElement {
           }
           this.staticOptions.push(option);
 
-          if (
-            child.getAttribute('selected') !== null ||
-            (!this.placeholder && this.values.length === 0)
-          ) {
-            if (
-              !this.value ||
-              (this.value && this.getValue(option) == this.value)
-            ) {
-              if (this.getAttribute('multi') !== null) {
-                this.addValue(option);
-              } else {
-                this.setValue(option);
-              }
+          if (child.getAttribute('selected') !== null) {
+            if (this.getAttribute('multi') !== null) {
+              this.addValue(option);
+            } else {
+              this.setValue(option);
             }
           }
+        }
+      }
+
+      if (this.values.length === 0 && !this.placeholder) {
+        if (this.getAttribute('multi') !== null) {
+          this.addValue(this.staticOptions[0]);
+        } else {
+          this.setValue(this.staticOptions[0]);
         }
       }
 
