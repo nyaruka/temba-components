@@ -81,7 +81,7 @@ export class VectorIcon extends LitElement {
       .clickable:hover {
         cursor: pointer;
         fill: var(--color-link-primary);
-        background: rgba(255, 255, 255, 0.95);
+        background: rgb(255, 255, 255);
       }
 
       .wrapper {

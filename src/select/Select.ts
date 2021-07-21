@@ -496,6 +496,17 @@ export class Select extends FormElement {
       }
     }
 
+    // if they set an inital value, look through our static options for it
+    if (changedProperties.has('value') && this.value) {
+      const existing = this.staticOptions.find(option => {
+        return this.getValue(option) === this.value;
+      });
+
+      if (existing) {
+        this.setValue(existing);
+      }
+    }
+
     // default to the first option if we don't have a placeholder
     if (
       this.values.length === 0 &&
@@ -991,10 +1002,15 @@ export class Select extends FormElement {
             child.getAttribute('selected') !== null ||
             (!this.placeholder && this.values.length === 0)
           ) {
-            if (this.getAttribute('multi') !== null) {
-              this.addValue(option);
-            } else {
-              this.setValue(option);
+            if (
+              !this.value ||
+              (this.value && this.getValue(option) == this.value)
+            ) {
+              if (this.getAttribute('multi') !== null) {
+                this.addValue(option);
+              } else {
+                this.setValue(option);
+              }
             }
           }
         }

@@ -28,8 +28,14 @@ export class TembaList extends RapidElement {
   @property({ type: String })
   valueKey = 'id';
 
+  @property({ type: String })
+  value: string;
+
   @property({ type: Boolean })
   loading = false;
+
+  @property({ type: Boolean })
+  collapsed: boolean;
 
   @property({ attribute: false })
   getNextRefresh: (firstOption: any) => any;
@@ -248,7 +254,13 @@ export class TembaList extends RapidElement {
       }
     }
 
-    this.requestUpdate('cursorIndex');
+    // TODO: Not sure why this is needed
+    // this.requestUpdate('cursorIndex');
+
+    if (this.value) {
+      this.setSelection(this.value);
+      this.value = null;
+    }
 
     return Promise.resolve();
   }
@@ -278,6 +290,7 @@ export class TembaList extends RapidElement {
     return html`<temba-options
       ?visible=${true}
       ?block=${true}
+      ?collapsed=${this.collapsed}
       ?loading=${this.loading}
       .renderOption=${this.renderOption}
       .renderOptionDetail=${this.renderOptionDetail}

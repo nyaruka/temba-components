@@ -1,7 +1,7 @@
 import { css, html, property, TemplateResult } from 'lit-element';
 import { RapidElement } from '../RapidElement';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { postJSON } from '../utils';
+import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
@@ -167,6 +167,7 @@ export class ContactChat extends RapidElement {
 
   constructor() {
     super();
+    this.showDetails = getCookieBoolean(COOKIE_KEYS.TICKET_SHOW_DETAILS);
   }
 
   public getContactHistory(): ContactHistory {
@@ -224,7 +225,7 @@ export class ContactChat extends RapidElement {
       .then(() => {
         this.refresh();
         this.fireCustomEvent(CustomEventType.ContentChanged, {
-          ticket: { uuid, status: 'O' },
+          ticket: { uuid, status: 'open' },
         });
       })
       .catch((response: any) => {
@@ -255,6 +256,7 @@ export class ContactChat extends RapidElement {
 
   private handleDetailSlider(): void {
     this.showDetails = !this.showDetails;
+    setCookie(COOKIE_KEYS.TICKET_SHOW_DETAILS, this.showDetails);
   }
 
   private handleCurrentTicketChanged(event: CustomEvent): void {

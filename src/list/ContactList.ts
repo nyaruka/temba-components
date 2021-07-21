@@ -48,7 +48,7 @@ export class ContactList extends TembaList {
                 : null}
             </div>
             <div
-              style="font-size:0.8em;display:flex;flex-direction:column;align-items:center;width:30px"
+              style="font-size:0.8em;display:flex;flex-direction:column;align-items:center;max-width:60px;min-width:30px"
             >
               <div style="text-align:center;padding:4px;padding-bottom:2px;">
                 ${timeSince(

@@ -20,8 +20,7 @@ export class Options extends RapidElement {
         visibility: hidden;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg-focused);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        box-shadow: var(--options-shadow);
         border: 1px solid var(--color-widget-border);
         user-select: none;
         border-radius: var(--curvature-widget);
@@ -35,11 +34,25 @@ export class Options extends RapidElement {
 
       :host([block]) .options-container {
         border: none;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-          0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        box-shadow: var(--options-block-shadow);
         height: 100%;
         z-index: 9000;
         visibility: visible;
+      }
+
+      :host([collapsed]) temba-icon {
+        flex-grow: 1;
+        margin-right: 0px !important;
+        padding-top: 0.25em;
+        padding-bottom: 0.25em;
+      }
+
+      :host([collapsed]) .name {
+        display: none;
+      }
+
+      :host([collapsed]) .count {
+        display: none;
       }
 
       .options {
@@ -145,6 +158,9 @@ export class Options extends RapidElement {
 
   @property({ type: Boolean })
   loading = false;
+
+  @property({ type: Boolean })
+  collapsed: boolean;
 
   @property({ attribute: false })
   getName: { (option: any): string } = function (option: any) {
