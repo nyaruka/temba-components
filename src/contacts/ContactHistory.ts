@@ -143,6 +143,8 @@ export class ContactHistory extends RapidElement {
         border-top-left-radius: var(--curvature);
         overflow: hidden;
         background: rgba(240, 240, 240, 0.95);
+        margin-right: -1.5em;
+        padding-right: 1.5em;
         box-shadow: 0px 3px 3px 0px rgba(0, 0, 0, 0.15);
       }
 
@@ -158,7 +160,8 @@ export class ContactHistory extends RapidElement {
         display: flex;
         margin: 1em -2em;
         padding: 1em 2em;
-        background: rgba(240, 240, 240, 0.8);
+        background: rgba(240, 240, 240, 0.95);
+        border-bottom: 1px solid rgba(220, 220, 220, 1);
       }
 
       .sticky.pinned {
@@ -169,7 +172,6 @@ export class ContactHistory extends RapidElement {
         margin: 0;
         padding: 1em 2em;
         border-radius: 0px;
-        border-bottom: 1px solid rgba(220, 220, 220, 1);
       }
 
       .sticky .event {
