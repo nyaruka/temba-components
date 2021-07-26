@@ -15,6 +15,8 @@ export class ContactDetails extends RapidElement {
         display: block;
         height: 100%;
         position: relative;
+        border-bottom-right-radius: var(--curvature);
+        overflow: hidden;
       }
 
       .wrapper {
@@ -75,14 +77,14 @@ export class ContactDetails extends RapidElement {
       .actions {
         margin-top: 16px;
         border: 0px solid #ddd;
-        border-radius: 0.5em;
+        border-radius: var(--curvature);
         padding: 0px;
       }
 
       .fields-wrapper {
         margin-top: 1em;
         background: #fff;
-        border-radius: 0.5em;
+        border-radius: var(--curvature);
         overflow: hidden;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -100,13 +102,13 @@ export class ContactDetails extends RapidElement {
       .fields {
         padding: 1em;
         max-height: 200px;
-        border-radius: 0.5em;
+        border-radius: var(--curvature);
         overflow-y: auto;
         -webkit-mask-image: -webkit-radial-gradient(white, black);
       }
 
       .field {
-        border-radius: 0.5em;
+        border-radius: var(--curvature);
 
         display: flex;
         flex-direction: column;

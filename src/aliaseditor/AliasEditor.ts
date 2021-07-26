@@ -120,7 +120,7 @@ export class AliasEditor extends LitElement {
         height: 250px;
         width: 450px;
         border: 0px solid #999;
-        border-radius: 5px;
+        border-radius: var(--curvature);
       }
 
       .edit {

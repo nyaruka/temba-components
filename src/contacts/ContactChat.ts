@@ -15,7 +15,7 @@ export class ContactChat extends RapidElement {
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
 
         height: 100%;
-        border-radius: 0.5rem;
+        border-radius: var(--curvature);
 
         flex-grow: 1;
         width: 100%;
@@ -84,12 +84,13 @@ export class ContactChat extends RapidElement {
         z-index: 10;
         box-shadow: -1px 0px 6px 1px rgba(0, 0, 0, 0.1);
         flex-shrink: 0;
-        border-top-right-radius: 0.5em;
-        border-bottom-right-radius: 0.5em;
+        border-top-right-radius: var(--curvature);
+        border-bottom-right-radius: var(--curvature);
         padding: 0.5em 0;
         display: flex;
         flex-direction: column;
         align-items: center;
+        overflow: hidden;
       }
 
       .toolbar temba-icon {
@@ -105,13 +106,16 @@ export class ContactChat extends RapidElement {
         flex-basis: 16em;
         flex-grow: 0;
         flex-shrink: 0;
-        transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05);
+        transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05),
+          opacity 600ms ease-in-out 200ms;
         z-index: 5;
         margin-right: -2.5em;
+        border-radius: 10px;
       }
 
       temba-contact-details.hidden {
         margin-right: -16em;
+        opacity: 0;
       }
 
       @media only screen and (max-width: 768px) {

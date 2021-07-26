@@ -59,7 +59,7 @@ export const getEventStyles = () => {
       padding: 3px 10px;
       font-weight: 400;
       color: #777;
-      border-radius: 6px;
+      border-radius: var(--curvature);
       cursor: pointer;
       min-width: 0%;
       opacity: 1;
@@ -97,7 +97,7 @@ export const getEventStyles = () => {
       margin-bottom: 1.5em;
 
       border: 1px solid #f2f2f2;
-      border-radius: 0.5em;
+      border-radius: var(--curvature);
       padding: 0.5em 1em;
     }
 
@@ -143,7 +143,7 @@ export const getEventStyles = () => {
       padding: 2em;
       margin-left: 1em;
       margin-right: 1em;
-      border-radius: 0.5em;
+      border-radius: var(--curvature);
       padding-bottom: 1em;
       box-shadow: inset 0px 11px 4px -15px #000, inset 0px -11px 4px -15px #000;
     }
@@ -177,7 +177,7 @@ export const getEventStyles = () => {
 
     .event {
       margin-bottom: 1em;
-      border-radius: 6px;
+      border-radius: var(--curvature);
       flex-grow: 1;
     }
 
