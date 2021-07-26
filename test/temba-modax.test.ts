@@ -121,7 +121,7 @@ describe('temba-modax', () => {
     // close our dialog
     await clickPrimary(modax);
     await clock.tick(500);
-    await waitFor(100);
+    await waitFor(500);
 
     // modax reset occurs after hiding animation completes
     expect(modax.open).equals(false);
