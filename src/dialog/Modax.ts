@@ -301,6 +301,7 @@ export class Modax extends RapidElement {
     if (button.name === (this.cancelName || 'Cancel')) {
       this.open = false;
       this.fetching = false;
+      this.cancelName = undefined;
       // this.cancelToken.cancel();
     }
   }
