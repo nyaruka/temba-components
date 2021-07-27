@@ -109,10 +109,9 @@ describe('temba-modax', () => {
       getModaxHTML('/test-assets/modax/hello.html')
     );
 
-    await click('temba-modax');
+    // await click('temba-modax');
+    await open(modax);
     expect(modax.open).equals(true);
-    await modax.httpComplete;
-    await clock.tick(400);
 
     // should only have one button, okay
     let buttons = getButtons(modax);
@@ -120,10 +119,6 @@ describe('temba-modax', () => {
 
     // close our dialog
     await clickPrimary(modax);
-    await clock.tick(500);
-    await waitFor(500);
-
-    // modax reset occurs after hiding animation completes
     expect(modax.open).equals(false);
 
     // now fetch form from the same modax
