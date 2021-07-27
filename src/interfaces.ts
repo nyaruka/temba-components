@@ -92,6 +92,7 @@ export interface Contact {
     uuid: string;
     subject: string;
     closed_on?: string;
+    last_activity_on: string;
     assignee?: User;
   };
 }
