@@ -30,13 +30,27 @@ const open = async (modax: Modax) => {
 };
 
 const clickPrimary = async (modax: Modax) => {
-  const primary = getButtons(modax, 'primary')[0] as Button;
-  expect(primary).not.equals(undefined, 'Missing primary button');
-  primary.click();
-  await clock.tick(500);
-  await clock.tick(100);
-  await waitFor(0);
-  await clock.tick(1000);
+  const buttons = getButtons(modax);
+
+  if (buttons.length > 0) {
+    let primary = buttons[0] as Button;
+
+    if (buttons.length > 1) {
+      // look for our primary flag
+      buttons.forEach((button: Button) => {
+        if (button.primary) {
+          primary = button;
+        }
+      });
+    }
+
+    expect(primary).not.equals(undefined, 'Missing primary button');
+    primary.click();
+    await clock.tick(500);
+    await clock.tick(100);
+    await waitFor(0);
+    await clock.tick(1000);
+  }
 };
 
 const getDialogClip = (modax: Modax) => {
@@ -88,6 +102,44 @@ describe('temba-modax', () => {
 
     expect(modax.open).to.equal(true);
     await assertScreenshot('modax/form', getDialogClip(modax));
+  });
+
+  it('reverts primary name on reuse', async () => {
+    const modax: Modax = await fixture(
+      getModaxHTML('/test-assets/modax/hello.html')
+    );
+
+    // await click('temba-modax');
+    await open(modax);
+    expect(modax.open).equals(true);
+
+    // should only have one button, okay
+    let buttons = getButtons(modax);
+    expect(buttons.length).equals(1);
+
+    // close our dialog
+    await clickPrimary(modax);
+    expect(modax.open).equals(false);
+
+    // now fetch form from the same modax
+    modax.endpoint = '/test-assets/modax/form.html';
+    await modax.updateComplete;
+    await modax.httpComplete;
+    await clock.tick(400);
+
+    await open(modax);
+    expect(modax.open).equals(true);
+    await modax.httpComplete;
+    await clock.tick(400);
+    await waitFor(100);
+
+    // now we should have two buttons, 'Save Everything' and 'Cancel'
+    buttons = getButtons(modax);
+    expect(buttons.length).equals(2);
+
+    // secondary should be Cancel, not Ok
+    const secondary = getButtons(modax, 'secondary')[0] as Button;
+    expect(secondary.name).equals('Cancel');
   });
 
   it('closes after redirect', async () => {

@@ -95,6 +95,7 @@ export const forPages = async (select: Select, pages = 1) => {
   for (const _ in range(0, pages * 3 + 1)) {
     await select.httpComplete;
     await select.updateComplete;
+    await waitFor(100);
   }
 };
 
