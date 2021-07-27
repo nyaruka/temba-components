@@ -52,7 +52,9 @@ export class ContactList extends TembaList {
             >
               <div style="text-align:center;padding:4px;padding-bottom:2px;">
                 ${timeSince(
-                  new Date(contact.ticket.closed_on || contact.last_seen_on)
+                  new Date(
+                    contact.ticket.closed_on || contact.ticket.last_activity_on
+                  )
                 )}
               </div>
               <div style="font-size:0.7em;">
