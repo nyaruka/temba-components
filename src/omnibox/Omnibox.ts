@@ -173,19 +173,16 @@ export class Omnibox extends RapidElement {
   }
 
   public render(): TemplateResult {
-    return html` <temba-field
-      name=${this.name}
-      .label=${this.label}
-      .helpText=${this.helpText}
-      .errors=${this.errors}
-      .widgetOnly=${this.widgetOnly}
-      ?disabled=${this.disabled}
-    >
+    return html`
       <temba-select
         name=${this.name}
         endpoint=${this.getEndpoint()}
         placeholder=${this.placeholder}
         queryParam="search"
+        .label=${this.label}
+        .helpText=${this.helpText}
+        .widgetOnly=${this.widgetOnly}
+        ?disabled=${this.disabled}
         .errors=${this.errors}
         .values=${this.value}
         .renderOption=${this.renderOption.bind(this)}
@@ -196,6 +193,6 @@ export class Omnibox extends RapidElement {
         searchOnFocus
         multi
       ></temba-select>
-    </temba-field>`;
+    `;
   }
 }
