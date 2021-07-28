@@ -998,7 +998,10 @@ export class Select extends FormElement {
           }
           this.staticOptions.push(option);
 
-          if (child.getAttribute('selected') !== null) {
+          if (
+            child.getAttribute('selected') !== null ||
+            this.getValue(option) == this.value
+          ) {
             if (this.getAttribute('multi') !== null) {
               this.addValue(option);
             } else {
