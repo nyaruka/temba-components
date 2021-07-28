@@ -150,6 +150,14 @@ export class ContactSearch extends FormElement {
       if (response.status === 200) {
         this.summary = response.json as SummaryResponse;
         this.fetching = false;
+
+        console.log(this.summary);
+        if (this.summary.error) {
+          this.errors = [this.summary.error];
+        } else {
+          this.errors = [];
+        }
+        this.requestUpdate('errors');
       }
     });
   }
@@ -219,12 +227,6 @@ export class ContactSearch extends FormElement {
             </tr>
           </table>
         `;
-      } else {
-        summary = html`
-          <div class="error">
-            <temba-alert level="error">${this.summary.error}</temba-alert>
-          </div>
-        `;
       }
     }
 
@@ -232,7 +234,10 @@ export class ContactSearch extends FormElement {
 
     return html`
       <temba-textinput
-        ?error=${!!(this.summary && this.summary.error)}
+        .label=${this.label}
+        .helpText=${this.helpText}
+        .widgetOnly=${this.widgetOnly}
+        .errors=${this.errors}
         name=${this.name}
         .inputRoot=${this}
         @input=${this.handleQueryChange}
