@@ -255,7 +255,7 @@ export class ContactChat extends RapidElement {
 
   private handleTicketAssigned() {
     this.refresh();
-    this.getContactHistory().checkForAgentTakeEvent(this.agent);
+    this.getContactHistory().checkForAgentAssignmentEvent(this.agent);
   }
 
   private handleDetailSlider(): void {

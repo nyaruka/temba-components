@@ -825,7 +825,7 @@ export class ContactHistory extends RapidElement {
       });
   }
 
-  public checkForAgentTakeEvent(agent: number) {
+  public checkForAgentAssignmentEvent(agent: number) {
     if (this.currentTicket) {
       this.httpComplete = getAssets(
         `/api/v2/tickets.json?ticket=${this.currentTicket.uuid}`
@@ -834,7 +834,11 @@ export class ContactHistory extends RapidElement {
           const ticket = assets[0] as Ticket;
           if (ticket.assignee && ticket.assignee.id === agent) {
             this.fireCustomEvent(CustomEventType.ContentChanged, {
-              ticket: { uuid: this.currentTicket.uuid, took: true },
+              ticket: { uuid: this.currentTicket.uuid, assigned: 'self' },
+            });
+          } else {
+            this.fireCustomEvent(CustomEventType.ContentChanged, {
+              ticket: { uuid: this.currentTicket.uuid, assigned: 'other' },
             });
           }
         }
