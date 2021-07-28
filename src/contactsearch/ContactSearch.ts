@@ -151,7 +151,6 @@ export class ContactSearch extends FormElement {
         this.summary = response.json as SummaryResponse;
         this.fetching = false;
 
-        console.log(this.summary);
         if (this.summary.error) {
           this.errors = [this.summary.error];
         } else {
