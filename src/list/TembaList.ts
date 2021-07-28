@@ -19,7 +19,7 @@ export class TembaList extends RapidElement {
   @property({ type: String })
   endpoint: string;
 
-  @property({ type: Object, attribute: false })
+  @property({ type: String })
   nextSelection: any;
 
   @property({ type: Number })
@@ -298,6 +298,8 @@ export class TembaList extends RapidElement {
       @temba-selection=${this.handleSelection.bind(this)}
       .options=${this.items}
       .cursorIndex=${this.cursorIndex}
-    ></temba-options>`;
+    >
+      <slot></slot>
+    </temba-options>`;
   }
 }

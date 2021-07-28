@@ -104,7 +104,6 @@ export class Options extends RapidElement {
 
       :host([block]) .options {
         max-height: inherit;
-        height: 100%;
       }
 
       temba-loading {
