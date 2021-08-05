@@ -207,12 +207,12 @@ export const getEventStyles = () => {
 
     .webhook_called {
       fill: #e68628;
+      word-break: break-all;
     }
 
     .webhook_called .failed {
       fill: var(--color-error);
       color: var(--color-error);
-      word-break: break-all;
     }
 
     .input_labels_added,
