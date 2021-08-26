@@ -1,0 +1,20 @@
+{
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "email": "bob@nyaruka.com",
+            "first_name": "Bob",
+            "last_name": "McFlow",
+            "role": "administrator",
+            "created_on": "2020-08-21T22:11:09.376180Z"
+        },
+        {
+            "email": "jim@nyaruka.com",
+            "first_name": "Jim",
+            "last_name": "O'Tickets",
+            "role": "agent",
+            "created_on": "2020-08-21T22:11:09.376180Z"
+        }
+    ]
+}

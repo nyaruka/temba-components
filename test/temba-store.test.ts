@@ -36,4 +36,12 @@ describe('temba-store', () => {
 
     assert.equal(store.getKeyedAssets().fields.length, 5);
   });
+
+  it('users', async () => {
+    const store: Store = await createStore(
+      "<temba-store users='/test-assets/store/users.json'></temba-store>"
+    );
+    assert.equal(store.getUser('bob@nyaruka.com').first_name, 'Bob');
+    assert.equal(store.getUser('jim@nyaruka.com').first_name, 'Jim');
+  });
 });

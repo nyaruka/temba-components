@@ -6,6 +6,7 @@ import {
   CompletionOption,
   CompletionSchema,
   KeyedAssets,
+  User,
 } from '../interfaces';
 
 export class Store extends LitElement {
@@ -21,6 +22,9 @@ export class Store extends LitElement {
   @property({ type: String, attribute: 'globals' })
   globalsEndpoint: string;
 
+  @property({ type: String, attribute: 'users' })
+  usersEndpoint: string;
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -32,6 +36,7 @@ export class Store extends LitElement {
 
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
+  private users: { [email: string]: User } = {};
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;
@@ -77,6 +82,18 @@ export class Store extends LitElement {
       );
     }
 
+    if (this.usersEndpoint) {
+      fetches.push(
+        getAssets(this.usersEndpoint).then((assets: any[]) => {
+          this.keyedAssets['users'] = [];
+          assets.forEach((user: any) => {
+            this.keyedAssets['users'].push(user.email);
+            this.users[user.email] = user;
+          });
+        })
+      );
+    }
+
     this.httpComplete = Promise.all(fetches);
   }
 
@@ -110,5 +127,9 @@ export class Store extends LitElement {
       return true;
     }
     return false;
+  }
+
+  public getUser(email: string): User {
+    return this.users[email];
   }
 }
