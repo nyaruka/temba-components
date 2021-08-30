@@ -1,0 +1,17 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": "tasks",
+      "name": "Tasks",
+      "icon": "coffee",
+      "endpoint": "/test-assets/list/menu-tasks.json"
+    },
+    {
+      "id": "calendar",
+      "name": "Schedule",
+      "icon": "calendar"
+    }
+  ]
+}

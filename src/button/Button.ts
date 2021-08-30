@@ -7,7 +7,15 @@ export class Button extends LitElement {
       :host {
         display: inline-block;
         font-family: var(--font-family);
-        font-weight: 300;
+        font-weight: 400;
+      }
+
+      .v-2.button-container {
+        background: var(--button-bg);
+        background-image: var(--button-bg-img);
+        color: var(--button-text);
+        box-shadow: var(--button-shadow);
+        transition: all 100ms ease-in;
       }
 
       .button-container {
@@ -16,10 +24,13 @@ export class Button extends LitElement {
         display: block;
         border-radius: var(--curvature);
         outline: none;
-        transition: background ease-in 100ms;
+        transition: background ease-in 200ms;
         user-select: none;
+        -webkit-user-select: none;
         text-align: center;
-        font-weight: 400;
+      }
+
+      .button-name {
       }
 
       .secondary-button:hover .button-mask {
@@ -27,7 +38,7 @@ export class Button extends LitElement {
       }
 
       .button-mask:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0.05);
       }
 
       .button-container:focus {
@@ -35,21 +46,20 @@ export class Button extends LitElement {
         margin: 0;
       }
 
-      .button-container:focus .button-mask {
-        background: rgb(0, 0, 0, 0.1);
-        box-shadow: 0 0 0px 1px var(--color-focus);
+      .button-container:focus {
+        box-shadow: var(--widget-box-shadow-focused);
       }
 
       .button-container.secondary-button:focus .button-mask {
         background: transparent;
-        box-shadow: 0 0 0px 1px var(--color-focus);
       }
 
       .button-mask {
         padding: var(--button-y) var(--button-x);
         border-radius: var(--curvature);
         border: 1px solid transparent;
-        transition: all ease-in 250ms;
+        transition: all ease-in 200ms;
+        background: var(--button-mask);
       }
 
       .button-container.disabled-button {
@@ -68,7 +78,7 @@ export class Button extends LitElement {
       }
 
       .button-container.active-button .button-mask {
-        box-shadow: inset 0 0 4px 2px rgb(0, 0, 0, 0.1);
+        // box-shadow: inset 0 0 4px 2px rgb(0, 0, 0, 0.1);
       }
 
       .secondary-button.active-button {
@@ -88,6 +98,11 @@ export class Button extends LitElement {
       .primary-button {
         background: var(--color-button-primary);
         color: var(--color-button-primary-text);
+      }
+
+      .light-button {
+        background: var(--color-button-light);
+        color: var(--color-button-light-text);
       }
 
       .attention-button {
@@ -134,6 +149,9 @@ export class Button extends LitElement {
   @property({ type: Boolean })
   attention: boolean;
 
+  @property({ type: Number })
+  v = 1;
+
   @property({ type: Boolean })
   destructive: boolean;
 
@@ -175,11 +193,13 @@ export class Button extends LitElement {
   private handleMouseDown(): void {
     if (!this.disabled && !this.submitting) {
       this.active = true;
+      this.classList.add('active');
     }
   }
 
   private handleMouseUp(): void {
     this.active = false;
+    this.classList.remove('active');
   }
 
   public render(): TemplateResult {
@@ -192,10 +212,14 @@ export class Button extends LitElement {
     return html`
       <div
         class="button-container 
+          v-${this.v}
           ${getClasses({
           'primary-button':
             this.primary ||
-            (!this.primary && !this.secondary && !this.attention),
+            (!this.primary &&
+              !this.secondary &&
+              !this.attention &&
+              this.v == 1),
           'secondary-button': this.secondary,
           'disabled-button': this.disabled,
           'active-button': this.active,

@@ -123,10 +123,15 @@ export class TembaList extends RapidElement {
     if (changedProperties.has('cursorIndex')) {
       if (this.cursorIndex > -1) {
         this.selected = this.items[this.cursorIndex];
-        const evt = new Event('change', { bubbles: true });
-        this.dispatchEvent(evt);
+        this.handleSelected(this.selected);
       }
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public handleSelected(selected: any) {
+    const evt = new Event('change', { bubbles: true });
+    this.dispatchEvent(evt);
   }
 
   private getValue(obj: any): any {
@@ -284,6 +289,9 @@ export class TembaList extends RapidElement {
 
     this.selected = selected;
     this.cursorIndex = index;
+
+    event.stopPropagation();
+    event.preventDefault();
   }
 
   public render(): TemplateResult {

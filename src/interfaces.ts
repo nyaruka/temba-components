@@ -170,4 +170,5 @@ export enum CustomEventType {
   ContentChanged = 'temba-content-changed',
   ContextChanged = 'temba-context-changed',
   Submitted = 'temba-submitted',
+  Redirected = 'temba-redirected',
 }

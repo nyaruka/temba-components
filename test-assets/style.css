@@ -78,6 +78,8 @@ html {
   --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
   --color-button-primary: var(--color-primary-dark);
   --color-button-primary-text: var(--color-text-light);
+  --color-button-light: rgb(246, 248, 250);
+  --color-button-light-text: rgb(36, 41, 47);
   --color-button-secondary: var(--color-secondary-light);
   --color-button-secondary-text: var(--color-text-dark);
 
@@ -94,9 +96,11 @@ html {
   --color-nav-unselected: #fff;
   --color-nav-selected-bg: #fff;
   --color-nav-selected-text: var(--color-primary-dark);
+  --color-info: rgb(246, 248, 250);
+  --color-info-border: rgb(208, 215, 222);
 
-  --color-info: #c0d9eb;
-  --color-warning: #fff6c0;
+  --color-warning: rgb(255, 253, 218);
+  --color-warning-border: rgb(251, 246, 176);
   --color-error: rgb(var(--error-rgb));
   --font-size: 14px;
   --button-font-size: 1.125rem;
@@ -126,7 +130,41 @@ html {
   
   --button-y: 6px;  
   --button-x: 14px;
+
+  --menu-padding: 1em;
 }
+
+temba-button {
+  --button-bg: var(--color-primary-dark);
+  --button-text: var(--color-text-light);
+  --button-border: none;
+  --button-shadow: var(--widget-box-shadow);
+}
+
+temba-button:hover {
+  --button-bg-img: linear-gradient(to bottom, rgba(var(--primary-rgb),.1), transparent, transparent);
+}
+
+temba-button.active {
+  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.05));
+}
+
+temba-button.light {
+  --button-bg: #fff;
+  --button-text: #999;
+  --button-border: none;
+  --button-shadow: var(--widget-box-shadow);
+
+}
+
+temba-button.light:hover {
+  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.001));
+}
+
+temba-button.light.active {
+  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.02));
+}
+
 
 temba-select:focus {
   outline: none;

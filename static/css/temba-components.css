@@ -71,6 +71,8 @@ html input {
     --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
     --color-button-primary: var(--color-primary-dark);
     --color-button-primary-text: var(--color-text-light);
+    --color-button-light: rgb(246, 248, 250);
+    --color-button-light-text: rgb(36, 41, 47);
     --color-button-secondary: var(--color-secondary-light);
     --color-button-secondary-text: var(--color-text-dark);
   
@@ -88,8 +90,12 @@ html input {
     --color-nav-selected-bg: #fff;
     --color-nav-selected-text: var(--color-primary-dark);
   
-    --color-info: #c0d9eb;
-    --color-warning: #fff6c0;
+    --color-info: rgb(246, 248, 250);
+    --color-info-border: rgb(208, 215, 222);
+  
+    --color-warning: rgb(255, 253, 218);
+    --color-warning-border: rgb(251, 246, 176);
+
     --color-error: rgb(var(--error-rgb));
 
     --icon-color: var(--text-color);
@@ -113,6 +119,8 @@ html input {
     --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     
     --label-size: 14px;
+
+    --menu-padding: 1em;
   
     font-size: var(--font-size);
     font-weight: 300;
@@ -120,7 +128,43 @@ html input {
   
     --button-y: 6px;  
     --button-x: 14px;
+
+    --menu-padding: 1em;
+    --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
   }
+
+  temba-button {
+    --button-bg: var(--color-primary-dark);
+    --button-text: var(--color-text-light);
+    --button-border: none;
+    --button-shadow: var(--widget-box-shadow);
+  }
+  
+  temba-button:hover {
+    --button-bg-img: linear-gradient(to bottom, rgba(var(--primary-rgb),.1), transparent, transparent);
+  }
+  
+  temba-button.active {
+    --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.05));
+  }
+  
+  temba-button.light {
+    --button-bg: #fff;
+    --button-text: #999;
+    --button-border: none;
+    --button-shadow: var(--widget-box-shadow);
+  
+  }
+  
+  temba-button.light:hover {
+    --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.001));
+  }
+  
+  temba-button.light.active {
+    --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.02));
+  }
+  
   
   temba-select:focus {
     outline: none;

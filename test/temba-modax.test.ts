@@ -147,10 +147,6 @@ describe('temba-modax', () => {
       getModaxHTML('/test-assets/modax/form.html')
     );
 
-    // we don't want to hijack the browser during our tests
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    modax.updateLocation = () => {};
-
     await open(modax);
     const primary = getButtons(modax, 'primary')[0] as Button;
     expect(primary.name).equals('Save Everything');

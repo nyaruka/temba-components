@@ -2,6 +2,9 @@ import { property, LitElement, TemplateResult, html, css } from 'lit-element';
 
 import { getClasses } from '../utils';
 
+// for cache busting, increase whenever the icon set changes
+const ICON_VERSION = 2;
+
 export class VectorIcon extends LitElement {
   @property({ type: String })
   name: string;
@@ -171,7 +174,8 @@ export class VectorIcon extends LitElement {
           })}"
         >
           <use
-            href="/sitestatic/icons/symbol-defs.svg?#icon-${this.lastName ||
+            href="/sitestatic/icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${this
+              .lastName ||
             this.name ||
             this.id}"
           />
