@@ -78,7 +78,6 @@ export class Button extends LitElement {
       }
 
       .button-container.active-button .button-mask {
-        // box-shadow: inset 0 0 4px 2px rgb(0, 0, 0, 0.1);
       }
 
       .secondary-button.active-button {

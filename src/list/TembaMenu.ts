@@ -74,8 +74,6 @@ export class TembaMenu extends RapidElement {
       .level {
         display: flex;
         flex-direction: column;
-        // margin-right: 0.5em;
-        // border: 1px solid red;
       }
 
       .level.hidden {
@@ -83,12 +81,9 @@ export class TembaMenu extends RapidElement {
       }
 
       .submenu {
-        // transition: all 200ms ease-in-out;
       }
 
       .level-0 > .item {
-        // transition: all 60ms linear;
-        // background: rgb(247, 247, 247);
         background: var(--color-primary-dark);
         --icon-color: #fff;
         font-size: 1em;
@@ -96,12 +91,10 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .top {
         padding-top: var(--menu-padding);
-        // background: rgb(247, 247, 247);
         background: var(--color-primary-dark);
       }
 
       .level-0 > .empty {
-        // background: rgb(247, 247, 247);
         background: var(--color-primary-dark);
         align-self: stretch;
         flex-grow: 1;
@@ -109,7 +102,6 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .bottom {
         height: 1em;
-        // background: rgb(247, 247, 247);
         background: var(--color-primary-dark);
       }
 
@@ -118,14 +110,10 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0.expanding {
-        // transform: scale(1.05);
       }
 
       .level-0.expanded {
         background: inherit;
-        // border-radius: var(--curvature);
-        // box-shadow: 0 0px 2px 0px rgba(0, 0, 0, 0.1),
-        // 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       }
 
       .level-0 > .item.selected {
@@ -139,7 +127,6 @@ export class TembaMenu extends RapidElement {
 
       .level-0 {
         padding: 0px;
-        // margin-right: 1em;
       }
 
       .item {
@@ -215,12 +202,6 @@ export class TembaMenu extends RapidElement {
       }
 
       .item.selected.inline {
-        // background: #f9f9f9;
-        // color: rgba(0, 0, 0, 0.7);
-        // --icon-color: rgba(0, 0, 0, 0.7);
-        // box-shadow: var(--shadow);
-        // display: flex;
-        // flex-direction: column;
       }
     `;
   }
