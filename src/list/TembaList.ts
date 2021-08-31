@@ -63,6 +63,9 @@ export class TembaList extends RapidElement {
   clearRefreshTimeout: any;
   pending: AbortController[] = [];
 
+  // used for testing only
+  preserve: boolean;
+
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
 
@@ -103,9 +106,12 @@ export class TembaList extends RapidElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('endpoint') && this.endpoint) {
-      this.reset();
+      // if our tests aren't preserving our properties, reset
+      if (!this.preserve) {
+        this.reset();
+        this.loading = true;
+      }
 
-      this.loading = true;
       this.httpComplete = this.fetchItems();
     }
 
@@ -238,10 +244,20 @@ export class TembaList extends RapidElement {
         return this.getValue(item) === this.getValue(this.selected);
       });
 
+      // old selection is in the new fetch
       if (index > -1) {
         this.cursorIndex = index;
-      } else if (this.cursorIndex === -1) {
-        this.cursorIndex = 0;
+      }
+      // old selection is missing from the new fetch
+      else {
+        // if our index didn't change, our item still did, fire change
+        if (this.cursorIndex === 0) {
+          this.requestUpdate('cursorIndex');
+        }
+        // otherwise select the first item
+        else {
+          this.cursorIndex = 0;
+        }
       }
     }
 

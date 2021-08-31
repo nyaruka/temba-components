@@ -89,9 +89,9 @@ html input {
     --color-nav-unselected: #fff;
     --color-nav-selected-bg: #fff;
     --color-nav-selected-text: var(--color-primary-dark);
-  
-    --color-info: rgb(246, 248, 250);
-    --color-info-border: rgb(208, 215, 222);
+    
+    --color-info: rgb(238, 246, 255);
+    --color-info-border: rgb(74, 163, 223);
   
     --color-warning: rgb(255, 253, 218);
     --color-warning-border: rgb(251, 246, 176);
