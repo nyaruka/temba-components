@@ -43,10 +43,31 @@ describe('temba-list', () => {
     list.addEventListener('change', changeEvent);
     list.cursorIndex = 1;
 
-    // let your event fire
+    // let our event fire
     await waitFor(0);
 
     assert(changeEvent.called, 'change event not fired');
     await assertScreenshot('list/items-selected', getClip(list));
+  });
+
+  it('fires change when first element changes after fetch', async () => {
+    const list: TembaList = await getList({
+      endpoint: '/test-assets/list/temba-list.json',
+    });
+
+    // spy on change event
+    const changeEvent = sinon.spy();
+    list.addEventListener('change', changeEvent);
+
+    // don't let our list reset on endpoint change
+    list.preserve = true;
+    list.endpoint = '/test-assets/list/temba-list-shorter.json';
+
+    // refresh our endpoint and wait for event to fire
+    await waitFor(0);
+    await list.httpComplete;
+
+    assert(changeEvent.called, 'change event not fired');
+    await assertScreenshot('list/items-updated', getClip(list));
   });
 });
