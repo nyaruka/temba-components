@@ -59,17 +59,15 @@ describe('temba-list', () => {
     const changeEvent = sinon.spy();
     list.addEventListener('change', changeEvent);
 
+    // don't let our list reset on endpoint change
     list.preserve = true;
     list.endpoint = '/test-assets/list/temba-list-shorter.json';
 
-    // refersh our endpoint
+    // refresh our endpoint and wait for event to fire
     await waitFor(0);
     await list.httpComplete;
 
-    // let our event fire
-    await waitFor(0);
     assert(changeEvent.called, 'change event not fired');
-
     await assertScreenshot('list/items-updated', getClip(list));
   });
 });
