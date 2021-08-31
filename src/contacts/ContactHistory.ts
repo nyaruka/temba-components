@@ -143,8 +143,6 @@ export class ContactHistory extends RapidElement {
         border-top-left-radius: var(--curvature);
         overflow: hidden;
         background: rgba(240, 240, 240, 0.95);
-        margin-right: -1.5em;
-        padding-right: 1.5em;
         box-shadow: 0px 3px 3px 0px rgba(0, 0, 0, 0.15);
       }
 

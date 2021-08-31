@@ -19,8 +19,8 @@ export class TextInput extends FormElement {
         display: flex;
         flex-direction: row;
         align-items: stretch;
-        box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
-          0 1px 2px 0 rgba(0, 0, 0, 0.02);
+
+        box-shadow: var(--widget-box-shadow);
 
         caret-color: var(--input-caret);
       }

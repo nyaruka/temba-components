@@ -106,7 +106,7 @@ export class FormField extends LitElement {
 
     return html`
       <div class="field ${this.disabled ? 'disabled' : ''}">
-        ${!!this.name && !this.hideLabel
+        ${!!this.name && !this.hideLabel && !!this.label
           ? html`
               <label class="control-label" for="${this.name}"
                 >${this.label}</label

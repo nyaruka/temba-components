@@ -23,20 +23,36 @@ describe('temba-menu', () => {
   it('can be created', async () => {
     const list: TembaMenu = await getMenu();
     assert.instanceOf(list, TembaMenu);
-    expect(list.items.length).to.equal(0);
+    expect(list.root).is.undefined;
   });
 
   it('renders with endpoint', async () => {
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/list/menu-counts.json',
+      endpoint: '/test-assets/list/menu-root.json',
     });
-    expect(menu.items.length).to.equal(3);
-    await assertScreenshot('list/menu-counts', getClip(menu));
+
+    expect(menu.root.items.length).to.equal(2);
+    await assertScreenshot('list/menu-root', getClip(menu));
   });
 
-  it('supports collapse', async () => {
+  it('supports submenu', async () => {
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/list/menu-counts.json',
+      endpoint: '/test-assets/list/menu-root.json',
+    });
+
+    // click our first item
+    menu.getDiv('#menu-tasks').click();
+    await menu.httpComplete;
+
+    expect(menu.root.items[0].items.length).to.equal(3);
+
+    await assertScreenshot('list/menu-submenu', getClip(menu));
+  });
+
+  // TODO: general menu doesn't support collapse yet
+  xit('supports collapse', async () => {
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/list/menu-root.json',
       collapsible: true,
     });
 

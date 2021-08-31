@@ -40,6 +40,7 @@ export class ContactChat extends RapidElement {
         display: flex;
         flex-direction: column;
         z-index: 3;
+        border-bottom-left-radius: var(--curvature);
       }
 
       .closed-footer {
@@ -109,8 +110,8 @@ export class ContactChat extends RapidElement {
         transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05),
           opacity 600ms ease-in-out 200ms;
         z-index: 5;
-        margin-right: -2.5em;
-        border-radius: 10px;
+        margin-right: -1.5em;
+        border-top-right-radius: 6px;
       }
 
       temba-contact-details.hidden {

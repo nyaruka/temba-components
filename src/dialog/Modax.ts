@@ -241,10 +241,6 @@ export class Modax extends RapidElement {
     );
   }
 
-  public updateLocation(location: string): void {
-    this.ownerDocument.location.href = location;
-  }
-
   public submit(): void {
     this.submitting = true;
     const form = this.shadowRoot.querySelector('form');
@@ -274,7 +270,9 @@ export class Modax extends RapidElement {
                 this.fireCustomEvent(CustomEventType.Submitted);
               }, 0);
             } else {
-              this.updateLocation(redirect);
+              this.fireCustomEvent(CustomEventType.Redirected, {
+                url: redirect,
+              });
               this.open = false;
             }
           } else {
