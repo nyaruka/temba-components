@@ -392,7 +392,6 @@ export class TembaMenu extends RapidElement {
   }
 
   public setSelection(path: string[]) {
-    console.log('Setting selection', path);
     this.pending = [...path];
     this.selection = [];
     if (this.root) {
