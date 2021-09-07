@@ -38,6 +38,7 @@ export class Options extends RapidElement {
         height: 100%;
         z-index: 9000;
         visibility: visible;
+        overflow-y: auto;
       }
 
       :host([collapsed]) temba-icon {
@@ -103,7 +104,7 @@ export class Options extends RapidElement {
       }
 
       :host([block]) .options {
-        max-height: inherit;
+        overflow-y: initial;
       }
 
       temba-loading {
