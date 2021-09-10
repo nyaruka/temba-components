@@ -74,7 +74,7 @@ describe('temba-contact-history', () => {
     // we should have scrolled to the bottom
     const events = history.shadowRoot.querySelector('.events');
     const top = events.scrollHeight - events.getBoundingClientRect().height;
-    expect(top).to.equal(174);
+    expect(top).to.equal(308);
 
     // make sure we actually scrolled to there
     expect(events.scrollTop).to.equal(top);
@@ -89,7 +89,8 @@ describe('temba-contact-history', () => {
       })
     );
 
-    const groups = [2, 6];
+    // our groups with collapsed events
+    const groups = [3, 11];
     for (const idx of groups) {
       const group = history.shadowRoot.querySelector(
         `[data-group-index='${idx}']`

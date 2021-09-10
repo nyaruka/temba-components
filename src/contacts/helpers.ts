@@ -76,6 +76,10 @@ export const fetchContactHistory = (
 };
 
 export const getDisplayName = (user: User) => {
+  if (!user) {
+    return 'Somebody';
+  }
+
   if (user.first_name && user.last_name) {
     return `${user.first_name} ${user.last_name}`;
   }
