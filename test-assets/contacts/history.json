@@ -6,6 +6,54 @@
   "start_date": "2019-09-22",
   "events": [
     {
+      "type": "ticket_reopened",
+      "note": null,
+      "topic": null,
+      "assignee": null,
+      "ticket": {
+        "uuid": "22e478f2-17e8-42d5-ab28-d1e2e37e2df4",
+        "opened_on": "2021-09-10T17:21:47.763270+00:00",
+        "closed_on": null,
+        "topic": null,
+        "status": "O",
+        "subject": "Open ticket",
+        "body": "",
+        "ticketer": {
+          "uuid": "79101e60-60da-4893-8b7b-b865ebe50e21",
+          "name": "Mailgun"
+        }
+      },
+      "created_on": "2021-03-31T00:30:00.585471+00:00",
+      "created_by": null
+    },
+    {
+      "type": "ticket_closed",
+      "note": null,
+      "topic": null,
+      "assignee": null,
+      "ticket": {
+        "uuid": "22e478f2-17e8-42d5-ab28-d1e2e37e2df4",
+        "opened_on": "2021-09-10T17:21:47.763270+00:00",
+        "closed_on": null,
+        "topic": null,
+        "status": "O",
+        "subject": "Open ticket",
+        "body": "",
+        "ticketer": {
+          "uuid": "79101e60-60da-4893-8b7b-b865ebe50e21",
+          "name": "Mailgun"
+        }
+      },
+      "created_on": "2021-03-31T00:30:00.585471+00:00",
+      "created_by": {
+        "id": 3,
+        "first_name": "Enrique",
+        "last_name": "Newcomers",
+        "email": "admin1@nyaruka.com"
+      }
+    },
+
+    {
       "type": "msg_created",
       "created_on": "2021-03-31T00:30:00.585471+00:00",
       "msg": {
