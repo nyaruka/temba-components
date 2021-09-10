@@ -186,7 +186,7 @@ export class TembaList extends RapidElement {
 
     let endpoint = this.endpoint;
     let pagesToFetch = this.pages || 1;
-    let pages = this.pages | 0;
+    let pages = 0;
     let nextPage = null;
 
     let fetchedItems: any[] = [];
@@ -209,7 +209,7 @@ export class TembaList extends RapidElement {
 
         // save our next pages
         nextPage = page.next;
-        endpoint = this.nextPage;
+        endpoint = nextPage;
         pagesToFetch--;
         pages++;
       } catch (error) {
@@ -220,7 +220,6 @@ export class TembaList extends RapidElement {
 
       this.nextPage = nextPage;
     }
-
     this.pages = pages;
 
     const topItem = fetchedItems[0];
