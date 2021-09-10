@@ -81,6 +81,14 @@ export class Options extends RapidElement {
         user-select: none;
         -webkit-user-select: none;
         -ms-user-select: none;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        -ms-word-break: break-all;
+        word-break: break-word;
+        -ms-hyphens: auto;
+        -moz-hyphens: auto;
+        -webkit-hyphens: auto;
+        hyphens: auto;
       }
 
       .option.focused {
@@ -232,7 +240,7 @@ export class Options extends RapidElement {
       ) as HTMLDivElement;
 
       if (focusedOption) {
-        const scrollBox = this.shadowRoot.querySelector('.options');
+        const scrollBox = this.shadowRoot.querySelector('.options-container');
         const scrollBoxRect = scrollBox.getBoundingClientRect();
         const scrollBoxHeight = scrollBoxRect.height;
         const focusedEleHeight = focusedOption.getBoundingClientRect().height;
@@ -401,7 +409,7 @@ export class Options extends RapidElement {
     const scrollbox = evt.target as HTMLDivElement;
 
     // scroll height has changed, enable scroll trigger
-    if (scrollbox.scrollHeight != this.scrollHeight) {
+    if (scrollbox.scrollHeight > this.scrollHeight) {
       this.scrollHeight = scrollbox.scrollHeight;
       this.triggerScroll = true;
     }
@@ -522,12 +530,13 @@ export class Options extends RapidElement {
 
     const options = this.options || [];
     return html`
-      <div id="wrapper" class=${classes} style=${styleMap(containerStyle)}>
-        <div
-          @scroll=${throttle(this.handleInnerScroll, 100)}
-          class="${classesInner}"
-          style=${styleMap(optionsStyle)}
-        >
+      <div
+        id="wrapper"
+        @scroll=${throttle(this.handleInnerScroll, 100)}
+        class=${classes}
+        style=${styleMap(containerStyle)}
+      >
+        <div class="${classesInner}" style=${styleMap(optionsStyle)}>
           ${this.loading
             ? html`<div
                 style="padding: 1em;
