@@ -4,5 +4,7 @@ import './temba-modules';
 // leaflet-map doesn't work in dev mode
 import { AliasEditor } from './src/aliaseditor/AliasEditor';
 import { LeafletMap } from './src/leafletmap/LeafletMap';
-window.customElements.define('leaflet-map', LeafletMap);
-window.customElements.define('alias-editor', AliasEditor);
+import { addCustomElement } from './temba-modules';
+
+addCustomElement('leaflet-map', LeafletMap);
+addCustomElement('alias-editor', AliasEditor);

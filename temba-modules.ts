@@ -22,27 +22,33 @@ import { Omnibox } from './src/omnibox/Omnibox';
 import { Tip } from './src/tip/Tip';
 import { TembaMenu } from './src/list/TembaMenu';
 
-window.customElements.define('temba-alert', Alert);
-window.customElements.define('temba-store', Store);
-window.customElements.define('temba-textinput', TextInput);
-window.customElements.define('temba-completion', Completion);
-window.customElements.define('temba-checkbox', Checkbox);
-window.customElements.define('temba-select', Select);
-window.customElements.define('temba-options', Options);
-window.customElements.define('temba-loading', Loading);
-window.customElements.define('temba-button', Button);
-window.customElements.define('temba-omnibox', Omnibox);
-window.customElements.define('temba-tip', Tip);
+export function addCustomElement(name: string, comp: any) {
+  if (!window.customElements.get(name)) {
+    window.customElements.define(name, comp);
+  }
+}
 
-window.customElements.define('temba-field', FormField);
-window.customElements.define('temba-dialog', Dialog);
-window.customElements.define('temba-modax', Modax);
-window.customElements.define('temba-charcount', CharCount);
-window.customElements.define('temba-contact-history', ContactHistory);
-window.customElements.define('temba-contact-chat', ContactChat);
-window.customElements.define('temba-contact-details', ContactDetails);
-window.customElements.define('temba-contacts', ContactList);
-window.customElements.define('temba-list', TembaList);
-window.customElements.define('temba-menu', TembaMenu);
-window.customElements.define('temba-contact-search', ContactSearch);
-window.customElements.define('temba-icon', VectorIcon);
+addCustomElement('temba-alert', Alert);
+addCustomElement('temba-store', Store);
+addCustomElement('temba-textinput', TextInput);
+addCustomElement('temba-completion', Completion);
+addCustomElement('temba-checkbox', Checkbox);
+addCustomElement('temba-select', Select);
+addCustomElement('temba-options', Options);
+addCustomElement('temba-loading', Loading);
+addCustomElement('temba-button', Button);
+addCustomElement('temba-omnibox', Omnibox);
+addCustomElement('temba-tip', Tip);
+
+addCustomElement('temba-field', FormField);
+addCustomElement('temba-dialog', Dialog);
+addCustomElement('temba-modax', Modax);
+addCustomElement('temba-charcount', CharCount);
+addCustomElement('temba-contact-history', ContactHistory);
+addCustomElement('temba-contact-chat', ContactChat);
+addCustomElement('temba-contact-details', ContactDetails);
+addCustomElement('temba-contacts', ContactList);
+addCustomElement('temba-list', TembaList);
+addCustomElement('temba-menu', TembaMenu);
+addCustomElement('temba-contact-search', ContactSearch);
+addCustomElement('temba-icon', VectorIcon);
