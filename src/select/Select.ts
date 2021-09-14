@@ -399,7 +399,8 @@ export class Select extends FormElement {
 
   @property({ attribute: false })
   isMatch: (option: any, q: string) => boolean = (option: any, q: string) => {
-    return this.getName(option).toLowerCase().indexOf(q) > -1;
+    const name = this.getName(option) || '';
+    return name.toLowerCase().indexOf(q) > -1;
   };
 
   @property({ attribute: false })
@@ -1012,10 +1013,21 @@ export class Select extends FormElement {
       }
 
       if (this.values.length === 0 && !this.placeholder) {
-        if (this.getAttribute('multi') !== null) {
-          this.addValue(this.staticOptions[0]);
+        if (this.staticOptions.length == 0 && this.endpoint) {
+          // see if we need to auto select the first item but need to fetch it
+          fetchResults(this.endpoint).then((results: any) => {
+            if (results.length > 0) {
+              this.setValue(results[0]);
+              this.fireEvent('change');
+            }
+          });
         } else {
-          this.setValue(this.staticOptions[0]);
+          if (this.getAttribute('multi') !== null) {
+            this.addValue(this.staticOptions[0]);
+          } else {
+            this.setValue(this.staticOptions[0]);
+          }
+          this.fireEvent('change');
         }
       }
 
