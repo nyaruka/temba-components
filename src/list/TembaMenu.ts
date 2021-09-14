@@ -215,6 +215,9 @@ export class TembaMenu extends RapidElement {
   @property({ type: Boolean })
   collapsed: boolean;
 
+  @property({ type: Boolean })
+  wait: boolean;
+
   @property({ type: String })
   endpoint: string;
 
@@ -254,7 +257,10 @@ export class TembaMenu extends RapidElement {
         level: -1,
         endpoint: this.endpoint,
       };
-      this.loadItems(this.root);
+
+      if (!this.wait) {
+        this.loadItems(this.root);
+      }
     }
   }
 
@@ -303,7 +309,6 @@ export class TembaMenu extends RapidElement {
           item.items = items;
           item.loading = false;
           this.requestUpdate('root');
-
           if (this.pending && this.pending.length > 0) {
             // auto select the next pending click
             const nextId = this.pending.splice(0, 1)[0];
@@ -358,11 +363,25 @@ export class TembaMenu extends RapidElement {
 
       if (menuItem.endpoint) {
         this.loadItems(menuItem);
+        this.dispatchEvent(new Event('change'));
       } else {
+        this.dispatchEvent(new Event('change'));
+
+        if (this.pending && this.pending.length > 0) {
+          // auto select the next pending click
+          const nextId = this.pending.splice(0, 1)[0];
+          const item = this.getMenuItem();
+          if (nextId && item && item.items && item.items.length > 0) {
+            const nextItem = item.items.find(item => item.id === nextId);
+            if (nextItem) {
+              this.handleItemClicked(null, nextItem);
+            }
+          }
+        }
+
+        this.pending = [];
         this.requestUpdate('root');
       }
-
-      this.dispatchEvent(new Event('change'));
     }
   }
 
@@ -394,7 +413,9 @@ export class TembaMenu extends RapidElement {
   public setSelection(path: string[]) {
     this.pending = [...path];
     this.selection = [];
-    if (this.root) {
+
+    if (this.wait) {
+      this.wait = false;
       this.loadItems(this.root);
     }
   }
@@ -471,7 +492,7 @@ export class TembaMenu extends RapidElement {
   }
 
   public render(): TemplateResult {
-    if (!this.root) {
+    if (!this.root || !this.root.items) {
       return html`<temba-loading />`;
     }
 
