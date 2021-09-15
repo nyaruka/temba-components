@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css, property } from 'lit-element';
-import { getUrl, getClasses, fetchResults, WebResponse } from '../utils';
+import {
+  getUrl,
+  getClasses,
+  fetchResults,
+  WebResponse,
+  postJSON,
+} from '../utils';
 import '../options/Options';
 import { EventHandler } from '../RapidElement';
 import { FormElement } from '../FormElement';
@@ -518,13 +524,11 @@ export class Select extends FormElement {
     }
   }
 
-  public handleOptionSelection(event: CustomEvent) {
-    const selected = event.detail.selected;
-
+  private setSelectedOption(option: any) {
     if (this.multi) {
-      this.addValue(selected);
+      this.addValue(option);
     } else {
-      this.setValue(selected);
+      this.setValue(option);
     }
 
     if (!this.multi || !this.searchable) {
@@ -539,6 +543,24 @@ export class Select extends FormElement {
     this.selectedIndex = -1;
 
     this.fireEvent('change');
+  }
+
+  public handleOptionSelection(event: CustomEvent) {
+    const selected = event.detail.selected;
+    // check if we should post it
+    if (selected.post && this.endpoint) {
+      postJSON(this.endpoint, selected).then(response => {
+        if (response.status >= 200 && response.status < 300) {
+          this.setSelectedOption(response.json);
+          this.lruCache = flru(20);
+        } else {
+          // TODO: find a way to share inline errors
+          this.blur();
+        }
+      });
+    } else {
+      this.setSelectedOption(selected);
+    }
   }
 
   private handleExpressionSelection(evt: CustomEvent) {

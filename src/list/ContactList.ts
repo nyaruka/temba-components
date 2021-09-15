@@ -22,20 +22,24 @@ export class ContactList extends TembaList {
     this.valueKey = 'ticket.uuid';
     this.renderOption = (contact: Contact): TemplateResult => {
       return html`
-        <div style="display: flex-col; align-items:center">
-          <div style="display:flex;	align-items: flex-start;">
-            <div style="flex: 1; color:#333; margin-top: 0.4em">
-              <div style="font-weight:400">${contact.name}</div>
+        <div
+          style="display: flex-col; align-items:center; margin-top: 0.1em; margin-bottom: 0.1em"
+        >
+          <div
+            style="display:flex; align-items: flex-start;border:0px solid red;"
+          >
+            <div style="flex: 1; color:#333;">
+              <div
+                style="font-weight:400;line-height:1.6;border:0px solid purple;"
+              >
+                ${contact.name}
+              </div>
               ${contact.ticket.closed_on
-                ? html`<div
-                    style="font-size: 0.9em; margin:0.4em 0; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
-                  >
-                    ${contact.ticket.subject}
-                  </div>`
+                ? null
                 : contact.last_msg
                 ? html`
                     <div
-                      style="font-size: 0.9em; margin-bottom:0.5em; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+                      style="font-size: 0.9em; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
                     >
                       ${contact.last_msg.direction === 'I'
                         ? html`<div
@@ -48,9 +52,9 @@ export class ContactList extends TembaList {
                 : null}
             </div>
             <div
-              style="font-size:0.8em;display:flex;flex-direction:column;align-items:center;max-width:60px;min-width:30px"
+              style="font-size:0.8em;display:flex;flex-direction:column;align-items:flex-end;max-width:60px;min-width:30px;border:0px solid green;text-align:right"
             >
-              <div style="text-align:center;padding:4px;padding-bottom:2px;">
+              <div style="padding:4px;padding-bottom:2px">
                 ${timeSince(
                   new Date(
                     contact.ticket.closed_on || contact.ticket.last_activity_on
@@ -58,7 +62,7 @@ export class ContactList extends TembaList {
                 )}
               </div>
               <div style="font-size:0.7em;">
-                ${contact.ticket.assignee
+                ${!contact.ticket.closed_on && contact.ticket.assignee
                   ? html`${renderAvatar(contact.ticket.assignee, this.agent)}`
                   : null}
               </div>
