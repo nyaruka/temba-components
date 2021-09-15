@@ -7,6 +7,11 @@ export interface User {
   created_on?: string;
 }
 
+export interface Topic {
+  name: string;
+  uuid: string;
+}
+
 export interface Ticket {
   uuid: string;
   subject: string;
@@ -96,6 +101,7 @@ export interface Contact {
     closed_on?: string;
     last_activity_on: string;
     assignee?: User;
+    topic?: Topic;
   };
 }
 

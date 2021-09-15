@@ -1,6 +1,6 @@
 import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
-import { Msg, ObjectReference, User } from '../interfaces';
+import { Msg, ObjectReference, Topic, User } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
 import { getDisplayName } from './helpers';
 
@@ -532,6 +532,7 @@ export interface TicketEvent extends ContactEvent {
     ticketer: ObjectReference;
     subject: string;
     body: string;
+    topic?: Topic;
     external_id?: string;
     closed_on?: string;
     opened_on?: string;
@@ -910,7 +911,10 @@ export const renderTicketOpened = (
 
     <div class="active" style="flex-grow:1;">
       Opened
-      <div class="attn">${event.ticket.subject}</div>
+      <div class="attn">
+        ${event.ticket.subject ||
+        (event.ticket.topic ? event.ticket.topic.name : '')}
+      </div>
       <div class="subtext">${timeSince(new Date(event.created_on))}</div>
     </div>
     ${handleClose
