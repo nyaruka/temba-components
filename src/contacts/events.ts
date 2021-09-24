@@ -762,10 +762,13 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   return html`
     <temba-icon name="contact"></temba-icon>
     <div class="description">
-      Updated
-      <div class="attn">${event.field.name}</div>
-      to
-      <div class="attn">${event.value.text}</div>
+      ${event.value
+        ? html`Updated
+            <div class="attn">${event.field.name}</div>
+            to
+            <div class="attn">${event.value.text}</div>`
+        : html`Cleared
+            <div class="attn">${event.field.name}</div>`}
     </div>
   `;
 };
