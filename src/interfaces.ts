@@ -7,14 +7,10 @@ export interface User {
   created_on?: string;
 }
 
-export interface Topic {
-  name: string;
-  uuid: string;
-}
-
 export interface Ticket {
   uuid: string;
   subject: string;
+  topic: ObjectReference;
   body?: string;
   closed_on: string;
   opened_on: string;
@@ -34,6 +30,7 @@ export interface Msg {
   direction: string;
   type: string;
   created_by?: User;
+  attachments: string[];
 }
 
 export interface ObjectReference {
@@ -101,7 +98,7 @@ export interface Contact {
     closed_on?: string;
     last_activity_on: string;
     assignee?: User;
-    topic?: Topic;
+    topic?: ObjectReference;
   };
 }
 

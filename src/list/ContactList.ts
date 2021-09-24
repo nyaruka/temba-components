@@ -41,13 +41,28 @@ export class ContactList extends TembaList {
                     <div
                       style="font-size: 0.9em; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
                     >
-                      ${contact.last_msg.direction === 'I'
-                        ? html`<div
-                            style="border-radius:9999px; background:var(--color-primary-dark);width:6px;height:6px;display:inline-block;margin:0px 2px;margin-bottom:1px;"
-                          ></div>`
-                        : null}
-                      ${contact.last_msg.text}
-                    </div>
+                      ${
+                        contact.last_msg.direction === 'I'
+                          ? html`<div
+                              style="border-radius:9999px; background:var(--color-primary-dark);width:6px;height:6px;display:inline-block;margin:0px 2px;margin-bottom:1px;"
+                            ></div>`
+                          : null
+                      }
+                      ${
+                        contact.last_msg.text
+                          ? contact.last_msg.text
+                          : contact.last_msg.attachments
+                          ? html`<div style="display:inline-block">
+                              <div style="display:flex; margin-left:0.2em">
+                                <temba-icon name="paperclip"></temba-icon>
+                                <div style="flex-grow:1;margin-left:0.2em">
+                                  Attachment
+                                </div>
+                              </div>
+                            </div>`
+                          : 'Unsupported Message'
+                      }
+                    </div></div>
                   `
                 : null}
             </div>

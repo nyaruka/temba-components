@@ -891,7 +891,7 @@ export class ContactHistory extends RapidElement {
                   type: Events.TICKET_OPENED,
                   ticket: {
                     uuid: ticket.uuid,
-                    subject: ticket.subject,
+                    topic: ticket.topic,
                     body: ticket.body,
                     ticketer: ticket.ticketer,
                   },

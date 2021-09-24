@@ -1,6 +1,6 @@
 import { css } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
-import { Msg, ObjectReference, Topic, User } from '../interfaces';
+import { Msg, ObjectReference, User } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
 import { getDisplayName } from './helpers';
 
@@ -363,6 +363,13 @@ export const getEventStyles = () => {
       margin-left: 1px;
     }
 
+    .unsupported {
+      border: 1px solid #f2f2f2;
+      color: #999;
+      padding: 0.5em 1em;
+      border-radius: var(--curvature);
+    }
+
     .time {
       padding: 0.3em 1px;
     }
@@ -530,9 +537,8 @@ export interface TicketEvent extends ContactEvent {
   ticket: {
     uuid: string;
     ticketer: ObjectReference;
-    subject: string;
     body: string;
-    topic?: Topic;
+    topic?: ObjectReference;
     external_id?: string;
     closed_on?: string;
     opened_on?: string;
@@ -664,15 +670,56 @@ export const renderAvatar = (user: User, agent = -1) => {
   }
 };
 
+export const renderAttachment = (attachment: string): TemplateResult => {
+  const idx = attachment.indexOf(':');
+  const attType = attachment.substr(0, idx);
+  const url = attachment.substr(idx + 1);
+  const [mediaType, ext] = attType.split('/', 2);
+
+  let inner = null;
+  if (mediaType === 'image') {
+    inner = html`<a href="${url}"><img src="${url}" style="width:100%;height:auto;display:block"></img></a>`;
+  } else if (ext === 'pdf') {
+    return html`<div
+    style="width:100%;height:300px;border-radius:var(--curvature); box-shadow:0px 0px 9px -4px rgb(140,140,140);overflow:hidden"
+  ><embed src="${url}#view=Fit" type="application/pdf" frameBorder="0" scrolling="auto" height="100%" width="100%"></embed></div>`;
+  } else if (mediaType === 'video') {
+    return html`<video max-width="400px" height="auto" controls="controls">
+      <source src="${url}" type="video/mp4" />
+    </video> `;
+  } else {
+    return html`<div style="display:flex">
+      <temba-icon name="download"></temba-icon>
+      <div>Attachment ${ext}</div>
+    </div>`;
+  }
+
+  return html`<div
+    style="width:40%;max-width:900px;border-radius:var(--curvature); box-shadow:0px 0px 9px -4px rgb(140,140,140);overflow:hidden"
+  >
+    ${inner}
+  </div>`;
+};
+
 export const renderMsgEvent = (
   event: MsgEvent,
   agent: number
 ): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
   const isError = event.status === 'E' || event.status === 'F';
-  return html` <div style="display:flex;align-items:flex-start">
+  const msg = html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
-      <div class="msg">${event.msg.text}</div>
+      ${event.msg.text ? html`<div class="msg">${event.msg.text}</div>` : null}
+      ${event.msg.attachments
+        ? html`<div class="attachments">
+            ${event.msg.attachments.map(attachment =>
+              renderAttachment(attachment)
+            )}
+          </div> `
+        : null}
+      ${!event.msg.text && !event.msg.attachments
+        ? html`<div class="unsupported">Unsupported Message</div>`
+        : null}
       <div
         class="msg-summary"
         style="flex-direction:row${isInbound ? '-reverse' : ''}"
@@ -712,6 +759,7 @@ export const renderMsgEvent = (
         </div>`
       : null}
   </div>`;
+  return msg;
 };
 
 export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
@@ -915,8 +963,7 @@ export const renderTicketOpened = (
     <div class="active" style="flex-grow:1;">
       Opened
       <div class="attn">
-        ${event.ticket.subject ||
-        (event.ticket.topic ? event.ticket.topic.name : '')}
+        ${event.ticket.topic ? event.ticket.topic.name : 'General'}
       </div>
       <div class="subtext">${timeSince(new Date(event.created_on))}</div>
     </div>
