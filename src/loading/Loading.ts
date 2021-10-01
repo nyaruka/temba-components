@@ -5,6 +5,10 @@ import { range } from '../utils';
 export class Loading extends LitElement {
   static get styles() {
     return css`
+      :host {
+        display: block;
+      }
+
       .loading-unit {
         border: 1px inset rgba(0, 0, 0, 0.05);
         animation: loading-pulse 0.9s cubic-bezier(0.3, 0, 0.7, 1) infinite;
@@ -43,11 +47,14 @@ export class Loading extends LitElement {
   @property({ type: Boolean })
   square?: boolean;
 
+  @property({ type: String })
+  direction = 'row';
+
   public render(): TemplateResult {
     const margin = this.size / 2;
 
     return html`
-      <div class="loading-container">
+      <div class="loading-container" style="flex-direction:${this.direction}">
         ${range(0, this.units).map((num: number) => {
           const ballStyle = {
             'border-radius': this.square ? '0' : '50%',

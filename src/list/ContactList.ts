@@ -23,7 +23,7 @@ export class ContactList extends TembaList {
     this.renderOption = (contact: Contact): TemplateResult => {
       return html`
         <div
-          style="display: flex-col; align-items:center; margin-top: 0.1em; margin-bottom: 0.1em"
+          style="display: align-items:center; margin-top: 0.1em; margin-bottom: 0.1em"
         >
           <div
             style="display:flex; align-items: flex-start;border:0px solid red;"

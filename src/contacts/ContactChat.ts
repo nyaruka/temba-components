@@ -6,6 +6,9 @@ import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
+import { fetchContact } from './helpers';
+
+const DEFAULT_REFRESH = 10000;
 
 export class ContactChat extends RapidElement {
   public static get styles() {
@@ -24,13 +27,17 @@ export class ContactChat extends RapidElement {
         overflow: hidden;
       }
 
+      .left-pane {
+        box-shadow: -13px 10px 7px 14px rgba(0, 0, 0, 0.15);
+        z-index: 100;
+      }
+
       .chat-wrapper {
         display: flex;
         flex-direction: column;
         height: 100%;
         background: #fff;
         overflow: hidden;
-        border-radius: var(--curvature);
       }
 
       .chatbox {
@@ -79,11 +86,10 @@ export class ContactChat extends RapidElement {
 
       .toolbar {
         position: relative;
-        width: 2em;
-        background: #f2f2f2;
+        width: 2.5em;
+        background: #e6e6e6;
         transition: all 600ms ease-in;
         z-index: 10;
-        box-shadow: -1px 0px 6px 1px rgba(0, 0, 0, 0.1);
         flex-shrink: 0;
         border-top-right-radius: var(--curvature);
         border-bottom-right-radius: var(--curvature);
@@ -100,7 +106,8 @@ export class ContactChat extends RapidElement {
       }
 
       .toolbar.closed {
-        box-shadow: -1px 0px 1px 1px rgba(0, 0, 0, 0);
+        box-shadow: inset 10px 0px 10px -11px rgb(0 0 0 / 15%);
+        z-index: 1000;
       }
 
       temba-contact-details {
@@ -110,8 +117,6 @@ export class ContactChat extends RapidElement {
         transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05),
           opacity 600ms ease-in-out 200ms;
         z-index: 5;
-        margin-right: -1.5em;
-        border-top-right-radius: 6px;
       }
 
       temba-contact-details.hidden {
@@ -149,8 +154,11 @@ export class ContactChat extends RapidElement {
     `;
   }
 
-  @property({ type: Object })
-  contact: Contact = null;
+  @property({ type: String, attribute: 'contact' })
+  contactUUID: string;
+
+  @property({ type: String, attribute: 'ticket' })
+  ticketUUID: string;
 
   @property({ type: String })
   contactsEndpoint = '/api/v2/contacts.json';
@@ -164,8 +172,14 @@ export class ContactChat extends RapidElement {
   @property({ type: Boolean })
   showDetails = true;
 
+  @property({ type: Boolean })
+  monitor = false;
+
   @property({ type: Object })
   currentTicket: Ticket = null;
+
+  @property({ type: Object })
+  currentContact: Contact = null;
 
   @property({ type: Number })
   agent = -1;
@@ -173,6 +187,26 @@ export class ContactChat extends RapidElement {
   constructor() {
     super();
     this.showDetails = getCookieBoolean(COOKIE_KEYS.TICKET_SHOW_DETAILS);
+  }
+
+  refreshInterval = null;
+
+  public connectedCallback() {
+    super.connectedCallback();
+    if (this.monitor) {
+      this.refreshInterval = setInterval(() => {
+        if (this.currentTicket && this.currentTicket.closed_on) {
+          return;
+        }
+        this.refresh();
+      }, DEFAULT_REFRESH);
+    }
+  }
+
+  public disconnectedCallback() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
 
   public getContactHistory(): ContactHistory {
@@ -194,13 +228,36 @@ export class ContactChat extends RapidElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
+    /* if (changedProperties.has('currentTicket')) {
+      console.log('currentTicket', this.currentTicket);
+    }
+
+    if (changedProperties.has('currentContact')) {
+      console.log('currentContact', this.currentContact);
+    }
+
+    if (changedProperties.has('contactUUID')) {
+      console.log('contactUUID', this.contactUUID);
+    }*/
+
+    // we were provided a uuid, fetch our contact details
+    if (changedProperties.has('contactUUID')) {
+      fetchContact(this.contactsEndpoint + '?uuid=' + this.contactUUID).then(
+        contact => {
+          this.currentContact = contact;
+        }
+      );
+    }
+
     // if we don't have an endpoint infer one
-    if (changedProperties.has('contact')) {
+    if (changedProperties.has('currentContact')) {
       // focus our completion on load
       const prevContact = changedProperties.get('contact');
       if (
         !prevContact ||
-        (this.contact && this.contact.ticket.uuid !== prevContact.ticket.uuid)
+        (this.currentContact &&
+          this.currentContact.ticket &&
+          this.currentContact.ticket.uuid !== prevContact.ticket.uuid)
       ) {
         const completion = this.shadowRoot.querySelector(
           'temba-completion'
@@ -223,7 +280,7 @@ export class ContactChat extends RapidElement {
   }
 
   private handleReopen() {
-    const uuid = this.contact.ticket.uuid;
+    const uuid = this.currentTicket.uuid;
     postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
       status: 'open',
     })
@@ -239,11 +296,16 @@ export class ContactChat extends RapidElement {
   }
 
   private handleSend() {
-    postJSON(`/api/v2/broadcasts.json`, {
-      contacts: [this.contact.uuid],
+    const payload = {
+      contacts: [this.currentContact.uuid],
       text: this.currentChat,
-      ticket: this.currentTicket.uuid,
-    })
+    };
+
+    if (this.currentTicket) {
+      payload['ticket'] = this.currentTicket.uuid;
+    }
+
+    postJSON(`/api/v2/broadcasts.json`, payload)
       .then(() => {
         this.currentChat = '';
         this.refresh(true);
@@ -264,26 +326,26 @@ export class ContactChat extends RapidElement {
     setCookie(COOKIE_KEYS.TICKET_SHOW_DETAILS, this.showDetails);
   }
 
-  private handleCurrentTicketChanged(event: CustomEvent): void {
-    this.currentTicket = event.detail.context;
-  }
-
   public render(): TemplateResult {
     return html`
       <div style="display: flex; height: 100%;">
-        <div style="flex-grow: 1; margin-right: 0em;">
+        <div style="flex-grow: 1; margin-right: 0em;" class="left-pane">
           <div class="chat-wrapper">
-            ${this.contact
+            ${this.currentContact
               ? html` <temba-contact-history
-                    .uuid=${this.contact.uuid}
-                    .ticket=${this.contact.ticket.uuid}
-                    .endDate=${this.contact.ticket.closed_on}
+                    .uuid=${this.currentContact.uuid}
+                    .contact=${this.currentContact}
+                    .ticket=${
+                      this.currentTicket ? this.currentTicket.uuid : null
+                    }
+                    .endDate=${
+                      this.currentTicket ? this.currentTicket.closed_on : null
+                    }
                     .agent=${this.agent}
-                    @temba-context-changed=${this.handleCurrentTicketChanged}
                   ></temba-contact-history>
 
                   ${
-                    this.contact.ticket.closed_on
+                    this.currentTicket && this.currentTicket.closed_on
                       ? html`<div class="closed-footer">
                           <temba-button
                             id="reopen-button"
@@ -320,20 +382,19 @@ export class ContactChat extends RapidElement {
               : null}
           </div>
         </div>
-        ${this.contact
+        ${this.currentContact
           ? html`<temba-contact-details
               style="z-index: 10"
               class="${this.showDetails ? '' : 'hidden'}"
-              .uuid="${this.contact.uuid}"
-              .name="${this.contact.name}"
+              showGroups="true"
               .visible=${this.showDetails}
               .ticket=${this.currentTicket}
-              endpoint="${this.contactsEndpoint}?uuid=${this.contact.uuid}"
+              .contact=${this.currentContact}
             ></temba-contact-details>`
           : null}
 
         <div class="toolbar ${this.showDetails ? '' : 'closed'}">
-          ${this.contact
+          ${this.currentContact
             ? html`
                 <temba-tip
                   style="margin-top:5px"

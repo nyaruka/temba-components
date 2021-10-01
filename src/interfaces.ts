@@ -10,13 +10,13 @@ export interface User {
 export interface Ticket {
   uuid: string;
   subject: string;
-  topic: ObjectReference;
   body?: string;
   closed_on: string;
   opened_on: string;
   status: string;
   contact: ObjectReference;
   ticketer: ObjectReference;
+  topic: ObjectReference;
   assignee?: User;
 }
 

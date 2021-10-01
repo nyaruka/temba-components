@@ -31,6 +31,7 @@ export class Button extends LitElement {
       }
 
       .button-name {
+        white-space: nowrap;
       }
 
       .secondary-button:hover .button-mask {
