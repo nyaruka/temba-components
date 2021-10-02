@@ -125,6 +125,7 @@ export class ContactHistory extends RapidElement {
         flex-grow: 1;
         border-top-left-radius: var(--curvature);
         padding-top: 1em;
+        background: #fff;
       }
 
       temba-loading {

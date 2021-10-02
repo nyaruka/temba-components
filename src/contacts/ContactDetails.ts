@@ -83,8 +83,6 @@ export class ContactDetails extends RapidElement {
         background: #fff;
         overflow: hidden;
         margin: 0em -1em;
-
-        // box-shadow: inset -13px 10px 7px 14px rgba(0, 0, 0, 0.15);
       }
 
       .body-wrapper {
