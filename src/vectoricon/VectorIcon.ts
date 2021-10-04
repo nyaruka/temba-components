@@ -19,6 +19,9 @@ export class VectorIcon extends LitElement {
   @property({ type: Boolean })
   clickable: boolean;
 
+  @property({ type: Boolean })
+  circled: boolean;
+
   @property({ type: String })
   animateChange: string;
 
@@ -46,9 +49,6 @@ export class VectorIcon extends LitElement {
       }
 
       svg {
-        -webkit-transform: scale(1);
-        transform: scale(1);
-
         fill: var(--icon-color);
         transition: fill 100ms ease-in-out,
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
@@ -87,13 +87,24 @@ export class VectorIcon extends LitElement {
         background: rgb(255, 255, 255);
       }
 
+      .circled {
+        background: rgb(240, 240, 240);
+        padding: 0.15em;
+        margin: -0.15em;
+        box-shadow: var(--shadow);
+      }
+
       .wrapper {
         display: flex;
         flex-direction: column;
         border-radius: 999px;
         transition: background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
-          padding 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
-          margin 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+          transform 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
+          padding 150ms linear, margin 150ms linear;
+      }
+
+      .wrapper.clickable {
+        transform: scale(1);
       }
 
       .wrapper.clickable:hover {
@@ -159,6 +170,7 @@ export class VectorIcon extends LitElement {
       <div
         class="wrapper ${getClasses({
           clickable: this.clickable,
+          circled: this.circled,
           animate: !!this.animateChange,
         })}"
       >

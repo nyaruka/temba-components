@@ -88,10 +88,6 @@ export class TembaList extends RapidElement {
   constructor() {
     super();
     this.handleSelection.bind(this);
-
-    setInterval(() => {
-      this.refreshKey = 'default_' + new Date().getTime();
-    }, DEFAULT_REFRESH);
   }
 
   private reset(): void {
@@ -100,6 +96,19 @@ export class TembaList extends RapidElement {
     this.cursorIndex = -1;
     this.mostRecentItem = null;
     this.items = [];
+  }
+
+  refreshInterval = null;
+
+  public connectedCallback() {
+    super.connectedCallback();
+    this.refreshInterval = setInterval(() => {
+      this.refreshKey = 'default_' + new Date().getTime();
+    }, DEFAULT_REFRESH);
+  }
+
+  public disconnectedCallback() {
+    clearInterval(this.refreshInterval);
   }
 
   public updated(changedProperties: Map<string, any>) {

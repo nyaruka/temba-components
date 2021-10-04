@@ -34,11 +34,22 @@ export class Options extends RapidElement {
 
       :host([block]) .options-container {
         border: none;
-        box-shadow: var(--options-block-shadow);
         height: 100%;
         z-index: 9000;
         visibility: visible;
         overflow-y: auto;
+        -webkit-mask-image: -webkit-radial-gradient(white, black);
+      }
+
+      :host([block]) {
+        box-shadow: var(--options-block-shadow);
+        border-radius: var(--curvature);
+        display: block;
+        height: 100%;
+      }
+
+      :host([block]) .options {
+        margin-bottom: 1.5em;
       }
 
       :host([collapsed]) temba-icon {
@@ -72,7 +83,7 @@ export class Options extends RapidElement {
         font-size: 14px;
         padding: 5px 10px;
         border-radius: 4px;
-        margin: 3px;
+        margin: 0.3em;
         cursor: pointer;
         color: var(--color-text-dark);
       }
@@ -559,6 +570,7 @@ export class Options extends RapidElement {
                   )}
                 </div>`;
               })}
+          ${this.block ? html`<div style="height:0.1em"></div>` : null}
         </div>
         <slot></slot>
       </div>

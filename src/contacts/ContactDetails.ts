@@ -10,18 +10,16 @@ export class ContactDetails extends RapidElement {
   static get styles() {
     return css`
       :host {
-        box-shadow: inset 14px 0 7px -14px rgba(0, 0, 0, 0.15);
         background: #f9f9f9;
         display: block;
         height: 100%;
         position: relative;
-        border-bottom-right-radius: var(--curvature);
         overflow: hidden;
+        -webkit-mask-image: -webkit-radial-gradient(white, black);
       }
 
       .wrapper {
-        padding-right: 3.5em;
-        padding-left: 1em;
+        padding: 0em 1em;
       }
 
       a {
@@ -33,9 +31,9 @@ export class ContactDetails extends RapidElement {
       }
 
       .contact > .name {
-        font-size: 18px;
+        font-size: 1.2em;
         font-weight: 400;
-        padding: 0.75em;
+        padding: 0.5em 0.75em;
         padding-right: 1em;
       }
 
@@ -82,12 +80,9 @@ export class ContactDetails extends RapidElement {
       }
 
       .fields-wrapper {
-        margin-top: 1em;
         background: #fff;
-        border-radius: var(--curvature);
         overflow: hidden;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-          0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        margin: 0em -1em;
       }
 
       .body-wrapper {
@@ -102,9 +97,7 @@ export class ContactDetails extends RapidElement {
       .fields {
         padding: 1em;
         max-height: 200px;
-        border-radius: var(--curvature);
         overflow-y: auto;
-        -webkit-mask-image: -webkit-radial-gradient(white, black);
       }
 
       .field {
@@ -142,7 +135,7 @@ export class ContactDetails extends RapidElement {
   @property({ type: String })
   uuid: string;
 
-  @property({ attribute: false, type: Object })
+  @property({ type: Object })
   contact: Contact;
 
   @property({ attribute: false })
@@ -172,14 +165,10 @@ export class ContactDetails extends RapidElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has('endpoint')) {
-      this.flow = null;
-      this.expandFields = false;
 
+    if (changes.has('contact')) {
       const store: Store = document.querySelector('temba-store');
-
-      fetchContact(this.endpoint).then((contact: Contact) => {
-        this.contact = contact;
+      if (this.contact && this.contact.fields) {
         this.fields = Object.keys(this.contact.fields).filter((key: string) => {
           const hasField = !!this.contact.fields[key];
           return hasField && store.getContactField(key).pinned;
@@ -198,6 +187,14 @@ export class ContactDetails extends RapidElement {
           }
           return a.name.localeCompare(b.name);
         });
+      }
+    }
+
+    if (changes.has('endpoint')) {
+      this.flow = null;
+      this.expandFields = false;
+      fetchContact(this.endpoint).then((contact: Contact) => {
+        this.contact = contact;
       });
     }
   }
@@ -237,9 +234,9 @@ export class ContactDetails extends RapidElement {
 
     if (this.contact) {
       return html`<div class="contact">
-        <div class="name">${this.name || this.contact.name}</div>
-        <div class="wrapper">
-          ${this.showGroups
+        <div class="name">
+          ${this.name || this.contact.name}
+          ${this.showGroups && !this.ticket
             ? html`<div>
                 ${this.contact.groups.map((group: Group) => {
                   return html`<a
@@ -254,6 +251,8 @@ export class ContactDetails extends RapidElement {
                 })}
               </div>`
             : html``}
+        </div>
+        <div class="wrapper">
           ${body
             ? html`<div class="body-wrapper">
                 <div class="body">${body}</div>
@@ -306,13 +305,14 @@ export class ContactDetails extends RapidElement {
             : null}
 
           <div class="actions">
-            ${this.showGroups
+            ${this.showGroups && !this.ticket
               ? html`
                   <div class="start-flow">
                     <temba-select
                       endpoint="/api/v2/flows.json?archived=false"
                       placeholder="Start Flow"
                       flavor="small"
+                      searchable="true"
                       .values=${this.flow ? [this.flow] : []}
                       @temba-selection=${this.handleFlowChanged}
                     ></temba-select>

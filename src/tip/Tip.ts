@@ -149,15 +149,20 @@ export class Tip extends RapidElement {
   }
 
   lastEnter = 0;
+  failSafe = 0;
 
   private handleMouseEnter() {
     this.lastEnter = window.setTimeout(() => {
       this.visible = true;
+      this.failSafe = window.setTimeout(() => {
+        this.visible = false;
+      }, 2000);
     }, 600);
   }
 
   private handleMouseLeave() {
     window.clearTimeout(this.lastEnter);
+    window.clearTimeout(this.failSafe);
     this.visible = false;
   }
 
@@ -186,6 +191,7 @@ export class Tip extends RapidElement {
     return html`
       <div
         class="slot"
+        @click=${this.handleMouseLeave}
         @mouseenter=${this.handleMouseEnter}
         @mouseleave=${this.handleMouseLeave}
       >
