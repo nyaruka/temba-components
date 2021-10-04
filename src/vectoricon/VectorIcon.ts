@@ -50,6 +50,7 @@ export class VectorIcon extends LitElement {
 
       svg {
         fill: var(--icon-color);
+        transform: scale(1);
         transition: fill 100ms ease-in-out,
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
           padding 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
