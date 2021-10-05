@@ -280,8 +280,9 @@ export class ContactChat extends RapidElement {
 
   private handleReopen() {
     const uuid = this.currentTicket.uuid;
-    postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
-      status: 'open',
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'reopen',
     })
       .then(() => {
         this.refresh();

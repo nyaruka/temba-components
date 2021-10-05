@@ -807,8 +807,9 @@ export class ContactHistory extends RapidElement {
   }
 
   private handleClose(uuid: string) {
-    this.httpComplete = postJSON(`/api/v2/tickets.json?uuid=${uuid}`, {
-      status: 'closed',
+    this.httpComplete = postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'close',
     })
       .then(() => {
         this.refreshTickets();
@@ -824,7 +825,7 @@ export class ContactHistory extends RapidElement {
 
   public checkForAgentAssignmentEvent(agent: number) {
     this.httpComplete = getAssets(
-      `/api/v2/tickets.json?ticket=${this.ticket}`
+      `/api/v2/tickets.json?uuid=${this.ticket}`
     ).then((assets: Asset[]) => {
       if (assets.length === 1) {
         const ticket = assets[0] as Ticket;
