@@ -29,7 +29,6 @@ export class ContactChat extends RapidElement {
 
       .left-pane {
         box-shadow: -13px 10px 7px 14px rgba(0, 0, 0, 0.15);
-        z-index: 100;
       }
 
       .chat-wrapper {
