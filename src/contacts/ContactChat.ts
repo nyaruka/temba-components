@@ -28,7 +28,13 @@ export class ContactChat extends RapidElement {
       }
 
       .left-pane {
+        box-shadow: -13px 10px 7px 14px rgba(0, 0, 0, 0);
+        transition: box-shadow 600ms linear;
+      }
+
+      .left-pane.open {
         box-shadow: -13px 10px 7px 14px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
       }
 
       .chat-wrapper {
@@ -105,7 +111,6 @@ export class ContactChat extends RapidElement {
 
       .toolbar.closed {
         box-shadow: inset 10px 0px 10px -11px rgb(0 0 0 / 15%);
-        z-index: 1000;
       }
 
       temba-contact-details {
@@ -328,7 +333,10 @@ export class ContactChat extends RapidElement {
   public render(): TemplateResult {
     return html`
       <div style="display: flex; height: 100%;">
-        <div style="flex-grow: 1; margin-right: 0em;" class="left-pane">
+        <div
+          style="flex-grow: 1; margin-right: 0em;"
+          class="left-pane  ${this.showDetails ? 'open' : ''}"
+        >
           <div class="chat-wrapper">
             ${this.currentContact
               ? html` <temba-contact-history
