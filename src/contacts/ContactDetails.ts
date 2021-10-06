@@ -67,6 +67,14 @@ export class ContactDetails extends RapidElement {
         margin-top: 6px;
         user-select: none;
         -webkit-user-select: none;
+        margin-right: 0.75em;
+        margin-bottom: 0.75em;
+      }
+
+      .groups {
+        margin-top: 0.55em;
+        padding: 0px 0.75em;
+        margin-bottom: 0.3em;
       }
 
       .start-flow {
@@ -234,24 +242,23 @@ export class ContactDetails extends RapidElement {
 
     if (this.contact) {
       return html`<div class="contact">
-        <div class="name">
-          ${this.name || this.contact.name}
-          ${this.showGroups && !this.ticket
-            ? html`<div>
-                ${this.contact.groups.map((group: Group) => {
-                  return html`<a
-                    href="/contact/filter/${group.uuid}/"
-                    target="_"
-                    ><div class="group-label" style="cursor:pointer">
-                      ${group.is_dynamic
-                        ? html`<temba-icon name="atom"></temba-icon>`
-                        : null}${group.name}
-                    </div></a
-                  >`;
-                })}
-              </div>`
-            : html``}
-        </div>
+        ${this.ticket
+          ? html`<div class="name">${this.name || this.contact.name}</div>`
+          : null}
+        ${this.showGroups && !this.ticket
+          ? html`<div class="groups">
+              ${this.contact.groups.map((group: Group) => {
+                return html`<a href="/contacts/filter/${group.uuid}/"
+                  ><div class="group-label" style="cursor:pointer">
+                    ${group.is_dynamic
+                      ? html`<temba-icon name="atom"></temba-icon>`
+                      : null}${group.name}
+                  </div></a
+                >`;
+              })}
+            </div>`
+          : html``}
+
         <div class="wrapper">
           ${body
             ? html`<div class="body-wrapper">

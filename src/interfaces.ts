@@ -176,4 +176,5 @@ export enum CustomEventType {
   ContextChanged = 'temba-context-changed',
   Submitted = 'temba-submitted',
   Redirected = 'temba-redirected',
+  NoPath = 'temba-no-path',
 }
