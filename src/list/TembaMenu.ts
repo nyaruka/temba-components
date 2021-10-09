@@ -134,6 +134,7 @@ export class TembaMenu extends RapidElement {
         padding: 0.2em 0.75em;
         margin-top: 0.1em;
         border-radius: var(--curvature);
+        display: flex;
       }
 
       .item > temba-icon {
@@ -141,8 +142,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .item > .name {
-        min-width: 7em;
-        max-width: 13em;
+        flex-grow: 1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -164,7 +164,7 @@ export class TembaMenu extends RapidElement {
 
       .count {
         align-self: center;
-        margin-left: 5em;
+        margin-left: 1em;
         font-size: 0.8em;
         font-weight: 400;
       }
@@ -211,6 +211,7 @@ export class TembaMenu extends RapidElement {
 
       .level-1 {
         overflow-y: auto;
+        width: 16em;
       }
     `;
   }
