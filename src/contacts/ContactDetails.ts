@@ -18,8 +18,18 @@ export class ContactDetails extends RapidElement {
         -webkit-mask-image: -webkit-radial-gradient(white, black);
       }
 
+      .contact {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        height: 100%;
+      }
+
       .wrapper {
         padding: 0em 1em;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
       }
 
       a {
@@ -63,8 +73,6 @@ export class ContactDetails extends RapidElement {
         letter-spacing: 0.025em;
         white-space: nowrap;
         text-align: center;
-        margin-right: 6px;
-        margin-top: 6px;
         user-select: none;
         -webkit-user-select: none;
         margin-right: 0.75em;
@@ -91,6 +99,15 @@ export class ContactDetails extends RapidElement {
         background: #fff;
         overflow: hidden;
         margin: 0em -1em;
+
+        display: flex;
+        align-items: stretch;
+        flex-direction: column;
+        transition: all 300ms linear;
+      }
+
+      .fields-wrapper.expanded {
+        flex-grow: 2;
       }
 
       .body-wrapper {
@@ -104,8 +121,12 @@ export class ContactDetails extends RapidElement {
 
       .fields {
         padding: 1em;
-        max-height: 200px;
         overflow-y: auto;
+      }
+
+      .fields-wrapper.expanded .fields {
+        flex-grow: 1;
+        height: 0px;
       }
 
       .field {
@@ -211,12 +232,8 @@ export class ContactDetails extends RapidElement {
     this.flow = evt.detail.selected as any;
   }
 
-  private handleExpandFields(): void {
-    this.expandFields = true;
-  }
-
-  private handleHideFields(): void {
-    this.expandFields = false;
+  private handleToggleFields(): void {
+    this.expandFields = !this.expandFields;
   }
 
   private handleExpandBody(): void {
@@ -277,56 +294,44 @@ export class ContactDetails extends RapidElement {
               </div>`
             : null}
           ${this.fields.length > 0
-            ? html` <div class="fields-wrapper">
-                <div class="fields">
-                  ${this.fields
-                    .slice(0, this.expandFields ? 255 : 3)
-                    .map((key: string) => {
-                      let value = this.contact.fields[key];
-                      if (value) {
-                        if (isDate(value)) {
-                          value = timeSince(new Date(value));
+            ? html` <div
+                  class="fields-wrapper ${this.expandFields ? 'expanded' : ''}"
+                >
+                  <div class="fields">
+                    ${this.fields
+                      .slice(0, this.expandFields ? 255 : 3)
+                      .map((key: string) => {
+                        let value = this.contact.fields[key];
+                        if (value) {
+                          if (isDate(value)) {
+                            value = timeSince(new Date(value));
+                          }
+                          return html`<div class="field">
+                            <div class="name">
+                              ${store.getContactField(key).label}
+                            </div>
+                            <div class="value">${value}</div>
+                          </div>`;
                         }
-                        return html`<div class="field">
-                          <div class="name">
-                            ${store.getContactField(key).label}
-                          </div>
-                          <div class="value">${value}</div>
-                        </div>`;
-                      }
-                    })}
-
-                  <div class="field-links">
-                    ${this.fields.length > 3
-                      ? !this.expandFields
-                        ? html`<a href="#" @click="${this.handleExpandFields}"
-                            >more</a
-                          >`
-                        : html`<a href="#" @click="${this.handleHideFields}"
-                            >less</a
-                          >`
-                      : null}
+                      })}
                   </div>
                 </div>
-              </div>`
-            : null}
-
-          <div class="actions">
-            ${this.showGroups && !this.ticket
-              ? html`
-                  <div class="start-flow">
-                    <temba-select
-                      endpoint="/api/v2/flows.json?archived=false"
-                      placeholder="Start Flow"
-                      flavor="small"
-                      searchable="true"
-                      .values=${this.flow ? [this.flow] : []}
-                      @temba-selection=${this.handleFlowChanged}
-                    ></temba-select>
+                <div style="display:flex;">
+                  <div style="flex-grow:1"></div>
+                  <div style="margin-right:1em;margin-top:-0.5em">
+                    ${this.fields.length > 3
+                      ? html`<temba-icon
+                          name="chevrons-${this.expandFields ? 'up' : 'down'}"
+                          @click=${this.handleToggleFields}
+                          animateChange="spin"
+                          circled
+                          clickable
+                        ></temba-icon>`
+                      : null}
                   </div>
-                `
-              : null}
-          </div>
+                </div>`
+            : null}
+          <div style="flex-grow:1"></div>
         </div>
       </div>`;
     }
