@@ -80,8 +80,9 @@ export class ContactDetails extends RapidElement {
       }
 
       .groups {
-        margin-top: 0.3em;
-        padding: 0 0.75em;
+        margin-top: 0.55em;
+        padding: 0px 0.75em;
+        margin-bottom: 0.3em;
       }
 
       .start-flow {
@@ -264,7 +265,7 @@ export class ContactDetails extends RapidElement {
         ${this.showGroups && !this.ticket
           ? html`<div class="groups">
               ${this.contact.groups.map((group: Group) => {
-                return html`<a href="/contact/filter/${group.uuid}/" target="_"
+                return html`<a href="/contacts/filter/${group.uuid}/"
                   ><div class="group-label" style="cursor:pointer">
                     ${group.is_dynamic
                       ? html`<temba-icon name="atom"></temba-icon>`

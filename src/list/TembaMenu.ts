@@ -1,4 +1,5 @@
 import { css, html, property, TemplateResult } from 'lit-element';
+import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import {
   COOKIE_KEYS,
@@ -133,6 +134,7 @@ export class TembaMenu extends RapidElement {
         padding: 0.2em 0.75em;
         margin-top: 0.1em;
         border-radius: var(--curvature);
+        display: flex;
       }
 
       .item > temba-icon {
@@ -140,7 +142,10 @@ export class TembaMenu extends RapidElement {
       }
 
       .item > .name {
-        min-width: 7em;
+        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .level-0 > .item {
@@ -159,7 +164,7 @@ export class TembaMenu extends RapidElement {
 
       .count {
         align-self: center;
-        margin-left: var(--menu-padding);
+        margin-left: 1em;
         font-size: 0.8em;
         font-weight: 400;
       }
@@ -202,6 +207,11 @@ export class TembaMenu extends RapidElement {
       }
 
       .item.selected.inline {
+      }
+
+      .level-1 {
+        overflow-y: auto;
+        width: 16em;
       }
     `;
   }
@@ -316,6 +326,12 @@ export class TembaMenu extends RapidElement {
               const nextItem = items.find(item => item.id === nextId);
               if (nextItem) {
                 this.handleItemClicked(null, nextItem);
+              } else {
+                this.fireCustomEvent(CustomEventType.NoPath, {
+                  item: item.id,
+                  endpoint: item.endpoint,
+                  path: nextId + '/' + this.pending.join('/'),
+                });
               }
             }
           } else {
@@ -475,8 +491,12 @@ export class TembaMenu extends RapidElement {
         >
           ${menuItem.name}
         </div>
-        ${menuItem.count || menuItem.count == 0
-          ? html` <div class="count">${menuItem.count.toLocaleString()}</div> `
+        ${menuItem.level > 0
+          ? html`${menuItem.count || menuItem.count == 0
+              ? html`
+                  <div class="count">${menuItem.count.toLocaleString()}</div>
+                `
+              : html`<div class="count"></div>`}`
           : null}
       </div>
 

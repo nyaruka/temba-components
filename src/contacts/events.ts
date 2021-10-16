@@ -412,11 +412,14 @@ export const getEventStyles = () => {
       font-size: 90%;
     }
 
-    a {
+    a,
+    .linked {
       color: var(--color-link-primary);
+      cursor: pointer;
     }
 
-    a:hover {
+    a:hover,
+    .linked:hover {
       text-decoration: underline;
       color: var(--color-link-primary-hover);
     }
@@ -732,12 +735,14 @@ export const renderMsgEvent = (
         <div style="flex-grow:1"></div>
         ${event.logs_url
           ? html`
-              <a class="icon-link" target="_logs" href="${event.logs_url}">
+              <div class="icon-link">
                 <temba-icon
+                  onclick="goto(event)"
+                  href="${event.logs_url}"
                   name="log"
                   class="${isError ? 'error' : ''}"
-                ></temba-icon
-              ></a>
+                ></temba-icon>
+              </div>
             `
           : isError
           ? html`<temba-icon
@@ -785,9 +790,13 @@ export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
     <temba-icon name="${icon}"></temba-icon>
     <div class="description">
       ${verb}
-      <a target="_" href="/flow/editor/${event.flow.uuid}/"
-        >${event.flow.name}</a
+      <span
+        class="linked"
+        href="/flow/editor/${event.flow.uuid}/"
+        onclick="goto(event)"
       >
+        ${event.flow.name}
+      </span>
     </div>
   `;
 };
@@ -1105,11 +1114,9 @@ export const renderCampaignFiredEvent = (
   return html`<temba-icon name="campaign"></temba-icon>
     <div class="description">
       Campaign
-      <a href="/campaign/read/${event.campaign.id}" target="_"
-        >${event.campaign.name}</a
-      >
+      <a href="/campaign/read/${event.campaign.id}">${event.campaign.name}</a>
       ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
-      <a href="/campaignevent/read/${event.campaign_event.id}" target="_">
+      <a href="/campaignevent/read/${event.campaign_event.id}">
         ${event.campaign_event.offset_display}
         ${event.campaign_event.relative_to.name}</a
       >
@@ -1131,9 +1138,7 @@ export const renderContactGroupsEvent = (
       ${oxfordFn(
         groups,
         (group: ObjectReference) =>
-          html`<a target="_" href="/contact/filter/${group.uuid}"
-            >${group.name}</a
-          >`
+          html`<a href="/contact/filter/${group.uuid}">${group.name}</a>`
       )}
       ${event.type === Events.FAILURE
         ? html`<div>Run ended prematurely, check the flow design.</div>`
