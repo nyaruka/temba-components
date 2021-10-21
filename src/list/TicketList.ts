@@ -1,20 +1,22 @@
-import { css, html, property, TemplateResult } from 'lit-element';
+import { html, property, TemplateResult } from 'lit-element';
 import { TembaList } from './TembaList';
 import { timeSince } from '../utils';
 import { Contact } from '../interfaces';
 import { renderAvatar } from '../contacts/events';
 
-export class ContactList extends TembaList {
-  static get styles() {
-    return css`
-      :host {
-        width: 100%;
-      }
-    `;
-  }
+export class TicketList extends TembaList {
+  @property({ type: String })
+  agent = '';
 
-  @property({ type: Number })
-  agent = 1;
+  public getRefreshEndpoint() {
+    if (this.items.length > 0) {
+      const lastActivity = this.items[0].ticket.last_activity_on;
+      return (
+        this.endpoint + '?after=' + new Date(lastActivity).getTime() * 1000
+      );
+    }
+    return this.endpoint;
+  }
 
   constructor() {
     super();
@@ -23,7 +25,7 @@ export class ContactList extends TembaList {
     this.renderOption = (contact: Contact): TemplateResult => {
       return html`
         <div
-          style="display: align-items:center; margin-top: 0.1em; margin-bottom: 0.1em"
+          style="align-items:center; margin-top: 0.1em; margin-bottom: 0.1em"
         >
           <div
             style="display:flex; align-items: flex-start;border:0px solid red;"

@@ -232,8 +232,8 @@ export class ContactHistory extends RapidElement {
   @property({ type: String })
   uuid: string;
 
-  @property({ type: Number })
-  agent: number;
+  @property({ type: String })
+  agent: string;
 
   @property({ type: Array })
   eventGroups: EventGroup[] = [];
@@ -823,19 +823,22 @@ export class ContactHistory extends RapidElement {
       });
   }
 
-  public checkForAgentAssignmentEvent(agent: number) {
+  public checkForAgentAssignmentEvent(agent: string) {
     this.httpComplete = getAssets(
       `/api/v2/tickets.json?uuid=${this.ticket}`
     ).then((assets: Asset[]) => {
       if (assets.length === 1) {
         const ticket = assets[0] as Ticket;
-        if (ticket.assignee && ticket.assignee.id === agent) {
+        if (ticket.assignee && ticket.assignee.email === agent) {
           this.fireCustomEvent(CustomEventType.ContentChanged, {
             ticket: { uuid: this.ticket, assigned: 'self' },
           });
         } else {
           this.fireCustomEvent(CustomEventType.ContentChanged, {
-            ticket: { uuid: this.ticket, assigned: 'other' },
+            ticket: {
+              uuid: this.ticket,
+              assigned: ticket.assignee ? ticket.assignee : null,
+            },
           });
         }
       }
