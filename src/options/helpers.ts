@@ -1,5 +1,4 @@
 export const getScrollParent = (element: HTMLElement) => {
-  // console.log("finding parent for", element);
   if (!element) {
     return window;
   }

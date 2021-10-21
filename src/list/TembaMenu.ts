@@ -401,8 +401,19 @@ export class TembaMenu extends RapidElement {
     }
   }
 
-  public getMenuItem() {
+  public clickItem(id: string) {
     const path = [...this.selection];
+    path.splice(path.length - 1, 1, id);
+    const item = this.getMenuItemForSelection(path);
+    this.handleItemClicked(null, item);
+  }
+
+  public getMenuItem() {
+    return this.getMenuItemForSelection([...this.selection]);
+  }
+
+  public getMenuItemForSelection(selection: string[]) {
+    const path = selection;
     let items = this.root.items;
     let item = null;
     while (path.length > 0) {

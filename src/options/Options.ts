@@ -20,12 +20,14 @@ export class Options extends RapidElement {
         visibility: hidden;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg-focused);
+        user-select: none;
         box-shadow: var(--options-shadow);
         border: 1px solid var(--color-widget-border);
-        user-select: none;
         border-radius: var(--curvature-widget);
         overflow: hidden;
         margin-top: var(--options-margin-top);
+        display: flex;
+        flex-direction: column;
       }
 
       .anchored {
@@ -33,11 +35,17 @@ export class Options extends RapidElement {
       }
 
       :host([block]) .options-container {
+        flex-grow: 1;
+        height: 100%;
         border: none;
+      }
+
+      :host([block]) .options-scroll {
         height: 100%;
         z-index: 9000;
         visibility: visible;
         overflow-y: auto;
+        flex-grow: 1;
         -webkit-mask-image: -webkit-radial-gradient(white, black);
       }
 
@@ -50,6 +58,11 @@ export class Options extends RapidElement {
 
       :host([block]) .options {
         margin-bottom: 1.5em;
+      }
+
+      .options-scroll {
+        display: flex;
+        flex-direction: column;
       }
 
       :host([collapsed]) temba-icon {
@@ -129,6 +142,22 @@ export class Options extends RapidElement {
       temba-loading {
         align-self: center;
         margin-top: 0.025em;
+      }
+
+      .loader-bar {
+        pointer-events: none;
+        align-items: center;
+        background: #eee;
+        max-height: 0;
+        transition: max-height 200ms ease-in-out;
+        border-bottom-left-radius: var(--curvature-widget);
+        border-bottom-right-radius: var(--curvature-widget);
+        display: flex;
+        overflow: hidden;
+      }
+
+      .loading .loader-bar {
+        max-height: 1.1em;
       }
     `;
   }
@@ -276,6 +305,10 @@ export class Options extends RapidElement {
 
     if (changedProperties.has('options')) {
       this.calculatePosition();
+
+      // allow scrolls to trigger again
+      this.triggerScroll = true;
+
       const prevOptions = changedProperties.get('options');
       const previousCount = prevOptions ? prevOptions.length : 0;
       const newCount = this.options ? this.options.length : 0;
@@ -447,7 +480,6 @@ export class Options extends RapidElement {
 
         if (this.anchorTo && this.scrollParent) {
           if (!isElementVisible(this.anchorTo, this.scrollParent)) {
-            // console.log("Not visible canceling");
             // this.fireCustomEvent(CustomEventType.Canceled);
           }
         }
@@ -533,6 +565,7 @@ export class Options extends RapidElement {
       show: this.visible,
       top: this.poppedTop,
       anchored: !this.block,
+      loading: this.loading,
     });
 
     const classesInner = getClasses({
@@ -541,38 +574,27 @@ export class Options extends RapidElement {
 
     const options = this.options || [];
     return html`
-      <div
-        id="wrapper"
-        @scroll=${throttle(this.handleInnerScroll, 100)}
-        class=${classes}
-        style=${styleMap(containerStyle)}
-      >
-        <div class="${classesInner}" style=${styleMap(optionsStyle)}>
-          ${this.loading
-            ? html`<div
-                style="padding: 1em;
-                margin-bottom: 1;
-                display: flex;
-                flex-direction: column;"
+      <div class=${classes} style=${styleMap(containerStyle)}>
+        <div class="options-scroll" @scroll=${this.handleInnerScroll}>
+          <div class="${classesInner}" style=${styleMap(optionsStyle)}>
+            ${options.map((option, index) => {
+              return html`<div
+                data-option-index="${index}"
+                @mousemove=${this.handleMouseMove}
+                @click=${this.handleOptionClick}
+                class="option ${index === this.cursorIndex ? 'focused' : ''}"
               >
-                <temba-loading></temba-loading>
-              </div>`
-            : options.map((option, index) => {
-                return html`<div
-                  data-option-index="${index}"
-                  @mousemove=${this.handleMouseMove}
-                  @click=${this.handleOptionClick}
-                  class="option ${index === this.cursorIndex ? 'focused' : ''}"
-                >
-                  ${this.resolvedRenderOption(
-                    option,
-                    index === this.cursorIndex
-                  )}
-                </div>`;
-              })}
-          ${this.block ? html`<div style="height:0.1em"></div>` : null}
+                ${this.resolvedRenderOption(option, index === this.cursorIndex)}
+              </div>`;
+            })}
+            ${this.block ? html`<div style="height:0.1em"></div>` : null}
+          </div>
+          <slot></slot>
         </div>
-        <slot></slot>
+
+        <div class="loader-bar">
+          <temba-loading></temba-loading>
+        </div>
       </div>
     `;
   }

@@ -455,7 +455,7 @@ export const getEventStyles = () => {
   `;
 };
 
-const FLOW_USER_ID = -1;
+const FLOW_USER_ID = 'flow';
 
 export interface EventGroup {
   type: string;
@@ -646,9 +646,9 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   return 'verbose';
 };
 
-export const renderAvatar = (user: User, agent = -1) => {
-  const current = user && user.id === agent;
-  if (user.id === FLOW_USER_ID || !user || !user.first_name) {
+export const renderAvatar = (user: User, agent = '') => {
+  const current = user && user.email === agent;
+  if (user.email === FLOW_USER_ID || !user || !user.first_name) {
     return html`<temba-tip text="Automated message" position="top"
       ><div class="avatar flow" style="margin-top:0.5em">
         <temba-icon size="1" name="activity" /></div
@@ -711,7 +711,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
 
 export const renderMsgEvent = (
   event: MsgEvent,
-  agent: number
+  agent: string
 ): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
   const isError = event.status === 'E' || event.status === 'F';
@@ -765,7 +765,7 @@ export const renderMsgEvent = (
             ? html`<div style="font-size:0.8em">
                 ${renderAvatar(event.msg.created_by, agent)}
               </div>`
-            : renderAvatar({ id: FLOW_USER_ID })}
+            : renderAvatar({ email: FLOW_USER_ID })}
         </div>`
       : null}
   </div>`;
@@ -890,7 +890,7 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
 
 export const renderNoteCreated = (
   event: TicketEvent,
-  agent: number
+  agent: string
 ): TemplateResult => {
   return html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">

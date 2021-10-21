@@ -79,8 +79,15 @@ export class TembaList extends RapidElement {
 
       temba-options {
         display: block;
-        height: 100%;
         width: 100%;
+        flex-grow: 1;
+      }
+
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        align-items: center;
       }
     `;
   }
@@ -128,7 +135,7 @@ export class TembaList extends RapidElement {
       changedProperties.has('refreshKey') &&
       !changedProperties.has('endpoint')
     ) {
-      this.fetchItems();
+      this.refreshTop();
     }
 
     if (changedProperties.has('mostRecentItem')) {
@@ -173,6 +180,26 @@ export class TembaList extends RapidElement {
     this.dispatchEvent(evt);
   }
 
+  public getItemIndex(value: string) {
+    return this.items.findIndex(option => this.getValue(option) === value);
+  }
+
+  public removeItem(value: string) {
+    const index = this.getItemIndex(value);
+    this.items.splice(index, 1);
+    this.items = [...this.items];
+
+    // if we were at the end, move us down
+    this.cursorIndex = Math.max(
+      0,
+      Math.min(this.items.length - 1, this.cursorIndex - 1)
+    );
+
+    // request a change even if it is the same, the item is different
+    this.requestUpdate('cursorIndex');
+    this.requestUpdate('items');
+  }
+
   public getSelection(): any {
     return this.selected;
   }
@@ -184,6 +211,77 @@ export class TembaList extends RapidElement {
   public setEndpoint(endpoint: string, nextSelection: any = null) {
     this.endpoint = endpoint;
     this.nextSelection = nextSelection;
+  }
+
+  public getRefreshEndpoint() {
+    return this.endpoint;
+  }
+
+  /**
+   * Refreshes the first page, updating any found items in our list
+   */
+  private async refreshTop(): Promise<void> {
+    // cancel any outstanding requests
+    while (this.pending.length > 0) {
+      const pending = this.pending.pop();
+      pending.abort();
+    }
+
+    const controller = new AbortController();
+    this.pending.push(controller);
+
+    const prevItem = this.items[this.cursorIndex];
+
+    try {
+      const page = await fetchResultsPage(
+        this.getRefreshEndpoint(),
+        controller
+      );
+
+      const items = [...this.items];
+      // remove any dupes already in our list
+      if (page.results) {
+        page.results.forEach((newOption: any) => {
+          if (this.sanitizeOption) {
+            this.sanitizeOption(newOption);
+          }
+          const newValue = this.getValue(newOption);
+          const removeIndex = items.findIndex(
+            option => this.getValue(option) === newValue
+          );
+
+          if (removeIndex > -1) {
+            items.splice(removeIndex, 1);
+          }
+        });
+
+        // insert our new items at the front
+        const newItems = [...page.results.reverse(), ...items];
+
+        if (prevItem) {
+          const newItem = newItems[this.cursorIndex];
+          const prevValue = this.getValue(prevItem);
+          if (prevValue !== this.getValue(newItem)) {
+            const newIndex = newItems.findIndex(
+              option => this.getValue(option) === prevValue
+            );
+            this.cursorIndex = newIndex;
+
+            // make sure our focused item is visible
+            window.setTimeout(() => {
+              const option = this.shadowRoot
+                .querySelector('temba-options')
+                .shadowRoot.querySelector('.option.focused');
+              option.scrollIntoView({ block: 'end', inline: 'nearest' });
+            }, 0);
+          }
+        }
+
+        this.items = newItems;
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   private async fetchItems(): Promise<void> {
@@ -295,7 +393,8 @@ export class TembaList extends RapidElement {
   }
 
   private handleScrollThreshold() {
-    if (this.nextPage) {
+    if (this.nextPage && !this.loading) {
+      this.loading = true;
       fetchResultsPage(this.nextPage).then((page: ResultsPage) => {
         if (this.sanitizeOption) {
           page.results.forEach(this.sanitizeOption);
@@ -304,6 +403,7 @@ export class TembaList extends RapidElement {
         this.items = [...this.items, ...page.results];
         this.nextPage = page.next;
         this.pages++;
+        this.loading = false;
       });
     }
   }
@@ -319,19 +419,21 @@ export class TembaList extends RapidElement {
   }
 
   public render(): TemplateResult {
-    return html`<temba-options
-      ?visible=${true}
-      ?block=${true}
-      ?collapsed=${this.collapsed}
-      ?loading=${this.loading}
-      .renderOption=${this.renderOption}
-      .renderOptionDetail=${this.renderOptionDetail}
-      @temba-scroll-threshold=${this.handleScrollThreshold}
-      @temba-selection=${this.handleSelection.bind(this)}
-      .options=${this.items}
-      .cursorIndex=${this.cursorIndex}
-    >
-      <slot></slot>
-    </temba-options>`;
+    return html`<div class="wrapper">
+      <temba-options
+        ?visible=${true}
+        ?block=${true}
+        ?collapsed=${this.collapsed}
+        ?loading=${this.loading}
+        .renderOption=${this.renderOption}
+        .renderOptionDetail=${this.renderOptionDetail}
+        @temba-scroll-threshold=${this.handleScrollThreshold}
+        @temba-selection=${this.handleSelection.bind(this)}
+        .options=${this.items}
+        .cursorIndex=${this.cursorIndex}
+      >
+        <slot></slot>
+      </temba-options>
+    </div>`;
   }
 }

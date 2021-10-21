@@ -184,8 +184,8 @@ export class ContactChat extends RapidElement {
   @property({ type: Object })
   currentContact: Contact = null;
 
-  @property({ type: Number })
-  agent = -1;
+  @property({ type: String })
+  agent = '';
 
   constructor() {
     super();
@@ -231,20 +231,8 @@ export class ContactChat extends RapidElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    /* if (changedProperties.has('currentTicket')) {
-      console.log('currentTicket', this.currentTicket);
-    }
-
-    if (changedProperties.has('currentContact')) {
-      console.log('currentContact', this.currentContact);
-    }
-
-    if (changedProperties.has('contactUUID')) {
-      console.log('contactUUID', this.contactUUID);
-    }*/
-
     // we were provided a uuid, fetch our contact details
-    if (changedProperties.has('contactUUID')) {
+    if (changedProperties.has('contactUUID') && this.contactUUID) {
       fetchContact(this.contactsEndpoint + '?uuid=' + this.contactUUID).then(
         contact => {
           this.currentContact = contact;
