@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { css, property } from 'lit-element';
 import { html, TemplateResult } from 'lit-html';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
@@ -898,7 +897,6 @@ export class ContactHistory extends RapidElement {
                     body: ticket.body,
                     ticketer: ticket.ticketer,
                   },
-                  // eslint-disable-next-line @typescript-eslint/camelcase
                   created_on: ticket.opened_on,
                 };
 
@@ -918,8 +916,6 @@ export class ContactHistory extends RapidElement {
     return html`
       ${this.ticket
         ? html`<div class="sticky-bin">${unfetchedTickets}</div>`
-        : this.contact
-        ? html`<div class="scroll-title">${this.contact.name}</div>`
         : null}
       ${this.fetching
         ? html`<temba-loading units="5" size="10"></temba-loading>`
