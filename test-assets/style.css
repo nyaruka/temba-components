@@ -2,7 +2,7 @@
   display:none;
 }
 
-temba-dialog, temba-modax, temba-contact-history {
+temba-dialog, temba-modax, temba-contact-history, temba-menu {
   --transition-speed: 0ms !important;
 }
 

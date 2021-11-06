@@ -48,20 +48,4 @@ describe('temba-menu', () => {
 
     await assertScreenshot('list/menu-submenu', getClip(menu));
   });
-
-  // TODO: general menu doesn't support collapse yet
-  xit('supports collapse', async () => {
-    const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/list/menu-root.json',
-      collapsible: true,
-    });
-
-    // collapse our menu
-    menu.collapsed = true;
-    await menu.updateComplete;
-    await waitFor(0);
-
-    // selfie time!
-    await assertScreenshot('list/menu-collapsed', getClip(menu));
-  });
 });

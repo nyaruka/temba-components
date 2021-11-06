@@ -1,18 +1,14 @@
 import { css, html, property, TemplateResult } from 'lit-element';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import {
-  COOKIE_KEYS,
-  fetchResults,
-  getCookieBoolean,
-  setCookie,
-} from '../utils';
+import { fetchResults, getClasses } from '../utils';
 
 export interface MenuItem {
   id?: string;
   name?: string;
   count?: number;
   icon?: string;
+  collapsed_icon?: string;
   endpoint?: string;
   loading?: boolean;
   bottom?: boolean;
@@ -21,6 +17,10 @@ export interface MenuItem {
   href?: string;
   items?: MenuItem[];
   inline?: boolean;
+}
+
+interface MenuItemState {
+  collapsed?: string;
 }
 
 export class TembaMenu extends RapidElement {
@@ -106,8 +106,8 @@ export class TembaMenu extends RapidElement {
         background: var(--color-primary-dark);
       }
 
-      .level-0 > .item > .name {
-        display: none;
+      .level-0 > .item > .details {
+        display: none !important;
       }
 
       .level-0.expanding {
@@ -141,7 +141,11 @@ export class TembaMenu extends RapidElement {
         margin-right: 0.5em;
       }
 
-      .item > .name {
+      .item.inline > temba-icon {
+        margin-right: 0em;
+      }
+
+      .item > .details > .name {
         flex-grow: 1;
         white-space: nowrap;
         overflow: hidden;
@@ -199,31 +203,157 @@ export class TembaMenu extends RapidElement {
       }
 
       .inline-children {
-        margin-left: 0.5em;
+        padding-left: 0.5em;
       }
 
-      .item.selected.inline.child-selected {
-        background: inherit;
+      .inline-children {
+        background: #ffffff;
+        padding: 0.5em;
+        border-bottom-right-radius: var(--curvature);
+        border-bottom-left-radius: var(--curvature);
+        font-size: 0.9rem;
+        margin-bottom: 0.75em;
+        border: 1px solid #f1f1f1;
       }
 
-      .item.selected.inline {
+      .item.inline {
+        border: 1px solid #f1f1f1;
+        margin-top: 0.75em;
+      }
+
+      .item.inline.child-selected,
+      .item.inline.selected {
+        background: #f1f1f1;
+        border-bottom-right-radius: 0px !important;
+        border-bottom-left-radius: 0px !important;
+        z-index: 1000;
+        color: #444;
+        --icon-color: #444;
+      }
+
+      .level-1,
+      .level-2 {
+        border-right: 1px solid rgba(0 0 0 / 8%);
+        box-shadow: rgb(0 0 0 / 6%) 4px 0px 6px 1px;
       }
 
       .level-1 {
         overflow-y: auto;
-        width: 16em;
+        z-index: 1500;
+      }
+
+      .level-2 {
+        background: #fbfbfb;
+        overflow-y: auto;
+        z-index: 1000;
+      }
+
+      .level-2 .item .details {
+        overflow: hidden;
+      }
+
+      .level-2 .item {
+        min-width: 12em;
+        max-width: 12em;
+      }
+
+      .level-1 .item {
+        overflow: hidden;
+        max-width: 12em;
+        min-width: 12em;
+        min-height: 1.5em;
+        max-height: 1.5em;
+        transition: min-width var(--transition-speed) !important;
+      }
+
+      .level-1 .item .details {
+      }
+
+      .collapsed .item {
+        overflow: hidden;
+        min-width: 0;
+        margin: 0;
+      }
+
+      .item .details {
+        opacity: 1;
+        min-height: 1.5em;
+        max-height: 1.5em;
+        align-items: center;
+      }
+
+      .item .details .name {
+      }
+
+      .item temba-icon {
+      }
+
+      .collapsed .item .details {
+        overflow: hidden;
+        max-height: 0em;
+        max-width: 0em;
+      }
+
+      .collapsed .item .details {
+        max-height: 0em;
+      }
+
+      .collapsed .item temba-icon {
+        margin-right: 0;
+      }
+
+      .section {
+        transition: opacity var(--transition-speed) linear !important;
+        max-width: 12em;
+      }
+
+      .collapsed .section {
+        opacity: 0;
+        max-width: 0em;
+        max-height: 0.3em;
+      }
+
+      .collapsed.level-1 {
+        overflow: hidden;
+      }
+
+      .collapsed .item .right {
+        flex-grow: 1;
+      }
+
+      .collapse-icon {
+        display: none;
+      }
+
+      .collapsed .collapse-icon {
+        --icon-color: #ccc;
+        display: block;
+      }
+
+      .collapsed .item.iconless {
+        max-height: 0em;
+        padding: 0em;
+        min-height: 0em;
+      }
+
+      .divider {
+        height: 1px;
+        background: #f3f3f3;
+        margin: 0.5em 0.75em;
+        min-height: 1px;
+      }
+
+      .collapsed .divider {
+        height: 0;
+        margin: 0;
+        padding: 0;
+        min-height: 0px;
       }
     `;
   }
 
   @property({ type: Boolean })
   wraps = false;
-
-  @property({ type: Boolean })
-  collapsible = false;
-
-  @property({ type: Boolean })
-  collapsed: boolean;
 
   @property({ type: Boolean })
   wait: boolean;
@@ -247,10 +377,22 @@ export class TembaMenu extends RapidElement {
   root: MenuItem;
   selection: string[] = [];
   pending: string[] = [];
+  state: { [id: string]: MenuItemState } = {};
 
   constructor() {
     super();
-    this.collapsed = getCookieBoolean(COOKIE_KEYS.MENU_COLLAPSED);
+  }
+
+  private getMenuItemState(id: string): MenuItemState {
+    let itemState = {};
+    if (id) {
+      itemState = this.state[id];
+      if (!itemState) {
+        itemState = {};
+        this.state[id] = itemState;
+      }
+    }
+    return itemState;
   }
 
   public updated(changes: Map<string, any>) {
@@ -287,13 +429,30 @@ export class TembaMenu extends RapidElement {
             item.loading = true;
             const itemToUpdate = item;
             fetchResults(itemToUpdate.endpoint).then((updated: MenuItem[]) => {
-              // for now we only deal with updating counts
-              (itemToUpdate.items || []).forEach((existing: MenuItem) => {
-                const updatedItem = updated.find(
-                  updatedItem => updatedItem.id === existing.id
-                );
-                existing.count = updatedItem.count;
-              });
+              // for now we only deal with updating counts and names
+              (itemToUpdate.items || []).forEach(
+                (existing: MenuItem, index: number, items: []) => {
+                  const updatedItem = updated.find(
+                    updatedItem => updatedItem.id === existing.id
+                  );
+
+                  // we were removed!
+                  if (!updatedItem) {
+                    items.splice(index, 1);
+
+                    if (
+                      this.selection.length > 1 &&
+                      this.selection[this.selection.length - 1] == existing.id
+                    ) {
+                      this.selection.splice(this.selection.length - 1, 1);
+                      this.clickItem(this.selection[this.selection.length - 1]);
+                    }
+                  } else {
+                    existing.count = updatedItem.count;
+                    existing.name = updatedItem.name;
+                  }
+                }
+              );
 
               itemToUpdate.loading = false;
               this.requestUpdate('root');
@@ -401,11 +560,16 @@ export class TembaMenu extends RapidElement {
     }
   }
 
-  public clickItem(id: string) {
+  public clickItem(id: string): boolean {
     const path = [...this.selection];
     path.splice(path.length - 1, 1, id);
     const item = this.getMenuItemForSelection(path);
-    this.handleItemClicked(null, item);
+
+    if (item) {
+      this.handleItemClicked(null, item);
+      return true;
+    }
+    return false;
   }
 
   public getMenuItem() {
@@ -447,6 +611,24 @@ export class TembaMenu extends RapidElement {
     }
   }
 
+  public setSelectionPath(path: string) {
+    const asPath = path.split('/').filter(step => !!step);
+
+    // first try to click in the current space
+    const clicked = this.clickItem(asPath[asPath.length - 1]);
+
+    if (!clicked) {
+      this.wait = true;
+      this.setSelection(asPath);
+    }
+  }
+
+  public setFocusedItem(path: string) {
+    const focusedPath = path.split('/').filter(step => !!step);
+    this.selection = focusedPath;
+    this.requestUpdate('root');
+  }
+
   private isSelected(menuItem: MenuItem) {
     if (menuItem.level < this.selection.length) {
       return this.selection[menuItem.level] == menuItem.id;
@@ -460,6 +642,10 @@ export class TembaMenu extends RapidElement {
   }
 
   private renderMenuItem = (menuItem: MenuItem): TemplateResult => {
+    if (menuItem.id === 'divider') {
+      return html`<div class="divider"></div>`;
+    }
+
     const isSelected = this.isSelected(menuItem);
     const isChildSelected =
       isSelected && this.selection.length > menuItem.level + 1;
@@ -471,56 +657,77 @@ export class TembaMenu extends RapidElement {
         ></temba-icon>`
       : null;
 
+    const collapsedIcon = menuItem.collapsed_icon
+      ? html`<temba-icon
+          size="${menuItem.level === 0 ? '1.5' : '1'}"
+          name="${menuItem.collapsed_icon}"
+          class="collapse-icon"
+        ></temba-icon>`
+      : null;
+
+    const itemClasses = getClasses({
+      ['menu-' + menuItem.id]: true,
+      'child-selected': isChildSelected,
+      selected: isSelected,
+      item: true,
+      inline: menuItem.inline,
+      expanding: this.expanding && this.expanding === menuItem.id,
+      expanded: this.isExpanded(menuItem),
+      iconless: !icon && !collapsedIcon,
+    });
+
     const item = html` <div
-        class="item-top ${isSelected ? 'selected' : null}"
+        class="item-top ${isSelected ? 'selected' : null} "
       ></div>
 
       <div
         id="menu-${menuItem.id}"
-        class="item ${isSelected ? 'selected' : ''} ${isChildSelected
-          ? 'child-selected'
-          : ''} ${menuItem.inline ? 'inline' : ''} ${this.expanding &&
-        this.expanding === menuItem.id
-          ? 'expanding'
-          : ''} ${this.isExpanded(menuItem) ? 'expanded' : ''}"
+        class="${itemClasses}"
         @click=${event => {
           this.handleItemClicked(event, menuItem);
         }}
       >
-        ${this.collapsed || menuItem.level === 0
+        ${menuItem.level === 0
           ? html`<temba-tip
               style="display:flex;"
               text="${menuItem.name}"
               position="right"
               >${icon}</temba-tip
             >`
-          : icon}
+          : html`${icon}${collapsedIcon}`}
 
-        <div
-          class="name"
-          style="flex-grow:1; white-space: ${this.wraps ? 'normal' : 'nowrap'};"
-        >
-          ${menuItem.name}
+        <div class="details" style="flex-grow:1;display:flex">
+          <div
+            class="name"
+            style="flex-grow:1; flex-shrink:0 white-space: ${this.wraps
+              ? 'normal'
+              : 'nowrap'};"
+          >
+            ${menuItem.name}
+          </div>
+          ${menuItem.level > 0
+            ? menuItem.inline
+              ? html`<temba-icon
+                  name="chevron-${isSelected || isChildSelected
+                    ? 'up'
+                    : 'down'}"
+                ></temba-icon>`
+              : html`${menuItem.count || menuItem.count == 0
+                  ? html`
+                      <div class="count">
+                        ${menuItem.count.toLocaleString()}
+                      </div>
+                    `
+                  : html`<div class="count"></div>`}`
+            : null}
         </div>
-        ${menuItem.level > 0
-          ? html`${menuItem.count || menuItem.count == 0
-              ? html`
-                  <div class="count">${menuItem.count.toLocaleString()}</div>
-                `
-              : html`<div class="count"></div>`}`
-          : null}
+        <div class="right"></div>
       </div>
 
       <div class="item-bottom ${isSelected ? 'selected' : null}"></div>`;
 
     return item;
   };
-
-  public toggleCollapsed() {
-    this.collapsed = !this.collapsed;
-    setCookie(COOKIE_KEYS.MENU_COLLAPSED, this.collapsed);
-    this.requestUpdate('root');
-  }
 
   public render(): TemplateResult {
     if (!this.root || !this.root.items) {
@@ -532,7 +739,7 @@ export class TembaMenu extends RapidElement {
       />`;
     }
 
-    let items = this.root.items;
+    let items = this.root.items || [];
     const levels = [];
 
     levels.push(
@@ -557,20 +764,38 @@ export class TembaMenu extends RapidElement {
 
     this.selection.forEach((id, index) => {
       const selected = (items || []).find(item => item.id === id);
+      let collapsed = false;
       if (selected) {
         items = selected.items;
+        const itemState = this.getMenuItemState(selected.id);
+        // users set an explicit collapse state
+        if (itemState.collapsed) {
+          collapsed = itemState.collapsed === 'collapsed';
+        }
+        // otherwise pick a default collapse state
+        else {
+          if (this.selection.length > selected.level + 2) {
+            collapsed = true;
+          }
+        }
       } else {
         items = null;
       }
 
       if (items && items.length > 0 && !selected.inline) {
         levels.push(
-          html`<div class="level level-${index + 1}">
-            ${index == 0 && !this.submenu
+          html`<div
+            class="${getClasses({
+              level: true,
+              ['level-' + (index + 1)]: true,
+              collapsed,
+            })}"
+          >
+            ${!this.submenu
               ? html`<div class="section">${selected.name}</div>`
               : null}
             ${items.map((item: MenuItem) => {
-              if (item.inline && item.items && this.isSelected(item)) {
+              if (item.inline && this.isSelected(item)) {
                 return html`${this.renderMenuItem(item)}
                   <div class="inline-children">
                     ${item.items.map((child: MenuItem) => {
@@ -586,16 +811,6 @@ export class TembaMenu extends RapidElement {
     });
 
     const menu = html`<div class="root">${levels}</div>`;
-
-    if (this.collapsible) {
-      return html`
-        <div style="display:flex">
-          ${menu}
-          <div class="collapse-toggle" @click=${this.toggleCollapsed}></div>
-        </div>
-      `;
-    }
-
     return html`${menu}`;
   }
 }

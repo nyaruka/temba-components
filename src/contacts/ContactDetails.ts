@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { css, html, property, TemplateResult } from 'lit-element';
 import { Contact, Group, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -265,7 +264,7 @@ export class ContactDetails extends RapidElement {
         ${this.showGroups && !this.ticket
           ? html`<div class="groups">
               ${this.contact.groups.map((group: Group) => {
-                return html`<a href="/contacts/filter/${group.uuid}/"
+                return html`<a href="/contacts/groups/${group.uuid}/"
                   ><div class="group-label" style="cursor:pointer">
                     ${group.is_dynamic
                       ? html`<temba-icon name="atom"></temba-icon>`
