@@ -279,6 +279,7 @@ export class TembaMenu extends RapidElement {
         opacity: 1;
         min-height: 1.5em;
         max-height: 1.5em;
+        align-items: center;
       }
 
       .item .details .name {
