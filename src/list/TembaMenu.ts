@@ -263,7 +263,7 @@ export class TembaMenu extends RapidElement {
         min-width: 12em;
         min-height: 1.5em;
         max-height: 1.5em;
-        transition: min-width 250ms;
+        transition: min-width var(--transition-speed) !important;
       }
 
       .level-1 .item .details {
@@ -302,7 +302,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .section {
-        transition: all 100ms linear;
+        transition: opacity var(--transition-speed) linear !important;
         max-width: 12em;
       }
 
@@ -476,7 +476,7 @@ export class TembaMenu extends RapidElement {
           items.forEach(subItem => (subItem.level = item.level + 1));
           item.items = items;
           item.loading = false;
-          // this.requestUpdate('root');
+          this.requestUpdate('root');
           if (this.pending && this.pending.length > 0) {
             // auto select the next pending click
             const nextId = this.pending.splice(0, 1)[0];
