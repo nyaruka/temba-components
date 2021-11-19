@@ -64,6 +64,7 @@ export class TembaMenu extends RapidElement {
         -webkit-user-select: none;
         display: flex;
         font-size: 1.15em;
+        --icon-color: var(--color-text-dark);
       }
 
       .item.selected {
@@ -361,6 +362,11 @@ export class TembaMenu extends RapidElement {
         padding: 0;
         min-height: 0px;
       }
+
+      .sub-section {
+        font-size: 1.1rem;
+        color: #888;
+      }
     `;
   }
 
@@ -477,6 +483,26 @@ export class TembaMenu extends RapidElement {
     }
   }
 
+  private fireNoPath(missingId: string) {
+    const item = this.getMenuItem();
+
+    const details = {
+      item: item.id,
+      selection: '/' + this.selection.join('/'),
+      endpoint: item.endpoint,
+      path: missingId + '/' + this.pending.join('/') + document.location.search,
+    };
+
+    // remove any excess from our selection
+    const selection = this.selection.join('/');
+    selection.replace(details.path, '');
+    this.selection = selection.split('/');
+
+    this.fireCustomEvent(CustomEventType.NoPath, details);
+    this.pending = [];
+    this.requestUpdate('root');
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private loadItems(item: MenuItem, selectFirst = true) {
     if (item && item.endpoint) {
@@ -484,7 +510,16 @@ export class TembaMenu extends RapidElement {
       this.httpComplete = fetchResults(item.endpoint).then(
         (items: MenuItem[]) => {
           // update our item level
-          items.forEach(subItem => (subItem.level = item.level + 1));
+          items.forEach(subItem => {
+            subItem.level = item.level + 1;
+            // if we came with preset items, set the level for them accordingly
+            if (subItem.items) {
+              subItem.items.forEach(
+                inlineItem => (inlineItem.level = item.level + 2)
+              );
+            }
+          });
+
           item.items = items;
           item.loading = false;
           this.requestUpdate('root');
@@ -497,11 +532,7 @@ export class TembaMenu extends RapidElement {
               if (nextItem) {
                 this.handleItemClicked(null, nextItem);
               } else {
-                this.fireCustomEvent(CustomEventType.NoPath, {
-                  item: item.id,
-                  endpoint: item.endpoint,
-                  path: nextId + '/' + this.pending.join('/'),
-                });
+                this.fireNoPath(nextId);
               }
             }
           } else {
@@ -549,7 +580,7 @@ export class TembaMenu extends RapidElement {
       }
 
       if (menuItem.endpoint) {
-        this.loadItems(menuItem);
+        this.loadItems(menuItem, !menuItem.href);
         this.dispatchEvent(new Event('change'));
       } else {
         this.dispatchEvent(new Event('change'));
@@ -563,10 +594,10 @@ export class TembaMenu extends RapidElement {
             if (nextItem) {
               this.handleItemClicked(null, nextItem);
             }
+          } else {
+            this.fireNoPath(nextId);
           }
         }
-
-        this.pending = [];
         this.requestUpdate('root');
       }
     }
@@ -646,18 +677,38 @@ export class TembaMenu extends RapidElement {
     }
   }
 
-  public setFocusedItem(path: string, collapsed = false) {
+  public async setFocusedItem(path: string) {
     const focusedPath = path.split('/').filter(step => !!step);
-    this.selection = focusedPath;
-    const selected = this.getMenuItem();
-    if (selected && this.endpoint && !selected.items) {
-      this.loadItems(selected, false);
+
+    // if we don't match at the first level, we are a noop
+    if (focusedPath.length > 0) {
+      const rootItem = findItem(this.root.items, focusedPath[0]);
+      if (!rootItem) {
+        console.log('no root, noop');
+        return;
+      }
     }
 
-    if (collapsed) {
-      this.getMenuItemState(selected.id).collapsed = 'collapsed';
+    const newPath = [];
+    let level = this.root;
+    while (focusedPath.length > 0) {
+      const nextId = focusedPath.shift();
+      if (nextId) {
+        if (!level.items) {
+          this.loadItems(level, false);
+          await this.httpComplete;
+        }
+
+        level = findItem(level.items, nextId);
+        if (!level) {
+          focusedPath.splice(0, focusedPath.length);
+        } else {
+          newPath.push(nextId);
+        }
+      }
     }
 
+    this.selection = newPath;
     this.requestUpdate('root');
   }
 
@@ -680,6 +731,10 @@ export class TembaMenu extends RapidElement {
   private renderMenuItem = (menuItem: MenuItem): TemplateResult => {
     if (menuItem.id === 'divider') {
       return html`<div class="divider"></div>`;
+    }
+
+    if (menuItem.id === 'section') {
+      return html`<div class="sub-section">${menuItem.name}</div>`;
     }
 
     const isSelected = this.isSelected(menuItem);
@@ -812,7 +867,7 @@ export class TembaMenu extends RapidElement {
         // otherwise pick a default collapse state
         else {
           if (this.selection.length > selected.level + 2) {
-            collapsed = true;
+            collapsed = false;
           }
         }
       } else {

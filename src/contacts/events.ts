@@ -686,7 +686,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
 
   let inner = null;
   if (mediaType === 'image') {
-    inner = html`<a href="${url}"><img src="${url}" style="width:100%;height:auto;display:block"></img></a>`;
+    inner = html`<div class="linked" onclick="goto(event)" href="${url}"><img src="${url}" style="width:100%;height:auto;display:block"></img></a>`;
   } else if (ext === 'pdf') {
     return html`<div
     style="width:100%;height:300px;border-radius:var(--curvature);box-shadow:0px 0px 10px -1px rgb(160 160 160);overflow:hidden"
@@ -928,7 +928,13 @@ export const renderTicketAction = (
       <temba-icon name="${icon}"></temba-icon>
       <div class="description">
         ${getDisplayName(event.created_by)} ${action} a
-        <a href="/tickets/all/open/${event.ticket.uuid}">ticket</a>
+        <span
+          onclick="goto(event)"
+          class="linked"
+          href="/ticket/all/open/${event.ticket.uuid}"
+        >
+          ticket
+        </span>
       </div>
     </div>`;
   }
@@ -976,7 +982,13 @@ export const renderTicketOpened = (
       <temba-icon name="${icon}"></temba-icon>
       <div class="description">
         ${event.ticket.topic.name}
-        <a href="/tickets/all/open/${event.ticket.uuid}">ticket</a> was opened
+        <span
+          class="linked"
+          onclick="goto(event)"
+          href="/tickets/all/open/${event.ticket.uuid}"
+          >ticket</span
+        >
+        was opened
       </div>
     </div>`;
   } else {
@@ -1114,11 +1126,20 @@ export const renderCampaignFiredEvent = (
   return html`<temba-icon name="campaign"></temba-icon>
     <div class="description">
       Campaign
-      <a href="/campaign/read/${event.campaign.id}">${event.campaign.name}</a>
+      <span
+        class="linked"
+        onclick="goto(event)"
+        href="/campaign/read/${event.campaign.id}"
+        >${event.campaign.name}</span
+      >
       ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
-      <a href="/campaignevent/read/${event.campaign_event.id}">
+      <span
+        class="linked"
+        onclick="goto(event)"
+        href="/campaignevent/read/${event.campaign_event.id}"
+      >
         ${event.campaign_event.offset_display}
-        ${event.campaign_event.relative_to.name}</a
+        ${event.campaign_event.relative_to.name}</span
       >
     </div>`;
 };
@@ -1138,7 +1159,12 @@ export const renderContactGroupsEvent = (
       ${oxfordFn(
         groups,
         (group: ObjectReference) =>
-          html`<a href="/contact/filter/${group.uuid}">${group.name}</a>`
+          html`<span
+            class="linked"
+            onclick="goto(event)"
+            href="/contact/filter/${group.uuid}"
+            >${group.name}</span
+          >`
       )}
       ${event.type === Events.FAILURE
         ? html`<div>Run ended prematurely, check the flow design.</div>`

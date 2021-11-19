@@ -15,6 +15,10 @@ Single-colored icons can be modified like so:
 }
 ========================================== */
 
+.icon-users1 {
+  width: 1.125em;
+}
+
 .icon-channel-kannel {
   width: 0.7734375em;
 }
@@ -49,8 +53,4 @@ Single-colored icons can be modified like so:
 
 .icon-vonage {
   width: 1.1484375em;
-}
-
-.icon-users1 {
-  width: 1.125em;
 }

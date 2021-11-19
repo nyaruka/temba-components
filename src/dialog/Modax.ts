@@ -106,6 +106,9 @@ export class Modax extends RapidElement {
   @property({ type: Boolean })
   noSubmit: boolean;
 
+  @property({ type: Object })
+  headers: any = {};
+
   @property({ type: String })
   body: any = this.getLoading();
 
@@ -222,12 +225,18 @@ export class Modax extends RapidElement {
     return !scriptOnly;
   }
 
+  public getHeaders(): any {
+    const headers = this.headers;
+    headers['X-PJAX'] = 1;
+    return headers;
+  }
+
   private fetchForm() {
     // const CancelToken = axios.CancelToken;
     // this.cancelToken = CancelToken.source();
     this.fetching = true;
     this.body = this.getLoading();
-    this.httpComplete = getUrl(this.endpoint, null, true).then(
+    this.httpComplete = getUrl(this.endpoint, null, this.getHeaders()).then(
       (response: WebResponse) => {
         this.setBody(response.body);
         this.updatePrimaryButton();
@@ -249,7 +258,7 @@ export class Modax extends RapidElement {
     this.httpComplete = postUrl(
       this.endpoint,
       postData,
-      true,
+      this.getHeaders(),
       'application/x-www-form-urlencoded'
     )
       .then((response: WebResponse) => {

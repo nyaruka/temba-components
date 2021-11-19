@@ -39,29 +39,29 @@ export const getHTTPCookie = (name: string): string => {
   return null;
 };
 
-export const getHeaders = (pjax = false) => {
+export const getHeaders = (headers: any = {}) => {
   const csrf = getHTTPCookie('csrftoken');
-  const headers: any = csrf ? { 'X-CSRFToken': csrf } : {};
+  const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
   // mark us as ajax
-  headers['X-Requested-With'] = 'XMLHttpRequest';
+  fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 
-  if (pjax) {
-    headers['X-PJAX'] = 'true';
-  }
+  Object.keys(headers).forEach(key => {
+    fetchHeaders[key] = headers[key];
+  });
 
-  return headers;
+  return fetchHeaders;
 };
 
 export const getUrl = (
   url: string,
   controller: AbortController = null,
-  pjax = false
+  headers: { [key: string]: string } = {}
 ): Promise<WebResponse> => {
   return new Promise<WebResponse>((resolve, reject) => {
     const options = {
       method: 'GET',
-      headers: getHeaders(pjax),
+      headers: getHeaders(headers),
     };
 
     if (controller) {
@@ -183,17 +183,18 @@ export interface WebResponse {
 export const postUrl = (
   url: string,
   payload: any,
-  pjax = false,
+  headers: any = {},
   contentType = null
 ): Promise<WebResponse> => {
-  const headers = getHeaders(pjax);
+  const fetchHeaders = getHeaders(headers);
+
   if (contentType) {
-    headers['Content-Type'] = contentType;
+    fetchHeaders['Content-Type'] = contentType;
   }
-  //   headers['Content-Type'] = contentType;
+
   const options = {
     method: 'POST',
-    headers,
+    headers: fetchHeaders,
     body: payload,
   };
 
@@ -474,7 +475,7 @@ export const isDate = (value: string): boolean => {
   return DATE_FORMAT.test(value);
 };
 
-export const debounce = (fn: Function, millis: number, immediate = false) => {
+export const debounce = (fn: any, millis: number, immediate = false) => {
   let timeout: any;
   return function (...args: any) {
     const context = this;
@@ -493,7 +494,7 @@ export const debounce = (fn: Function, millis: number, immediate = false) => {
   };
 };
 
-export const throttle = (fn: Function, millis: number) => {
+export const throttle = (fn: any, millis: number) => {
   let ready = true;
   return function (...args: any) {
     const context = this;
