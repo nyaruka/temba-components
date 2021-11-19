@@ -264,13 +264,18 @@ export class ContactDetails extends RapidElement {
         ${this.showGroups && !this.ticket
           ? html`<div class="groups">
               ${this.contact.groups.map((group: Group) => {
-                return html`<a href="/contacts/groups/${group.uuid}/"
-                  ><div class="group-label" style="cursor:pointer">
+                return html`
+                  <div
+                    onclick="goto(event)"
+                    href="/contact/filter/${group.uuid}/"
+                    class="group-label"
+                    style="cursor:pointer"
+                  >
                     ${group.is_dynamic
                       ? html`<temba-icon name="atom"></temba-icon>`
                       : null}${group.name}
-                  </div></a
-                >`;
+                  </div>
+                `;
               })}
             </div>`
           : html``}
