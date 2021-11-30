@@ -18,6 +18,7 @@ export interface MenuItem {
   href?: string;
   items?: MenuItem[];
   inline?: boolean;
+  type?: string;
 }
 
 interface MenuItemState {
@@ -142,6 +143,9 @@ export class TembaMenu extends RapidElement {
         margin-top: 0.1em;
         border-radius: var(--curvature);
         display: flex;
+
+        min-width: 12em;
+        max-width: 12em;
       }
 
       .item > temba-icon {
@@ -149,7 +153,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .item.inline > temba-icon {
-        margin-right: 0em;
+        // margin-right: 0em;
       }
 
       .item > .details > .name {
@@ -157,12 +161,15 @@ export class TembaMenu extends RapidElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        width: 0;
       }
 
       .level-0 > .item {
         padding: 1em 1em;
         margin-top: 0em;
         border-radius: 0px;
+        min-width: inherit;
+        max-width: inherit;
       }
 
       .level-0 > .item > temba-icon {
@@ -210,32 +217,43 @@ export class TembaMenu extends RapidElement {
       }
 
       .inline-children {
-        padding-left: 0.5em;
-      }
-
-      .inline-children {
-        background: #ffffff;
+        // background: #ffffff;
         padding: 0.5em;
         border-bottom-right-radius: var(--curvature);
         border-bottom-left-radius: var(--curvature);
-        font-size: 0.9rem;
+        font-size: 1rem;
         margin-bottom: 0.75em;
-        border: 1px solid #f1f1f1;
+        border: 1px solid #f3f3f3;
+        // box-shadow: var(--shadow);
+        // margin-top: -1px;
+        z-index: 1000;
+        // margin-left: 1em;
+        border-top: none;
+      }
+
+      .inline-children .item {
+        max-width: 11em !important;
+        min-width: 11em !important;
+        // border: 1px solid #f1f1f1;
+        // margin-top: 0.75em;
+        // margin-right: -1em;
+        // padding-right: 0;
       }
 
       .item.inline {
-        border: 1px solid #f1f1f1;
-        margin-top: 0.75em;
+        border: 0px solid transparent;
       }
 
       .item.inline.child-selected,
       .item.inline.selected {
-        background: #f1f1f1;
+        background: #f3f3f3;
+        border: 0px solid #f1f1f1;
         border-bottom-right-radius: 0px !important;
         border-bottom-left-radius: 0px !important;
         z-index: 1000;
         color: #444;
         --icon-color: #444;
+        // box-shadow: var(--shadow);
       }
 
       .level-1,
@@ -366,6 +384,8 @@ export class TembaMenu extends RapidElement {
       .sub-section {
         font-size: 1.1rem;
         color: #888;
+        margin-top: 1rem;
+        margin-left: 0.3rem;
       }
     `;
   }
@@ -543,7 +563,12 @@ export class TembaMenu extends RapidElement {
               this.selection.length >= 1 &&
               !item.inline
             ) {
-              this.handleItemClicked(null, items[0]);
+              for (const item of items) {
+                if (!item.type) {
+                  this.handleItemClicked(null, item);
+                  break;
+                }
+              }
             }
           }
         }
@@ -684,7 +709,6 @@ export class TembaMenu extends RapidElement {
     if (focusedPath.length > 0) {
       const rootItem = findItem(this.root.items, focusedPath[0]);
       if (!rootItem) {
-        console.log('no root, noop');
         return;
       }
     }
@@ -729,11 +753,11 @@ export class TembaMenu extends RapidElement {
   }
 
   private renderMenuItem = (menuItem: MenuItem): TemplateResult => {
-    if (menuItem.id === 'divider') {
+    if (menuItem.type === 'divider') {
       return html`<div class="divider"></div>`;
     }
 
-    if (menuItem.id === 'section') {
+    if (menuItem.type === 'section') {
       return html`<div class="sub-section">${menuItem.name}</div>`;
     }
 
@@ -790,7 +814,7 @@ export class TembaMenu extends RapidElement {
         <div class="details" style="flex-grow:1;display:flex">
           <div
             class="name"
-            style="flex-grow:1; flex-shrink:0 white-space: ${this.wraps
+            style="flex-grow:1; flex-shrink:0; white-space: ${this.wraps
               ? 'normal'
               : 'nowrap'};"
           >

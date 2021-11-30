@@ -21,6 +21,7 @@ import { Alert } from './src/alert/Alert';
 import { Omnibox } from './src/omnibox/Omnibox';
 import { Tip } from './src/tip/Tip';
 import { TembaMenu } from './src/list/TembaMenu';
+import { Anchor } from './src/anchor/Anchor';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -28,6 +29,7 @@ export function addCustomElement(name: string, comp: any) {
   }
 }
 
+addCustomElement('temba-anchor', Anchor);
 addCustomElement('temba-alert', Alert);
 addCustomElement('temba-store', Store);
 addCustomElement('temba-textinput', TextInput);
