@@ -319,7 +319,7 @@ export class TextInput extends FormElement {
       return;
     }
 
-    if (this.autogrow) {
+    if (this.textarea && this.autogrow) {
       const autogrow = this.shadowRoot.querySelector(
         '.grow-wrap > div'
       ) as HTMLDivElement;
