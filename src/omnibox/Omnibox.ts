@@ -1,6 +1,7 @@
 import { TemplateResult, html, css, property } from 'lit-element';
 import { styleMap } from 'lit-html/directives/style-map';
 import { RapidElement } from '../RapidElement';
+import { Select } from '../select/Select';
 
 enum OmniType {
   Group = 'group',
@@ -104,7 +105,9 @@ export class Omnibox extends RapidElement {
     }
 
     if (option.type === OmniType.Group) {
-      return html` <div style=${styleMap(style)}>${option.count}</div> `;
+      return html`
+        <div style=${styleMap(style)}>${option.count.toLocaleString()}</div>
+      `;
     }
 
     return null;
@@ -170,6 +173,11 @@ export class Omnibox extends RapidElement {
         return { id: 'tel:' + input, name: input, type: 'urn' };
       }
     }
+  }
+
+  public getValues(): any[] {
+    const select = this.shadowRoot.querySelector('temba-select') as Select;
+    return select.values;
   }
 
   public render(): TemplateResult {
