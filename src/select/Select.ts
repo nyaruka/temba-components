@@ -455,6 +455,8 @@ export class Select extends FormElement {
   private next: string = null;
   private query: string;
 
+  private removingSelection: boolean;
+
   private lruCache = flru(20);
 
   // http promise to monitor for completeness
@@ -854,7 +856,7 @@ export class Select extends FormElement {
   private handleFocus(): void {
     if (!this.focused && this.visibleOptions.length === 0) {
       this.focused = true;
-      if (this.searchOnFocus) {
+      if (this.searchOnFocus && !this.removingSelection) {
         this.requestUpdate('input');
       }
     }
@@ -1192,6 +1194,12 @@ export class Select extends FormElement {
                           <div
                             class="remove-item"
                             style="margin-top:1px"
+                            @mousedown=${() => {
+                              this.removingSelection = true;
+                            }}
+                            @mouseup=${() => {
+                              this.removingSelection = false;
+                            }}
                             @click=${(evt: MouseEvent) => {
                               evt.preventDefault();
                               evt.stopPropagation();

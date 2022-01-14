@@ -1,8 +1,8 @@
 import { TemplateResult, html, property, css } from 'lit-element';
-import { getUrl, fillTemplate, WebResponse } from '../utils';
+import { getUrl, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import '../alert/Alert';
-import { Contact } from '../interfaces';
+import { Contact, CustomEventType } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map';
 import { FormElement } from '../FormElement';
 
@@ -31,7 +31,7 @@ export class ContactSearch extends FormElement {
         width: 160px;
       }
 
-      .created-on {
+      .date {
         text-align: right;
       }
 
@@ -40,7 +40,7 @@ export class ContactSearch extends FormElement {
         color: var(--color-text-dark);
       }
 
-      .field-header.created-on {
+      .field-header.date {
         text-align: right;
       }
 
@@ -53,14 +53,11 @@ export class ContactSearch extends FormElement {
         vertical-align: top;
       }
 
-      table {
-        width: 100%;
-        padding-top: 10px;
+      .summary {
       }
 
-      .header td {
-        border-bottom: 2px solid var(--color-borders);
-        padding: 5px 3px;
+      table {
+        width: 100%;
       }
 
       .contact td {
@@ -92,6 +89,46 @@ export class ContactSearch extends FormElement {
       .error {
         margin-top: 10px;
       }
+
+      .match-count {
+        padding: 4px;
+        margin-top: 6px;
+      }
+
+      .linked {
+        color: var(--color-link-primary);
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .header td {
+        border-bottom: 0px solid var(--color-borders);
+        padding: 5px 3px;
+      }
+
+      .expanded .header td {
+        border-bottom: 2px solid var(--color-borders);
+      }
+
+      td.field-header,
+      tr.table-footer,
+      tr.contact {
+        display: none;
+      }
+
+      .expanded td.field-header {
+        display: table-cell;
+      }
+
+      .expanded tr.contact,
+      .expanded tr.table-footer {
+        display: table-row;
+      }
+
+      .query {
+        display: var(--contact-search-query-display);
+        margin-bottom: 10px;
+      }
     `;
   }
 
@@ -99,6 +136,9 @@ export class ContactSearch extends FormElement {
 
   @property({ type: Boolean })
   fetching: boolean;
+
+  @property({ type: Boolean })
+  expanded: boolean;
 
   @property({ type: String })
   endpoint: string;
@@ -112,8 +152,11 @@ export class ContactSearch extends FormElement {
   @property({ type: String })
   query = '';
 
-  @property({ type: String, attribute: 'matches-text' })
-  matchesText = '';
+  @property({ type: Number })
+  inactiveThreshold = 1000;
+
+  @property({ type: Number })
+  inactiveDays = 90;
 
   @property({ attribute: false })
   summary: SummaryResponse;
@@ -140,16 +183,22 @@ export class ContactSearch extends FormElement {
     }
   }
 
-  public fetchSummary(query: string): any {
-    // const CancelToken = axios.CancelToken;
-    // this.cancelToken = CancelToken.source();
-
-    const url = this.endpoint + query;
-
+  public executeQuery(query: string): any {
+    const url = this.endpoint + query.replace('\n', ' ');
     getUrl(url).then((response: WebResponse) => {
       if (response.status === 200) {
+        const summary = response.json as SummaryResponse;
+        this.fireCustomEvent(CustomEventType.FetchComplete, summary);
+      }
+    });
+  }
+
+  public fetchSummary(query: string): any {
+    const url = this.endpoint + query.replace('\n', ' ');
+    getUrl(url).then((response: WebResponse) => {
+      this.fetching = false;
+      if (response.status === 200) {
         this.summary = response.json as SummaryResponse;
-        this.fetching = false;
 
         if (this.summary.error) {
           this.errors = [this.summary.error];
@@ -157,6 +206,7 @@ export class ContactSearch extends FormElement {
           this.errors = [];
         }
         this.requestUpdate('errors');
+        this.fireCustomEvent(CustomEventType.ContentChanged, this.summary);
       }
     });
   }
@@ -177,20 +227,29 @@ export class ContactSearch extends FormElement {
 
       if (!this.summary.error) {
         const count = this.summary.total;
-        const message = fillTemplate(this.matchesText, {
-          query: this.summary.query,
-          count,
-        });
+        const lastSeenOn = this.summary.query.indexOf('last_seen_on') > -1;
 
         summary = html`
+          <div class="summary ${this.expanded ? 'expanded' : ''}">
           <table cellspacing="0" cellpadding="0">
             <tr class="header">
-              <td colspan="2"></td>
+              <td colspan="2">
+              Found <a
+              class="linked"
+              target="_"
+              href="/contact/?search=${encodeURIComponent(this.summary.query)}"
+              
+            >${count.toLocaleString()}</a> contact${
+          count !== 1 ? 's' : ''
+        }</div>
+              </td>
               ${fields.map(
                 field => html` <td class="field-header">${field.label}</td> `
               )}
               <td></td>
-              <td class="field-header created-on">Created On</td>
+              <td class="field-header date">
+                ${lastSeenOn ? 'Last Seen' : 'Created'}
+              </td>
             </tr>
 
             ${this.summary.sample.map(
@@ -207,24 +266,35 @@ export class ContactSearch extends FormElement {
                     `
                   )}
                   <td></td>
-                  <td class="created-on">${contact.created_on}</td>
+                  <td class="date">
+                    ${lastSeenOn
+                      ? contact.last_seen_on || '--'
+                      : contact.created_on}
+                  </td>
                 </tr>
               `
             )}
 
-            <tr class="table-footer">
-              <td class="query-details" colspan=${fields.length + 3}>
-                ${message}
-              </td>
-              <td class="more">
-                ${this.summary.total > this.summary.sample.length
-                  ? html`
-                      ${this.summary.total - this.summary.sample.length} more
-                    `
-                  : null}
-              </td>
-            </tr>
+            ${
+              this.summary.total > this.summary.sample.length
+                ? html`<tr class="table-footer">
+                    <td class="query-details" colspan=${fields.length + 3}></td>
+                    <td class="more">
+                      <a
+                        class="linked"
+                        target="_"
+                        href="/contact/?search=${encodeURIComponent(
+                          this.summary.query
+                        )}"
+                        >more</a
+                      >
+                    </td>
+                  </tr>`
+                : null
+            }
+            
           </table>
+          </div>
         `;
       }
     }
@@ -232,23 +302,31 @@ export class ContactSearch extends FormElement {
     const loadingStyle = this.fetching ? { opacity: '1' } : {};
 
     return html`
-      <temba-textinput
-        .label=${this.label}
-        .helpText=${this.helpText}
-        .widgetOnly=${this.widgetOnly}
-        .errors=${this.errors}
-        name=${this.name}
-        .inputRoot=${this}
-        @input=${this.handleQueryChange}
-        placeholder=${this.placeholder}
-        value=${this.query}
-      >
-        <temba-loading
-          units="4"
-          style=${styleMap(loadingStyle)}
-        ></temba-loading>
-      </temba-textinput>
-      ${this.summary ? html` <div class="summary">${summary}</div> ` : null}
+      <div class="query">
+        <temba-textinput
+          .label=${this.label}
+          .helpText=${this.helpText}
+          .widgetOnly=${this.widgetOnly}
+          .errors=${this.errors}
+          name=${this.name}
+          .inputRoot=${this}
+          @input=${this.handleQueryChange}
+          placeholder=${this.placeholder}
+          .value=${this.query}
+          textarea
+          autogrow
+        >
+        </temba-textinput>
+      </div>
+
+      ${this.fetching
+        ? html`<temba-loading
+            units="4"
+            style=${styleMap(loadingStyle)}
+          ></temba-loading>`
+        : this.summary
+        ? html` <div class="summary">${summary}</div> `
+        : null}
     `;
   }
 }

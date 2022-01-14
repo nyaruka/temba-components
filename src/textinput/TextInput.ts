@@ -219,6 +219,13 @@ export class TextInput extends FormElement {
       this.setValues([this.value]);
       this.fireEvent('change');
 
+      if (this.textarea && this.autogrow) {
+        const autogrow = this.shadowRoot.querySelector(
+          '.grow-wrap > div'
+        ) as HTMLDivElement;
+        autogrow.innerText = this.value + String.fromCharCode(10);
+      }
+
       if (this.cursorStart > -1 && this.cursorEnd > -1) {
         this.inputElement.setSelectionRange(this.cursorStart, this.cursorEnd);
         this.cursorStart = -1;
@@ -317,13 +324,6 @@ export class TextInput extends FormElement {
   private handleInput(update: any): void {
     if (this.disabled) {
       return;
-    }
-
-    if (this.textarea && this.autogrow) {
-      const autogrow = this.shadowRoot.querySelector(
-        '.grow-wrap > div'
-      ) as HTMLDivElement;
-      autogrow.innerText = update.target.value + String.fromCharCode(10);
     }
 
     this.updateValue(update.target.value);
@@ -454,7 +454,7 @@ export class TextInput extends FormElement {
           }
         }}
         placeholder=${this.placeholder}
-        value="${this.value}"
+        .value=${this.value}
         .disabled=${this.disabled}
       />
     `;

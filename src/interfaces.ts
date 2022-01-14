@@ -174,6 +174,7 @@ export enum CustomEventType {
   ScrollThreshold = 'temba-scroll-threshold',
   ContentChanged = 'temba-content-changed',
   ContextChanged = 'temba-context-changed',
+  FetchComplete = 'temba-fetch-complete',
   Submitted = 'temba-submitted',
   Redirected = 'temba-redirected',
   NoPath = 'temba-no-path',

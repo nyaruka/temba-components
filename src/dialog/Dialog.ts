@@ -68,7 +68,7 @@ export class Dialog extends RapidElement {
 
       .dialog-body {
         background: #fff;
-        max-height: 55vh;
+        max-height: 75vh;
         overflow-y: auto;
       }
 
@@ -161,6 +161,9 @@ export class Dialog extends RapidElement {
 
   @property({ type: Boolean })
   destructive: boolean;
+
+  @property({ type: Boolean })
+  disabled: boolean;
 
   @property({ type: Boolean })
   loading: boolean;
@@ -293,6 +296,10 @@ export class Dialog extends RapidElement {
     );
   }
 
+  public getPrimaryButton(): Button {
+    return this.shadowRoot.querySelector(`temba-button[primary]`);
+  }
+
   private handleKeyUp(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       this.clickCancel();
@@ -320,7 +327,9 @@ export class Dialog extends RapidElement {
   public render(): TemplateResult {
     const height = this.getDocumentHeight();
 
-    const maskStyle = { height: `${height + 100}px` };
+    const maskStyle = {
+      height: `${height + 100}px`,
+    };
     const dialogStyle = { width: Dialog.widths[this.size] };
 
     const header = this.header
@@ -375,6 +384,7 @@ export class Dialog extends RapidElement {
                           ?destructive=${this.destructive}
                           ?primary=${!this.destructive}
                           ?submitting=${this.submitting}
+                          ?disabled=${this.disabled}
                           >}</temba-button
                         >
                       `

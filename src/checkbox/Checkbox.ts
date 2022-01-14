@@ -9,6 +9,19 @@ export class Checkbox extends FormElement {
         display: inline-block;
       }
 
+      :host([label]) {
+        width: 100%;
+      }
+
+      .wrapper.label {
+        padding: 10px;
+        border-radius: var(--curvature);
+      }
+
+      .wrapper.label:hover {
+        background: #f9f9f9;
+      }
+
       temba-field {
         --help-text-margin-left: 24px;
         cursor: pointer;
@@ -93,22 +106,24 @@ export class Checkbox extends FormElement {
     />`;
 
     return html`
-      <temba-field
-        name=${this.name}
-        .helpText=${this.helpText}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .helpAlways=${true}
-        ?disabled=${this.disabled}
-        @click=${this.handleClick}
-      >
-        <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
-          ${icon}
-          ${this.label
-            ? html`<div class="checkbox-label">${this.label}</div>`
-            : null}
-        </div>
-      </temba-field>
+      <div class="wrapper ${this.label ? 'label' : ''}">
+        <temba-field
+          name=${this.name}
+          .helpText=${this.helpText}
+          .errors=${this.errors}
+          .widgetOnly=${this.widgetOnly}
+          .helpAlways=${true}
+          ?disabled=${this.disabled}
+          @click=${this.handleClick}
+        >
+          <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
+            ${icon}
+            ${this.label
+              ? html`<div class="checkbox-label">${this.label}</div>`
+              : null}
+          </div>
+        </temba-field>
+      </div>
     `;
   }
 }

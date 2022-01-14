@@ -112,6 +112,11 @@ export class Modax extends RapidElement {
   @property({ type: String })
   body: any = this.getLoading();
 
+  @property({ type: Boolean })
+  disabled = false;
+
+  @property({ type: Boolean })
+  suspendSubmit = false;
   // private cancelToken: CancelTokenSource;
 
   // http promise to monitor for completeness
@@ -301,7 +306,9 @@ export class Modax extends RapidElement {
     const button = evt.detail.button;
     if (!button.disabled && !button.submitting) {
       if (button.name === this.primaryName) {
-        this.submit();
+        if (!this.suspendSubmit) {
+          this.submit();
+        }
       }
     }
 
@@ -309,7 +316,6 @@ export class Modax extends RapidElement {
       this.open = false;
       this.fetching = false;
       this.cancelName = undefined;
-      // this.cancelToken.cancel();
     }
   }
 
@@ -338,6 +344,7 @@ export class Modax extends RapidElement {
         ?submitting=${this.submitting}
         ?destructive=${this.isDestructive()}
         ?noFocus=${true}
+        ?disabled=${this.disabled}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
