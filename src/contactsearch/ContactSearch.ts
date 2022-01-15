@@ -53,9 +53,6 @@ export class ContactSearch extends FormElement {
         vertical-align: top;
       }
 
-      .summary {
-      }
-
       table {
         width: 100%;
       }
@@ -231,52 +228,56 @@ export class ContactSearch extends FormElement {
 
         summary = html`
           <div class="summary ${this.expanded ? 'expanded' : ''}">
-          <table cellspacing="0" cellpadding="0">
-            <tr class="header">
-              <td colspan="2">
-              Found <a
-              class="linked"
-              target="_"
-              href="/contact/?search=${encodeURIComponent(this.summary.query)}"
-              
-            >${count.toLocaleString()}</a> contact${
-          count !== 1 ? 's' : ''
-        }</div>
-              </td>
-              ${fields.map(
-                field => html` <td class="field-header">${field.label}</td> `
+            <table cellspacing="0" cellpadding="0">
+              <tr class="header">
+                <td colspan="2">
+                  Found
+                  <a
+                    class="linked"
+                    target="_"
+                    href="/contact/?search=${encodeURIComponent(
+                      this.summary.query
+                    )}"
+                  >
+                    ${count.toLocaleString()}
+                  </a>
+                  contact${count !== 1 ? 's' : ''}
+                </td>
+                ${fields.map(
+                  field => html` <td class="field-header">${field.label}</td> `
+                )}
+                <td></td>
+                <td class="field-header date">
+                  ${lastSeenOn ? 'Last Seen' : 'Created'}
+                </td>
+              </tr>
+
+              ${this.summary.sample.map(
+                (contact: Contact) => html`
+                  <tr class="contact">
+                    <td class="urn">
+                      ${(contact as any).primary_urn_formatted}
+                    </td>
+                    <td class="name">${contact.name}</td>
+                    ${fields.map(
+                      field => html`
+                        <td class="field">
+                          ${(
+                            (contact as any).fields[field.uuid] || { text: '' }
+                          ).text}
+                        </td>
+                      `
+                    )}
+                    <td></td>
+                    <td class="date">
+                      ${lastSeenOn
+                        ? contact.last_seen_on || '--'
+                        : contact.created_on}
+                    </td>
+                  </tr>
+                `
               )}
-              <td></td>
-              <td class="field-header date">
-                ${lastSeenOn ? 'Last Seen' : 'Created'}
-              </td>
-            </tr>
-
-            ${this.summary.sample.map(
-              (contact: Contact) => html`
-                <tr class="contact">
-                  <td class="urn">${(contact as any).primary_urn_formatted}</td>
-                  <td class="name">${contact.name}</td>
-                  ${fields.map(
-                    field => html`
-                      <td class="field">
-                        ${((contact as any).fields[field.uuid] || { text: '' })
-                          .text}
-                      </td>
-                    `
-                  )}
-                  <td></td>
-                  <td class="date">
-                    ${lastSeenOn
-                      ? contact.last_seen_on || '--'
-                      : contact.created_on}
-                  </td>
-                </tr>
-              `
-            )}
-
-            ${
-              this.summary.total > this.summary.sample.length
+              ${this.summary.total > this.summary.sample.length
                 ? html`<tr class="table-footer">
                     <td class="query-details" colspan=${fields.length + 3}></td>
                     <td class="more">
@@ -290,10 +291,8 @@ export class ContactSearch extends FormElement {
                       >
                     </td>
                   </tr>`
-                : null
-            }
-            
-          </table>
+                : null}
+            </table>
           </div>
         `;
       }
