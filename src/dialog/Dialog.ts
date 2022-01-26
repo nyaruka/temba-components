@@ -49,7 +49,7 @@ export class Dialog extends RapidElement {
         position: fixed;
         top: 0px;
         left: 0px;
-        transition: opacity linear calc(var(--transitions-speed) / 2ms);
+        transition: opacity linear calc(var(--transition-speed) / 2ms);
         pointer-events: none;
       }
 

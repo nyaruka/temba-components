@@ -3,7 +3,6 @@ html input {
   }
   
   html {
-  
     
     --font-family: 'Roboto', Helvetica, Arial, sans-serif;
     --primary-rgb: 35, 135, 202;
@@ -100,7 +99,7 @@ html input {
 
     --icon-color: var(--text-color);
     --icon-color-hover: var(--icon-color);
-    --transition-speed: 200ms;
+    --transition-speed: 250ms;
     --event-padding: 0.5em 1em;
     --temba-select-selected-padding: 9px;
     --temba-select-selected-line-height: 16px;
