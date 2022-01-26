@@ -62,7 +62,7 @@ export const clickOption = async (select: Select, index: number) => {
     `[data-option-index="${index}"]`
   ) as HTMLDivElement;
   option.click();
-  await clock.tick(50);
+  await clock.tick(250);
   await options.updateComplete;
   await select.updateComplete;
   //checkTimers(clock);
@@ -358,6 +358,8 @@ describe('temba-select', () => {
 
       // close and reopen
       select.blur();
+      await clock.tick(250);
+
       await open(select);
       assert.equal(select.visibleOptions.length, 15);
 

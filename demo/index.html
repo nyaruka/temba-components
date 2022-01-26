@@ -1,117 +1,155 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en-GB">
-<head>
-  <meta charset="utf-8">
-  <link
-    href="/sitestatic/css/temba-components.css"
-    rel="stylesheet"
-    type="text/css"
-  />
+  <head>
+    <meta charset="utf-8" />
+    <link
+      href="/sitestatic/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
 
-  <link
-    href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
-    rel="stylesheet"
-  />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
 
-  <style>
-    .example {
-      border: 0px solid gray;
-      padding: 10px;
-      max-width: 500px;
-    }
-
-  </style>
-  <script type="module">
-    import '../out-tsc/temba-modules.js';    
-  </script>
- 
-</head>
-<body>
-  <temba-store
+    <style>
+      .example {
+        border: 0px solid gray;
+        padding: 10px;
+        max-width: 500px;
+      }
+    </style>
+    <script type="module">
+      import '../out-tsc/temba-modules.js';
+    </script>
+    <script>
+      function handleColorChange(event) {
+        var color = event.target.values[0].name;
+        if (color == 'Green') {
+          event.target.infoText = 'Green is super dangerous!';
+        } else {
+          event.target.infoText = null;
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <temba-store
       completion="/static/api/completion.json"
       functions="/static/api/functions.json"
       fields="/static/api/fields.json"
       globals="/static/api/globals.json"
       groups="/static/api/groups.json"
-  ></temba-store>
+    ></temba-store>
 
-  <div class="example">
-    <temba-omnibox
-      placeholder='Contacts or Groups'
-      label="Recipients"
-      help_text="This is the helpful friendly book"
-      endpoint="/contact/omnibox/?v=2"
-      groups
-      contacts
-    ></temba-omnibox>
-</div>
-  <div class="example">
-    <temba-checkbox label="you betcha" checked></temba-checkbox>
-  </div>
-
-  <div class="example">
-    <temba-textinput value="plain text"></temba-textinput>
-  </div>
-  
-  <div class="example">
-    <temba-completion value="you complete me @cont"></temba-completion>    
-  </div>
-
-
-
-  <div class="example">
-    <temba-select  placeholder='Select a color' clearable>
-      <temba-option name="Red" value="0"></temba-option>
-      <temba-option name="Green" value="1"></temba-option>
-      <temba-option name="Blue" value="2"></temba-option>
-    </temba-select>
-  </div>
-
-  <div class="example">
-    <temba-select placeholder='Select a color' expressions="message" values='[{"name":"Red","value":"0"}]' searchable multi disabled>
-      <temba-option name="Red" value="0"></temba-option>
-      <temba-option name="Green" value="1"></temba-option>
-      <temba-option name="Blue" value="2"></temba-option>
-    </temba-select>
-  </div>
-
-
-  <div class="example">
-    <temba-select name="Color" label="Color" help_text="I'm not really enabled at the moment" placeholder='Select a color' expressions="message" values='[{"name":"Red","value":"0"}]' searchable multi disabled>
-      <temba-option name="Red" value="0"></temba-option>
-      <temba-option name="Green" value="1"></temba-option>
-      <temba-option name="Blue" value="2"></temba-option>
-    </temba-select>
-  </div>
-
-  <div class="example">
-    <script>
-      function toggleSelect(evt) {
-        document.getElementById("select-toggle").disabled = !evt.currentTarget.checked;
-      }
-    </script>
-    <div style="display:flex;align-items: center;">
-    <temba-checkbox onchange="toggleSelect(event)" checked></temba-checkbox>
-    <temba-select style="margin-left:10px" id="select-toggle" placeholder='Select a color' expressions="message">
-      <temba-option name="Red" value="0"></temba-option>
-      <temba-option name="Green" value="1"></temba-option>
-      <temba-option name="Blue" value="2"></temba-option>
-    </temba-select>
+    <div class="example">
+      <temba-omnibox
+        placeholder="Contacts or Groups"
+        label="Recipients"
+        help_text="This is the helpful friendly book"
+        endpoint="/contact/omnibox/?v=2"
+        groups
+        contacts
+      ></temba-omnibox>
     </div>
-  </div>
+    <div class="example">
+      <temba-checkbox label="you betcha" checked></temba-checkbox>
+    </div>
 
-  <div class="example">
-    <temba-textinput
-      name="start"
-      label="Start Time"
-      help_text="This is something you should think long and hard about"
-      placeholder="Put something down, for real"
-      value="2020-11-28 15:03"
-      clearable
-      datetimepicker
-    ></temba-textinput>
-  </div>
+    <div class="example">
+      <temba-textinput value="plain text"></temba-textinput>
+    </div>
 
+    <div class="example">
+      <temba-completion value="you complete me @cont"></temba-completion>
+    </div>
 
-</body>
+    <div class="example">
+      <temba-select
+        placeholder="Select a color"
+        info_text="Some colors are very dangerous, choose wisely"
+        onchange="handleColorChange(event)"
+      >
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1"></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <temba-select placeholder="Select a color" clearable>
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1"></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <temba-select
+        placeholder="Select a color"
+        expressions="message"
+        values='[{"name":"Red","value":"0"}]'
+        searchable
+        multi
+        disabled
+      >
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1"></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <temba-select
+        name="Color"
+        label="Color"
+        help_text="I'm not really enabled at the moment"
+        placeholder="Select a color"
+        expressions="message"
+        values='[{"name":"Red","value":"0"}]'
+        searchable
+        multi
+        disabled
+      >
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1"></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>
+    </div>
+
+    <div class="example">
+      <script>
+        function toggleSelect(evt) {
+          document.getElementById('select-toggle').disabled = !evt.currentTarget
+            .checked;
+        }
+      </script>
+      <div style="display: flex; align-items: center">
+        <temba-checkbox onchange="toggleSelect(event)" checked></temba-checkbox>
+        <temba-select
+          style="margin-left: 10px"
+          id="select-toggle"
+          placeholder="Select a color"
+          expressions="message"
+        >
+          <temba-option name="Red" value="0"></temba-option>
+          <temba-option name="Green" value="1"></temba-option>
+          <temba-option name="Blue" value="2"></temba-option>
+        </temba-select>
+      </div>
+    </div>
+
+    <div class="example">
+      <temba-textinput
+        name="start"
+        label="Start Time"
+        help_text="This is something you should think long and hard about"
+        placeholder="Put something down, for real"
+        value="2020-11-28 15:03"
+        clearable
+        datetimepicker
+      ></temba-textinput>
+    </div>
+  </body>
 </html>

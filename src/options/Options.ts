@@ -9,25 +9,26 @@ import {
   throttle,
 } from '../utils';
 
-interface NameFunction {
-  (option: any): string;
-}
-
 export class Options extends RapidElement {
   static get styles() {
     return css`
       .options-container {
-        visibility: hidden;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg-focused);
         user-select: none;
         box-shadow: var(--options-shadow);
-        border: 1px solid var(--color-widget-border);
         border-radius: var(--curvature-widget);
         overflow: hidden;
         margin-top: var(--options-margin-top);
         display: flex;
         flex-direction: column;
+        transform: scaleY(0.5) translateY(-5em);
+        transition: transform var(--transition-speed)
+            cubic-bezier(0.71, 0.18, 0.61, 1.33),
+          opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
+        z-index: 10000;
+        pointer-events: none;
+        opacity: 0;
       }
 
       .anchored {
@@ -88,8 +89,11 @@ export class Options extends RapidElement {
       }
 
       .show {
-        visibility: visible;
         z-index: 10000;
+        transform: scaleY(1) translateY(0);
+        border: 1px solid var(--color-widget-border);
+        pointer-events: auto;
+        opacity: 1;
       }
 
       .option {
@@ -194,6 +198,9 @@ export class Options extends RapidElement {
 
   @property({ type: Array })
   options: any[];
+
+  @property({ type: Array })
+  tempOptions: any[];
 
   @property({ type: Boolean })
   poppedTop: boolean;
@@ -301,6 +308,15 @@ export class Options extends RapidElement {
       this.fireCustomEvent(CustomEventType.CursorChanged, {
         index: this.cursorIndex,
       });
+    }
+
+    if (changedProperties.has('visible') && changedProperties.has('options')) {
+      if (!this.visible && this.options.length == 0) {
+        this.tempOptions = changedProperties.get('options');
+        window.setTimeout(() => {
+          this.tempOptions = [];
+        }, 100);
+      }
     }
 
     if (changedProperties.has('options')) {
@@ -572,7 +588,15 @@ export class Options extends RapidElement {
       options: true,
     });
 
-    const options = this.options || [];
+    let options = this.options || [];
+    if (
+      options.length == 0 &&
+      this.tempOptions &&
+      this.tempOptions.length > 0
+    ) {
+      options = this.tempOptions;
+    }
+
     return html`
       <div class=${classes} style=${styleMap(containerStyle)}>
         <div class="options-scroll" @scroll=${this.handleInnerScroll}>

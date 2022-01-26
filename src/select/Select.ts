@@ -38,6 +38,7 @@ export class Select extends FormElement {
 
       temba-options {
         --icon-color: var(--color-text-dark);
+        z-index: 3;
       }
 
       :host:focus {
@@ -87,6 +88,9 @@ export class Select extends FormElement {
         padding-top: 1px;
         box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
           0 1px 2px 0 rgba(0, 0, 0, 0.02);
+
+        position: relative;
+        z-index: 2;
       }
 
       .select-container:hover temba-icon[name='chevron-down'],
@@ -303,6 +307,34 @@ export class Select extends FormElement {
         --temba-select-selected-font-size: 12px;
         --search-input-height: 7px !important;
       }
+
+      .info-text {
+        opacity: 1;
+        transition: margin 200ms ease-in-out;
+        margin-bottom: 16px;
+        margin-top: -1em;
+        padding: 0.5em 1em;
+        background: #f3f3f3;
+        padding-top: 1.5em;
+        border-radius: var(--curvature);
+        font-size: 0.9em;
+        color: rgba(0, 0, 0, 0.5);
+        box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%);
+        z-index: 1;
+        position: relative;
+      }
+
+      .info-text.focused {
+        opacity: 1;
+      }
+
+      .info-text.hide {
+        opacity: 0;
+        max-height: 0;
+        margin-bottom: 0px;
+        margin-top: -2em;
+        pointer-events: none;
+      }
     `;
   }
 
@@ -398,6 +430,9 @@ export class Select extends FormElement {
 
   @property({ type: String })
   flavor = 'default';
+
+  @property({ type: String, attribute: 'info_text' })
+  infoText = '';
 
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
@@ -863,14 +898,16 @@ export class Select extends FormElement {
   }
 
   private handleBlur() {
-    this.focused = false;
-    if (this.visibleOptions.length > 0) {
-      this.input = '';
-      this.next = null;
-      this.complete = true;
-      this.visibleOptions = [];
-      this.cursorIndex = 0;
-    }
+    window.setTimeout(() => {
+      this.focused = false;
+      if (this.visibleOptions.length > 0) {
+        this.input = '';
+        this.next = null;
+        this.complete = true;
+        this.visibleOptions = [];
+        this.cursorIndex = 0;
+      }
+    }, 200);
   }
 
   private handleClick(): void {
@@ -1173,6 +1210,7 @@ export class Select extends FormElement {
         .hideErrors=${this.hideErrors}
         ?disabled=${this.disabled}
       >
+  
       
         <div
           tabindex="0"
@@ -1235,45 +1273,51 @@ export class Select extends FormElement {
                 </div>`
               : null
           }
-          <temba-options
-          @temba-selection=${this.handleOptionSelection}
-          .cursorIndex=${this.cursorIndex}
-          .renderOptionDetail=${this.renderOptionDetail}
-          .renderOptionName=${this.renderOptionName}
-          .renderOption=${this.renderOption}
-          .anchorTo=${this.anchorElement}
-          .options=${this.visibleOptions}
-          .spaceSelect=${this.spaceSelect}
-          .nameKey=${this.nameKey}
-          .getName=${this.getNameInternal}
-          ?visible=${this.visibleOptions.length > 0}
-        ></temba-options>
-  
-          <temba-options
-          @temba-selection=${this.handleExpressionSelection}
-          @temba-canceled=${() => {}}
-          .anchorTo=${this.anchorExpressions}
-          .options=${this.completionOptions}
-          .renderOption=${renderCompletionOption}
-          ?visible=${this.completionOptions.length > 0}
-          >
-            ${
-              this.currentFunction
-                ? html`
-                    <div class="current-fn">
-                      ${renderCompletionOption(this.currentFunction, true)}
-                    </div>
-                  `
-                : null
-            }
-            <div class="footer">Tab to complete, enter to select</div>
-          </temba-options>
-
           </div>
           
         </div>
+        <div class="info-text ${!this.infoText ? 'hide' : ''} ${
+      this.focused ? 'focused' : ''
+    }">${this.infoText}</div>
+    
+    <temba-options
+    @temba-selection=${this.handleOptionSelection}
+    .cursorIndex=${this.cursorIndex}
+    .renderOptionDetail=${this.renderOptionDetail}
+    .renderOptionName=${this.renderOptionName}
+    .renderOption=${this.renderOption}
+    .anchorTo=${this.anchorElement}
+    .options=${this.visibleOptions}
+    .spaceSelect=${this.spaceSelect}
+    .nameKey=${this.nameKey}
+    .getName=${this.getNameInternal}
+    ?visible=${this.visibleOptions.length > 0}
+  ></temba-options>
+
+    <temba-options
+    @temba-selection=${this.handleExpressionSelection}
+    @temba-canceled=${() => {}}
+    .anchorTo=${this.anchorExpressions}
+    .options=${this.completionOptions}
+    .renderOption=${renderCompletionOption}
+    ?visible=${this.completionOptions.length > 0}
+    >
+      ${
+        this.currentFunction
+          ? html`
+              <div class="current-fn">
+                ${renderCompletionOption(this.currentFunction, true)}
+              </div>
+            `
+          : null
+      }
+      <div class="footer">Tab to complete, enter to select</div>
+    </temba-options>
+
+
 
         </temba-field>
+    
     `;
   }
 }
