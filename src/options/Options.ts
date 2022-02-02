@@ -13,7 +13,6 @@ export class Options extends RapidElement {
   static get styles() {
     return css`
       .options-container {
-        border-radius: var(--curvature-widget);
         background: var(--color-widget-bg-focused);
         user-select: none;
         box-shadow: var(--options-shadow);
@@ -29,6 +28,7 @@ export class Options extends RapidElement {
         z-index: 10000;
         pointer-events: none;
         opacity: 0;
+        border: 1px transparent;
       }
 
       .anchored {
@@ -97,7 +97,7 @@ export class Options extends RapidElement {
       }
 
       .option {
-        font-size: 14px;
+        font-size: var(--temba-options-font-size);
         padding: 5px 10px;
         border-radius: 4px;
         margin: 0.3em;
@@ -315,7 +315,7 @@ export class Options extends RapidElement {
         this.tempOptions = changedProperties.get('options');
         window.setTimeout(() => {
           this.tempOptions = [];
-        }, 100);
+        }, 300);
       }
     }
 
