@@ -37,6 +37,7 @@ export class Select extends FormElement {
       }
 
       temba-options {
+        --temba-options-font-size: var(--temba-select-selected-font-size);
         --icon-color: var(--color-text-dark);
         z-index: 3;
       }
@@ -93,8 +94,8 @@ export class Select extends FormElement {
         z-index: 2;
       }
 
-      .select-container:hover temba-icon[name='chevron-down'],
-      .select-container:hover .clear-button {
+      temba-icon[name='chevron-down']:hover,
+      .clear-button:hover {
         --icon-color: var(--color-text-dark);
       }
 
@@ -282,6 +283,9 @@ export class Select extends FormElement {
       .searchbox::placeholder {
         color: var(--color-placeholder);
         font-weight: 300;
+        font-size: 1.1em;
+        line-height: var(--temba-select-selected-line-height);
+        padding-left: 1px;
       }
 
       .placeholder {
