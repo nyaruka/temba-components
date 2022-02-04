@@ -902,16 +902,14 @@ export class Select extends FormElement {
   }
 
   private handleBlur() {
-    window.setTimeout(() => {
-      this.focused = false;
-      if (this.visibleOptions.length > 0) {
-        this.input = '';
-        this.next = null;
-        this.complete = true;
-        this.visibleOptions = [];
-        this.cursorIndex = 0;
-      }
-    }, 200);
+    this.focused = false;
+    if (this.visibleOptions.length > 0) {
+      this.input = '';
+      this.next = null;
+      this.complete = true;
+      this.visibleOptions = [];
+      this.cursorIndex = 0;
+    }
   }
 
   private handleClick(): void {
