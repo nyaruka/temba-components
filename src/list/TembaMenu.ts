@@ -153,7 +153,6 @@ export class TembaMenu extends RapidElement {
       }
 
       .item.inline > temba-icon {
-        // margin-right: 0em;
       }
 
       .item > .details > .name {
@@ -217,27 +216,19 @@ export class TembaMenu extends RapidElement {
       }
 
       .inline-children {
-        // background: #ffffff;
         padding: 0.5em;
         border-bottom-right-radius: var(--curvature);
         border-bottom-left-radius: var(--curvature);
         font-size: 1rem;
         margin-bottom: 0.75em;
         border: 1px solid #f3f3f3;
-        // box-shadow: var(--shadow);
-        // margin-top: -1px;
         z-index: 1000;
-        // margin-left: 1em;
         border-top: none;
       }
 
       .inline-children .item {
         max-width: 11em !important;
         min-width: 11em !important;
-        // border: 1px solid #f1f1f1;
-        // margin-top: 0.75em;
-        // margin-right: -1em;
-        // padding-right: 0;
       }
 
       .item.inline {
@@ -253,7 +244,6 @@ export class TembaMenu extends RapidElement {
         z-index: 1000;
         color: #444;
         --icon-color: #444;
-        // box-shadow: var(--shadow);
       }
 
       .level-1,
@@ -263,6 +253,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-1 {
+        transition: opacity 100ms linear, margin 200ms linear;
         overflow-y: auto;
         z-index: 1500;
       }
@@ -387,6 +378,26 @@ export class TembaMenu extends RapidElement {
         margin-top: 1rem;
         margin-left: 0.3rem;
       }
+
+      .fully-collapsed .level-0 {
+        z-index: 1;
+      }
+
+      .fully-collapsed .level-1 {
+        margin-left: -245px;
+        z-index: 0;
+        border: none;
+      }
+
+      .fully-collapsed .level-1 .item,
+      .fully-collapsed .level-1 .divider {
+        opacity: 0;
+      }
+
+      .fully-collapsed .level-2,
+      .fully-collapsed .level-3 {
+        display: none;
+      }
     `;
   }
 
@@ -408,6 +419,9 @@ export class TembaMenu extends RapidElement {
   // submenu to constrain to
   @property({ type: String })
   submenu: string;
+
+  @property({ type: Boolean })
+  collapsed: boolean;
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
@@ -577,6 +591,10 @@ export class TembaMenu extends RapidElement {
   }
 
   private handleItemClicked(event: MouseEvent, menuItem: MenuItem) {
+    if (this.collapsed) {
+      this.collapsed = false;
+    }
+
     if (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -926,7 +944,11 @@ export class TembaMenu extends RapidElement {
       }
     });
 
-    const menu = html`<div class="root">${levels}</div>`;
+    const menu = html`<div
+      class="root ${this.collapsed ? 'fully-collapsed' : ''}"
+    >
+      ${levels}
+    </div>`;
     return html`${menu}`;
   }
 }
