@@ -543,6 +543,12 @@ export class Options extends RapidElement {
     }
   }
 
+  // we need to swallow mouse down so we don't grab focus
+  private handleMouseDown(evt: MouseEvent) {
+    evt.preventDefault();
+    evt.stopPropagation();
+  }
+
   private handleOptionClick(evt: MouseEvent) {
     evt.preventDefault();
     evt.stopPropagation();
@@ -606,6 +612,7 @@ export class Options extends RapidElement {
                 data-option-index="${index}"
                 @mousemove=${this.handleMouseMove}
                 @click=${this.handleOptionClick}
+                @mousedown=${this.handleMouseDown}
                 class="option ${index === this.cursorIndex ? 'focused' : ''}"
               >
                 ${this.resolvedRenderOption(option, index === this.cursorIndex)}
