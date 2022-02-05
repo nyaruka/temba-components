@@ -605,7 +605,11 @@ export class Options extends RapidElement {
 
     return html`
       <div class=${classes} style=${styleMap(containerStyle)}>
-        <div class="options-scroll" @scroll=${this.handleInnerScroll}>
+        <div
+          class="options-scroll"
+          @scroll=${this.handleInnerScroll}
+          @mousedown=${this.handleMouseDown}
+        >
           <div class="${classesInner}" style=${styleMap(optionsStyle)}>
             ${options.map((option, index) => {
               return html`<div
