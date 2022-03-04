@@ -37,7 +37,7 @@
     "lit-element": "^2.0.1",
     "lit-flatpickr": "^0.2.2",
     "lit-html": "^1.0.0",
-    "marked": "0.7.0",
+    "marked": "4.0.10",
     "remarkable": "^2.0.1",
     "serialize-javascript": "^3.0.0"
   },
