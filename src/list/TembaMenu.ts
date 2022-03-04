@@ -25,10 +25,21 @@ interface MenuItemState {
   collapsed?: string;
 }
 
-const findItem = (items: MenuItem[], id: string) =>
-  (items || []).find((item: MenuItem) => {
+const findItem = (
+  items: MenuItem[],
+  id: string
+): { item: MenuItem; index: number } => {
+  const search = items || [];
+  const index = search.findIndex((item: MenuItem) => {
     return item.id == id || item.vanity_id == id;
   });
+
+  if (index > -1) {
+    const item = search[index];
+    return { item: item, index: index };
+  }
+  return { item: null, index: -1 };
+};
 
 export class TembaMenu extends RapidElement {
   static get styles() {
@@ -153,7 +164,6 @@ export class TembaMenu extends RapidElement {
       }
 
       .item.inline > temba-icon {
-        // margin-right: 0em;
       }
 
       .item > .details > .name {
@@ -217,27 +227,19 @@ export class TembaMenu extends RapidElement {
       }
 
       .inline-children {
-        // background: #ffffff;
         padding: 0.5em;
         border-bottom-right-radius: var(--curvature);
         border-bottom-left-radius: var(--curvature);
         font-size: 1rem;
         margin-bottom: 0.75em;
         border: 1px solid #f3f3f3;
-        // box-shadow: var(--shadow);
-        // margin-top: -1px;
         z-index: 1000;
-        // margin-left: 1em;
         border-top: none;
       }
 
       .inline-children .item {
         max-width: 11em !important;
         min-width: 11em !important;
-        // border: 1px solid #f1f1f1;
-        // margin-top: 0.75em;
-        // margin-right: -1em;
-        // padding-right: 0;
       }
 
       .item.inline {
@@ -253,7 +255,6 @@ export class TembaMenu extends RapidElement {
         z-index: 1000;
         color: #444;
         --icon-color: #444;
-        // box-shadow: var(--shadow);
       }
 
       .level-1,
@@ -263,6 +264,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-1 {
+        transition: opacity 100ms linear, margin 200ms linear;
         overflow-y: auto;
         z-index: 1500;
       }
@@ -387,6 +389,33 @@ export class TembaMenu extends RapidElement {
         margin-top: 1rem;
         margin-left: 0.3rem;
       }
+
+      .fully-collapsed .level-0 {
+        z-index: 1;
+      }
+
+      .fully-collapsed .level-1 {
+        margin-left: -245px;
+        z-index: 0;
+        border: none;
+      }
+
+      .fully-collapsed .level-1 .item,
+      .fully-collapsed .level-1 .divider {
+        opacity: 0;
+      }
+
+      .fully-collapsed .level-2,
+      .fully-collapsed .level-3 {
+        display: none;
+      }
+
+      temba-button {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+        margin-left: 0.75em;
+        margin-right: 0.75em;
+      }
     `;
   }
 
@@ -408,6 +437,9 @@ export class TembaMenu extends RapidElement {
   // submenu to constrain to
   @property({ type: String })
   submenu: string;
+
+  @property({ type: Boolean })
+  collapsed: boolean;
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
@@ -461,7 +493,7 @@ export class TembaMenu extends RapidElement {
     while (path.length > 0) {
       const step = path.splice(0, 1)[0];
       if (items) {
-        item = findItem(items, step);
+        item = findItem(items, step).item;
         if (item) {
           if (item.endpoint) {
             item.loading = true;
@@ -470,7 +502,11 @@ export class TembaMenu extends RapidElement {
               // for now we only deal with updating counts and names
               (itemToUpdate.items || []).forEach(
                 (existing: MenuItem, index: number, items: []) => {
-                  const updatedItem = findItem(updated, existing.id);
+                  const itdx = findItem(updated, existing.id);
+                  const updatedItem = itdx.item;
+
+                  // remove it from our updated list
+                  updated.splice(itdx.index, 1);
 
                   // we were removed!
                   if (!updatedItem) {
@@ -548,7 +584,7 @@ export class TembaMenu extends RapidElement {
             // auto select the next pending click
             const nextId = this.pending.splice(0, 1)[0];
             if (nextId && items.length > 0) {
-              const nextItem = findItem(items, nextId);
+              const nextItem = findItem(items, nextId).item;
               if (nextItem) {
                 this.handleItemClicked(null, nextItem);
               } else {
@@ -577,9 +613,21 @@ export class TembaMenu extends RapidElement {
   }
 
   private handleItemClicked(event: MouseEvent, menuItem: MenuItem) {
+    if (this.collapsed) {
+      this.collapsed = false;
+    }
+
     if (event) {
       event.preventDefault();
       event.stopPropagation();
+    }
+
+    if (menuItem.type == 'modax-button') {
+      this.fireCustomEvent(CustomEventType.ButtonClicked, {
+        title: menuItem.name,
+        href: menuItem.href,
+      });
+      return;
     }
 
     if (menuItem.trigger) {
@@ -609,13 +657,12 @@ export class TembaMenu extends RapidElement {
         this.dispatchEvent(new Event('change'));
       } else {
         this.dispatchEvent(new Event('change'));
-
         if (this.pending && this.pending.length > 0) {
           // auto select the next pending click
           const nextId = this.pending.splice(0, 1)[0];
           const item = this.getMenuItem();
           if (nextId && item && item.items && item.items.length > 0) {
-            const nextItem = findItem(item.items, nextId);
+            const nextItem = findItem(item.items, nextId).item;
             if (nextItem) {
               this.handleItemClicked(null, nextItem);
             }
@@ -662,7 +709,7 @@ export class TembaMenu extends RapidElement {
     while (path.length > 0) {
       const step = path.splice(0, 1)[0];
       if (items) {
-        item = findItem(items, step);
+        item = findItem(items, step).item;
         if (item) {
           items = item.items;
         } else {
@@ -707,7 +754,7 @@ export class TembaMenu extends RapidElement {
 
     // if we don't match at the first level, we are a noop
     if (focusedPath.length > 0) {
-      const rootItem = findItem(this.root.items, focusedPath[0]);
+      const rootItem = findItem(this.root.items, focusedPath[0]).item;
       if (!rootItem) {
         return;
       }
@@ -723,7 +770,7 @@ export class TembaMenu extends RapidElement {
           await this.httpComplete;
         }
 
-        level = findItem(level.items, nextId);
+        level = findItem(level.items, nextId).item;
         if (!level) {
           focusedPath.splice(0, focusedPath.length);
         } else {
@@ -759,6 +806,15 @@ export class TembaMenu extends RapidElement {
 
     if (menuItem.type === 'section') {
       return html`<div class="sub-section">${menuItem.name}</div>`;
+    }
+
+    if (menuItem.type === 'modax-button') {
+      return html`<temba-button
+        name=${menuItem.name}
+        @click=${event => {
+          this.handleItemClicked(event, menuItem);
+        }}
+      />`;
     }
 
     const isSelected = this.isSelected(menuItem);
@@ -878,7 +934,7 @@ export class TembaMenu extends RapidElement {
     );
 
     this.selection.forEach((id, index) => {
-      const selected = findItem(items, id);
+      const selected = findItem(items, id).item;
 
       let collapsed = false;
       if (selected) {
@@ -926,7 +982,11 @@ export class TembaMenu extends RapidElement {
       }
     });
 
-    const menu = html`<div class="root">${levels}</div>`;
+    const menu = html`<div
+      class="root ${this.collapsed ? 'fully-collapsed' : ''}"
+    >
+      ${levels}
+    </div>`;
     return html`${menu}`;
   }
 }

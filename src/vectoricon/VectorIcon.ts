@@ -9,6 +9,9 @@ export class VectorIcon extends LitElement {
   @property({ type: String })
   name: string;
 
+  @property({ type: String })
+  prefix: string;
+
   // same as name but without implicit coloring
   @property({ type: String })
   id: string;
@@ -188,7 +191,9 @@ export class VectorIcon extends LitElement {
           })}"
         >
           <use
-            href="/sitestatic/icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${this
+            href="${this.prefix ||
+            (window as any).static_url ||
+            '/static/'}icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${this
               .lastName ||
             this.name ||
             this.id}"
