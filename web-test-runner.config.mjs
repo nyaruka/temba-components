@@ -138,6 +138,8 @@ const wireScreenshots = async (page, context) => {
   await page.exposeFunction(
     'matchPageSnapshot',
     (filename, clip, excluded, threshold) => {
+      console.log(filename, clip);
+
       return new Promise(async (resolve, reject) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
