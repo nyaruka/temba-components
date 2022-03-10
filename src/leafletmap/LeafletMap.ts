@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { Feature, Geometry } from 'geojson';
 import {
   GeoJSON,
@@ -9,7 +8,8 @@ import {
   map as createMap,
   Path,
 } from 'leaflet';
-import { css, html, LitElement, property } from 'lit-element';
+import { css, html, LitElement } from 'lit';
+import { property } from 'lit/decorators';
 
 import { FeatureProperties } from '../interfaces';
 import { getUrl, WebResponse } from '../utils';

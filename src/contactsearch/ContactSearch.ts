@@ -1,4 +1,5 @@
-import { TemplateResult, html, property, css } from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
+import { property } from 'lit/decorators';
 import { getUrl, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import '../alert/Alert';

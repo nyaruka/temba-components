@@ -34,9 +34,8 @@
     "highlight.js": "^10.7.1",
     "image-size": "^0.9.7",
     "leaflet": "1.5.1",
-    "lit-element": "^2.0.1",
-    "lit-flatpickr": "^0.2.2",
-    "lit-html": "^1.0.0",
+    "lit": "2.2.0",
+    "lit-flatpickr": "^0.3",
     "marked": "4.0.10",
     "remarkable": "^2.0.1",
     "serialize-javascript": "^3.0.0"
@@ -46,7 +45,7 @@
     "@open-wc/building-rollup": "^1.0.0",
     "@open-wc/demoing-storybook": "2.4.7",
     "@open-wc/eslint-config": "4.2.0",
-    "@open-wc/testing": "^2.0.0",
+    "@open-wc/testing": "3.1.2",
     "@rollup/plugin-commonjs": "^17.1.0",
     "@types/leaflet": "1.4.4",
     "@types/node": "13.11.1",
@@ -55,7 +54,7 @@
     "@typescript-eslint/parser": "4.0.0",
     "@web/dev-server": "^0.0.12",
     "@web/test-runner": "^0.7.41",
-    "@web/test-runner-puppeteer": "^0.9.3",
+    "@web/test-runner-puppeteer": "0.10.5",
     "auto-changelog": "^1.16.2",
     "concurrently": "^5.1.0",
     "deepmerge": "^4.2.2",
@@ -77,7 +76,7 @@
     "rollup-plugin-copy": "^3.4.0",
     "sinon": "^9.2.4",
     "tslib": "^1.11.0",
-    "typescript": "~4.0.3"
+    "typescript": "4.6.2"
   },
   "eslintConfig": {
     "extends": [
@@ -103,6 +102,8 @@
   },
   "resolutions": {
     "trim": "^0.0.3",
-    "prismjs": "^1.23.0"
+    "prismjs": "^1.23.0",
+    "lit-element": "^3",
+    "lit-html": "^2"
   }
 }

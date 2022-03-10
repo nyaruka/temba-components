@@ -1,10 +1,5 @@
-import {
-  css,
-  customElement,
-  html,
-  property,
-  TemplateResult,
-} from 'lit-element';
+import { css, html, TemplateResult } from 'lit';
+import { property, customElement } from 'lit/decorators';
 import { RapidElement } from '../RapidElement';
 
 @customElement('temba-remote')

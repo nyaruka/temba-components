@@ -1,5 +1,6 @@
-import { TemplateResult, html, css, property } from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
+import { property } from 'lit/decorators';
 
 export class Checkbox extends FormElement {
   static get styles() {

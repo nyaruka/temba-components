@@ -1,4 +1,5 @@
-import { TemplateResult, html, property, css } from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
+import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement, EventHandler } from '../RapidElement';
 import { styleMap } from 'lit-html/directives/style-map';

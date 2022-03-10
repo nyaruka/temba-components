@@ -1,11 +1,5 @@
-import {
-  LitElement,
-  TemplateResult,
-  html,
-  css,
-  customElement,
-  property,
-} from 'lit-element';
+import { LitElement, TemplateResult, html, css } from 'lit';
+import { property, customElement } from 'lit/decorators';
 import { getClasses } from '../utils';
 import { styleMap } from 'lit-html/directives/style-map';
 

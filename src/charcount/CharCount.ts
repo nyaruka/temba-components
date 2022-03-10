@@ -1,7 +1,8 @@
-import { css, html, property, TemplateResult } from 'lit-element';
+import { css, html, TemplateResult } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { splitSMS } from '../sms';
 import { getExtendedCharacters } from './helpers';
+import { property } from 'lit/decorators';
 
 export class CharCount extends RapidElement {
   static get styles() {

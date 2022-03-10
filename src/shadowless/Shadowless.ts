@@ -1,5 +1,5 @@
-import { customElement, property } from 'lit-element/lib/decorators';
-import { TemplateResult, LitElement } from 'lit-element';
+import { customElement, property } from 'lit/decorators';
+import { TemplateResult, LitElement } from 'lit';
 
 @customElement('temba-shadowless')
 export default class Shadowless extends LitElement {

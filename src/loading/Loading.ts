@@ -1,4 +1,5 @@
-import { property, html, TemplateResult, css, LitElement } from 'lit-element';
+import { html, TemplateResult, css, LitElement } from 'lit';
+import { property } from 'lit/decorators';
 import { styleMap } from 'lit-html/directives/style-map';
 import { range } from '../utils';
 

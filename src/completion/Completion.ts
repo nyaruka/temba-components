@@ -1,4 +1,5 @@
-import { TemplateResult, css, property, html } from 'lit-element';
+import { TemplateResult, css, html } from 'lit';
+import { property } from 'lit/decorators';
 import { ifDefined } from 'lit-html/directives/if-defined';
 import { TextInput } from '../textinput/TextInput';
 import {

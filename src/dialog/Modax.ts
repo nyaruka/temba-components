@@ -1,8 +1,9 @@
-import { property } from 'lit-element/lib/decorators';
-import { TemplateResult, html, css } from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
+import { property } from 'lit/decorators';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html';
+
 import { RapidElement } from '../RapidElement';
 import { getUrl, serialize, postUrl, WebResponse } from '../utils';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html';
 import { CustomEventType } from '../interfaces';
 import { Dialog } from './Dialog';
 

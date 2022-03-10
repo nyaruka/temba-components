@@ -1,4 +1,5 @@
-import { css, html, LitElement, property, TemplateResult } from 'lit-element';
+import { css, html, LitElement, TemplateResult } from 'lit';
+import { property } from 'lit/decorators';
 
 export class Alert extends LitElement {
   static get styles() {

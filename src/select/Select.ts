@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { TemplateResult, html, css, property } from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
+import { property } from 'lit/decorators';
 import {
   getUrl,
   getClasses,
@@ -469,19 +470,19 @@ export class Select extends FormElement {
     html``;
 
   @property({ attribute: false })
-  renderSelectedItem: (option: any) => TemplateResult = this
-    .renderSelectedItemDefault;
+  renderSelectedItem: (option: any) => TemplateResult =
+    this.renderSelectedItemDefault;
 
   @property({ attribute: false })
-  createArbitraryOption: (input: string, options: any[]) => any = this
-    .createArbitraryOptionDefault;
+  createArbitraryOption: (input: string, options: any[]) => any =
+    this.createArbitraryOptionDefault;
 
   @property({ attribute: false })
   getOptions: (response: WebResponse) => any[] = this.getOptionsDefault;
 
   @property({ attribute: false })
-  isComplete: (newestOptions: any[], response: WebResponse) => boolean = this
-    .isCompleteDefault;
+  isComplete: (newestOptions: any[], response: WebResponse) => boolean =
+    this.isCompleteDefault;
 
   @property({ type: Array, attribute: 'options' })
   private staticOptions: any[] = [];
