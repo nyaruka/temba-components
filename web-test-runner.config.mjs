@@ -138,8 +138,6 @@ const wireScreenshots = async (page, context) => {
   await page.exposeFunction(
     'matchPageSnapshot',
     (filename, clip, excluded, threshold) => {
-      console.log(filename, clip);
-
       return new Promise(async (resolve, reject) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
@@ -274,7 +272,8 @@ export default {
     puppeteerLauncher({
       launchOptions: {
         args: [
-          '--font-render-hinsting=none',
+          '--font-render-hinting=medium',
+          '--force-color-profile=srgb',
           '--hide-scrollbars',
           '--disable-web-security',
         ],
@@ -284,6 +283,7 @@ export default {
         browser.defaultBrowserContext(),
       createPage: async ({ context, config }) => {
         const page = await context.newPage();
+        await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
         await page.exposeFunction('readStaticFile', filename => {
           try {
             var content = fs.readFileSync('./' + filename, 'utf8');
