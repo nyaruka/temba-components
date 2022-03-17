@@ -154,7 +154,7 @@ export class Options extends RapidElement {
         align-items: center;
         background: #eee;
         max-height: 0;
-        transition: max-height 200ms ease-in-out;
+        transition: max-height var(--transition-speed) ease-in-out;
         border-bottom-left-radius: var(--curvature-widget);
         border-bottom-right-radius: var(--curvature-widget);
         display: flex;
