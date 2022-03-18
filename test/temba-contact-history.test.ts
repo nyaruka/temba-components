@@ -98,6 +98,8 @@ describe('temba-contact-history', () => {
       group.click();
     }
 
+    await waitFor(1000);
+
     await assertScreenshot(
       'contacts/history-expanded',
       getHistoryClip(history)
