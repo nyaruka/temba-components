@@ -276,6 +276,7 @@ export default {
           '--force-color-profile=srgb',
           '--hide-scrollbars',
           '--disable-web-security',
+          '--force-device-scale-factor=1'
         ],
         headless: true,
       },
