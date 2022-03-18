@@ -1,5 +1,5 @@
-import { property } from 'lit-element/lib/decorators';
-import { TemplateResult, html, css } from 'lit-element';
+import { property } from 'lit/decorators';
+import { TemplateResult, html, css } from 'lit';
 import { Button } from '../button/Button';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';

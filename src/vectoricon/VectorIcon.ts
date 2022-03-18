@@ -1,4 +1,5 @@
-import { property, LitElement, TemplateResult, html, css } from 'lit-element';
+import { LitElement, TemplateResult, html, css } from 'lit';
+import { property } from 'lit/decorators';
 
 import { getClasses } from '../utils';
 

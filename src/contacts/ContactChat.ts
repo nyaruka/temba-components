@@ -1,4 +1,5 @@
-import { css, html, property, TemplateResult } from 'lit-element';
+import { css, html, TemplateResult } from 'lit';
+import { property } from 'lit/decorators';
 import { RapidElement } from '../RapidElement';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';

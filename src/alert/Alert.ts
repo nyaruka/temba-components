@@ -1,4 +1,5 @@
-import { css, html, LitElement, property, TemplateResult } from 'lit-element';
+import { css, html, LitElement, TemplateResult } from 'lit';
+import { property } from 'lit/decorators';
 
 export class Alert extends LitElement {
   static get styles() {
@@ -9,11 +10,10 @@ export class Alert extends LitElement {
 
       .temba-alert {
         color: rgba(0, 0, 0, 0.8);
-        padding: 0.65em 1em;
+        padding: 0.65rem 1rem;
         border: 1px solid rgba(0, 0, 0, 0.35);
         border-left: 10px solid rgba(0, 0, 0, 0.35);
         border-radius: var(--curvature-widget);
-        font-size: 14px;
         box-shadow: var(--shadow);
       }
 

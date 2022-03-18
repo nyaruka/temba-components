@@ -1,5 +1,4 @@
-import { css } from 'lit-element';
-import { html, TemplateResult } from 'lit-html';
+import { css, html, TemplateResult } from 'lit';
 import { Msg, ObjectReference, User } from '../interfaces';
 import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
 import { getDisplayName } from './helpers';

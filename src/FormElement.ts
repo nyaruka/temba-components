@@ -1,5 +1,5 @@
 import { RapidElement } from './RapidElement';
-import { property } from 'lit-element';
+import { property } from 'lit/decorators';
 
 /**
  * FormElement is a component that appends a hidden input (outside of

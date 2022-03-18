@@ -1,5 +1,7 @@
-import { LitElement, TemplateResult, html, css, property } from 'lit-element';
+import { LitElement, TemplateResult, html, css } from 'lit';
 import { getClasses } from '../utils';
+
+import { property } from 'lit/decorators';
 
 export class Button extends LitElement {
   static get styles() {

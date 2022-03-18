@@ -1,10 +1,5 @@
-import {
-  customElement,
-  TemplateResult,
-  html,
-  css,
-  property,
-} from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
+import { property, customElement } from 'lit/decorators';
 
 import { FormElement } from '../FormElement';
 import 'lit-flatpickr';

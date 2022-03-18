@@ -1,4 +1,5 @@
-import { css, property } from 'lit-element';
+import { css } from 'lit';
+import { property } from 'lit/decorators';
 import { html, TemplateResult } from 'lit-html';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -641,9 +642,8 @@ export class ContactHistory extends RapidElement {
   private handleEventGroupShow(event: MouseEvent) {
     const grouping = event.currentTarget as HTMLDivElement;
     const groupIndex = parseInt(grouping.getAttribute('data-group-index'));
-    const eventGroup = this.eventGroups[
-      this.eventGroups.length - groupIndex - 1
-    ];
+    const eventGroup =
+      this.eventGroups[this.eventGroups.length - groupIndex - 1];
     eventGroup.open = true;
     this.requestUpdate('eventGroups');
   }
@@ -651,9 +651,8 @@ export class ContactHistory extends RapidElement {
   private handleEventGroupHide(event: MouseEvent) {
     const grouping = event.currentTarget as HTMLDivElement;
     const groupIndex = parseInt(grouping.getAttribute('data-group-index'));
-    const eventGroup = this.eventGroups[
-      this.eventGroups.length - groupIndex - 1
-    ];
+    const eventGroup =
+      this.eventGroups[this.eventGroups.length - groupIndex - 1];
 
     // mark us as closing
     eventGroup.closing = true;
@@ -720,7 +719,7 @@ export class ContactHistory extends RapidElement {
     return 0;
   }
 
-  public renderEvent(event: ContactEvent): TemplateResult {
+  public renderEvent(event: ContactEvent): any {
     switch (event.type) {
       case Events.IVR_CREATED:
       case Events.MESSAGE_CREATED:

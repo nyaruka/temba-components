@@ -1,4 +1,5 @@
-import { css, html, property, TemplateResult } from 'lit-element';
+import { css, html, TemplateResult } from 'lit';
+import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { fetchResults, getClasses } from '../utils';

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { TemplateResult, html, css, property } from 'lit-element';
+import { TemplateResult, html, css } from 'lit';
+import { property } from 'lit/decorators';
 import {
   getUrl,
   getClasses,
@@ -28,7 +29,7 @@ export class Select extends FormElement {
     return css`
       :host {
         font-family: var(--font-family);
-        transition: all ease-in-out 200ms;
+        transition: all ease-in-out var(--transition-speed);
         display: inline;
         line-height: normal;
         outline: none;
@@ -82,7 +83,7 @@ export class Select extends FormElement {
         flex-wrap: nowrap;
         align-items: center;
         border: 1px solid var(--color-widget-border);
-        transition: all ease-in-out 200ms;
+        transition: all ease-in-out var(--transition-speed);
         cursor: pointer;
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
@@ -314,7 +315,7 @@ export class Select extends FormElement {
 
       .info-text {
         opacity: 1;
-        transition: margin 200ms ease-in-out;
+        transition: margin var(--transition-speed) ease-in-out;
         margin-bottom: 16px;
         margin-top: -1em;
         padding: 0.5em 1em;
@@ -469,19 +470,19 @@ export class Select extends FormElement {
     html``;
 
   @property({ attribute: false })
-  renderSelectedItem: (option: any) => TemplateResult = this
-    .renderSelectedItemDefault;
+  renderSelectedItem: (option: any) => TemplateResult =
+    this.renderSelectedItemDefault;
 
   @property({ attribute: false })
-  createArbitraryOption: (input: string, options: any[]) => any = this
-    .createArbitraryOptionDefault;
+  createArbitraryOption: (input: string, options: any[]) => any =
+    this.createArbitraryOptionDefault;
 
   @property({ attribute: false })
   getOptions: (response: WebResponse) => any[] = this.getOptionsDefault;
 
   @property({ attribute: false })
-  isComplete: (newestOptions: any[], response: WebResponse) => boolean = this
-    .isCompleteDefault;
+  isComplete: (newestOptions: any[], response: WebResponse) => boolean =
+    this.isCompleteDefault;
 
   @property({ type: Array, attribute: 'options' })
   private staticOptions: any[] = [];

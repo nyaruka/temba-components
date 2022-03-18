@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   bulid:
-    runs-on: macos-latest
+    runs-on: macOS-11
     steps:
       - uses: actions/checkout@v1
       - name: Use Node.js 12.x
