@@ -22,7 +22,7 @@ export class Dropdown extends RapidElement {
         user-select: none;
         margin-top: 0px;
         margin-left: 0px;
-        box-shadow: rgb(0 0 0 / 20%) 0px 0px 40px, rgb(0 0 0 / 20%) 0px 0px 12px;
+        box-shadow: var(--dropdown-shadow);
       }
 
       .dropdown:focus {
