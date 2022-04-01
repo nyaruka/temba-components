@@ -17,8 +17,8 @@ export class Dropdown extends RapidElement {
         padding: 0;
         border-radius: var(--curvature);
         background: #fff;
-        transform: translateY(-1em);
-        transition: all calc(0.4 * var(--transition-speed)) linear;
+        transform: translateY(2em);
+        transition: all calc(0.6 * var(--transition-speed)) linear;
         user-select: none;
         margin-top: 0px;
         margin-left: 0px;
@@ -53,10 +53,16 @@ export class Dropdown extends RapidElement {
   open = false;
 
   @property({ type: Number })
-  arrowOffset = 12;
+  arrowSize = 6;
 
   @property({ type: Number })
-  dropdownOffset = -10;
+  arrowOffset = this.arrowSize * 2;
+
+  @property({ type: Number })
+  offsetX = -10;
+
+  @property({ type: Number })
+  offsetY = 0;
 
   public firstUpdated(props: any) {
     super.firstUpdated(props);
@@ -66,19 +72,22 @@ export class Dropdown extends RapidElement {
     ) as HTMLDivElement;
     const arrow = this.shadowRoot.querySelector('.arrow') as HTMLDivElement;
 
+    arrow.style.borderWidth = this.arrowSize + 'px';
+    arrow.style.top = '-' + this.arrowSize + 'px';
+
     if (this.arrowOffset < 0) {
       arrow.style.right = Math.abs(this.arrowOffset) + 'px';
     } else {
       arrow.style.left = this.arrowOffset + 'px';
     }
 
+    dropdown.style.marginTop = this.offsetY + 'px';
+
     if (dropdown.offsetLeft + dropdown.clientWidth > window.outerWidth) {
       dropdown.style.marginLeft =
-        '-' +
-        (dropdown.clientWidth - this.clientWidth + this.dropdownOffset) +
-        'px';
+        '-' + (dropdown.clientWidth - this.clientWidth + this.offsetX) + 'px';
     } else {
-      dropdown.style.marginLeft = this.dropdownOffset + 'px';
+      dropdown.style.marginLeft = this.offsetX + 'px';
     }
 
     dropdown.addEventListener('blur', () => {
