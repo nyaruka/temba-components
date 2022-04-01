@@ -99,6 +99,8 @@ html input {
 
     --icon-color: var(--text-color);
     --icon-color-hover: var(--icon-color);
+    --icon-color-circle-hover: rgb(245, 245, 245);
+
     --transition-speed: 250ms;
     --event-padding: 0.5em 1em;
     --temba-select-selected-padding: 9px;
@@ -174,4 +176,12 @@ html input {
     margin-top: 28px;
     margin-bottom: 28px;
     margin-left: -13px;
+  }
+
+  temba-dropdown {
+    opacity: 0;
+  }
+  
+  temba-dropdown:defined {
+    opacity: 1;
   }

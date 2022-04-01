@@ -97,6 +97,7 @@ export class Checkbox extends FormElement {
 
   public click(): void {
     this.handleClick();
+    super.click();
   }
 
   public render(): TemplateResult {
