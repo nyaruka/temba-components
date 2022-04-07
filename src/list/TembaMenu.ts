@@ -230,20 +230,10 @@ export class TembaMenu extends RapidElement {
         background: inherit;
       }
 
-      .inline-childrens {
-        padding: 0.5em;
-        border-bottom-right-radius: var(--curvature);
-        border-bottom-left-radius: var(--curvature);
-        font-size: 1rem;
-        margin-bottom: 0.75em;
-        border: 1px solid #f3f3f3;
-        z-index: 1000;
-        border-top: none;
+      .inline-children {
       }
 
       .inline-children .item {
-        max-width: 11em !important;
-        min-width: 11em !important;
       }
 
       .item.inline {
