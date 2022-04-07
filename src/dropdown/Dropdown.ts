@@ -85,7 +85,7 @@ export class Dropdown extends RapidElement {
 
     if (dropdown.offsetLeft + dropdown.clientWidth > window.outerWidth) {
       dropdown.style.marginLeft =
-        '-' + (dropdown.clientWidth - this.clientWidth + this.offsetX) + 'px';
+        '-' + (dropdown.clientWidth - this.clientWidth - this.offsetX) + 'px';
     } else {
       dropdown.style.marginLeft = this.offsetX + 'px';
     }
