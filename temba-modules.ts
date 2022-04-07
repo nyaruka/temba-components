@@ -22,6 +22,7 @@ import { Omnibox } from './src/omnibox/Omnibox';
 import { Tip } from './src/tip/Tip';
 import { TembaMenu } from './src/list/TembaMenu';
 import { Anchor } from './src/anchor/Anchor';
+import { Dropdown } from './src/dropdown/Dropdown';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -54,3 +55,4 @@ addCustomElement('temba-list', TembaList);
 addCustomElement('temba-menu', TembaMenu);
 addCustomElement('temba-contact-search', ContactSearch);
 addCustomElement('temba-icon', VectorIcon);
+addCustomElement('temba-dropdown', Dropdown);
