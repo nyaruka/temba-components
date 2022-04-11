@@ -20,6 +20,7 @@ export interface MenuItem {
   items?: MenuItem[];
   inline?: boolean;
   type?: string;
+  parent?: MenuItem;
 }
 
 interface MenuItemState {
@@ -31,14 +32,16 @@ const findItem = (
   id: string
 ): { item: MenuItem; index: number } => {
   const search = items || [];
+
   const index = search.findIndex((item: MenuItem) => {
     return item.id == id || item.vanity_id == id;
   });
 
   if (index > -1) {
     const item = search[index];
-    return { item: item, index: index };
+    return { item, index };
   }
+
   return { item: null, index: -1 };
 };
 
@@ -228,34 +231,13 @@ export class TembaMenu extends RapidElement {
       }
 
       .inline-children {
-        padding: 0.5em;
-        border-bottom-right-radius: var(--curvature);
-        border-bottom-left-radius: var(--curvature);
-        font-size: 1rem;
-        margin-bottom: 0.75em;
-        border: 1px solid #f3f3f3;
-        z-index: 1000;
-        border-top: none;
       }
 
       .inline-children .item {
-        max-width: 11em !important;
-        min-width: 11em !important;
       }
 
       .item.inline {
         border: 0px solid transparent;
-      }
-
-      .item.inline.child-selected,
-      .item.inline.selected {
-        background: #f3f3f3;
-        border: 0px solid #f1f1f1;
-        border-bottom-right-radius: 0px !important;
-        border-bottom-left-radius: 0px !important;
-        z-index: 1000;
-        color: #444;
-        --icon-color: #444;
       }
 
       .level-1,
@@ -571,9 +553,10 @@ export class TembaMenu extends RapidElement {
             subItem.level = item.level + 1;
             // if we came with preset items, set the level for them accordingly
             if (subItem.items) {
-              subItem.items.forEach(
-                inlineItem => (inlineItem.level = item.level + 2)
-              );
+              subItem.items.forEach(inlineItem => {
+                inlineItem.level = item.level + 2;
+                inlineItem.parent = subItem;
+              });
             }
           });
 
@@ -583,11 +566,11 @@ export class TembaMenu extends RapidElement {
           this.scrollSelectedIntoView();
           if (this.pending && this.pending.length > 0) {
             // auto select the next pending click
-            const nextId = this.pending.splice(0, 1)[0];
+            const nextId = this.pending.shift();
             if (nextId && items.length > 0) {
-              const nextItem = findItem(items, nextId).item;
-              if (nextItem) {
-                this.handleItemClicked(null, nextItem);
+              const nextItem = findItem(items, nextId);
+              if (nextItem.item) {
+                this.handleItemClicked(null, nextItem.item);
               } else {
                 this.fireNoPath(nextId);
               }
@@ -613,7 +596,15 @@ export class TembaMenu extends RapidElement {
     }
   }
 
-  private handleItemClicked(event: MouseEvent, menuItem: MenuItem) {
+  private handleItemClicked(
+    event: MouseEvent,
+    menuItem: MenuItem,
+    alias = false
+  ) {
+    if (menuItem.parent) {
+      this.handleItemClicked(null, menuItem.parent, alias);
+    }
+
     if (this.collapsed) {
       this.collapsed = false;
     }
@@ -660,7 +651,7 @@ export class TembaMenu extends RapidElement {
         this.dispatchEvent(new Event('change'));
         if (this.pending && this.pending.length > 0) {
           // auto select the next pending click
-          const nextId = this.pending.splice(0, 1)[0];
+          const nextId = this.pending.shift();
           const item = this.getMenuItem();
           if (nextId && item && item.items && item.items.length > 0) {
             const nextItem = findItem(item.items, nextId).item;
@@ -805,7 +796,7 @@ export class TembaMenu extends RapidElement {
       return html`<div class="divider"></div>`;
     }
 
-    if (menuItem.type === 'section') {
+    if (menuItem.type === 'section' || menuItem.inline) {
       return html`<div class="sub-section">${menuItem.name}</div>`;
     }
 
@@ -968,7 +959,7 @@ export class TembaMenu extends RapidElement {
               ? html`<div class="section">${selected.name}</div>`
               : null}
             ${items.map((item: MenuItem) => {
-              if (item.inline && this.isSelected(item)) {
+              if (item.inline) {
                 return html`${this.renderMenuItem(item)}
                   <div class="inline-children">
                     ${item.items.map((child: MenuItem) => {
