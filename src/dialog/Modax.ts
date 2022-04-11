@@ -101,9 +101,6 @@ export class Modax extends RapidElement {
   @property({ type: String })
   onLoaded: string;
 
-  @property({ type: String })
-  onSubmitted: string;
-
   @property({ type: Boolean })
   noSubmit: boolean;
 
