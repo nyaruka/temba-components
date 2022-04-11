@@ -21,6 +21,7 @@ export interface MenuItem {
   inline?: boolean;
   type?: string;
   parent?: MenuItem;
+  on_submit?: string;
 }
 
 interface MenuItemState {
@@ -469,56 +470,19 @@ export class TembaMenu extends RapidElement {
     }
   }
 
-  public refresh() {
-    const path = [...this.selection];
-    let items = this.root.items;
-    let item = null;
-    while (path.length > 0) {
-      const step = path.splice(0, 1)[0];
-      if (items) {
-        item = findItem(items, step).item;
-        if (item) {
-          if (item.endpoint) {
-            item.loading = true;
-            const itemToUpdate = item;
-            fetchResults(itemToUpdate.endpoint).then((updated: MenuItem[]) => {
-              // for now we only deal with updating counts and names
-              (itemToUpdate.items || []).forEach(
-                (existing: MenuItem, index: number, items: []) => {
-                  const itdx = findItem(updated, existing.id);
-                  const updatedItem = itdx.item;
+  public refresh(path: string[] = null) {
+    if (!path) {
+      path = [...this.selection];
+    }
 
-                  // remove it from our updated list
-                  updated.splice(itdx.index, 1);
+    // go up the tree until we find an endpoint
+    const item = this.getMenuItemForSelection(path);
 
-                  // we were removed!
-                  if (!updatedItem) {
-                    items.splice(index, 1);
-
-                    if (
-                      this.selection.length > 1 &&
-                      this.selection[this.selection.length - 1] == existing.id
-                    ) {
-                      this.selection.splice(this.selection.length - 1, 1);
-                      this.clickItem(this.selection[this.selection.length - 1]);
-                    }
-                  } else {
-                    existing.count = updatedItem.count;
-                    existing.name = updatedItem.name;
-                  }
-                }
-              );
-
-              itemToUpdate.loading = false;
-              this.requestUpdate('root');
-            });
-          }
-
-          items = item.items;
-        }
-      } else {
-        break;
-      }
+    if (item.endpoint) {
+      this.loadItems(item, false);
+    } else {
+      path.pop();
+      this.refresh(path);
     }
   }
 
@@ -618,6 +582,7 @@ export class TembaMenu extends RapidElement {
       this.fireCustomEvent(CustomEventType.ButtonClicked, {
         title: menuItem.name,
         href: menuItem.href,
+        on_submit: menuItem.on_submit,
       });
       return;
     }
@@ -695,7 +660,7 @@ export class TembaMenu extends RapidElement {
   }
 
   public getMenuItemForSelection(selection: string[]) {
-    const path = selection;
+    const path = [...selection];
     let items = this.root.items;
     let item = null;
     while (path.length > 0) {
