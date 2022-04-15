@@ -20,7 +20,6 @@ export interface MenuItem {
   items?: MenuItem[];
   inline?: boolean;
   type?: string;
-  parent?: MenuItem;
   on_submit?: string;
 }
 
@@ -57,7 +56,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .section {
-        font-size: 1.875rem;
+        font-size: 1.5em;
         margin-bottom: 0.2em;
         color: var(--color-text-dark);
       }
@@ -80,7 +79,7 @@ export class TembaMenu extends RapidElement {
         user-select: none;
         -webkit-user-select: none;
         display: flex;
-        font-size: 1.15em;
+        font-size: 1em;
         --icon-color: var(--color-text-dark);
       }
 
@@ -368,7 +367,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .sub-section {
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: #888;
         margin-top: 1rem;
         margin-left: 0.3rem;
@@ -519,7 +518,7 @@ export class TembaMenu extends RapidElement {
             if (subItem.items) {
               subItem.items.forEach(inlineItem => {
                 inlineItem.level = item.level + 2;
-                inlineItem.parent = subItem;
+                // inlineItem.parent = subItem;
               });
             }
           });
@@ -563,10 +562,10 @@ export class TembaMenu extends RapidElement {
   private handleItemClicked(
     event: MouseEvent,
     menuItem: MenuItem,
-    alias = false
+    parent: MenuItem = null
   ) {
-    if (menuItem.parent) {
-      this.handleItemClicked(null, menuItem.parent, alias);
+    if (parent && parent.inline) {
+      this.handleItemClicked(null, parent);
     }
 
     if (this.collapsed) {
@@ -613,7 +612,6 @@ export class TembaMenu extends RapidElement {
         this.loadItems(menuItem, !menuItem.href);
         this.dispatchEvent(new Event('change'));
       } else {
-        this.dispatchEvent(new Event('change'));
         if (this.pending && this.pending.length > 0) {
           // auto select the next pending click
           const nextId = this.pending.shift();
@@ -622,10 +620,14 @@ export class TembaMenu extends RapidElement {
             const nextItem = findItem(item.items, nextId).item;
             if (nextItem) {
               this.handleItemClicked(null, nextItem);
+            } else {
+              this.fireNoPath(nextId);
             }
           } else {
             this.fireNoPath(nextId);
           }
+        } else {
+          this.dispatchEvent(new Event('change'));
         }
         this.requestUpdate('root');
       }
@@ -756,7 +758,10 @@ export class TembaMenu extends RapidElement {
     return expanded;
   }
 
-  private renderMenuItem = (menuItem: MenuItem): TemplateResult => {
+  private renderMenuItem = (
+    menuItem: MenuItem,
+    parent: MenuItem = null
+  ): TemplateResult => {
     if (menuItem.type === 'divider') {
       return html`<div class="divider"></div>`;
     }
@@ -812,7 +817,7 @@ export class TembaMenu extends RapidElement {
         id="menu-${menuItem.id}"
         class="${itemClasses}"
         @click=${event => {
-          this.handleItemClicked(event, menuItem);
+          this.handleItemClicked(event, menuItem, parent);
         }}
       >
         ${menuItem.level === 0
@@ -928,7 +933,7 @@ export class TembaMenu extends RapidElement {
                 return html`${this.renderMenuItem(item)}
                   <div class="inline-children">
                     ${item.items.map((child: MenuItem) => {
-                      return this.renderMenuItem(child);
+                      return this.renderMenuItem(child, item);
                     })}
                   </div>`;
               }
