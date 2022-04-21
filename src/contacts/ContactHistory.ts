@@ -110,22 +110,24 @@ export class ContactHistory extends RapidElement {
     return css`
       ${getEventStyles()}
 
-      :host {
-        flex-grow: 1;
-        flex-direction: column;
+      .wrapper {
+        border: 0px solid green;
         display: flex;
         flex-direction: column;
         align-items: items-stretch;
+        flex-grow: 1;
+        min-height: 0;
       }
 
       .events {
-        height: 200px;
         overflow-y: scroll;
         overflow-x: hidden;
-        flex-grow: 1;
-        border-top-left-radius: var(--curvature);
-        padding-top: 1em;
         background: #fff;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-height: 0;
+        padding-top: 3em;
       }
 
       temba-loading {
@@ -180,12 +182,9 @@ export class ContactHistory extends RapidElement {
       }
 
       .sticky-bin {
-        display: flex;
-        flex-direction: column;
-        z-index: 2;
         border-top-left-radius: var(--curvature);
-        overflow: hidden;
-        box-shadow: 0px 3px 3px 0px rgba(0, 0, 0, 0.15);
+        z-index: 2;
+        box-shadow: rgb(0 0 0 / 15%) 0px 3px 3px 0px;
         background: rgb(240, 240, 240);
       }
 
@@ -382,7 +381,6 @@ export class ContactHistory extends RapidElement {
             if (forceOpen) {
               grouped[grouped.length - 1].open = forceOpen;
             }
-
             this.eventGroups = [...previousGroups, ...grouped];
           }
           this.refreshing = false;
@@ -452,6 +450,7 @@ export class ContactHistory extends RapidElement {
     if (changedProperties.has('refreshing') && !this.refreshing) {
       if (this.lastRefreshAdded > 0) {
         const events = this.getEventsPane();
+
         // if we are near the bottom, push us to the bottom to show new stuff
         if (this.lastHeight > 0) {
           const addedHeight = events.scrollHeight - this.lastHeight;
@@ -573,7 +572,6 @@ export class ContactHistory extends RapidElement {
         }
         eventGroup = {
           open: false,
-          closing: false,
           events: [event],
           type: currentEventGroupType,
         };
@@ -649,21 +647,17 @@ export class ContactHistory extends RapidElement {
   }
 
   private handleEventGroupHide(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
     const grouping = event.currentTarget as HTMLDivElement;
     const groupIndex = parseInt(grouping.getAttribute('data-group-index'));
     const eventGroup =
       this.eventGroups[this.eventGroups.length - groupIndex - 1];
 
-    // mark us as closing
-    eventGroup.closing = true;
-    this.requestUpdate('eventGroups');
+    eventGroup.open = false;
 
-    // after our animation, close it up for real
-    setTimeout(() => {
-      eventGroup.closing = false;
-      eventGroup.open = false;
-      this.requestUpdate('eventGroups');
-    }, 300);
+    this.requestUpdate('eventGroups');
   }
 
   private handleScroll() {
@@ -913,12 +907,16 @@ export class ContactHistory extends RapidElement {
         : null;
 
     return html`
-      ${this.ticket
-        ? html`<div class="sticky-bin">${unfetchedTickets}</div>`
-        : null}
-      ${this.fetching
-        ? html`<temba-loading units="5" size="10"></temba-loading>`
-        : html`<div style="height:0em"></div>`}
+      ${
+        this.ticket
+          ? html`<div class="sticky-bin">${unfetchedTickets}</div>`
+          : null
+      }
+      ${
+        this.fetching
+          ? html`<temba-loading units="5" size="10"></temba-loading>`
+          : html`<div style="height:0em"></div>`
+      }
       <div class="events" @scroll=${this.handleScroll}>
         ${this.eventGroups.map((eventGroup: EventGroup, index: number) => {
           const grouping = getEventGroupType(eventGroup.events[0], this.ticket);
@@ -928,9 +926,7 @@ export class ContactHistory extends RapidElement {
             grouping: true,
             [grouping]: true,
             expanded: eventGroup.open,
-            closing: eventGroup.closing,
           });
-
           return html`<div class="${classes}">
             ${grouping === 'verbose'
               ? html`<div
@@ -938,36 +934,37 @@ export class ContactHistory extends RapidElement {
                   @click=${this.handleEventGroupShow}
                   data-group-index="${groupIndex}"
                 >
-                  ${eventGroup.events.length}
-                  ${eventGroup.events.length === 1 ? html`event` : html`events`}
+                  ${eventGroup.open
+                    ? html`<temba-icon
+                        @click=${this.handleEventGroupHide}
+                        data-group-index="${groupIndex}"
+                        name="x"
+                        clickable
+                      ></temba-icon>`
+                    : html`${eventGroup.events.length}
+                      ${eventGroup.events.length === 1
+                        ? html`event`
+                        : html`events`} `}
                 </div>`
               : null}
-            ${grouping === 'verbose'
-              ? html`
-                  <temba-icon
-                    @click=${this.handleEventGroupHide}
-                    data-group-index="${groupIndex}"
-                    class="grouping-close-button"
-                    name="x"
-                    clickable
-                  ></temba-icon>
-                `
-              : null}
-            ${eventGroup.events.map((event: ContactEvent) => {
-              if (
-                event.type === Events.TICKET_ASSIGNED &&
-                (event as TicketEvent).note
-              ) {
-                const noteEvent = { ...event };
-                noteEvent.type = Events.TICKET_NOTE_ADDED;
 
-                return html`${this.renderEventContainer(
-                  noteEvent
-                )}${this.renderEventContainer(event)}`;
-              } else {
-                return this.renderEventContainer(event);
-              }
-            })}
+            <div class="items">
+              ${eventGroup.events.map((event: ContactEvent) => {
+                if (
+                  event.type === Events.TICKET_ASSIGNED &&
+                  (event as TicketEvent).note
+                ) {
+                  const noteEvent = { ...event };
+                  noteEvent.type = Events.TICKET_NOTE_ADDED;
+
+                  return html`${this.renderEventContainer(
+                    noteEvent
+                  )}${this.renderEventContainer(event)}`;
+                } else {
+                  return this.renderEventContainer(event);
+                }
+              })}
+            </div>
           </div>`;
         })}
       </div>
@@ -983,6 +980,7 @@ export class ContactHistory extends RapidElement {
         >
           New Messages
         </div>
+      </div>
       </div>
     `;
   }

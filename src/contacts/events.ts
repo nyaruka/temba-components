@@ -6,21 +6,54 @@ import { getDisplayName } from './helpers';
 export const getEventStyles = () => {
   return css`
     .grouping {
-      padding: 0 2em;
-      margin: 0 -1em;
+      margin-top: 1em;
     }
 
     .grouping.verbose {
       background: #f9f9f9;
-      max-height: 1px;
-      border-top: 1px solid #f9f9f9;
-      padding-top: 0;
-      padding-bottom: 0;
-      margin-top: 0;
-      margin-bottom: 1.5em;
-      color: #efefef;
+      color: var(--color-dark);
       --color-link-primary: rgba(38, 166, 230, 1);
       pointer-events: none;
+      background: #fefefe;
+      box-shadow: -8px 0px 8px 1px rgba(0, 0, 0, 0.05) inset;
+      margin-right: -16px;
+      padding-right: 16px;
+      margin-bottom: 1.3em;
+    }
+
+    .grouping .items {
+      display: block;
+      user-select: none;
+    }
+
+    .grouping.verbose .items {
+      opacity: 0;
+      max-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .grouping.flows .items {
+      padding: 0;
+    }
+
+    .grouping.messages .items {
+      display: flex;
+      flex-direction: column;
+      margin: 0em 0.75em;
+    }
+
+    .grouping.verbose.expanded .items {
+      transition: max-height var(--transition-speed) ease-in-out,
+        opacity var(--transition-speed) ease-in-out;
+      opacity: 1;
+      max-height: 1000px;
+      padding: 1em 1em;
+    }
+
+    .grouping.verbose.expanded {
+      border-top: 1px solid #f3f3f3;
+      border-bottom: 1px solid #f3f3f3;
     }
 
     .grouping.verbose.expanded,
@@ -43,50 +76,37 @@ export const getEventStyles = () => {
     }
 
     .grouping.verbose .attn {
-      color: #fff;
+      color: #666;
     }
 
     .event-count {
       position: relative;
-      top: -1.2em;
       font-size: 0.8em;
       text-align: center;
-      border: 2px solid #f9f9f9;
-      background: #fff;
       margin: 0 auto;
       display: table;
       padding: 3px 10px;
       font-weight: 400;
-      color: #777;
-      border-radius: var(--curvature);
+      color: #999;
       cursor: pointer;
-      min-width: 0%;
+      width: 100%;
       opacity: 1;
-      transition: all var(--transition-speed) ease-in, opacity 0.1ms,
-        margin-top 0ms;
-    }
-
-    .closing .grouping-close-button {
-      opacity: 0 !important;
-      transition: none !important;
-    }
-
-    .event-count {
       z-index: 1;
-      margin-bottom: 1em;
+    }
+
+    .event-count temba-icon {
+      display: inline-block;
+      position: absolute;
+      right: 5px;
+      top: 5px;
     }
 
     .event-count:hover {
-      padding: 3px 10px;
-      min-width: 50%;
-      background: #f9f9f9;
-      color: #333;
+      color: var(--color-link-primary-hover);
     }
 
     .expanded .event-count {
-      opacity: 0;
-      margin-top: -42px;
-      z-index: 0;
+      padding: 0;
       pointer-events: none;
     }
 
@@ -114,54 +134,18 @@ export const getEventStyles = () => {
       word-wrap: break-word;
     }
 
-    .grouping.verbose.closing {
-      opacity: 0 !important;
-      padding: 0 !important;
-      background: #f9f9f9 !important;
-      max-height: 1px !important;
-      border-top: 1px solid #f9f9f9 !important;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
-
-    .grouping.verbose.closing .event,
-    .grouping.verbose.closing pre {
-      max-height: 0px;
-    }
-
-    .grouping.verbose.expanded {
-      transition: all var(--transition-speed)
-          cubic-bezier(0.68, -0.55, 0.265, 1.05),
-        color 0.1ms;
-      background: #444;
-      color: #efefef;
-      max-height: 1000px;
-      border-top: 1px solid #f1f1f1;
-      padding: 2em;
-      margin-left: 1em;
-      margin-right: 1em;
-      border-radius: var(--curvature);
-      padding-bottom: 1em;
-      box-shadow: inset 0px 11px 4px -15px #000, inset 0px -11px 4px -15px #000;
-    }
-
     .grouping.verbose.expanded .event,
     .grouping.verbose.expanded pre {
       max-height: 500px;
-      margin-bottom: 0.5em;
       opacity: 1;
-      transition: all var(--transition-speed) ease-in-out;
     }
 
     .grouping-close-button {
+      position: relative;
+      display: inline-block;
       opacity: 0;
       float: right;
-      margin-top: -1em !important;
-      margin-right: -1em !important;
-      fill: #f2f2f2;
-      transition: opacity var(--transition-speed) ease-in;
+      --icon-color: #666;
     }
 
     .grouping.verbose.expanded:hover .grouping-close-button {
@@ -175,7 +159,7 @@ export const getEventStyles = () => {
     }
 
     .event {
-      margin-bottom: 1em;
+      margin: 0.25em 0.5em;
       border-radius: var(--curvature);
       flex-grow: 1;
     }
@@ -332,6 +316,7 @@ export const getEventStyles = () => {
       font-size: 80%;
       color: rgba(0, 0, 0, 0.6);
       padding: 6px 3px;
+      margin-bottom: 0.5em;
     }
 
     .msg-summary temba-icon[name='log'] {
@@ -460,7 +445,6 @@ export interface EventGroup {
   type: string;
   events: ContactEvent[];
   open: boolean;
-  closing: boolean;
 }
 
 export enum Events {
@@ -1081,7 +1065,9 @@ export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
   return html`<temba-icon name="contact"></temba-icon>
-    <div class="description">Language updated to ${event.language}</div>`;
+    <div class="description">
+      Language updated to <span class="attn">${event.language}</span>
+    </div>`;
 };
 
 export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
