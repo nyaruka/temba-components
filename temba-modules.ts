@@ -23,6 +23,8 @@ import { Tip } from './src/tip/Tip';
 import { TembaMenu } from './src/list/TembaMenu';
 import { Anchor } from './src/anchor/Anchor';
 import { Dropdown } from './src/dropdown/Dropdown';
+import { TabPane } from './src/tabpane/TabPane';
+import { Tab } from './src/tabpane/Tab';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -56,3 +58,5 @@ addCustomElement('temba-menu', TembaMenu);
 addCustomElement('temba-contact-search', ContactSearch);
 addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
+addCustomElement('temba-tabs', TabPane);
+addCustomElement('temba-tab', Tab);

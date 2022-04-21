@@ -14,11 +14,19 @@
     />
 
     <style>
+
+      .linked {
+        text-decoration: underline;
+        color: blue;
+        cursor: pointer;
+      }
+
       .example {
         border: 0px solid gray;
         padding: 10px;
         max-width: 500px;
         --temba-select-selected-font-size: 1em;
+        display:none;
       }
 
       temba-dropdown.open {
@@ -33,6 +41,14 @@
 
       .open .more, .more:hover {
         background: rgba(0,0,0,.3);
+      }
+
+      temba-tabs *, temba-tab * {
+        opacity: 0;
+      }
+
+      temba-tabs:defined *, temba-tab:defined * {
+        opacity: 1;
       }
 
     </style>
@@ -60,20 +76,23 @@
       groups="/static/api/groups.json"
     ></temba-store>
 
-    <div style="margin: 10px; background: #777; border-radius: 6px; overflow: hidden;">
-      <div style="display: flex; flex-direction: row; --icon-color: #fff;">
-        <div style="flex-grow: 1"></div>
-        <temba-dropdown style="display:flex; align-items: center; height: 100%" arrowOffset="-10" offsetX="0" offsetY="4" arrowSize="10">
-          <div slot="toggle" class="more">
-            <temba-icon name="menu" size="2"></temba-icon>
-          </div>
-          <div slot="dropdown" style="width:150px; padding:0.5em 1em">
-            <a href="http://google.com">Google</a>
-          </div>
-        </temba-dropdown>
-      </div>
-    </div>
+    <temba-tabs>
 
+      <temba-tab name="Chats" icon="message-square">
+        Chat content
+      </temba-tab>
+
+      <temba-tab name="Details" icon="list">
+        Details content
+      </temba-tab>
+
+      <temba-tab name="Log" icon="log">
+       Log content
+      </temba-tab>
+
+    </temba-tabs>
+
+    
     <div class="example" style="margin: 10px; background: #ccc; border-radius:6px;">
       <temba-dropdown>
         <div style="display:inline-block" slot="toggle">

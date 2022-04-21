@@ -14,7 +14,7 @@ export const createHistory = async (def: string) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute(
     'style',
-    'width: 500px;height:750px;display:flex;flex-direction:column'
+    'width: 500px;height:750px;display:flex;flex-direction:column;flex-grow:1;min-height:0;'
   );
   const history = (await fixture(def, { parentNode })) as ContactHistory;
 
@@ -29,7 +29,8 @@ export const createHistory = async (def: string) => {
   return history;
 };
 
-const getHistoryHTML = (attrs: any = {}) =>
+const getHistoryHTML = (attrs: any = {} as any) =>
+  // attrs = "min-height:0;display:flex;flex-grow:1;flex-direction:column";
   getHTML('temba-contact-history', attrs);
 
 const getHistoryClip = (ele: ContactHistory) => {
@@ -74,10 +75,11 @@ describe('temba-contact-history', () => {
     // we should have scrolled to the bottom
     const events = history.shadowRoot.querySelector('.events');
     const top = events.scrollHeight - events.getBoundingClientRect().height;
-    expect(top).to.equal(223);
+
+    expect(top).to.equal(539);
 
     // make sure we actually scrolled to there
-    // expect(events.scrollTop).to.equal(top - 1);
+    expect(events.scrollTop).to.equal(top - 4);
 
     await assertScreenshot('contacts/history', getHistoryClip(history));
   });
@@ -90,15 +92,15 @@ describe('temba-contact-history', () => {
     );
 
     // our groups with collapsed events
-    const groups = [3, 11];
+    const groups = [3, 5, 7];
     for (const idx of groups) {
       const group = history.shadowRoot.querySelector(
-        `[data-group-index='${idx}']`
+        `.event-count[data-group-index='${idx}']`
       ) as HTMLDivElement;
       group.click();
     }
 
-    await waitFor(1000);
+    await waitFor(500);
 
     await assertScreenshot(
       'contacts/history-expanded',

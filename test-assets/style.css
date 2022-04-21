@@ -169,6 +169,12 @@ temba-button.light.active {
   --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.02));
 }
 
+temba-contact-history {
+  min-height:0;
+  display:flex;
+  flex-grow:1;
+  flex-direction:column;
+}
 
 temba-select:focus {
   outline: none;
