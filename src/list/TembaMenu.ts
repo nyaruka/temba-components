@@ -21,6 +21,7 @@ export interface MenuItem {
   inline?: boolean;
   type?: string;
   on_submit?: string;
+  bubble?: string;
 }
 
 interface MenuItemState {
@@ -53,6 +54,18 @@ export class TembaMenu extends RapidElement {
         display: block;
         --color-widget-bg-focused: transparent;
         --options-block-shadow: none;
+      }
+
+      .bubble {
+        width: 8px;
+        height: 8px;
+        left: 14px;
+        bottom: -1px;
+        z-index: 10000;
+        border-radius: 99px;
+        border: 1px solid rgb(255, 255, 255);
+        position: relative;
+        margin-top: -10px;
       }
 
       .section {
@@ -158,7 +171,6 @@ export class TembaMenu extends RapidElement {
         margin-top: 0.1em;
         border-radius: var(--curvature);
         display: flex;
-
         min-width: 12em;
         max-width: 12em;
       }
@@ -436,6 +448,16 @@ export class TembaMenu extends RapidElement {
     super();
   }
 
+  public setBubble(id: string, color: string) {
+    const found = findItem(this.root.items, id);
+    if (found && found.item) {
+      found.item.bubble = color;
+      this.requestUpdate('root');
+      return true;
+    }
+    return false;
+  }
+
   private getMenuItemState(id: string): MenuItemState {
     let itemState = {};
     if (id) {
@@ -587,7 +609,7 @@ export class TembaMenu extends RapidElement {
     }
 
     if (menuItem.trigger) {
-      window[menuItem.trigger]();
+      new Function(menuItem.trigger)();
     } else {
       if (menuItem.level === 0) {
         /* this.expanding = menuItem.id;
@@ -785,9 +807,15 @@ export class TembaMenu extends RapidElement {
 
     const icon = menuItem.icon
       ? html`<temba-icon
-          size="${menuItem.level === 0 ? '1.5' : '1'}"
-          name="${menuItem.icon}"
-        ></temba-icon>`
+            size="${menuItem.level === 0 ? '1.5' : '1'}"
+            name="${menuItem.icon}"
+          ></temba-icon
+          >${menuItem.bubble
+            ? html`<div
+                style="background-color: ${menuItem.bubble}"
+                class="bubble"
+              ></div>`
+            : null}`
       : null;
 
     const collapsedIcon = menuItem.collapsed_icon
@@ -945,7 +973,10 @@ export class TembaMenu extends RapidElement {
     });
 
     const menu = html`<div
-      class="root ${this.collapsed ? 'fully-collapsed' : ''}"
+      class="${getClasses({
+        root: true,
+        'fully-collapsed': this.collapsed,
+      })}"
     >
       ${levels}
     </div>`;
