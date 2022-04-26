@@ -17,7 +17,7 @@ html input {
 html {
   --transition-speed: 0ms !important;
   --input-caret: transparent !important;
-  --font-family: 'Roboto';
+  --font-family: 'Arial';
   --primary-rgb: 35, 135, 202;
   --secondary-rgb: 140, 51, 140;
   --tertiary-rgb: 135, 202, 35;
