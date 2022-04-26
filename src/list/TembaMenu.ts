@@ -260,7 +260,7 @@ export class TembaMenu extends RapidElement {
 
       .level-1 {
         transition: opacity 100ms linear, margin 200ms linear;
-        overflow-y: auto;
+        overflow-y: scroll;
         z-index: 1500;
       }
 
@@ -369,6 +369,10 @@ export class TembaMenu extends RapidElement {
         background: #f3f3f3;
         margin: 0.5em 0.75em;
         min-height: 1px;
+      }
+
+      .space {
+        margin: 0.5em;
       }
 
       .collapsed .divider {
@@ -788,6 +792,10 @@ export class TembaMenu extends RapidElement {
       return html`<div class="divider"></div>`;
     }
 
+    if (menuItem.type === 'space') {
+      return html`<div class="space"></div>`;
+    }
+
     if (menuItem.type === 'section' || menuItem.inline) {
       return html`<div class="sub-section">${menuItem.name}</div>`;
     }
@@ -957,10 +965,10 @@ export class TembaMenu extends RapidElement {
               ? html`<div class="section">${selected.name}</div>`
               : null}
             ${items.map((item: MenuItem) => {
-              if (item.inline) {
+              if (item.inline && item.items) {
                 return html`${this.renderMenuItem(item)}
                   <div class="inline-children">
-                    ${item.items.map((child: MenuItem) => {
+                    ${(item.items || []).map((child: MenuItem) => {
                       return this.renderMenuItem(child, item);
                     })}
                   </div>`;
