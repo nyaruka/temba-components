@@ -23,7 +23,6 @@ export const getEventStyles = () => {
 
     .grouping .items {
       display: block;
-      user-select: none;
     }
 
     .grouping.verbose .items {
@@ -31,6 +30,7 @@ export const getEventStyles = () => {
       max-height: 0;
       display: flex;
       flex-direction: column;
+      user-select: none;
     }
 
     .grouping.flows .items {
