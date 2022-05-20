@@ -52,7 +52,6 @@
         "email": "admin1@nyaruka.com"
       }
     },
-
     {
       "type": "msg_created",
       "created_on": "2021-03-31T00:30:00.585471+00:00",
@@ -66,8 +65,10 @@
           "name": "SMS Channel"
         }
       },
-      "status": "W",
-      "logs_url": "/channels/channellog/read/1479/"
+      "status": "F",
+      "failed_reason": "D",
+      "failed_reason_display": "No suitable channel found",
+      "logs_url": null
     },
     {
       "type": "flow_exited",

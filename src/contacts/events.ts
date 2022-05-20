@@ -496,6 +496,8 @@ export interface ContactLanguageChangedEvent extends ContactEvent {
 export interface MsgEvent extends ContactEvent {
   msg: Msg;
   status: string;
+  failed_reason?: string;
+  failed_reason_display?: string;
   logs_url: string;
   msg_type: string;
   recipient_count?: number;
@@ -697,8 +699,45 @@ export const renderMsgEvent = (
   agent: string
 ): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
-  const isError = event.status === 'E' || event.status === 'F';
-  const msg = html`<div style="display:flex;align-items:flex-start">
+  const isError = event.status === 'E';
+  const isFailure = event.status === 'F';
+
+  // summary items which appear under the message bubble
+  const summary: TemplateResult[] = [];
+  if (event.logs_url) {
+    summary.push(html` <div class="icon-link">
+      <temba-icon
+        onclick="goto(event)"
+        href="${event.logs_url}"
+        name="log"
+        class="${isError || isFailure ? 'error' : ''}"
+      ></temba-icon>
+    </div>`);
+  } else if (isError) {
+    summary.push(
+      html`<temba-icon
+        title="Message delivery error"
+        name="alert-triangle"
+      ></temba-icon>`
+    );
+  } else if (isFailure) {
+    summary.push(
+      html`<temba-icon
+        title="Message delivery failure: ${event.failed_reason_display}"
+        name="alert-triangle"
+      ></temba-icon>`
+    );
+  }
+  if (event.recipient_count > 1) {
+    summary.push(html`<temba-icon size="1" name="megaphone"></temba-icon>
+      <div class="recipients">${event.recipient_count} contacts</div>
+      <div class="separator">•</div>`);
+  }
+  summary.push(
+    html`<div class="time">${timeSince(new Date(event.created_on))}</div>`
+  );
+
+  return html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
       ${event.msg.text ? html`<div class="msg">${event.msg.text}</div>` : null}
       ${event.msg.attachments
@@ -716,29 +755,7 @@ export const renderMsgEvent = (
         style="flex-direction:row${isInbound ? '-reverse' : ''}"
       >
         <div style="flex-grow:1"></div>
-        ${event.logs_url
-          ? html`
-              <div class="icon-link">
-                <temba-icon
-                  onclick="goto(event)"
-                  href="${event.logs_url}"
-                  name="log"
-                  class="${isError ? 'error' : ''}"
-                ></temba-icon>
-              </div>
-            `
-          : isError
-          ? html`<temba-icon
-              title="Message delivery error"
-              name="alert-triangle"
-            ></temba-icon>`
-          : null}
-        ${event.recipient_count > 1
-          ? html`<temba-icon size="1" name="megaphone"></temba-icon>
-              <div class="recipients">${event.recipient_count} contacts</div>
-              <div class="separator">•</div>`
-          : null}
-        <div class="time">${timeSince(new Date(event.created_on))}</div>
+        ${summary}
       </div>
     </div>
 
@@ -752,7 +769,6 @@ export const renderMsgEvent = (
         </div>`
       : null}
   </div>`;
-  return msg;
 };
 
 export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
