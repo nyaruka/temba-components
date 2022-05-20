@@ -22,7 +22,7 @@
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --write --ignore-path .gitignore",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "format": "yarn format:eslint && yarn format:prettier",
-    "test": "tsc && web-test-runner --node-resolve --coverage",
+    "test": "rimraf out-tsc && tsc && web-test-runner --node-resolve --coverage",
     "test:watch": "web-test-runner --node-resolve --watch",
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
     "storybook:build": "build-storybook",
