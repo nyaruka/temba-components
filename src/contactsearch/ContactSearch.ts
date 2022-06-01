@@ -192,7 +192,7 @@ export class ContactSearch extends FormElement {
   }
 
   public fetchSummary(query: string): any {
-    const url = this.endpoint + query.replace('\n', ' ');
+    const url = this.endpoint + encodeURIComponent(query.replace('\n', ' '));
     getUrl(url).then((response: WebResponse) => {
       this.fetching = false;
       if (response.status === 200) {
