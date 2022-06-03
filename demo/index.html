@@ -65,6 +65,13 @@
           event.target.infoText = null;
         }
       }
+
+      function storeTest() {
+        var store = document.querySelector("temba-store");
+        store.getResults("http://localhost.textit.in:8888/api/v2/fields.json", { force: true }).then(function(response){
+          console.log(response);
+        })
+      }
     </script>
   </head>
   <body>
@@ -79,7 +86,7 @@
     <temba-tabs>
 
       <temba-tab name="Chats" icon="message-square">
-        Chat content
+        <div onclick="storeTest();">Click me!</div>
       </temba-tab>
 
       <temba-tab name="Details" icon="list">
@@ -91,6 +98,7 @@
       </temba-tab>
 
     </temba-tabs>
+
 
     
     <div class="example" style="margin: 10px; background: #ccc; border-radius:6px;">

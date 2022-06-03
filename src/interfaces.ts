@@ -43,6 +43,7 @@ export interface ContactField {
   label: string;
   value_type: string;
   pinned: boolean;
+  priority: number;
 }
 
 export interface ContactGroup {
@@ -178,4 +179,5 @@ export enum CustomEventType {
   Submitted = 'temba-submitted',
   Redirected = 'temba-redirected',
   NoPath = 'temba-no-path',
+  StoreUpdated = 'temba-store-updated',
 }
