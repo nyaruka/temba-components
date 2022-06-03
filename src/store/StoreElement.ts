@@ -51,17 +51,21 @@ export class StoreElement extends RapidElement {
     this.store = document.querySelector('temba-store') as Store;
     this.handleStoreUpdated = this.handleStoreUpdated.bind(this);
     this.prepareData = this.prepareData.bind(this);
-    this.store.addEventListener(
-      CustomEventType.StoreUpdated,
-      this.handleStoreUpdated
-    );
+    if (this.store) {
+      this.store.addEventListener(
+        CustomEventType.StoreUpdated,
+        this.handleStoreUpdated
+      );
+    }
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.store.removeEventListener(
-      CustomEventType.StoreUpdated,
-      this.handleStoreUpdated
-    );
+    if (this.store) {
+      this.store.removeEventListener(
+        CustomEventType.StoreUpdated,
+        this.handleStoreUpdated
+      );
+    }
   }
 }
