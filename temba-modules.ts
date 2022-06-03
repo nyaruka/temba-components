@@ -25,6 +25,12 @@ import { Anchor } from './src/anchor/Anchor';
 import { Dropdown } from './src/dropdown/Dropdown';
 import { TabPane } from './src/tabpane/TabPane';
 import { Tab } from './src/tabpane/Tab';
+import Label from './src/label/Label';
+import { ContactGroups } from './src/contacts/ContactGroups';
+import { ContactName } from './src/contacts/ContactName';
+import { ContactUrn } from './src/contacts/ContactUrn';
+import { ContactFields } from './src/contacts/ContactFields';
+import { ContactFieldEditor } from './src/contacts/ContactFieldEditor';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -54,9 +60,15 @@ addCustomElement('temba-contact-chat', ContactChat);
 addCustomElement('temba-contact-details', ContactDetails);
 addCustomElement('temba-ticket-list', TicketList);
 addCustomElement('temba-list', TembaList);
+addCustomElement('temba-label', Label);
 addCustomElement('temba-menu', TembaMenu);
 addCustomElement('temba-contact-search', ContactSearch);
 addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
+addCustomElement('temba-contact-name', ContactName);
+addCustomElement('temba-contact-field', ContactFieldEditor);
+addCustomElement('temba-contact-fields', ContactFields);
+addCustomElement('temba-urn', ContactUrn);
+addCustomElement('temba-contact-groups', ContactGroups);

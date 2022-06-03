@@ -12,7 +12,7 @@ import '../options/Options';
 import { EventHandler } from '../RapidElement';
 import { FormElement } from '../FormElement';
 
-import flru from 'flru';
+import Lru from 'tiny-lru';
 import { CompletionOption, CustomEventType, Position } from '../interfaces';
 import {
   renderCompletionOption,
@@ -497,7 +497,7 @@ export class Select extends FormElement {
 
   private removingSelection: boolean;
 
-  private lruCache = flru(20);
+  private lruCache = Lru(20, 60000);
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse>;
@@ -507,7 +507,7 @@ export class Select extends FormElement {
 
     // if our cache key changes, clear it out
     if (changedProperties.has('cacheKey')) {
-      this.lruCache.clear(false);
+      this.lruCache.clear();
     }
 
     if (
@@ -594,7 +594,7 @@ export class Select extends FormElement {
       postJSON(this.endpoint, selected).then(response => {
         if (response.status >= 200 && response.status < 300) {
           this.setSelectedOption(response.json);
-          this.lruCache = flru(20);
+          this.lruCache = Lru(20, 60000);
         } else {
           // TODO: find a way to share inline errors
           this.blur();

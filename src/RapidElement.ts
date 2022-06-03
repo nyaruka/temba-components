@@ -9,7 +9,6 @@ export interface EventHandler {
 
 export class RapidElement extends LitElement {
   private eles: { [selector: string]: HTMLDivElement } = {};
-
   public getEventHandlers(): EventHandler[] {
     return [];
   }
