@@ -4,7 +4,7 @@ import { property } from 'lit/decorators';
 import { getClasses } from '../utils';
 
 // for cache busting, increase whenever the icon set changes
-const ICON_VERSION = 6;
+const ICON_VERSION = 8;
 
 export class VectorIcon extends LitElement {
   @property({ type: String })
@@ -32,6 +32,9 @@ export class VectorIcon extends LitElement {
   @property({ type: Number })
   animationDuration = 200;
 
+  @property({ type: String })
+  href = '';
+
   @property({ type: Number, attribute: false })
   steps = 2;
 
@@ -53,7 +56,7 @@ export class VectorIcon extends LitElement {
         padding-bottom: 0.2em;
       }
 
-      svg {
+      .sheet {
         fill: var(--icon-color);
         transform: scale(1);
         transition: fill 100ms ease-in-out,
@@ -62,28 +65,28 @@ export class VectorIcon extends LitElement {
           margin 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
       }
 
-      svg.spin {
+      .sheet.spin {
         transform: rotate(0deg);
       }
 
-      svg.spin-1 {
+      .sheet.spin-1 {
         transform: rotate(180deg);
       }
 
-      svg.spin-2 {
+      .sheet.spin-2 {
         transform: rotate(360deg);
       }
 
-      svg.spin-3 {
+      .sheet.spin-3 {
         transform: rotate(0deg);
         transition-duration: 0ms !important;
       }
 
-      svg.pulse {
+      .sheet.pulse {
         transform: scale(1);
       }
 
-      svg.pulse-1 {
+      .sheet.pulse-1 {
         transform: scale(1.2);
       }
 
@@ -192,18 +195,20 @@ export class VectorIcon extends LitElement {
           this.steps}ms
           ${this.easing}"
           class="${getClasses({
+            sheet: this.href === '',
             [this.animateChange]: !!this.animateChange,
             [this.animateChange + '-' + this.animationStep]:
               this.animationStep > 0,
           })}"
         >
           <use
-            href="${this.prefix ||
-            (window as any).static_url ||
-            '/static/'}icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${this
-              .lastName ||
-            this.name ||
-            this.id}"
+            href="${this.href
+              ? this.href
+              : `${
+                  this.prefix || (window as any).static_url || '/static/'
+                }icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${
+                  this.lastName || this.name || this.id
+                }`}"
           />
         </svg>
       </div>

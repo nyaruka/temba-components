@@ -157,6 +157,9 @@ export class Button extends LitElement {
   @property({ type: Boolean })
   destructive: boolean;
 
+  @property({ type: Boolean })
+  light: boolean;
+
   @property()
   name: string;
 
@@ -227,6 +230,7 @@ export class Button extends LitElement {
           'active-button': this.active,
           'attention-button': this.attention,
           'destructive-button': this.destructive,
+          'light-button': this.light,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}

@@ -525,6 +525,7 @@ export class TextInput extends FormElement {
           style=${styleMap(containerStyle)}
           @click=${this.handleContainerClick}
         >
+          <slot name="prefix"></slot>
           ${input} ${clear}
           <slot></slot>
         </div>
