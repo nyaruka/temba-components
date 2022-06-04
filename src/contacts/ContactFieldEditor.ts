@@ -25,12 +25,22 @@ export class ContactFieldEditor extends RapidElement {
   static get styles() {
     return css`
       .prefix {
-        padding: 0.5em 0.75em;
         background: rgba(0, 0, 0, 0.05);
         border-top-left-radius: 4px;
         border-bottom-left-radius: 4px;
         color: #888;
         cursor: pointer;
+        width: 100px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        padding: 0em 0.5em;
+      }
+
+      .prefix .name {
+        padding: 0.5em 0em;
+        color: #888;
         width: 80px;
         white-space: nowrap;
         overflow: hidden;
@@ -38,8 +48,13 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       .postfix {
+        display: flex;
+        align-items: stretch;
+      }
+
+      .popper {
         padding: 0.5em 0.75em;
-        background: rgba(0, 0, 0, 0.05);
+        background: rgba(240, 240, 240, 1);
         border-top-right-radius: 4px;
         border-bottom-right-radius: 4px;
         --icon-color: #888;
@@ -49,21 +64,26 @@ export class ContactFieldEditor extends RapidElement {
         transition: all 300ms ease-in-out;
         display: flex;
         align-items: stretch;
+        z-index: 1000;
       }
 
-      .postfix.check {
+      .postfix temba-icon[name='calendar'] {
+        --icon-color: #e3e3e3;
+      }
+
+      .popper.check {
         background: rgba(90, 145, 86, 0.15);
       }
 
-      .postfix.none {
+      .popper.none {
         opacity: 0;
       }
 
-      .postfix.copy temba-icon:hover {
+      .popper.copy temba-icon:hover {
         --icon-color: #555;
       }
 
-      .postfix.corner-down-left {
+      .popper.corner-down-left {
         // background: var(--color-primary-dark);
         // --icon-color: var(--color-text-light);
         opacity: 1;
@@ -78,12 +98,12 @@ export class ContactFieldEditor extends RapidElement {
         --icon-color: rgb(90, 145, 86);
       }
 
-      temba-textinput:hover .postfix.copy {
+      temba-textinput:hover .popper.copy {
         opacity: 1;
         transform: scale(1);
       }
 
-      temba-textinput:focus .postfix.copy {
+      temba-textinput:focus .popper.copy {
         opacity: 1;
         transform: scale(1);
       }
@@ -107,11 +127,12 @@ export class ContactFieldEditor extends RapidElement {
   public handleIconClick(evt: MouseEvent) {
     const ele = evt.target as HTMLDivElement;
     const icon = ele.getAttribute('name');
+    const input = this.shadowRoot.querySelector('temba-textinput') as TextInput;
 
     if (icon === 'copy') {
       if (navigator.clipboard) {
         this.iconClass = 'clicked';
-        navigator.clipboard.writeText(this.value).then(() => {
+        navigator.clipboard.writeText(input.getDisplayValue()).then(() => {
           window.setTimeout(() => {
             this.iconClass = '';
           }, 300);
@@ -153,12 +174,25 @@ export class ContactFieldEditor extends RapidElement {
           @keydown=${this.handleInput}
           @change=${this.handleChange}
         >
-          <div class="prefix" slot="prefix">${this.name}</div>
-          <div
-            class="postfix ${this.iconClass} ${this.icon ? this.icon : 'none'}"
-            @click=${this.handleIconClick}
-          >
-            <temba-icon name="${this.icon}" animatechange="spin"></temba-icon>
+          <div class="prefix" slot="prefix">
+            <div class="name">${this.name}</div>
+          </div>
+
+          <div class="postfix">
+            ${this.type === 'datetime'
+              ? html`<div
+                  style="position: absolute; padding-top: .75em; padding-left: .75em;"
+                >
+                  <temba-icon name="calendar" />
+                </div>`
+              : null}
+
+            <div
+              class="popper ${this.iconClass} ${this.icon ? this.icon : 'none'}"
+              @click=${this.handleIconClick}
+            >
+              <temba-icon name="${this.icon}" animatechange="spin"></temba-icon>
+            </div>
           </div>
         </temba-textinput>
       </div>
