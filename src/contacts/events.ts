@@ -436,6 +436,10 @@ export const getEventStyles = () => {
     .assigned .attn {
       color: #777;
     }
+
+    .attachments {
+      margin-top: 1em;
+    }
   `;
 };
 
@@ -674,12 +678,45 @@ export const renderAttachment = (attachment: string): TemplateResult => {
     inner = html`<div class="linked" onclick="goto(event)" href="${url}"><img src="${url}" style="width:100%;height:auto;display:block"></img></a>`;
   } else if (ext === 'pdf') {
     return html`<div
-    style="width:100%;height:300px;border-radius:var(--curvature);box-shadow:0px 0px 10px -1px rgb(160 160 160);overflow:hidden"
-  ><embed src="${url}#view=Fit" type="application/pdf" frameBorder="0" scrolling="auto" height="100%" width="100%"></embed></div>`;
+      style="width:100%;height:300px;border-radius:var(--curvature);box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);overflow:hidden"
+    ><embed src="${url}#view=Fit" type="application/pdf" frameBorder="0" scrolling="auto" height="100%" width="100%"></embed></div>`;
   } else if (mediaType === 'video') {
-    return html`<video max-width="400px" height="auto" controls="controls">
+    return html`<video
+      style="border-radius:var(--curvature);box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);"
+      max-width="400px"
+      height="auto"
+      controls="controls"
+    >
       <source src="${url}" type="video/mp4" />
     </video> `;
+  } else if (mediaType === 'audio') {
+    return html`<audio
+      style="border-radius: 99px; box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);"
+      src="${url}"
+      type="${attType}"
+      controls
+    >
+      <a target="_" href="${url}">${url}</a>
+    </audio>`;
+  } else if (attType === 'geo') {
+    const [lat, long] = url.split(',');
+    const latFloat = parseFloat(lat);
+    const longFloat = parseFloat(long);
+    const geo = `${lat}000000%2C${long}000000`;
+
+    return html` <iframe
+      style="border-radius: var(--curvature);box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);"
+      width="300"
+      height="300"
+      frameborder="0"
+      scrolling="no"
+      marginheight="0"
+      marginwidth="0"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=${longFloat -
+      0.005}000000%2C${latFloat - 0.005}%2C${longFloat +
+      0.005}000000%2C${latFloat +
+      0.005}000000&amp;layer=mapnik&amp;marker=${geo}"
+    ></iframe>`;
   } else {
     return html`<div style="display:flex">
       <temba-icon name="download"></temba-icon>
@@ -688,7 +725,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
   }
 
   return html`<div
-    style="width:100%;max-width:300px;border-radius:var(--curvature); box-shadow:0px 0px 10px -1px rgb(160 160 160);overflow:hidden"
+    style="width:100%;max-width:300px;border-radius:var(--curvature); box-shadow:0px 0px 6px 0px rgba(0,0,0,.15);overflow:hidden"
   >
     ${inner}
   </div>`;
