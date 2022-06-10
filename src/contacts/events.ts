@@ -696,7 +696,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
       type="${attType}"
       controls
     >
-      I'm sorry. You're browser doesn't support HTML5 <code>audio</code>.
+      <a target="_" href="${url}">${url}</a>
     </audio>`;
   } else if (attType === 'geo') {
     const [lat, long] = url.split(',');
