@@ -503,11 +503,13 @@ export class TembaMenu extends RapidElement {
     // go up the tree until we find an endpoint
     const item = this.getMenuItemForSelection(path);
 
-    if (item.endpoint) {
-      this.loadItems(item, false);
-    } else {
-      path.pop();
-      this.refresh(path);
+    if (item) {
+      if (item.endpoint) {
+        this.loadItems(item, false);
+      } else {
+        path.pop();
+        this.refresh(path);
+      }
     }
   }
 
