@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.26.7",
+  "version": "0.26.9",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
@@ -22,14 +22,13 @@
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --write --ignore-path .gitignore",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "format": "yarn format:eslint && yarn format:prettier",
-    "test": "tsc && web-test-runner --node-resolve --coverage",
+    "test": "rimraf out-tsc && tsc && web-test-runner --node-resolve --coverage",
     "test:watch": "web-test-runner --node-resolve --watch",
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
     "storybook:build": "build-storybook",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md"
   },
   "dependencies": {
-    "flru": "^1.0.2",
     "geojson": "^0.5.0",
     "highlight.js": "^10.7.1",
     "image-size": "^0.9.7",
@@ -38,7 +37,8 @@
     "lit-flatpickr": "^0.3",
     "marked": "4.0.10",
     "remarkable": "^2.0.1",
-    "serialize-javascript": "^3.0.0"
+    "serialize-javascript": "^3.0.0",
+    "tiny-lru": "^8.0.2"
   },
   "devDependencies": {
     "@babel/core": "7.11.0",

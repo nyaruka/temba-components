@@ -1,15 +1,23 @@
-import { LitElement } from 'lit';
 import { property } from 'lit/decorators';
-import { getUrl, getAssets, Asset, WebResponse } from '../utils';
+import { fetchResults, getUrl, getAssets, Asset, WebResponse } from '../utils';
 import {
   ContactField,
   ContactGroup,
   CompletionOption,
   CompletionSchema,
   KeyedAssets,
+  CustomEventType,
 } from '../interfaces';
+import { RapidElement } from '../RapidElement';
+import Lru from 'tiny-lru';
 
-export class Store extends LitElement {
+export class Store extends RapidElement {
+  @property({ type: Number })
+  ttl = 60000;
+
+  @property({ type: Number })
+  max = 20;
+
   @property({ type: String, attribute: 'completion' })
   completionEndpoint: string;
 
@@ -42,7 +50,11 @@ export class Store extends LitElement {
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;
 
+  private cache: any;
+
   public firstUpdated() {
+    this.cache = Lru(this.max, this.ttl);
+
     const fetches = [];
     if (this.completionEndpoint) {
       fetches.push(
@@ -57,9 +69,18 @@ export class Store extends LitElement {
       fetches.push(
         getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
           this.keyedAssets['fields'] = [];
+          this.pinnedFields = [];
+
           assets.forEach((field: ContactField) => {
             this.keyedAssets['fields'].push(field.key);
             this.fields[field.key] = field;
+            if (field.pinned) {
+              this.pinnedFields.push(field);
+            }
+          });
+
+          this.pinnedFields.sort((a, b) => {
+            return b.priority - a.priority;
           });
         })
       );
@@ -140,5 +161,99 @@ export class Store extends LitElement {
       return true;
     }
     return false;
+  }
+
+  public getUrl(
+    url: string,
+    options?: {
+      force?: boolean;
+      controller?: AbortController;
+      headers?: { [key: string]: string };
+    }
+  ): Promise<WebResponse> {
+    options = options || {};
+    if (!options.force && this.cache.has(url)) {
+      return new Promise<WebResponse>(resolve => {
+        resolve(this.cache.get(url));
+      });
+    }
+
+    return getUrl(url, options.controller, options.headers || {}).then(
+      (response: WebResponse) => {
+        return new Promise<WebResponse>((resolve, reject) => {
+          if (response.status >= 200 && response.status <= 300) {
+            this.cache.set(url, response);
+            resolve(response);
+          } else {
+            reject('Status: ' + response.status);
+          }
+        });
+      }
+    );
+  }
+
+  private pendingResolves = {};
+
+  /**
+   * Fetches all of the results for a given API endpoint with caching
+   * @param url
+   */
+  public getResults(
+    url: string,
+    options?: { force?: boolean }
+  ): Promise<any[]> {
+    options = options || {};
+    const key = 'results_' + url;
+    const results = this.cache.get(key);
+
+    if (!options.force && results) {
+      return new Promise<any[]>(resolve => {
+        resolve(results);
+      });
+    }
+
+    return new Promise<any[]>(resolve => {
+      const pending = this.pendingResolves[url] || [];
+      pending.push(resolve);
+      this.pendingResolves[url] = pending;
+      if (pending.length <= 1) {
+        fetchResults(url).then((results: any[]) => {
+          this.cache.set(key, results);
+          const pending = this.pendingResolves[url] || [];
+          while (pending.length > 0) {
+            const resolve = pending.pop();
+            resolve(results);
+          }
+        });
+      }
+    });
+  }
+
+  public fetching: { [url: string]: number } = {};
+
+  public makeRequest(
+    url: string,
+    options?: { force?: boolean; prepareData?: (data: any) => any }
+  ) {
+    const previousRequest = this.fetching[url];
+    const now = new Date().getTime();
+    // if the request was recently made, don't do anything
+    if (previousRequest && now - previousRequest < 500) {
+      return;
+    }
+
+    this.fetching[url] = now;
+    options = options || {};
+    const cached = this.cache.get(url);
+    if (cached && !options.force) {
+      this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
+    } else {
+      fetchResults(url).then(data => {
+        data = options.prepareData ? options.prepareData(data) : data;
+        this.cache.set(url, data);
+        this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
+        delete this.fetching[url];
+      });
+    }
   }
 }

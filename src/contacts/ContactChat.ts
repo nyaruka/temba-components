@@ -1,17 +1,16 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
-import { RapidElement } from '../RapidElement';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
-import { fetchContact } from './helpers';
+import { ContactStoreElement } from './ContactStoreElement';
 
 const DEFAULT_REFRESH = 10000;
 
-export class ContactChat extends RapidElement {
+export class ContactChat extends ContactStoreElement {
   public static get styles() {
     return css`
       .left-pane {
@@ -164,9 +163,6 @@ export class ContactChat extends RapidElement {
     `;
   }
 
-  @property({ type: String, attribute: 'contact' })
-  contactUUID: string;
-
   @property({ type: String, attribute: 'ticket' })
   ticketUUID: string;
 
@@ -241,17 +237,12 @@ export class ContactChat extends RapidElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    // we were provided a uuid, fetch our contact details
-    if (changedProperties.has('contactUUID') && this.contactUUID) {
-      fetchContact(this.contactsEndpoint + '?uuid=' + this.contactUUID).then(
-        contact => {
-          this.currentContact = contact;
-        }
-      );
-    }
-
     // if we don't have an endpoint infer one
-    if (changedProperties.has('currentContact')) {
+    if (
+      changedProperties.has('data') ||
+      changedProperties.has('currentContact')
+    ) {
+      this.currentContact = this.data;
       // focus our completion on load
       const prevContact = changedProperties.get('contact');
       if (

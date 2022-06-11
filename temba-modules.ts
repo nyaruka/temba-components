@@ -25,6 +25,11 @@ import { Anchor } from './src/anchor/Anchor';
 import { Dropdown } from './src/dropdown/Dropdown';
 import { TabPane } from './src/tabpane/TabPane';
 import { Tab } from './src/tabpane/Tab';
+import Label from './src/label/Label';
+import { ContactName } from './src/contacts/ContactName';
+import { ContactUrn } from './src/contacts/ContactUrn';
+import { ContactFields } from './src/contacts/ContactFields';
+import { ContactFieldEditor } from './src/contacts/ContactFieldEditor';
 
 import { ContactBadges } from './src/contacts/ContactBadges';
 
@@ -60,6 +65,7 @@ addCustomElement('temba-contact-chat', ContactChat);
 addCustomElement('temba-contact-details', ContactDetails);
 addCustomElement('temba-ticket-list', TicketList);
 addCustomElement('temba-list', TembaList);
+addCustomElement('temba-label', Label);
 addCustomElement('temba-menu', TembaMenu);
 addCustomElement('temba-contact-search', ContactSearch);
 addCustomElement('temba-icon', VectorIcon);
