@@ -154,9 +154,8 @@ export class VectorIcon extends LitElement {
     }
   }
 
-  public handleClicked(evt: MouseEvent) {
+  public handleClicked() {
     if (this.animateClick) {
-      console.log('clicked icon', evt.currentTarget);
       this.animationStep = 1;
     }
   }

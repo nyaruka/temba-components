@@ -12,7 +12,6 @@ export class ContactFields extends ContactStoreElement {
     return css`
       :host {
         --curvature-widget: 0px;
-
         border-radius: 6px;
       }
 
@@ -21,7 +20,6 @@ export class ContactFields extends ContactStoreElement {
         margin: 0.3em 0.3em;
         box-shadow: 0 0 0.2em rgba(0, 0, 0, 0.15);
         border-radius: 0px;
-        // var(--curvature);
         align-items: center;
         overflow: hidden;
       }
@@ -43,9 +41,7 @@ export class ContactFields extends ContactStoreElement {
       .label {
         padding: 0.25em 1em;
         border-top-left-radius: 0px;
-        // var(--curvature);
         border-bottom-left-radius: 0px;
-        // var(--curvature);
         color: #777;
         font-size: 0.9em;
         font-weight: 400;
@@ -60,20 +56,14 @@ export class ContactFields extends ContactStoreElement {
         text-overflow: ellipsis;
         padding: 0.25em 1em;
         border-top-right-radius: 0px;
-        //var(--curvature);
         border-bottom-right-radius: 0px;
-        // var(--curvature);
         font-size: 0.9em;
       }
 
       temba-contact-field {
-        // margin: 0.3em;
-        // min-width: 320px;
-        // flex-grow: 1;
       }
+
       .footer {
-        // box-shadow: 0 0 6px 1px rgba(0,0,0,.1) inset;
-        // margin: 1px;
         margin-bottom: 0;
         display: flex;
         background: #fff;
