@@ -4,7 +4,7 @@ import { property } from 'lit/decorators';
 import { getClasses } from '../utils';
 
 // for cache busting, increase whenever the icon set changes
-const ICON_VERSION = 6;
+const ICON_VERSION = 12;
 
 export class VectorIcon extends LitElement {
   @property({ type: String })
@@ -28,6 +28,9 @@ export class VectorIcon extends LitElement {
 
   @property({ type: String })
   animateChange: string;
+
+  @property({ type: String })
+  animateClick: string;
 
   @property({ type: Number })
   animationDuration = 200;
@@ -148,6 +151,13 @@ export class VectorIcon extends LitElement {
     }
   }
 
+  public handleClicked(evt: MouseEvent) {
+    if (this.animateClick) {
+      console.log('clicked icon', evt.currentTarget);
+      this.animationStep = 1;
+    }
+  }
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
 
@@ -180,10 +190,11 @@ export class VectorIcon extends LitElement {
   public render(): TemplateResult {
     return html`
       <div
+        @click=${this.handleClicked}
         class="wrapper ${getClasses({
           clickable: this.clickable,
           circled: this.circled,
-          animate: !!this.animateChange,
+          animate: !!this.animateChange || !!this.animateClick,
         })}"
       >
         <svg
@@ -194,6 +205,9 @@ export class VectorIcon extends LitElement {
           class="${getClasses({
             [this.animateChange]: !!this.animateChange,
             [this.animateChange + '-' + this.animationStep]:
+              this.animationStep > 0,
+            [this.animateClick]: !!this.animateClick,
+            [this.animateClick + '-' + this.animationStep]:
               this.animationStep > 0,
           })}"
         >

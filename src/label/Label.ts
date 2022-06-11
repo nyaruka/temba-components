@@ -41,6 +41,20 @@ export default class Label extends LitElement {
         text-shadow: none;
       }
 
+      .tertiary {
+        background: var(--color-label-tertiary);
+        color: var(--color-label-tertiary-text);
+        --icon-color: var(--color-label-tertiary-text);
+        text-shadow: none;
+      }
+
+      .tertiary {
+        background: var(--color-label-tertiary);
+        color: var(--color-label-tertiary-text);
+        --icon-color: var(--color-label-tertiary-text);
+        text-shadow: none;
+      }
+
       .light {
         background: var(--color-overlay-light);
         color: var(--color-overlay-light-text);
@@ -69,6 +83,9 @@ export default class Label extends LitElement {
   secondary: boolean;
 
   @property({ type: Boolean })
+  tertiary: boolean;
+
+  @property({ type: Boolean })
   light: boolean;
 
   @property({ type: Boolean })
@@ -95,6 +112,7 @@ export default class Label extends LitElement {
           clickable: this.clickable,
           primary: this.primary,
           secondary: this.secondary,
+          tertiary: this.tertiary,
           light: this.light,
           dark: this.dark,
         })}"

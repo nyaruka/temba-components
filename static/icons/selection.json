@@ -4,6 +4,278 @@
     {
       "icon": {
         "paths": [
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+          "M1011.354 558.541c-31.949-87.398-121.139-139.571-238.643-139.571-4.608 0-9.011 0.102-13.414 0.307l-0.819-105.626c0 0 174.592-30.106 180.48-31.078s6.81-6.093 5.581-11.827c-1.178-5.683-8.55-45.21-9.626-49.971-1.382-6.707-5.222-6.502-10.598-5.581-5.325 0.922-166.4 23.603-166.4 23.603s-0.614-99.994-0.666-106.394c-0.051-6.4-3.533-8.090-9.933-7.987s-47.104 0.717-52.48 0.819c-5.376 0.102-8.397 2.509-8.294 7.578 0.102 5.12 1.69 118.118 1.69 118.118s-156.723 26.982-160.973 27.802c-4.301 0.717-8.704 2.714-7.731 7.322s9.728 56.013 10.65 60.006c0.922 4.096 3.686 6.605 9.626 5.478 5.888-0.973 149.709-25.805 149.709-25.805l1.792 103.322c-55.142 14.387-92.211 42.189-115.507 66.714-39.322 41.318-61.798 96.614-61.798 151.706 0 81.203 49.715 129.485 119.194 137.984 161.894 19.814 262.093-156.672 295.373-241.408 56.166 77.107 13.107 222.925-107.213 306.176-2.202 1.485-5.018 6.605-1.69 10.598s27.699 33.894 31.693 38.707c4.096 4.915 10.547 3.021 13.107 1.178 128.512-88.576 187.443-231.168 146.893-342.17zM633.19 721.766c-49.459-6.195-48.333-46.797-48.333-74.394 0-39.578 16.742-80.896 44.851-110.387 17.152-18.125 38.4-31.795 62.925-40.909l4.198 218.982c-19.712 6.707-40.909 9.472-63.642 6.707zM757.453 693.453l2.355-210.381c4.301-0.205 8.499-0.512 12.902-0.512 39.578 0 76.493 7.424 96.512 18.483 20.019 11.11-52.378 138.906-111.77 192.41zM299.213 300.851c-1.536-4.813-5.274-7.424-10.035-7.424h-99.84c-4.762 0-8.448 2.611-9.933 7.373-21.094 66.509-178.176 562.688-178.995 565.299-0.87 2.611-0.563 3.891 3.174 3.891h88.73c3.84 0 5.069-1.178 5.837-3.686 0.768-2.611 51.61-169.882 51.61-169.882h178.995c0 0 50.79 167.322 51.61 169.882 0.819 2.509 1.997 3.686 5.786 3.686h88.781c3.686 0 3.994-1.28 3.174-3.891-0.717-2.56-157.85-498.739-178.893-565.248zM165.171 624.333l74.086-268.8 74.086 268.8h-148.173z"
+        ],
+        "attrs": [
+          {}
+        ],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "language"
+        ],
+        "grid": 20
+      },
+      "attrs": [
+        {}
+      ],
+      "properties": {
+        "order": 1,
+        "id": 0,
+        "prevSize": 20,
+        "name": "language"
+      },
+      "setIdx": 0,
+      "setId": 5,
+      "iconIdx": 0
+    },
+    {
+      "icon": {
+        "paths": [
+          "M726 128q34 0 59 26t25 60v682l-298-128-298 128v-682q0-34 25-60t59-26h428z"
+        ],
+        "attrs": [
+          {}
+        ],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "bookmark",
+          "turned_in"
+        ],
+        "grid": 24
+      },
+      "attrs": [
+        {}
+      ],
+      "properties": {
+        "order": 1,
+        "id": 1,
+        "prevSize": 24,
+        "name": "bookmark-filled"
+      },
+      "setIdx": 1,
+      "setId": 4,
+      "iconIdx": 0
+    },
+    {
+      "icon": {
+        "paths": [
+          "M726 768v-554h-428v554l214-94zM726 128q34 0 59 26t25 60v682l-298-128-298 128v-682q0-34 25-60t59-26h428z"
+        ],
+        "attrs": [
+          {}
+        ],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "bookmark_outline",
+          "turned_in_not"
+        ],
+        "grid": 24
+      },
+      "attrs": [
+        {}
+      ],
+      "properties": {
+        "order": 2,
+        "id": 0,
+        "prevSize": 24,
+        "name": "bookmark"
+      },
+      "setIdx": 1,
+      "setId": 4,
+      "iconIdx": 1
+    },
+    {
+      "icon": {
+        "paths": [
+          "M298.667 85.333v42.667h-85.333c-35.328 0-67.413 14.379-90.496 37.504s-37.504 55.168-37.504 90.496v597.333c0 35.328 14.379 67.413 37.504 90.496s55.168 37.504 90.496 37.504h597.333c35.328 0 67.413-14.379 90.496-37.504s37.504-55.168 37.504-90.496v-597.333c0-35.328-14.379-67.413-37.504-90.496s-55.168-37.504-90.496-37.504h-85.333v-42.667c0-23.552-19.115-42.667-42.667-42.667s-42.667 19.115-42.667 42.667v42.667h-256v-42.667c0-23.552-19.115-42.667-42.667-42.667s-42.667 19.115-42.667 42.667zM853.333 384h-682.667v-128c0-11.776 4.736-22.4 12.501-30.165s18.389-12.501 30.165-12.501h85.333v42.667c0 23.552 19.115 42.667 42.667 42.667s42.667-19.115 42.667-42.667v-42.667h256v42.667c0 23.552 19.115 42.667 42.667 42.667s42.667-19.115 42.667-42.667v-42.667h85.333c11.776 0 22.4 4.736 30.165 12.501s12.501 18.389 12.501 30.165zM170.667 469.333h682.667v384c0 11.776-4.736 22.4-12.501 30.165s-18.389 12.501-30.165 12.501h-597.333c-11.776 0-22.4-4.736-30.165-12.501s-12.501-18.389-12.501-30.165z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "calendar"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 40,
+        "order": 1330,
+        "prevSize": 24,
+        "name": "calendar"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 39
+    },
+    {
+      "icon": {
+        "paths": [
+          "M810.667 170.667v298.667c0 35.371-14.293 67.285-37.504 90.496s-55.125 37.504-90.496 37.504h-409.003l140.501-140.501c16.683-16.683 16.683-43.691 0-60.331s-43.691-16.683-60.331 0l-213.333 213.333c-3.925 3.925-7.083 8.619-9.259 13.824-6.4 15.445-3.328 33.92 9.259 46.507l213.333 213.333c16.683 16.683 43.691 16.683 60.331 0s16.683-43.691 0-60.331l-140.501-140.501h409.003c58.88 0 112.299-23.936 150.869-62.464s62.464-91.989 62.464-150.869v-298.667c0-23.552-19.115-42.667-42.667-42.667s-42.667 19.115-42.667 42.667z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "corner-down-left"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 73,
+        "order": 1329,
+        "prevSize": 24,
+        "name": "corner-down-left"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 72
+    },
+    {
+      "icon": {
+        "paths": [
+          "M725.333 554.667v256c0 11.776-4.736 22.4-12.501 30.165s-18.389 12.501-30.165 12.501h-469.333c-11.776 0-22.4-4.736-30.165-12.501s-12.501-18.389-12.501-30.165v-469.333c0-11.776 4.736-22.4 12.501-30.165s18.389-12.501 30.165-12.501h256c23.552 0 42.667-19.115 42.667-42.667s-19.115-42.667-42.667-42.667h-256c-35.328 0-67.413 14.379-90.496 37.504s-37.504 55.168-37.504 90.496v469.333c0 35.328 14.379 67.413 37.504 90.496s55.168 37.504 90.496 37.504h469.333c35.328 0 67.413-14.379 90.496-37.504s37.504-55.168 37.504-90.496v-256c0-23.552-19.115-42.667-42.667-42.667s-42.667 19.115-42.667 42.667zM456.832 627.499l396.501-396.501v153.003c0 23.552 19.115 42.667 42.667 42.667s42.667-19.115 42.667-42.667v-256c0-5.803-1.152-11.307-3.243-16.341s-5.163-9.728-9.216-13.781c-0.043-0.043-0.043-0.043-0.085-0.085-3.925-3.925-8.619-7.083-13.781-9.216-5.035-2.091-10.539-3.243-16.341-3.243h-256c-23.552 0-42.667 19.115-42.667 42.667s19.115 42.667 42.667 42.667h153.003l-396.501 396.501c-16.683 16.683-16.683 43.691 0 60.331s43.691 16.683 60.331 0z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "external-link"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 95,
+        "order": 1331,
+        "prevSize": 24,
+        "name": "external-link"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 94
+    },
+    {
+      "icon": {
+        "paths": [
+          "M723.243 469.333c-9.131-114.773-47.019-228.395-114.091-328.96 66.987 17.451 126.848 52.565 174.379 100.096 60.075 60.075 100.309 139.861 110.123 228.864zM609.237 883.584c63.275-94.976 103.979-207.061 113.877-328.917h170.539c-9.813 89.003-50.048 168.789-110.123 228.864-47.488 47.488-107.349 82.603-174.293 100.053zM300.757 554.667c9.131 114.773 47.019 228.395 114.091 328.96-66.987-17.451-126.848-52.565-174.379-100.096-60.075-60.075-100.309-139.861-110.123-228.864zM414.763 140.416c-63.232 94.976-103.936 207.061-113.877 328.917h-170.539c9.813-89.003 50.048-168.789 110.123-228.864 47.531-47.488 107.349-82.603 174.293-100.053zM512.171 42.667c0 0 0 0 0 0-129.877 0.043-247.211 52.608-332.032 137.472-84.907 84.864-137.472 202.283-137.472 331.861s52.565 246.997 137.472 331.861c84.821 84.864 202.155 137.429 331.691 137.472 0 0 0 0 0 0 129.877-0.043 247.168-52.608 332.032-137.472 84.907-84.864 137.472-202.283 137.472-331.861s-52.565-246.997-137.472-331.861c-84.821-84.864-202.155-137.429-331.691-137.472zM637.696 554.667c-10.752 118.955-56.149 228.693-125.653 317.909-73.771-94.763-115.456-205.568-125.653-317.909zM511.957 151.424c73.771 94.763 115.456 205.568 125.653 317.909h-251.307c10.752-118.955 56.149-228.693 125.653-317.909z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "globe"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 121,
+        "order": 1337,
+        "prevSize": 24,
+        "name": "globe"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 120
+    },
+    {
+      "icon": {
+        "paths": [
+          "M597.333 512c0-23.552-9.6-44.928-25.003-60.331s-36.779-25.003-60.331-25.003-44.928 9.6-60.331 25.003-25.003 36.779-25.003 60.331 9.6 44.928 25.003 60.331 36.779 25.003 60.331 25.003 44.928-9.6 60.331-25.003 25.003-36.779 25.003-60.331zM896 512c0-23.552-9.6-44.928-25.003-60.331s-36.779-25.003-60.331-25.003-44.928 9.6-60.331 25.003-25.003 36.779-25.003 60.331 9.6 44.928 25.003 60.331 36.779 25.003 60.331 25.003 44.928-9.6 60.331-25.003 25.003-36.779 25.003-60.331zM298.667 512c0-23.552-9.6-44.928-25.003-60.331s-36.779-25.003-60.331-25.003-44.928 9.6-60.331 25.003-25.003 36.779-25.003 60.331 9.6 44.928 25.003 60.331 36.779 25.003 60.331 25.003 44.928-9.6 60.331-25.003 25.003-36.779 25.003-60.331z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "more-horizontal"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 165,
+        "order": 1327,
+        "prevSize": 24,
+        "name": "more-horizontal"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 164
+    },
+    {
+      "icon": {
+        "paths": [
+          "M189.995 398.251c31.445-88.875 95.872-156.544 174.763-194.219s172.032-45.184 260.864-13.739c50.603 17.92 94.123 46.421 127.275 80.213l120.747 113.493h-148.309c-23.552 0-42.667 19.115-42.667 42.667s19.115 42.667 42.667 42.667h255.872c0.213 0 0.384 0 0.597 0 5.845-0.043 11.435-1.323 16.469-3.499 5.077-2.176 9.771-5.376 13.824-9.6 0.512-0.555 1.024-1.109 1.536-1.664 3.2-3.712 5.675-7.808 7.381-12.16s2.731-9.003 2.944-13.909c0.043-0.64 0.043-1.237 0.043-1.835v-256c0-23.552-19.115-42.667-42.667-42.667s-42.667 19.115-42.667 42.667v157.397l-124.843-117.291c-42.325-43.093-96.896-78.635-159.701-100.864-111.061-39.296-227.627-29.824-326.101 17.152s-179.157 131.669-218.453 242.731c-7.893 22.187 3.755 46.549 25.941 54.443s46.592-3.755 54.443-25.984zM85.333 695.979l126.080 118.485c82.304 82.389 191.573 124.075 300.715 124.117s218.411-41.6 301.739-124.885c47.104-47.104 81.109-102.699 100.736-159.787 7.68-22.272-4.181-46.549-26.496-54.229s-46.549 4.181-54.229 26.496c-15.403 44.8-42.368 89.216-80.341 127.189-66.688 66.645-153.984 99.925-241.365 99.925s-174.677-33.365-242.304-100.949l-119.467-112.341h148.267c23.552 0 42.667-19.115 42.667-42.667s-19.115-42.667-42.667-42.667h-255.872c-0.213 0-0.384 0-0.597 0-5.845 0.043-11.435 1.323-16.469 3.499-5.077 2.176-9.771 5.376-13.824 9.6-0.512 0.555-1.024 1.109-1.536 1.664-3.2 3.712-5.675 7.808-7.381 12.16s-2.731 9.003-2.944 13.909c-0.043 0.64-0.043 1.237-0.043 1.835v256c0 23.552 19.115 42.667 42.667 42.667s42.667-19.115 42.667-42.667z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "refresh-cw"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 197,
+        "order": 1328,
+        "prevSize": 24,
+        "name": "refresh-cw"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 196
+    },
+    {
+      "icon": {
+        "paths": [
+          "M684.416 676.523c-1.451 1.109-2.859 2.347-4.224 3.712s-2.56 2.731-3.712 4.224c-53.675 51.755-126.677 83.541-207.147 83.541-82.475 0-157.099-33.365-211.2-87.467s-87.467-128.725-87.467-211.2 33.365-157.099 87.467-211.2 128.725-87.467 211.2-87.467 157.099 33.365 211.2 87.467 87.467 128.725 87.467 211.2c0 80.469-31.787 153.472-83.584 207.189zM926.165 865.835l-156.8-156.8c52.523-65.707 83.968-149.035 83.968-239.701 0-106.027-43.008-202.069-112.469-271.531s-165.504-112.469-271.531-112.469-202.069 43.008-271.531 112.469-112.469 165.504-112.469 271.531 43.008 202.069 112.469 271.531 165.504 112.469 271.531 112.469c90.667 0 173.995-31.445 239.701-83.968l156.8 156.8c16.683 16.683 43.691 16.683 60.331 0s16.683-43.691 0-60.331z"
+        ],
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "search"
+        ],
+        "grid": 24
+      },
+      "attrs": [],
+      "properties": {
+        "id": 205,
+        "order": 1336,
+        "prevSize": 24,
+        "name": "search"
+      },
+      "setIdx": 2,
+      "setId": 3,
+      "iconIdx": 204
+    },
+    {
+      "icon": {
+        "paths": [
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
           "M256 128c-23.552 0-42.667 19.115-42.667 42.667v682.667c0 23.552 19.115 42.667 42.667 42.667h170.667c23.552 0 42.667-19.115 42.667-42.667v-682.667c0-23.552-19.115-42.667-42.667-42.667zM298.667 213.333h85.333v597.333h-85.333zM597.333 128c-23.552 0-42.667 19.115-42.667 42.667v682.667c0 23.552 19.115 42.667 42.667 42.667h170.667c23.552 0 42.667-19.115 42.667-42.667v-682.667c0-23.552-19.115-42.667-42.667-42.667zM640 213.333h85.333v597.333h-85.333z"
         ],
         "attrs": [],
@@ -21,9 +293,33 @@
         "prevSize": 24,
         "name": "pause"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 0,
       "setId": 3,
       "iconIdx": 174
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 0
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 0,
+      "setId": 3,
+      "iconIdx": 174
+=======
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 0
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     },
     {
       "icon": {
@@ -45,9 +341,33 @@
         "prevSize": 24,
         "name": "play"
       },
+<<<<<<< Updated upstream
       "setIdx": 0,
       "setId": 3,
       "iconIdx": 186
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 1
+=======
+<<<<<<< Updated upstream
+      "setIdx": 0,
+      "setId": 3,
+      "iconIdx": 186
+=======
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 1
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 1
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
     },
     {
       "icon": {
@@ -69,9 +389,33 @@
         "prevSize": 24,
         "name": "user-x"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 0,
       "setId": 3,
       "iconIdx": 260
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 2
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 0,
+      "setId": 3,
+      "iconIdx": 260
+=======
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 2
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     },
     {
       "icon": {
@@ -101,7 +445,25 @@
         "prevSize": 32,
         "name": "zapier"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 0
     },
@@ -130,7 +492,23 @@
         "name": "channel",
         "id": 842
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 1
     },
@@ -154,7 +532,25 @@
         "prevSize": 24,
         "name": "cloud"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 2
     },
@@ -178,7 +574,25 @@
         "prevSize": 24,
         "name": "codepen"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 3
     },
@@ -202,7 +616,23 @@
         "prevSize": 24,
         "name": "codesandbox"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 4
     },
@@ -226,7 +656,25 @@
         "prevSize": 24,
         "name": "git-pull-request"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 5
     },
@@ -250,7 +698,25 @@
         "prevSize": 24,
         "name": "grid"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 6
     },
@@ -274,7 +740,23 @@
         "prevSize": 24,
         "name": "hard-drive"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 7
     },
@@ -298,7 +780,25 @@
         "prevSize": 24,
         "name": "layout"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 8
     },
@@ -322,7 +822,25 @@
         "prevSize": 24,
         "name": "list"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 9
     },
@@ -346,7 +864,23 @@
         "prevSize": 24,
         "name": "map-pin"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 10
     },
@@ -370,7 +904,25 @@
         "prevSize": 24,
         "name": "package"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 11
     },
@@ -394,7 +946,25 @@
         "prevSize": 24,
         "name": "bell"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 12
     },
@@ -418,7 +988,23 @@
         "prevSize": 24,
         "name": "book-open"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 13
     },
@@ -442,7 +1028,25 @@
         "prevSize": 24,
         "name": "box"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 14
     },
@@ -466,7 +1070,23 @@
         "prevSize": 24,
         "name": "menu"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 15
     },
@@ -490,7 +1110,25 @@
         "prevSize": 24,
         "name": "plus"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 16
     },
@@ -516,7 +1154,25 @@
         "name": "cord",
         "code": 59683
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 17
     },
@@ -561,7 +1217,23 @@
         "prevSize": 32,
         "code": 59649
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 18
     },
@@ -588,7 +1260,25 @@
         "name": "channel-android",
         "code": 57354
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 19
     },
@@ -616,7 +1306,25 @@
         "name": "channel-kannel",
         "code": 58888
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 20
     },
@@ -643,7 +1351,23 @@
         "name": "channel-plivo",
         "code": 57553
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 21
     },
@@ -670,7 +1394,25 @@
         "name": "channel-twilio",
         "code": 57499
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 22
     },
@@ -698,7 +1440,25 @@
         "name": "chatbase",
         "code": 59653
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 23
     },
@@ -725,7 +1485,23 @@
         "name": "clickatell",
         "code": 57549
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 24
     },
@@ -752,7 +1528,25 @@
         "name": "clickatell-inverted",
         "code": 57548
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 25
     },
@@ -789,7 +1583,25 @@
         "name": "dtone",
         "code": 57554
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 26
     },
@@ -817,7 +1629,23 @@
         "name": "facebook-official",
         "code": 59655
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 27
     },
@@ -850,7 +1678,25 @@
         "prevSize": 32,
         "code": 59667
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 28
     },
@@ -877,7 +1723,25 @@
         "name": "github",
         "code": 57353
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 29
     },
@@ -904,7 +1768,23 @@
         "name": "google-plus",
         "code": 57350
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 30
     },
@@ -932,7 +1812,25 @@
         "name": "jiochat",
         "code": 59656
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 31
     },
@@ -959,7 +1857,25 @@
         "name": "junebug",
         "code": 59660
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 32
     },
@@ -987,7 +1903,23 @@
         "name": "line",
         "code": 59657
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 33
     },
@@ -1020,7 +1952,25 @@
         "prevSize": 32,
         "code": 59686
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 34
     },
@@ -1050,7 +2000,25 @@
         "prevSize": 32,
         "code": 59668
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 35
     },
@@ -1077,7 +2045,23 @@
         "name": "plivo",
         "code": 57551
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 36
     },
@@ -1104,7 +2088,25 @@
         "name": "plivo-inverted",
         "code": 57550
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 37
     },
@@ -1131,7 +2133,25 @@
         "prevSize": 32,
         "code": 59669
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 38
     },
@@ -1165,7 +2185,23 @@
         "prevSize": 32,
         "code": 59670
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 39
     },
@@ -1200,7 +2236,25 @@
         ],
         "code": 59661
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 40
     },
@@ -1227,7 +2281,25 @@
         "name": "telegram",
         "code": 59651
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 41
     },
@@ -1256,7 +2328,23 @@
         "prevSize": 32,
         "code": 59650
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 42
     },
@@ -1283,7 +2371,25 @@
         "name": "twilio_inverted",
         "code": 57497
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 43
     },
@@ -1310,7 +2416,25 @@
         "name": "twilio_original",
         "code": 57498
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 44
     },
@@ -1337,7 +2461,23 @@
         "name": "twitter",
         "code": 57351
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 45
     },
@@ -1364,7 +2504,25 @@
         "name": "viber",
         "code": 59658
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 46
     },
@@ -1394,7 +2552,25 @@
         "name": "vk",
         "code": 59648
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 47
     },
@@ -1426,7 +2602,23 @@
         "name": "wechat",
         "code": 60052
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 48
     },
@@ -1455,7 +2647,25 @@
         "prevSize": 32,
         "code": 60051
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 49
     },
@@ -1497,7 +2707,25 @@
         "prevSize": 32,
         "code": 59692
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 50
     },
@@ -1539,7 +2767,23 @@
         "prevSize": 32,
         "code": 59672
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 51
     },
@@ -1572,7 +2816,25 @@
         "prevSize": 32,
         "code": 59664
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 52
     },
@@ -1600,7 +2862,25 @@
         "name": "agent",
         "prevSize": 24
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 53
     },
@@ -1624,7 +2904,23 @@
         "prevSize": 24,
         "name": "arrow-down-circle"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 54
     },
@@ -1648,13 +2944,31 @@
         "prevSize": 24,
         "name": "arrow-up-circle"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
       "setId": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+      "setId": 1,
+      "iconIdx": 58
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+      "setId": 1,
+>>>>>>> Stashed changes
       "iconIdx": 55
     },
     {
       "icon": {
         "paths": [
+<<<<<<< Updated upstream
           "M785.877 930.731c6.869 4.949 15.488 7.936 24.789 7.936 23.552 0 42.667-19.115 42.667-42.667v-682.667c0-35.328-14.379-67.413-37.504-90.496s-55.168-37.504-90.496-37.504h-426.667c-35.328 0-67.413 14.379-90.496 37.504s-37.504 55.168-37.504 90.496v682.667c-0.043 8.491 2.56 17.237 7.936 24.789 13.696 19.157 40.363 23.637 59.52 9.899l273.877-195.584zM768 813.099l-231.211-165.163c-15.147-10.837-34.944-10.325-49.579 0l-231.211 165.163v-599.765c0-11.776 4.736-22.4 12.501-30.165s18.389-12.501 30.165-12.501h426.667c11.776 0 22.4 4.736 30.165 12.501s12.501 18.389 12.501 30.165z"
         ],
         "attrs": [],
@@ -1675,10 +2989,16 @@
       "setIdx": 1,
       "setId": 1,
       "iconIdx": 56
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
     },
     {
       "icon": {
         "paths": [
+=======
+>>>>>>> Stashed changes
           "M170.667 213.419c0 0 0.128-4.053 9.088-12.288 10.453-9.6 28.629-20.608 55.723-31.147 63.957-24.96 163.029-41.984 276.523-41.984s212.565 17.024 276.565 41.984c27.051 10.539 45.269 21.547 55.723 31.147 8.747 8.064 9.045 11.989 9.045 12.288 0 0.128-0.299 4.053-9.088 12.117-10.453 9.6-28.629 20.608-55.723 31.147-63.957 24.96-163.029 41.984-276.523 41.984s-212.565-17.024-276.565-41.984c-27.051-10.539-45.269-21.547-55.723-31.147-8.875-8.192-9.045-12.117-9.045-12.117zM853.333 620.032v190.763c-1.749 4.139-4.096 7.723-9.259 12.416-10.453 9.6-28.629 20.565-55.595 31.061-63.787 24.832-162.517 41.728-276.48 41.728s-212.693-16.896-276.48-41.728c-27.008-10.496-45.141-21.461-55.595-31.061-5.12-4.693-7.509-8.277-8.491-10.325l-0.256-192.597c10.581 5.376 21.76 10.325 33.365 14.848 76.672 29.824 186.752 47.531 307.456 47.531s230.784-17.707 307.456-47.531c11.819-4.608 23.168-9.6 33.877-15.104zM853.333 321.152v190.421c0 0.171 0 0.341 0 0.555-1.749 4.139-4.096 7.723-9.259 12.416-10.453 9.6-28.629 20.565-55.595 31.061-63.787 24.832-162.517 41.728-276.48 41.728s-212.693-16.896-276.48-41.728c-27.008-10.496-45.141-21.461-55.595-31.061-5.12-4.693-7.509-8.277-8.491-10.325-0.043-1.707-0.171-3.371-0.384-4.992l-0.213-188.032c10.581 5.461 21.888 10.411 33.621 15.019 76.843 29.952 187.221 47.787 307.541 47.787s230.699-17.835 307.541-47.787c11.776-4.608 23.125-9.6 33.792-15.061zM85.333 213.333v597.333c0 2.475 0.085 4.949 0.299 7.424 2.432 28.373 18.133 51.072 36.565 68.011 21.248 19.499 50.133 35.157 82.347 47.701 76.672 29.824 186.752 47.531 307.456 47.531s230.784-17.707 307.456-47.531c32.213-12.544 61.099-28.203 82.347-47.701 18.432-16.939 34.133-39.637 36.565-68.011 0.213-2.475 0.299-4.949 0.299-7.424v-597.333c0-2.389-0.085-4.779-0.299-7.168-2.347-28.331-18.005-50.987-36.352-67.84-21.248-19.584-50.219-35.285-82.475-47.872-76.843-29.952-187.221-47.787-307.541-47.787s-230.699 17.835-307.541 47.787c-32.256 12.587-61.227 28.331-82.475 47.872-18.347 16.853-34.005 39.552-36.352 67.84-0.213 2.389-0.299 4.779-0.299 7.168z"
         ],
         "attrs": [],
@@ -1696,7 +3016,25 @@
         "prevSize": 24,
         "name": "database"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 57
     },
@@ -1720,7 +3058,23 @@
         "prevSize": 24,
         "name": "download"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 58
     },
@@ -1744,7 +3098,25 @@
         "prevSize": 24,
         "name": "help-circle"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 59
     },
@@ -1768,7 +3140,23 @@
         "prevSize": 24,
         "name": "life-buoy"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 60
     },
@@ -1792,7 +3180,25 @@
         "prevSize": 24,
         "name": "log-out"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 61
     },
@@ -1816,7 +3222,25 @@
         "prevSize": 24,
         "name": "more-vertical"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 62
     },
@@ -1840,7 +3264,23 @@
         "prevSize": 24,
         "name": "star"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 63
     },
@@ -1864,7 +3304,25 @@
         "prevSize": 24,
         "name": "upload"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 64
     },
@@ -1888,7 +3346,25 @@
         "prevSize": 24,
         "name": "publish"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 65
     },
@@ -1912,7 +3388,23 @@
         "prevSize": 24,
         "name": "coffee"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 66
     },
@@ -1936,7 +3428,25 @@
         "prevSize": 24,
         "name": "frown"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 67
     },
@@ -1960,7 +3470,25 @@
         "prevSize": 24,
         "name": "mail"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 68
     },
@@ -1984,7 +3512,23 @@
         "prevSize": 24,
         "name": "meh"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 69
     },
@@ -2008,7 +3552,25 @@
         "prevSize": 24,
         "name": "dollar-sign"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 70
     },
@@ -2032,7 +3594,25 @@
         "prevSize": 24,
         "name": "log"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 71
     },
@@ -2059,7 +3639,23 @@
         "name": "megaphone",
         "code": 57405
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 72
     },
@@ -2088,7 +3684,25 @@
         "prevSize": 24,
         "code": 59673
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 73
     },
@@ -2117,7 +3731,25 @@
         "prevSize": 24,
         "code": 59674
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 74
     },
@@ -2142,7 +3774,23 @@
         "code": 59675,
         "name": "flow"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 75
     },
@@ -2167,7 +3815,25 @@
         "code": 59648,
         "name": "activity"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 76
     },
@@ -2192,7 +3858,25 @@
         "code": 59653,
         "name": "alert-circle"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 77
     },
@@ -2217,7 +3901,23 @@
         "code": 59654,
         "name": "alert-octagon"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 78
     },
@@ -2242,7 +3942,25 @@
         "code": 59659,
         "name": "alert-triangle"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 79
     },
@@ -2267,7 +3985,25 @@
         "code": 59661,
         "name": "archive"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 80
     },
@@ -2291,7 +4027,23 @@
         "prevSize": 24,
         "name": "battery"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 81
     },
@@ -2315,7 +4067,25 @@
         "prevSize": 24,
         "name": "battery-charging"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 82
     },
@@ -2340,7 +4110,25 @@
         "code": 59662,
         "name": "book"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 83
     },
@@ -2364,7 +4152,23 @@
         "prevSize": 24,
         "name": "briefcase"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 84
     },
@@ -2388,7 +4192,25 @@
         "prevSize": 24,
         "name": "calendar"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 85
     },
@@ -2413,7 +4235,25 @@
         "code": 59666,
         "name": "camera"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 86
     },
@@ -2438,7 +4278,23 @@
         "code": 59668,
         "name": "check"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 87
     },
@@ -2463,7 +4319,25 @@
         "code": 59671,
         "name": "check-square"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 88
     },
@@ -2488,7 +4362,25 @@
         "name": "chevron-down",
         "code": 59652
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 89
     },
@@ -2513,7 +4405,23 @@
         "name": "chevron-left",
         "code": 59706
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 90
     },
@@ -2538,7 +4446,25 @@
         "name": "chevron-right",
         "code": 59707
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 91
     },
@@ -2563,7 +4489,25 @@
         "name": "chevron-up",
         "code": 59708
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 92
     },
@@ -2588,7 +4532,23 @@
         "name": "chevrons-down",
         "code": 59709
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 93
     },
@@ -2613,7 +4573,25 @@
         "code": 59676,
         "name": "chevrons-left"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 94
     },
@@ -2638,7 +4616,25 @@
         "code": 59677,
         "name": "chevrons-right"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 95
     },
@@ -2663,7 +4659,23 @@
         "name": "chevrons-up",
         "code": 59710
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 96
     },
@@ -2688,7 +4700,25 @@
         "name": "circle",
         "code": 59711
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 97
     },
@@ -2712,7 +4742,25 @@
         "prevSize": 24,
         "name": "clipboard"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 98
     },
@@ -2737,7 +4785,23 @@
         "code": 59678,
         "name": "clock"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 99
     },
@@ -2762,7 +4826,25 @@
         "name": "cloud1",
         "code": 59712
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 100
     },
@@ -2787,7 +4869,25 @@
         "name": "code",
         "code": 59713
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 101
     },
@@ -2811,7 +4911,23 @@
         "prevSize": 24,
         "name": "copy"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 102
     },
@@ -2836,7 +4952,25 @@
         "code": 59679,
         "name": "credit-card"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 103
     },
@@ -2861,7 +4995,25 @@
         "name": "disc",
         "code": 59714
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 104
     },
@@ -2886,7 +5038,23 @@
         "code": 59680,
         "name": "edit"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 105
     },
@@ -2911,7 +5079,25 @@
         "name": "edit-3",
         "code": 59715
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 106
     },
@@ -2934,9 +5120,32 @@
         "order": 1086,
         "prevSize": 24,
         "code": 59681,
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
         "name": "external-link"
+=======
+        "name": "external-link1"
+>>>>>>> Stashed changes
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+        "name": "external-link1"
+      },
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 107
     },
@@ -2961,7 +5170,25 @@
         "name": "flag",
         "code": 59716
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 108
     },
@@ -2986,7 +5213,23 @@
         "code": 59682,
         "name": "home"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 109
     },
@@ -3011,7 +5254,25 @@
         "code": 59683,
         "name": "image"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 110
     },
@@ -3036,7 +5297,25 @@
         "name": "inbox",
         "code": 59717
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 111
     },
@@ -3061,7 +5340,23 @@
         "name": "info",
         "code": 59718
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 112
     },
@@ -3086,7 +5381,25 @@
         "name": "layers",
         "code": 59719
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 113
     },
@@ -3111,7 +5424,25 @@
         "code": 59684,
         "name": "loader"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 114
     },
@@ -3136,7 +5467,23 @@
         "code": 59685,
         "name": "lock"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 115
     },
@@ -3161,7 +5508,25 @@
         "code": 59686,
         "name": "mail1"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 116
     },
@@ -3186,7 +5551,25 @@
         "code": 59687,
         "name": "message-square"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 117
     },
@@ -3210,7 +5593,23 @@
         "prevSize": 24,
         "name": "mic"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 118
     },
@@ -3235,7 +5634,25 @@
         "name": "paperclip",
         "code": 59720
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 119
     },
@@ -3259,7 +5676,25 @@
         "prevSize": 24,
         "name": "phone"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 120
     },
@@ -3283,7 +5718,23 @@
         "prevSize": 24,
         "name": "phone-forwarded"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 121
     },
@@ -3307,7 +5758,25 @@
         "prevSize": 24,
         "name": "phone-incoming"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 122
     },
@@ -3331,7 +5800,25 @@
         "prevSize": 24,
         "name": "phone-missed"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 123
     },
@@ -3355,7 +5842,23 @@
         "prevSize": 24,
         "name": "phone-outgoing"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 124
     },
@@ -3380,7 +5883,25 @@
         "code": 59688,
         "name": "radio"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 125
     },
@@ -3405,7 +5926,25 @@
         "code": 59689,
         "name": "repeat"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 126
     },
@@ -3430,7 +5969,23 @@
         "name": "send",
         "code": 59721
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 127
     },
@@ -3455,7 +6010,25 @@
         "code": 59690,
         "name": "settings"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 128
     },
@@ -3480,7 +6053,25 @@
         "code": 59691,
         "name": "shield"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 129
     },
@@ -3505,7 +6096,23 @@
         "code": 59692,
         "name": "shield-off"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 130
     },
@@ -3530,7 +6137,25 @@
         "code": 59693,
         "name": "sidebar"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 131
     },
@@ -3555,7 +6180,25 @@
         "name": "slash",
         "code": 59722
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 132
     },
@@ -3580,7 +6223,23 @@
         "code": 59694,
         "name": "sliders"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 133
     },
@@ -3604,7 +6263,25 @@
         "prevSize": 24,
         "name": "smartphone"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 134
     },
@@ -3629,7 +6306,25 @@
         "code": 59695,
         "name": "square"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 135
     },
@@ -3654,7 +6349,23 @@
         "name": "tag",
         "code": 59723
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 136
     },
@@ -3679,7 +6390,25 @@
         "code": 59696,
         "name": "tool"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 137
     },
@@ -3704,7 +6433,25 @@
         "code": 59697,
         "name": "trash"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 138
     },
@@ -3728,7 +6475,23 @@
         "prevSize": 24,
         "name": "trash-2"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 139
     },
@@ -3753,7 +6516,25 @@
         "code": 59698,
         "name": "user"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 140
     },
@@ -3778,7 +6559,25 @@
         "code": 59699,
         "name": "users"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 141
     },
@@ -3803,7 +6602,23 @@
         "code": 59700,
         "name": "speaker"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 142
     },
@@ -3828,7 +6643,25 @@
         "name": "x",
         "code": 59724
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 143
     },
@@ -3853,7 +6686,25 @@
         "code": 59701,
         "name": "x-octagon"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 144
     },
@@ -3878,7 +6729,23 @@
         "code": 59702,
         "name": "zap"
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 145
     },
@@ -3904,7 +6771,25 @@
         "code": 59703,
         "name": "contact-cal"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 146
     },
@@ -3930,7 +6815,25 @@
         "code": 59704,
         "name": "send-mobile"
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 147
     },
@@ -3963,7 +6866,23 @@
         "name": "users1",
         "id": 0
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 148
     },
@@ -3993,7 +6912,25 @@
         "id": 1,
         "code": 60241
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 149
     },
@@ -4020,7 +6957,25 @@
         "name": "atom",
         "id": 2
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 150
     },
@@ -4052,7 +7007,23 @@
         "name": "paperplane",
         "id": 3
       },
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 151
     },
@@ -4081,7 +7052,25 @@
         "name": "cancel",
         "id": 4
       },
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "setIdx": 1,
+=======
+<<<<<<< Updated upstream
+      "setIdx": 4,
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+      "setIdx": 1,
+=======
+      "setIdx": 4,
+>>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "setId": 1,
       "iconIdx": 152
     }

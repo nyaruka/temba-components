@@ -84,6 +84,9 @@ html input {
     --color-label-primary-text: var(--color-text-light);
     --color-label-secondary: rgba(0, 0, 0, 0.2);
     --color-label-secondary-text: rgba(255, 255, 255, 0.9);
+    --color-label-tertiary: var(--color-tertiary);
+    --color-label-tertiary-text: var(--color-text-light);
+
   
     --color-nav-unselected: #fff;
     --color-nav-selected-bg: #fff;

@@ -1,5 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
+import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { Tab } from './Tab';
 
@@ -21,6 +22,7 @@ export class TabPane extends RapidElement {
         margin: 0em 0em;
         cursor: pointer;
         display: flex;
+        align-items: center;
         border-radius: var(--curvature);
         border-bottom-right-radius: 0px;
         border-bottom-left-radius: 0px;
@@ -53,6 +55,21 @@ export class TabPane extends RapidElement {
       .pane.first {
         border-top-left-radius: 0px;
       }
+
+      .badge {
+        margin-left: 0.4em;
+      }
+
+      .count {
+        border-radius: 99px;
+        background: rgba(0, 0, 0, 0.05);
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 0.7em;
+        font-weight: 400;
+        padding: 0.1em 0.4em;
+        min-width: 1em;
+        text-align: center;
+      }
     `;
   }
 
@@ -64,6 +81,7 @@ export class TabPane extends RapidElement {
       (event.currentTarget as HTMLDivElement).dataset.index
     );
     this.requestUpdate('index');
+    this.fireEvent(CustomEventType.ContextChanged);
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -84,6 +102,10 @@ export class TabPane extends RapidElement {
     }
   }
 
+  public getTab(index: number): Tab {
+    return this.children.item(index) as Tab;
+  }
+
   public render(): TemplateResult {
     const tabs: Tab[] = [];
     for (const tab of this.children) {
@@ -98,9 +120,23 @@ export class TabPane extends RapidElement {
               @click=${this.handleTabClick}
               data-index=${index}
               class="tab ${index == this.index ? 'selected' : ''}"
+              style="${tab.selectionColor && index == this.index
+                ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
+                : ''} ${tab.selectionBackground && index == this.index
+                ? `background-color:${tab.selectionBackground};`
+                : ''}"
             >
               ${tab.icon ? html`<temba-icon name=${tab.icon} />` : null}
               ${tab.name}
+              ${tab.hasBadge()
+                ? html`
+                    <div class="badge">
+                      ${tab.count > 0
+                        ? html`<div class="count">${tab.count}</div>`
+                        : null}
+                    </div>
+                  `
+                : null}
             </div>
           `
         )}

@@ -26,6 +26,8 @@ import { Dropdown } from './src/dropdown/Dropdown';
 import { TabPane } from './src/tabpane/TabPane';
 import { Tab } from './src/tabpane/Tab';
 
+import { ContactBadges } from './src/contacts/ContactBadges';
+
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
     window.customElements.define(name, comp);
@@ -60,3 +62,6 @@ addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
+addCustomElement('temba-contact-groups', ContactBadges);
+addCustomElement('temba-contact-groups', ContactBadges);
+addCustomElement('temba-contact-groups', ContactBadges);
