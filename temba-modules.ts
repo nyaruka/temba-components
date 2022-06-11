@@ -46,6 +46,10 @@ addCustomElement('temba-loading', Loading);
 addCustomElement('temba-button', Button);
 addCustomElement('temba-omnibox', Omnibox);
 addCustomElement('temba-tip', Tip);
+addCustomElement('temba-contact-name', ContactName);
+addCustomElement('temba-contact-field', ContactFieldEditor);
+addCustomElement('temba-contact-fields', ContactFields);
+addCustomElement('temba-urn', ContactUrn);
 
 addCustomElement('temba-field', FormField);
 addCustomElement('temba-dialog', Dialog);
@@ -62,6 +66,4 @@ addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
-addCustomElement('temba-contact-groups', ContactBadges);
-addCustomElement('temba-contact-groups', ContactBadges);
 addCustomElement('temba-contact-groups', ContactBadges);

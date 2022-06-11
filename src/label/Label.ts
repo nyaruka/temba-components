@@ -55,6 +55,13 @@ export default class Label extends LitElement {
         text-shadow: none;
       }
 
+      .tertiary {
+        background: var(--color-label-tertiary);
+        color: var(--color-label-tertiary-text);
+        --icon-color: var(--color-label-tertiary-text);
+        text-shadow: none;
+      }
+
       .light {
         background: var(--color-overlay-light);
         color: var(--color-overlay-light-text);

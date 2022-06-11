@@ -4,16 +4,6 @@
     {
       "icon": {
         "paths": [
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
           "M1011.354 558.541c-31.949-87.398-121.139-139.571-238.643-139.571-4.608 0-9.011 0.102-13.414 0.307l-0.819-105.626c0 0 174.592-30.106 180.48-31.078s6.81-6.093 5.581-11.827c-1.178-5.683-8.55-45.21-9.626-49.971-1.382-6.707-5.222-6.502-10.598-5.581-5.325 0.922-166.4 23.603-166.4 23.603s-0.614-99.994-0.666-106.394c-0.051-6.4-3.533-8.090-9.933-7.987s-47.104 0.717-52.48 0.819c-5.376 0.102-8.397 2.509-8.294 7.578 0.102 5.12 1.69 118.118 1.69 118.118s-156.723 26.982-160.973 27.802c-4.301 0.717-8.704 2.714-7.731 7.322s9.728 56.013 10.65 60.006c0.922 4.096 3.686 6.605 9.626 5.478 5.888-0.973 149.709-25.805 149.709-25.805l1.792 103.322c-55.142 14.387-92.211 42.189-115.507 66.714-39.322 41.318-61.798 96.614-61.798 151.706 0 81.203 49.715 129.485 119.194 137.984 161.894 19.814 262.093-156.672 295.373-241.408 56.166 77.107 13.107 222.925-107.213 306.176-2.202 1.485-5.018 6.605-1.69 10.598s27.699 33.894 31.693 38.707c4.096 4.915 10.547 3.021 13.107 1.178 128.512-88.576 187.443-231.168 146.893-342.17zM633.19 721.766c-49.459-6.195-48.333-46.797-48.333-74.394 0-39.578 16.742-80.896 44.851-110.387 17.152-18.125 38.4-31.795 62.925-40.909l4.198 218.982c-19.712 6.707-40.909 9.472-63.642 6.707zM757.453 693.453l2.355-210.381c4.301-0.205 8.499-0.512 12.902-0.512 39.578 0 76.493 7.424 96.512 18.483 20.019 11.11-52.378 138.906-111.77 192.41zM299.213 300.851c-1.536-4.813-5.274-7.424-10.035-7.424h-99.84c-4.762 0-8.448 2.611-9.933 7.373-21.094 66.509-178.176 562.688-178.995 565.299-0.87 2.611-0.563 3.891 3.174 3.891h88.73c3.84 0 5.069-1.178 5.837-3.686 0.768-2.611 51.61-169.882 51.61-169.882h178.995c0 0 50.79 167.322 51.61 169.882 0.819 2.509 1.997 3.686 5.786 3.686h88.781c3.686 0 3.994-1.28 3.174-3.891-0.717-2.56-157.85-498.739-178.893-565.248zM165.171 624.333l74.086-268.8 74.086 268.8h-148.173z"
         ],
         "attrs": [
@@ -268,14 +258,6 @@
     {
       "icon": {
         "paths": [
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
           "M256 128c-23.552 0-42.667 19.115-42.667 42.667v682.667c0 23.552 19.115 42.667 42.667 42.667h170.667c23.552 0 42.667-19.115 42.667-42.667v-682.667c0-23.552-19.115-42.667-42.667-42.667zM298.667 213.333h85.333v597.333h-85.333zM597.333 128c-23.552 0-42.667 19.115-42.667 42.667v682.667c0 23.552 19.115 42.667 42.667 42.667h170.667c23.552 0 42.667-19.115 42.667-42.667v-682.667c0-23.552-19.115-42.667-42.667-42.667zM640 213.333h85.333v597.333h-85.333z"
         ],
         "attrs": [],
@@ -293,33 +275,9 @@
         "prevSize": 24,
         "name": "pause"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 0,
-      "setId": 3,
-      "iconIdx": 174
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
       "setId": 1,
       "iconIdx": 0
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 0,
-      "setId": 3,
-      "iconIdx": 174
-=======
-      "setIdx": 4,
-      "setId": 1,
-      "iconIdx": 0
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     },
     {
       "icon": {
@@ -341,33 +299,9 @@
         "prevSize": 24,
         "name": "play"
       },
-<<<<<<< Updated upstream
-      "setIdx": 0,
-      "setId": 3,
-      "iconIdx": 186
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
       "setId": 1,
       "iconIdx": 1
-=======
-<<<<<<< Updated upstream
-      "setIdx": 0,
-      "setId": 3,
-      "iconIdx": 186
-=======
-      "setIdx": 4,
-      "setId": 1,
-      "iconIdx": 1
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
-      "setId": 1,
-      "iconIdx": 1
->>>>>>> Stashed changes
->>>>>>> Stashed changes
     },
     {
       "icon": {
@@ -389,33 +323,9 @@
         "prevSize": 24,
         "name": "user-x"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 0,
-      "setId": 3,
-      "iconIdx": 260
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
       "setId": 1,
       "iconIdx": 2
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 0,
-      "setId": 3,
-      "iconIdx": 260
-=======
-      "setIdx": 4,
-      "setId": 1,
-      "iconIdx": 2
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     },
     {
       "icon": {
@@ -445,27 +355,9 @@
         "prevSize": 32,
         "name": "zapier"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 0
+      "iconIdx": 3
     },
     {
       "icon": {
@@ -492,25 +384,9 @@
         "name": "channel",
         "id": 842
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 1
+      "iconIdx": 4
     },
     {
       "icon": {
@@ -532,27 +408,9 @@
         "prevSize": 24,
         "name": "cloud"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 2
+      "iconIdx": 5
     },
     {
       "icon": {
@@ -574,27 +432,9 @@
         "prevSize": 24,
         "name": "codepen"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 3
+      "iconIdx": 6
     },
     {
       "icon": {
@@ -616,25 +456,9 @@
         "prevSize": 24,
         "name": "codesandbox"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 4
+      "iconIdx": 7
     },
     {
       "icon": {
@@ -656,27 +480,9 @@
         "prevSize": 24,
         "name": "git-pull-request"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 5
+      "iconIdx": 8
     },
     {
       "icon": {
@@ -698,27 +504,9 @@
         "prevSize": 24,
         "name": "grid"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 6
+      "iconIdx": 9
     },
     {
       "icon": {
@@ -740,25 +528,9 @@
         "prevSize": 24,
         "name": "hard-drive"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 7
+      "iconIdx": 10
     },
     {
       "icon": {
@@ -780,27 +552,9 @@
         "prevSize": 24,
         "name": "layout"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 8
+      "iconIdx": 11
     },
     {
       "icon": {
@@ -822,27 +576,9 @@
         "prevSize": 24,
         "name": "list"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 9
+      "iconIdx": 12
     },
     {
       "icon": {
@@ -864,25 +600,9 @@
         "prevSize": 24,
         "name": "map-pin"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 10
+      "iconIdx": 13
     },
     {
       "icon": {
@@ -904,27 +624,9 @@
         "prevSize": 24,
         "name": "package"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 11
+      "iconIdx": 14
     },
     {
       "icon": {
@@ -946,27 +648,9 @@
         "prevSize": 24,
         "name": "bell"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 12
+      "iconIdx": 15
     },
     {
       "icon": {
@@ -988,25 +672,9 @@
         "prevSize": 24,
         "name": "book-open"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 13
+      "iconIdx": 16
     },
     {
       "icon": {
@@ -1028,27 +696,9 @@
         "prevSize": 24,
         "name": "box"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 14
+      "iconIdx": 17
     },
     {
       "icon": {
@@ -1070,25 +720,9 @@
         "prevSize": 24,
         "name": "menu"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 15
+      "iconIdx": 18
     },
     {
       "icon": {
@@ -1110,27 +744,9 @@
         "prevSize": 24,
         "name": "plus"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 16
+      "iconIdx": 19
     },
     {
       "icon": {
@@ -1154,27 +770,9 @@
         "name": "cord",
         "code": 59683
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 17
+      "iconIdx": 20
     },
     {
       "icon": {
@@ -1217,25 +815,9 @@
         "prevSize": 32,
         "code": 59649
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 18
+      "iconIdx": 21
     },
     {
       "icon": {
@@ -1260,27 +842,9 @@
         "name": "channel-android",
         "code": 57354
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 19
+      "iconIdx": 22
     },
     {
       "icon": {
@@ -1306,27 +870,9 @@
         "name": "channel-kannel",
         "code": 58888
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 20
+      "iconIdx": 23
     },
     {
       "icon": {
@@ -1351,25 +897,9 @@
         "name": "channel-plivo",
         "code": 57553
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 21
+      "iconIdx": 24
     },
     {
       "icon": {
@@ -1394,27 +924,9 @@
         "name": "channel-twilio",
         "code": 57499
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 22
+      "iconIdx": 25
     },
     {
       "icon": {
@@ -1440,27 +952,9 @@
         "name": "chatbase",
         "code": 59653
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 23
+      "iconIdx": 26
     },
     {
       "icon": {
@@ -1485,25 +979,9 @@
         "name": "clickatell",
         "code": 57549
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 24
+      "iconIdx": 27
     },
     {
       "icon": {
@@ -1528,27 +1006,9 @@
         "name": "clickatell-inverted",
         "code": 57548
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 25
+      "iconIdx": 28
     },
     {
       "icon": {
@@ -1583,27 +1043,9 @@
         "name": "dtone",
         "code": 57554
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 26
+      "iconIdx": 29
     },
     {
       "icon": {
@@ -1629,25 +1071,9 @@
         "name": "facebook-official",
         "code": 59655
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 27
+      "iconIdx": 30
     },
     {
       "icon": {
@@ -1678,27 +1104,9 @@
         "prevSize": 32,
         "code": 59667
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 28
+      "iconIdx": 31
     },
     {
       "icon": {
@@ -1723,27 +1131,9 @@
         "name": "github",
         "code": 57353
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 29
+      "iconIdx": 32
     },
     {
       "icon": {
@@ -1768,25 +1158,9 @@
         "name": "google-plus",
         "code": 57350
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 30
+      "iconIdx": 33
     },
     {
       "icon": {
@@ -1812,27 +1186,9 @@
         "name": "jiochat",
         "code": 59656
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 31
+      "iconIdx": 34
     },
     {
       "icon": {
@@ -1857,27 +1213,9 @@
         "name": "junebug",
         "code": 59660
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 32
+      "iconIdx": 35
     },
     {
       "icon": {
@@ -1903,25 +1241,9 @@
         "name": "line",
         "code": 59657
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 33
+      "iconIdx": 36
     },
     {
       "icon": {
@@ -1952,27 +1274,9 @@
         "prevSize": 32,
         "code": 59686
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 34
+      "iconIdx": 37
     },
     {
       "icon": {
@@ -2000,27 +1304,9 @@
         "prevSize": 32,
         "code": 59668
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 35
+      "iconIdx": 38
     },
     {
       "icon": {
@@ -2045,25 +1331,9 @@
         "name": "plivo",
         "code": 57551
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 36
+      "iconIdx": 39
     },
     {
       "icon": {
@@ -2088,27 +1358,9 @@
         "name": "plivo-inverted",
         "code": 57550
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 37
+      "iconIdx": 40
     },
     {
       "icon": {
@@ -2133,27 +1385,9 @@
         "prevSize": 32,
         "code": 59669
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 38
+      "iconIdx": 41
     },
     {
       "icon": {
@@ -2185,25 +1419,9 @@
         "prevSize": 32,
         "code": 59670
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 39
+      "iconIdx": 42
     },
     {
       "icon": {
@@ -2236,27 +1454,9 @@
         ],
         "code": 59661
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 40
+      "iconIdx": 43
     },
     {
       "icon": {
@@ -2281,27 +1481,9 @@
         "name": "telegram",
         "code": 59651
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 41
+      "iconIdx": 44
     },
     {
       "icon": {
@@ -2328,25 +1510,9 @@
         "prevSize": 32,
         "code": 59650
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 42
+      "iconIdx": 45
     },
     {
       "icon": {
@@ -2371,27 +1537,9 @@
         "name": "twilio_inverted",
         "code": 57497
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 43
+      "iconIdx": 46
     },
     {
       "icon": {
@@ -2416,27 +1564,9 @@
         "name": "twilio_original",
         "code": 57498
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 44
+      "iconIdx": 47
     },
     {
       "icon": {
@@ -2461,25 +1591,9 @@
         "name": "twitter",
         "code": 57351
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 45
+      "iconIdx": 48
     },
     {
       "icon": {
@@ -2504,27 +1618,9 @@
         "name": "viber",
         "code": 59658
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 46
+      "iconIdx": 49
     },
     {
       "icon": {
@@ -2552,27 +1648,9 @@
         "name": "vk",
         "code": 59648
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 47
+      "iconIdx": 50
     },
     {
       "icon": {
@@ -2602,25 +1680,9 @@
         "name": "wechat",
         "code": 60052
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 48
+      "iconIdx": 51
     },
     {
       "icon": {
@@ -2647,27 +1709,9 @@
         "prevSize": 32,
         "code": 60051
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 49
+      "iconIdx": 52
     },
     {
       "icon": {
@@ -2707,27 +1751,9 @@
         "prevSize": 32,
         "code": 59692
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 50
+      "iconIdx": 53
     },
     {
       "icon": {
@@ -2767,25 +1793,9 @@
         "prevSize": 32,
         "code": 59672
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 51
+      "iconIdx": 54
     },
     {
       "icon": {
@@ -2816,27 +1826,9 @@
         "prevSize": 32,
         "code": 59664
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 52
+      "iconIdx": 55
     },
     {
       "icon": {
@@ -2862,27 +1854,9 @@
         "name": "agent",
         "prevSize": 24
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 53
+      "iconIdx": 56
     },
     {
       "icon": {
@@ -2904,25 +1878,9 @@
         "prevSize": 24,
         "name": "arrow-down-circle"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 54
+      "iconIdx": 57
     },
     {
       "icon": {
@@ -2944,61 +1902,13 @@
         "prevSize": 24,
         "name": "arrow-up-circle"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-      "setId": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
       "setId": 1,
       "iconIdx": 58
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-      "setId": 1,
->>>>>>> Stashed changes
-      "iconIdx": 55
     },
     {
       "icon": {
         "paths": [
-<<<<<<< Updated upstream
-          "M785.877 930.731c6.869 4.949 15.488 7.936 24.789 7.936 23.552 0 42.667-19.115 42.667-42.667v-682.667c0-35.328-14.379-67.413-37.504-90.496s-55.168-37.504-90.496-37.504h-426.667c-35.328 0-67.413 14.379-90.496 37.504s-37.504 55.168-37.504 90.496v682.667c-0.043 8.491 2.56 17.237 7.936 24.789 13.696 19.157 40.363 23.637 59.52 9.899l273.877-195.584zM768 813.099l-231.211-165.163c-15.147-10.837-34.944-10.325-49.579 0l-231.211 165.163v-599.765c0-11.776 4.736-22.4 12.501-30.165s18.389-12.501 30.165-12.501h426.667c11.776 0 22.4 4.736 30.165 12.501s12.501 18.389 12.501 30.165z"
-        ],
-        "attrs": [],
-        "isMulticolor": false,
-        "isMulticolor2": false,
-        "tags": [
-          "bookmark"
-        ],
-        "grid": 24
-      },
-      "attrs": [],
-      "properties": {
-        "id": 37,
-        "order": 1019,
-        "prevSize": 24,
-        "name": "bookmark"
-      },
-      "setIdx": 1,
-      "setId": 1,
-      "iconIdx": 56
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-    },
-    {
-      "icon": {
-        "paths": [
-=======
->>>>>>> Stashed changes
           "M170.667 213.419c0 0 0.128-4.053 9.088-12.288 10.453-9.6 28.629-20.608 55.723-31.147 63.957-24.96 163.029-41.984 276.523-41.984s212.565 17.024 276.565 41.984c27.051 10.539 45.269 21.547 55.723 31.147 8.747 8.064 9.045 11.989 9.045 12.288 0 0.128-0.299 4.053-9.088 12.117-10.453 9.6-28.629 20.608-55.723 31.147-63.957 24.96-163.029 41.984-276.523 41.984s-212.565-17.024-276.565-41.984c-27.051-10.539-45.269-21.547-55.723-31.147-8.875-8.192-9.045-12.117-9.045-12.117zM853.333 620.032v190.763c-1.749 4.139-4.096 7.723-9.259 12.416-10.453 9.6-28.629 20.565-55.595 31.061-63.787 24.832-162.517 41.728-276.48 41.728s-212.693-16.896-276.48-41.728c-27.008-10.496-45.141-21.461-55.595-31.061-5.12-4.693-7.509-8.277-8.491-10.325l-0.256-192.597c10.581 5.376 21.76 10.325 33.365 14.848 76.672 29.824 186.752 47.531 307.456 47.531s230.784-17.707 307.456-47.531c11.819-4.608 23.168-9.6 33.877-15.104zM853.333 321.152v190.421c0 0.171 0 0.341 0 0.555-1.749 4.139-4.096 7.723-9.259 12.416-10.453 9.6-28.629 20.565-55.595 31.061-63.787 24.832-162.517 41.728-276.48 41.728s-212.693-16.896-276.48-41.728c-27.008-10.496-45.141-21.461-55.595-31.061-5.12-4.693-7.509-8.277-8.491-10.325-0.043-1.707-0.171-3.371-0.384-4.992l-0.213-188.032c10.581 5.461 21.888 10.411 33.621 15.019 76.843 29.952 187.221 47.787 307.541 47.787s230.699-17.835 307.541-47.787c11.776-4.608 23.125-9.6 33.792-15.061zM85.333 213.333v597.333c0 2.475 0.085 4.949 0.299 7.424 2.432 28.373 18.133 51.072 36.565 68.011 21.248 19.499 50.133 35.157 82.347 47.701 76.672 29.824 186.752 47.531 307.456 47.531s230.784-17.707 307.456-47.531c32.213-12.544 61.099-28.203 82.347-47.701 18.432-16.939 34.133-39.637 36.565-68.011 0.213-2.475 0.299-4.949 0.299-7.424v-597.333c0-2.389-0.085-4.779-0.299-7.168-2.347-28.331-18.005-50.987-36.352-67.84-21.248-19.584-50.219-35.285-82.475-47.872-76.843-29.952-187.221-47.787-307.541-47.787s-230.699 17.835-307.541 47.787c-32.256 12.587-61.227 28.331-82.475 47.872-18.347 16.853-34.005 39.552-36.352 67.84-0.213 2.389-0.299 4.779-0.299 7.168z"
         ],
         "attrs": [],
@@ -3016,27 +1926,9 @@
         "prevSize": 24,
         "name": "database"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 57
+      "iconIdx": 60
     },
     {
       "icon": {
@@ -3058,25 +1950,9 @@
         "prevSize": 24,
         "name": "download"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 58
+      "iconIdx": 61
     },
     {
       "icon": {
@@ -3098,27 +1974,9 @@
         "prevSize": 24,
         "name": "help-circle"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 59
+      "iconIdx": 62
     },
     {
       "icon": {
@@ -3140,25 +1998,9 @@
         "prevSize": 24,
         "name": "life-buoy"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 60
+      "iconIdx": 63
     },
     {
       "icon": {
@@ -3180,27 +2022,9 @@
         "prevSize": 24,
         "name": "log-out"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 61
+      "iconIdx": 64
     },
     {
       "icon": {
@@ -3222,27 +2046,9 @@
         "prevSize": 24,
         "name": "more-vertical"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 62
+      "iconIdx": 65
     },
     {
       "icon": {
@@ -3264,25 +2070,9 @@
         "prevSize": 24,
         "name": "star"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 63
+      "iconIdx": 66
     },
     {
       "icon": {
@@ -3304,27 +2094,9 @@
         "prevSize": 24,
         "name": "upload"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 64
+      "iconIdx": 67
     },
     {
       "icon": {
@@ -3346,27 +2118,9 @@
         "prevSize": 24,
         "name": "publish"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 65
+      "iconIdx": 68
     },
     {
       "icon": {
@@ -3388,25 +2142,9 @@
         "prevSize": 24,
         "name": "coffee"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 66
+      "iconIdx": 69
     },
     {
       "icon": {
@@ -3428,27 +2166,9 @@
         "prevSize": 24,
         "name": "frown"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 67
+      "iconIdx": 70
     },
     {
       "icon": {
@@ -3470,27 +2190,9 @@
         "prevSize": 24,
         "name": "mail"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 68
+      "iconIdx": 71
     },
     {
       "icon": {
@@ -3512,25 +2214,9 @@
         "prevSize": 24,
         "name": "meh"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 69
+      "iconIdx": 72
     },
     {
       "icon": {
@@ -3552,27 +2238,9 @@
         "prevSize": 24,
         "name": "dollar-sign"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 70
+      "iconIdx": 73
     },
     {
       "icon": {
@@ -3594,27 +2262,9 @@
         "prevSize": 24,
         "name": "log"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 71
+      "iconIdx": 74
     },
     {
       "icon": {
@@ -3639,25 +2289,9 @@
         "name": "megaphone",
         "code": 57405
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 72
+      "iconIdx": 75
     },
     {
       "icon": {
@@ -3684,27 +2318,9 @@
         "prevSize": 24,
         "code": 59673
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 73
+      "iconIdx": 76
     },
     {
       "icon": {
@@ -3731,27 +2347,9 @@
         "prevSize": 24,
         "code": 59674
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 74
+      "iconIdx": 77
     },
     {
       "icon": {
@@ -3774,25 +2372,9 @@
         "code": 59675,
         "name": "flow"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 75
+      "iconIdx": 78
     },
     {
       "icon": {
@@ -3815,27 +2397,9 @@
         "code": 59648,
         "name": "activity"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 76
+      "iconIdx": 79
     },
     {
       "icon": {
@@ -3858,27 +2422,9 @@
         "code": 59653,
         "name": "alert-circle"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 77
+      "iconIdx": 80
     },
     {
       "icon": {
@@ -3901,25 +2447,9 @@
         "code": 59654,
         "name": "alert-octagon"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 78
+      "iconIdx": 81
     },
     {
       "icon": {
@@ -3942,27 +2472,9 @@
         "code": 59659,
         "name": "alert-triangle"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 79
+      "iconIdx": 82
     },
     {
       "icon": {
@@ -3985,27 +2497,9 @@
         "code": 59661,
         "name": "archive"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 80
+      "iconIdx": 83
     },
     {
       "icon": {
@@ -4027,25 +2521,9 @@
         "prevSize": 24,
         "name": "battery"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 81
+      "iconIdx": 84
     },
     {
       "icon": {
@@ -4067,27 +2545,9 @@
         "prevSize": 24,
         "name": "battery-charging"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 82
+      "iconIdx": 85
     },
     {
       "icon": {
@@ -4110,27 +2570,9 @@
         "code": 59662,
         "name": "book"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 83
+      "iconIdx": 86
     },
     {
       "icon": {
@@ -4152,25 +2594,9 @@
         "prevSize": 24,
         "name": "briefcase"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 84
+      "iconIdx": 87
     },
     {
       "icon": {
@@ -4190,29 +2616,11 @@
         "id": 9,
         "order": 1069,
         "prevSize": 24,
-        "name": "calendar"
+        "name": "calendar1"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 85
+      "iconIdx": 88
     },
     {
       "icon": {
@@ -4235,27 +2643,9 @@
         "code": 59666,
         "name": "camera"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 86
+      "iconIdx": 89
     },
     {
       "icon": {
@@ -4278,25 +2668,9 @@
         "code": 59668,
         "name": "check"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 87
+      "iconIdx": 90
     },
     {
       "icon": {
@@ -4319,27 +2693,9 @@
         "code": 59671,
         "name": "check-square"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 88
+      "iconIdx": 91
     },
     {
       "icon": {
@@ -4362,27 +2718,9 @@
         "name": "chevron-down",
         "code": 59652
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 89
+      "iconIdx": 92
     },
     {
       "icon": {
@@ -4405,25 +2743,9 @@
         "name": "chevron-left",
         "code": 59706
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 90
+      "iconIdx": 93
     },
     {
       "icon": {
@@ -4446,27 +2768,9 @@
         "name": "chevron-right",
         "code": 59707
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 91
+      "iconIdx": 94
     },
     {
       "icon": {
@@ -4489,27 +2793,9 @@
         "name": "chevron-up",
         "code": 59708
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 92
+      "iconIdx": 95
     },
     {
       "icon": {
@@ -4532,25 +2818,9 @@
         "name": "chevrons-down",
         "code": 59709
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 93
+      "iconIdx": 96
     },
     {
       "icon": {
@@ -4573,27 +2843,9 @@
         "code": 59676,
         "name": "chevrons-left"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 94
+      "iconIdx": 97
     },
     {
       "icon": {
@@ -4616,27 +2868,9 @@
         "code": 59677,
         "name": "chevrons-right"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 95
+      "iconIdx": 98
     },
     {
       "icon": {
@@ -4659,25 +2893,9 @@
         "name": "chevrons-up",
         "code": 59710
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 96
+      "iconIdx": 99
     },
     {
       "icon": {
@@ -4700,27 +2918,9 @@
         "name": "circle",
         "code": 59711
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 97
+      "iconIdx": 100
     },
     {
       "icon": {
@@ -4742,27 +2942,9 @@
         "prevSize": 24,
         "name": "clipboard"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 98
+      "iconIdx": 101
     },
     {
       "icon": {
@@ -4785,25 +2967,9 @@
         "code": 59678,
         "name": "clock"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 99
+      "iconIdx": 102
     },
     {
       "icon": {
@@ -4826,27 +2992,9 @@
         "name": "cloud1",
         "code": 59712
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 100
+      "iconIdx": 103
     },
     {
       "icon": {
@@ -4869,27 +3017,9 @@
         "name": "code",
         "code": 59713
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 101
+      "iconIdx": 104
     },
     {
       "icon": {
@@ -4911,25 +3041,9 @@
         "prevSize": 24,
         "name": "copy"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 102
+      "iconIdx": 105
     },
     {
       "icon": {
@@ -4952,27 +3066,9 @@
         "code": 59679,
         "name": "credit-card"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 103
+      "iconIdx": 106
     },
     {
       "icon": {
@@ -4995,27 +3091,9 @@
         "name": "disc",
         "code": 59714
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 104
+      "iconIdx": 107
     },
     {
       "icon": {
@@ -5038,25 +3116,9 @@
         "code": 59680,
         "name": "edit"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 105
+      "iconIdx": 108
     },
     {
       "icon": {
@@ -5079,27 +3141,9 @@
         "name": "edit-3",
         "code": 59715
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 106
+      "iconIdx": 109
     },
     {
       "icon": {
@@ -5120,34 +3164,11 @@
         "order": 1086,
         "prevSize": 24,
         "code": 59681,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        "name": "external-link"
-=======
-        "name": "external-link1"
->>>>>>> Stashed changes
-      },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
         "name": "external-link1"
       },
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 107
+      "iconIdx": 110
     },
     {
       "icon": {
@@ -5170,27 +3191,9 @@
         "name": "flag",
         "code": 59716
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 108
+      "iconIdx": 111
     },
     {
       "icon": {
@@ -5213,25 +3216,9 @@
         "code": 59682,
         "name": "home"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 109
+      "iconIdx": 112
     },
     {
       "icon": {
@@ -5254,27 +3241,9 @@
         "code": 59683,
         "name": "image"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 110
+      "iconIdx": 113
     },
     {
       "icon": {
@@ -5297,27 +3266,9 @@
         "name": "inbox",
         "code": 59717
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 111
+      "iconIdx": 114
     },
     {
       "icon": {
@@ -5340,25 +3291,9 @@
         "name": "info",
         "code": 59718
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 112
+      "iconIdx": 115
     },
     {
       "icon": {
@@ -5381,27 +3316,9 @@
         "name": "layers",
         "code": 59719
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 113
+      "iconIdx": 116
     },
     {
       "icon": {
@@ -5424,27 +3341,9 @@
         "code": 59684,
         "name": "loader"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 114
+      "iconIdx": 117
     },
     {
       "icon": {
@@ -5467,25 +3366,9 @@
         "code": 59685,
         "name": "lock"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 115
+      "iconIdx": 118
     },
     {
       "icon": {
@@ -5508,27 +3391,9 @@
         "code": 59686,
         "name": "mail1"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 116
+      "iconIdx": 119
     },
     {
       "icon": {
@@ -5551,27 +3416,9 @@
         "code": 59687,
         "name": "message-square"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 117
+      "iconIdx": 120
     },
     {
       "icon": {
@@ -5593,25 +3440,9 @@
         "prevSize": 24,
         "name": "mic"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 118
+      "iconIdx": 121
     },
     {
       "icon": {
@@ -5634,27 +3465,9 @@
         "name": "paperclip",
         "code": 59720
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 119
+      "iconIdx": 122
     },
     {
       "icon": {
@@ -5676,27 +3489,9 @@
         "prevSize": 24,
         "name": "phone"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 120
+      "iconIdx": 123
     },
     {
       "icon": {
@@ -5718,25 +3513,9 @@
         "prevSize": 24,
         "name": "phone-forwarded"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 121
+      "iconIdx": 124
     },
     {
       "icon": {
@@ -5758,27 +3537,9 @@
         "prevSize": 24,
         "name": "phone-incoming"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 122
+      "iconIdx": 125
     },
     {
       "icon": {
@@ -5800,27 +3561,9 @@
         "prevSize": 24,
         "name": "phone-missed"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 123
+      "iconIdx": 126
     },
     {
       "icon": {
@@ -5842,25 +3585,9 @@
         "prevSize": 24,
         "name": "phone-outgoing"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 124
+      "iconIdx": 127
     },
     {
       "icon": {
@@ -5883,27 +3610,9 @@
         "code": 59688,
         "name": "radio"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 125
+      "iconIdx": 128
     },
     {
       "icon": {
@@ -5926,27 +3635,9 @@
         "code": 59689,
         "name": "repeat"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 126
+      "iconIdx": 129
     },
     {
       "icon": {
@@ -5969,25 +3660,9 @@
         "name": "send",
         "code": 59721
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 127
+      "iconIdx": 130
     },
     {
       "icon": {
@@ -6010,27 +3685,9 @@
         "code": 59690,
         "name": "settings"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 128
+      "iconIdx": 131
     },
     {
       "icon": {
@@ -6053,27 +3710,9 @@
         "code": 59691,
         "name": "shield"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 129
+      "iconIdx": 132
     },
     {
       "icon": {
@@ -6096,25 +3735,9 @@
         "code": 59692,
         "name": "shield-off"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 130
+      "iconIdx": 133
     },
     {
       "icon": {
@@ -6137,27 +3760,9 @@
         "code": 59693,
         "name": "sidebar"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 131
+      "iconIdx": 134
     },
     {
       "icon": {
@@ -6180,27 +3785,9 @@
         "name": "slash",
         "code": 59722
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 132
+      "iconIdx": 135
     },
     {
       "icon": {
@@ -6223,25 +3810,9 @@
         "code": 59694,
         "name": "sliders"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 133
+      "iconIdx": 136
     },
     {
       "icon": {
@@ -6263,27 +3834,9 @@
         "prevSize": 24,
         "name": "smartphone"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 134
+      "iconIdx": 137
     },
     {
       "icon": {
@@ -6306,27 +3859,9 @@
         "code": 59695,
         "name": "square"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 135
+      "iconIdx": 138
     },
     {
       "icon": {
@@ -6349,25 +3884,9 @@
         "name": "tag",
         "code": 59723
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 136
+      "iconIdx": 139
     },
     {
       "icon": {
@@ -6390,27 +3909,9 @@
         "code": 59696,
         "name": "tool"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 137
+      "iconIdx": 140
     },
     {
       "icon": {
@@ -6433,27 +3934,9 @@
         "code": 59697,
         "name": "trash"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 138
+      "iconIdx": 141
     },
     {
       "icon": {
@@ -6475,25 +3958,9 @@
         "prevSize": 24,
         "name": "trash-2"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 139
+      "iconIdx": 142
     },
     {
       "icon": {
@@ -6516,27 +3983,9 @@
         "code": 59698,
         "name": "user"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 140
+      "iconIdx": 143
     },
     {
       "icon": {
@@ -6559,27 +4008,9 @@
         "code": 59699,
         "name": "users"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 141
+      "iconIdx": 144
     },
     {
       "icon": {
@@ -6602,25 +4033,9 @@
         "code": 59700,
         "name": "speaker"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 142
+      "iconIdx": 145
     },
     {
       "icon": {
@@ -6643,27 +4058,9 @@
         "name": "x",
         "code": 59724
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 143
+      "iconIdx": 146
     },
     {
       "icon": {
@@ -6686,27 +4083,9 @@
         "code": 59701,
         "name": "x-octagon"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 144
+      "iconIdx": 147
     },
     {
       "icon": {
@@ -6729,25 +4108,9 @@
         "code": 59702,
         "name": "zap"
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 145
+      "iconIdx": 148
     },
     {
       "icon": {
@@ -6771,27 +4134,9 @@
         "code": 59703,
         "name": "contact-cal"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 146
+      "iconIdx": 149
     },
     {
       "icon": {
@@ -6815,27 +4160,9 @@
         "code": 59704,
         "name": "send-mobile"
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 147
+      "iconIdx": 150
     },
     {
       "icon": {
@@ -6866,25 +4193,9 @@
         "name": "users1",
         "id": 0
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 148
+      "iconIdx": 151
     },
     {
       "icon": {
@@ -6912,27 +4223,9 @@
         "id": 1,
         "code": 60241
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 149
+      "iconIdx": 152
     },
     {
       "icon": {
@@ -6957,27 +4250,9 @@
         "name": "atom",
         "id": 2
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 150
+      "iconIdx": 153
     },
     {
       "icon": {
@@ -7007,25 +4282,9 @@
         "name": "paperplane",
         "id": 3
       },
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 151
+      "iconIdx": 154
     },
     {
       "icon": {
@@ -7052,27 +4311,9 @@
         "name": "cancel",
         "id": 4
       },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      "setIdx": 1,
-=======
-<<<<<<< Updated upstream
       "setIdx": 4,
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-      "setIdx": 1,
-=======
-      "setIdx": 4,
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       "setId": 1,
-      "iconIdx": 152
+      "iconIdx": 155
     }
   ],
   "height": 1024,
