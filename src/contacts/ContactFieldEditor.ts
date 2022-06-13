@@ -1,5 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
+import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { TextInput } from '../textinput/TextInput';
 
@@ -26,11 +27,11 @@ export class ContactFieldEditor extends RapidElement {
     return css`
       .prefix {
         background: rgba(0, 0, 0, 0.05);
-        border-top-left-radius: 4px;
-        border-bottom-left-radius: 4px;
+        border-top-left-radius: var(--curvature-widget);
+        border-bottom-left-radius: var(--curvature-widget);
         color: #888;
         cursor: pointer;
-        width: 100px;
+        width: 200px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -38,10 +39,14 @@ export class ContactFieldEditor extends RapidElement {
         padding: 0em 0.5em;
       }
 
+      .wrapper {
+        margin-bottom: -1px;
+      }
+
       .prefix .name {
         padding: 0.5em 0em;
         color: #888;
-        width: 80px;
+        width: 200px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -55,8 +60,8 @@ export class ContactFieldEditor extends RapidElement {
       .popper {
         padding: 0.5em 0.75em;
         background: rgba(240, 240, 240, 1);
-        border-top-right-radius: 4px;
-        border-bottom-right-radius: 4px;
+        border-top-right-radius: var(--curvature-widget);
+        border-bottom-right-radius: var(--curvature-widget);
         --icon-color: #888;
         opacity: 0;
         cursor: default;
@@ -67,45 +72,32 @@ export class ContactFieldEditor extends RapidElement {
         z-index: 1000;
       }
 
-      .postfix temba-icon[name='calendar'] {
-        --icon-color: #e3e3e3;
+      temba-icon[name='calendar'] {
+        --icon-color: rgba(0, 0, 0, 0.2);
       }
 
-      .popper.check {
-        background: rgba(90, 145, 86, 0.15);
-      }
-
-      .popper.none {
-        opacity: 0;
-      }
-
-      .popper.copy temba-icon:hover {
-        --icon-color: #555;
-      }
-
-      .popper.corner-down-left {
-        // background: var(--color-primary-dark);
-        // --icon-color: var(--color-text-light);
-        opacity: 1;
-        transform: scale(1);
+      temba-icon:hover {
+        --icon-color: rgba(0, 0, 0, 0.5);
       }
 
       temba-icon {
         cursor: pointer;
+        --icon-color: rgba(0, 0, 0, 0.3);
       }
 
-      temba-icon[name='check'] {
-        --icon-color: rgb(90, 145, 86);
-      }
-
-      temba-textinput:hover .popper.copy {
+      temba-textinput:hover .popper {
         opacity: 1;
         transform: scale(1);
       }
 
-      temba-textinput:focus .popper.copy {
+      temba-textinput:focus .popper {
         opacity: 1;
         transform: scale(1);
+      }
+
+      .unset temba-textinput:focus .popper,
+      .unset temba-textinput:hover .popper {
+        opacity: 0;
       }
 
       .copy.clicked temba-icon {
@@ -114,6 +106,10 @@ export class ContactFieldEditor extends RapidElement {
 
       temba-icon {
         transition: all 200ms ease-in-out;
+      }
+
+      temba-icon[name='search'] {
+        margin-right: 1em;
       }
     `;
   }
@@ -139,6 +135,14 @@ export class ContactFieldEditor extends RapidElement {
         });
       }
     }
+
+    if (icon === 'search') {
+      this.fireCustomEvent(CustomEventType.ButtonClicked, {
+        key: this.key,
+        value: this.value,
+      });
+    }
+
     evt.preventDefault();
     evt.stopPropagation();
   }
@@ -166,7 +170,7 @@ export class ContactFieldEditor extends RapidElement {
 
   public render(): TemplateResult {
     return html`
-      <div>
+      <div class="wrapper ${this.value ? 'set' : 'unset'}">
         <temba-textinput
           value="${this.value ? this.value : ''}"
           ?datetimepicker=${this.type === 'datetime'}
@@ -176,22 +180,32 @@ export class ContactFieldEditor extends RapidElement {
         >
           <div class="prefix" slot="prefix">
             <div class="name">${this.name}</div>
+            ${this.type === 'datetime'
+              ? html`<div style="position: relative; padding-top: .75em;">
+                  <temba-icon name="calendar" animateclick="pulse" />
+                </div>`
+              : null}
           </div>
 
           <div class="postfix">
-            ${this.type === 'datetime'
-              ? html`<div
-                  style="position: absolute; padding-top: .75em; padding-left: .75em;"
-                >
-                  <temba-icon name="calendar" />
-                </div>`
-              : null}
-
             <div
-              class="popper ${this.iconClass} ${this.icon ? this.icon : 'none'}"
+              class="popper ${this.iconClass}"
               @click=${this.handleIconClick}
             >
-              <temba-icon name="${this.icon}" animatechange="spin"></temba-icon>
+              ${this.value
+                ? html`
+                <temba-icon 
+                  name="search"
+                  animateclick="pulse"                  
+                ></temba-icon>
+                </div>
+              `
+                : null}
+              <temba-icon
+                name="${this.icon}"
+                animatechange="spin"
+                animateclick="pulse"
+              ></temba-icon>
             </div>
           </div>
         </temba-textinput>

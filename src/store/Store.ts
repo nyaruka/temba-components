@@ -30,6 +30,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'globals' })
   globalsEndpoint: string;
 
+  @property({ type: String, attribute: 'languages' })
+  languagesEndpoint: string;
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -41,7 +44,7 @@ export class Store extends RapidElement {
 
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
-
+  private languages: any = {};
   private pinnedFields: ContactField[] = [];
 
   // http promise to monitor for completeness
@@ -91,6 +94,22 @@ export class Store extends RapidElement {
       );
     }
 
+    if (this.languagesEndpoint) {
+      fetches.push(
+        getAssets(this.languagesEndpoint).then((results: any[]) => {
+          // convert array of objects to lookup
+          this.languages = results.reduce(function (
+            languages: any,
+            result: any
+          ) {
+            languages[result.value] = result.name;
+            return languages;
+          },
+          {});
+        })
+      );
+    }
+
     if (this.groupsEndpoint) {
       fetches.push(
         getAssets(this.groupsEndpoint).then((groups: any[]) => {
@@ -130,6 +149,10 @@ export class Store extends RapidElement {
 
   public getPinnedFields(): ContactField[] {
     return this.pinnedFields;
+  }
+
+  public getLanguageName(iso: string) {
+    return this.languages[iso];
   }
 
   public isDynamicGroup(uuid: string): boolean {

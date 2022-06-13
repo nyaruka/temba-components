@@ -31,12 +31,25 @@ export class Tab extends RapidElement {
   @property({ type: String })
   icon: string;
 
+  @property({ type: String })
+  selectionColor: string;
+
+  @property({ type: String })
+  selectionBackground: string;
+
   @property({ type: Boolean })
   selected = false;
+
+  @property({ type: Number })
+  count = 0;
+
+  public hasBadge() {
+    return this.count > 0;
+  }
 
   public render(): TemplateResult {
     return html`<slot
       class="${getClasses({ selected: this.selected })}"
-    ></slot>`;
+    ></slot> `;
   }
 }

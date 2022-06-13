@@ -20,9 +20,7 @@ export class TextInput extends FormElement {
         display: flex;
         flex-direction: row;
         align-items: stretch;
-
         box-shadow: var(--widget-box-shadow);
-
         caret-color: var(--input-caret);
       }
 
@@ -47,6 +45,8 @@ export class TextInput extends FormElement {
         border-color: var(--color-focus);
         background: var(--color-widget-bg-focused);
         box-shadow: var(--widget-box-shadow-focused);
+        z-index: 10000;
+        position: relative;
       }
 
       .input-container:hover {

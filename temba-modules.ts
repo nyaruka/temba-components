@@ -26,11 +26,12 @@ import { Dropdown } from './src/dropdown/Dropdown';
 import { TabPane } from './src/tabpane/TabPane';
 import { Tab } from './src/tabpane/Tab';
 import Label from './src/label/Label';
-import { ContactGroups } from './src/contacts/ContactGroups';
 import { ContactName } from './src/contacts/ContactName';
 import { ContactUrn } from './src/contacts/ContactUrn';
 import { ContactFields } from './src/contacts/ContactFields';
 import { ContactFieldEditor } from './src/contacts/ContactFieldEditor';
+
+import { ContactBadges } from './src/contacts/ContactBadges';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -50,6 +51,10 @@ addCustomElement('temba-loading', Loading);
 addCustomElement('temba-button', Button);
 addCustomElement('temba-omnibox', Omnibox);
 addCustomElement('temba-tip', Tip);
+addCustomElement('temba-contact-name', ContactName);
+addCustomElement('temba-contact-field', ContactFieldEditor);
+addCustomElement('temba-contact-fields', ContactFields);
+addCustomElement('temba-urn', ContactUrn);
 
 addCustomElement('temba-field', FormField);
 addCustomElement('temba-dialog', Dialog);
@@ -67,8 +72,4 @@ addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
-addCustomElement('temba-contact-name', ContactName);
-addCustomElement('temba-contact-field', ContactFieldEditor);
-addCustomElement('temba-contact-fields', ContactFields);
-addCustomElement('temba-urn', ContactUrn);
-addCustomElement('temba-contact-groups', ContactGroups);
+addCustomElement('temba-contact-groups', ContactBadges);

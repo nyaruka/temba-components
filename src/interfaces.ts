@@ -84,13 +84,15 @@ export interface Contact {
   stopped: boolean;
   blocked: boolean;
   urns: string[];
-  lang: string;
+  language?: string;
   fields: { [key: string]: string };
   groups: Group[];
   modified_on: string;
   created_on: string;
   last_seen_on: string;
+  status: string;
 
+  flow?: ObjectReference;
   last_msg?: Msg;
   direction?: string;
   ticket: {
