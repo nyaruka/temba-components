@@ -27,8 +27,6 @@ export class ContactBadges extends ContactStoreElement {
 
   public render(): TemplateResult {
     if (this.data) {
-      console.log(this.data);
-
       const status = STATUS[this.data.status];
 
       return html`
