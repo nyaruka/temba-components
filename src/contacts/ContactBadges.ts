@@ -3,9 +3,9 @@ import { Group } from '../interfaces';
 import { ContactStoreElement } from './ContactStoreElement';
 
 const STATUS = {
-  S: { name: 'Stopped', icon: 'x-octagon' },
-  B: { name: 'Blocked', icon: 'slash' },
-  V: { name: 'Archived', icon: 'archive' },
+  stopped: { name: 'Stopped', icon: 'x-octagon' },
+  blocked: { name: 'Blocked', icon: 'slash' },
+  archived: { name: 'Archived', icon: 'archive' },
 };
 
 export class ContactBadges extends ContactStoreElement {
@@ -31,7 +31,7 @@ export class ContactBadges extends ContactStoreElement {
 
       return html`
         <div class="badges">
-          ${status && this.data.status !== 'A'
+          ${status && this.data.status !== 'active'
             ? html`
                 <temba-label
                   class="status"
