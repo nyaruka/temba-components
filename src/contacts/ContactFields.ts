@@ -103,11 +103,12 @@ export class ContactFields extends ContactStoreElement {
 
   public handleFieldChanged(evt: InputEvent) {
     const field = evt.currentTarget as ContactFieldEditor;
-    this.data.fields[field.key] = field.value;
+    const value = field.value;
+    this.data.fields[field.key] = value;
     postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
-      fields: { [field.key]: field.value },
-    }).then(() => {
-      this.refresh();
+      fields: { [field.key]: value },
+    }).then((response: any) => {
+      this.updateStoreContact(response.json);
     });
   }
 

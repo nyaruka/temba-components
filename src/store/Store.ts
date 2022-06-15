@@ -7,6 +7,7 @@ import {
   CompletionSchema,
   KeyedAssets,
   CustomEventType,
+  Workspace,
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
@@ -33,6 +34,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'languages' })
   languagesEndpoint: string;
 
+  @property({ type: String, attribute: 'workspace' })
+  workspaceEndpoint: string;
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -42,9 +46,12 @@ export class Store extends RapidElement {
   @property({ type: Object, attribute: false })
   private keyedAssets: KeyedAssets = {};
 
+  private locale = [...navigator.languages];
+
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
   private languages: any = {};
+  private workspace: Workspace;
   private pinnedFields: ContactField[] = [];
 
   // http promise to monitor for completeness
@@ -120,6 +127,18 @@ export class Store extends RapidElement {
       );
     }
 
+    if (this.workspaceEndpoint) {
+      fetches.push(
+        getUrl(this.workspaceEndpoint).then((response: WebResponse) => {
+          this.workspace = response.json;
+          const lang = response.headers.get('content-language');
+          if (lang) {
+            this.locale = [lang, ...this.locale];
+          }
+        })
+      );
+    }
+
     this.httpComplete = Promise.all(fetches);
   }
 
@@ -161,6 +180,20 @@ export class Store extends RapidElement {
       return true;
     }
     return false;
+  }
+
+  public getWorkspace(): Workspace {
+    return this.workspace;
+  }
+
+  public formatDate(dateString: string) {
+    return new Date(dateString).toLocaleString(this.locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
   }
 
   public getUrl(
@@ -230,6 +263,11 @@ export class Store extends RapidElement {
   }
 
   public fetching: { [url: string]: number } = {};
+
+  public updateCache(url: string, data: any) {
+    this.cache.set(url, data);
+    this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
+  }
 
   public makeRequest(
     url: string,

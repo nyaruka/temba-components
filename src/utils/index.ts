@@ -6,7 +6,8 @@ import { ContactField, Ticket } from '../interfaces';
 
 export type Asset = KeyedAsset & Ticket & ContactField;
 
-export const DATE_FORMAT = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
+export const DATE_FORMAT =
+  /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
 
 interface KeyedAsset {
   key?: string;
@@ -77,11 +78,11 @@ export const getUrl = (
             // eslint-disable-next-line no-empty
           } catch (err) {}
           resolve({
+            controller,
             body,
             json,
-            status: response.status,
             headers: response.headers,
-            controller,
+            status: response.status,
           });
         });
       })
@@ -210,8 +211,8 @@ export const postUrl = (
           resolve({
             body,
             json,
-            status: response.status,
             headers: response.headers,
+            status: response.status,
           });
         });
       })
@@ -260,12 +261,11 @@ export const postForm = (
 
 /**
  */
-export const renderIf = (predicate: boolean | any) => (
-  then: () => TemplateResult,
-  otherwise?: () => TemplateResult
-) => {
-  return predicate ? then() : otherwise ? otherwise() : html``;
-};
+export const renderIf =
+  (predicate: boolean | any) =>
+  (then: () => TemplateResult, otherwise?: () => TemplateResult) => {
+    return predicate ? then() : otherwise ? otherwise() : html``;
+  };
 
 export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

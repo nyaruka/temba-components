@@ -32,6 +32,7 @@ import { ContactFields } from './src/contacts/ContactFields';
 import { ContactFieldEditor } from './src/contacts/ContactFieldEditor';
 
 import { ContactBadges } from './src/contacts/ContactBadges';
+import { ContactPending } from './src/contacts/ContactPending';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -73,3 +74,4 @@ addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
 addCustomElement('temba-contact-groups', ContactBadges);
+addCustomElement('temba-contact-pending', ContactPending);

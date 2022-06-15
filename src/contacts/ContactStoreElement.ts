@@ -36,6 +36,10 @@ export class ContactStoreElement extends StoreElement {
     return null;
   }
 
+  public updateStoreContact(value: any) {
+    this.store.updateCache(`/api/v2/contacts.json?uuid=${this.contact}`, value);
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
