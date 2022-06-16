@@ -17,6 +17,7 @@ export enum DateStyle {
 export enum ScheduledEventType {
   CampaignEvent = 'campaign_event',
   ScheduledBroadcast = 'scheduled_broadcast',
+  ScheduledTrigger = 'scheduled_trigger',
 }
 
 export interface ScheduledEvent {

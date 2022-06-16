@@ -11,6 +11,11 @@ import {
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
+import {
+  HumanizeDurationLanguage,
+  HumanizeDuration,
+} from 'humanize-duration-ts';
+import { DateTime } from 'luxon';
 
 export class Store extends RapidElement {
   @property({ type: Number })
@@ -54,6 +59,9 @@ export class Store extends RapidElement {
   private workspace: Workspace;
   private pinnedFields: ContactField[] = [];
 
+  private langService = new HumanizeDurationLanguage();
+  private humanizer = new HumanizeDuration(this.langService);
+
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;
 
@@ -61,6 +69,21 @@ export class Store extends RapidElement {
 
   public firstUpdated() {
     this.cache = Lru(this.max, this.ttl);
+
+    /* 
+    // This will create a shorthand unit
+    this.humanizer.addLanguage("en", {
+      y: () => "y",
+      mo: () => "mo",
+      w: () => "w",
+      d: () => "d",
+      h: () => "h",
+      m: () => "m",
+      s: () => "s",
+      ms: () => "ms",
+      decimal: ".",
+    });
+    */
 
     const fetches = [];
     if (this.completionEndpoint) {
@@ -140,6 +163,25 @@ export class Store extends RapidElement {
     }
 
     this.httpComplete = Promise.all(fetches);
+  }
+
+  public getLanguageCode() {
+    if (this.locale.length > 0) {
+      return this.locale[0].split('-')[0];
+    }
+    return 'en';
+  }
+
+  public getShortDuration(isoDate: string) {
+    const scheduled = DateTime.fromISO(isoDate);
+    const now = DateTime.now();
+
+    const duration = scheduled.diff(now).valueOf();
+    return this.humanizer.humanize(duration, {
+      language: this.getLanguageCode(),
+      largest: 1,
+      round: false,
+    });
   }
 
   public setKeyedAssets(name: string, values: string[]): void {
