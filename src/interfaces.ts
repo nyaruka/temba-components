@@ -1,3 +1,34 @@
+export interface Workspace {
+  uuid: string;
+  name: string;
+  country: string;
+  languages: string[];
+  timezone: string;
+  date_style: DateStyle;
+  anon: boolean;
+}
+
+export enum DateStyle {
+  DayFirst = 'day_first',
+  MonthFirst = 'month_first',
+  YearFirst = 'year_first',
+}
+
+export enum ScheduledEventType {
+  CampaignEvent = 'campaign_event',
+  ScheduledBroadcast = 'scheduled_broadcast',
+  ScheduledTrigger = 'scheduled_trigger',
+}
+
+export interface ScheduledEvent {
+  type: ScheduledEventType;
+  scheduled: string;
+  repeat_period: string;
+  campaign?: ObjectReference;
+  flow?: ObjectReference;
+  message?: string;
+}
+
 export interface User {
   id?: number;
   first_name?: string;

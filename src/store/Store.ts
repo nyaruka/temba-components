@@ -7,9 +7,15 @@ import {
   CompletionSchema,
   KeyedAssets,
   CustomEventType,
+  Workspace,
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
+import {
+  HumanizeDurationLanguage,
+  HumanizeDuration,
+} from 'humanize-duration-ts';
+import { DateTime } from 'luxon';
 
 export class Store extends RapidElement {
   @property({ type: Number })
@@ -33,6 +39,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'languages' })
   languagesEndpoint: string;
 
+  @property({ type: String, attribute: 'workspace' })
+  workspaceEndpoint: string;
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -42,10 +51,16 @@ export class Store extends RapidElement {
   @property({ type: Object, attribute: false })
   private keyedAssets: KeyedAssets = {};
 
+  private locale = [...navigator.languages];
+
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
   private languages: any = {};
+  private workspace: Workspace;
   private pinnedFields: ContactField[] = [];
+
+  private langService = new HumanizeDurationLanguage();
+  private humanizer = new HumanizeDuration(this.langService);
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;
@@ -54,6 +69,21 @@ export class Store extends RapidElement {
 
   public firstUpdated() {
     this.cache = Lru(this.max, this.ttl);
+
+    /* 
+    // This will create a shorthand unit
+    this.humanizer.addLanguage("en", {
+      y: () => "y",
+      mo: () => "mo",
+      w: () => "w",
+      d: () => "d",
+      h: () => "h",
+      m: () => "m",
+      s: () => "s",
+      ms: () => "ms",
+      decimal: ".",
+    });
+    */
 
     const fetches = [];
     if (this.completionEndpoint) {
@@ -120,7 +150,38 @@ export class Store extends RapidElement {
       );
     }
 
+    if (this.workspaceEndpoint) {
+      fetches.push(
+        getUrl(this.workspaceEndpoint).then((response: WebResponse) => {
+          this.workspace = response.json;
+          const lang = response.headers.get('content-language');
+          if (lang) {
+            this.locale = [lang, ...this.locale];
+          }
+        })
+      );
+    }
+
     this.httpComplete = Promise.all(fetches);
+  }
+
+  public getLanguageCode() {
+    if (this.locale.length > 0) {
+      return this.locale[0].split('-')[0];
+    }
+    return 'en';
+  }
+
+  public getShortDuration(isoDate: string) {
+    const scheduled = DateTime.fromISO(isoDate);
+    const now = DateTime.now();
+
+    const duration = scheduled.diff(now).valueOf();
+    return this.humanizer.humanize(duration, {
+      language: this.getLanguageCode(),
+      largest: 1,
+      round: false,
+    });
   }
 
   public setKeyedAssets(name: string, values: string[]): void {
@@ -161,6 +222,20 @@ export class Store extends RapidElement {
       return true;
     }
     return false;
+  }
+
+  public getWorkspace(): Workspace {
+    return this.workspace;
+  }
+
+  public formatDate(dateString: string) {
+    return new Date(dateString).toLocaleString(this.locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    });
   }
 
   public getUrl(
@@ -230,6 +305,11 @@ export class Store extends RapidElement {
   }
 
   public fetching: { [url: string]: number } = {};
+
+  public updateCache(url: string, data: any) {
+    this.cache.set(url, data);
+    this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
+  }
 
   public makeRequest(
     url: string,

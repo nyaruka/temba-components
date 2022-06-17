@@ -685,7 +685,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
       style="border-radius:var(--curvature);box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);"
       max-width="400px"
       height="auto"
-      controls="controls"
+      controls
     >
       <source src="${url}" type="video/mp4" />
     </video> `;

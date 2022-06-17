@@ -103,17 +103,17 @@ export class ContactFields extends ContactStoreElement {
 
   public handleFieldChanged(evt: InputEvent) {
     const field = evt.currentTarget as ContactFieldEditor;
-    this.data.fields[field.key] = field.value;
+    const value = field.value;
+    this.data.fields[field.key] = value;
     postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
-      fields: { [field.key]: field.value },
-    }).then(() => {
-      this.refresh();
+      fields: { [field.key]: value },
+    }).then((response: any) => {
+      this.updateStoreContact(response.json);
     });
   }
 
   public handleToggle(evt: Event) {
     const checkbox = evt.currentTarget as Checkbox;
-    console.log(checkbox.checked);
     this.showAll = checkbox.checked;
   }
 
@@ -129,16 +129,19 @@ export class ContactFields extends ContactStoreElement {
         .sort((a: [string, string], b: [string, string]) => {
           const [ak] = a;
           const [bk] = b;
-          /* if (av && !bv) {
-          return -1;
-        }
-
-        if (bv && !av) {
-          return 1;
-        }*/
+          const priority =
+            this.store.getContactField(bk).priority -
+            this.store.getContactField(ak).priority;
+          if (priority !== 0) {
+            return priority;
+          }
 
           return ak.localeCompare(bk);
         });
+
+      if (fieldsToShow.length == 0) {
+        return html`<slot name="empty"></slot>`;
+      }
 
       const fields = fieldsToShow.map((entry: [string, string]) => {
         const [k, v] = entry;
@@ -159,7 +162,7 @@ export class ContactFields extends ContactStoreElement {
         </div>
 
         ${!this.pinned && Object.keys(this.data.fields).length >= MIN_FOR_FILTER
-          ? html` <div class="footer">
+          ? html`<div class="footer">
               <div style="flex-grow: 1"></div>
               <div>
                 <temba-checkbox
