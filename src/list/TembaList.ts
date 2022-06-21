@@ -1,6 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
-import { reset } from 'sinon';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { fetchResultsPage, ResultsPage } from '../utils';
@@ -324,7 +323,7 @@ export class TembaList extends RapidElement {
         pages++;
       } catch (error) {
         // aborted
-        reset();
+        this.reset();
         return;
       }
 

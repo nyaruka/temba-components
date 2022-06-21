@@ -99,6 +99,7 @@ html input {
     --color-warning-border: rgb(251, 246, 176);
 
     --color-error: rgb(var(--error-rgb));
+    --color-alert: rgb(var(--error-rgb));
 
     --icon-color: var(--text-color);
     --icon-color-hover: var(--icon-color);

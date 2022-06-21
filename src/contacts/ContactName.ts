@@ -31,6 +31,7 @@ export class ContactName extends ContactStoreElement {
       return html`
         ${urn}
         <div class="name">${this.data.name}</div>
+        <slot></slot>
       `;
     }
   }

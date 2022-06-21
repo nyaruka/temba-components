@@ -33,6 +33,7 @@ import { ContactFieldEditor } from './src/contacts/ContactFieldEditor';
 
 import { ContactBadges } from './src/contacts/ContactBadges';
 import { ContactPending } from './src/contacts/ContactPending';
+import { ContactTickets } from './src/contacts/ContactTickets';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -75,3 +76,4 @@ addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
 addCustomElement('temba-contact-groups', ContactBadges);
 addCustomElement('temba-contact-pending', ContactPending);
+addCustomElement('temba-contact-tickets', ContactTickets);

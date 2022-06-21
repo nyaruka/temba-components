@@ -34,7 +34,6 @@ export class ContactPending extends StoreElement {
   static get styles() {
     return css`
       :host {
-        --text-color: rgba(50, 50, 50, 0.65);
       }
 
       a,
@@ -75,7 +74,6 @@ export class ContactPending extends StoreElement {
       }
 
       .message {
-        // font-style: italic;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -85,7 +83,6 @@ export class ContactPending extends StoreElement {
 
       .event {
         margin-bottom: 0.5em;
-        // background: rgba(0,0,0,.02);
         border-radius: var(--curvature);
         display: flex;
         flex-direction: row;

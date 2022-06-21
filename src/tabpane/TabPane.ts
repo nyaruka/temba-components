@@ -64,11 +64,16 @@ export class TabPane extends RapidElement {
         border-radius: 99px;
         background: rgba(0, 0, 0, 0.05);
         color: rgba(0, 0, 0, 0.5);
-        font-size: 0.7em;
+        font-size: 0.6em;
         font-weight: 400;
         padding: 0.1em 0.4em;
         min-width: 1em;
         text-align: center;
+      }
+
+      .notify .count {
+        background: var(--color-alert);
+        color: #fff;
       }
     `;
   }
@@ -119,7 +124,9 @@ export class TabPane extends RapidElement {
             <div
               @click=${this.handleTabClick}
               data-index=${index}
-              class="tab ${index == this.index ? 'selected' : ''}"
+              class="tab ${index == this.index ? 'selected' : ''} ${tab.notify
+                ? 'notify'
+                : ''}"
               style="${tab.selectionColor && index == this.index
                 ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
                 : ''} ${tab.selectionBackground && index == this.index
