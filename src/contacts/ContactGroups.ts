@@ -34,6 +34,7 @@ export class ContactGroups extends ContactStoreElement {
                 </temba-label>
               `;
             })}
+            <slot></slot>
           </div>
         `
       : null}`;

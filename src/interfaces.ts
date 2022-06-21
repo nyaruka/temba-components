@@ -20,6 +20,11 @@ export enum ScheduledEventType {
   ScheduledTrigger = 'scheduled_trigger',
 }
 
+export enum TicketStatus {
+  Open = 'open',
+  Closed = 'closed',
+}
+
 export interface ScheduledEvent {
   type: ScheduledEventType;
   scheduled: string;
@@ -213,4 +218,5 @@ export enum CustomEventType {
   Redirected = 'temba-redirected',
   NoPath = 'temba-no-path',
   StoreUpdated = 'temba-store-updated',
+  Ready = 'temba-ready',
 }

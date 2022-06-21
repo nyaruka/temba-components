@@ -492,10 +492,14 @@ export class TembaMenu extends RapidElement {
       if (!this.wait) {
         this.loadItems(this.root);
       }
+
+      this.fireCustomEvent(CustomEventType.Ready);
     }
   }
 
   public refresh(path: string[] = null) {
+    console.log('refresh!');
+
     if (!path) {
       path = [...this.selection];
     }

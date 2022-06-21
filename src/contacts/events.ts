@@ -586,7 +586,7 @@ export interface AirtimeTransferredEvent extends ContactEvent {
 
 export type CallStartedEvent = ContactEvent;
 export interface CampaignFiredEvent extends ContactEvent {
-  campaign: { id: number; name: string };
+  campaign: { uuid: string; id: number; name: string };
   campaign_event: {
     id: number;
     offset_display: string;
@@ -1167,14 +1167,15 @@ export const renderCampaignFiredEvent = (
       <span
         class="linked"
         onclick="goto(event)"
-        href="/campaign/read/${event.campaign.id}"
+        href="/campaign/read/${event.campaign.uuid}"
         >${event.campaign.name}</span
       >
       ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
       <span
         class="linked"
         onclick="goto(event)"
-        href="/campaignevent/read/${event.campaign_event.id}"
+        href="/campaignevent/read/${event.campaign.uuid}/${event.campaign_event
+          .id}"
       >
         ${event.campaign_event.offset_display}
         ${event.campaign_event.relative_to.name}</span
