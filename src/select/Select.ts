@@ -812,8 +812,8 @@ export class Select extends FormElement {
           url = this.next;
         }
 
-        if (this.cache && !this.tags && this.lruCache.has(url)) {
-          const cache = this.lruCache.get(url);
+        const cache = this.lruCache.get(url);
+        if (this.cache && !this.tags && cache) {
           if (page === 0 && !this.next) {
             this.cursorIndex = 0;
             this.setVisibleOptions([...options, ...cache.options]);
@@ -1071,6 +1071,7 @@ export class Select extends FormElement {
               this.addValue(option);
             } else {
               this.setValue(option);
+              this.fireEvent('change');
             }
           }
         }
