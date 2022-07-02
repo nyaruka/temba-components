@@ -1,11 +1,11 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators';
-import { getUrl, WebResponse } from '../utils';
+import { getClasses, postJSON, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import '../alert/Alert';
 import { Contact, CustomEventType } from '../interfaces';
-import { styleMap } from 'lit-html/directives/style-map';
 import { FormElement } from '../FormElement';
+import { Checkbox } from '../checkbox/Checkbox';
 
 const QUEIT_MILLIS = 1000;
 
@@ -79,9 +79,17 @@ export class ContactSearch extends FormElement {
       }
 
       temba-loading {
-        margin-top: 10px;
-        margin-right: 10px;
+        transform: scale(0);
+        max-width: 0;
         opacity: 0;
+        transition: transform 200ms ease-in-out;
+      }
+
+      .fetching temba-loading {
+        transform: scale(1);
+        max-width: 500px;
+        opacity: 1;
+        display: block;
       }
 
       .error {
@@ -127,6 +135,21 @@ export class ContactSearch extends FormElement {
         display: var(--contact-search-query-display);
         margin-bottom: 10px;
       }
+
+      .results {
+        display: none;
+      }
+
+      .summary {
+        min-height: 2.2em;
+      }
+
+      .results.initialized {
+        display: flex;
+        align-items: center;
+        margin-top: 0.5em;
+        margin-left: 0.6em;
+      }
     `;
   }
 
@@ -156,62 +179,91 @@ export class ContactSearch extends FormElement {
   @property({ type: Number })
   inactiveDays = 90;
 
-  @property({ attribute: false })
+  @property({ type: Object, attribute: false })
   summary: SummaryResponse;
 
+  @property({ type: Object, attribute: false })
+  flow: any;
+
   private lastQuery: number;
+  private initialized = false;
+
+  private exclusions = {};
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('query')) {
-      this.fetching = !!this.query;
+    if (changedProperties.has('query') || changedProperties.has('endpoint')) {
+      this.fetching = !!this.query && !!this.endpoint;
 
-      // clear our summary on any change
-      this.summary = null;
-      if (this.lastQuery) {
-        window.clearTimeout(this.lastQuery);
-      }
+      if (this.fetching) {
+        this.initialized = true;
+        // clear our summary on any change
+        this.summary = null;
+        if (this.lastQuery) {
+          window.clearTimeout(this.lastQuery);
+        }
 
-      if (this.query.trim().length > 0) {
-        this.lastQuery = window.setTimeout(() => {
-          this.fetchSummary(this.query);
-        }, QUEIT_MILLIS);
+        if (this.query.trim().length > 0) {
+          this.lastQuery = window.setTimeout(() => {
+            this.fetchSummary(this.query);
+          }, QUEIT_MILLIS);
+        }
       }
     }
   }
 
-  public executeQuery(query: string): any {
-    const url = this.endpoint + query.replace('\n', ' ');
-    getUrl(url).then((response: WebResponse) => {
-      if (response.status === 200) {
-        const summary = response.json as SummaryResponse;
-        this.fireCustomEvent(CustomEventType.FetchComplete, summary);
-      }
-    });
-  }
-
   public fetchSummary(query: string): any {
-    const url = this.endpoint + encodeURIComponent(query.replace('\n', ' '));
-    getUrl(url).then((response: WebResponse) => {
-      this.fetching = false;
-      if (response.status === 200) {
-        this.summary = response.json as SummaryResponse;
+    if (this.endpoint) {
+      postJSON(this.endpoint, {
+        include: { query },
+        exclude: this.exclusions,
+      }).then((response: WebResponse) => {
+        this.fetching = false;
+        if (response.status === 200) {
+          this.summary = response.json as SummaryResponse;
 
-        if (this.summary.error) {
-          this.errors = [this.summary.error];
+          if (this.summary.error) {
+            this.errors = [this.summary.error];
+          } else {
+            this.errors = [];
+          }
+          this.requestUpdate('errors');
+          this.fireCustomEvent(CustomEventType.ContentChanged, this.summary);
         } else {
-          this.errors = [];
+          this.summary = response.json as SummaryResponse;
+          if (this.summary.error) {
+            this.errors = [this.summary.error];
+          }
+          this.requestUpdate('errors');
+          this.fireCustomEvent(CustomEventType.ContentChanged, this.summary);
         }
-        this.requestUpdate('errors');
-        this.fireCustomEvent(CustomEventType.ContentChanged, this.summary);
-      }
-    });
+      });
+    }
   }
 
   private handleQueryChange(evt: KeyboardEvent) {
     const input = evt.target as TextInput;
     this.query = input.inputElement.value;
+  }
+
+  private handleSlotChanged(evt: any) {
+    if (evt.target.tagName === 'TEMBA-CHECKBOX') {
+      const checkbox = evt.target as Checkbox;
+      let value = checkbox.checked as any;
+
+      if (!value) {
+        delete this.exclusions[checkbox.name];
+      } else {
+        if (checkbox.name === 'not_seen_since_days') {
+          value = 90;
+        }
+
+        this.exclusions[checkbox.name] = value;
+      }
+    }
+
+    this.requestUpdate('query');
   }
 
   public render(): TemplateResult {
@@ -228,78 +280,71 @@ export class ContactSearch extends FormElement {
         const lastSeenOn = this.summary.query.indexOf('last_seen_on') > -1;
 
         summary = html`
-          <div class="summary ${this.expanded ? 'expanded' : ''}">
-            <table cellspacing="0" cellpadding="0">
-              <tr class="header">
-                <td colspan="2">
-                  Found
-                  <a
-                    class="linked"
-                    target="_"
-                    href="/contact/?search=${encodeURIComponent(
-                      this.summary.query
-                    )}"
-                  >
-                    ${count.toLocaleString()}
-                  </a>
-                  contact${count !== 1 ? 's' : ''}
-                </td>
-                ${fields.map(
-                  field => html` <td class="field-header">${field.label}</td> `
-                )}
-                <td></td>
-                <td class="field-header date">
-                  ${lastSeenOn ? 'Last Seen' : 'Created'}
-                </td>
-              </tr>
-
-              ${this.summary.sample.map(
-                (contact: Contact) => html`
-                  <tr class="contact">
-                    <td class="urn">
-                      ${(contact as any).primary_urn_formatted}
-                    </td>
-                    <td class="name">${contact.name}</td>
-                    ${fields.map(
-                      field => html`
-                        <td class="field">
-                          ${(
-                            (contact as any).fields[field.uuid] || { text: '' }
-                          ).text}
-                        </td>
-                      `
-                    )}
-                    <td></td>
-                    <td class="date">
-                      ${lastSeenOn
-                        ? contact.last_seen_on || '--'
-                        : contact.created_on}
-                    </td>
-                  </tr>
-                `
+          <table cellspacing="0" cellpadding="0">
+            <tr class="header">
+              <td colspan="2">
+                Found
+                <a
+                  class="linked"
+                  target="_"
+                  href="/contact/?search=${encodeURIComponent(
+                    this.summary.query
+                  )}"
+                >
+                  ${count.toLocaleString()}
+                </a>
+                contact${count !== 1 ? 's' : ''}
+              </td>
+              ${fields.map(
+                field => html` <td class="field-header">${field.label}</td> `
               )}
-              ${this.summary.total > this.summary.sample.length
-                ? html`<tr class="table-footer">
-                    <td class="query-details" colspan=${fields.length + 3}></td>
-                    <td class="more">
-                      <a
-                        class="linked"
-                        target="_"
-                        href="/contact/?search=${encodeURIComponent(
-                          this.summary.query
-                        )}"
-                        >more</a
-                      >
-                    </td>
-                  </tr>`
-                : null}
-            </table>
-          </div>
+              <td></td>
+              <td class="field-header date">
+                ${lastSeenOn ? 'Last Seen' : 'Created'}
+              </td>
+            </tr>
+
+            ${this.summary.sample.map(
+              (contact: Contact) => html`
+                <tr class="contact">
+                  <td class="urn">${(contact as any).primary_urn_formatted}</td>
+                  <td class="name">${contact.name}</td>
+                  ${fields.map(
+                    field => html`
+                      <td class="field">
+                        ${((contact as any).fields[field.uuid] || { text: '' })
+                          .text}
+                      </td>
+                    `
+                  )}
+                  <td></td>
+                  <td class="date">
+                    ${lastSeenOn
+                      ? contact.last_seen_on || '--'
+                      : contact.created_on}
+                  </td>
+                </tr>
+              `
+            )}
+            ${this.summary.total > this.summary.sample.length
+              ? html`<tr class="table-footer">
+                  <td class="query-details" colspan=${fields.length + 3}></td>
+                  <td class="more">
+                    <a
+                      class="linked"
+                      target="_"
+                      href="/contact/?search=${encodeURIComponent(
+                        this.summary.query
+                      )}"
+                      >more</a
+                    >
+                  </td>
+                </tr>`
+              : null}
+          </table>
         `;
       }
     }
-
-    const loadingStyle = this.fetching ? { opacity: '1' } : {};
 
     return html`
       <div class="query">
@@ -319,14 +364,17 @@ export class ContactSearch extends FormElement {
         </temba-textinput>
       </div>
 
-      ${this.fetching
-        ? html`<temba-loading
-            units="4"
-            style=${styleMap(loadingStyle)}
-          ></temba-loading>`
-        : this.summary
-        ? html` <div class="summary">${summary}</div> `
-        : null}
+      <slot @change=${this.handleSlotChanged}></slot>
+
+      <div
+        class="results ${getClasses({
+          fetching: this.fetching,
+          initialized: this.initialized || this.fetching,
+        })}"
+      >
+        <temba-loading units="6" size="8"></temba-loading>
+        <div class="summary ${this.expanded ? 'expanded' : ''}">${summary}</div>
+      </div>
     `;
   }
 }

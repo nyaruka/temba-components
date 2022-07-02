@@ -233,7 +233,9 @@ export class Dialog extends RapidElement {
       if (this.open && !changedProperties.get('open')) {
         this.shadowRoot
           .querySelectorAll('temba-button')
-          .forEach((button: Button) => (button.disabled = false));
+          .forEach((button: Button) => {
+            if (button) button.submitting = false;
+          });
 
         if (!this.noFocus) {
           this.focusFirstInput();
