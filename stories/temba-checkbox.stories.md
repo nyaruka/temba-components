@@ -1,6 +1,6 @@
 ```js script
 import { html } from '@open-wc/demoing-storybook';
-import '../dist/temba-checkbox.js';
+import '../dist/index.js';
 
 export default {
   title: 'forms/temba-checkbox',
@@ -21,19 +21,9 @@ A component for...
 
 ## How to use
 
-### Installation
-
-```bash
-yarn add temba-checkbox
-```
-
-```js
-import 'temba-checkbox/temba-checkbox.js';
-```
-
 ```js preview-story
 export const Default = () =>
-  html` <temba-checkbox label="Click me for good luck"></temba-checkbox> `;
+  html`<temba-checkbox label="Click me for good luck"></temba-checkbox> `;
 ```
 
 ## Variations
