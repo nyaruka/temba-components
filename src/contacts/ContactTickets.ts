@@ -13,17 +13,16 @@ export class ContactTickets extends StoreElement {
   static get styles() {
     return css`
       :host {
-        background: rgba(0, 0, 0, 0.6);
-        color: #fff;
-        --icon-color: #fff;
-        border-radius: var(--curvature);
+        padding: 1em;
       }
 
       :hover {
-        background: rgba(0, 0, 0, 0.9);
-        border-radius: var(--curvature);
-        transition: background 200ms ease-in-out, padding 200ms ease-in-out;
+      }
+
+      .ticket:hover {
         cursor: pointer;
+        box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
+          0 0 0px 2px var(--color-link-primary);
       }
 
       .tickets {
@@ -56,24 +55,17 @@ export class ContactTickets extends StoreElement {
       }
 
       .ticket > div {
-        padding: 1em;
+        padding: 0.5em 1em;
+        pointer-events: none;
       }
 
-      .ticket .action {
-        background: rgba(0, 0, 0, 0.1);
-        border-top-right-radius: var(--curvature);
-        border-bottom-right-radius: var(--curvature);
-        padding: 1.5em;
-        --icon-color: rgba(0, 0, 0, 0.4);
-        white-space: nowrap;
+      .status {
+        --icon-color: #999;
       }
 
-      .open .action {
-        background: rgba(0, 0, 0, 0.1);
-      }
-
-      .closed .action {
-        background: #fff;
+      .ticket.closed {
+        background: #f9f9f9;
+        color: #888;
       }
     `;
   }
@@ -81,8 +73,25 @@ export class ContactTickets extends StoreElement {
   prepareData(data: any): any {
     if (data && data.length) {
       data.sort((a: Ticket, b: Ticket) => {
+        if (a.status == TicketStatus.Open && b.status == TicketStatus.Closed) {
+          return -1;
+        }
+
+        if (b.status == TicketStatus.Open && a.status == TicketStatus.Closed) {
+          return 1;
+        }
+
+        if (
+          a.status == TicketStatus.Closed &&
+          b.status == TicketStatus.Closed
+        ) {
+          return (
+            new Date(b.closed_on).getTime() - new Date(a.closed_on).getTime()
+          );
+        }
+
         return (
-          new Date(a.opened_on).getTime() - new Date(b.opened_on).getTime()
+          new Date(b.opened_on).getTime() - new Date(a.opened_on).getTime()
         );
       });
     }
@@ -120,43 +129,24 @@ export class ContactTickets extends StoreElement {
           </temba-tip>
         </div>
 
-        ${ticket.status === TicketStatus.Open
-          ? html`
-              <div class="action">
-                <temba-icon name="check" size="1.5" clickable></temba-icon>
-              </div>
-            `
-          : html`
-              <div class="action">
-                <temba-icon name="check" size="1.5"></temba-icon>
-              </div>
-            `}
+        ${ticket.status === TicketStatus.Closed
+          ? html`<div class="status">
+              <temba-icon name="check"></temba-icon>
+            </div>`
+          : null}
       </div>
     `;
   }
 
   public render(): TemplateResult {
     if (this.data && this.data.length > 0) {
-      const ticket = this.data.find(
-        (ticket: Ticket) => ticket.status == TicketStatus.Open
-      );
-      if (ticket) {
-        return html`
-          <div
-            class="tickets"
-            href="/ticket/all/open/${ticket.uuid}"
-            onclick="goto(event)"
-          >
-            <div style="flex-grow:1"></div>
-            <temba-icon name="agent" style="pointer-events: none;"></temba-icon>
-            <div class="count" style="pointer-events: none;">
-              ${this.data.filter(
-                (ticket: Ticket) => ticket.status === TicketStatus.Open
-              ).length}
-            </div>
-          </div>
-        `;
-      }
+      const tickets = this.data.map(ticket => {
+        return this.renderTicket(ticket);
+      });
+
+      return html`${tickets}`;
     }
+
+    return html`<slot name="empty"></slot>`;
   }
 }
