@@ -33,7 +33,8 @@ To view the interactive demo, use start.
 ## Testing
 
 All tests live under [/test](test). When running tests, some tests capture screenshots for pixel
-comparision under [/screenshots](screenshots/truth).
+comparision under [/screenshots](screenshots/truth). Running tests requires that you have Chromium
+installed.
 
 ```bash
 % yarn test
