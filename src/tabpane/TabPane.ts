@@ -2,6 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
+import { getClasses } from '../utils';
 import { Tab } from './Tab';
 
 export class TabPane extends RapidElement {
@@ -18,6 +19,7 @@ export class TabPane extends RapidElement {
       }
 
       .tab {
+        user-select: none;
         padding: 0.5em 1em;
         margin: 0em 0em;
         cursor: pointer;
@@ -29,10 +31,39 @@ export class TabPane extends RapidElement {
         border: 0px solid rgba(0, 0, 0, 0.45);
         color: var(--color-text-dark);
         --icon-color: var(--color-text-dark);
+        white-space: nowrap;
+      }
+
+      .tab.hidden {
+        display: none;
       }
 
       .tab temba-icon {
+      }
+
+      .tab .name {
+        margin-left: 0.4em;
+        max-width: 80px;
         margin-right: 0.4em;
+        overflow: hidden;
+        transition: max-width 500ms ease-in-out;
+      }
+
+      .tab .badge {
+        margin-left: 0.4em;
+      }
+
+      @media (max-width: 900px) {
+        .collapses .tab .name {
+          max-width: 0px;
+          margin: 0;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .collapses .tab .badge {
+          display: none;
+        }
       }
 
       .tab.selected {
@@ -57,7 +88,6 @@ export class TabPane extends RapidElement {
       }
 
       .badge {
-        margin-left: 0.4em;
       }
 
       .count {
@@ -77,6 +107,9 @@ export class TabPane extends RapidElement {
       }
     `;
   }
+
+  @property({ type: Boolean })
+  collapses = false;
 
   @property({ type: Number })
   index = 0;
@@ -118,15 +151,20 @@ export class TabPane extends RapidElement {
     }
 
     return html`
-      <div class="tabs">
+      <div
+        class="tabs ${getClasses({ tabs: true, collapses: this.collapses })}"
+      >
         ${tabs.map(
           (tab, index) => html`
             <div
               @click=${this.handleTabClick}
               data-index=${index}
-              class="tab ${index == this.index ? 'selected' : ''} ${tab.notify
-                ? 'notify'
-                : ''}"
+              class="${getClasses({
+                tab: true,
+                selected: index == this.index,
+                hidden: tab.hidden,
+                notify: tab.notify,
+              })}"
               style="${tab.selectionColor && index == this.index
                 ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
                 : ''} ${tab.selectionBackground && index == this.index
@@ -134,7 +172,7 @@ export class TabPane extends RapidElement {
                 : ''}"
             >
               ${tab.icon ? html`<temba-icon name=${tab.icon} />` : null}
-              ${tab.name}
+              <div class="name">${tab.name}</div>
               ${tab.hasBadge()
                 ? html`
                     <div class="badge">
