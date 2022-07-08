@@ -394,9 +394,10 @@ export class TembaMenu extends RapidElement {
       }
 
       .fully-collapsed .level-1 {
-        margin-left: -245px;
+        margin-left: -217px;
         z-index: 0;
         border: none;
+        overflow: hidden;
       }
 
       .fully-collapsed .level-1 .item,
