@@ -164,6 +164,7 @@ export class TembaMenu extends RapidElement {
 
       .level-0 {
         padding: 0px;
+        z-index: 500;
       }
 
       .item {
@@ -261,7 +262,7 @@ export class TembaMenu extends RapidElement {
       .level-1 {
         transition: opacity 100ms linear, margin 200ms linear;
         overflow-y: scroll;
-        z-index: 1500;
+        z-index: 150;
       }
 
       .level-2 {
@@ -395,9 +396,13 @@ export class TembaMenu extends RapidElement {
 
       .fully-collapsed .level-1 {
         margin-left: -217px;
-        z-index: 0;
+        pointer-events: none;
         border: none;
         overflow: hidden;
+      }
+
+      .fully-collapsed .level-1 > * {
+        opacity: 0;
       }
 
       .fully-collapsed .level-1 .item,
