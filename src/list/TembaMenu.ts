@@ -504,8 +504,6 @@ export class TembaMenu extends RapidElement {
   }
 
   public refresh(path: string[] = null) {
-    console.log('refresh!');
-
     if (!path) {
       path = [...this.selection];
     }
