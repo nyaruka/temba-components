@@ -247,7 +247,7 @@ export class Store extends RapidElement {
 
   public postUrl(
     url: string,
-    payload: any,
+    payload: any = '',
     headers: any = {},
     contentType = null
   ) {
