@@ -1,5 +1,12 @@
 import { property } from 'lit/decorators';
-import { fetchResults, getUrl, getAssets, Asset, WebResponse } from '../utils';
+import {
+  fetchResults,
+  getUrl,
+  getAssets,
+  Asset,
+  WebResponse,
+  postUrl,
+} from '../utils';
 import {
   ContactField,
   ContactGroup,
@@ -236,6 +243,15 @@ export class Store extends RapidElement {
       hour: 'numeric',
       minute: 'numeric',
     });
+  }
+
+  public postUrl(
+    url: string,
+    payload: any = '',
+    headers: any = {},
+    contentType = null
+  ) {
+    return postUrl(url, payload, headers, contentType);
   }
 
   public getUrl(

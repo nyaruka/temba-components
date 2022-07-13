@@ -36,4 +36,10 @@ describe('temba-store', () => {
 
     assert.equal(store.getKeyedAssets().fields.length, 5);
   });
+
+  it('exposes postUrl', async () => {
+    const store = await createStore('<temba-store></temba-store>');
+    const response = await store.postUrl('/no-endpoint');
+    assert.equal(response.status, 404);
+  });
 });
