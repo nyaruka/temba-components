@@ -128,7 +128,14 @@ export class TembaSlider extends FormElement {
     const track = this.shadowRoot.querySelector('.track') as HTMLDivElement;
     const pre = this.shadowRoot.querySelector('.pre') as HTMLDivElement;
     const range = this.max - this.min;
-    const pct = (parseInt(this.value) - this.min) / range;
+    let cValue = parseInt(this.value);
+    if (!cValue || cValue < this.min) {
+      cValue = this.min;
+    } else if (cValue > this.max) {
+      cValue = this.max;
+    }
+    this.value = '' + cValue;
+    const pct = (cValue - this.min) / range;
     const pctAsPixels = track.offsetWidth * pct;
 
     this.circleX = pctAsPixels + (pre ? pre.offsetWidth : 0);
