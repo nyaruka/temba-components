@@ -205,6 +205,20 @@ const wireScreenshots = async (page, context) => {
     });
   });
 
+  await page.exposeFunction('mouseDown', async() => {
+    return new Promise(async (resolve, reject) => {
+      await page.mouse.down();
+      resolve();
+    });
+  });
+
+  await page.exposeFunction('mouseUp', async() => {
+    return new Promise(async (resolve, reject) => {
+      await page.mouse.up();
+      resolve();
+    });
+  });
+
   await page.exposeFunction('click', async element => {
     const frame = await page.frames().find(f => {
       return true;
