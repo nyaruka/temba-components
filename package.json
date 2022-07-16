@@ -8,7 +8,6 @@
   "homepage": "https://github.com/nyaruka/temba-components/",
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/nyaruka/temba-components/",
-  "private": false,
   "scripts": {
     "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --open --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
@@ -22,6 +21,7 @@
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --write --ignore-path .gitignore",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "format": "yarn format:eslint && yarn format:prettier",
+    "test-file": "rimraf out-tsc && tsc && web-test-runner --node-resolve --coverage",
     "test": "rimraf out-tsc && tsc && web-test-runner --node-resolve --coverage",
     "test:watch": "web-test-runner --node-resolve --watch",
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
@@ -107,5 +107,6 @@
     "prismjs": "^1.23.0",
     "lit-element": "^3",
     "lit-html": "^2"
-  }
+  },
+  "packageManager": "yarn@3.2.1"
 }

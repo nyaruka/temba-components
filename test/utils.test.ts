@@ -109,11 +109,11 @@ after(() => {
   (window.fetch as any).restore();
 });
 
-export const mockGET = (endpoint: RegExp, body: any, headers: {} = {}) => {
+export const mockGET = (endpoint: RegExp, body: any, headers: any = {}) => {
   gets.push({ endpoint, body, headers });
 };
 
-export const mockPOST = (endpoint: RegExp, body: any, headers: {} = {}) => {
+export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
   posts.push({ endpoint, body, headers });
 };
 
