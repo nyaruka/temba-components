@@ -1,10 +1,17 @@
 import { html, fixture, expect } from '@open-wc/testing';
+import { TemplateResult } from 'lit';
 import { TembaSlider } from '../src/slider/TembaSlider';
 import { assertScreenshot, getClip } from './utils.test';
 
+const createSlider = async (def: TemplateResult) => {
+  const parentNode = document.createElement('div');
+  parentNode.setAttribute('style', 'width: 200px;');
+  return (await fixture(def, { parentNode })) as TembaSlider;
+};
+
 describe('temba-slider', () => {
   it('renders default slider', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider"></temba-slider>
     `);
 
@@ -13,7 +20,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider with visible range - custom min default max no value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" min="5" range></temba-slider>
     `);
     expect(slider.range).to.equal(true);
@@ -27,7 +34,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider with visible range - default min custom max no value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" max="105" range></temba-slider>
     `);
     expect(slider.range).to.equal(true);
@@ -41,7 +48,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider with visible range - custom min custom max no value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" min="5" max="105" range></temba-slider>
     `);
     expect(slider.range).to.equal(true);
@@ -55,7 +62,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider with visible range - custom min custom max valid value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider
         label="My Slider"
         min="5"
@@ -75,7 +82,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider with visible range - custom min custom max invalid value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider
         label="My Slider"
         min="5"
@@ -95,7 +102,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider without visible range - default min default max no value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider"></temba-slider>
     `);
     expect(slider.range).to.equal(false);
@@ -106,7 +113,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider without visible range - default min default max valid value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" value="50"></temba-slider>
     `);
     expect(slider.range).to.equal(false);
@@ -120,7 +127,7 @@ describe('temba-slider', () => {
   });
 
   it('renders a slider without visible range - default min default max invalid value', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" value="150"></temba-slider>
     `);
     expect(slider.range).to.equal(false);
@@ -134,7 +141,7 @@ describe('temba-slider', () => {
   });
 
   it('updates slider position on element value change', async () => {
-    const slider: TembaSlider = await fixture(html`
+    const slider: TembaSlider = await createSlider(html`
       <temba-slider
         label="My Slider"
         min="0"
@@ -151,57 +158,46 @@ describe('temba-slider', () => {
     );
   });
 
-  // it('updates slider position on when track clicked', async () => {
-  //   const slider: TembaSlider = await fixture(html`
-  //     <temba-slider label="My Slider" value="50"></temba-slider>
-  //   `);
-  //   console.log('after fixture, before get bounding client rect');
-  //   const clip = slider.getBoundingClientRect();
-  //   console.log(clip);
-  //   // initial circle is at x,y position (50)
-  //   const x = clip.x + (clip.width / 2);
-  //   let y = clip.y + (clip.height / 2);
-  //   // update circle to x1,y1 position (75) via clicking the track
-  //   const x1 = clip.x + (clip.width / 4);
-  //   const y1 = clip.x + (clip.width / 2);
-  //   // relative distance from 50 to 75
-  //   let px = x1 - x;
-  //   let py = y1 - y;
-  //   console.log('after get bounding client rect, before mouse move');
-  //   await moveMouse(px, py);
-  //   console.log('after mouse move, before click');
-  //   slider.click();
-  //   console.log('after click, before expect');
-  //   expect(slider.value).to.equal('75');
-  //   await assertScreenshot('slider/update-slider-on-track-clicked', getClip(slider));
-  // });
+  it('updates slider position on when track clicked', async () => {
+    const slider: TembaSlider = await createSlider(html`
+      <temba-slider label="My Slider" value="50"></temba-slider>
+    `);
+    const clip = slider.getBoundingClientRect();
 
-  // it('updates slider position on circle drag', async () => {
-  //   const slider: TembaSlider = await fixture(html`
-  //     <temba-slider label="My Slider" value="50"></temba-slider>
-  //   `);
-  //   console.log('after fixture, before get bounding client rect');
-  //   const clip = slider.getBoundingClientRect();
-  //   console.log(clip);
-  //   // initial circle is at x,y position (50)
-  //   const x = clip.x + (clip.width / 2);
-  //   const y = clip.y + (clip.height / 2);
-  //   console.log('after get bounding client rect, before mouse move');
-  //   await moveMouse(x, y);
-  //   console.log('after mouse move, before mouse down');
-  //   await mouseDown();
-  //   console.log('after mouse down, before mouse move');
-  //   // update circle to x1,y1 position (75) via dragging the circle
-  //   const x1 = clip.x + (clip.width / 4);
-  //   const y1 = clip.x + (clip.width / 2);
-  //   // relative distance from 50 to 75
-  //   let px = x1 - x;
-  //   let py = y1 - y;
-  //   await moveMouse(px, py);
-  //   console.log('after mouse move, before mouse up');
-  //   await mouseUp();
-  //   console.log('after mouse up, before expect');
-  //   expect(slider.value).to.equal('75');
-  //   await assertScreenshot('slider/update-slider-on-value-change', getClip(slider));
-  // });
+    const y = clip.top + clip.height / 2;
+    const x75 = clip.left + (clip.width / 4) * 3;
+
+    // click track at three quarters
+    await moveMouse(x75, y);
+    await mouseDown();
+    await mouseUp();
+
+    expect(slider.value).to.equal('75');
+    await assertScreenshot(
+      'slider/update-slider-on-track-clicked',
+      getClip(slider)
+    );
+  });
+
+  it('updates slider position on circle drag', async () => {
+    const slider: TembaSlider = await createSlider(html`
+      <temba-slider label="My Slider" value="0"></temba-slider>
+    `);
+    const clip = slider.getBoundingClientRect();
+
+    // hover over the circle at 0, mouse down, then drag to 80
+    const y = clip.top + clip.height / 2;
+    const x80 = clip.left + (clip.width / 5) * 4;
+
+    await moveMouse(clip.left, y);
+    await mouseDown();
+    await moveMouse(x80, y);
+    await mouseUp();
+
+    expect(slider.value).to.equal('80');
+    await assertScreenshot(
+      'slider/update-slider-on-circle-dragged',
+      getClip(slider)
+    );
+  });
 });
