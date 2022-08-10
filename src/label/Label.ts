@@ -34,7 +34,7 @@ export default class Label extends LitElement {
         border-radius: 12px;
         background: tomato;
         color: #fff;
-        text-shadow: 0 0.04em 0.04em rgba(0, 0, 0, 0.35);
+        box-shadow: 0 0.04em 0.08em rgba(0, 0, 0, 0.15);
       }
 
       .primary {
@@ -126,13 +126,16 @@ export default class Label extends LitElement {
   textColor: string;
 
   public render(): TemplateResult {
-    const labelStyle =
-      this.backgroundColor && this.textColor
-        ? {
-            background: `${this.backgroundColor}`,
-            color: `${this.textColor}`,
-          }
-        : {};
+    const labelStyle = {};
+
+    if (this.backgroundColor) {
+      labelStyle['background'] = this.backgroundColor;
+    }
+
+    if (this.textColor) {
+      labelStyle['color'] = this.textColor;
+      labelStyle['--icon-color'] = this.textColor;
+    }
 
     return html`
       <div
