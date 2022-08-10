@@ -21,4 +21,5 @@
 /dist/
 /out-tsc/
 
-.yarn
+.yarn/cache/
+.yarn/install-state.gz
