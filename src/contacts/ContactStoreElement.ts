@@ -10,6 +10,9 @@ export class ContactStoreElement extends StoreElement {
   @property({ type: Object, attribute: false })
   data: Contact;
 
+  @property({ type: String })
+  endpoint = '/api/v2/contacts.json?uuid=';
+
   prepareData(data: any) {
     if (data && data.length > 0) {
       data = data[0];
@@ -37,7 +40,7 @@ export class ContactStoreElement extends StoreElement {
   }
 
   public updateStoreContact(value: any) {
-    this.store.updateCache(`/api/v2/contacts.json?uuid=${this.contact}`, value);
+    this.store.updateCache(`${this.endpoint}${this.contact}`, value);
   }
 
   protected updated(
@@ -46,7 +49,7 @@ export class ContactStoreElement extends StoreElement {
     super.updated(changes);
     if (changes.has('contact')) {
       if (this.contact) {
-        this.url = `/api/v2/contacts.json?uuid=${this.contact}`;
+        this.url = `${this.endpoint}${this.contact}`;
       } else {
         this.url = null;
       }

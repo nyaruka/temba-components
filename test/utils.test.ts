@@ -10,6 +10,7 @@ interface Clip {
 import { stub } from 'sinon';
 import { expect, fixture, html, assert } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
+import { Store } from '../src/store/Store';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -213,4 +214,17 @@ export const getHTMLAttrs = (attrs: any = {}) => {
 
 export const getHTML = (tag: string, attrs: any = {}) => {
   return `<${tag} ${getHTMLAttrs(attrs)}></${tag}>`;
+};
+
+export const loadStore = async () => {
+  const store: Store = await fixture(
+    `<temba-store 
+      completion='/test-assets/store/editor.json'
+      groups='/test-assets/store/groups.json'
+      languages='/test-assets/store/languages.json'
+    />`
+  );
+  await store.httpComplete;
+  await store.httpComplete;
+  return store;
 };

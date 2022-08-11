@@ -19,9 +19,6 @@ export class ContactBadges extends ContactStoreElement {
         display: flex;
         flex-wrap: wrap;
       }
-
-      .flow {
-      }
     `;
   }
 
@@ -34,7 +31,6 @@ export class ContactBadges extends ContactStoreElement {
           ${status && this.data.status !== 'active'
             ? html`
                 <temba-label
-                  class="status"
                   icon="${status.icon}"
                   onclick="goto(event)"
                   href="/contact/${status.name.toLowerCase()}"
@@ -49,7 +45,6 @@ export class ContactBadges extends ContactStoreElement {
           ${this.data.flow
             ? html`
                 <temba-label
-                  class="flow"
                   icon="flow"
                   onclick="goto(event)"
                   href="/contact/?search=flow+%3D+${encodeURIComponent(
@@ -66,7 +61,6 @@ export class ContactBadges extends ContactStoreElement {
           ${this.data.language
             ? html`
                 <temba-label
-                  class="language"
                   icon="globe"
                   onclick="goto(event)"
                   href="/contact/?search=language+%3D+${encodeURIComponent(

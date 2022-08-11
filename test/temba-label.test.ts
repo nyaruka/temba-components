@@ -7,7 +7,7 @@ const getLabel = async (slot, attrs: any = {}) => {
   return (await getComponent(TAG, attrs, slot)) as Label;
 };
 
-describe('temba-list', () => {
+describe('temba-label', () => {
   it('renders default', async () => {
     const label: Label = await getLabel('Default');
     assert.instanceOf(label, Label);
