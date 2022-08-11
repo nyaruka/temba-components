@@ -23,3 +23,4 @@
 
 .yarn/cache/
 .yarn/install-state.gz
+.yarn/versions
