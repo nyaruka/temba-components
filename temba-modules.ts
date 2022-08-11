@@ -75,7 +75,7 @@ addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
 addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
-addCustomElement('temba-contact-groups', ContactBadges);
+addCustomElement('temba-contact-badges', ContactBadges);
 addCustomElement('temba-contact-pending', ContactPending);
 addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
