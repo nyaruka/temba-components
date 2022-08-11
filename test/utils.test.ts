@@ -8,7 +8,8 @@ interface Clip {
 }
 
 import { stub } from 'sinon';
-import { expect, fixture } from '@open-wc/testing';
+import { expect, fixture, html, assert } from '@open-wc/testing';
+import MouseHelper from './MouseHelper';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -19,6 +20,11 @@ export interface CodeMock {
 const gets: CodeMock[] = [];
 const posts: CodeMock[] = [];
 let normalFetch;
+
+export const showMouse = async () => {
+  const mouse = await fixture(html`<mouse-helper />`);
+  assert.instanceOf(mouse, MouseHelper);
+};
 
 export const getAttributes = (attrs: any = {}) => {
   return `${Object.keys(attrs)
