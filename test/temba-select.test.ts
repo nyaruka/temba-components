@@ -2,9 +2,13 @@ import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Options } from '../src/options/Options';
 import { Select } from '../src/select/Select';
-import { assertScreenshot, checkTimers, getClip } from './utils.test';
+import {
+  assertScreenshot,
+  checkTimers,
+  getClip,
+  loadStore,
+} from './utils.test';
 import { range } from '../src/utils';
-import { Store } from '../src/store/Store';
 
 let clock: any;
 
@@ -119,14 +123,6 @@ const getClipWithOptions = (select: Select) => {
   }
 
   return selectClip;
-};
-
-const loadStore = async () => {
-  const store: Store = await fixture(
-    "<temba-store completion='/test-assets/store/editor.json'></temba-store>"
-  );
-  await store.httpComplete;
-  return store;
 };
 
 describe('temba-select', () => {

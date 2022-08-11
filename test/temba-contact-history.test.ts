@@ -1,5 +1,5 @@
 import { fixture, assert, expect } from '@open-wc/testing';
-import sinon from 'sinon';
+import * as sinon from 'sinon';
 import { ContactHistory } from '../src/contacts/ContactHistory';
 import { stubbable } from '../src/utils';
 import {
@@ -76,7 +76,7 @@ describe('temba-contact-history', () => {
     const events = history.shadowRoot.querySelector('.events');
     const top = events.scrollHeight - events.getBoundingClientRect().height;
 
-    expect(top).to.equal(533);
+    expect(top).to.equal(520);
 
     // make sure we actually scrolled to there
     expect(events.scrollTop).to.equal(top);

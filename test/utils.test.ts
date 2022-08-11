@@ -8,7 +8,9 @@ interface Clip {
 }
 
 import { stub } from 'sinon';
-import { expect, fixture } from '@open-wc/testing';
+import { expect, fixture, html, assert } from '@open-wc/testing';
+import MouseHelper from './MouseHelper';
+import { Store } from '../src/store/Store';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -19,6 +21,11 @@ export interface CodeMock {
 const gets: CodeMock[] = [];
 const posts: CodeMock[] = [];
 let normalFetch;
+
+export const showMouse = async () => {
+  const mouse = await fixture(html`<mouse-helper />`);
+  assert.instanceOf(mouse, MouseHelper);
+};
 
 export const getAttributes = (attrs: any = {}) => {
   return `${Object.keys(attrs)
@@ -109,11 +116,11 @@ after(() => {
   (window.fetch as any).restore();
 });
 
-export const mockGET = (endpoint: RegExp, body: any, headers: {} = {}) => {
+export const mockGET = (endpoint: RegExp, body: any, headers: any = {}) => {
   gets.push({ endpoint, body, headers });
 };
 
-export const mockPOST = (endpoint: RegExp, body: any, headers: {} = {}) => {
+export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
   posts.push({ endpoint, body, headers });
 };
 
@@ -207,4 +214,17 @@ export const getHTMLAttrs = (attrs: any = {}) => {
 
 export const getHTML = (tag: string, attrs: any = {}) => {
   return `<${tag} ${getHTMLAttrs(attrs)}></${tag}>`;
+};
+
+export const loadStore = async () => {
+  const store: Store = await fixture(
+    `<temba-store 
+      completion='/test-assets/store/editor.json'
+      groups='/test-assets/store/groups.json'
+      languages='/test-assets/store/languages.json'
+    />`
+  );
+  await store.httpComplete;
+  await store.httpComplete;
+  return store;
 };

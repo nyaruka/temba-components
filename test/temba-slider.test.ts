@@ -1,7 +1,7 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { TemplateResult } from 'lit';
 import { TembaSlider } from '../src/slider/TembaSlider';
-import { assertScreenshot, getClip } from './utils.test';
+import { assertScreenshot, getClip, showMouse } from './utils.test';
 
 const createSlider = async (def: TemplateResult) => {
   const parentNode = document.createElement('div');
@@ -159,6 +159,8 @@ describe('temba-slider', () => {
   });
 
   it('updates slider position on when track clicked', async () => {
+    showMouse();
+
     const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" value="50"></temba-slider>
     `);
@@ -180,6 +182,8 @@ describe('temba-slider', () => {
   });
 
   it('updates slider position on circle drag', async () => {
+    showMouse();
+
     const slider: TembaSlider = await createSlider(html`
       <temba-slider label="My Slider" value="0"></temba-slider>
     `);

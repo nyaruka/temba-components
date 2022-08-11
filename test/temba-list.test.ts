@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import sinon from 'sinon';
+import * as sinon from 'sinon';
 import { TembaList } from '../src/list/TembaList';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 

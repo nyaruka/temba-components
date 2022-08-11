@@ -54,11 +54,6 @@ export class VectorIcon extends LitElement {
         --color1: var(--icon-color);
       }
 
-      :host([id='flow']),
-      :host([name='flow']) {
-        padding-bottom: 0.2em;
-      }
-
       .sheet {
         fill: var(--icon-color);
         transform: scale(1);

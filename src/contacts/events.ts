@@ -62,7 +62,6 @@ export const getEventStyles = () => {
     }
 
     .grouping.verbose temba-icon {
-      margin-top: 3px;
     }
 
     .grouping.verbose > .event,
@@ -297,7 +296,6 @@ export const getEventStyles = () => {
 
     .flow_exited temba-icon,
     .flow_entered temba-icon {
-      margin-top: 5px;
     }
 
     .event {
@@ -377,7 +375,6 @@ export const getEventStyles = () => {
     }
 
     temba-icon[name='check'] {
-      margin-top: 3px;
     }
 
     .attn {

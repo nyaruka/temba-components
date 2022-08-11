@@ -20,3 +20,6 @@
 /_site/
 /dist/
 /out-tsc/
+
+.yarn/cache/
+.yarn/install-state.gz
