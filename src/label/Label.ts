@@ -22,6 +22,7 @@ export default class Label extends LitElement {
 
       temba-icon {
         margin-right: 0.3em;
+        padding-bottom: 0.1em;
       }
 
       .label.clickable .mask:hover {
