@@ -21,11 +21,10 @@ const gets: CodeMock[] = [];
 const posts: CodeMock[] = [];
 let normalFetch;
 
-
 export const showMouse = async () => {
-  const mouse = await fixture(html`<mouse-helper/>`);
+  const mouse = await fixture(html`<mouse-helper />`);
   assert.instanceOf(mouse, MouseHelper);
-}
+};
 
 export const getAttributes = (attrs: any = {}) => {
   return `${Object.keys(attrs)
@@ -116,11 +115,11 @@ after(() => {
   (window.fetch as any).restore();
 });
 
-export const mockGET = (endpoint: RegExp, body: any, headers: {} = {}) => {
+export const mockGET = (endpoint: RegExp, body: any, headers: any = {}) => {
   gets.push({ endpoint, body, headers });
 };
 
-export const mockPOST = (endpoint: RegExp, body: any, headers: {} = {}) => {
+export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
   posts.push({ endpoint, body, headers });
 };
 
