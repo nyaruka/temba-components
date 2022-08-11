@@ -3,7 +3,7 @@
   "previous": null,
   "results": [
     {
-      "uuid": "9a578f1f-98e1-4097-959a-10d0abafc343",
+      "uuid": "contact-barak-archived",
       "name": "Barack Obama",
       "status": "archived",
       "language": "fra",
@@ -14,10 +14,6 @@
         {
           "uuid": "3da236a9-9eed-4db3-a18e-cfb58030c249",
           "name": "Completed"
-        },
-        {
-          "uuid": "12e583b3-46f5-4d9d-85ca-15fb6153c1a0",
-          "name": "Open Tickets"
         }
       ],
       "fields": {
@@ -33,10 +29,7 @@
         "businessloan_amount": "0 USD",
         "unhcr_number": "14560212"
       },
-      "flow": {
-        "uuid": "d6946f76-dbcd-4c3f-b0e4-2dfe2f04d5fd",
-        "name": "Daily Flow"
-      },
+      "flow": null,
       "created_on": "2021-06-15T19:16:49.377501Z",
       "modified_on": "2022-08-11T02:01:09.120952Z",
       "last_seen_on": "2022-07-08T02:04:51.567474Z",

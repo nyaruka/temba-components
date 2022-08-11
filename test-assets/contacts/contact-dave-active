@@ -3,7 +3,7 @@
   "previous": null,
   "results": [
     {
-      "uuid": "9a578f1f-98e1-4097-959a-10d0abafc343",
+      "uuid": "contact-dave-active",
       "name": "Dave Matthews",
       "status": "active",
       "language": "eng",
@@ -13,7 +13,7 @@
         "instagram:123232",
         "line:12322",
         "whatsapp:2342334422",
-        "tel:+12067993567"
+        "tel:+12065553567"
       ],
       "groups": [
         {
@@ -30,11 +30,11 @@
         "student_id": "A2342CVAF",
         "joined": "2022-07-08T03:04:51.568443+01:00",
         "last_message": "2022-06-16T00:16:00.000000Z",
-        "team": "Farmers",
+        "team": "Performers",
         "checkintime": "3:00pm",
         "wantsresources": "Yes",
         "age": "30",
-        "rating": "B",
+        "rating": "A+",
         "businessloan_amount": "24,300 RWF",
         "unhcr_number": "34560212"
       },

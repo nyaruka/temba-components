@@ -10,6 +10,7 @@ const getMenu = async (attrs: any = {}, width = 0) => {
     attrs,
     '',
     width,
+    0,
     'display:inline-block'
   )) as TembaMenu;
 

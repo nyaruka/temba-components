@@ -1,4 +1,3 @@
-import { assert } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
 import {
   assertScreenshot,
@@ -6,13 +5,23 @@ import {
   getClip,
   getComponent,
   loadStore,
+  mockGET,
 } from '../test/utils.test';
 
 const TAG = 'temba-contact-chat';
 
 const getContactChat = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
-  const chat = (await getComponent(TAG, attrs, '', 500)) as ContactChat;
+
+  // add some sizes and styles to force our chat history to scroll
+  const chat = (await getComponent(
+    TAG,
+    attrs,
+    '',
+    500,
+    500,
+    'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
+  )) as ContactChat;
 
   // wait for our contact to load
   await delay(100);
@@ -21,17 +30,40 @@ const getContactChat = async (attrs: any = {}) => {
 };
 
 describe('temba-contact-chat', () => {
+  // map requests for contact history and ticket api to our static files
+  // we'll just us the same history and ticket list for everybody for now
+  beforeEach(() => {
+    mockGET(
+      /\/contact\/history\/contact-.*/,
+      '/test-assets/contacts/history.json'
+    );
+
+    mockGET(
+      /\/api\/v2\/tickets\.json\?contact=contact-.*/,
+      '/test-assets/api/tickets.json'
+    );
+  });
+
   it('can be created', async () => {
-    const chat: ContactChat = await getContactChat();
-    assert.instanceOf(chat, ContactChat);
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    await assertScreenshot('contacts/contact-chat', getClip(chat));
   });
 
   it('cannot send msg if contact is archived', async () => {
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-archived.json',
+      contact: 'contact-barak-archived',
     });
-    await assertScreenshot('contacts/chat-archived', getClip(chat));
+
+    // TODO: do some other assertions, make sure chat box is hidden etc.
+    //       the current screenshot should fail since it's showing right
+    //       for archived contacts still
+
+    await assertScreenshot('contacts/contact-chat-archived', getClip(chat));
   });
 
   // it('cannot send msg if contact is archived', async () => {

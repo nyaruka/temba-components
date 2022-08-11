@@ -48,12 +48,12 @@ sinon.stub(stubbable, 'getCurrentDate').callsFake(() => {
 describe('temba-contact-history', () => {
   beforeEach(() => {
     mockGET(
-      /\/contact\/history\/1234\/.*/,
+      /\/contact\/history\/contact-dave-active\/.*/,
       '/test-assets/contacts/history.json'
     );
 
     mockGET(
-      /\/api\/v2\/tickets\.json\?contact=1234/,
+      /\/api\/v2\/tickets\.json\?contact=contact-dave-active/,
       '/test-assets/api/tickets.json'
     );
   });
@@ -66,7 +66,7 @@ describe('temba-contact-history', () => {
   it('renders history', async () => {
     const history = await createHistory(
       getHistoryHTML({
-        uuid: '1234',
+        uuid: 'contact-dave-active',
       })
     );
 
@@ -87,7 +87,7 @@ describe('temba-contact-history', () => {
   it('expands event groups', async () => {
     const history = await createHistory(
       getHistoryHTML({
-        uuid: '1234',
+        uuid: 'contact-dave-active',
       })
     );
 
