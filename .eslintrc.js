@@ -11,6 +11,7 @@ module.exports = {
   ],
   rules: {
     // disable the rule for all files
+    '@typescript-eslint/camelcase': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',

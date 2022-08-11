@@ -32,50 +32,35 @@ export default class Label extends LitElement {
         font-size: 0.8em;
         font-weight: 400;
         border-radius: 12px;
-        background: tomato;
-        color: #fff;
         box-shadow: 0 0.04em 0.08em rgba(0, 0, 0, 0.15);
-      }
-
-      .primary {
-        background: var(--color-label-primary);
-        color: var(--color-label-primary-text);
-        --icon-color: var(--color-label-primary-text);
-      }
-
-      .secondary {
-        background: var(--color-label-secondary);
-        color: var(--color-label-secondary-text);
-        --icon-color: var(--color-label-secondary-text);
-        text-shadow: none;
-      }
-
-      .tertiary {
-        background: var(--color-label-tertiary);
-        color: var(--color-label-tertiary-text);
-        --icon-color: var(--color-label-tertiary-text);
-        text-shadow: none;
-      }
-
-      .tertiary {
-        background: var(--color-label-tertiary);
-        color: var(--color-label-tertiary-text);
-        --icon-color: var(--color-label-tertiary-text);
-        text-shadow: none;
-      }
-
-      .tertiary {
-        background: var(--color-label-tertiary);
-        color: var(--color-label-tertiary-text);
-        --icon-color: var(--color-label-tertiary-text);
-        text-shadow: none;
-      }
-
-      .light {
         background: var(--color-overlay-light);
         color: var(--color-overlay-light-text);
         --icon-color: var(--color-overlay-light-text);
         text-shadow: none;
+      }
+
+      .danger {
+        background: tomato;
+        color: #fff;
+        --icon-color: #fff;
+      }
+
+      .primary {
+        background: var(--color-primary-dark);
+        color: var(--color-text-light);
+        --icon-color: var(--color-text-light);
+      }
+
+      .secondary {
+        background: var(--color-secondary-dark);
+        color: var(--color-text-light);
+        --icon-color: var(--color-text-light);
+      }
+
+      .tertiary {
+        background: var(--color-tertiary);
+        color: var(--color-text-light);
+        --icon-color: var(--color-text-light);
       }
 
       .dark {
@@ -108,7 +93,7 @@ export default class Label extends LitElement {
   tertiary: boolean;
 
   @property({ type: Boolean })
-  light: boolean;
+  danger: boolean;
 
   @property({ type: Boolean })
   dark: boolean;
@@ -144,9 +129,8 @@ export default class Label extends LitElement {
           primary: this.primary,
           secondary: this.secondary,
           tertiary: this.tertiary,
-          light: this.light,
-          dark: this.dark,
           shadow: this.shadow,
+          danger: this.danger,
         })}"
         style=${styleMap(labelStyle)}
       >

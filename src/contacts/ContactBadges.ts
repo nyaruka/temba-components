@@ -38,8 +38,8 @@ export class ContactBadges extends ContactStoreElement {
                   icon="${status.icon}"
                   onclick="goto(event)"
                   href="/contact/${status.name.toLowerCase()}"
-                  clickable
                   secondary
+                  clickable
                   shadow
                 >
                   ${status.name}
@@ -56,7 +56,7 @@ export class ContactBadges extends ContactStoreElement {
                     '"' + this.data.flow.name + '"'
                   )}"
                   clickable
-                  tertiary
+                  primary
                   shadow
                 >
                   ${this.data.flow.name}
@@ -88,7 +88,6 @@ export class ContactBadges extends ContactStoreElement {
                 href="/contact/filter/${group.uuid}/"
                 icon=${group.is_dynamic ? 'atom' : 'users'}
                 clickable
-                light
                 shadow
               >
                 ${group.name}

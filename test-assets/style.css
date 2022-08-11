@@ -66,6 +66,8 @@ html {
   --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
   --color-text-help: rgba(0, 0, 0, 0.35);
 
+  --color-tertiary: rgb(var(--tertiary-rgb));
+  
   /* solid overlays with text */
   --color-overlay-dark: rgba(0, 0, 0, 0.2);
   --color-overlay-dark-text: rgba(255, 255, 255, 0.9);

@@ -1,5 +1,5 @@
 import { fixture, assert, expect } from '@open-wc/testing';
-import sinon from 'sinon';
+import * as sinon from 'sinon';
 import { ContactHistory } from '../src/contacts/ContactHistory';
 import { stubbable } from '../src/utils';
 import {
