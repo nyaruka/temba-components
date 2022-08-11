@@ -349,7 +349,10 @@ export class ContactChat extends ContactStoreElement {
                           ></temba-button>
                         </div>`
                       : html` <div
-                          class="chatbox ${this.toolbar ? 'full' : ''}"
+                          class="chatbox ${this.toolbar ? 'full' : ''}  ${this
+                            .currentContact.status === 'archived'
+                            ? 'visibility:hidden'
+                            : ''}"
                         >
                           <temba-completion
                             @change=${this.handleChatChange}
