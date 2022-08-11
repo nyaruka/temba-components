@@ -1,16 +1,37 @@
-import { fixture, assert } from '@open-wc/testing';
-// import { fixture, assert, expect } from '@open-wc/testing';
+import { assert } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
-// import { Contact } from '../src/interfaces';
-import { getHTML } from '../test/utils.test';
-// import { assertScreenshot, getClip } from './utils.test';
+import {
+  assertScreenshot,
+  delay,
+  getClip,
+  getComponent,
+  loadStore,
+} from '../test/utils.test';
 
-const getChatHTML = (attrs: any = {}) => getHTML('temba-contact-chat', attrs);
+const TAG = 'temba-contact-chat';
+
+const getContactChat = async (attrs: any = {}) => {
+  attrs['endpoint'] = '/test-assets/contacts/';
+  const chat = (await getComponent(TAG, attrs, '', 500)) as ContactChat;
+
+  // wait for our contact to load
+  await delay(100);
+
+  return chat;
+};
 
 describe('temba-contact-chat', () => {
   it('can be created', async () => {
-    const chat: ContactChat = await fixture(getChatHTML());
+    const chat: ContactChat = await getContactChat();
     assert.instanceOf(chat, ContactChat);
+  });
+
+  it('cannot send msg if contact is archived', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-archived.json',
+    });
+    await assertScreenshot('contacts/chat-archived', getClip(chat));
   });
 
   // it('cannot send msg if contact is archived', async () => {
