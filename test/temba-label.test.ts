@@ -19,6 +19,14 @@ describe('temba-label', () => {
     await assertScreenshot('label/default-icon', getClip(label));
   });
 
+  it('renders shadow', async () => {
+    const label: Label = await getLabel('Shadow', {
+      icon: 'loader',
+      shadow: true,
+    });
+    await assertScreenshot('label/shadow', getClip(label));
+  });
+
   it('renders primary', async () => {
     const label: Label = await getLabel('Primary', {
       icon: 'check',
