@@ -1,3 +1,4 @@
+import { expect } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
 import {
   assertScreenshot,
@@ -45,82 +46,164 @@ describe('temba-contact-chat', () => {
   });
 
   it('can be created', async () => {
+    // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-dave-active',
     });
 
-    await assertScreenshot('contacts/contact-chat', getClip(chat));
+    await assertScreenshot('contacts/contact-active-default', getClip(chat));
   });
 
-  it('cannot send msg if contact is archived', async () => {
+  it('can send chat msg if contact is active', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    const chatboxDivEl = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    const displayVal = chatboxDivEl.style.display;
+    expect(displayVal).to.equal('');
+
+    await assertScreenshot(
+      'contacts/contact-active-show-chat-msg',
+      getClip(chat)
+    );
+  });
+
+  it('can see chat history if contact is active', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as HTMLDivElement;
+    const displayVal = chatHistoryEl.style.display;
+    expect(displayVal).to.equal('');
+
+    await assertScreenshot(
+      'contacts/contact-active-show-chat-history',
+      getClip(chat)
+    );
+  });
+
+  it('cannot send chat msg if contact is archived', async () => {
+    // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-barak-archived',
     });
 
-    // TODO: do some other assertions, make sure chat box is hidden etc.
-    //       the current screenshot should fail since it's showing right
-    //       for archived contacts still
+    const chatboxDivEl = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    const displayVal = chatboxDivEl.style.display;
+    expect(displayVal).to.equal('none');
 
-    await assertScreenshot('contacts/contact-chat-archived', getClip(chat));
+    await assertScreenshot(
+      'contacts/contact-archived-hide-chat-msg',
+      getClip(chat)
+    );
   });
 
-  // it('cannot send msg if contact is archived', async () => {
-  //   const chat: ContactChat = await fixture(getChatHTML());
+  it('can see chat history if contact is archived', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-barak-archived',
+    });
 
-  //   console.log('contactChat');
-  //   console.log(chat);
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as HTMLDivElement;
+    const displayVal = chatHistoryEl.style.display;
+    expect(displayVal).to.equal('');
 
-  //   chat.currentContact = archivedContact;
-  //   console.log('contactChat.currentContact');
-  //   console.log(chat.currentContact);
+    await assertScreenshot(
+      'contacts/contact-archived-show-chat-history',
+      getClip(chat)
+    );
+  });
 
-  //   console.log('contactChat.shadowRoot');
-  //   console.log(chat.shadowRoot);
+  it('cannot send chat msg if contact is blocked', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-michelle-blocked',
+    });
 
-  //   const chatWrapperDivEl = chat.shadowRoot.querySelector(
-  //     '.chat-wrapper'
-  //   ) as HTMLDivElement;
-  //   console.log(chatWrapperDivEl);
+    const chatboxDivEl = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    const displayVal = chatboxDivEl.style.display;
+    expect(displayVal).to.equal('none');
 
-  //   const chatboxDivEl = chat.shadowRoot.querySelector(
-  //     '.chatbox'
-  //   ) as HTMLDivElement;
-  //   console.log(chatboxDivEl);
+    await assertScreenshot(
+      'contacts/contact-blocked-hide-chat-msg',
+      getClip(chat)
+    );
+  });
 
-  //   expect(chatboxDivEl.getAttribute('visibility')).to.equal('hidden');
-  //   await assertScreenshot('contacts/chat-archived', getClip(chatWrapperDivEl));
-  // });
+  it('can see chat history if contact is blocked', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-michelle-blocked',
+    });
+
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as HTMLDivElement;
+    const displayVal = chatHistoryEl.style.display;
+    expect(displayVal).to.equal('');
+
+    await assertScreenshot(
+      'contacts/contact-blocked-show-chat-history',
+      getClip(chat)
+    );
+  });
+
+  it('cannot send chat msg if contact is stopped', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-tim-stopped',
+    });
+
+    const chatboxDivEl = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    const displayVal = chatboxDivEl.style.display;
+    expect(displayVal).to.equal('none');
+
+    await assertScreenshot(
+      'contacts/contact-stopped-hide-chat-msg',
+      getClip(chat)
+    );
+  });
+
+  it('can see chat history if contact is stopped', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-tim-stopped',
+    });
+
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as HTMLDivElement;
+    const displayVal = chatHistoryEl.style.display;
+    expect(displayVal).to.equal('');
+
+    await assertScreenshot(
+      'contacts/contact-stopped-show-chat-history',
+      getClip(chat)
+    );
+  });
 });
-
-// const archivedContact = {
-//   uuid: '4e4cdcc6-7b46-4027-8e0d-4e9a1e094b09',
-//   name: 'Hallie Kardashian',
-//   status: 'archived',
-//   language: 'fra',
-//   urns: ['tel:+250700009994'],
-//   groups: [],
-//   fields: {
-//     gender: 'M',
-//     age: '49',
-//     joined: '2021-09-14T17:38:19.772634-03:00',
-//     ward: null,
-//     district: null,
-//     state: null,
-//   },
-//   flow: null,
-//   created_on: '2022-08-07T14:55:05.202452Z',
-//   modified_on: '2022-08-11T08:03:06.598216Z',
-//   last_seen_on: null,
-//   blocked: false,
-//   stopped: false,
-//   ticket: {
-//     uuid: '',
-//     subject: '',
-//     closed_on: '',
-//     last_activity_on: '',
-//     assignee: null,
-//     topic: null,
-//   },
-// };

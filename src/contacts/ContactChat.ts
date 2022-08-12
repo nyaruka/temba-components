@@ -349,9 +349,9 @@ export class ContactChat extends ContactStoreElement {
                           ></temba-button>
                         </div>`
                       : html` <div
-                          class="chatbox ${this.toolbar ? 'full' : ''}  ${this
-                            .currentContact.status === 'archived'
-                            ? 'visibility:hidden'
+                          class="chatbox ${this.toolbar ? 'full' : ''}"
+                          style="${this.currentContact.status !== 'active'
+                            ? 'display:none'
                             : ''}"
                         >
                           <temba-completion
