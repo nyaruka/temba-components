@@ -43,21 +43,19 @@ export const getComponent = async (
   attrs: any = {},
   slot = '',
   width = 250,
+  height = 0,
   style = ''
 ) => {
   const spec = `<${tag} ${getAttributes(attrs)}>${slot}</${tag}>`;
+  const parentNode = document.createElement('div');
+  const styleAttribute = `
+    ${width > 0 ? `width:${width}px;` : ``} 
+    ${height > 0 ? `height:${height}px;` : ``}
+    ${style ? style : ``}
+  `;
 
-  if (width > 0 || style) {
-    const parentNode = document.createElement('div');
-    if (width > 0) {
-      parentNode.setAttribute('style', `width: ${width}px;${style}`);
-    } else {
-      parentNode.setAttribute('style', `${style}`);
-    }
-    return await fixture(spec, { parentNode });
-  }
-
-  return await fixture(spec);
+  parentNode.setAttribute('style', styleAttribute);
+  return await fixture(spec, { parentNode });
 };
 
 const createResponse = mocked => {
@@ -147,7 +145,7 @@ export const assertScreenshot = async (
   // (option: string) => option === '--screenshots'
   // );
 
-  // await (window as any).waitFor(300);
+  await (window as any).waitFor(300);
 
   // console.log((window as any).watched);
   if ((window as any).watched) {

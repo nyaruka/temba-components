@@ -12,7 +12,7 @@ const getTip = async (
   attrs: { text?: string; position?: string; visible?: boolean } = {},
   slot = getTarget()
 ) => {
-  return (await getComponent(TAG, attrs, slot, 20, 'margin:200px;')) as Tip;
+  return (await getComponent(TAG, attrs, slot, 20, 0, 'margin:200px;')) as Tip;
 };
 
 const getRightClip = (ele: HTMLElement) => {

@@ -318,6 +318,8 @@ export default {
           await wireScreenshots(page, context);
         });
 
+        await page.emulateTimezone('GMT');
+
         return page;
       },
     }),

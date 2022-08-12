@@ -25,7 +25,7 @@ describe('temba-contact-badges', () => {
     await loadStore();
 
     const badges: ContactBadges = await getBadges({
-      contact: 'contact-a.json',
+      contact: 'contact-dave-active',
     });
     assert.instanceOf(badges, ContactBadges);
     await assertScreenshot('contacts/badges', getClip(badges));

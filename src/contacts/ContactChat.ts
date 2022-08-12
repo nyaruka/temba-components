@@ -350,6 +350,9 @@ export class ContactChat extends ContactStoreElement {
                         </div>`
                       : html` <div
                           class="chatbox ${this.toolbar ? 'full' : ''}"
+                          style="${this.currentContact.status !== 'active'
+                            ? 'display:none'
+                            : ''}"
                         >
                           <temba-completion
                             @change=${this.handleChatChange}
