@@ -145,7 +145,7 @@ export const assertScreenshot = async (
   // (option: string) => option === '--screenshots'
   // );
 
-  // await (window as any).waitFor(300);
+  await (window as any).waitFor(300);
 
   // console.log((window as any).watched);
   if ((window as any).watched) {
