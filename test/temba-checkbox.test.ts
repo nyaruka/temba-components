@@ -69,7 +69,7 @@ describe('temba-checkbox', () => {
   //upon rendering the component
   it('has no background hover effect when label is empty', async () => {
     const el: Checkbox = await fixture(html`
-      <temba-checkbox name="My Checkbox" label=""></temba-checkbox>
+      <temba-checkbox name="My Checkbox"></temba-checkbox>
     `);
     expect(el.label).to.equal('');
     //the ".wrapper.label" style results in the background hover effect

@@ -107,7 +107,7 @@ export class Checkbox extends FormElement {
       animatechange="${this.animateChange}"
     />`;
 
-    this.label = this.label.trim();
+    this.label = this.label ? this.label.trim() : '';
 
     return html`
       <div class="wrapper ${this.label ? 'label' : ''}">
