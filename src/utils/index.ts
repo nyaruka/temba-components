@@ -599,3 +599,6 @@ export enum COOKIE_KEYS {
   MENU_COLLAPSED = 'menu-collapsed',
   TICKET_SHOW_DETAILS = 'tickets.show-details',
 }
+
+export const capitalize = ([first, ...rest], locale = navigator.language) =>
+  first === undefined ? '' : first.toLocaleUpperCase(locale) + rest.join('');

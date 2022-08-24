@@ -4,7 +4,7 @@ import { property } from 'lit/decorators';
 import { getClasses } from '../utils';
 
 // for cache busting, increase whenever the icon set changes
-const ICON_VERSION = 12;
+const ICON_VERSION = 13;
 
 export class VectorIcon extends LitElement {
   @property({ type: String })
@@ -36,7 +36,7 @@ export class VectorIcon extends LitElement {
   animationDuration = 200;
 
   @property({ type: String })
-  href = '';
+  src = '';
 
   @property({ type: Number, attribute: false })
   steps = 2;
@@ -200,7 +200,7 @@ export class VectorIcon extends LitElement {
           this.steps}ms
           ${this.easing}"
           class="${getClasses({
-            sheet: this.href === '',
+            sheet: this.src === '',
             [this.animateChange]: !!this.animateChange,
             [this.animateChange + '-' + this.animationStep]:
               this.animationStep > 0,
@@ -210,8 +210,8 @@ export class VectorIcon extends LitElement {
           })}"
         >
           <use
-            href="${this.href
-              ? this.href
+            href="${this.src
+              ? this.src
               : `${
                   this.prefix || (window as any).static_url || '/static/'
                 }icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${

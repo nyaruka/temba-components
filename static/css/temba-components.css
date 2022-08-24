@@ -104,7 +104,7 @@
 
     --icon-color: var(--text-color);
     --icon-color-hover: var(--icon-color);
-    --icon-color-circle-hover: rgb(245, 245, 245);
+    --icon-color-circle-hover: rgba(245, 245, 245, .8);
 
     --transition-speed: 250ms;
     --event-padding: 0.5em 1em;
