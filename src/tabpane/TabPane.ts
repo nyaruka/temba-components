@@ -177,7 +177,9 @@ export class TabPane extends RapidElement {
                 ? html`
                     <div class="badge">
                       ${tab.count > 0
-                        ? html`<div class="count">${tab.count}</div>`
+                        ? html`<div class="count">
+                            ${tab.count.toLocaleString()}
+                          </div>`
                         : null}
                     </div>
                   `

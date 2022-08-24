@@ -11,6 +11,10 @@ export class ContactUrn extends RapidElement {
 
   static get styles() {
     return css`
+      :host {
+        display: flex;
+        align-items: center;
+      }
       .urn {
         box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.04) inset;
         padding: 3px;
@@ -19,6 +23,13 @@ export class ContactUrn extends RapidElement {
         background: #eee;
         margin-right: 0.2em;
       }
+
+      .small {
+        padding: 0px;
+        border: 0px;
+        box-shadow: none;
+        margin-right: 0.5em;
+      }
     `;
   }
 
@@ -26,7 +37,7 @@ export class ContactUrn extends RapidElement {
     const scheme = this.urn.split(':')[0];
     return html`
       <img
-        class="urn"
+        class="urn ${this.size < 20 ? 'small' : ''}"
         width="${this.size}em"
         height="${this.size}em"
         src="${this.prefix ||

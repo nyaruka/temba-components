@@ -16,7 +16,6 @@ export class Options extends RapidElement {
       .options-container {
         background: var(--color-widget-bg-focused);
         user-select: none;
-        box-shadow: var(--options-shadow);
         border-radius: var(--curvature-widget);
         overflow: hidden;
         margin-top: var(--options-margin-top);
@@ -30,6 +29,10 @@ export class Options extends RapidElement {
         pointer-events: none;
         opacity: 0;
         border: 1px transparent;
+      }
+
+      .shadow {
+        box-shadow: var(--options-shadow);
       }
 
       .anchored {
@@ -52,10 +55,17 @@ export class Options extends RapidElement {
       }
 
       :host([block]) {
-        box-shadow: var(--options-block-shadow);
         border-radius: var(--curvature);
         display: block;
         height: 100%;
+      }
+
+      :host([block]) .shadow {
+        box-shadow: var(--options-block-shadow);
+      }
+
+      .bordered {
+        border: 1px solid var(--color-widget-border) !important;
       }
 
       :host([block]) .options {
@@ -217,6 +227,9 @@ export class Options extends RapidElement {
 
   @property({ type: Boolean })
   collapsed: boolean;
+
+  @property({ type: Boolean })
+  hideShadow = false;
 
   @property({ attribute: false })
   getName: { (option: any): string } = function (option: any) {
@@ -589,6 +602,8 @@ export class Options extends RapidElement {
       top: this.poppedTop,
       anchored: !this.block,
       loading: this.loading,
+      shadow: !this.hideShadow,
+      bordered: this.hideShadow,
     });
 
     const classesInner = getClasses({

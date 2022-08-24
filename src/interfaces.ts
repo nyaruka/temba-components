@@ -56,6 +56,25 @@ export interface Ticket {
   assignee?: User;
 }
 
+export interface FlowResult {
+  key: string;
+  name: string;
+  categories: string[];
+  node_uuids: string[];
+}
+
+export interface FlowDetails {
+  name: string;
+  results: FlowResult[];
+  modified_on: string;
+  runs: {
+    active: number;
+    completed: number;
+    expired: number;
+    interrupted: number;
+  };
+}
+
 export interface Msg {
   text: string;
   status: string;

@@ -35,6 +35,9 @@ import { ContactBadges } from './src/contacts/ContactBadges';
 import { ContactPending } from './src/contacts/ContactPending';
 import { ContactTickets } from './src/contacts/ContactTickets';
 import { TembaSlider } from './src/slider/TembaSlider';
+import { RunList } from './src/list/RunList';
+import { FlowStoreElement } from './src/flow/FlowStoreElement';
+import { ContactNameFetch } from './src/contacts/ContactNameFetch';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -55,6 +58,7 @@ addCustomElement('temba-button', Button);
 addCustomElement('temba-omnibox', Omnibox);
 addCustomElement('temba-tip', Tip);
 addCustomElement('temba-contact-name', ContactName);
+addCustomElement('temba-contact-name-fetch', ContactNameFetch);
 addCustomElement('temba-contact-field', ContactFieldEditor);
 addCustomElement('temba-contact-fields', ContactFields);
 addCustomElement('temba-urn', ContactUrn);
@@ -68,6 +72,8 @@ addCustomElement('temba-contact-chat', ContactChat);
 addCustomElement('temba-contact-details', ContactDetails);
 addCustomElement('temba-ticket-list', TicketList);
 addCustomElement('temba-list', TembaList);
+addCustomElement('temba-run-list', RunList);
+addCustomElement('temba-flow-details', FlowStoreElement);
 addCustomElement('temba-label', Label);
 addCustomElement('temba-menu', TembaMenu);
 addCustomElement('temba-contact-search', ContactSearch);

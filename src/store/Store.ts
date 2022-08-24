@@ -179,11 +179,28 @@ export class Store extends RapidElement {
     return 'en';
   }
 
-  public getShortDuration(isoDate: string) {
-    const scheduled = DateTime.fromISO(isoDate);
-    const now = DateTime.now();
+  public getShortDuration(
+    isoDateA: string,
+    isoDateB: string = null,
+    showSeconds = false
+  ) {
+    const scheduled = DateTime.fromISO(isoDateA);
+    const now = isoDateB ? DateTime.fromISO(isoDateB) : DateTime.now();
 
     const duration = scheduled.diff(now).valueOf();
+
+    if (showSeconds) {
+      return this.humanizer.humanize(duration, {
+        language: this.getLanguageCode(),
+        largest: 1,
+        round: true,
+      });
+    }
+
+    if (Math.abs(duration) < 60000) {
+      return 'just now';
+    }
+
     return this.humanizer.humanize(duration, {
       language: this.getLanguageCode(),
       largest: 1,
