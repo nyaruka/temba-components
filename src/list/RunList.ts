@@ -48,7 +48,7 @@ export class RunList extends TembaList {
         const select = this.shadowRoot.querySelector('temba-select') as Select;
         select.setOptions(this.results);
         this.resultKeys = this.results.reduce(
-          (a, v) => ({ ...a, [v.key]: v }),
+          (current, result) => ({ ...current, [result.key]: result }),
           {}
         );
       }
@@ -71,7 +71,7 @@ export class RunList extends TembaList {
     return null;
   }
 
-  public removeRun(id) {
+  public removeRun(id: number) {
     this.items = this.items.filter(run => run.id !== id);
     this.cursorIndex = Math.min(this.cursorIndex, this.items.length);
     this.requestUpdate('cursorIndex');
@@ -148,8 +148,6 @@ export class RunList extends TembaList {
       `;
     };
   }
-
-  // <temba-icon style="margin-left: 0.5em" onclick="goto(event, this)" href="/contact/read/${run.contact.uuid}/" name="external-link" clickable/>
 
   public getRefreshEndpoint() {
     if (this.items.length > 0) {
