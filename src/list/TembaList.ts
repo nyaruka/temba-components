@@ -41,6 +41,9 @@ export class TembaList extends RapidElement {
   @property({ type: Boolean })
   hideShadow: boolean;
 
+  @property({ type: Boolean })
+  paused = false;
+
   @property({ attribute: false })
   getNextRefresh: (firstOption: any) => any;
 
@@ -109,7 +112,9 @@ export class TembaList extends RapidElement {
   public connectedCallback() {
     super.connectedCallback();
     this.refreshInterval = setInterval(() => {
-      this.refreshKey = 'default_' + new Date().getTime();
+      if (!this.paused) {
+        this.refreshKey = 'default_' + new Date().getTime();
+      }
     }, DEFAULT_REFRESH);
   }
 
