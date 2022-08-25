@@ -119,7 +119,6 @@ export class TabPane extends RapidElement {
       (event.currentTarget as HTMLDivElement).dataset.index
     );
     this.requestUpdate('index');
-    this.fireEvent(CustomEventType.ContextChanged);
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -137,6 +136,7 @@ export class TabPane extends RapidElement {
           }
         }
       }
+      this.fireEvent(CustomEventType.ContextChanged);
     }
   }
 
