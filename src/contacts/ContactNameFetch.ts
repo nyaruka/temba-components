@@ -21,7 +21,6 @@ export class ContactNameFetch extends ContactStoreElement {
 
   public render(): TemplateResult {
     if (this.data) {
-      console.log(this.data);
       return html` <temba-contact-name
           name=${this.data.name}
           urn=${this.data.urns.length > 0 ? this.data.urns[0] : null}
