@@ -147,6 +147,7 @@ export interface Contact {
   last_seen_on: string;
   status: string;
 
+  anon_display?: string;
   flow?: ObjectReference;
   last_msg?: Msg;
   direction?: string;
