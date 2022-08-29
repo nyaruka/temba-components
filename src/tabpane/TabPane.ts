@@ -16,6 +16,7 @@ export class TabPane extends RapidElement {
 
       .tabs {
         display: flex;
+        padding-left: 0.18em;
       }
 
       .tab {
@@ -32,6 +33,7 @@ export class TabPane extends RapidElement {
         color: var(--color-text-dark);
         --icon-color: var(--color-text-dark);
         white-space: nowrap;
+        transition: all 100ms ease-in-out;
       }
 
       .tab.hidden {
@@ -70,6 +72,8 @@ export class TabPane extends RapidElement {
         cursor: default;
         box-shadow: 2px 1px 3px 2px rgba(0, 0, 0, 0.07);
         background: #fff;
+        transform: scale(1.05) translateY(-0.05em);
+        z-index: 0;
       }
 
       .pane {
@@ -81,10 +85,12 @@ export class TabPane extends RapidElement {
         box-shadow: 2px 5px 12px 2px rgba(0, 0, 0, 0.09),
           3px 3px 2px 1px rgba(0, 0, 0, 0.05);
         min-height: 0;
+        z-index: 1;
       }
 
       .pane.first {
         border-top-left-radius: 0px;
+        overflow: hidden;
       }
 
       .badge {
