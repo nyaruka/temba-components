@@ -429,7 +429,6 @@ export class TembaMenu extends RapidElement {
       .expand-icon {
         transform: rotate(180deg);
         --icon-color: rgba(255, 255, 255, 0.5);
-        padding-top: 0.5em;
         cursor: pointer;
         max-height: 0px;
         overflow: hidden;
@@ -442,6 +441,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .fully-collapsed .expand-icon {
+        padding-top: 0.5em;
         max-height: 2em;
         opacity: 1;
       }
