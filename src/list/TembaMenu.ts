@@ -524,21 +524,24 @@ export class TembaMenu extends RapidElement {
   private fireNoPath(missingId: string) {
     const item = this.getMenuItem();
 
-    const details = {
-      item: item.id,
-      selection: '/' + this.selection.join('/'),
-      endpoint: item.endpoint,
-      path: missingId + '/' + this.pending.join('/') + document.location.search,
-    };
+    if (item) {
+      const details = {
+        item: item.id,
+        selection: '/' + this.selection.join('/'),
+        endpoint: item.endpoint,
+        path:
+          missingId + '/' + this.pending.join('/') + document.location.search,
+      };
 
-    // remove any excess from our selection
-    const selection = this.selection.join('/');
-    selection.replace(details.path, '');
-    this.selection = selection.split('/');
+      // remove any excess from our selection
+      const selection = this.selection.join('/');
+      selection.replace(details.path, '');
+      this.selection = selection.split('/');
 
-    this.fireCustomEvent(CustomEventType.NoPath, details);
-    this.pending = [];
-    this.requestUpdate('root');
+      this.fireCustomEvent(CustomEventType.NoPath, details);
+      this.pending = [];
+      this.requestUpdate('root');
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -645,7 +648,7 @@ export class TembaMenu extends RapidElement {
       }
 
       if (menuItem.endpoint) {
-        this.loadItems(menuItem, !menuItem.href);
+        this.loadItems(menuItem, true);
         this.dispatchEvent(new Event('change'));
       } else {
         if (this.pending && this.pending.length > 0) {

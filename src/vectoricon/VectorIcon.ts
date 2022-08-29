@@ -51,7 +51,6 @@ export class VectorIcon extends LitElement {
     return css`
       :host {
         margin: auto;
-        --color1: var(--icon-color);
       }
 
       .sheet {
@@ -90,7 +89,7 @@ export class VectorIcon extends LitElement {
 
       .clickable:hover {
         cursor: pointer;
-        fill: var(--color-link-primary);
+        fill: var(--color-link-primary) !important;
         background: rgb(255, 255, 255);
       }
 
