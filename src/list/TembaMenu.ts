@@ -17,6 +17,7 @@ export interface MenuItem {
   level?: number;
   trigger?: string;
   href?: string;
+  show_header?: boolean;
   items?: MenuItem[];
   inline?: boolean;
   type?: string;
@@ -129,6 +130,9 @@ export class TembaMenu extends RapidElement {
       .level-0 > .top {
         padding-top: var(--menu-padding);
         background: var(--color-primary-dark);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
       .level-0 > .empty {
@@ -395,7 +399,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .fully-collapsed .level-1 {
-        margin-left: -217px;
+        margin-left: -208px;
         pointer-events: none;
         border: none;
         overflow: hidden;
@@ -420,6 +424,54 @@ export class TembaMenu extends RapidElement {
         margin-bottom: 0.2em;
         margin-left: 0.75em;
         margin-right: 0.75em;
+      }
+
+      .expand-icon {
+        transform: rotate(180deg);
+        --icon-color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        max-height: 0px;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 400ms ease-in-out 400ms;
+      }
+
+      .expand-icon:hover {
+        --icon-color: #fff;
+      }
+
+      .fully-collapsed .expand-icon {
+        padding-top: 0.5em;
+        max-height: 2em;
+        opacity: 1;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+      }
+
+      .section-header .section {
+        flex-grow: 1;
+      }
+
+      .section-header temba-icon {
+        --icon-color: #ddd;
+        cursor: pointer;
+        padding-bottom: 0.5em;
+        padding-right: 0.5em;
+      }
+
+      .section-header temba-icon:hover {
+        --icon-color: var(--color-link-primary);
+      }
+
+      slot[name='header'] {
+        display: none;
+      }
+
+      slot[name='header'].show-header {
+        display: block;
       }
     `;
   }
@@ -747,6 +799,14 @@ export class TembaMenu extends RapidElement {
     }
   }
 
+  public handleExpand() {
+    this.collapsed = false;
+  }
+
+  public handleCollapse() {
+    this.collapsed = true;
+  }
+
   public async setFocusedItem(path: string) {
     const focusedPath = path.split('/').filter(step => !!step);
 
@@ -926,7 +986,15 @@ export class TembaMenu extends RapidElement {
 
     levels.push(
       html`<div class="level level-0 ${this.submenu ? 'hidden' : ''}">
-        <div class="top"></div>
+        <div class="top">
+          <div class="expand-icon" @click=${this.handleExpand}>
+            <temba-icon
+              name="menu-collapse"
+              class="expand"
+              size="1.4"
+            ></temba-icon>
+          </div>
+        </div>
 
         ${items
           .filter(item => !item.bottom)
@@ -975,7 +1043,25 @@ export class TembaMenu extends RapidElement {
             })}"
           >
             ${!this.submenu
-              ? html`<div class="section">${selected.name}</div>`
+              ? html`
+                  <slot
+                    class="${getClasses({
+                      'show-header': selected.show_header,
+                    })}"
+                    name="header"
+                  ></slot>
+                  <div class="section-header">
+                    <div class="section">${selected.name}</div>
+
+                    ${index == 0 && !this.collapsed
+                      ? html`<temba-icon
+                          name="menu-collapse"
+                          size="1.1"
+                          @click=${this.handleCollapse}
+                        ></temba-icon>`
+                      : null}
+                  </div>
+                `
               : null}
             ${items.map((item: MenuItem) => {
               if (item.inline && item.items) {

@@ -4,7 +4,7 @@ import { property } from 'lit/decorators';
 import { getClasses } from '../utils';
 
 // for cache busting, increase whenever the icon set changes
-const ICON_VERSION = 14;
+const ICON_VERSION = 15;
 
 export class VectorIcon extends LitElement {
   @property({ type: String })
