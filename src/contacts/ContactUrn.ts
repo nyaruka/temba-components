@@ -6,8 +6,11 @@ export class ContactUrn extends RapidElement {
   @property({ type: String })
   urn: string;
 
+  @property({ type: String })
+  scheme: string;
+
   @property({ type: Number })
-  size: number;
+  size = 20;
 
   static get styles() {
     return css`
@@ -34,7 +37,7 @@ export class ContactUrn extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const scheme = this.urn.split(':')[0];
+    const scheme = this.scheme || this.urn.split(':')[0];
     return html`
       <img
         class="urn ${this.size < 20 ? 'small' : ''}"
