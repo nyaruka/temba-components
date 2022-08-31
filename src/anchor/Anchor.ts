@@ -5,8 +5,13 @@ export class Anchor extends LitElement {
   static get styles() {
     return css`
       :host {
-        cursor: pointer;
         color: var(--color-link-primary);
+        display: inline-block;
+      }
+
+      slot:hover {
+        cursor: pointer;
+        text-decoration: underline;
       }
     `;
   }
@@ -20,8 +25,6 @@ export class Anchor extends LitElement {
   }
 
   public render(): TemplateResult {
-    return html`
-      <slot href="${this.href}" @click="${this.handleClick}"></slot>
-    `;
+    return html`<slot href="${this.href}" @click="${this.handleClick}"></slot>`;
   }
 }
