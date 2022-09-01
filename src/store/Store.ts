@@ -74,7 +74,7 @@ export class Store extends RapidElement {
 
   private cache: any;
 
-  public firstUpdated() {
+  public reset() {
     this.cache = Lru(this.max, this.ttl);
 
     /* 
@@ -170,6 +170,10 @@ export class Store extends RapidElement {
     }
 
     this.httpComplete = Promise.all(fetches);
+  }
+
+  public firstUpdated() {
+    this.reset();
   }
 
   public getLanguageCode() {

@@ -88,8 +88,7 @@ export class Select extends FormElement {
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
         padding-top: 1px;
-        box-shadow: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
-          0 1px 2px 0 rgba(0, 0, 0, 0.02);
+        box-shadow: var(--widget-shadow);
 
         position: relative;
         z-index: 2;
@@ -452,6 +451,12 @@ export class Select extends FormElement {
   @property({ attribute: false })
   getValue: (option: any) => string = (option: any) =>
     option[this.valueKey || 'value'] || option.id;
+
+  @property({ type: Number, attribute: 'option-width' })
+  optionWidth: number;
+
+  @property({ type: Boolean, attribute: 'anchor-right' })
+  anchorRight: boolean;
 
   @property({ attribute: false })
   shouldExclude: (option: any) => boolean;
@@ -1295,6 +1300,8 @@ export class Select extends FormElement {
     .spaceSelect=${this.spaceSelect}
     .nameKey=${this.nameKey}
     .getName=${this.getNameInternal}
+    static-width=${this.optionWidth}
+    ?anchor-right=${this.anchorRight}
     ?visible=${this.visibleOptions.length > 0}
   ></temba-options>
 
