@@ -555,6 +555,10 @@ export class TembaMenu extends RapidElement {
     }
   }
 
+  public reset() {
+    this.loadItems(this.root);
+  }
+
   public refresh(path: string[] = null) {
     if (!path) {
       path = [...this.selection];

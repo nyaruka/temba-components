@@ -14,7 +14,7 @@ export class Options extends RapidElement {
   static get styles() {
     return css`
       .options-container {
-        background: var(--color-widget-bg-focused);
+        background: var(--color-options-bg);
         user-select: none;
         border-radius: var(--curvature-widget);
         overflow: hidden;
@@ -185,6 +185,12 @@ export class Options extends RapidElement {
 
   @property({ type: Number })
   width: number;
+
+  @property({ type: Number, attribute: 'static-width' })
+  staticWidth: number;
+
+  @property({ type: Boolean, attribute: 'anchor-right' })
+  anchorRight: boolean;
 
   @property({ type: Number })
   marginHorizontal = 0;
@@ -526,7 +532,14 @@ export class Options extends RapidElement {
         }
 
         this.left = anchorBounds.left;
-        this.width = anchorBounds.width - 2 - this.marginHorizontal * 2;
+        this.width =
+          this.staticWidth > 0
+            ? this.staticWidth
+            : anchorBounds.width - 2 - this.marginHorizontal * 2;
+
+        if (this.anchorRight) {
+          this.left = anchorBounds.right - this.width;
+        }
       }
     }
   }
