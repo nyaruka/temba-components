@@ -288,6 +288,7 @@ export class ContactChat extends ContactStoreElement {
       });
   }
 
+  //todo needs to refresh the page
   private handleReactivate() {
     const uuid = this.currentContact.uuid;
     postJSON(`/api/v2/contact_actions.json`, {
@@ -386,56 +387,66 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
-    if (this.currentTicket && this.currentTicket.closed_on) {
+    if (this.currentTicket) {
       //reopen button for closed tickets
-      return html` <div class="closed-footer">
-        <temba-button
-          id="reopen-button"
-          name="Reopen"
-          @click=${this.handleReopen}
-        ></temba-button>
-      </div>`;
+      if (this.currentTicket.closed_on) {
+        return html` <div class="closed-footer">
+          <temba-button
+            id="reopen-button"
+            name="Reopen"
+            @click=${this.handleReopen}
+          ></temba-button>
+        </div>`;
+      }
+      //chatbox for open tickets
+      else {
+        return this.getChatbox();
+      }
+    } else if (this.currentContact) {
+      //reactivate button for archived, blocked, or stopped contacts
+      if (this.currentContact.status !== 'active') {
+        return html` <div class="closed-footer">
+          <temba-button
+            id="reactivate-button"
+            name="Reactivate"
+            @click=${this.handleReactivate}
+          ></temba-button>
+        </div>`;
+      }
+      //chatbox for active contacts
+      else {
+        return this.getChatbox();
+      }
+    } else {
+      return this.getChatbox();
     }
-    //reactivate button for archived, blocked, or stopped contacts
-    else if (this.currentContact.status !== 'active') {
-      return html` <div class="closed-footer">
-        <temba-button
-          id="reactivate-button"
-          name="Reactivate"
-          @click=${this.handleReactivate}
-        ></temba-button>
-      </div>`;
-    }
-    //chatbox for default active contact or open ticket
-    else {
-      return html` <div
-        class="chatbox ${this.toolbar ? 'full' : ''}"
-        style="${this.currentContact.status !== 'active' ? 'display:none' : ''}"
-      >
-        <temba-completion
-          @change=${this.handleChatChange}
-          .value=${this.currentChat}
-          @keydown=${(e: KeyboardEvent) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              const chat = e.target as Completion;
-              if (!chat.hasVisibleOptions()) {
-                this.handleSend();
-                e.preventDefault();
-                e.stopPropagation();
-              }
+  }
+
+  private getChatbox(): TemplateResult {
+    return html` <div class="chatbox ${this.toolbar ? 'full' : ''}">
+      <temba-completion
+        @change=${this.handleChatChange}
+        .value=${this.currentChat}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            const chat = e.target as Completion;
+            if (!chat.hasVisibleOptions()) {
+              this.handleSend();
+              e.preventDefault();
+              e.stopPropagation();
             }
-          }}
-          textarea
-        >
-        </temba-completion>
-        <temba-button
-          id="send-button"
-          name="Send"
-          @click=${this.handleSend}
-          ?disabled=${this.currentChat.trim().length === 0}
-        ></temba-button>
-      </div>`;
-    }
+          }
+        }}
+        textarea
+      >
+      </temba-completion>
+      <temba-button
+        id="send-button"
+        name="Send"
+        @click=${this.handleSend}
+        ?disabled=${this.currentChat.trim().length === 0}
+      ></temba-button>
+    </div>`;
   }
 
   private getTembaContactDetails(): TemplateResult {

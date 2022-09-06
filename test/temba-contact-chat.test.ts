@@ -84,8 +84,7 @@ describe('temba-contact-chat', () => {
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
     ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    expect(chatHistoryEl).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-active-show-chat-history',
@@ -100,11 +99,15 @@ describe('temba-contact-chat', () => {
       contact: 'contact-barak-archived',
     });
 
-    const chatboxDivEl = chat.shadowRoot.querySelector(
+    const chatboxDiv = chat.shadowRoot.querySelector(
       '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('none');
+    expect(chatboxDiv).to.equal(null);
+
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-archived-hide-chat-msg',
@@ -122,8 +125,7 @@ describe('temba-contact-chat', () => {
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
     ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    expect(chatHistoryEl).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-archived-show-chat-history',
@@ -138,11 +140,15 @@ describe('temba-contact-chat', () => {
       contact: 'contact-michelle-blocked',
     });
 
-    const chatboxDivEl = chat.shadowRoot.querySelector(
+    const chatboxDiv = chat.shadowRoot.querySelector(
       '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('none');
+    expect(chatboxDiv).to.equal(null);
+
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-blocked-hide-chat-msg',
@@ -160,8 +166,7 @@ describe('temba-contact-chat', () => {
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
     ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    expect(chatHistoryEl).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-blocked-show-chat-history',
@@ -176,11 +181,15 @@ describe('temba-contact-chat', () => {
       contact: 'contact-tim-stopped',
     });
 
-    const chatboxDivEl = chat.shadowRoot.querySelector(
+    const chatboxDiv = chat.shadowRoot.querySelector(
       '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('none');
+    expect(chatboxDiv).to.equal(null);
+
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-stopped-hide-chat-msg',
@@ -198,8 +207,7 @@ describe('temba-contact-chat', () => {
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
     ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    expect(chatHistoryEl).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-stopped-show-chat-history',
