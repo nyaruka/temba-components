@@ -34,12 +34,6 @@ export default class DatePicker extends FormElement {
   }
 
   @property({ type: String })
-  value = '';
-
-  @property({ type: String })
-  name = '';
-
-  @property({ type: String })
   timezone = '';
 
   @property({ type: Object })
@@ -66,6 +60,7 @@ export default class DatePicker extends FormElement {
         } else {
           this.datetime = DateTime.fromISO(this.value, { zone: this.timezone });
         }
+        this.value = this.datetime.toUTC().toISO();
       }
     }
   }
@@ -74,14 +69,6 @@ export default class DatePicker extends FormElement {
     this.value = event.target.value;
     event.preventDefault();
     event.stopPropagation();
-  }
-
-  /** the utc date in iso format */
-  public getISODate() {
-    if (this.datetime) {
-      return this.datetime.toUTC().toISO();
-    }
-    return '';
   }
 
   public handleBlur() {
@@ -95,7 +82,7 @@ export default class DatePicker extends FormElement {
     return html`
       <input
         class=${classes}
-        name=${this.name}
+        name=${this.label}
         value=${this.datetime ? this.datetime.toFormat("yyyy-LL-dd'T'T") : null}
         type="datetime-local"
         @change=${this.handleChange}
