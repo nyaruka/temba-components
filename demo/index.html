@@ -92,12 +92,21 @@
         margin-top: 1em;
       }
 
+      temba-datepicker {
+        margin-right: 0.5em;
+      }
+
 
     </style>
     <script type="module">
       import '../out-tsc/temba-modules.js';
     </script>
     <script>
+
+      function handleDateChange(event) {
+        console.log("Changed!", event.target.getISODate());
+      }
+
       // var static_url = '/static/';
       function handleColorChange(event) {
         var color = event.target.values[0].name;
@@ -140,6 +149,15 @@
     <div class="header">temba-components</div>
 
     <temba-tabs>
+
+      <temba-tab name="datepicker" icon="calendar">
+        <div style="display:flex">
+          <temba-datepicker onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker value="2022-09-13T00:00:02.535Z" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
+        </div>
+
+      </temba-tab>
+      
       <temba-tab name="temba-slider" icon="sliders">
 
 

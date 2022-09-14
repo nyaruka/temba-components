@@ -1,49 +1,37 @@
 import { TemplateResult, html, css } from 'lit';
-import { property, customElement } from 'lit/decorators';
-
+import { property } from 'lit/decorators';
 import { FormElement } from '../FormElement';
-import 'lit-flatpickr';
+import { getClasses } from '../utils';
+import { DateTime } from 'luxon';
 
-@customElement('temba-datepicker')
 export default class DatePicker extends FormElement {
   static get styles() {
     return css`
-      .textinput {
-        padding: 9px;
-        border: none;
-        flex: 1;
-        margin: 0;
-        background: none;
+      input {
         color: var(--color-widget-text);
+        padding: var(--temba-textinput-padding);
+        border-radius: var(--curvature);
+        border: 1px solid var(--color-widget-border);
         font-family: var(--font-family);
-        font-size: 13px;
-        cursor: text;
-        resize: none;
         font-weight: 300;
-        width: 100%;
-      }
-
-      .datepicker {
-        padding: 9px;
-        margin: 0px;
-        border: 1px red solid;
-      }
-
-      .textinput:focus {
         outline: none;
-        box-shadow: none;
-        cursor: text;
       }
 
-      .textinput::placeholder {
-        color: var(--color-placeholder);
-        font-weight: 300;
+      input.unset {
+        color: #ddd;
+      }
+
+      input.unset:focus {
+        color: var(--color-widget-text);
+      }
+
+      input:focus {
+        border-color: var(--color-focus);
+        background: var(--color-widget-bg-focused);
+        box-shadow: var(--widget-box-shadow-focused);
       }
     `;
   }
-
-  @property({ type: String })
-  placeholder = '';
 
   @property({ type: String })
   value = '';
@@ -51,26 +39,68 @@ export default class DatePicker extends FormElement {
   @property({ type: String })
   name = '';
 
+  @property({ type: String })
+  timezone = '';
+
   @property({ type: Object })
-  inputElement: HTMLInputElement;
+  datetime = null;
 
   /** we just return the value since it should be a string */
   public serializeValue(value: any): string {
     return value;
   }
 
+  public constructor() {
+    super();
+
+    // default to the local browser zone
+    this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
+  public updated(changed: Map<string, any>): void {
+    super.updated(changed);
+    if (changed.has('value')) {
+      if (this.value) {
+        if (!this.datetime) {
+          this.datetime = DateTime.fromISO(this.value).setZone(this.timezone);
+        } else {
+          this.datetime = DateTime.fromISO(this.value, { zone: this.timezone });
+        }
+      }
+    }
+  }
+
+  public handleChange(event) {
+    this.value = event.target.value;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  /** the utc date in iso format */
+  public getISODate() {
+    if (this.datetime) {
+      return this.datetime.toUTC().toISO();
+    }
+    return '';
+  }
+
+  public handleBlur() {
+    // we fire a change event on blur
+    this.fireEvent('change');
+  }
+
   public render(): TemplateResult {
+    const classes = getClasses({ unset: !this.value });
+
     return html`
-      <lit-flatpickr
-        class="textinput"
-        id="my-date-picker"
-        altInput
-        altFormat="F j, Y"
-        dateFormat="Y-m-d H:i"
-        enableTime: true
-      >
-        <input class="textinput"></input>
-      </lit-flatpickr>
+      <input
+        class=${classes}
+        name=${this.name}
+        value=${this.datetime ? this.datetime.toFormat("yyyy-LL-dd'T'T") : null}
+        type="datetime-local"
+        @change=${this.handleChange}
+        @blur=${this.handleBlur}
+      />
     `;
   }
 }
