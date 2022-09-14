@@ -92,7 +92,7 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('cannot send chat msg if contact is archived', async () => {
+  it('hide chatbox if contact is archived', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -115,7 +115,7 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('can see chat history if contact is archived', async () => {
+  it('show chat history if contact is archived', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -133,7 +133,7 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('cannot send chat msg if contact is blocked', async () => {
+  it('hide chatbox if contact is blocked', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -156,7 +156,7 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('can see chat history if contact is blocked', async () => {
+  it('show chat history if contact is blocked', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -174,7 +174,7 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('cannot send chat msg if contact is stopped', async () => {
+  it('hide chatbox if contact is stopped', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -197,7 +197,7 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('can see chat history if contact is stopped', async () => {
+  it('show chat history if contact is stopped', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -214,4 +214,25 @@ describe('temba-contact-chat', () => {
       getClip(chat)
     );
   });
+
+  // it('show chatbox if current view is contact and contact is active', async () => {
+  // });
+
+  // it('show reactivate button if current view is contact and contact is archived', async () => {
+  // });
+
+  // it('show chatbox if current view is ticket and contact is active and selected ticket is open', async () => {
+  // });
+
+  // it('show reopen button if current view is ticket and contact is active and selected ticket is closed', async () => {
+  // });
+
+  // it('hide chatbox if current view is ticket and contact is archived and all tickets are closed', async () => {
+  // });
+
+  // it('hide chatbox if current view is ticket and list contains 0 tickets', async () => {
+  // });
+
+  // it('hide chatbox if current view is ticket and no ticket is selected', async () => {
+  // });
 });

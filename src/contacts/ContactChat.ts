@@ -271,7 +271,7 @@ export class ContactChat extends ContactStoreElement {
     this.currentChat = chat.value;
   }
 
-  private handleReopen() {
+  private handleTicketReopen() {
     const uuid = this.currentTicket.uuid;
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
@@ -288,8 +288,7 @@ export class ContactChat extends ContactStoreElement {
       });
   }
 
-  //todo needs to refresh the page
-  private handleReactivate() {
+  private handleContactReactivate() {
     const uuid = this.currentContact.uuid;
     postJSON(`/api/v2/contact_actions.json`, {
       contacts: [uuid],
@@ -387,29 +386,40 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
+    if (!this.currentContact && !this.currentTicket) {
+      return null;
+    }
+
     if (this.currentTicket) {
-      //reopen button for closed tickets
-      if (this.currentTicket.closed_on) {
-        return html` <div class="closed-footer">
-          <temba-button
-            id="reopen-button"
-            name="Reopen"
-            @click=${this.handleReopen}
-          ></temba-button>
-        </div>`;
+      //no chatbox for archived, blocked, or stopped contacts
+      if (this.currentContact && this.currentContact.status !== 'active') {
+        return null;
+      } else {
+        //reopen button for closed tickets
+        if (this.currentTicket && this.currentTicket.closed_on) {
+          return html` <div class="closed-footer">
+            <temba-button
+              id="reopen-button"
+              name="Reopen"
+              @click=${this.handleTicketReopen}
+            ></temba-button>
+          </div>`;
+        }
+        //chatbox for open tickets
+        else {
+          return this.getChatbox();
+        }
       }
-      //chatbox for open tickets
-      else {
-        return this.getChatbox();
-      }
-    } else if (this.currentContact) {
+    }
+
+    if (this.currentContact) {
       //reactivate button for archived, blocked, or stopped contacts
       if (this.currentContact.status !== 'active') {
         return html` <div class="closed-footer">
           <temba-button
             id="reactivate-button"
             name="Reactivate"
-            @click=${this.handleReactivate}
+            @click=${this.handleContactReactivate}
           ></temba-button>
         </div>`;
       }
@@ -417,8 +427,6 @@ export class ContactChat extends ContactStoreElement {
       else {
         return this.getChatbox();
       }
-    } else {
-      return this.getChatbox();
     }
   }
 
