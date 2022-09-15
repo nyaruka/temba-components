@@ -92,7 +92,7 @@
         margin-top: 1em;
       }
 
-      temba-datepicker {
+      temba-datepicker, temba-select, temba-textinput, temba-completion {
         margin: 0.5em;
         flex-grow: 1;
       }
@@ -148,15 +148,36 @@
 
     <div class="header">temba-components</div>
 
-    <temba-tabs>
+    <temba-tabs collapses>
+      <temba-tab name="Overview" icon="list">
+        <div style="display:flex;flex-wrap: wrap;">
 
+          <temba-checkbox label="Check this out" checked></temba-checkbox>
+
+          <temba-select placeholder="Select a color" clearable>
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+          </temba-select>
+
+          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
+
+
+        </div>
+
+        <temba-slider style="margin-bottom: 1em" value="50" min="0" max="100" range></temba-slider>
+        <temba-textinput value="plain text"></temba-textinput>
+        <temba-completion value="you complete me @cont"></temba-completion>
+      </temba-tab>
       <temba-tab name="datepicker" icon="calendar">
         <div style="display:flex;flex-wrap: wrap;">
           <temba-datepicker onChange="handleDateChange(event)"></temba-datepicker>          
           <temba-datepicker value="2022-10-02 01:00:00+00:00" onChange="handleDateChange(event)"></temba-datepicker>          
-          <temba-datepicker value="2022-10-02T05:00:00.000Z" timezone="Africa/Nairobi" onChange="handleDateChange(event)"></temba-datepicker>
-          <temba-datepicker value="2022-09-13T00:00:02.535Z" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
-
+          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="Africa/Nairobi" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="America/Phoenix" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="America/Phoenix" onChange="handleDateChange(event)"></temba-datepicker>
+          
         </div>
         <div style="display:flex;margin-top:0.5em">
           
@@ -165,7 +186,7 @@
 
       </temba-tab>
       
-      <temba-tab name="temba-slider" icon="sliders">
+      <temba-tab name="slider" icon="sliders">
 
 
         <div class="example">
@@ -179,7 +200,7 @@
         </div>
 
       </temba-tab>
-      <temba-tab name="temba-select" icon="chevron-down">
+      <temba-tab name="select" icon="credit-card">
 
         <div class="example">
           <temba-select
@@ -257,7 +278,7 @@
         
       </temba-tab>
 
-      <temba-tab name="temba-textinput" icon="edit">
+      <temba-tab name="textinput" icon="edit">
     
         <div class="example">
           <temba-textinput value="plain text"></temba-textinput>
@@ -284,14 +305,6 @@
           <temba-charcount text='count this text'></temba-charcount>
         </div>
       </temba-tab>
-
-      <temba-tab name="other" icon="list">
-        <div class="example">
-          <temba-checkbox label="Check this out" checked></temba-checkbox>
-        </div>
-
-      </temba-tab>
-
     </temba-tabs>
   </body>
 </html>

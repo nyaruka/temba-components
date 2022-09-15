@@ -27,16 +27,28 @@ export default class DatePicker extends FormElement {
         font-size: 0.8em;
         flex-direction: column;
         align-self: stretch;
-        background: #efefef;
-        color: #999;
+        color: #888;
         display: flex;
-        align-items: center;
-        flex-direction: row;
-        border-top-right-radius: var(--curvature);
-        border-bottom-right-radius: var(--curvature);
+        align-items: flex-start;
+        flex-direction: column;
         padding: 0em 1em;
         font-weight: 400;
         cursor: pointer;
+        margin: auto;
+      }
+
+      .tz .label {
+        font-size: 0.8em;
+        color: #aaa;
+      }
+
+      .tz-wrapper {
+        background: #efefef;
+        border-top-right-radius: var(--curvature);
+        border-bottom-right-radius: var(--curvature);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
       }
 
       .container:focus-within {
@@ -52,6 +64,10 @@ export default class DatePicker extends FormElement {
         font-weight: 300;
         outline: none;
         width: 100%;
+        font-size: 13px;
+        padding: 0px;
+        margin: 0px;
+        line-height: 1em;
       }
 
       input.unset {
@@ -85,6 +101,9 @@ export default class DatePicker extends FormElement {
   @property({ type: String })
   timezone = '';
 
+  @property({ type: String })
+  timezoneFriendly = '';
+
   @property({ type: Object })
   datetime = null;
 
@@ -117,6 +136,12 @@ export default class DatePicker extends FormElement {
         }
         this.setValue(this.datetime.toUTC().toISO());
       }
+    }
+
+    if (changed.has('timezone')) {
+      this.timezoneFriendly = this.timezone
+        .replace('_', ' ')
+        .replace('/', ', ');
     }
   }
 
@@ -161,8 +186,11 @@ export default class DatePicker extends FormElement {
               @blur=${this.handleBlur}
             />
           </div>
-          <div class="tz" @click=${this.handleZoneClicked}>
-            ${this.timezone}
+          <div class="tz-wrapper">
+            <div class="tz" @click=${this.handleZoneClicked}>
+              <div class="label">Time Zone</div>
+              <div class="zone">${this.timezoneFriendly}</div>
+            </div>
           </div>
         </div>
       </temba-field>
