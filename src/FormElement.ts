@@ -8,6 +8,9 @@ import { property } from 'lit/decorators';
 export class FormElement extends RapidElement {
   private hiddenInputs: HTMLInputElement[] = [];
 
+  @property({ type: String })
+  name = '';
+
   @property({ type: String, attribute: 'help_text' })
   helpText: string;
 
@@ -34,6 +37,9 @@ export class FormElement extends RapidElement {
 
   @property({ attribute: false })
   inputRoot: HTMLElement = this;
+
+  @property({ type: Boolean })
+  disabled = false;
 
   public setValue(value: any) {
     if (!value) {

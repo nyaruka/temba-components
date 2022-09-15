@@ -93,9 +93,9 @@
       }
 
       temba-datepicker {
-        margin-right: 0.5em;
+        margin: 0.5em;
+        flex-grow: 1;
       }
-
 
     </style>
     <script type="module">
@@ -104,7 +104,7 @@
     <script>
 
       function handleDateChange(event) {
-        console.log("Changed!", event.target.getISODate());
+        console.log("Changed!", event.target.value);
       }
 
       // var static_url = '/static/';
@@ -151,9 +151,16 @@
     <temba-tabs>
 
       <temba-tab name="datepicker" icon="calendar">
-        <div style="display:flex">
-          <temba-datepicker onChange="handleDateChange(event)"></temba-datepicker>
+        <div style="display:flex;flex-wrap: wrap;">
+          <temba-datepicker onChange="handleDateChange(event)"></temba-datepicker>          
+          <temba-datepicker value="2022-10-02 01:00:00+00:00" onChange="handleDateChange(event)"></temba-datepicker>          
+          <temba-datepicker value="2022-10-02T05:00:00.000Z" timezone="Africa/Nairobi" onChange="handleDateChange(event)"></temba-datepicker>
           <temba-datepicker value="2022-09-13T00:00:02.535Z" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
+
+        </div>
+        <div style="display:flex;margin-top:0.5em">
+          
+          
         </div>
 
       </temba-tab>

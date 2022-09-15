@@ -8,7 +8,7 @@ export const getPickerHTML = (attrs: any = {}) => {
 
 export const createPicker = async (def: string) => {
   const parentNode = document.createElement('div');
-  // parentNode.setAttribute('style', 'width: 250px;');
+  parentNode.setAttribute('style', 'width: 400px;');
   parentNode.id = 'parent';
   const picker: DatePicker = await fixture(def, { parentNode });
   return picker;
@@ -56,14 +56,14 @@ describe('temba-datepicker', () => {
       getPickerHTML({ value: '2020-01-20T14:00Z', id: 'picker' })
     );
 
-    // click into the picker and update the hour
+    // click into the picker and update the date
     await click('#picker');
-    await typeInto('#picker', '04', false);
+    await typeInto('#picker', '01202024', false);
 
     // click away to update
-    await click('#parent');
+    picker.blur();
 
-    expect(picker.value).to.equal('2020-01-20T16:00:00.000Z');
+    expect(picker.value).to.equal('2024-01-20T14:00:00.000Z');
     await assertScreenshot('datepicker/updated-keyboard', getClip(picker));
   });
 });

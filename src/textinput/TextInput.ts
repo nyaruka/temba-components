@@ -142,9 +142,6 @@ export class TextInput extends FormElement {
   @property({ type: String })
   value = '';
 
-  @property({ type: String })
-  name = '';
-
   @property({ type: Boolean })
   password: boolean;
 
@@ -175,9 +172,6 @@ export class TextInput extends FormElement {
 
   @property()
   onBlur: any;
-
-  @property({ type: Boolean })
-  disabled = false;
 
   @property({ type: Boolean })
   autogrow = false;
