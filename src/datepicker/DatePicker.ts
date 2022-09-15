@@ -15,6 +15,7 @@ export default class DatePicker extends FormElement {
         border-radius: var(--curvature);
         border: 1px solid var(--color-widget-border);
         display: flex;
+        cursor: pointer;
       }
 
       .input-wrapper {
@@ -156,7 +157,7 @@ export default class DatePicker extends FormElement {
     this.fireEvent('change');
   }
 
-  public handleZoneClicked() {
+  public handleClicked() {
     this.shadowRoot.querySelector('input').focus();
   }
 
@@ -174,7 +175,7 @@ export default class DatePicker extends FormElement {
         .disabled=${this.disabled}
       >
         <div class="container">
-          <div class="input-wrapper">
+          <div class="input-wrapper" @click=${this.handleClicked}>
             <input
               class=${classes}
               name=${this.label}
@@ -186,8 +187,8 @@ export default class DatePicker extends FormElement {
               @blur=${this.handleBlur}
             />
           </div>
-          <div class="tz-wrapper">
-            <div class="tz" @click=${this.handleZoneClicked}>
+          <div class="tz-wrapper" @click=${this.handleClicked}>
+            <div class="tz">
               <div class="label">Time Zone</div>
               <div class="zone">${this.timezoneFriendly}</div>
             </div>
