@@ -148,7 +148,7 @@
 
     <div class="header">temba-components</div>
 
-    <temba-tabs collapses>
+    <temba-tabs collapses index="1">
       <temba-tab name="Overview" icon="list">
         <div style="display:flex;flex-wrap: wrap;">
 
@@ -160,7 +160,7 @@
             <temba-option name="Blue" value="2"></temba-option>
           </temba-select>
 
-          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
 
 
         </div>
@@ -171,12 +171,15 @@
       </temba-tab>
       <temba-tab name="datepicker" icon="calendar">
         <div style="display:flex;flex-wrap: wrap;">
-          <temba-datepicker onChange="handleDateChange(event)"></temba-datepicker>          
-          <temba-datepicker value="2022-10-02 01:00:00+00:00" onChange="handleDateChange(event)"></temba-datepicker>          
-          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="Africa/Nairobi" onChange="handleDateChange(event)"></temba-datepicker>
-          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
-          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="America/Phoenix" onChange="handleDateChange(event)"></temba-datepicker>
-          <temba-datepicker value="2022-10-02 01:00:00+00:00" timezone="America/Phoenix" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2020-01-20T14:00+00:00" timezone="UTC" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker value="2022-10-09" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time timezone="" value="2022-09-29T20:20:00.000000Z"></temba-datepicker>
+          <temba-datepicker time onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2022-10-03 01:00:00+00:00" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2022-10-04 01:00:00+00:00" timezone="Africa/Nairobi" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2022-10-05 01:00:00+00:00" timezone="Africa/Lagos" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2022-10-06 01:00:00+00:00" timezone="America/Phoenix" onChange="handleDateChange(event)"></temba-datepicker>
+          <temba-datepicker time value="2022-10-07 01:00:00+00:00" timezone="America/Phoenix" onChange="handleDateChange(event)"></temba-datepicker>
           
         </div>
         <div style="display:flex;margin-top:0.5em">

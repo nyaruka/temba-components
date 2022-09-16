@@ -15,15 +15,23 @@ export const createPicker = async (def: string) => {
 };
 
 describe('temba-datepicker', () => {
-  it('can be created', async () => {
+  it('can create a date picker', async () => {
     const picker: DatePicker = await createPicker(getPickerHTML());
     assert.instanceOf(picker, DatePicker);
-    await assertScreenshot('datepicker/default', getClip(picker));
+    await assertScreenshot('datepicker/date', getClip(picker));
+  });
+
+  it('can create a datetime picker', async () => {
+    const picker: DatePicker = await createPicker(
+      getPickerHTML({ time: true })
+    );
+    assert.instanceOf(picker, DatePicker);
+    await assertScreenshot('datepicker/datetime', getClip(picker));
   });
 
   it('can be initialized with an iso date', async () => {
     const picker: DatePicker = await createPicker(
-      getPickerHTML({ value: '2020-01-20T14:00Z' })
+      getPickerHTML({ value: '2020-01-20T14:00Z', time: true })
     );
 
     // default should be browser locale, which for our tests is UTC
@@ -41,6 +49,7 @@ describe('temba-datepicker', () => {
       getPickerHTML({
         value: '2020-01-20T14:00Z',
         timezone: 'America/New_York',
+        time: true,
       })
     );
 
@@ -53,7 +62,7 @@ describe('temba-datepicker', () => {
 
   it('can be updated via keyboard', async () => {
     const picker: DatePicker = await createPicker(
-      getPickerHTML({ value: '2020-01-20T14:00Z', id: 'picker' })
+      getPickerHTML({ value: '2020-01-20T14:00Z', id: 'picker', time: true })
     );
 
     // click into the picker and update the date
@@ -65,5 +74,21 @@ describe('temba-datepicker', () => {
 
     expect(picker.value).to.equal('2024-01-20T14:00:00.000Z');
     await assertScreenshot('datepicker/updated-keyboard', getClip(picker));
+  });
+
+  it('can update date via keyboard', async () => {
+    const picker: DatePicker = await createPicker(
+      getPickerHTML({ value: '2020-01-20', id: 'picker' })
+    );
+
+    // click into the picker and update the date
+    await click('#picker');
+    await typeInto('#picker', '12252024', false);
+
+    // click away to update
+    picker.blur();
+
+    expect(picker.value).to.equal('2024-12-25');
+    await assertScreenshot('datepicker/updated-keyboard-date', getClip(picker));
   });
 });

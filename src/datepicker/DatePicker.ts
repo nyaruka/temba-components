@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators';
 import { FormElement } from '../FormElement';
 import { getClasses } from '../utils';
@@ -16,6 +16,7 @@ export default class DatePicker extends FormElement {
         border: 1px solid var(--color-widget-border);
         display: flex;
         cursor: pointer;
+        box-shadow: var(--widget-box-shadow);
       }
 
       .input-wrapper {
@@ -41,6 +42,13 @@ export default class DatePicker extends FormElement {
       .tz .label {
         font-size: 0.8em;
         color: #aaa;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .tz .zone {
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       .tz-wrapper {
@@ -108,6 +116,9 @@ export default class DatePicker extends FormElement {
   @property({ type: Object })
   datetime = null;
 
+  @property({ type: Boolean })
+  time = false;
+
   /** we just return the value since it should be a string */
   public serializeValue(value: any): string {
     return value;
@@ -115,45 +126,62 @@ export default class DatePicker extends FormElement {
 
   public constructor() {
     super();
-
-    // default to the local browser zone
-    this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  public updated(changed: Map<string, any>): void {
-    super.updated(changed);
+  protected firstUpdated(
+    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
     if (changed.has('value')) {
-      if (this.value) {
-        if (!this.datetime) {
+      // default to the local browser zone
+      if (this.time) {
+        this.timezone =
+          this.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.timezoneFriendly = this.timezone
+          .replace('_', ' ')
+          .replace('/', ', ');
+
+        if (this.value) {
+          // we fire a change event on blur
           let datetime = DateTime.fromSQL(this.value).setZone(this.timezone);
           // if we can't read it as a sql stamp, try iso
           if (datetime.invalid) {
             datetime = DateTime.fromISO(this.value).setZone(this.timezone);
           }
-
           this.datetime = datetime;
-        } else {
-          this.datetime = DateTime.fromISO(this.value, { zone: this.timezone });
+          this.setValue(this.datetime.toUTC().toISO());
         }
-        this.setValue(this.datetime.toUTC().toISO());
+      } else {
+        this.setValue(this.value);
       }
     }
+  }
 
-    if (changed.has('timezone')) {
+  public updated(changed: Map<string, any>): void {
+    super.updated(changed);
+    if (changed.has('timezone') && this.time) {
+      this.timezone =
+        this.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       this.timezoneFriendly = this.timezone
         .replace('_', ' ')
         .replace('/', ', ');
+      this.requestUpdate('value');
     }
   }
 
   public handleChange(event) {
-    this.value = event.target.value;
     event.preventDefault();
     event.stopPropagation();
   }
 
-  public handleBlur() {
-    // we fire a change event on blur
+  public handleBlur(event) {
+    if (this.time) {
+      this.datetime = DateTime.fromISO(event.target.value, {
+        zone: this.timezone,
+      });
+      this.setValue(this.datetime.toUTC().toISO());
+    } else {
+      this.setValue(event.target.value);
+    }
     this.fireEvent('change');
   }
 
@@ -163,6 +191,13 @@ export default class DatePicker extends FormElement {
 
   public render(): TemplateResult {
     const classes = getClasses({ unset: !this.value });
+
+    let dateWidgetValue = null;
+    if (this.time && this.datetime && !this.datetime.invalid) {
+      dateWidgetValue = this.datetime.toFormat("yyyy-LL-dd'T'HH:mm");
+    } else if (!this.time) {
+      dateWidgetValue = this.value;
+    }
 
     return html`
       <temba-field
@@ -174,25 +209,28 @@ export default class DatePicker extends FormElement {
         .hideLabel=${this.hideLabel}
         .disabled=${this.disabled}
       >
-        <div class="container">
-          <div class="input-wrapper" @click=${this.handleClicked}>
+        <div class="container" @click=${this.handleClicked}>
+          <slot name="prefix"></slot>
+          <div class="input-wrapper">
             <input
               class=${classes}
               name=${this.label}
-              value=${this.datetime
-                ? this.datetime.toFormat("yyyy-LL-dd'T'T")
-                : null}
-              type="datetime-local"
+              value=${dateWidgetValue}
+              type="${this.time ? 'datetime-local' : 'date'}"
               @change=${this.handleChange}
               @blur=${this.handleBlur}
             />
           </div>
-          <div class="tz-wrapper" @click=${this.handleClicked}>
-            <div class="tz">
-              <div class="label">Time Zone</div>
-              <div class="zone">${this.timezoneFriendly}</div>
-            </div>
-          </div>
+          ${this.time
+            ? html`
+                <div class="tz-wrapper">
+                  <div class="tz">
+                    <div class="label">Time Zone</div>
+                    <div class="zone">${this.timezoneFriendly}</div>
+                  </div>
+                </div>
+              `
+            : null}
         </div>
       </temba-field>
     `;
