@@ -12,7 +12,10 @@ export class ContactFields extends ContactStoreElement {
     return css`
       :host {
         --curvature-widget: 0px;
-        border-radius: 6px;
+      }
+
+      .fields {
+        box-shadow: var(--widget-box-shadow);
       }
 
       .field {
@@ -85,6 +88,9 @@ export class ContactFields extends ContactStoreElement {
   @property({ type: Boolean })
   showAll: boolean;
 
+  @property({ type: String })
+  timezone: string;
+
   connectedCallback(): void {
     super.connectedCallback();
     this.handleFieldChanged = this.handleFieldChanged.bind(this);
@@ -153,11 +159,12 @@ export class ContactFields extends ContactStoreElement {
           value=${v}
           type=${field.value_type}
           @change=${this.handleFieldChanged}
+          timezone=${this.timezone}
         ></temba-contact-field>`;
       });
 
       return html`
-        <div class="${this.showAll || this.pinned ? 'show-all' : ''}">
+        <div class="fields ${this.showAll || this.pinned ? 'show-all' : ''}">
           ${fields}
         </div>
 

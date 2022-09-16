@@ -49,6 +49,8 @@ export class TabPane extends RapidElement {
         margin-right: 0.4em;
         overflow: hidden;
         transition: max-width 500ms ease-in-out;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
 
       .tab .badge {

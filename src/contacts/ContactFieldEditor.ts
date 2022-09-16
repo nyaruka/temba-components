@@ -1,5 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
+import { FormElement } from '../FormElement';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { TextInput } from '../textinput/TextInput';
@@ -18,6 +19,9 @@ export class ContactFieldEditor extends RapidElement {
   type: string;
 
   @property({ type: String })
+  timezone: string;
+
+  @property({ type: String })
   icon = navigator.clipboard ? 'copy' : '';
 
   @property({ type: String })
@@ -25,6 +29,10 @@ export class ContactFieldEditor extends RapidElement {
 
   static get styles() {
     return css`
+      .wrapper {
+        --widget-box-shadow: none;
+      }
+
       .prefix {
         background: rgba(0, 0, 0, 0.05);
         border-top-left-radius: var(--curvature-widget);
@@ -111,6 +119,11 @@ export class ContactFieldEditor extends RapidElement {
       temba-icon[name='search'] {
         margin-right: 1em;
       }
+
+      temba-datepicker {
+        --curvature: 0px;
+        position: relative;
+      }
     `;
   }
 
@@ -148,7 +161,9 @@ export class ContactFieldEditor extends RapidElement {
   }
 
   public handleSubmit() {
-    const input = this.shadowRoot.querySelector('temba-textinput') as TextInput;
+    const input = this.shadowRoot.querySelector(
+      'temba-textinput, temba-datepicker'
+    ) as FormElement;
     if (input.value !== this.value) {
       this.value = input.value;
       this.fireEvent('change');
@@ -171,44 +186,53 @@ export class ContactFieldEditor extends RapidElement {
   public render(): TemplateResult {
     return html`
       <div class="wrapper ${this.value ? 'set' : 'unset'}">
-        <temba-textinput
-          value="${this.value ? this.value : ''}"
-          ?datetimepicker=${this.type === 'datetime'}
-          @blur=${this.handleSubmit}
-          @keydown=${this.handleInput}
-          @change=${this.handleChange}
-        >
-          <div class="prefix" slot="prefix">
-            <div class="name">${this.name}</div>
-            ${this.type === 'datetime'
-              ? html`<div style="position: relative; padding-top: .75em;">
-                  <temba-icon name="calendar" animateclick="pulse" />
-                </div>`
-              : null}
-          </div>
-
-          <div class="postfix">
-            <div
-              class="popper ${this.iconClass}"
-              @click=${this.handleIconClick}
-            >
-              ${this.value
-                ? html`
-                <temba-icon 
-                  name="search"
-                  animateclick="pulse"                  
-                ></temba-icon>
+        ${this.type === 'datetime'
+          ? html`
+              <temba-datepicker
+                timezone=${this.timezone}
+                value="${this.value ? this.value : ''}"
+                @change=${this.handleSubmit}
+                time
+              >
+                <div class="prefix" slot="prefix">
+                  <div class="name">${this.name}</div>
                 </div>
-              `
-                : null}
-              <temba-icon
-                name="${this.icon}"
-                animatechange="spin"
-                animateclick="pulse"
-              ></temba-icon>
-            </div>
-          </div>
-        </temba-textinput>
+              </temba-datepicker>
+            `
+          : html`
+              <temba-textinput
+                value="${this.value ? this.value : ''}"
+                @blur=${this.handleSubmit}
+                @keydown=${this.handleInput}
+                @change=${this.handleChange}
+              >
+                <div class="prefix" slot="prefix">
+                  <div class="name">${this.name}</div>
+                </div>
+
+                <div class="postfix">
+                  <div
+                    class="popper ${this.iconClass}"
+                    @click=${this.handleIconClick}
+                  >
+                    ${this.value
+                      ? html`
+                  <temba-icon
+                    name="search"
+                    animateclick="pulse"
+                  ></temba-icon>
+                  </div>
+                `
+                      : null}
+                    <temba-icon
+                      name="${this.icon}"
+                      animatechange="spin"
+                      animateclick="pulse"
+                    ></temba-icon>
+                  </div>
+                </div>
+              </temba-textinput>
+            `}
       </div>
     `;
   }
