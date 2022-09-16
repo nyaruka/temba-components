@@ -91,4 +91,13 @@ describe('temba-datepicker', () => {
     expect(picker.value).to.equal('2024-12-25');
     await assertScreenshot('datepicker/updated-keyboard-date', getClip(picker));
   });
+
+  it('truncates time on dates', async () => {
+    const picker: DatePicker = await createPicker(
+      getPickerHTML({ value: '2020-01-20 00:00:00' })
+    );
+
+    expect(picker.value).to.equal('2020-01-20');
+    await assertScreenshot('datepicker/date-truncated-time', getClip(picker));
+  });
 });
