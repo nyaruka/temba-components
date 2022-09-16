@@ -151,7 +151,8 @@ export default class DatePicker extends FormElement {
           this.setValue(this.datetime.toUTC().toISO());
         }
       } else {
-        this.setValue(this.value);
+        this.datetime = DateTime.fromSQL(this.value);
+        this.setValue(this.datetime.toISODate());
       }
     }
   }
