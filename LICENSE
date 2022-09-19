@@ -1,6 +1,6 @@
-Temba Components - General components for building websites
+Temba Components - general components for building websites
 
-Copyright (C) 2020 Nyaruka
+Copyright (C) 2020-2022 TextIt
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -14,7 +14,7 @@ GNU Affero General Public License below for more details.
 
 ------------------------------------------------------------------------
 
-GNU AFFERO GENERAL PUBLIC LICENSE
+                    GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>

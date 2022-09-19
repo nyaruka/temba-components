@@ -183,6 +183,10 @@ temba-select:focus {
   box-shadow: none;
 }
 
+temba-datepicker {
+  margin: 1em;
+}
+
 .flatpickr-calendar {
   margin-top: 28px;
   margin-bottom: 28px;

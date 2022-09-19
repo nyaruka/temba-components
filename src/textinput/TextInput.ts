@@ -6,7 +6,6 @@ import { FormElement } from '../FormElement';
 import { Modax } from '../dialog/Modax';
 import { sanitize } from './helpers';
 import { CharCount } from '../charcount/CharCount';
-import 'lit-flatpickr';
 
 export class TextInput extends FormElement {
   static get styles() {
@@ -73,20 +72,6 @@ export class TextInput extends FormElement {
         width: 100%;
       }
 
-      .textinput.withdate {
-        cursor: pointer;
-      }
-
-      .textinput.withdate.loading {
-        color: #fff;
-      }
-
-      .datepicker {
-        padding: 9px;
-        margin: 0px;
-        border: 1px red solid;
-      }
-
       .textinput:focus {
         outline: none;
         box-shadow: none;
@@ -130,20 +115,11 @@ export class TextInput extends FormElement {
   @property({ type: Boolean })
   textarea: boolean;
 
-  @property({ type: Boolean })
-  datepicker: boolean;
-
-  @property({ type: Boolean })
-  datetimepicker: boolean;
-
   @property({ type: String })
   placeholder = '';
 
   @property({ type: String })
   value = '';
-
-  @property({ type: String })
-  name = '';
 
   @property({ type: Boolean })
   password: boolean;
@@ -153,9 +129,6 @@ export class TextInput extends FormElement {
 
   @property({ type: Object })
   inputElement: HTMLInputElement;
-
-  @property({ type: Object })
-  dateElement: any;
 
   @property({ type: Boolean })
   clearable: boolean;
@@ -177,16 +150,11 @@ export class TextInput extends FormElement {
   onBlur: any;
 
   @property({ type: Boolean })
-  disabled = false;
-
-  @property({ type: Boolean })
   autogrow = false;
 
   counterElement: CharCount = null;
   cursorStart = -1;
   cursorEnd = -1;
-
-  isoFormattedDate: string;
 
   public constructor() {
     super();
@@ -194,13 +162,6 @@ export class TextInput extends FormElement {
 
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
-
-    this.dateElement = this.shadowRoot.querySelector('.datepicker');
-    if (this.dateElement) {
-      this.onDateUpdated = this.onDateUpdated.bind(this);
-      this.onDateReady = this.onDateReady.bind(this);
-      this.onDateClose = this.onDateClose.bind(this);
-    }
 
     this.inputElement = this.shadowRoot.querySelector('.textinput');
 
@@ -221,63 +182,26 @@ export class TextInput extends FormElement {
     super.updated(changes);
 
     if (changes.has('value')) {
-      if (this.datepicker || this.datetimepicker) {
-        this.onDateReady();
-      } else {
-        this.setValues([this.value]);
-        this.fireEvent('change');
+      this.setValues([this.value]);
+      this.fireEvent('change');
 
-        if (this.textarea && this.autogrow) {
-          const autogrow = this.shadowRoot.querySelector(
-            '.grow-wrap > div'
-          ) as HTMLDivElement;
-          autogrow.innerText = this.value + String.fromCharCode(10);
-        }
-
-        if (this.cursorStart > -1 && this.cursorEnd > -1) {
-          this.inputElement.setSelectionRange(this.cursorStart, this.cursorEnd);
-          this.cursorStart = -1;
-          this.cursorEnd = -1;
-        }
+      if (this.textarea && this.autogrow) {
+        const autogrow = this.shadowRoot.querySelector(
+          '.grow-wrap > div'
+        ) as HTMLDivElement;
+        autogrow.innerText = this.value + String.fromCharCode(10);
       }
-    }
-  }
 
-  private onDateUpdated(dates: Date[], isoFormatDate: string) {
-    if (dates.length > 0) {
-      this.isoFormattedDate = isoFormatDate;
-      this.inputElement.value = this.dateElement.formatDate(
-        dates[0],
-        this.dateElement.altFormat
-      );
+      if (this.cursorStart > -1 && this.cursorEnd > -1) {
+        this.inputElement.setSelectionRange(this.cursorStart, this.cursorEnd);
+        this.cursorStart = -1;
+        this.cursorEnd = -1;
+      }
     }
   }
 
   public getDisplayValue() {
     return this.inputElement.value;
-  }
-
-  private onDateReady() {
-    window.setTimeout(() => {
-      if (this.dateElement) {
-        if (this.value) {
-          this.inputElement.value = this.dateElement.formatDate(
-            this.dateElement.parseDate(this.value),
-            this.dateElement.altFormat
-          );
-          this.dateElement.setDate(this.value);
-        }
-
-        this.loading = false;
-      }
-    }, 0);
-  }
-
-  private onDateClose() {
-    if (this.isoFormattedDate) {
-      this.setValue(this.isoFormattedDate);
-      this.fireEvent('blur');
-    }
   }
 
   private handleClear(event: any): void {
@@ -320,15 +244,6 @@ export class TextInput extends FormElement {
     this.fireEvent('change');
   }
 
-  private handleDateClick(): void {
-    if (this.disabled) {
-      return;
-    }
-
-    this.dateElement.open();
-    this.dateElement.focus();
-  }
-
   private handleContainerClick(): void {
     if (this.disabled) {
       return;
@@ -336,8 +251,6 @@ export class TextInput extends FormElement {
 
     if (this.inputElement) {
       this.inputElement.focus();
-    } else {
-      this.handleDateClick();
     }
   }
 
@@ -499,35 +412,6 @@ export class TextInput extends FormElement {
           ${input}
         </div>`;
       }
-    }
-
-    if (this.datepicker || this.datetimepicker) {
-      input = html`
-        <input
-          class="textinput withdate ${this.loading ? 'loading' : ''}"
-          name=${this.name}
-          type="text"
-          @click=${this.handleDateClick}
-          @focus=${this.handleDateClick}
-          @keydown=${(e: any) => {
-            e.preventDefault();
-          }}
-          readonly="true"
-          placeholder="${this.placeholder}"
-          .value="${this.value}"
-          ?disabled=${this.disabled}
-        />
-        <lit-flatpickr
-          class="datepicker hidden"
-          altInput
-          altFormat="${this.datepicker ? 'F j, Y' : 'F j, Y h:i K'}"
-          dateFormat="${this.datepicker ? 'Y-m-d' : 'Z'}"
-          .onValueUpdate=${this.onDateUpdated}
-          .onReady=${this.onDateReady}
-          .onClose=${this.onDateClose}
-          ?enableTime=${this.datetimepicker}
-        ></lit-flatpickr>
-      `;
     }
 
     return html`

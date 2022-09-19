@@ -38,6 +38,7 @@ import { TembaSlider } from './src/slider/TembaSlider';
 import { RunList } from './src/list/RunList';
 import { FlowStoreElement } from './src/flow/FlowStoreElement';
 import { ContactNameFetch } from './src/contacts/ContactNameFetch';
+import DatePicker from './src/datepicker/DatePicker';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -49,6 +50,7 @@ addCustomElement('temba-anchor', Anchor);
 addCustomElement('temba-alert', Alert);
 addCustomElement('temba-store', Store);
 addCustomElement('temba-textinput', TextInput);
+addCustomElement('temba-datepicker', DatePicker);
 addCustomElement('temba-completion', Completion);
 addCustomElement('temba-checkbox', Checkbox);
 addCustomElement('temba-select', Select);
