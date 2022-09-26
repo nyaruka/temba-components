@@ -1,6 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
-import { TembaList } from '../src/list/TembaList';
+// import { TembaList } from '../src/list/TembaList';
 import {
   assertScreenshot,
   delay,
@@ -31,15 +31,15 @@ const getContactChat = async (attrs: any = {}) => {
   return chat;
 };
 
-const list_TAG = 'temba-list';
-const getTickets = async (attrs: any = {}) => {
-  const list = (await getComponent(list_TAG, attrs)) as TembaList;
+// const list_TAG = 'temba-list';
+// const getTickets = async (attrs: any = {}) => {
+//   const list = (await getComponent(list_TAG, attrs)) as TembaList;
 
-  // wait for the fetch
-  await list.httpComplete;
+//   // wait for the fetch
+//   await list.httpComplete;
 
-  return list;
-};
+//   return list;
+// };
 
 describe('temba-contact-chat', () => {
   // map requests for contact history and ticket api to our static files
@@ -250,47 +250,47 @@ describe('temba-contact-chat', () => {
     );
   });
 
-  it('show chatbox if contact is active and ticket is open', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
-    });
+  // it('show chatbox if contact is active and ticket is open', async () => {
+  //   // we are a StoreElement, so load a store first
+  //   await loadStore();
+  //   const chat: ContactChat = await getContactChat({
+  //     contact: 'contact-dave-active',
+  //   });
 
-    // get a list of tickets for the contact
-    const tickets: TembaList = await getTickets({
-      endpoint: '/test-assets/tickets/tickets-dave-active.json',
-    });
+  //   // get a list of tickets for the contact
+  //   const tickets: TembaList = await getTickets({
+  //     endpoint: '/test-assets/tickets/tickets-dave-active.json',
+  //   });
 
-    // console.log(tickets);
-    // console.log(tickets.items);
-    // console.log(tickets.items.length);
+  //   // console.log(tickets);
+  //   // console.log(tickets.items);
+  //   // console.log(tickets.items.length);
 
-    // update the chat's current ticket and ticket uuid
-    chat.currentTicket = tickets.items[0];
-    chat.ticketUUID = tickets.items[0].uuid;
-    chat.refresh();
+  //   // update the chat's current ticket and ticket uuid
+  //   chat.currentTicket = tickets.items[0];
+  //   chat.ticketUUID = tickets.items[0].uuid;
+  //   chat.refresh();
 
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.not.equal(null);
+  //   const chatboxDiv = chat.shadowRoot.querySelector(
+  //     '.chatbox'
+  //   ) as HTMLDivElement;
+  //   expect(chatboxDiv).to.not.equal(null);
 
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.equal(null);
+  //   const reactivateButton = chat.shadowRoot.querySelector(
+  //     'temba-button#reactivate-button'
+  //   ) as HTMLDivElement;
+  //   expect(reactivateButton).to.equal(null);
 
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
+  //   const reopenButton = chat.shadowRoot.querySelector(
+  //     'temba-button#reopen-button'
+  //   ) as HTMLDivElement;
+  //   expect(reopenButton).to.equal(null);
 
-    await assertScreenshot(
-      'contacts/contact-active-ticket-open-show-chatbox',
-      getClip(chat)
-    );
-  });
+  //   await assertScreenshot(
+  //     'contacts/contact-active-ticket-open-show-chatbox',
+  //     getClip(chat)
+  //   );
+  // });
 
   // it('show reopen button if contact is active and ticket is closed', async () => {
   //     // we are a StoreElement, so load a store first
