@@ -31,6 +31,13 @@ const getContactChat = async (attrs: any = {}) => {
   return chat;
 };
 
+// const getTickets = async () => {
+//   await fetch('../test-assets/tickets/tickets-dave-active.json', { method: "GET" })
+//     .then(response => response.json())
+//     .then(data => console.log(data))
+//     .catch(error => console.error(error));
+// };
+
 // const list_TAG = 'temba-list';
 // const getTickets = async (attrs: any = {}) => {
 //   const list = (await getComponent(list_TAG, attrs)) as TembaList;
@@ -257,7 +264,11 @@ describe('temba-contact-chat', () => {
   //     contact: 'contact-dave-active',
   //   });
 
-  //   // get a list of tickets for the contact
+  //   // option 1 - get a list of tickets for the contact
+  //   const tickets = getTickets();
+  //   console.log(tickets);
+
+  //   // option 2 - get a list of tickets for the contact
   //   const tickets: TembaList = await getTickets({
   //     endpoint: '/test-assets/tickets/tickets-dave-active.json',
   //   });
