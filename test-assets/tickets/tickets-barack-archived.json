@@ -1,5 +1,4 @@
 {
-  "comments": "dave matthews is an active contact with 2 open tickets and 1 closed ticket",
   "next": null,
   "previous": null,
   "results": [
@@ -10,14 +9,14 @@
         "name": "Internal"
       },
       "contact": {
-        "uuid": "contact-dave-active",
-        "name": "Dave Matthews"
+        "uuid": "contact-barak-archived",
+        "name": "Barack Obama"
       },
-      "status": "open",
+      "status": "closed",
       "subject": "Favorites",
       "body": "A new result: Some Value\nColor: help",
       "opened_on": "2021-04-02T21:06:59.666960Z",
-      "closed_on": null
+      "closed_on": "2021-04-03T21:06:59.666960Z"
     },
     {
       "uuid": "8c3f31e9-89d4-48d9-a178-a47461d7f1b6",
@@ -26,14 +25,14 @@
         "name": "Internal"
       },
       "contact": {
-        "uuid": "contact-dave-active",
-        "name": "Dave Matthews"
+        "uuid": "contact-barak-archived",
+        "name": "Barack Obama"
       },
-      "status": "open",
+      "status": "closed",
       "subject": "Favorites",
       "body": "A new result: Some Value\nColor: help",
       "opened_on": "2021-04-02T17:12:22.633991Z",
-      "closed_on": null
+      "closed_on": "2021-04-03T21:06:59.666960Z"
     },
     {
       "uuid": "31e48a8e-ed79-4bf0-9aa7-5f84b92853c7",
@@ -42,14 +41,14 @@
         "name": "Internal"
       },
       "contact": {
-        "uuid": "contact-dave-active",
-        "name": "Dave Matthews"
+        "uuid": "contact-barak-archived",
+        "name": "Barack Obama"
       },
       "status": "closed",
       "subject": "Favorites",
       "body": "Color: help",
       "opened_on": "2021-02-18T00:19:19.895705Z",
-      "closed_on": "2021-02-19T00:19:19.895705Z"
+      "closed_on": "2021-04-03T21:06:59.666960Z"
     }
   ]
 }
