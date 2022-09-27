@@ -40,7 +40,10 @@ export class ContactStoreElement extends StoreElement {
   }
 
   public updateStoreContact(value: any) {
-    this.store.updateCache(`${this.endpoint}${this.contact}`, value);
+    this.store.updateCache(
+      `${this.endpoint}${this.contact}`,
+      this.prepareData([value])
+    );
   }
 
   protected updated(
