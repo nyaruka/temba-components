@@ -386,17 +386,30 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
+    console.log('getTembaChatbox');
+    console.log(this.contact);
+    if (this.currentContact) console.log(this.currentContact.status);
+    if (this.currentTicket) {
+      console.log(this.currentTicket.status);
+      console.log(this.currentTicket.closed_on);
+    }
+    console.log('/getTembaChatbox');
+
     if (!this.currentContact && !this.currentTicket) {
       return null;
     }
 
     if (this.currentTicket) {
+      console.log('current ticket not null');
       //no chatbox for archived, blocked, or stopped contacts
       if (this.currentContact && this.currentContact.status !== 'active') {
+        console.log('current contact not active');
         return null;
       } else {
+        console.log('current contact is active');
         //reopen button for closed tickets
-        if (this.currentTicket && this.currentTicket.closed_on) {
+        if (this.currentTicket.closed_on) {
+          console.log('current ticket is closed');
           return html` <div class="closed-footer">
             <temba-button
               id="reopen-button"
@@ -407,6 +420,7 @@ export class ContactChat extends ContactStoreElement {
         }
         //chatbox for open tickets
         else {
+          console.log('current ticket is open');
           return this.getChatbox();
         }
       }

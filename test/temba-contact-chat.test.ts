@@ -1,6 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
-// import { TembaList } from '../src/list/TembaList';
+import { TembaList } from '../src/list/TembaList';
 import {
   assertScreenshot,
   delay,
@@ -31,24 +31,17 @@ const getContactChat = async (attrs: any = {}) => {
   return chat;
 };
 
-// const getTickets = async () => {
-//   await fetch('../test-assets/tickets/tickets-dave-active.json', { method: "GET" })
-//     .then(response => response.json())
-//     .then(data => console.log(data))
-//     .catch(error => console.error(error));
-// };
+const list_TAG = 'temba-list';
+const getList = async (attrs: any = {}) => {
+  const list = (await getComponent(list_TAG, attrs)) as TembaList;
 
-// const list_TAG = 'temba-list';
-// const getTickets = async (attrs: any = {}) => {
-//   const list = (await getComponent(list_TAG, attrs)) as TembaList;
+  // wait for the fetch
+  await list.httpComplete;
 
-//   // wait for the fetch
-//   await list.httpComplete;
+  return list;
+};
 
-//   return list;
-// };
-
-describe('temba-contact-chat', () => {
+describe('temba-contact-chat - contact tests', () => {
   // map requests for contact history and ticket api to our static files
   // we'll just us the same history and ticket list for everybody for now
   beforeEach(() => {
@@ -256,144 +249,171 @@ describe('temba-contact-chat', () => {
       getClip(chat)
     );
   });
+});
 
-  // it('show chatbox if contact is active and ticket is open', async () => {
-  //   // we are a StoreElement, so load a store first
-  //   await loadStore();
-  //   const chat: ContactChat = await getContactChat({
-  //     contact: 'contact-dave-active',
-  //   });
+describe('temba-contact-chat - ticket tests', () => {
+  // map requests for contact history to our static files
+  // we'll just us the same history for everybody for now
+  beforeEach(() => {
+    mockGET(
+      /\/contact\/history\/contact-.*/,
+      '/test-assets/contacts/history.json'
+    );
+  });
 
-  //   // option 1 - get a list of tickets for the contact
-  //   const tickets = getTickets();
-  //   console.log(tickets);
+  it('show chatbox if contact is active and ticket is open', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-carter-active',
+    });
 
-  //   // option 2 - get a list of tickets for the contact
-  //   const tickets: TembaList = await getTickets({
-  //     endpoint: '/test-assets/tickets/tickets-dave-active.json',
-  //   });
+    console.log(chat);
 
-  //   // console.log(tickets);
-  //   // console.log(tickets.items);
-  //   // console.log(tickets.items.length);
+    const tickets: TembaList = await getList({
+      endpoint: '/test-assets/tickets/ticket-carter-open.json',
+    });
 
-  //   // update the chat's current ticket and ticket uuid
-  //   chat.currentTicket = tickets.items[0];
-  //   chat.ticketUUID = tickets.items[0].uuid;
-  //   chat.refresh();
+    chat.currentTicket = tickets.items[0];
+    chat.refresh();
 
-  //   const chatboxDiv = chat.shadowRoot.querySelector(
-  //     '.chatbox'
-  //   ) as HTMLDivElement;
-  //   expect(chatboxDiv).to.not.equal(null);
+    console.log('contact_active_ticket_open_test');
+    console.log(chat.contact);
+    if (chat.currentContact) console.log(chat.currentContact.status);
+    if (chat.currentTicket) {
+      console.log(chat.currentTicket.status);
+      console.log(chat.currentTicket.closed_on);
+    }
+    console.log('/contact_active_ticket_open_test');
 
-  //   const reactivateButton = chat.shadowRoot.querySelector(
-  //     'temba-button#reactivate-button'
-  //   ) as HTMLDivElement;
-  //   expect(reactivateButton).to.equal(null);
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.not.equal(null);
 
-  //   const reopenButton = chat.shadowRoot.querySelector(
-  //     'temba-button#reopen-button'
-  //   ) as HTMLDivElement;
-  //   expect(reopenButton).to.equal(null);
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.equal(null);
 
-  //   await assertScreenshot(
-  //     'contacts/contact-active-ticket-open-show-chatbox',
-  //     getClip(chat)
-  //   );
-  // });
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
 
-  // it('show reopen button if contact is active and ticket is closed', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
-  //     const chat: ContactChat = await getContactChat({
-  //       contact: 'contact-dave-active',
-  //     });
+    await assertScreenshot(
+      'contacts/contact-active-ticket-open-show-chatbox',
+      getClip(chat)
+    );
+  });
 
-  //     // todo
+  xit('show reopen button if contact is active and ticket is closed', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-carter-active',
+    });
 
-  //     const chatboxDiv = chat.shadowRoot.querySelector(
-  //       '.chatbox'
-  //     ) as HTMLDivElement;
-  //     expect(chatboxDiv).to.equal(null);
+    console.log(chat);
 
-  //     const reactivateButton = chat.shadowRoot.querySelector(
-  //       'temba-button#reactivate-button'
-  //     ) as HTMLDivElement;
-  //     expect(reactivateButton).to.equal(null);
+    const tickets: TembaList = await getList({
+      endpoint: '/test-assets/tickets/ticket-carter-closed.json',
+    });
 
-  //     const reopenButton = chat.shadowRoot.querySelector(
-  //       'temba-button#reopen-button'
-  //     ) as HTMLDivElement;
-  //     expect(reopenButton).to.not.equal(null);
+    chat.currentTicket = tickets.items[0];
+    chat.refresh();
 
-  //     await assertScreenshot(
-  //       'contacts/contact-active-ticket-closed-show-reopen-button',
-  //       getClip(chat)
-  //     );
-  // });
+    console.log('contact_active_ticket_closed_test');
+    console.log(chat.contact);
+    if (chat.currentContact) console.log(chat.currentContact.status);
+    if (chat.currentTicket) {
+      console.log(chat.currentTicket.status);
+      console.log(chat.currentTicket.closed_on);
+    }
+    console.log('/contact_active_ticket_closed_test');
 
-  // it('hide chatbox if contact is archived and ticket is closed', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.equal(null);
 
-  //     const chat: ContactChat = await getContactChat({
-  //       contact: 'contact-barack-archived',
-  //     });
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.equal(null);
 
-  //     // todo
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.not.equal(null);
 
-  //     const chatboxDiv = chat.shadowRoot.querySelector(
-  //       '.chatbox'
-  //     ) as HTMLDivElement;
-  //     expect(chatboxDiv).to.equal(null);
+    await assertScreenshot(
+      'contacts/contact-active-ticket-closed-show-reopen-button',
+      getClip(chat)
+    );
+  });
 
-  //     const reactivateButton = chat.shadowRoot.querySelector(
-  //       'temba-button#reactivate-button'
-  //     ) as HTMLDivElement;
-  //     expect(reactivateButton).to.equal(null);
+  xit('hide chatbox if contact is archived and ticket is closed', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
 
-  //     const reopenButton = chat.shadowRoot.querySelector(
-  //       'temba-button#reopen-button'
-  //     ) as HTMLDivElement;
-  //     expect(reopenButton).to.equal(null);
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-barack-archived',
+    });
 
-  //     await assertScreenshot(
-  //       'contacts/contact-archived-ticket-closed-hide-chatbox',
-  //       getClip(chat)
-  //     );
-  // });
+    // todo
 
-  // // for the case when a contact is active and has
-  // // 0 open and 1+ closed tickets OR 1+ open and 0 closed tickets
-  // // and the user is viewing the ticket list containing 0 tickets
-  // it('hide chatbox if contact is active and list contains 0 tickets', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
-  //     const chat: ContactChat = await getContactChat({
-  //       ticket: 'contact-carter-active',
-  //     });
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.equal(null);
 
-  //     // todo
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.equal(null);
 
-  //     const chatboxDiv = chat.shadowRoot.querySelector(
-  //       '.chatbox'
-  //     ) as HTMLDivElement;
-  //     expect(chatboxDiv).to.equal(null);
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
 
-  //     const reactivateButton = chat.shadowRoot.querySelector(
-  //       'temba-button#reactivate-button'
-  //     ) as HTMLDivElement;
-  //     expect(reactivateButton).to.equal(null);
+    await assertScreenshot(
+      'contacts/contact-archived-ticket-closed-hide-chatbox',
+      getClip(chat)
+    );
+  });
 
-  //     const reopenButton = chat.shadowRoot.querySelector(
-  //       'temba-button#reopen-button'
-  //     ) as HTMLDivElement;
-  //     expect(reopenButton).to.equal(null);
+  // for the case when a contact is active and has
+  // 0 open and 1+ closed tickets OR 1+ open and 0 closed tickets
+  // and the user is viewing the ticket list containing 0 tickets
+  xit('hide chatbox if contact is active and 0 tickets', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      ticket: 'contact-carter-active',
+    });
 
-  //     await assertScreenshot(
-  //       'contacts/contact-archived-0-tickets-hide-chatbox',
-  //       getClip(chat)
-  //     );
-  // });
+    // todo
+
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.equal(null);
+
+    const reactivateButton = chat.shadowRoot.querySelector(
+      'temba-button#reactivate-button'
+    ) as HTMLDivElement;
+    expect(reactivateButton).to.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
+
+    await assertScreenshot(
+      'contacts/contact-archived-0-tickets-hide-chatbox',
+      getClip(chat)
+    );
+  });
 });
