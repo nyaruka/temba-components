@@ -229,15 +229,27 @@ const wireScreenshots = async (page, context) => {
 
   await page.exposeFunction(
     'typeInto',
-    async (selector, text, replace = false) => {
-      // console.log("frames", page.frames().length);
+    async (selector, text, replace = false, enter = false) => {
+
+      const selectors = selector.split(":");
       const frame = await page.frames().find(f => {
         return true;
       });
-      const element = await frame.$(selector);
+      await frame.$(selectors[0]);
 
+      let codeSelector = `document.querySelector("${selectors[0]}")`;
+      selectors.shift();
+      if (selectors.length > 0) {
+        codeSelector += "." + selectors.map((entry)=>`shadowRoot.querySelector("${entry}")`).join(".");
+      }    
+
+      const element = await page.evaluateHandle(codeSelector);
       await element.click({ clickCount: replace ? 3 : 1 });
       await page.keyboard.type(text);
+
+      if (enter) {
+        await page.keyboard.press("Enter");
+      }
     }
   );
 

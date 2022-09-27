@@ -220,6 +220,7 @@ export const loadStore = async () => {
       completion='/test-assets/store/editor.json'
       groups='/test-assets/store/groups.json'
       languages='/test-assets/store/languages.json'
+      fields='/test-assets/store/fields.json'
     />`
   );
   await store.httpComplete;
