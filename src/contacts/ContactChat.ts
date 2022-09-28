@@ -386,14 +386,16 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
-    console.log('getTembaChatbox');
-    console.log(this.contact);
-    if (this.currentContact) console.log(this.currentContact.status);
-    if (this.currentTicket) {
-      console.log(this.currentTicket.status);
-      console.log(this.currentTicket.closed_on);
-    }
-    console.log('/getTembaChatbox');
+    // console.log('getTembaChatbox()');
+    // console.log("contact="+this.contact);
+    // if (this.currentContact) {
+    //   console.log("currentContact=" + this.currentContact.status);
+    // }
+    // if (this.currentTicket) {
+    //   console.log("currentTicket=" + this.currentTicket.status);
+    //   if(this.currentTicket.closed_on) console.log(this.currentTicket.closed_on);
+    // }
+    // console.log('/getTembaChatbox()');
 
     if (!this.currentContact && !this.currentTicket) {
       return null;
@@ -406,10 +408,10 @@ export class ContactChat extends ContactStoreElement {
         console.log('current contact not active');
         return null;
       } else {
-        console.log('current contact is active');
+        console.log('current contact active');
         //reopen button for closed tickets
         if (this.currentTicket.closed_on) {
-          console.log('current ticket is closed');
+          console.log('current ticket closed');
           return html` <div class="closed-footer">
             <temba-button
               id="reopen-button"
@@ -420,7 +422,7 @@ export class ContactChat extends ContactStoreElement {
         }
         //chatbox for open tickets
         else {
-          console.log('current ticket is open');
+          console.log('current ticket open');
           return this.getChatbox();
         }
       }
