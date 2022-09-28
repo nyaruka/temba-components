@@ -37,18 +37,18 @@ const getList = async (attrs: any = {}) => {
 };
 
 // TODO remove this when PR is no longer draft !!!
-const debug = (chat: ContactChat) => {
-  console.log('debug()');
-  // console.log(chat);
-  console.log('contact=' + chat.contact);
-  if (chat.currentContact)
-    console.log('currentContact=' + chat.currentContact.status);
-  if (chat.currentTicket) {
-    console.log('currentTicket=' + chat.currentTicket.status);
-    if (chat.currentTicket.closed_on) console.log(chat.currentTicket.closed_on);
-  }
-  console.log('/debug()');
-};
+// const debug = (chat: ContactChat) => {
+//   console.log('debug()');
+//   // console.log(chat);
+//   console.log('contact=' + chat.contact);
+//   if (chat.currentContact)
+//     console.log('currentContact=' + chat.currentContact.status);
+//   if (chat.currentTicket) {
+//     console.log('currentTicket=' + chat.currentTicket.status);
+//     if (chat.currentTicket.closed_on) console.log(chat.currentTicket.closed_on);
+//   }
+//   console.log('/debug()');
+// };
 
 describe('temba-contact-chat - contact tests', () => {
   // map requests for contact history and ticket api to our static files
