@@ -39,8 +39,10 @@ export class ContactStoreElement extends StoreElement {
     return null;
   }
 
-  public updateStoreContact(value: any) {
-    this.store.updateCache(`${this.endpoint}${this.contact}`, value);
+  public setContact(contact: any) {
+    // make sure contact data is properly prepped
+    this.data = this.prepareData([contact]);
+    this.store.updateCache(`${this.endpoint}${this.contact}`, this.data);
   }
 
   protected updated(

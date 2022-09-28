@@ -26,17 +26,9 @@
         }
       ],
       "fields": {
-        "checkindate": "2022-04-21T00:20:00.000000Z",
-        "student_id": "A2342CVAF",
         "joined": "2022-07-08T03:04:51.568443+01:00",
-        "last_message": "2022-06-16T00:16:00.000000Z",
-        "team": "Performers",
-        "checkintime": "3:00pm",
-        "wantsresources": "Yes",
         "age": "30",
-        "rating": "A+",
-        "businessloan_amount": "24,300 RWF",
-        "unhcr_number": "34560212"
+        "gender": "M"
       },
       "flow": {
         "uuid": "d6946f76-dbcd-4c3f-b0e4-2dfe2f04d5fd",
