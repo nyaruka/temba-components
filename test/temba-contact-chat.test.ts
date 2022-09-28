@@ -227,7 +227,7 @@ describe('temba-contact-chat - ticket tests', () => {
       contact: 'contact-carter-active',
     });
 
-    debug(chat);
+    // debug(chat);
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
@@ -272,7 +272,7 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.currentTicket = tickets.items[0];
     chat.refresh();
 
-    debug(chat);
+    // debug(chat);
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
@@ -317,7 +317,7 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.currentTicket = tickets.items[0];
     chat.refresh();
 
-    debug(chat);
+    // debug(chat);
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
@@ -365,7 +365,7 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.currentTicket = tickets.items[0];
     chat.refresh();
 
-    debug(chat);
+    // debug(chat);
 
     // todo figure out why this is null when it should not be null
     // const chatHistoryEl = chat.shadowRoot.querySelector(
