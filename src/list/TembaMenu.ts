@@ -705,7 +705,6 @@ export class TembaMenu extends RapidElement {
 
       if (menuItem.endpoint) {
         this.loadItems(menuItem, true);
-        this.dispatchEvent(new Event('change'));
       } else {
         if (this.pending && this.pending.length > 0) {
           // auto select the next pending click
@@ -721,11 +720,10 @@ export class TembaMenu extends RapidElement {
           } else {
             this.fireNoPath(nextId);
           }
-        } else {
-          this.dispatchEvent(new Event('change'));
         }
         this.requestUpdate('root');
       }
+      this.dispatchEvent(new Event('change'));
     }
   }
 
