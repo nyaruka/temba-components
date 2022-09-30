@@ -8,6 +8,7 @@ export interface MenuItem {
   id?: string;
   vanity_id?: string;
   name?: string;
+  verbose_name?: string;
   count?: number;
   icon?: string;
   collapsed_icon?: string;
