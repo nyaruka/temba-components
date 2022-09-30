@@ -193,6 +193,9 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   agent = '';
 
+  // http promise to monitor for completeness
+  public httpComplete: Promise<void>;
+
   constructor() {
     super();
     this.showDetails = getCookieBoolean(COOKIE_KEYS.TICKET_SHOW_DETAILS);
@@ -386,51 +389,38 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
-    // console.log('getTembaChatbox()');
-    // console.log("contact="+this.contact);
-    // if (this.currentContact) {
-    //   console.log("currentContact=" + this.currentContact.status);
-    // }
-    // if (this.currentTicket) {
-    //   console.log("currentTicket=" + this.currentTicket.status);
-    //   if(this.currentTicket.closed_on) console.log(this.currentTicket.closed_on);
-    // }
-    // console.log('/getTembaChatbox()');
-
     if (!this.currentContact && !this.currentTicket) {
       return null;
     }
 
     if (this.currentTicket) {
-      console.log('current ticket not null');
-      //no chatbox for archived, blocked, or stopped contacts
-      if (this.currentContact && this.currentContact.status !== 'active') {
-        console.log('current contact not active');
-        return null;
+      if (this.currentContact) {
+        if (this.currentContact.status !== 'active') {
+          //no chatbox for archived, blocked, or stopped contacts
+          return null;
+        } else {
+          if (this.currentTicket.closed_on) {
+            //reopen button for active contact with a closed ticket
+            return html` <div class="closed-footer">
+              <temba-button
+                id="reopen-button"
+                name="Reopen"
+                @click=${this.handleTicketReopen}
+              ></temba-button>
+            </div>`;
+          } else {
+            //chatbox for active contact with an open ticket
+            return this.getChatbox();
+          }
+        }
       } else {
-        console.log('current contact active');
-        //reopen button for closed tickets
-        if (this.currentTicket.closed_on) {
-          console.log('current ticket closed');
-          return html` <div class="closed-footer">
-            <temba-button
-              id="reopen-button"
-              name="Reopen"
-              @click=${this.handleTicketReopen}
-            ></temba-button>
-          </div>`;
-        }
-        //chatbox for open tickets
-        else {
-          console.log('current ticket open');
-          return this.getChatbox();
-        }
+        return null;
       }
     }
 
     if (this.currentContact) {
-      //reactivate button for archived, blocked, or stopped contacts
       if (this.currentContact.status !== 'active') {
+        //reactivate button for archived, blocked, or stopped contacts
         return html` <div class="closed-footer">
           <temba-button
             id="reactivate-button"
@@ -438,11 +428,12 @@ export class ContactChat extends ContactStoreElement {
             @click=${this.handleContactReactivate}
           ></temba-button>
         </div>`;
-      }
-      //chatbox for active contacts
-      else {
+      } else {
+        //chatbox for active contacts
         return this.getChatbox();
       }
+    } else {
+      return null;
     }
   }
 
