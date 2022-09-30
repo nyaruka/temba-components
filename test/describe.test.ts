@@ -11,6 +11,7 @@ describe('root', () => {
   it('increments', () => {
     expect(count).equal(1);
   });
+
   it('increments again', () => {
     expect(count).equal(2);
   });
@@ -29,11 +30,17 @@ describe('root', () => {
 
   describe('child with more', () => {
     beforeEach(() => {
-      count++;
+      count *= 10;
     });
 
     it('beforeEach commands stack, so 2x for this one', () => {
-      expect(count).equal(6);
+      expect(count).equal(50);
     });
+  });
+});
+
+describe('sibling', () => {
+  it('nothing happens here', () => {
+    expect(count).equal(50);
   });
 });
