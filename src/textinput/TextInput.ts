@@ -355,6 +355,11 @@ export class TextInput extends FormElement {
                 return false;
               }
 
+              // don't submit disabled forms on enter
+              if (parentModax && parentModax.disabled) {
+                return false;
+              }
+
               input.blur();
 
               // look for a form to submit
