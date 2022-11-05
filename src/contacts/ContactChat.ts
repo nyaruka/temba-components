@@ -1,7 +1,13 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
+import {
+  COOKIE_KEYS,
+  getCookieBoolean,
+  Icon,
+  postJSON,
+  setCookie,
+} from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
@@ -409,7 +415,9 @@ export class ContactChat extends ContactStoreElement {
                   >
                     <temba-icon
                       id="details-button"
-                      name="${this.showDetails ? 'chevrons-left' : 'sidebar'}"
+                      name="${this.showDetails
+                        ? Icon.MenuCollapse
+                        : 'layout-left'}"
                       @click="${this.handleDetailSlider}"
                       clickable
                       animatechange="spin"
@@ -424,7 +432,7 @@ export class ContactChat extends ContactStoreElement {
                         >
                           <temba-icon
                             id="assign-button"
-                            name="user"
+                            name="${Icon.Users}"
                             @click="${() => {
                               const modax = this.shadowRoot.getElementById(
                                 'assign-dialog'
@@ -441,7 +449,7 @@ export class ContactChat extends ContactStoreElement {
                         >
                           <temba-icon
                             id="add-note-button"
-                            name="edit"
+                            name="${Icon.AddNote}"
                             @click="${() => {
                               const note = this.shadowRoot.getElementById(
                                 'note-dialog'

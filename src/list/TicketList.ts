@@ -1,7 +1,7 @@
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { TembaList } from './TembaList';
-import { timeSince } from '../utils';
+import { Icon, timeSince } from '../utils';
 import { Contact } from '../interfaces';
 import { renderAvatar } from '../contacts/events';
 
@@ -57,7 +57,9 @@ export class TicketList extends TembaList {
                           : contact.last_msg.attachments
                           ? html`<div style="display:inline-block">
                               <div style="display:flex; margin-left:0.2em">
-                                <temba-icon name="paperclip"></temba-icon>
+                                <temba-icon
+                                  name="${Icon.Attachment}"
+                                ></temba-icon>
                                 <div style="flex-grow:1;margin-left:0.2em">
                                   Attachment
                                 </div>

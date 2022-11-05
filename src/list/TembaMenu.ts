@@ -2,7 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { fetchResults, getClasses } from '../utils';
+import { fetchResults, getClasses, Icon } from '../utils';
 
 export interface MenuItem {
   id?: string;
@@ -124,7 +124,7 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .item {
         background: var(--color-primary-dark);
-        --icon-color: #fff;
+        --icon-color: rgba(255, 255, 255, 0.7);
         font-size: 1em;
       }
 
@@ -242,10 +242,13 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .item:hover {
         background: rgba(var(--primary-rgb), 0.85);
+        --icon-color: #fff;
       }
 
       .level-0 > .item.selected:hover {
         background: inherit;
+        --icon-color: var(--color-primary-dark);
+        cursor: default;
       }
 
       .inline-children {
@@ -992,7 +995,8 @@ export class TembaMenu extends RapidElement {
         <div class="top">
           <div class="expand-icon" @click=${this.handleExpand}>
             <temba-icon
-              name="menu-collapse"
+              name="${Icon.MenuCollapse}"
+              class="collapse"
               class="expand"
               size="1.4"
             ></temba-icon>
@@ -1058,7 +1062,7 @@ export class TembaMenu extends RapidElement {
 
                     ${index == 0 && !this.collapsed
                       ? html`<temba-icon
-                          name="menu-collapse"
+                          name="${Icon.MenuCollapse}"
                           size="1.1"
                           @click=${this.handleCollapse}
                         ></temba-icon>`

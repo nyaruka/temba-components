@@ -602,3 +602,47 @@ export enum COOKIE_KEYS {
 
 export const capitalize = ([first, ...rest], locale = navigator.language) =>
   first === undefined ? '' : first.toLocaleUpperCase(locale) + rest.join('');
+
+export enum Icon {
+  AddNote = 'file-02',
+
+  Airtime = 'bank-note-01',
+  Attachment = 'paperclip',
+  Broadcast = 'announcement-01',
+  Call = 'phone-call-01',
+  CallMissed = 'phone-call-02',
+  Campaign = 'clock-refresh',
+  Check = 'check',
+  Contact = 'contact',
+  ContactStopped = 'slash-octagon',
+  ContactUpdated = 'user-edit',
+  Copy = 'copy-04',
+  Download = 'download-01',
+  Email = 'mail-01',
+  Error = 'alert-circle',
+  Event = 'zap',
+  Flow = 'flow',
+  Group = 'users-01',
+  Inbox = 'inbox-01',
+  Interrupted = 'x-close',
+  Label = 'tag-01',
+  Language = 'globe-01',
+  Log = 'file-02',
+  MenuCollapse = 'chevron-left-double',
+  // Some other decent choices
+  // MenuCollapse = "right-indent-01",
+  // MenuCollapse = "arrow-circle-broken-left",
+  // MenuCollapse = "arrow-square-left",
+  // MenuCollapse = "align-left-01",
+  Message = 'message-square-02',
+  Remove = 'x',
+  Search = 'search-refraction',
+  SelectOpen = 'chevron-down',
+  SmartGroup = 'atom-01',
+  Trigger = 'signal-01',
+  Updated = 'edit-02',
+  UserFlow = 'activity',
+  Users = 'users-01',
+  Webhook = 'link-external-01',
+  Zendesk = 'zendesk',
+}

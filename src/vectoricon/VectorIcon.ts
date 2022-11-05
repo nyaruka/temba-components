@@ -54,7 +54,7 @@ export class VectorIcon extends LitElement {
       }
 
       .sheet {
-        fill: var(--icon-color);
+        color: var(--icon-color);
         transform: scale(1);
         transition: fill 100ms ease-in-out,
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
@@ -213,7 +213,7 @@ export class VectorIcon extends LitElement {
               ? this.src
               : `${
                   this.prefix || (window as any).static_url || '/static/'
-                }icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${
+                }svg/index.svg?v=${ICON_VERSION}#${
                   this.lastName || this.name || this.id
                 }`}"
           />

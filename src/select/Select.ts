@@ -7,6 +7,7 @@ import {
   fetchResults,
   WebResponse,
   postJSON,
+  Icon,
 } from '../utils';
 import '../options/Options';
 import { EventHandler } from '../RapidElement';
@@ -94,7 +95,7 @@ export class Select extends FormElement {
         z-index: 2;
       }
 
-      temba-icon[name='chevron-down']:hover,
+      temba-icon.select-open:hover,
       .clear-button:hover {
         --icon-color: var(--color-text-dark);
       }
@@ -1253,7 +1254,7 @@ export class Select extends FormElement {
                               this.handleRemoveSelection(selected);
                             }}
                           >
-                            <temba-icon name="x" size="1" />
+                            <temba-icon name="${Icon.Remove}" size="1" />
                           </div>
                         `
                       : null}
@@ -1276,8 +1277,10 @@ export class Select extends FormElement {
                 >
                   <temba-icon
                     size="1.5"
-                    name="chevron-down"
-                    class="${this.visibleOptions.length > 0 ? 'open' : ''}"
+                    name="${Icon.SelectOpen}"
+                    class="select-open ${this.visibleOptions.length > 0
+                      ? 'open'
+                      : ''}"
                   />
                 </div>`
               : null
