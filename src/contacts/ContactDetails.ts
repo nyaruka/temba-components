@@ -2,7 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { Contact, Group, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { isDate, timeSince, truncate } from '../utils';
+import { Icon, isDate, timeSince, truncate } from '../utils';
 import { Store } from '../store/Store';
 import { BODY_SNIPPET_LENGTH, fetchContact } from './helpers';
 
@@ -273,7 +273,9 @@ export class ContactDetails extends RapidElement {
                     style="cursor:pointer"
                   >
                     ${group.is_dynamic
-                      ? html`<temba-icon name="atom"></temba-icon>`
+                      ? html`<temba-icon
+                          name="${Icon.SmartGroup}"
+                        ></temba-icon>`
                       : null}${group.name}
                   </div>
                 `;
