@@ -3,11 +3,13 @@ import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { fetchResults, getClasses } from '../utils';
+import { Icon } from '../vectoricon';
 
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
   name?: string;
+  verbose_name?: string;
   count?: number;
   icon?: string;
   collapsed_icon?: string;
@@ -123,7 +125,7 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .item {
         background: var(--color-primary-dark);
-        --icon-color: #fff;
+        --icon-color: rgba(255, 255, 255, 0.7);
         font-size: 1em;
       }
 
@@ -241,10 +243,13 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .item:hover {
         background: rgba(var(--primary-rgb), 0.85);
+        --icon-color: #fff;
       }
 
       .level-0 > .item.selected:hover {
         background: inherit;
+        --icon-color: var(--color-primary-dark);
+        cursor: default;
       }
 
       .inline-children {
@@ -952,9 +957,9 @@ export class TembaMenu extends RapidElement {
           ${menuItem.level > 0
             ? menuItem.inline
               ? html`<temba-icon
-                  name="chevron-${isSelected || isChildSelected
-                    ? 'up'
-                    : 'down'}"
+                  name="${isSelected || isChildSelected
+                    ? Icon.arrow_up
+                    : Icon.arrow_down}"
                 ></temba-icon>`
               : html`${menuItem.count || menuItem.count == 0
                   ? html`
@@ -991,7 +996,8 @@ export class TembaMenu extends RapidElement {
         <div class="top">
           <div class="expand-icon" @click=${this.handleExpand}>
             <temba-icon
-              name="menu-collapse"
+              name="${Icon.menu_collapse}"
+              class="collapse"
               class="expand"
               size="1.4"
             ></temba-icon>
@@ -1057,7 +1063,7 @@ export class TembaMenu extends RapidElement {
 
                     ${index == 0 && !this.collapsed
                       ? html`<temba-icon
-                          name="menu-collapse"
+                          name="${Icon.menu_collapse}"
                           size="1.1"
                           @click=${this.handleCollapse}
                         ></temba-icon>`

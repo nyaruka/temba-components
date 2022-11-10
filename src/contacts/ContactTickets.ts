@@ -2,6 +2,7 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { Ticket, TicketStatus } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
+import { Icon } from '../vectoricon';
 
 export class ContactTickets extends StoreElement {
   @property({ type: String })
@@ -131,7 +132,7 @@ export class ContactTickets extends StoreElement {
 
         ${ticket.status === TicketStatus.Closed
           ? html`<div class="status">
-              <temba-icon name="check"></temba-icon>
+              <temba-icon name="${Icon.check}"></temba-icon>
             </div>`
           : null}
       </div>

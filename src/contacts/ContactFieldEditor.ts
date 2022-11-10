@@ -4,6 +4,7 @@ import { FormElement } from '../FormElement';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { TextInput } from '../textinput/TextInput';
+import { Icon } from '../vectoricon';
 
 export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
@@ -22,7 +23,7 @@ export class ContactFieldEditor extends RapidElement {
   timezone: string;
 
   @property({ type: String })
-  icon = navigator.clipboard ? 'copy' : '';
+  icon = navigator.clipboard ? Icon.copy : '';
 
   @property({ type: String })
   iconClass = '';
@@ -116,7 +117,7 @@ export class ContactFieldEditor extends RapidElement {
         transition: all 200ms ease-in-out;
       }
 
-      temba-icon[name='search'] {
+      temba-icon.search {
         margin-right: 1em;
       }
 
@@ -135,7 +136,7 @@ export class ContactFieldEditor extends RapidElement {
 
   public handleIconClick(evt: MouseEvent) {
     const ele = evt.target as HTMLDivElement;
-    const icon = ele.getAttribute('name');
+    const icon = ele.getAttribute('icon-action');
     const input = this.shadowRoot.querySelector('temba-textinput') as TextInput;
 
     if (icon === 'copy') {
@@ -218,13 +219,16 @@ export class ContactFieldEditor extends RapidElement {
                     ${this.value
                       ? html`
                   <temba-icon
-                    name="search"
+                    class="search"
+                    icon-action="search"
+                    name="${Icon.search}"
                     animateclick="pulse"
                   ></temba-icon>
                   </div>
                 `
                       : null}
                     <temba-icon
+                      icon-action="copy"
                       name="${this.icon}"
                       animatechange="spin"
                       animateclick="pulse"

@@ -7,6 +7,7 @@ import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
+import { Icon } from '../vectoricon';
 
 const DEFAULT_REFRESH = 10000;
 
@@ -464,12 +465,11 @@ export class ContactChat extends ContactStoreElement {
     >
       <temba-icon
         id="details-button"
-        name="${this.showDetails ? 'chevrons-left' : 'sidebar'}"
+        name="${this.showDetails ? Icon.menu_collapse : 'layout-left'}"
         @click="${this.handleDetailSlider}"
         clickable
         animatechange="spin"
-      >
-      </temba-icon>
+      ></temba-icon>
     </temba-tip>`;
   }
 
@@ -481,7 +481,7 @@ export class ContactChat extends ContactStoreElement {
       >
         <temba-icon
           id="assign-button"
-          name="user"
+          name="${Icon.users}"
           @click="${() => {
             const modax = this.shadowRoot.getElementById(
               'assign-dialog'
@@ -489,20 +489,18 @@ export class ContactChat extends ContactStoreElement {
             modax.open = true;
           }}"
           clickable
-        >
-        </temba-icon>
+        ></temba-icon>
       </temba-tip>
       <temba-tip style="margin-top:5px" text="Add Note" position="left">
         <temba-icon
           id="add-note-button"
-          name="edit"
+          name="${Icon.add_note}"
           @click="${() => {
             const note = this.shadowRoot.getElementById('note-dialog') as Modax;
             note.open = true;
           }}"
           clickable
-        >
-        </temba-icon>
+        ></temba-icon>
       </temba-tip>`;
   }
 

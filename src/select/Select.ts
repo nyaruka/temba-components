@@ -21,6 +21,7 @@ import {
 } from '../completion/helpers';
 import { Store } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map';
+import { Icon } from '../vectoricon';
 
 const LOOK_AHEAD = 20;
 
@@ -94,7 +95,7 @@ export class Select extends FormElement {
         z-index: 2;
       }
 
-      temba-icon[name='chevron-down']:hover,
+      temba-icon.select-open:hover,
       .clear-button:hover {
         --icon-color: var(--color-text-dark);
       }
@@ -1165,7 +1166,7 @@ export class Select extends FormElement {
     const clear =
       this.clearable && this.values.length > 0 && !this.multi
         ? html`<temba-icon
-            name="x"
+            name="${Icon.select_clear}"
             size="1.1"
             class="clear-button"
             @click=${this.handleClear}
@@ -1253,7 +1254,7 @@ export class Select extends FormElement {
                               this.handleRemoveSelection(selected);
                             }}
                           >
-                            <temba-icon name="x" size="1" />
+                            <temba-icon name="${Icon.delete_small}" size="1" />
                           </div>
                         `
                       : null}
@@ -1276,8 +1277,10 @@ export class Select extends FormElement {
                 >
                   <temba-icon
                     size="1.5"
-                    name="chevron-down"
-                    class="${this.visibleOptions.length > 0 ? 'open' : ''}"
+                    name="${Icon.select_open}"
+                    class="select-open ${this.visibleOptions.length > 0
+                      ? 'open'
+                      : ''}"
                   />
                 </div>`
               : null

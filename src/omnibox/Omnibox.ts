@@ -3,6 +3,7 @@ import { property } from 'lit/decorators';
 import { styleMap } from 'lit-html/directives/style-map';
 import { RapidElement } from '../RapidElement';
 import { Select } from '../select/Select';
+import { Icon } from '../vectoricon';
 
 enum OmniType {
   Group = 'group',
@@ -140,11 +141,11 @@ export class Omnibox extends RapidElement {
 
   private getIcon(option: OmniOption): TemplateResult {
     if (option.type === OmniType.Group) {
-      return html` <temba-icon name="users" /> `;
+      return html` <temba-icon name="${Icon.group}" /> `;
     }
 
     if (option.type === OmniType.Contact) {
-      return html` <temba-icon name="user" /> `;
+      return html` <temba-icon name="${Icon.contact}" /> `;
     }
   }
 

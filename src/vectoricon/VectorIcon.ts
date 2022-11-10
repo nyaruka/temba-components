@@ -1,5 +1,6 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators';
+import { Icon } from '.';
 
 import { getClasses } from '../utils';
 
@@ -54,7 +55,7 @@ export class VectorIcon extends LitElement {
       }
 
       .sheet {
-        fill: var(--icon-color);
+        color: var(--icon-color);
         transform: scale(1);
         transition: fill 100ms ease-in-out,
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
@@ -184,6 +185,15 @@ export class VectorIcon extends LitElement {
   }
 
   public render(): TemplateResult {
+    // let icon name mappings take precedence
+    let name = this.lastName || this.name;
+    name = Icon[name.replace('icon.', '')] || name;
+
+    // referencing icons by id is explicit
+    if (!name) {
+      name = this.id;
+    }
+
     return html`
       <div
         @click=${this.handleClicked}
@@ -213,9 +223,7 @@ export class VectorIcon extends LitElement {
               ? this.src
               : `${
                   this.prefix || (window as any).static_url || '/static/'
-                }icons/symbol-defs.svg?v=${ICON_VERSION}#icon-${
-                  this.lastName || this.name || this.id
-                }`}"
+                }svg/index.svg?v=${ICON_VERSION}#${name}`}"
           />
         </svg>
       </div>

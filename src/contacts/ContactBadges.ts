@@ -1,5 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { Group } from '../interfaces';
+import { Icon } from '../vectoricon';
 import { ContactStoreElement } from './ContactStoreElement';
 
 const STATUS = {
@@ -61,7 +62,7 @@ export class ContactBadges extends ContactStoreElement {
           ${this.data.language
             ? html`
                 <temba-label
-                  icon="globe"
+                  icon=${Icon.language}
                   onclick="goto(event)"
                   href="/contact/?search=language+%3D+${encodeURIComponent(
                     '"' + this.data.language + '"'
@@ -80,7 +81,7 @@ export class ContactBadges extends ContactStoreElement {
                 class="group"
                 onclick="goto(event)"
                 href="/contact/filter/${group.uuid}/"
-                icon=${group.is_dynamic ? 'atom' : 'users'}
+                icon=${group.is_dynamic ? Icon.group_smart : Icon.group}
                 clickable
                 shadow
               >

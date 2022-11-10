@@ -5,6 +5,7 @@ import { RapidElement } from '../RapidElement';
 import { isDate, timeSince, truncate } from '../utils';
 import { Store } from '../store/Store';
 import { BODY_SNIPPET_LENGTH, fetchContact } from './helpers';
+import { Icon } from '../vectoricon';
 
 export class ContactDetails extends RapidElement {
   static get styles() {
@@ -273,7 +274,9 @@ export class ContactDetails extends RapidElement {
                     style="cursor:pointer"
                   >
                     ${group.is_dynamic
-                      ? html`<temba-icon name="atom"></temba-icon>`
+                      ? html`<temba-icon
+                          name="${Icon.group_smart}"
+                        ></temba-icon>`
                       : null}${group.name}
                   </div>
                 `;
@@ -326,7 +329,9 @@ export class ContactDetails extends RapidElement {
                   <div style="margin-right:1em;margin-top:-0.5em">
                     ${this.fields.length > 3
                       ? html`<temba-icon
-                          name="chevrons-${this.expandFields ? 'up' : 'down'}"
+                          name="${this.expandFields
+                            ? Icon.arrow_up
+                            : Icon.arrow_down}"
                           @click=${this.handleToggleFields}
                           animateChange="spin"
                           circled
