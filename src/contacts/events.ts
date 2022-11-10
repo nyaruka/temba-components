@@ -1,13 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
 import { Msg, ObjectReference, User } from '../interfaces';
-import {
-  getClasses,
-  Icon,
-  oxford,
-  oxfordFn,
-  oxfordNamed,
-  timeSince,
-} from '../utils';
+import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
+import { Icon } from '../vectoricon';
 import { getDisplayName } from './helpers';
 
 export const getEventStyles = () => {
@@ -646,7 +640,7 @@ export const renderAvatar = (user: User, agent = '') => {
   if (user.email === FLOW_USER_ID || !user || !user.first_name) {
     return html`<temba-tip text="Automated message" position="top"
       ><div class="avatar flow" style="margin-top:0.5em">
-        <temba-icon size="1" name="${Icon.UserFlow}" /></div
+        <temba-icon size="1" name="${Icon.flow_user}" /></div
     ></temba-tip>`;
   } else {
     return html`<temba-tip
@@ -724,7 +718,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
     ></iframe>`;
   } else {
     return html`<div style="display:flex">
-      <temba-icon name="${Icon.Download}"></temba-icon>
+      <temba-icon name="${Icon.download}"></temba-icon>
       <div>Attachment ${ext}</div>
     </div>`;
   }
@@ -751,7 +745,7 @@ export const renderMsgEvent = (
       <temba-icon
         onclick="goto(event)"
         href="${event.logs_url}"
-        name="${Icon.Log}"
+        name="${Icon.log}"
         class="log ${isError || isFailure ? 'error' : ''}"
       ></temba-icon>
     </div>`);
@@ -759,7 +753,7 @@ export const renderMsgEvent = (
     summary.push(
       html`<temba-icon
         title="Message delivery error"
-        name="${Icon.Error}"
+        name="${Icon.error}"
         class="delivery-error"
       ></temba-icon>`
     );
@@ -767,7 +761,7 @@ export const renderMsgEvent = (
     summary.push(
       html`<temba-icon
         title="Message delivery failure: ${event.failed_reason_display}"
-        name="${Icon.Error}"
+        name="${Icon.error}"
         class="delivery-error"
       ></temba-icon>`
     );
@@ -776,7 +770,7 @@ export const renderMsgEvent = (
     summary.push(html`<temba-icon
         size="1"
         class="broadcast"
-        name="${Icon.Broadcast}"
+        name="${Icon.broadcast}"
       ></temba-icon>
       <div class="recipients">${event.recipient_count} contacts</div>
       <div class="separator">•</div>`);
@@ -821,15 +815,15 @@ export const renderMsgEvent = (
 
 export const renderFlowEvent = (event: FlowEvent): TemplateResult => {
   let verb = 'Interrupted';
-  let icon = Icon.Interrupted;
+  let icon = Icon.flow_interrupted;
 
   if (event.status !== 'I') {
     if (event.type === Events.FLOW_ENTERED) {
       verb = 'Started';
-      icon = Icon.Flow;
+      icon = Icon.flow;
     } else {
       verb = 'Completed';
-      icon = Icon.Flow;
+      icon = Icon.flow;
     }
   }
 
@@ -853,7 +847,7 @@ export const renderResultEvent = (event: UpdateResultEvent): TemplateResult => {
     return null;
   }
   return html`
-    <temba-icon name="${Icon.Updated}"></temba-icon>
+    <temba-icon name="${Icon.updated}"></temba-icon>
     <div class="description">
       Updated
       <div class="attn">${event.name}</div>
@@ -869,7 +863,7 @@ export const renderResultEvent = (event: UpdateResultEvent): TemplateResult => {
 
 export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   return html`
-    <temba-icon name="${Icon.ContactUpdated}"></temba-icon>
+    <temba-icon name="${Icon.contact_updated}"></temba-icon>
     <div class="description">
       ${event.value
         ? html`Updated
@@ -884,7 +878,7 @@ export const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
 
 export const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
   return html`
-    <temba-icon name="${Icon.ContactUpdated}"></temba-icon>
+    <temba-icon name="${Icon.contact_updated}"></temba-icon>
     <div class="description">
       Updated
       <div class="attn">Name</div>
@@ -898,7 +892,7 @@ export const renderContactURNsChanged = (
   event: URNsChangedEvent
 ): TemplateResult => {
   return html`
-    <temba-icon name="${Icon.ContactUpdated}"></temba-icon>
+    <temba-icon name="${Icon.contact_updated}"></temba-icon>
     <div class="description">
       Updated
       <div class="attn">URNs</div>
@@ -915,7 +909,7 @@ export const renderContactURNsChanged = (
 
 export const renderEmailSent = (event: EmailSentEvent): TemplateResult => {
   return html`
-    <temba-icon name="${Icon.Email}"></temba-icon>
+    <temba-icon name="${Icon.email}"></temba-icon>
     <div class="description">
       Email sent to
       <div class="attn">${oxford(event.to, 'and')}</div>
@@ -927,7 +921,7 @@ export const renderEmailSent = (event: EmailSentEvent): TemplateResult => {
 
 export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
   return html`
-    <temba-icon name="${Icon.Label}"></temba-icon>
+    <temba-icon name="${Icon.label}"></temba-icon>
     <div class="description">
       Message labeled with
       <div class="attn">${oxfordNamed(event.labels, 'and')}</div>
@@ -954,11 +948,11 @@ export const renderNoteCreated = (
 };
 
 const getTicketIcon = (event: TicketEvent) => {
-  let icon = Icon.Inbox;
+  let icon = Icon.inbox;
   if (event.ticket.ticketer.name.indexOf('Email') > -1) {
-    icon = Icon.Email;
+    icon = Icon.email;
   } else if (event.ticket.ticketer.name.indexOf('Zendesk') > -1) {
-    icon = Icon.Zendesk;
+    icon = Icon.zendesk;
   }
   return icon;
 };
@@ -1055,7 +1049,7 @@ export const renderTicketOpened = (
               <temba-icon
                 class="clickable"
                 size="1.5"
-                name="${Icon.Check}"
+                name="${Icon.check}"
                 @click=${() => {
                   handleClose(event.ticket.uuid);
                 }}
@@ -1073,7 +1067,7 @@ export const renderErrorMessage = (
 ): TemplateResult => {
   return html`
     <temba-icon
-      name="${Icon.Error}"
+      name="${Icon.error}"
       style="--icon-color:var(--color-error)"
     ></temba-icon>
     <div class="description">
@@ -1091,7 +1085,7 @@ export const renderWebhookEvent = (event: WebhookEvent): TemplateResult => {
       class="${event.status === 'success' ? '' : 'failed'}"
       style="display: flex"
     >
-      <temba-icon name="${Icon.Webhook}"></temba-icon>
+      <temba-icon name="${Icon.webhook}"></temba-icon>
       <div class="description">
         ${event.status === 'success'
           ? html`Successfully called ${event.url}`
@@ -1106,13 +1100,13 @@ export const renderAirtimeTransferredEvent = (
 ): TemplateResult => {
   if (parseFloat(event.actual_amount) === 0) {
     return html`<temba-icon
-        name="${Icon.Error}"
+        name="${Icon.error}"
         style="--icon-color: var(--color-error)"
       ></temba-icon>
       <div class="description error">Airtime transfer failed</div>`;
   }
 
-  return html`<temba-icon name="${Icon.Airtime}"></temba-icon>
+  return html`<temba-icon name="${Icon.airtime}"></temba-icon>
     <div class="description">
       Transferred
       <div class="attn">${event.actual_amount} ${event.currency}</div>
@@ -1121,14 +1115,14 @@ export const renderAirtimeTransferredEvent = (
 };
 
 export const renderCallStartedEvent = (): TemplateResult => {
-  return html`<temba-icon name="${Icon.Call}"></temba-icon>
+  return html`<temba-icon name="${Icon.call}"></temba-icon>
     <div class="description">Call Started</div>`;
 };
 
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
-  return html`<temba-icon name="${Icon.ContactUpdated}"></temba-icon>
+  return html`<temba-icon name="${Icon.contact_updated}"></temba-icon>
     <div class="description">
       Language updated to <span class="attn">${event.language}</span>
     </div>`;
@@ -1136,29 +1130,29 @@ export const renderContactLanguageChangedEvent = (
 
 export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
   let eventMessage = '';
-  let icon = Icon.Call;
+  let icon = Icon.call;
 
   if (event.channel_event_type === 'mt_miss') {
     eventMessage = 'Missed outgoing call';
-    icon = Icon.CallMissed;
+    icon = Icon.call_missed;
   } else if (event.channel_event_type === 'mo_miss') {
     eventMessage = 'Missed incoming call';
-    icon = Icon.CallMissed;
+    icon = Icon.call_missed;
   } else if (event.channel_event_type === 'new_conversation') {
     eventMessage = 'Started Conversation';
-    icon = Icon.Event;
+    icon = Icon.event;
   } else if (event.channel_event_type === 'welcome_message') {
     eventMessage = 'Welcome Message Sent';
-    icon = Icon.Event;
+    icon = Icon.event;
   } else if (event.channel_event_type === 'referral') {
     eventMessage = 'Referred';
-    icon = Icon.Event;
+    icon = Icon.event;
   } else if (event.channel_event_type === 'follow') {
     eventMessage = 'Followed';
-    icon = Icon.Event;
+    icon = Icon.event;
   } else if (event.channel_event_type === 'stop_contact') {
     eventMessage = 'Stopped';
-    icon = Icon.ContactStopped;
+    icon = Icon.contact_stopped;
   } else if (event.channel_event_type === 'mt_call') {
     eventMessage = 'Outgoing Phone Call';
   } else if (event.channel_event_type == 'mo_call') {
@@ -1172,7 +1166,7 @@ export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
 export const renderCampaignFiredEvent = (
   event: CampaignFiredEvent
 ): TemplateResult => {
-  return html`<temba-icon name="${Icon.Campaign}"></temba-icon>
+  return html`<temba-icon name="${Icon.campaign}"></temba-icon>
     <div class="description">
       Campaign
       <span
@@ -1201,7 +1195,7 @@ export const renderContactGroupsEvent = (
   const added = !!event.groups_added;
   return html`
     <temba-icon
-      name="${Icon.Users}"
+      name="${Icon.users}"
       class="${getClasses({ added: added, removed: !added })}"
     ></temba-icon>
     <div class="description">

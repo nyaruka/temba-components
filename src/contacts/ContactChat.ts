@@ -1,18 +1,13 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import {
-  COOKIE_KEYS,
-  getCookieBoolean,
-  Icon,
-  postJSON,
-  setCookie,
-} from '../utils';
+import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
+import { Icon } from '../vectoricon';
 
 const DEFAULT_REFRESH = 10000;
 
@@ -416,7 +411,7 @@ export class ContactChat extends ContactStoreElement {
                     <temba-icon
                       id="details-button"
                       name="${this.showDetails
-                        ? Icon.MenuCollapse
+                        ? Icon.menu_collapse
                         : 'layout-left'}"
                       @click="${this.handleDetailSlider}"
                       clickable
@@ -432,7 +427,7 @@ export class ContactChat extends ContactStoreElement {
                         >
                           <temba-icon
                             id="assign-button"
-                            name="${Icon.Users}"
+                            name="${Icon.users}"
                             @click="${() => {
                               const modax = this.shadowRoot.getElementById(
                                 'assign-dialog'
@@ -449,7 +444,7 @@ export class ContactChat extends ContactStoreElement {
                         >
                           <temba-icon
                             id="add-note-button"
-                            name="${Icon.AddNote}"
+                            name="${Icon.add_note}"
                             @click="${() => {
                               const note = this.shadowRoot.getElementById(
                                 'note-dialog'

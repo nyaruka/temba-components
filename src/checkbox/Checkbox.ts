@@ -1,6 +1,7 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators';
+import { Icon } from '../vectoricon';
 
 export class Checkbox extends FormElement {
   static get styles() {
@@ -102,7 +103,7 @@ export class Checkbox extends FormElement {
 
   public render(): TemplateResult {
     const icon = html`<temba-icon
-      name="${this.checked ? 'check-' : ''}square"
+      name="${this.checked ? Icon.checkbox_checked : Icon.checkbox}"
       size="${this.size}"
       animatechange="${this.animateChange}"
     />`;

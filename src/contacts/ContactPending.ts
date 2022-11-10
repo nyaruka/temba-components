@@ -2,12 +2,12 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { ScheduledEvent, ScheduledEventType } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
-import { Icon } from '../utils';
+import { Icon } from '../vectoricon';
 
 const ICONS = {
-  [ScheduledEventType.CampaignEvent]: Icon.Campaign,
-  [ScheduledEventType.ScheduledBroadcast]: Icon.Message,
-  [ScheduledEventType.ScheduledTrigger]: Icon.Trigger,
+  [ScheduledEventType.CampaignEvent]: Icon.campaign,
+  [ScheduledEventType.ScheduledBroadcast]: Icon.message,
+  [ScheduledEventType.ScheduledTrigger]: Icon.trigger,
 };
 
 export class ContactPending extends StoreElement {
@@ -159,7 +159,7 @@ export class ContactPending extends StoreElement {
         <div class="type">
           <temba-icon
             size="2"
-            name="${event.message ? Icon.Message : Icon.Flow}"
+            name="${event.message ? Icon.message : Icon.flow}"
           ></temba-icon>
         </div>
 
@@ -188,7 +188,7 @@ export class ContactPending extends StoreElement {
                   href="/campaign/read/${event.campaign.uuid}/"
                   onclick="goto(event, this)"
                 >
-                  <temba-icon name="${Icon.Campaign}"></temba-icon>
+                  <temba-icon name="${Icon.campaign}"></temba-icon>
                   <div class="name">${event.campaign.name}</div>
                 </div>`
               : html`
