@@ -395,7 +395,7 @@ export class ContactChat extends ContactStoreElement {
               ></temba-button>
             </div>`;
           } else {
-            //chatbox for active contact with an open ticket
+            //chatbox for active contacts with an open ticket
             return this.getChatbox();
           }
         }
