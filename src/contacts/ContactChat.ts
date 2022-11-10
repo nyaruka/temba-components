@@ -375,12 +375,8 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
-    // if (!this.currentContact && !this.currentTicket) {
-    //   return null;
-    // }
-
     if (this.currentTicket) {
-      if (this.currentContact.status !== 'active') {
+      if (this.currentContact && this.currentContact.status !== 'active') {
         //no chatbox for archived, blocked, or stopped contacts
         return null;
       } else {
@@ -400,7 +396,7 @@ export class ContactChat extends ContactStoreElement {
       }
     }
 
-    if (this.currentContact.status !== 'active') {
+    if (this.currentContact && this.currentContact.status !== 'active') {
       //no chatbox for archived, blocked, or stopped contacts
       return null;
     } else {
