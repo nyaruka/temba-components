@@ -328,7 +328,7 @@ export class ContactChat extends ContactStoreElement {
       : null;
     const chatbox = this.currentContact ? this.getTembaChatbox() : null;
 
-    const contactHistoryAndChatbox = html` <div
+    const contactHistoryAndChatbox = html`<div
       style="flex-grow: 1; margin-right: 0em; display:flex; flex-direction:row; min-height: 0;"
       class="left-pane  ${this.showDetails ? 'open' : ''}"
     >
@@ -350,11 +350,13 @@ export class ContactChat extends ContactStoreElement {
         ? this.getAddNoteAndAssignTicketTembaModaxes()
         : null;
 
-      return html` ${contactHistoryAndChatbox} ${contactDetails}
+      const contactDetailsAndActions = html` ${contactDetails}
         <div class="toolbar ${this.showDetails ? '' : 'closed'}">
           ${toggleContactDetails} ${addNoteAndAssignTicketTembaTips}
         </div>
         ${addNoteAndAssignTicketTembaModaxes}`;
+
+      return html`${contactHistoryAndChatbox} ${contactDetailsAndActions}`;
     }
 
     return html`${contactHistoryAndChatbox}`;
