@@ -1,5 +1,6 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators';
+import { Icon } from '.';
 
 import { getClasses } from '../utils';
 
@@ -184,6 +185,15 @@ export class VectorIcon extends LitElement {
   }
 
   public render(): TemplateResult {
+    // let icon name mappings take precedence
+    let name = this.lastName || this.name;
+    name = Icon[name.replace('icon.', '')] || name;
+
+    // referencing icons by id is explicit
+    if (!name) {
+      name = this.id;
+    }
+
     return html`
       <div
         @click=${this.handleClicked}
@@ -213,9 +223,7 @@ export class VectorIcon extends LitElement {
               ? this.src
               : `${
                   this.prefix || (window as any).static_url || '/static/'
-                }svg/index.svg?v=${ICON_VERSION}#${
-                  this.lastName || this.name || this.id
-                }`}"
+                }svg/index.svg?v=${ICON_VERSION}#${name}`}"
           />
         </svg>
       </div>

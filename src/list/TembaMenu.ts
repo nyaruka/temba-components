@@ -2,7 +2,8 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { fetchResults, getClasses, Icon } from '../utils';
+import { fetchResults, getClasses } from '../utils';
+import { Icon } from '../vectoricon';
 
 export interface MenuItem {
   id?: string;
@@ -956,9 +957,9 @@ export class TembaMenu extends RapidElement {
           ${menuItem.level > 0
             ? menuItem.inline
               ? html`<temba-icon
-                  name="chevron-${isSelected || isChildSelected
-                    ? 'up'
-                    : 'down'}"
+                  name="${isSelected || isChildSelected
+                    ? Icon.arrow_up
+                    : Icon.arrow_down}"
                 ></temba-icon>`
               : html`${menuItem.count || menuItem.count == 0
                   ? html`
@@ -995,7 +996,7 @@ export class TembaMenu extends RapidElement {
         <div class="top">
           <div class="expand-icon" @click=${this.handleExpand}>
             <temba-icon
-              name="${Icon.MenuCollapse}"
+              name="${Icon.menu_collapse}"
               class="collapse"
               class="expand"
               size="1.4"
@@ -1062,7 +1063,7 @@ export class TembaMenu extends RapidElement {
 
                     ${index == 0 && !this.collapsed
                       ? html`<temba-icon
-                          name="${Icon.MenuCollapse}"
+                          name="${Icon.menu_collapse}"
                           size="1.1"
                           @click=${this.handleCollapse}
                         ></temba-icon>`

@@ -1,9 +1,10 @@
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { TembaList } from './TembaList';
-import { Icon, timeSince } from '../utils';
+import { timeSince } from '../utils';
 import { Contact } from '../interfaces';
 import { renderAvatar } from '../contacts/events';
+import { Icon } from '../vectoricon';
 
 export class TicketList extends TembaList {
   @property({ type: String })
@@ -58,7 +59,7 @@ export class TicketList extends TembaList {
                           ? html`<div style="display:inline-block">
                               <div style="display:flex; margin-left:0.2em">
                                 <temba-icon
-                                  name="${Icon.Attachment}"
+                                  name="${Icon.attachment}"
                                 ></temba-icon>
                                 <div style="flex-grow:1;margin-left:0.2em">
                                   Attachment

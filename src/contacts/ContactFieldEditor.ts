@@ -4,7 +4,7 @@ import { FormElement } from '../FormElement';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { TextInput } from '../textinput/TextInput';
-import { Icon } from '../utils';
+import { Icon } from '../vectoricon';
 
 export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
@@ -23,7 +23,7 @@ export class ContactFieldEditor extends RapidElement {
   timezone: string;
 
   @property({ type: String })
-  icon = navigator.clipboard ? Icon.Copy : '';
+  icon = navigator.clipboard ? Icon.copy : '';
 
   @property({ type: String })
   iconClass = '';
@@ -221,7 +221,7 @@ export class ContactFieldEditor extends RapidElement {
                   <temba-icon
                     class="search"
                     icon-action="search"
-                    name="${Icon.Search}"
+                    name="${Icon.search}"
                     animateclick="pulse"
                   ></temba-icon>
                   </div>
