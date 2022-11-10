@@ -75,11 +75,6 @@ describe('temba-contact-chat - contact tests', () => {
     ) as HTMLDivElement;
     expect(chatboxDivEl).to.not.equal(null);
 
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.equal(null);
-
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
     ) as HTMLDivElement;
@@ -210,11 +205,6 @@ describe('temba-contact-chat - ticket tests', () => {
     ) as HTMLDivElement;
     expect(chatboxDiv).to.not.equal(null);
 
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.equal(null);
-
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
     ) as HTMLDivElement;
@@ -251,11 +241,6 @@ describe('temba-contact-chat - ticket tests', () => {
       '.chatbox'
     ) as HTMLDivElement;
     expect(chatboxDiv).to.equal(null);
-
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.equal(null);
 
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
@@ -294,11 +279,6 @@ describe('temba-contact-chat - ticket tests', () => {
       '.chatbox'
     ) as HTMLDivElement;
     expect(chatboxDiv).to.equal(null);
-
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.equal(null);
 
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
