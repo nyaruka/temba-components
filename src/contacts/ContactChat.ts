@@ -351,7 +351,7 @@ export class ContactChat extends ContactStoreElement {
         ? this.getAddNoteAndAssignTicketTembaModaxes()
         : null;
 
-      const contactDetailsAndActions = html` ${contactDetails}
+      const contactDetailsAndActions = html`${contactDetails}
         <div class="toolbar ${this.showDetails ? '' : 'closed'}">
           ${toggleContactDetails} ${addNoteAndAssignTicketTembaTips}
         </div>
