@@ -1,7 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { ContactHistory } from '../src/contacts/ContactHistory';
-import { TembaList } from '../src/list/TembaList';
+import { TicketList } from '../src/list/TicketList';
 import {
   assertScreenshot,
   delay,
@@ -31,8 +31,8 @@ const getContactChat = async (attrs: any = {}) => {
 };
 
 const list_TAG = 'temba-list';
-const getList = async (attrs: any = {}) => {
-  const list = (await getComponent(list_TAG, attrs)) as TembaList;
+const getTicketList = async (attrs: any = {}) => {
+  const list = (await getComponent(list_TAG, attrs)) as TicketList;
   // wait for the fetch
   await list.httpComplete;
   return list;
@@ -193,7 +193,7 @@ describe('temba-contact-chat - ticket tests', () => {
       contact: 'contact-carter-active',
     });
 
-    const tickets: TembaList = await getList({
+    const tickets: TicketList = await getTicketList({
       endpoint: '/test-assets/tickets/ticket-carter-open.json',
     });
 
@@ -233,7 +233,7 @@ describe('temba-contact-chat - ticket tests', () => {
       contact: 'contact-carter-active',
     });
 
-    const tickets: TembaList = await getList({
+    const tickets: TicketList = await getTicketList({
       endpoint: '/test-assets/tickets/ticket-carter-closed.json',
     });
     chat.currentTicket = tickets.items[0];
@@ -276,7 +276,7 @@ describe('temba-contact-chat - ticket tests', () => {
       contact: 'contact-barack-archived',
     });
 
-    const tickets: TembaList = await getList({
+    const tickets: TicketList = await getTicketList({
       endpoint: '/test-assets/tickets/ticket-barack-closed.json',
     });
     chat.currentTicket = tickets.items[0];
