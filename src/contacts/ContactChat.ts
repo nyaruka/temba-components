@@ -375,45 +375,37 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getTembaChatbox(): TemplateResult {
-    if (!this.currentContact && !this.currentTicket) {
-      return null;
-    }
+    // if (!this.currentContact && !this.currentTicket) {
+    //   return null;
+    // }
 
     if (this.currentTicket) {
-      if (this.currentContact) {
-        if (this.currentContact.status !== 'active') {
-          //no chatbox for archived, blocked, or stopped contacts
-          return null;
-        } else {
-          if (this.currentTicket.closed_on) {
-            //reopen button for active contacts with a closed ticket
-            return html` <div class="closed-footer">
-              <temba-button
-                id="reopen-button"
-                name="Reopen"
-                @click=${this.handleTicketReopen}
-              ></temba-button>
-            </div>`;
-          } else {
-            //chatbox for active contacts with an open ticket
-            return this.getChatbox();
-          }
-        }
-      } else {
-        return null;
-      }
-    }
-
-    if (this.currentContact) {
       if (this.currentContact.status !== 'active') {
         //no chatbox for archived, blocked, or stopped contacts
         return null;
       } else {
-        //chatbox for active contacts
-        return this.getChatbox();
+        if (this.currentTicket.closed_on) {
+          //reopen button for active contacts with a closed ticket
+          return html` <div class="closed-footer">
+            <temba-button
+              id="reopen-button"
+              name="Reopen"
+              @click=${this.handleTicketReopen}
+            ></temba-button>
+          </div>`;
+        } else {
+          //chatbox for active contacts with an open ticket
+          return this.getChatbox();
+        }
       }
-    } else {
+    }
+
+    if (this.currentContact.status !== 'active') {
+      //no chatbox for archived, blocked, or stopped contacts
       return null;
+    } else {
+      //chatbox for active contacts
+      return this.getChatbox();
     }
   }
 
