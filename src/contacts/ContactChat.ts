@@ -291,23 +291,6 @@ export class ContactChat extends ContactStoreElement {
       });
   }
 
-  private handleContactReactivate() {
-    const uuid = this.currentContact.uuid;
-    postJSON(`/api/v2/contact_actions.json`, {
-      contacts: [uuid],
-      action: 'unblock',
-    })
-      .then(() => {
-        this.refresh();
-        this.fireCustomEvent(CustomEventType.ContentChanged, {
-          contact: { uuid, status: 'active' },
-        });
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
-  }
-
   private handleSend() {
     const payload = {
       contacts: [this.currentContact.uuid],
@@ -400,7 +383,7 @@ export class ContactChat extends ContactStoreElement {
           return null;
         } else {
           if (this.currentTicket.closed_on) {
-            //reopen button for active contact with a closed ticket
+            //reopen button for active contacts with a closed ticket
             return html` <div class="closed-footer">
               <temba-button
                 id="reopen-button"
@@ -420,14 +403,8 @@ export class ContactChat extends ContactStoreElement {
 
     if (this.currentContact) {
       if (this.currentContact.status !== 'active') {
-        //reactivate button for archived, blocked, or stopped contacts
-        return html` <div class="closed-footer">
-          <temba-button
-            id="reactivate-button"
-            name="Reactivate"
-            @click=${this.handleContactReactivate}
-          ></temba-button>
-        </div>`;
+        //no chatbox for archived, blocked, or stopped contacts
+        return null;
       } else {
         //chatbox for active contacts
         return this.getChatbox();

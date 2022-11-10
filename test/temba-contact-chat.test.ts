@@ -58,7 +58,7 @@ describe('temba-contact-chat - contact tests', () => {
     await assertScreenshot('contacts/contact-active-default', getClip(chat));
   });
 
-  it('show history and chatbox if contact is active', async () => {
+  it('show history and show chatbox if contact is active', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -91,7 +91,7 @@ describe('temba-contact-chat - contact tests', () => {
     );
   });
 
-  it('show history and reactivate button if contact is archived', async () => {
+  it('show history and hide chatbox if contact is archived', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -108,23 +108,18 @@ describe('temba-contact-chat - contact tests', () => {
     ) as HTMLDivElement;
     expect(chatboxDiv).to.equal(null);
 
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.not.equal(null);
-
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
     ) as HTMLDivElement;
     expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-archived-show-reactivate-button',
+      'contacts/contact-archived-hide-chatbox',
       getClip(chat)
     );
   });
 
-  it('show history and reactivate button if contact is blocked', async () => {
+  it('show history and hide chatbox if contact is blocked', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -141,23 +136,18 @@ describe('temba-contact-chat - contact tests', () => {
     ) as HTMLDivElement;
     expect(chatboxDiv).to.equal(null);
 
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.not.equal(null);
-
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
     ) as HTMLDivElement;
     expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-blocked-show-reactivate-button',
+      'contacts/contact-blocked-hide-chatbox',
       getClip(chat)
     );
   });
 
-  it('show history and reactivate button if contact is stopped', async () => {
+  it('show history and hide chatbox if contact is stopped', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -174,18 +164,13 @@ describe('temba-contact-chat - contact tests', () => {
     ) as HTMLDivElement;
     expect(chatboxDiv).to.equal(null);
 
-    const reactivateButton = chat.shadowRoot.querySelector(
-      'temba-button#reactivate-button'
-    ) as HTMLDivElement;
-    expect(reactivateButton).to.not.equal(null);
-
     const reopenButton = chat.shadowRoot.querySelector(
       'temba-button#reopen-button'
     ) as HTMLDivElement;
     expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-stopped-show-reactivate-button',
+      'contacts/contact-stopped-hide-chatbox',
       getClip(chat)
     );
   });
@@ -201,7 +186,7 @@ describe('temba-contact-chat - ticket tests', () => {
     );
   });
 
-  it('show history and chatbox if contact is active and ticket is open', async () => {
+  it('show history and show chatbox if contact is active and ticket is open', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -241,7 +226,7 @@ describe('temba-contact-chat - ticket tests', () => {
     );
   });
 
-  it('show history and reopen button if contact is active and ticket is closed', async () => {
+  it('show history and show reopen button if contact is active and ticket is closed', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
