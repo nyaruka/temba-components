@@ -77,6 +77,6 @@ export enum Icon {
   users = 'users-01',
   user_beta = 'shield-zap',
   webhook = 'link-external-01',
-  workspace = 'message-chat-square',
+  workspace = 'folder',
   zendesk = 'zendesk',
 }
