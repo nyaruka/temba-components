@@ -42,6 +42,7 @@ export enum Icon {
   inbox = 'inbox-01',
   label = 'tag-01',
   language = 'globe-01',
+  link = 'link-external-01',
   log = 'file-02',
   menu = 'menu-01',
   menu_collapse = 'chevron-left-double',
