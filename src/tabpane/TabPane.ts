@@ -16,7 +16,6 @@ export class TabPane extends RapidElement {
 
       .tabs {
         display: flex;
-        padding-left: 0.18em;
       }
 
       .tab {
@@ -25,6 +24,7 @@ export class TabPane extends RapidElement {
         margin: 0em 0em;
         cursor: pointer;
         display: flex;
+        font-size: 1.1em;
         align-items: center;
         border-radius: var(--curvature);
         border-bottom-right-radius: 0px;
@@ -48,7 +48,7 @@ export class TabPane extends RapidElement {
         max-width: 80px;
         margin-right: 0.4em;
         overflow: hidden;
-        transition: max-width 500ms ease-in-out;
+        transition: max-width 500ms ease-in-out, margin 500ms ease-in-out;
         white-space: nowrap;
         text-overflow: ellipsis;
       }
@@ -70,12 +70,27 @@ export class TabPane extends RapidElement {
         }
       }
 
-      .tab.selected {
+      .tab {
+        transform: scale(0.9) translateY(-0.05em);
+        --icon-color: #aaa;
+        color: #aaa;
+      }
+
+      .tab.selected,
+      .tab.selected:hover {
         cursor: default;
         box-shadow: 2px 1px 3px 2px rgba(0, 0, 0, 0.07);
         background: #fff;
-        transform: scale(1.05) translateY(-0.05em);
+        transform: scale(1) translateY(0em);
         z-index: 0;
+        --icon-color: #666;
+        color: #666;
+      }
+
+      .tab:hover {
+        --icon-color: #666;
+        color: #666;
+        background: rgba(0, 0, 0, 0.02);
       }
 
       .pane {
