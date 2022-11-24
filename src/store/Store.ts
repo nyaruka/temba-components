@@ -103,24 +103,7 @@ export class Store extends RapidElement {
     }
 
     if (this.fieldsEndpoint) {
-      fetches.push(
-        getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
-          this.keyedAssets['fields'] = [];
-          this.pinnedFields = [];
-
-          assets.forEach((field: ContactField) => {
-            this.keyedAssets['fields'].push(field.key);
-            this.fields[field.key] = field;
-            if (field.pinned) {
-              this.pinnedFields.push(field);
-            }
-          });
-
-          this.pinnedFields.sort((a, b) => {
-            return b.priority - a.priority;
-          });
-        })
-      );
+      fetches.push(this.refreshFields());
     }
 
     if (this.globalsEndpoint) {
@@ -183,6 +166,32 @@ export class Store extends RapidElement {
     return 'en';
   }
 
+  public refreshFields() {
+    return getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
+      this.keyedAssets['fields'] = [];
+      this.pinnedFields = [];
+
+      assets.forEach((field: ContactField) => {
+        this.keyedAssets['fields'].push(field.key);
+        this.fields[field.key] = field;
+        if (field.pinned) {
+          this.pinnedFields.push(field);
+        }
+      });
+
+      this.pinnedFields.sort((a, b) => {
+        return b.priority - a.priority;
+      });
+
+      this.keyedAssets['fields'].sort();
+
+      this.fireCustomEvent(CustomEventType.StoreUpdated, {
+        url: this.fieldsEndpoint,
+        data: this.keyedAssets['fields'],
+      });
+    });
+  }
+
   public getShortDuration(
     isoDateA: string,
     isoDateB: string = null,
@@ -230,6 +239,10 @@ export class Store extends RapidElement {
 
   public getKeyedAssets(): KeyedAssets {
     return this.keyedAssets;
+  }
+
+  public getFieldKeys(): string[] {
+    return this.keyedAssets['fields'];
   }
 
   public getContactField(key: string): ContactField {

@@ -85,12 +85,15 @@ export class FormElement extends RapidElement {
     }
 
     for (const value of this.values) {
-      const ele = document.createElement('input');
-      ele.setAttribute('type', 'hidden');
-      ele.setAttribute('name', this.getAttribute('name'));
-      ele.setAttribute('value', this.serializeValue(value));
-      this.hiddenInputs.push(ele);
-      this.inputRoot.parentElement.appendChild(ele);
+      const name = this.getAttribute('name');
+      if (name) {
+        const ele = document.createElement('input');
+        ele.setAttribute('type', 'hidden');
+        ele.setAttribute('name', name);
+        ele.setAttribute('value', this.serializeValue(value));
+        this.hiddenInputs.push(ele);
+        this.inputRoot.parentElement.appendChild(ele);
+      }
     }
   }
 

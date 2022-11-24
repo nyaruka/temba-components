@@ -239,4 +239,7 @@ export enum CustomEventType {
   NoPath = 'temba-no-path',
   StoreUpdated = 'temba-store-updated',
   Ready = 'temba-ready',
+  OrderChanged = 'temba-order-changed',
+  DragStart = 'temba-drag-start',
+  DragStop = 'temba-drag-stop',
 }
