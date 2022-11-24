@@ -179,7 +179,6 @@ export class FieldManager extends StoreElement {
     super.update(properties);
     if (properties.has('data')) {
       this.filterFields();
-      // this.requestUpdate("featuredFields");
     } else if (properties.has('query')) {
       this.filterFields();
     }
@@ -222,6 +221,10 @@ export class FieldManager extends StoreElement {
     const key = ele.dataset.key;
     const action = ele.dataset.action;
     this.fireCustomEvent(CustomEventType.Selection, { key, action });
+  }
+
+  private handleSearch(event) {
+    this.query = (event.target.value || '').trim();
   }
 
   private renderField(field: ContactField) {
@@ -277,10 +280,6 @@ export class FieldManager extends StoreElement {
         ></temba-icon>
       </div>
     `;
-  }
-
-  private handleSearch(event) {
-    this.query = event.target.value;
   }
 
   public render(): TemplateResult {

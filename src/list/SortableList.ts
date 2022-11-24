@@ -2,12 +2,12 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-// import { getClasses } from "../utils";
 
 /**
  * A simple list that can be sorted by dragging
  */
 
+// how far we have to drag before it starts
 const DRAG_THRESHOLD = 5;
 export class SortableList extends RapidElement {
   static get styles() {
