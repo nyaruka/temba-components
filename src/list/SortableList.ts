@@ -124,18 +124,19 @@ export class SortableList extends RapidElement {
   private handleMouseDown(event: MouseEvent) {
     let ele = event.target as HTMLDivElement;
     ele = ele.closest('.sortable');
-    this.downEle = ele;
+    if (ele) {
+      this.downEle = ele;
+      this.draggingId = ele.id;
+      this.draggingIdx = this.getRowIndex(ele.id);
+      this.draggingEle = ele;
 
-    this.draggingId = ele.id;
-    this.draggingIdx = this.getRowIndex(ele.id);
-    this.draggingEle = ele;
+      this.xOffset = event.clientX - ele.offsetLeft;
+      this.yOffset = event.clientY - ele.offsetTop;
+      this.yDown = event.clientY;
 
-    this.xOffset = event.clientX - ele.offsetLeft;
-    this.yOffset = event.clientY - ele.offsetTop;
-    this.yDown = event.clientY;
-
-    document.addEventListener('mousemove', this.handleMouseMove);
-    document.addEventListener('mouseup', this.handleMouseUp);
+      document.addEventListener('mousemove', this.handleMouseMove);
+      document.addEventListener('mouseup', this.handleMouseUp);
+    }
   }
 
   private handleMouseMove(event: MouseEvent) {

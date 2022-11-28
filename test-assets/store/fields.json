@@ -2,10 +2,13 @@
   "next": null,
   "previous": null,
   "results": [
+    { "key": "rating", "label": "Rating", "value_type": "text", "pinned": true },
     { "key": "conversion", "label": "Conversion", "value_type": "text" },
     { "key": "district", "label": "District", "value_type": "district" },
+    { "key": "ward", "label": "Ward", "value_type": "ward" },
+    { "key": "state", "label": "State", "value_type": "state" },
     { "key": "joined", "label": "Joined On", "value_type": "datetime" },
-    { "key": "age", "label": "Age", "value_type": "numeric" },
+    { "key": "age", "label": "Age", "value_type": "numeric", "pinned": true },
     { "key": "gender", "label": "Gender", "value_type": "text" }
   ]
 }

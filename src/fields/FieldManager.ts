@@ -10,6 +10,9 @@ const TYPE_NAMES = {
   text: 'Text',
   numeric: 'Number',
   datetime: 'Date & Time',
+  state: 'State',
+  ward: 'Ward',
+  district: 'District',
 };
 
 const matches = (field: ContactField, query: string): boolean => {
@@ -227,6 +230,10 @@ export class FieldManager extends StoreElement {
     this.query = (event.target.value || '').trim();
   }
 
+  private hasUsages(): boolean {
+    return false;
+  }
+
   private renderField(field: ContactField) {
     return html`
       <div
@@ -252,7 +259,7 @@ export class FieldManager extends StoreElement {
           >
             ${field.label}
           </span>
-          ${field.label.indexOf('check') > -1
+          ${this.hasUsages(field)
             ? html`
                 <temba-icon
                   size="0.8"
@@ -289,6 +296,7 @@ export class FieldManager extends StoreElement {
 
     return html`
       <temba-textinput
+        id="search"
         placeholder="Search"
         @change=${this.handleSearch}
         clearable
