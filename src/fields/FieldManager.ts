@@ -259,7 +259,7 @@ export class FieldManager extends StoreElement {
           >
             ${field.label}
           </span>
-          ${this.hasUsages(field)
+          ${this.hasUsages()
             ? html`
                 <temba-icon
                   size="0.8"
