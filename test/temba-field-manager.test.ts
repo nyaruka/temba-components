@@ -61,7 +61,7 @@ describe('temba-field-manager', () => {
     // we can't easily test reordering since the store is static
     await mouseUp();
     first = fm.shadowRoot.querySelector('.sortable') as HTMLDivElement;
-    expect(first.id).to.equal('age');
+    expect(first.id).to.equal('ward');
 
     // it'll trigger a refresh from the store which is static and put it back though
     await delay(100);
