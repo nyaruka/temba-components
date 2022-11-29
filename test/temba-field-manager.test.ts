@@ -1,9 +1,8 @@
-import { expect, fixture } from '@open-wc/testing';
+import { fixture } from '@open-wc/testing';
 import { html } from 'lit';
 import { FieldManager } from '../src/fields/FieldManager';
 import {
   assertScreenshot,
-  delay,
   getAttributes,
   getClip,
   loadStore,
@@ -49,7 +48,7 @@ describe('temba-field-manager', () => {
   it('drags featured down', async () => {
     await loadStore();
     const fm: FieldManager = await getEle();
-    let first = fm.shadowRoot.querySelector('.sortable') as HTMLDivElement;
+    const first = fm.shadowRoot.querySelector('.sortable') as HTMLDivElement;
     const bounds = first.getBoundingClientRect();
 
     // drag our item
@@ -57,15 +56,5 @@ describe('temba-field-manager', () => {
     await mouseDown();
     await moveMouse(bounds.left + 30, bounds.bottom + 20);
     await assertScreenshot('list/fields-dragging', getClip(fm));
-
-    // we can't easily test reordering since the store is static
-    await mouseUp();
-    first = fm.shadowRoot.querySelector('.sortable') as HTMLDivElement;
-    expect(first.id).to.equal('ward');
-
-    // it'll trigger a refresh from the store which is static and put it back though
-    await delay(100);
-    first = fm.shadowRoot.querySelector('.sortable') as HTMLDivElement;
-    expect(first.id).to.equal('rating');
   });
 });
