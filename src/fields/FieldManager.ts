@@ -9,6 +9,7 @@ import { postJSON } from '../utils';
 const TYPE_NAMES = {
   text: 'Text',
   numeric: 'Number',
+  number: 'Number',
   datetime: 'Date & Time',
   state: 'State',
   ward: 'Ward',
@@ -40,7 +41,7 @@ export class FieldManager extends StoreElement {
         min-height: 0px;
       }
 
-      .pinned,
+      .featured,
       .other-fields {
         background: #fff;
         border-radius: var(--curvature);
@@ -50,7 +51,7 @@ export class FieldManager extends StoreElement {
         flex-direction: column;
       }
 
-      .pinned {
+      .featured {
         max-height: 40%;
       }
 
@@ -85,7 +86,7 @@ export class FieldManager extends StoreElement {
         border-bottom: 1px solid var(--color-widget-border);
       }
 
-      .pinned-field {
+      .featured-field {
         user-select: none;
       }
 
@@ -119,7 +120,7 @@ export class FieldManager extends StoreElement {
         border-radius: var(--curvature);
       }
 
-      .pinned temba-sortable-list .field:hover {
+      .featured temba-sortable-list .field:hover {
         cursor: move;
         border-color: #e6e6e6;
         background: #fcfcfc;
@@ -152,7 +153,7 @@ export class FieldManager extends StoreElement {
   private filterFields() {
     const filteredKeys = this.store.getFieldKeys().filter(key => {
       const field = this.store.getContactField(key);
-      if (field.pinned) {
+      if (field.featured) {
         return false;
       }
       return matches(field, this.query);
@@ -165,15 +166,15 @@ export class FieldManager extends StoreElement {
         .label.localeCompare(this.store.getContactField(b).label);
     });
 
-    const pinned: ContactField[] = [];
-    this.store.getPinnedFields().forEach(field => {
+    const featured: ContactField[] = [];
+    this.store.getFeaturedFields().forEach(field => {
       if (matches(field, this.query)) {
-        pinned.push(field);
+        featured.push(field);
       }
     });
 
     this.otherFieldKeys = filteredKeys;
-    this.featuredFields = pinned;
+    this.featuredFields = featured;
   }
 
   protected updated(
@@ -230,8 +231,11 @@ export class FieldManager extends StoreElement {
     this.query = (event.target.value || '').trim();
   }
 
-  private hasUsages(): boolean {
-    return false;
+  private hasUsages(field: ContactField): boolean {
+    return (
+      field.usages.campaign_events + field.usages.flows + field.usages.groups >
+      0
+    );
   }
 
   private renderField(field: ContactField) {
@@ -259,7 +263,7 @@ export class FieldManager extends StoreElement {
           >
             ${field.label}
           </span>
-          ${this.hasUsages()
+          ${this.hasUsages(field)
             ? html`
                 <temba-icon
                   size="0.8"
@@ -304,9 +308,9 @@ export class FieldManager extends StoreElement {
 
       ${this.featuredFields.length > 0
         ? html`
-            <div class="pinned">
+            <div class="featured">
               <div class="header">
-                <temba-icon name="pinned"></temba-icon>
+                <temba-icon name="featured"></temba-icon>
                 <div class="label">Featured</div>
               </div>
               ${this.query

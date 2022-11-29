@@ -77,7 +77,7 @@ export class ContactFields extends ContactStoreElement {
   }
 
   @property({ type: Boolean })
-  pinned: boolean;
+  featured: boolean;
 
   @property({ type: Boolean })
   system: boolean;
@@ -128,8 +128,8 @@ export class ContactFields extends ContactStoreElement {
       const fieldsToShow = Object.entries(this.data.fields)
         .filter((entry: [string, string]) => {
           return (
-            (this.pinned && this.store.getContactField(entry[0]).pinned) ||
-            (!this.pinned && !this.store.getContactField(entry[0]).pinned)
+            (this.featured && this.store.getContactField(entry[0]).featured) ||
+            (!this.featured && !this.store.getContactField(entry[0]).featured)
           );
         })
         .sort((a: [string, string], b: [string, string]) => {
@@ -164,11 +164,12 @@ export class ContactFields extends ContactStoreElement {
       });
 
       return html`
-        <div class="fields ${this.showAll || this.pinned ? 'show-all' : ''}">
+        <div class="fields ${this.showAll || this.featured ? 'show-all' : ''}">
           ${fields}
         </div>
 
-        ${!this.pinned && Object.keys(this.data.fields).length >= MIN_FOR_FILTER
+        ${!this.featured &&
+        Object.keys(this.data.fields).length >= MIN_FOR_FILTER
           ? html`<div class="footer">
               <div style="flex-grow: 1"></div>
               <div>

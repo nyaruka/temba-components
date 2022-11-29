@@ -64,7 +64,7 @@ export class Store extends RapidElement {
   private groups: { [uuid: string]: ContactGroup } = {};
   private languages: any = {};
   private workspace: Workspace;
-  private pinnedFields: ContactField[] = [];
+  private featuredFields: ContactField[] = [];
 
   private langService = new HumanizeDurationLanguage();
   private humanizer = new HumanizeDuration(this.langService);
@@ -169,17 +169,17 @@ export class Store extends RapidElement {
   public refreshFields() {
     return getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
       this.keyedAssets['fields'] = [];
-      this.pinnedFields = [];
+      this.featuredFields = [];
 
       assets.forEach((field: ContactField) => {
         this.keyedAssets['fields'].push(field.key);
         this.fields[field.key] = field;
-        if (field.pinned) {
-          this.pinnedFields.push(field);
+        if (field.featured) {
+          this.featuredFields.push(field);
         }
       });
 
-      this.pinnedFields.sort((a, b) => {
+      this.featuredFields.sort((a, b) => {
         return b.priority - a.priority;
       });
 
@@ -249,8 +249,8 @@ export class Store extends RapidElement {
     return this.fields[key];
   }
 
-  public getPinnedFields(): ContactField[] {
-    return this.pinnedFields;
+  public getFeaturedFields(): ContactField[] {
+    return this.featuredFields;
   }
 
   public getLanguageName(iso: string) {

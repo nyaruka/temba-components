@@ -97,8 +97,9 @@ export interface ContactField {
   key: string;
   label: string;
   value_type: string;
-  pinned: boolean;
+  featured: boolean;
   priority: number;
+  usages: { campaign_events: number; flows: number; groups: number };
 }
 
 export interface ContactGroup {

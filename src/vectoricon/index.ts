@@ -54,7 +54,7 @@ export enum Icon {
   org_suspended = 'slash-circle-01',
   org_verified = 'check-verified-02',
   org_flagged = 'flag-01',
-  pinned = 'star-01',
+  featured = 'star-01',
   resthooks = 'share-07',
   restore = 'play',
   search = 'search-refraction',
