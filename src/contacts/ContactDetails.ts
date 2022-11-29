@@ -201,7 +201,7 @@ export class ContactDetails extends RapidElement {
       if (this.contact && this.contact.fields) {
         this.fields = Object.keys(this.contact.fields).filter((key: string) => {
           const hasField = !!this.contact.fields[key];
-          return hasField && store.getContactField(key).pinned;
+          return hasField && store.getContactField(key).featured;
         });
 
         this.contact.groups.forEach((group: Group) => {

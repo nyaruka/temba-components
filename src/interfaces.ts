@@ -97,8 +97,9 @@ export interface ContactField {
   key: string;
   label: string;
   value_type: string;
-  pinned: boolean;
+  featured: boolean;
   priority: number;
+  usages: { campaign_events: number; flows: number; groups: number };
 }
 
 export interface ContactGroup {
@@ -239,4 +240,7 @@ export enum CustomEventType {
   NoPath = 'temba-no-path',
   StoreUpdated = 'temba-store-updated',
   Ready = 'temba-ready',
+  OrderChanged = 'temba-order-changed',
+  DragStart = 'temba-drag-start',
+  DragStop = 'temba-drag-stop',
 }

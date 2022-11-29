@@ -204,7 +204,7 @@ export class ContactHistory extends RapidElement {
         border-bottom: 1px solid rgba(220, 220, 220, 1);
       }
 
-      .sticky.pinned {
+      .sticky.featured {
         visibility: hidden;
       }
 
@@ -669,11 +669,11 @@ export class ContactHistory extends RapidElement {
 
     stickies.forEach((sticky: HTMLDivElement) => {
       const scrollBoundary = events.scrollTop + stickyBin.clientHeight + 136;
-      if (!sticky.classList.contains('pinned')) {
+      if (!sticky.classList.contains('featured')) {
         const eventElement = sticky.firstElementChild as HTMLDivElement;
         if (scrollBoundary > sticky.offsetTop) {
           sticky.style.height = eventElement.clientHeight + 'px';
-          sticky.classList.add('pinned');
+          sticky.classList.add('featured');
           (sticky as any).eventElement = eventElement;
           stickyBin.appendChild(eventElement);
         }
@@ -681,7 +681,7 @@ export class ContactHistory extends RapidElement {
         const eventElement = (sticky as any).eventElement;
         if (scrollBoundary < sticky.offsetTop + sticky.offsetHeight) {
           sticky.appendChild(eventElement);
-          sticky.classList.remove('pinned');
+          sticky.classList.remove('featured');
         }
       }
     });
