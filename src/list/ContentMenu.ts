@@ -54,10 +54,8 @@ export class ContentMenu extends RapidElement {
   //     //todo
   // }
 
-  //blah1 is public required
-  //blah2 is private required
-  //blah3 is optional?
-  //blah4 is event handling?
+  //blah1 is public required, blah2 is private required
+  //blah3 is optional?, blah4 is event handling?
   public render(): TemplateResult {
     return html`
       <temba-content-menu
