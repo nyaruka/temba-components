@@ -221,6 +221,16 @@ export interface CompletionSchema {
   root_no_session: CompletionProperty[];
 }
 
+export interface ContentMenu {
+  uuid: string;
+  name: string;
+}
+
+export interface ContentMenuItem {
+  uuid: string;
+  name: string;
+}
+
 export type KeyedAssets = { [assetType: string]: string[] };
 
 export enum CustomEventType {
