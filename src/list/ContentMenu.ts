@@ -30,7 +30,7 @@ export class ContentMenu extends RapidElement {
 
   public getHeaders(): any {
     const headers = this.headers;
-    headers['X-TEMBA-CONTENT-MENU'] = 1; //todo confirm whether X vs HTTP is needed
+    headers['HTTP_TEMBA_CONTENT_MENU'] = 1; //todo confirm whether X vs HTTP is needed
     return headers;
   }
 
