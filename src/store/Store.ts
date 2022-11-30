@@ -64,7 +64,7 @@ export class Store extends RapidElement {
   private groups: { [uuid: string]: ContactGroup } = {};
   private languages: any = {};
   private workspace: Workspace;
-  private pinnedFields: ContactField[] = [];
+  private featuredFields: ContactField[] = [];
 
   private langService = new HumanizeDurationLanguage();
   private humanizer = new HumanizeDuration(this.langService);
@@ -103,24 +103,7 @@ export class Store extends RapidElement {
     }
 
     if (this.fieldsEndpoint) {
-      fetches.push(
-        getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
-          this.keyedAssets['fields'] = [];
-          this.pinnedFields = [];
-
-          assets.forEach((field: ContactField) => {
-            this.keyedAssets['fields'].push(field.key);
-            this.fields[field.key] = field;
-            if (field.pinned) {
-              this.pinnedFields.push(field);
-            }
-          });
-
-          this.pinnedFields.sort((a, b) => {
-            return b.priority - a.priority;
-          });
-        })
-      );
+      fetches.push(this.refreshFields());
     }
 
     if (this.globalsEndpoint) {
@@ -183,6 +166,32 @@ export class Store extends RapidElement {
     return 'en';
   }
 
+  public refreshFields() {
+    return getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
+      this.keyedAssets['fields'] = [];
+      this.featuredFields = [];
+
+      assets.forEach((field: ContactField) => {
+        this.keyedAssets['fields'].push(field.key);
+        this.fields[field.key] = field;
+        if (field.featured) {
+          this.featuredFields.push(field);
+        }
+      });
+
+      this.featuredFields.sort((a, b) => {
+        return b.priority - a.priority;
+      });
+
+      this.keyedAssets['fields'].sort();
+
+      this.fireCustomEvent(CustomEventType.StoreUpdated, {
+        url: this.fieldsEndpoint,
+        data: this.keyedAssets['fields'],
+      });
+    });
+  }
+
   public getShortDuration(
     isoDateA: string,
     isoDateB: string = null,
@@ -232,12 +241,16 @@ export class Store extends RapidElement {
     return this.keyedAssets;
   }
 
+  public getFieldKeys(): string[] {
+    return this.keyedAssets['fields'];
+  }
+
   public getContactField(key: string): ContactField {
     return this.fields[key];
   }
 
-  public getPinnedFields(): ContactField[] {
-    return this.pinnedFields;
+  public getFeaturedFields(): ContactField[] {
+    return this.featuredFields;
   }
 
   public getLanguageName(iso: string) {

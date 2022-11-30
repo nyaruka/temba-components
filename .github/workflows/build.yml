@@ -7,10 +7,9 @@ jobs:
     runs-on: macOS-11
     steps:
       - uses: actions/checkout@v1
-      - name: Use Node.js 12.x
-        uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
-          node-version: 12
+          node-version: 16
       - name: Screenshot Tests
         run: |
           yarn install
@@ -23,7 +22,7 @@ jobs:
           name: screenshots
           path: screenshots/
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.4
+        uses: codecov/codecov-action@v3
         with:
           token: ${{secrets.CODECOV_TOKEN}}
-          file: coverage/lcov.info
+          files: coverage/lcov.info

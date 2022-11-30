@@ -39,6 +39,8 @@ import { RunList } from './src/list/RunList';
 import { FlowStoreElement } from './src/flow/FlowStoreElement';
 import { ContactNameFetch } from './src/contacts/ContactNameFetch';
 import DatePicker from './src/datepicker/DatePicker';
+import { FieldManager } from './src/fields/FieldManager';
+import { SortableList } from './src/list/SortableList';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -63,6 +65,7 @@ addCustomElement('temba-contact-name', ContactName);
 addCustomElement('temba-contact-name-fetch', ContactNameFetch);
 addCustomElement('temba-contact-field', ContactFieldEditor);
 addCustomElement('temba-contact-fields', ContactFields);
+addCustomElement('temba-field-manager', FieldManager);
 addCustomElement('temba-urn', ContactUrn);
 
 addCustomElement('temba-field', FormField);
@@ -74,6 +77,7 @@ addCustomElement('temba-contact-chat', ContactChat);
 addCustomElement('temba-contact-details', ContactDetails);
 addCustomElement('temba-ticket-list', TicketList);
 addCustomElement('temba-list', TembaList);
+addCustomElement('temba-sortable-list', SortableList);
 addCustomElement('temba-run-list', RunList);
 addCustomElement('temba-flow-details', FlowStoreElement);
 addCustomElement('temba-label', Label);
