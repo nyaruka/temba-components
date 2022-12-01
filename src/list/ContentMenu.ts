@@ -6,7 +6,8 @@ import { RapidElement } from '../RapidElement';
 import { getUrl, WebResponse } from '../utils';
 
 const HEADERS = {
-  HTTP_TEMBA_CONTENT_MENU: '1',
+  'Temba-Content-Menu': '1',
+  'Temba-Spa': '1',
 };
 
 export class ContentMenu extends RapidElement {
@@ -29,10 +30,10 @@ export class ContentMenu extends RapidElement {
   endpoint: string;
 
   @property({ type: Array })
-  items: ContentMenuItem[] = [{ name: 'Option 1', button: false }];
+  items: ContentMenuItem[] = [];
 
   @property({ type: Array })
-  buttons: ContentMenuItem[] = [{ name: 'Option 2', button: true }];
+  buttons: ContentMenuItem[] = [];
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse>;
@@ -47,7 +48,7 @@ export class ContentMenu extends RapidElement {
     getUrl(this.endpoint, null, HEADERS)
       .then((response: WebResponse) => {
         const json = response.json;
-        const contentMenu = json as ContentMenuItem[];
+        const contentMenu = json.items as ContentMenuItem[];
         this.items = contentMenu.filter(item => !item.button);
         this.buttons = contentMenu.filter(item => item.button);
       })
@@ -62,6 +63,7 @@ export class ContentMenu extends RapidElement {
 
   protected updated(changes: Map<string, any>) {
     if (changes.has('endpoint')) {
+      console.log('changed', this.endpoint);
       this.fetchContentMenu();
     }
   }
@@ -91,7 +93,7 @@ export class ContentMenu extends RapidElement {
 
       <div class="container">
         ${this.buttons.map(item => {
-          return html`<temba-button name=${item.name}></temba-button>`;
+          return html`<temba-button name=${item.label}></temba-button>`;
         })}
 
         <temba-dropdown>
@@ -105,7 +107,7 @@ export class ContentMenu extends RapidElement {
                 class="option"
                 @click=${() => this.handleItemClick(item)}
               >
-                ${item.name}
+                ${item.label}
               </div>`;
             })}
           </div>

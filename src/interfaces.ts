@@ -227,7 +227,9 @@ export interface ContentMenu {
 }
 
 export interface ContentMenuItem {
-  name: string;
+  label: string;
+  url: string;
+  type: string;
   button: boolean;
 }
 
