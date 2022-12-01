@@ -41,6 +41,7 @@ import { ContactNameFetch } from './src/contacts/ContactNameFetch';
 import DatePicker from './src/datepicker/DatePicker';
 import { FieldManager } from './src/fields/FieldManager';
 import { SortableList } from './src/list/SortableList';
+import { ContentMenu } from './src/list/ContentMenu';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -67,6 +68,7 @@ addCustomElement('temba-contact-field', ContactFieldEditor);
 addCustomElement('temba-contact-fields', ContactFields);
 addCustomElement('temba-field-manager', FieldManager);
 addCustomElement('temba-urn', ContactUrn);
+addCustomElement('temba-content-menu', ContentMenu);
 
 addCustomElement('temba-field', FormField);
 addCustomElement('temba-dialog', Dialog);

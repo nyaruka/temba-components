@@ -227,8 +227,8 @@ export interface ContentMenu {
 }
 
 export interface ContentMenuItem {
-  uuid: string;
   name: string;
+  button: boolean;
 }
 
 export type KeyedAssets = { [assetType: string]: string[] };
