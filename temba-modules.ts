@@ -93,3 +93,4 @@ addCustomElement('temba-contact-badges', ContactBadges);
 addCustomElement('temba-contact-pending', ContactPending);
 addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
+addCustomElement('temba-content-menu', ContentMenu);
