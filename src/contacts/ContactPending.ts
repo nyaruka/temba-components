@@ -210,7 +210,7 @@ export class ContactPending extends StoreElement {
               text=${this.store.formatDate(event.scheduled)}
               position="left"
             >
-              ${this.store.getShortDuration(event.scheduled)}
+              ${this.store.getShortDurationFromIso(event.scheduled)}
             </temba-tip>
           </div>
         </div>
