@@ -193,13 +193,11 @@ export class Store extends RapidElement {
   }
 
   public getShortDuration(
-    isoDateA: string,
-    isoDateB: string = null,
+    scheduled: DateTime,
+    compareDate: DateTime = null,
     showSeconds = false
   ) {
-    const scheduled = DateTime.fromISO(isoDateA);
-    const now = isoDateB ? DateTime.fromISO(isoDateB) : DateTime.now();
-
+    const now = compareDate || DateTime.now();
     const duration = scheduled.diff(now).valueOf();
 
     if (showSeconds) {
@@ -219,6 +217,16 @@ export class Store extends RapidElement {
       largest: 1,
       round: false,
     });
+  }
+
+  public getShortDurationFromIso(
+    isoDateA: string,
+    isoDateB: string = null,
+    showSeconds = false
+  ) {
+    const scheduled = DateTime.fromISO(isoDateA);
+    const now = isoDateB ? DateTime.fromISO(isoDateB) : DateTime.now();
+    return this.getShortDuration(scheduled, now, showSeconds);
   }
 
   public setKeyedAssets(name: string, values: string[]): void {
