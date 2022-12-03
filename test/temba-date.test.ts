@@ -17,7 +17,7 @@ export const getDate = async (attrs: any = {}) => {
 };
 
 // mock the current time
-const now = DateTime.fromISO('2000-01-01T00:00:00.000000-07:00');
+const now = DateTime.fromISO('2022-12-02T21:00:00.000000-07:00');
 sinon.replace(DateTime, 'now', () => {
   return now;
 });
@@ -47,7 +47,7 @@ describe('temba-date', () => {
     ).innerText;
 
     await assertScreenshot('date/duration', getClip(date));
-    expect(dateString).to.equal('21 years');
+    expect(dateString).to.equal('44 years');
   });
 
   it('renders datetime', async () => {
