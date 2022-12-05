@@ -23,7 +23,7 @@ export class TembaDate extends RapidElement {
   }
 
   @property({ type: String })
-  isodate: string;
+  value: string;
 
   @property({ type: String })
   display = 'date';
@@ -37,8 +37,8 @@ export class TembaDate extends RapidElement {
     changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changedProperties);
-    if (changedProperties.has('isodate')) {
-      this.datetime = DateTime.fromISO(this.isodate);
+    if (changedProperties.has('value')) {
+      this.datetime = DateTime.fromISO(this.value);
       this.store = document.querySelector('temba-store');
     }
   }

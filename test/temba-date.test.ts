@@ -28,7 +28,7 @@ describe('temba-date', () => {
   });
 
   it('renders default', async () => {
-    const date = await getDate({ isodate: '1978-11-18T02:22:00.000000-07:00' });
+    const date = await getDate({ value: '1978-11-18T02:22:00.000000-07:00' });
     const dateString = (
       date.shadowRoot.querySelector('.date') as HTMLDivElement
     ).innerText;
@@ -39,7 +39,7 @@ describe('temba-date', () => {
 
   it('renders duration', async () => {
     const date = await getDate({
-      isodate: '1978-11-18T02:22:00.000000-07:00',
+      value: '1978-11-18T02:22:00.000000-07:00',
       display: 'duration',
     });
     const dateString = (
@@ -52,7 +52,7 @@ describe('temba-date', () => {
 
   it('renders datetime', async () => {
     const date = await getDate({
-      isodate: '1978-11-18T02:22:00.000000-07:00',
+      value: '1978-11-18T02:22:00.000000-07:00',
       display: 'datetime',
     });
     const dateString = (
