@@ -18,25 +18,76 @@ export class ContentMenu extends RapidElement {
   static get styles() {
     return css`
       .container {
+        --button-y: 0.4em;
+        --button-x: 1em;
         display: flex;
+        height: 100%;
+      }
+
+      .primary_button_item {
+        margin-left: 1rem;
       }
 
       .button_item {
-        //todo
+        margin-left: 1rem;
+      }
+
+      temba-dropdown {
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+      }
+
+      div[slot='toggle'] {
+        --icon-color: #666;
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        margin-left: 0.5rem;
+      }
+
+      div[slot='dropdown'] {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        adding-top: 1rem;
+        padding-bottom: 1rem;
+        --tw-text-opacity: 1;
+        color: rgba(45, 45, 45, var(--tw-text-opacity));
+        z-index: 50;
+        min-width: 200px;
       }
 
       .item {
-        //todo
+        white-space: nowrap;
+        margin-top: 0.2em;
+        margin-bottom: 0.2em;
+        font-size: 1.1rem;
+        cursor: pointer;
+        color: inherit;
+        font-weight: 400;
       }
 
       .divider {
-        //todo
+        border-bottom-width: 1px;
+        --tw-border-opacity: 1;
+        border-color: rgba(237, 237, 237, var(--tw-border-opacity));
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
       }
     `;
   }
 
   @property({ type: String })
   endpoint: string;
+
+  // @property({ type: ContentMenuItem})
+  // primaryButton: ContentMenuItem;
 
   @property({ type: Array })
   buttons: ContentMenuItem[] = [];
@@ -57,6 +108,7 @@ export class ContentMenu extends RapidElement {
         console.log('json', json);
         console.log('json.items', json.items);
         const contentMenu = json.items as ContentMenuItem[];
+        // this.primaryButton = contentMenu.filter(item => item.as_button && item.primary); //todo do we need this?
         this.buttons = contentMenu.filter(item => item.as_button);
         this.items = contentMenu.filter(item => !item.as_button);
       })
@@ -76,7 +128,7 @@ export class ContentMenu extends RapidElement {
     }
   }
 
-  private handleItemClick(item: ContentMenuItem) {
+  private handleItemClicked(item: ContentMenuItem) {
     console.log('clicked', item);
 
     if (item.type === 'link') {
@@ -85,13 +137,15 @@ export class ContentMenu extends RapidElement {
     }
 
     if (item.type == 'modax') {
-      const modax = this.shadowRoot.querySelector('temba-modax') as Modax;
+      const modax = this.shadowRoot.querySelector(
+        'temba-modax #' + item.modal_id
+      ) as Modax;
       modax.endpoint = item.url;
-      modax.header = item.label;
+      modax.header = item.title;
       modax.headers = MODAX_HEADERS;
       modax.id = item.modal_id;
-      //modax.primaryName = item.primary; //todo confirm if this is needed and what it should be set to?
-      modax.disabled = item.disabled; //todo confirm if this is needed and whether it should be set?
+      modax.disabled = item.disabled;
+      // modax.onsubmit = item.on_submit; //todo
       modax.open = true;
     }
     if (item.type === 'url_post') {
@@ -107,37 +161,70 @@ export class ContentMenu extends RapidElement {
           console.error('error', error);
         });
     }
-    //note: the "js" item type is only used on the archived contacts page for the "delete all" content menu item
+
+    //note: as of 12.2022, the "js" item type is only used on the
+    //archived contacts page for the "delete all" content menu item
     if (item.type == 'js') {
       // todo confirm this is right
-      this.fireCustomEvent(CustomEventType.TriggerScript, {
-        name: item.on_click,
+      this.fireCustomEvent(CustomEventType.ScriptTriggered, {
+        script_name: item.on_click,
       });
     }
   }
 
-  private handleModaxOnSubmit(item: ContentMenuItem) {
+  private handleModaxSubmitted(item: ContentMenuItem) {
     // todo confirm this is right
-    this.fireCustomEvent(CustomEventType.TriggerScript, {
-      name: item.on_submit,
-    });
+    if (item.on_submit) {
+      this.fireCustomEvent(CustomEventType.ScriptTriggered, {
+        script_name: item.on_submit,
+      });
+    }
   }
 
+  //todo div container class needs to transcribe -> .flex.h-full.spa-gear-buttons
+  //todo temba-button class needs to transcribe -> .ml-4
+  //todo temba-dropdown class needs to transcribe -> .items-stretch.flex.flex-column(arrowoffset="-12" offsetx="24" offsety="6" arrowsize="8")
+  //todo div slot="toggle" class needs to transcribe -> .menu-button.items-center.flex.flex-column.py-2.px-2.ml-2
+  //todo div slot="dropdown" class needs to transcribe -> .px-6.py-4.text-gray-800.z-50 and style="min-width:200px"
+  //todo div dropdown divider item class needs to transcribe -> .border-b.border-gray-200.my-4.-mx-6
+  //todo div dropdown regular item class needs to transcribe -> .whitespace-nowrap.menu-item.hover-linked.font-normal
+  //todo what is gear-flag and item.flag? spa_page_menu.aml line 157
   public render(): TemplateResult {
     return html`
       <div class="container">
         ${this.buttons.map(button => {
-          return html` <temba-button
-            class="button_item"
-            name=${button.label}
-            @click=${() => this.handleItemClick(button)}
-          >
-          </temba-button>`;
+          if (button.type === 'modax') {
+            return html` <temba-button
+                class="${
+                  button.primary ? 'primary_button_item' : 'button_item'
+                }"
+                name=${button.label}
+                @click=${() => this.handleItemClicked(button)}
+              >
+                ${button.label}
+              </temba-button>
+              <temba-modax id="${button.modal_id}
+                @temba-submitted="${this.handleModaxSubmitted(button)}"
+              ></temba-modax>`;
+          } else {
+            return html` <temba-button
+              class="${button.primary ? 'primary_button_item' : 'button_item'}"
+              name=${button.label}
+              @click=${() => this.handleItemClicked(button)}
+            >
+              ${button.label}
+            </temba-button>`;
+          }
         })}
-
-        <temba-dropdown>
+        <temba-dropdown
+          arrowsize="8"
+          arrowoffset="-12"
+          offsetx="24"
+          offsety="6"
+          class="TODO"
+        >
           <div slot="toggle">
-            <temba-icon name="menu" />
+            <temba-icon name="menu" size="1.5" />
           </div>
           <div slot="dropdown">
             ${this.items.map(item => {
@@ -147,18 +234,18 @@ export class ContentMenu extends RapidElement {
                 return html` <div
                     class="item"
                     name=${item.label}
-                    @click=${() => this.handleItemClick(item)}
+                    @click=${() => this.handleItemClicked(item)}
                   >
                     ${item.label}
                   </div>
-                  <temba-modax
-                    @temba-submitted="${this.handleModaxOnSubmit(item)}"
+                  <temba-modax id="${item.modal_id}
+                    @temba-submitted="${this.handleModaxSubmitted(item)}"
                   ></temba-modax>`;
               } else {
                 return html` <div
                   class="item"
                   name=${item.label}
-                  @click=${() => this.handleItemClick(item)}
+                  @click=${() => this.handleItemClicked(item)}
                 >
                   ${item.label}
                 </div>`;
