@@ -126,7 +126,7 @@ export class ContactTickets extends StoreElement {
 
         <div class="date">
           <temba-tip direction="left" text=${this.store.formatDate(date)}>
-            ${this.store.getShortDuration(date)}
+            ${this.store.getShortDurationFromIso(date)}
           </temba-tip>
         </div>
 

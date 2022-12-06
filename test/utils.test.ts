@@ -225,5 +225,6 @@ export const loadStore = async () => {
   );
   await store.httpComplete;
   await store.httpComplete;
+
   return store;
 };
