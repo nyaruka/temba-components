@@ -37,33 +37,31 @@ export class ContentMenu extends RapidElement {
         flex-direction: column;
       }
 
-      div[slot='toggle'] {
-        --icon-color: #666;
+      .toggle {
+        color: #666;
         align-items: center;
         display: flex;
         flex-direction: column;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding: 0.5rem;
         margin-left: 0.5rem;
+        border-radius: var(--curvature);
+      }
+
+      .toggle:hover {
+        background: yellow;
+        color: purple;
       }
 
       div[slot='dropdown'] {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-        adding-top: 1rem;
-        padding-bottom: 1rem;
-        --tw-text-opacity: 1;
-        color: rgba(45, 45, 45, var(--tw-text-opacity));
+        padding: 1rem 1.5rem;
+        color: rgb(45, 45, 45);
         z-index: 50;
         min-width: 200px;
       }
 
       .item {
         white-space: nowrap;
-        margin-top: 0.2em;
-        margin-bottom: 0.2em;
+        margin: 0.2em 0em;
         font-size: 1.1rem;
         cursor: pointer;
         color: inherit;
@@ -71,13 +69,8 @@ export class ContentMenu extends RapidElement {
       }
 
       .divider {
-        border-bottom-width: 1px;
-        --tw-border-opacity: 1;
-        border-color: rgba(237, 237, 237, var(--tw-border-opacity));
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-        margin-left: -1.5rem;
-        margin-right: -1.5rem;
+        border-bottom: 1px solid #ccc;
+        margin: 1rem -1.5em;
       }
     `;
   }
@@ -155,7 +148,7 @@ export class ContentMenu extends RapidElement {
           offsety="6"
           class="TODO"
         >
-          <div slot="toggle">
+          <div class="toggle" slot="toggle">
             <temba-icon name="menu" size="1.5" />
           </div>
           <div slot="dropdown">
