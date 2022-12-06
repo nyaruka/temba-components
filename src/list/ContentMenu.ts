@@ -1,10 +1,9 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators';
-import { Modax } from '../dialog/Modax';
 import { ContentMenuItem, CustomEventType } from '../interfaces';
 
 import { RapidElement } from '../RapidElement';
-import { getUrl, postUrl, WebResponse } from '../utils';
+import { getUrl, WebResponse } from '../utils';
 
 const HEADERS = {
   'Temba-Content-Menu': '1',
@@ -105,8 +104,6 @@ export class ContentMenu extends RapidElement {
     getUrl(this.endpoint, null, HEADERS)
       .then((response: WebResponse) => {
         const json = response.json;
-        console.log('json', json);
-        console.log('json.items', json.items);
         const contentMenu = json.items as ContentMenuItem[];
         // this.primaryButton = contentMenu.filter(item => item.as_button && item.primary); //todo do we need this?
         this.buttons = contentMenu.filter(item => item.as_button);
@@ -123,62 +120,12 @@ export class ContentMenu extends RapidElement {
 
   protected updated(changes: Map<string, any>) {
     if (changes.has('endpoint')) {
-      console.log('changed', this.endpoint);
       this.fetchContentMenu();
     }
   }
 
   private handleItemClicked(item: ContentMenuItem) {
-    console.log('clicked', item);
-
-    if (item.type === 'link') {
-      console.log('url', item.url);
-      window.location.href = item.url;
-    }
-
-    if (item.type == 'modax') {
-      const modax = this.shadowRoot.querySelector(
-        'temba-modax #' + item.modal_id
-      ) as Modax;
-      modax.endpoint = item.url;
-      modax.header = item.title;
-      modax.headers = MODAX_HEADERS;
-      modax.id = item.modal_id;
-      modax.disabled = item.disabled;
-      // modax.onsubmit = item.on_submit; //todo
-      modax.open = true;
-    }
-    if (item.type === 'url_post') {
-      // todo confirm this is right
-      const payload: any = '';
-      const headers: any = {};
-      const contentType = null;
-      postUrl(item.url, payload, headers, contentType)
-        .then((response: WebResponse) => {
-          console.log('response', response);
-        })
-        .catch((error: any) => {
-          console.error('error', error);
-        });
-    }
-
-    //note: as of 12.2022, the "js" item type is only used on the
-    //archived contacts page for the "delete all" content menu item
-    if (item.type == 'js') {
-      // todo confirm this is right
-      this.fireCustomEvent(CustomEventType.ScriptTriggered, {
-        script_name: item.on_click,
-      });
-    }
-  }
-
-  private handleModaxSubmitted(item: ContentMenuItem) {
-    // todo confirm this is right
-    if (item.on_submit) {
-      this.fireCustomEvent(CustomEventType.ScriptTriggered, {
-        script_name: item.on_submit,
-      });
-    }
+    this.fireCustomEvent(CustomEventType.Selection, item);
   }
 
   //todo div container class needs to transcribe -> .flex.h-full.spa-gear-buttons
@@ -193,28 +140,13 @@ export class ContentMenu extends RapidElement {
     return html`
       <div class="container">
         ${this.buttons.map(button => {
-          if (button.type === 'modax') {
-            return html` <temba-button
-                class="${
-                  button.primary ? 'primary_button_item' : 'button_item'
-                }"
-                name=${button.label}
-                @click=${() => this.handleItemClicked(button)}
-              >
-                ${button.label}
-              </temba-button>
-              <temba-modax id="${button.modal_id}
-                @temba-submitted="${this.handleModaxSubmitted(button)}"
-              ></temba-modax>`;
-          } else {
-            return html` <temba-button
-              class="${button.primary ? 'primary_button_item' : 'button_item'}"
-              name=${button.label}
-              @click=${() => this.handleItemClicked(button)}
-            >
-              ${button.label}
-            </temba-button>`;
-          }
+          return html`<temba-button
+            class="${button.primary ? 'primary_button_item' : 'button_item'}"
+            name=${button.label}
+            @click=${() => this.handleItemClicked(button)}
+          >
+            ${button.label}
+          </temba-button>`;
         })}
         <temba-dropdown
           arrowsize="8"
@@ -232,15 +164,12 @@ export class ContentMenu extends RapidElement {
                 return html` <div class="divider"></div>`;
               } else if (item.type === 'modax') {
                 return html` <div
-                    class="item"
-                    name=${item.label}
-                    @click=${() => this.handleItemClicked(item)}
-                  >
-                    ${item.label}
-                  </div>
-                  <temba-modax id="${item.modal_id}
-                    @temba-submitted="${this.handleModaxSubmitted(item)}"
-                  ></temba-modax>`;
+                  class="item"
+                  name=${item.label}
+                  @click=${() => this.handleItemClicked(item)}
+                >
+                  ${item.label}
+                </div>`;
               } else {
                 return html` <div
                   class="item"

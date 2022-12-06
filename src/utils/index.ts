@@ -234,11 +234,7 @@ export const postFormData = (
     postUrl(url, formData, true)
       .then(response => {
         if (response.status >= 200 && response.status < 300) {
-          if (response.json.status === 'success' || response.status === 201) {
-            resolve(response);
-          } else {
-            reject({ errors: response.json.errors });
-          }
+          resolve(response);
         }
         reject('Server failure');
       })

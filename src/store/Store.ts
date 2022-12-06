@@ -6,6 +6,8 @@ import {
   Asset,
   WebResponse,
   postUrl,
+  postJSON,
+  postForm,
 } from '../utils';
 import {
   ContactField,
@@ -285,6 +287,14 @@ export class Store extends RapidElement {
       hour: 'numeric',
       minute: 'numeric',
     });
+  }
+
+  public postJSON(url: string, payload: any = '') {
+    return postJSON(url, payload);
+  }
+
+  public postForm(url: string, payload: any | FormData) {
+    return postForm(url, payload);
   }
 
   public postUrl(
