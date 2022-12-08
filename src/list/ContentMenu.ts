@@ -81,7 +81,6 @@ export class ContentMenu extends RapidElement {
     getUrl(this.endpoint, null, HEADERS)
       .then((response: WebResponse) => {
         const json = response.json;
-        // console.log('items', json.items);
         const contentMenu = json.items as ContentMenuItem[];
         this.buttons = contentMenu.filter(item => item.as_button);
         this.items = contentMenu.filter(item => !item.as_button);
