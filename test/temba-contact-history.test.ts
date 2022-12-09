@@ -1,12 +1,12 @@
 import { fixture, assert, expect } from '@open-wc/testing';
-import * as sinon from 'sinon';
 import { ContactHistory } from '../src/contacts/ContactHistory';
-import { stubbable } from '../src/utils';
 import {
   assertScreenshot,
   getClip,
   getHTML,
+  loadStore,
   mockGET,
+  mockNow,
 } from '../test/utils.test';
 import './utils.test';
 
@@ -41,12 +41,10 @@ const getHistoryClip = (ele: ContactHistory) => {
 };
 
 // stub our current date for consistent screenshots
-sinon.stub(stubbable, 'getCurrentDate').callsFake(() => {
-  return new Date('2021-03-31T00:00:00.000-00:00');
-});
+mockNow('2021-03-31T00:31:00.000-00:00');
 
 describe('temba-contact-history', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockGET(
       /\/contact\/history\/contact-dave-active\/.*/,
       '/test-assets/contacts/history.json'
@@ -56,6 +54,8 @@ describe('temba-contact-history', () => {
       /\/api\/v2\/tickets\.json\?contact=contact-dave-active/,
       '/test-assets/api/tickets.json'
     );
+
+    await loadStore();
   });
 
   it('can be created', async () => {

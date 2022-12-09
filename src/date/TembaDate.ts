@@ -52,8 +52,9 @@ export class TembaDate extends RapidElement {
   }
 
   public render(): TemplateResult {
-    if (this.datetime) {
+    if (this.datetime && this.store) {
       this.datetime.setLocale(this.store.getLocale());
+
       let formatted = '';
       if (this.display === Display.timedate) {
         const hours = Math.abs(
@@ -73,6 +74,7 @@ export class TembaDate extends RapidElement {
         if (minutes < 1) {
           return html`<div class="date">just now</div>`;
         }
+
         formatted = this.store.getShortDuration(this.datetime);
       } else if (this.display === Display.duration) {
         const minutes = Math.abs(
