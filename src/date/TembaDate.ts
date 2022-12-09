@@ -7,7 +7,11 @@ import { DateTime } from 'luxon';
 export const Display = {
   date: DateTime.DATE_SHORT,
   datetime: DateTime.DATETIME_SHORT,
+  time: DateTime.TIME_SIMPLE,
+  timedate: 'timedate',
   duration: 'duration',
+  relative: 'relative',
+  day: 'LLL d',
 };
 
 export class TembaDate extends RapidElement {
@@ -49,18 +53,41 @@ export class TembaDate extends RapidElement {
 
   public render(): TemplateResult {
     if (this.datetime) {
-      if (this.display === Display.duration) {
-        return html`<div class="date">
-          ${this.store.getShortDuration(this.datetime)}
-        </div>`;
+      this.datetime.setLocale(this.store.getLocale());
+      let formatted = '';
+      if (this.display === Display.timedate) {
+        const hours = Math.abs(
+          this.datetime.diffNow().milliseconds / 1000 / 60 / 60
+        );
+        if (hours < 24) {
+          formatted = this.datetime.toLocaleString(Display.time);
+        } else if (hours < 24 * 365) {
+          formatted = this.datetime.toFormat(Display.day);
+        } else {
+          formatted = this.datetime.toLocaleString(Display.date);
+        }
+      } else if (this.display === Display.relative) {
+        const minutes = Math.abs(
+          this.datetime.diffNow().milliseconds / 1000 / 60
+        );
+        if (minutes < 1) {
+          return html`<div class="date">just now</div>`;
+        }
+        formatted = this.store.getShortDuration(this.datetime);
+      } else if (this.display === Display.duration) {
+        const minutes = Math.abs(
+          this.datetime.diffNow().milliseconds / 1000 / 60
+        );
+        if (minutes < 1) {
+          return html`<div class="date">just now</div>`;
+        }
+        formatted = this.store.getShortDuration(this.datetime);
+      } else if (this.display === Display.day) {
+        formatted = this.datetime.toLocaleString(Display.day);
       } else {
-        return html`
-          <div class="date">
-            ${this.datetime.toLocaleString(Display[this.display])}
-          </div>
-        `;
+        formatted = this.datetime.toLocaleString(Display[this.display]);
       }
+      return html`<div class="date">${formatted}</div>`;
     }
-    return null;
   }
 }
