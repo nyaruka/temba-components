@@ -32,6 +32,7 @@ export class StoreElement extends RapidElement {
     if (event.detail.url === this.url) {
       this.data = event.detail.data;
       this.fireCustomEvent(CustomEventType.Refreshed, { data: this.data });
+      // console.log("Updated!", this.data);
     }
   }
 

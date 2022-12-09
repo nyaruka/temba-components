@@ -141,7 +141,7 @@ export class RunList extends TembaList {
           </div>
 
           <div style="flex-shrink:1">
-            ${this.store.getShortDuration(run.modified_on)}
+            ${this.store.getShortDurationFromIso(run.modified_on)}
           </div>
           ${this.getIcon(run)}
         </div>
@@ -256,7 +256,7 @@ export class RunList extends TembaList {
                       ${capitalize(this.selectedRun.exit_type)}
                       ${exitType == 'completed'
                         ? html` in
-                          ${this.store.getShortDuration(
+                          ${this.store.getShortDurationFromIso(
                             this.selectedRun.created_on,
                             this.selectedRun.exited_on,
                             true
@@ -264,7 +264,7 @@ export class RunList extends TembaList {
                         : null}
                       ${exitType == 'interrupted' || exitType == 'expired'
                         ? html` after
-                          ${this.store.getShortDuration(
+                          ${this.store.getShortDurationFromIso(
                             this.selectedRun.created_on,
                             this.selectedRun.exited_on,
                             true
@@ -275,7 +275,7 @@ export class RunList extends TembaList {
                 : html`${this.getIcon(this.selectedRun)}
                     <div style="margin-left:0.5em;flex-grow:1">
                       Active for
-                      ${this.store.getShortDuration(
+                      ${this.store.getShortDurationFromIso(
                         this.selectedRun.created_on,
                         null,
                         true

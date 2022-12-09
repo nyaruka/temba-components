@@ -34,7 +34,7 @@ describe('temba-store', () => {
       "<temba-store fields='/test-assets/store/fields.json'></temba-store>"
     );
 
-    assert.equal(store.getKeyedAssets().fields.length, 5);
+    assert.equal(store.getKeyedAssets().fields.length, 8);
   });
 
   it('exposes postUrl', async () => {
