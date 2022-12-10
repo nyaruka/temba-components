@@ -1,4 +1,5 @@
 export enum Icon {
+  analytics = 'bar-chart-01',
   account = 'user-01',
   active = 'play',
   add_note = 'file-02',
@@ -55,9 +56,11 @@ export enum Icon {
   org_new = 'stars-02',
   org_suspended = 'slash-circle-01',
   org_verified = 'check-verified-02',
+  overview = 'pie-chart-01',
   featured = 'star-01',
   resthooks = 'share-07',
   restore = 'play',
+  runs = 'rows-03',
   search = 'search-refraction',
   select_open = 'chevron-down',
   select_clear = 'x',

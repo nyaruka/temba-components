@@ -141,7 +141,7 @@ export class RunList extends TembaList {
           </div>
 
           <div style="flex-shrink:1">
-            ${this.store.getShortDurationFromIso(run.modified_on)}
+            <temba-date value="${run.modified_on}" display="duration" />
           </div>
           ${this.getIcon(run)}
         </div>
@@ -227,7 +227,6 @@ export class RunList extends TembaList {
       return null;
     }
 
-    const exitType = this.selectedRun.exit_type;
     const resultKeys = Object.keys(this.selectedRun.values);
 
     return html` <div
@@ -251,35 +250,25 @@ export class RunList extends TembaList {
             >
               ${this.selectedRun.exit_type
                 ? html`
-                    ${this.getIcon(this.selectedRun)}
-                    <div style="margin-left:0.5em;flex-grow:1">
-                      ${capitalize(this.selectedRun.exit_type)}
-                      ${exitType == 'completed'
-                        ? html` in
-                          ${this.store.getShortDurationFromIso(
-                            this.selectedRun.created_on,
-                            this.selectedRun.exited_on,
-                            true
-                          )}`
-                        : null}
-                      ${exitType == 'interrupted' || exitType == 'expired'
-                        ? html` after
-                          ${this.store.getShortDurationFromIso(
-                            this.selectedRun.created_on,
-                            this.selectedRun.exited_on,
-                            true
-                          )}`
-                        : null}
+                    <div style="margin-left:2em;flex-grow:1;display:flex">
+                      ${this.getIcon(this.selectedRun)}
+                      <div style="margin-left:0.5em">
+                        ${capitalize(this.selectedRun.exit_type)}&nbsp;
+                      </div>
+                      <temba-date
+                        value="${this.selectedRun.exited_on}"
+                        compare="${this.selectedRun.created_on}"
+                        display="duration"
+                      />
                     </div>
                   `
                 : html`${this.getIcon(this.selectedRun)}
-                    <div style="margin-left:0.5em;flex-grow:1">
-                      Active for
-                      ${this.store.getShortDurationFromIso(
-                        this.selectedRun.created_on,
-                        null,
-                        true
-                      )}
+                    <div style="margin-left:1.5em;flex-grow:1;display:flex">
+                      <div>Started&nbsp;</div>
+                      <temba-date
+                        value="${this.selectedRun.created_on}"
+                        display="duration"
+                      />
                     </div>`}
             </div>
           </div>
