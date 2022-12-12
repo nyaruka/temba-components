@@ -1,5 +1,6 @@
 import '../temba-modules';
-
+import { DateTime } from 'luxon';
+import * as sinon from 'sinon';
 interface Clip {
   x: number;
   y: number;
@@ -227,4 +228,12 @@ export const loadStore = async () => {
   await store.httpComplete;
 
   return store;
+};
+
+export const mockNow = (isodate: string) => {
+  const now = DateTime.fromISO(isodate);
+  // mock the current time
+  sinon.replace(DateTime, 'now', () => {
+    return now;
+  });
 };

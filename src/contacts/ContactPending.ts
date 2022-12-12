@@ -1,6 +1,10 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators';
-import { ScheduledEvent, ScheduledEventType } from '../interfaces';
+import {
+  CustomEventType,
+  ScheduledEvent,
+  ScheduledEventType,
+} from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 import { Icon } from '../vectoricon';
 
@@ -92,6 +96,12 @@ export class ContactPending extends StoreElement {
           0 0 0px 1px rgba(0, 0, 0, 0.02);
       }
 
+      .event:hover {
+        cursor: pointer;
+        box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
+          0 0 0px 2px var(--color-link-primary);
+      }
+
       .time {
         white-space: nowrap;
         background: rgba(0, 0, 0, 0.02);
@@ -128,16 +138,15 @@ export class ContactPending extends StoreElement {
         margin-right: 0.25em;
       }
 
-      .campaign_event .scheduled-by:hover {
-        color: var(--color-link-primary);
-        --icon-color: var(--color-link-primary);
-        cursor: pointer;
-      }
-
       .scheduled-by .name {
         flex-grow: 1;
       }
     `;
+  }
+
+  constructor() {
+    super();
+    this.handleEventClicked = this.handleEventClicked.bind(this);
   }
 
   protected updated(
@@ -153,52 +162,47 @@ export class ContactPending extends StoreElement {
     }
   }
 
-  public renderEvent(event: ScheduledEvent) {
+  public handleEventClicked(event: ScheduledEvent) {
+    this.fireCustomEvent(CustomEventType.Selection, event);
+  }
+
+  public renderEvent(scheduledEvent: ScheduledEvent) {
     return html`
-      <div class="event ${event.type}">
+      <div
+        class="event ${scheduledEvent.type}"
+        @click="${() => this.handleEventClicked(scheduledEvent)}"
+      >
         <div class="type">
           <temba-icon
             size="2"
-            name="${event.message ? Icon.message : Icon.flow}"
+            name="${scheduledEvent.message ? Icon.message : Icon.flow}"
           ></temba-icon>
         </div>
 
         <div class="details">
           <div>
-            ${event.flow
-              ? html`
-                  <div
-                    class="flow linked"
-                    href="/flow/editor/${event.flow.uuid}/"
-                    onclick="goto(event)"
-                  >
-                    ${event.flow.name}
-                  </div>
-                `
+            ${scheduledEvent.flow
+              ? html` Start ${scheduledEvent.flow.name}`
               : null}
-            ${event.message
-              ? html` <div class="message">${event.message}</div> `
+            ${scheduledEvent.message
+              ? html` <div class="message">${scheduledEvent.message}</div> `
               : null}
           </div>
 
           <div class="scheduled-by">
-            ${event.campaign
-              ? html`<div
-                  style="display:flex"
-                  href="/campaign/read/${event.campaign.uuid}/"
-                  onclick="goto(event, this)"
-                >
+            ${scheduledEvent.campaign
+              ? html`<div style="display:flex">
                   <temba-icon name="${Icon.campaign}"></temba-icon>
-                  <div class="name">${event.campaign.name}</div>
+                  <div class="name">${scheduledEvent.campaign.name}</div>
                 </div>`
               : html`
-                  ${event.type === ScheduledEventType.ScheduledTrigger
+                  ${scheduledEvent.type === ScheduledEventType.ScheduledTrigger
                     ? html`<temba-icon
-                        name="${ICONS[event.type]}"
+                        name="${ICONS[scheduledEvent.type]}"
                       ></temba-icon>`
                     : null}
                   <div class="name">
-                    ${this.REPEAT_PERIOD[event.repeat_period]}
+                    ${this.REPEAT_PERIOD[scheduledEvent.repeat_period]}
                   </div>
                 `}
           </div>
@@ -207,10 +211,10 @@ export class ContactPending extends StoreElement {
         <div class="time">
           <div class="duration">
             <temba-tip
-              text=${this.store.formatDate(event.scheduled)}
+              text=${this.store.formatDate(scheduledEvent.scheduled)}
               position="left"
             >
-              ${this.store.getShortDurationFromIso(event.scheduled)}
+              ${this.store.getShortDurationFromIso(scheduledEvent.scheduled)}
             </temba-tip>
           </div>
         </div>
