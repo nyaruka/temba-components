@@ -78,9 +78,12 @@ export class ContentMenu extends RapidElement {
   }
 
   private fetchContentMenu() {
+    console.log(this.endpoint);
     getUrl(this.endpoint, null, HEADERS)
       .then((response: WebResponse) => {
         const json = response.json;
+        console.log('json', json);
+        console.log('items', json.items);
         const contentMenu = json.items as ContentMenuItem[];
         this.buttons = contentMenu.filter(item => item.as_button);
         this.items = contentMenu.filter(item => !item.as_button);
@@ -116,31 +119,33 @@ export class ContentMenu extends RapidElement {
             ${button.label}
           </temba-button>`;
         })}
-        <temba-dropdown
-          arrowsize="8"
-          arrowoffset="-12"
-          offsetx="24"
-          offsety="6"
-        >
-          <div slot="toggle" class="toggle">
-            <temba-icon name="menu" size="1.5" />
-          </div>
-          <div slot="dropdown" class="dropdown">
-            ${this.items.map(item => {
-              if (item.type === 'divider') {
-                return html` <div class="divider"></div>`;
-              } else {
-                return html` <div
-                  class="item"
-                  name=${item.label}
-                  @click=${() => this.handleItemClicked(item)}
-                >
-                  ${item.label}
-                </div>`;
-              }
-            })}
-          </div>
-        </temba-dropdown>
+        ${this.items && this.items.length > 0
+          ? html` <temba-dropdown
+              arrowsize="8"
+              arrowoffset="-12"
+              offsetx="24"
+              offsety="6"
+            >
+              <div slot="toggle" class="toggle">
+                <temba-icon name="menu" size="1.5" />
+              </div>
+              <div slot="dropdown" class="dropdown">
+                ${this.items.map(item => {
+                  if (item.type === 'divider') {
+                    return html` <div class="divider"></div>`;
+                  } else {
+                    return html` <div
+                      class="item"
+                      name=${item.label}
+                      @click=${() => this.handleItemClicked(item)}
+                    >
+                      ${item.label}
+                    </div>`;
+                  }
+                })}
+              </div>
+            </temba-dropdown>`
+          : null}
       </div>
     `;
   }
