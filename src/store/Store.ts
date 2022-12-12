@@ -76,6 +76,10 @@ export class Store extends RapidElement {
 
   private cache: any;
 
+  public getLocale() {
+    return this.locale[0];
+  }
+
   public reset() {
     this.cache = Lru(this.max, this.ttl);
 
@@ -194,41 +198,17 @@ export class Store extends RapidElement {
     });
   }
 
-  public getShortDuration(
-    scheduled: DateTime,
-    compareDate: DateTime = null,
-    showSeconds = false
-  ) {
+  public getShortDuration(scheduled: DateTime, compareDate: DateTime = null) {
     const now = compareDate || DateTime.now();
-    const duration = scheduled.diff(now).valueOf();
-
-    if (showSeconds) {
-      return this.humanizer.humanize(duration, {
-        language: this.getLanguageCode(),
-        largest: 1,
-        round: true,
-      });
-    }
-
-    if (Math.abs(duration) < 60000) {
-      return 'just now';
-    }
-
-    return this.humanizer.humanize(duration, {
-      language: this.getLanguageCode(),
-      largest: 1,
-      round: false,
-    });
+    return scheduled
+      .setLocale(this.locale[0])
+      .toRelative({ base: now, style: 'long' });
   }
 
-  public getShortDurationFromIso(
-    isoDateA: string,
-    isoDateB: string = null,
-    showSeconds = false
-  ) {
+  public getShortDurationFromIso(isoDateA: string, isoDateB: string = null) {
     const scheduled = DateTime.fromISO(isoDateA);
     const now = isoDateB ? DateTime.fromISO(isoDateB) : DateTime.now();
-    return this.getShortDuration(scheduled, now, showSeconds);
+    return this.getShortDuration(scheduled, now);
   }
 
   public setKeyedAssets(name: string, values: string[]): void {
@@ -280,13 +260,9 @@ export class Store extends RapidElement {
   }
 
   public formatDate(dateString: string) {
-    return new Date(dateString).toLocaleString(this.locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    });
+    return DateTime.fromISO(dateString)
+      .setLocale(this.getLocale())
+      .toLocaleString(DateTime.DATETIME_SHORT);
   }
 
   public postJSON(url: string, payload: any = '') {
