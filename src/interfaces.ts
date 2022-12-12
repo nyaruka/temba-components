@@ -267,6 +267,5 @@ export enum CustomEventType {
   OrderChanged = 'temba-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
-  MenuClicked = 'temba-menu-clicked', //todo confirm if this is right
-  ScriptTriggered = 'temba-script-triggered', //todo confirm if this is needed
+  MenuClicked = 'temba-menu-clicked',
 }
