@@ -1,12 +1,11 @@
-import * as sinon from 'sinon';
 import { TembaDate } from '../src/date/TembaDate';
 import {
   assertScreenshot,
   getClip,
   getComponent,
   loadStore,
+  mockNow,
 } from './utils.test';
-import { DateTime } from 'luxon';
 import { expect } from '@open-wc/testing';
 
 const TAG = 'temba-date';
@@ -16,11 +15,7 @@ export const getDate = async (attrs: any = {}) => {
   return (await getComponent(TAG, attrs)) as TembaDate;
 };
 
-// mock the current time
-const now = DateTime.fromISO('2022-12-02T21:00:00.000000-07:00');
-sinon.replace(DateTime, 'now', () => {
-  return now;
-});
+mockNow('2022-12-02T21:00:00.000000-07:00');
 
 describe('temba-date', () => {
   beforeEach(() => {
@@ -47,7 +42,7 @@ describe('temba-date', () => {
     ).innerText;
 
     await assertScreenshot('date/duration', getClip(date));
-    expect(dateString).to.equal('44 years');
+    expect(dateString).to.equal('44 years ago');
   });
 
   it('renders datetime', async () => {

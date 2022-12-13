@@ -239,8 +239,8 @@ export const getEventStyles = () => {
     .tickets .note-summary {
       display: flex;
       flex-direction: row;
-      line-height: 0.5;
-      font-size: 80%;
+      font-size: 85%;
+      margin-top: -0.5em;
       color: rgba(0, 0, 0, 0.6);
       padding: 8px 3px;
     }
@@ -310,12 +310,11 @@ export const getEventStyles = () => {
 
     .msg-summary {
       display: flex;
-      line-height: 0.5;
-
-      font-size: 80%;
+      font-size: 85%;
       color: rgba(0, 0, 0, 0.6);
       padding: 6px 3px;
       margin-bottom: 0.5em;
+      margin-top: -0.5em;
     }
 
     .msg-summary temba-icon.log {
@@ -776,7 +775,11 @@ export const renderMsgEvent = (
       <div class="separator">•</div>`);
   }
   summary.push(
-    html`<div class="time">${timeSince(new Date(event.created_on))}</div>`
+    html`<temba-date
+      class="time"
+      value="${event.created_on}"
+      display="duration"
+    ></temba-date>`
   );
 
   return html`<div style="display:flex;align-items:flex-start">
@@ -938,7 +941,11 @@ export const renderNoteCreated = (
       <div class="description">${event.note}</div>
       <div class="note-summary">
         <div style="flex-grow:1"></div>
-        <div class="time">${timeSince(new Date(event.created_on))}</div>
+        <temba-date
+          class="time"
+          value="${event.created_on}"
+          display="duration"
+        ></temba-date>
       </div>
     </div>
     <div style="margin-left:0.8em;margin-top:0.3em;font-size:0.8em">
@@ -986,14 +993,17 @@ export const renderTicketAction = (
         ${getDisplayName(event.created_by)} ${action} this ticket
       </div>
       <div class="subtext" style="justify-content:center">
-        ${timeSince(reopened, { hideRecentText: true, suffix: ' ago' })}
+        <temba-date
+          class="time"
+          value="${reopened}"
+          display="duration"
+        ></temba-date>
       </div>
     </div>
   `;
 };
 
 export const renderTicketAssigned = (event: TicketEvent): TemplateResult => {
-  const created = new Date(event.created_on);
   return html`
     <div class="assigned active">
       <div style="text-align:center">
@@ -1005,7 +1015,11 @@ export const renderTicketAssigned = (event: TicketEvent): TemplateResult => {
           : html`${getDisplayName(event.created_by)} unassigned this ticket`}
       </div>
       <div class="subtext" style="justify-content:center">
-        ${timeSince(created, { hideRecentText: true, suffix: ' ago' })}
+        <temba-date
+          class="time"
+          value="${event.created_on}"
+          display="duration"
+        ></temba-date>
       </div>
     </div>
   `;
