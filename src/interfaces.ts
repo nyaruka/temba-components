@@ -221,30 +221,6 @@ export interface CompletionSchema {
   root_no_session: CompletionProperty[];
 }
 
-export interface ContentMenu {
-  uuid: string;
-  name: string;
-}
-
-export interface ContentMenuItem {
-  //divider - type
-  //link - as_button, label, type, url
-  //url_post - as_button, label, type, url
-  //modax - as_button, disabled, label, modal_id, on_submit, primary, title, type, url
-  //js - label, on_click, link_class, as_button
-  type: string;
-  as_button: boolean;
-  label: string;
-  url: string;
-  disabled: boolean;
-  modal_id: string;
-  on_submit: string;
-  primary: boolean;
-  title: string;
-  on_click: null;
-  link_class: string;
-}
-
 export type KeyedAssets = { [assetType: string]: string[] };
 
 export enum CustomEventType {

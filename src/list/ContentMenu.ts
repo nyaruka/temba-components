@@ -1,6 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators';
-import { ContentMenuItem, CustomEventType } from '../interfaces';
+import { CustomEventType } from '../interfaces';
 
 import { RapidElement } from '../RapidElement';
 import { getUrl, WebResponse } from '../utils';
@@ -9,6 +9,20 @@ const HEADERS = {
   'Temba-Content-Menu': '1',
   'Temba-Spa': '1',
 };
+
+export interface ContentMenuItem {
+  type: string;
+  as_button: boolean;
+  label: string;
+  url: string;
+  disabled: boolean;
+  modal_id: string;
+  on_submit: string;
+  primary: boolean;
+  title: string;
+  on_click: null;
+  link_class: string;
+}
 
 export class ContentMenu extends RapidElement {
   static get styles() {
@@ -71,18 +85,10 @@ export class ContentMenu extends RapidElement {
   @property({ type: Array })
   items: ContentMenuItem[] = [];
 
-  private contentMenu: ContentMenu;
-
-  public getContentMenu(): ContentMenu {
-    return this.contentMenu;
-  }
-
   private fetchContentMenu() {
-    console.log(this.endpoint);
     getUrl(this.endpoint, null, HEADERS)
       .then((response: WebResponse) => {
         const json = response.json;
-        console.log('json', json);
         console.log('items', json.items);
         const contentMenu = json.items as ContentMenuItem[];
         this.buttons = contentMenu.filter(item => item.as_button);
