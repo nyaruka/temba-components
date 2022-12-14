@@ -5,8 +5,17 @@ import { RapidElement } from '../RapidElement';
 export class Dropdown extends RapidElement {
   static get styles() {
     return css`
+      .wrapper {
+        position: relative;
+      }
+
       .toggle {
         cursor: pointer;
+      }
+
+      .dropdown-wrapper {
+        position: relative;
+        overflow: auto;
       }
 
       .dropdown {
@@ -52,6 +61,9 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   open = false;
 
+  @property({ type: String, attribute: 'drop_align' })
+  dropAlign = 'left';
+
   @property({ type: Number })
   arrowSize = 6;
 
@@ -96,6 +108,8 @@ export class Dropdown extends RapidElement {
       // a better way to deal with this
       window.setTimeout(() => {
         this.open = false;
+        // blur our host element too
+        (this.shadowRoot.host as HTMLDivElement).blur();
       }, 200);
     });
   }
@@ -111,7 +125,7 @@ export class Dropdown extends RapidElement {
     }
   }
 
-  public handleOpen(): void {
+  public handleToggleClicked(): void {
     if (!this.open) {
       this.open = true;
 
@@ -124,11 +138,21 @@ export class Dropdown extends RapidElement {
 
   public render(): TemplateResult {
     return html`
-      <div class=${this.open ? 'open' : ''}>
-        <slot name="toggle" class="toggle" @click="${this.handleOpen}"></slot>
-        <div class="dropdown" tabindex="0">
+      <div class="wrapper ${this.open ? 'open' : ''}">
+        <slot
+          name="toggle"
+          class="toggle"
+          @click="${this.handleToggleClicked}"
+        ></slot>
+        <div
+          class="dropdown"
+          tabindex="0"
+          style="${this.dropAlign == 'right' ? 'right:0' : ''}"
+        >
           <div class="arrow"></div>
-          <slot name="dropdown"></slot>
+          <div class="dropdown-wrapper">
+            <slot name="dropdown" tabindex="1"></slot>
+          </div>
         </div>
       </div>
     `;
