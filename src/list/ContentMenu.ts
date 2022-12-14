@@ -24,6 +24,14 @@ export interface ContentMenuItem {
   link_class: string;
 }
 
+export enum ContentMenuItemType {
+  LINK = 'link',
+  JS = 'js',
+  URL_POST = 'url_post',
+  MODAX = 'modax',
+  DIVIDER = 'divider',
+}
+
 export class ContentMenu extends RapidElement {
   static get styles() {
     return css`
@@ -137,7 +145,7 @@ export class ContentMenu extends RapidElement {
               </div>
               <div slot="dropdown" class="dropdown">
                 ${this.items.map(item => {
-                  if (item.type === 'divider') {
+                  if (item.type === ContentMenuItemType.DIVIDER) {
                     return html` <div class="divider"></div>`;
                   } else {
                     return html` <div

@@ -1,6 +1,6 @@
 import { assert, expect } from '@open-wc/testing';
 
-import { ContentMenu } from '../src/list/ContentMenu';
+import { ContentMenu, ContentMenuItemType } from '../src/list/ContentMenu';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-content-menu';
@@ -24,12 +24,153 @@ describe('temba-content-menu', () => {
     expect(contentMenu).is.undefined;
   });
 
-  it('renders with endpoint', async () => {
+  it('renders with 1+ items and 1+ buttons', async () => {
     const contentMenu: ContentMenu = await getContentMenu({
-      endpoint: '/test-assets/list/content-menu.json',
+      endpoint: '/test-assets/list/content-menu-contact-read.json',
     });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(6);
+    const buttons = contentMenuItems.filter(item => item.as_button);
+    expect(buttons.length).to.equal(1);
+    const items = contentMenuItems.filter(item => !item.as_button);
+    expect(items.length).to.equal(5);
+    await assertScreenshot(
+      'content-menu/with-items-and-buttons',
+      getClip(contentMenu)
+    );
+  });
 
-    expect(contentMenu.items.length).to.equal(6);
-    await assertScreenshot('list/content-menu', getClip(contentMenu));
+  it('renders with 1+ items and 0 buttons', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-archived-contacts.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(1);
+    const buttons = contentMenuItems.filter(item => item.as_button);
+    expect(buttons.length).to.equal(0);
+    const items = contentMenuItems.filter(item => !item.as_button);
+    expect(items.length).to.equal(1);
+  });
+
+  it('renders with 0 items and 1+ buttons', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-new-campaign.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(1);
+    const buttons = contentMenuItems.filter(item => item.as_button);
+    expect(buttons.length).to.equal(1);
+    const items = contentMenuItems.filter(item => !item.as_button);
+    expect(items.length).to.equal(0);
+    await assertScreenshot(
+      'content-menu/no-items-only-buttons',
+      getClip(contentMenu)
+    );
+  });
+
+  it('renders with 0 items and 0 buttons', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-none.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(0);
+    const buttons = contentMenuItems.filter(item => item.as_button);
+    expect(buttons.length).to.equal(0);
+    const items = contentMenuItems.filter(item => !item.as_button);
+    expect(items.length).to.equal(0);
+  });
+
+  it('fetches link items with correct properties', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-contact-read.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(6);
+    const links = contentMenuItems.filter(
+      item => item.type === ContentMenuItemType.LINK
+    );
+    for (const link in links) {
+      expect(link).should.include.keys(['type', 'title', 'href', 'as_button']);
+    }
+  });
+
+  it('fetches js items with correct properties', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-archived-contacts.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(6);
+    const jsItems = contentMenuItems.filter(
+      item => item.type === ContentMenuItemType.JS
+    );
+    for (const jsItem in jsItems) {
+      expect(jsItem).should.include.keys([
+        'type',
+        'id',
+        'title',
+        'href',
+        'on_click',
+        'js_class',
+        'as_button',
+      ]);
+    }
+  });
+
+  it('fetches url_post items with correct properties', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-contact-read.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(6);
+    const urlPosts = contentMenuItems.filter(
+      item => item.type === ContentMenuItemType.URL_POST
+    );
+    for (const urlPost in urlPosts) {
+      expect(urlPost).should.include.keys([
+        'type',
+        'title',
+        'href',
+        'js_class',
+        'as_button',
+      ]);
+    }
+  });
+
+  it('fetches modax items with correct properties', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-new-campaign.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(6);
+    const modaxes = contentMenuItems.filter(
+      item => item.type === ContentMenuItemType.MODAX
+    );
+    for (const modax in modaxes) {
+      expect(modax).should.include.keys([
+        'type',
+        'id',
+        'title',
+        'href',
+        'modax',
+        'on_submit',
+        'style',
+        'disabled',
+        'as_button',
+      ]);
+    }
+  });
+
+  it('fetches divider items with correct properties', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-new-campaign.json',
+    });
+    const contentMenuItems = contentMenu.items;
+    expect(contentMenuItems.length).to.equal(6);
+    const dividers = contentMenuItems.filter(
+      item => item.type === ContentMenuItemType.DIVIDER
+    );
+    for (const divider in dividers) {
+      expect(divider).should.include.keys(['type', 'divider']);
+    }
   });
 });
