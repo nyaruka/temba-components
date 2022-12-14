@@ -18,7 +18,7 @@ const getContentMenu = async (attrs: any = {}, width = 0) => {
 };
 
 describe('temba-content-menu', () => {
-  it('can be created', async () => {
+  it('can initially be created without endpoint', async () => {
     const contentMenu: ContentMenu = await getContentMenu();
     assert.instanceOf(contentMenu, ContentMenu);
     expect(contentMenu).is.undefined;
@@ -70,7 +70,7 @@ describe('temba-content-menu', () => {
 
   it('renders with 0 items and 0 buttons', async () => {
     const contentMenu: ContentMenu = await getContentMenu({
-      endpoint: '/test-assets/list/content-menu-none.json',
+      endpoint: '/test-assets/list/content-menu-wrong-endpoint.json',
     });
     const contentMenuItems = contentMenu.items;
     expect(contentMenuItems.length).to.equal(0);
