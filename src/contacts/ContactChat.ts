@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
 import { TextInput } from '../textinput/TextInput';

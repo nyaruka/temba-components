@@ -1,5 +1,5 @@
 import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { getClasses, postJSON, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import '../alert/Alert';

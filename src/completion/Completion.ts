@@ -1,6 +1,6 @@
 import { TemplateResult, css, html } from 'lit';
-import { property } from 'lit/decorators';
-import { ifDefined } from 'lit-html/directives/if-defined';
+import { property } from 'lit/decorators.js';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { TextInput } from '../textinput/TextInput';
 import {
   renderCompletionOption,
@@ -11,7 +11,7 @@ import {
 import { FormElement } from '../FormElement';
 import { CompletionOption, Position } from '../interfaces';
 import { Store } from '../store/Store';
-import { styleMap } from 'lit-html/directives/style-map';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 /**
  * Completion is a text input that handles excellent completion options in a popup

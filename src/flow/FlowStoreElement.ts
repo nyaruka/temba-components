@@ -1,5 +1,5 @@
 import { html, PropertyValueMap, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { FlowDetails } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 

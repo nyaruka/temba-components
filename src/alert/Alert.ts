@@ -1,5 +1,5 @@
 import { css, html, LitElement, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 export class Alert extends LitElement {
   static get styles() {

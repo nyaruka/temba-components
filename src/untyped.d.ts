@@ -16,5 +16,3 @@ declare function moveMouse(x: number, y: number);
 declare function mouseDown();
 declare function mouseUp();
 declare function setViewport({}: any);
-
-declare function readStaticFile(filename: string);

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import {
   getUrl,
   getClasses,
@@ -20,7 +20,7 @@ import {
   executeCompletionQuery,
 } from '../completion/helpers';
 import { Store } from '../store/Store';
-import { styleMap } from 'lit-html/directives/style-map';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../vectoricon';
 
 const LOOK_AHEAD = 20;

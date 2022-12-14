@@ -1,9 +1,9 @@
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { TemplateResult, html, css } from 'lit';
 import { Button } from '../button/Button';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
-import { styleMap } from 'lit-html/directives/style-map';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { getClasses } from '../utils';
 
 export class Dialog extends RapidElement {

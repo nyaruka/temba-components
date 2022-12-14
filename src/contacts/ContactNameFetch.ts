@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { ContactStoreElement } from './ContactStoreElement';
 
 export class ContactNameFetch extends ContactStoreElement {

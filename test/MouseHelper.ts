@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators';
+import { customElement } from 'lit/decorators.js';
 import { RapidElement } from '../src/RapidElement';
 
 @customElement('mouse-helper')

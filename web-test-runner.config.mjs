@@ -1,4 +1,7 @@
+/* eslint-disable no-async-promise-executor */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { puppeteerLauncher } from '@web/test-runner-puppeteer';
+import { esbuildPlugin } from '@web/dev-server-esbuild';
 import fs from 'fs';
 import * as path from 'path';
 import * as pngs from 'pngjs';
@@ -118,12 +121,13 @@ const checkScreenshot = async (filename, excluded, threshold) => {
     const img1 = fs
       .createReadStream(truthImg)
       .pipe(new PNG())
-      .on('parsed', await doneReading);
+      .on('parsed', doneReading);
 
     const img2 = fs
       .createReadStream(testImg)
       .pipe(new PNG())
-      .on('parsed', await doneReading);
+      .on('parsed', doneReading);
+
   });
 };
 
@@ -135,7 +139,7 @@ const wireScreenshots = async (page, context) => {
   rimraf.sync(diffs);
   rimraf.sync(tests);
 
-  await page.exposeFunction(
+  page.exposeFunction(
     'matchPageSnapshot',
     (filename, clip, excluded, threshold) => {
       return new Promise(async (resolve, reject) => {
@@ -264,10 +268,19 @@ const wireScreenshots = async (page, context) => {
   });
 };
 
+
+/*testFramework: {
+  config: {
+    ui: 'bdd',
+    timeout: '3000',
+  },
+},*/
+
 export default {
   rootDir: './',
-  files: 'out-tsc/**/test/**/*.test.js',
+  files: '**/test/**/*.test.ts',
   nodeResolve: true,
+
   plugins: [
     {
       name: 'add-style',
@@ -282,6 +295,8 @@ export default {
         }
       },
     },
+    esbuildPlugin({ ts: true })
+
     /* importMapsPlugin({
       inject: {
         importMap: {
@@ -311,15 +326,6 @@ export default {
       createPage: async ({ context, config }) => {
         const page = await context.newPage();
         await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
-        await page.exposeFunction('readStaticFile', filename => {
-          try {
-            var content = fs.readFileSync('./' + filename, 'utf8');
-            return content;
-          } catch (err) {
-            console.log(err);
-          }
-          return 'Not Found';
-        });
 
         await page.once('load', async () => {
           await page.addScriptTag({

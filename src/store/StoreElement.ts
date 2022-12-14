@@ -1,5 +1,5 @@
 import { PropertyValueMap } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { Store } from './Store';

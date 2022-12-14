@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map';
-import { property } from 'lit/decorators';
+import { styleMap } from 'lit-html/directives/style-map.js';
+import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { getClasses } from '../utils';
 

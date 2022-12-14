@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
-import { styleMap } from 'lit-html/directives/style-map';
+import { property } from 'lit/decorators.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { getCenter, getMiddle } from './helpers';

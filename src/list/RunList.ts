@@ -1,5 +1,5 @@
 import { html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Checkbox } from '../checkbox/Checkbox';
 import { Select } from '../select/Select';
 import { capitalize } from '../utils';

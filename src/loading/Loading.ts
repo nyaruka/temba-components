@@ -1,6 +1,6 @@
 import { html, TemplateResult, css, LitElement } from 'lit';
-import { property } from 'lit/decorators';
-import { styleMap } from 'lit-html/directives/style-map';
+import { property } from 'lit/decorators.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { range } from '../utils';
 
 export class Loading extends LitElement {

@@ -1,5 +1,5 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Icon } from '.';
 
 import { getClasses } from '../utils';
