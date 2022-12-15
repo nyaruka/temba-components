@@ -137,7 +137,7 @@ export class ContentMenu extends RapidElement {
           ? html` <temba-dropdown
               arrowsize="8"
               arrowoffset="-12"
-              offsetx="24"
+              offsetx="-200"
               offsety="6"
             >
               <div slot="toggle" class="toggle">
