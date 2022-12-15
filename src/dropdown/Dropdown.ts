@@ -71,7 +71,7 @@ export class Dropdown extends RapidElement {
   arrowOffset = this.arrowSize * 2;
 
   @property({ type: Number })
-  offsetX = -10;
+  offsetX = 0;
 
   @property({ type: Number })
   offsetY = 0;
@@ -79,11 +79,7 @@ export class Dropdown extends RapidElement {
   public firstUpdated(props: any) {
     super.firstUpdated(props);
 
-    const dropdown = this.shadowRoot.querySelector(
-      '.dropdown'
-    ) as HTMLDivElement;
     const arrow = this.shadowRoot.querySelector('.arrow') as HTMLDivElement;
-
     arrow.style.borderWidth = this.arrowSize + 'px';
     arrow.style.top = '-' + this.arrowSize + 'px';
 
@@ -93,14 +89,9 @@ export class Dropdown extends RapidElement {
       arrow.style.left = this.arrowOffset + 'px';
     }
 
-    dropdown.style.marginTop = this.offsetY + 'px';
-
-    if (dropdown.offsetLeft + dropdown.clientWidth > window.outerWidth) {
-      dropdown.style.marginLeft =
-        '-' + (dropdown.clientWidth - this.clientWidth - this.offsetX) + 'px';
-    } else {
-      dropdown.style.marginLeft = this.offsetX + 'px';
-    }
+    const dropdown = this.shadowRoot.querySelector(
+      '.dropdown'
+    ) as HTMLDivElement;
 
     dropdown.addEventListener('blur', () => {
       // we nest this to deal with clicking the toggle to close
@@ -116,6 +107,21 @@ export class Dropdown extends RapidElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    if (changedProperties.has('offsetY') || changedProperties.has('offsetX')) {
+      const dropdown = this.shadowRoot.querySelector(
+        '.dropdown'
+      ) as HTMLDivElement;
+
+      dropdown.style.marginTop = this.offsetY + 'px';
+      if (dropdown.offsetLeft + dropdown.clientWidth > window.outerWidth) {
+        dropdown.style.marginLeft =
+          '-' + (dropdown.clientWidth - this.clientWidth - this.offsetX) + 'px';
+      } else {
+        dropdown.style.marginLeft = this.offsetX + 'px';
+      }
+    }
+
     if (changedProperties.has('open')) {
       if (this.open) {
         this.classList.add('open');
