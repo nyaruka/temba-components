@@ -1,5 +1,5 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Store } from '../store/Store';
 import { DateTime } from 'luxon';

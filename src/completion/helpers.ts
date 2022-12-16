@@ -1,6 +1,12 @@
 import { html, TemplateResult } from 'lit';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html';
-import { directive, Directive, Part, PartInfo, PartType } from 'lit/directive';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
+import {
+  directive,
+  Directive,
+  Part,
+  PartInfo,
+  PartType,
+} from 'lit/directive.js';
 import ExcellentParser, { Expression } from './ExcellentParser';
 import {
   CompletionOption,

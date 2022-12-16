@@ -1,7 +1,7 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { getClasses } from '../utils';
 
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 export class Button extends LitElement {
   static get styles() {

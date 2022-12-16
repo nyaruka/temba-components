@@ -1,4 +1,4 @@
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import {
   fetchResults,
   getUrl,
@@ -18,10 +18,6 @@ import {
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
-import {
-  HumanizeDurationLanguage,
-  HumanizeDuration,
-} from 'humanize-duration-ts';
 import { DateTime } from 'luxon';
 
 export class Store extends RapidElement {
@@ -66,8 +62,6 @@ export class Store extends RapidElement {
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
 
-  private langService = new HumanizeDurationLanguage();
-  private humanizer = new HumanizeDuration(this.langService);
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;

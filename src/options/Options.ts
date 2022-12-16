@@ -1,8 +1,8 @@
 import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement, EventHandler } from '../RapidElement';
-import { styleMap } from 'lit-html/directives/style-map';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import {
   getClasses,
   getScrollParent,

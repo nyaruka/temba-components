@@ -1,4 +1,4 @@
-import { customElement, property } from 'lit/decorators';
+import { customElement, property } from 'lit/decorators.js';
 import { TemplateResult, LitElement } from 'lit';
 
 @customElement('temba-shadowless')

@@ -1,6 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
-import { styleMap } from 'lit-html/directives/style-map';
+import { property } from 'lit/decorators.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { RapidElement } from '../RapidElement';
 import { Select } from '../select/Select';
 import { Icon } from '../vectoricon';

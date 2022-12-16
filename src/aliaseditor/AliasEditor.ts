@@ -2,10 +2,10 @@ import { css, html, LitElement, TemplateResult } from 'lit';
 import { FeatureProperties } from '../interfaces';
 import { getUrl, postJSON, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
-import { styleMap } from 'lit-html/directives/style-map';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { FormElement } from '../FormElement';
 
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 export class AliasEditor extends LitElement {
   static get styles() {

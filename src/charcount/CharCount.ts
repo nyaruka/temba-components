@@ -2,7 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { splitSMS } from '../sms';
 import { getExtendedCharacters } from './helpers';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 export class CharCount extends RapidElement {
   static get styles() {
