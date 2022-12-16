@@ -1,5 +1,5 @@
-import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 
 import { RapidElement } from '../RapidElement';
@@ -94,17 +94,28 @@ export class ContentMenu extends RapidElement {
   items: ContentMenuItem[] = [];
 
   private fetchContentMenu() {
-    getUrl(this.endpoint, null, HEADERS)
-      .then((response: WebResponse) => {
-        const json = response.json;
-        console.log('items', json.items);
-        const contentMenu = json.items as ContentMenuItem[];
-        this.buttons = contentMenu.filter(item => item.as_button);
-        this.items = contentMenu.filter(item => !item.as_button);
-      })
-      .catch((error: any) => {
-        console.error(error);
-      });
+    if (this.endpoint) {
+      getUrl(this.endpoint, null, HEADERS)
+        .then((response: WebResponse) => {
+          const json = response.json;
+          const contentMenu = json.items as ContentMenuItem[];
+          if (contentMenu) {
+            this.buttons = contentMenu.filter(item => item.as_button);
+            this.items = contentMenu.filter(item => !item.as_button);
+          } else {
+            this.buttons = [];
+            this.items = [];
+          }
+
+          this.fireCustomEvent(CustomEventType.Loaded, {
+            buttons: this.buttons,
+            items: this.items,
+          });
+        })
+        .catch((error: any) => {
+          console.error(error);
+        });
+    }
   }
 
   public refresh() {
@@ -141,7 +152,7 @@ export class ContentMenu extends RapidElement {
               offsety="6"
             >
               <div slot="toggle" class="toggle">
-                <temba-icon name="menu" size="1.5" />
+                <temba-icon name="menu" size="1.5"></temba-icon>
               </div>
               <div slot="dropdown" class="dropdown">
                 ${this.items.map(item => {
