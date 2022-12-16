@@ -3,9 +3,9 @@
   "previous": null,
   "results": [
     {
-      "uuid": "contact-tim-stopped",
-      "name": "Tim Reynolds",
-      "status": "stopped",
+      "uuid": "contact-carter-active",
+      "name": "Carter Beauford",
+      "status": "active",
       "language": "eng",
       "urns": [
         "telegram:24028613#dmb4ever",
@@ -46,7 +46,7 @@
       "modified_on": "2022-08-11T02:01:09.120952Z",
       "last_seen_on": "2022-07-08T02:04:51.567474Z",
       "blocked": false,
-      "stopped": true
+      "stopped": false
     }
   ]
 }

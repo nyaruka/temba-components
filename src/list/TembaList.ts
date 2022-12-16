@@ -143,9 +143,7 @@ export class TembaList extends RapidElement {
     }
 
     if (changedProperties.has('mostRecentItem')) {
-      if (this.mostRecentItem) {
-        this.fireCustomEvent(CustomEventType.Refreshed);
-      }
+      this.fireCustomEvent(CustomEventType.Refreshed);
     }
 
     if (changedProperties.has('cursorIndex')) {

@@ -1,5 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { ContactChat } from '../src/contacts/ContactChat';
+import { ContactHistory } from '../src/contacts/ContactHistory';
+import { TicketList } from '../src/list/TicketList';
 import {
   assertScreenshot,
   delay,
@@ -10,10 +12,8 @@ import {
 } from '../test/utils.test';
 
 const TAG = 'temba-contact-chat';
-
 const getContactChat = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
-
   // add some sizes and styles to force our chat history to scroll
   const chat = (await getComponent(
     TAG,
@@ -30,18 +30,21 @@ const getContactChat = async (attrs: any = {}) => {
   return chat;
 };
 
-describe('temba-contact-chat', () => {
-  // map requests for contact history and ticket api to our static files
-  // we'll just us the same history and ticket list for everybody for now
+const list_TAG = 'temba-list';
+const getTicketList = async (attrs: any = {}) => {
+  const list = (await getComponent(list_TAG, attrs)) as TicketList;
+  // wait for the fetch
+  await list.httpComplete;
+  return list;
+};
+
+describe('temba-contact-chat - contact tests', () => {
+  // map requests for contact history to our static files
+  // we'll just us the same historylist for everybody for now
   beforeEach(() => {
     mockGET(
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
-    );
-
-    mockGET(
-      /\/api\/v2\/tickets\.json\?contact=contact-.*/,
-      '/test-assets/api/tickets.json'
     );
   });
 
@@ -55,26 +58,7 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/contact-active-default', getClip(chat));
   });
 
-  it('can send chat msg if contact is active', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
-    });
-
-    const chatboxDivEl = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('');
-
-    await assertScreenshot(
-      'contacts/contact-active-show-chat-msg',
-      getClip(chat)
-    );
-  });
-
-  it('can see chat history if contact is active', async () => {
+  it('show history and show chatbox if contact is active', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -83,74 +67,54 @@ describe('temba-contact-chat', () => {
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
-    ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
-
-    await assertScreenshot(
-      'contacts/contact-active-show-chat-history',
-      getClip(chat)
-    );
-  });
-
-  it('cannot send chat msg if contact is archived', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-barak-archived',
-    });
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
 
     const chatboxDivEl = chat.shadowRoot.querySelector(
       '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('none');
+    expect(chatboxDivEl).to.not.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-archived-hide-chat-msg',
+      'contacts/contact-active-show-chatbox',
       getClip(chat)
     );
   });
 
-  it('can see chat history if contact is archived', async () => {
+  it('show history and hide chatbox if contact is archived', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-barak-archived',
+      contact: 'contact-barack-archived',
     });
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
-    ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
 
-    await assertScreenshot(
-      'contacts/contact-archived-show-chat-history',
-      getClip(chat)
-    );
-  });
-
-  it('cannot send chat msg if contact is blocked', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-michelle-blocked',
-    });
-
-    const chatboxDivEl = chat.shadowRoot.querySelector(
+    const chatboxDiv = chat.shadowRoot.querySelector(
       '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('none');
+    expect(chatboxDiv).to.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-blocked-hide-chat-msg',
+      'contacts/contact-archived-hide-chatbox',
       getClip(chat)
     );
   });
 
-  it('can see chat history if contact is blocked', async () => {
+  it('show history and hide chatbox if contact is blocked', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -159,36 +123,26 @@ describe('temba-contact-chat', () => {
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
-    ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
 
-    await assertScreenshot(
-      'contacts/contact-blocked-show-chat-history',
-      getClip(chat)
-    );
-  });
-
-  it('cannot send chat msg if contact is stopped', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-tim-stopped',
-    });
-
-    const chatboxDivEl = chat.shadowRoot.querySelector(
+    const chatboxDiv = chat.shadowRoot.querySelector(
       '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatboxDivEl.style.display;
-    expect(displayVal).to.equal('none');
+    expect(chatboxDiv).to.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-stopped-hide-chat-msg',
+      'contacts/contact-blocked-hide-chatbox',
       getClip(chat)
     );
   });
 
-  it('can see chat history if contact is stopped', async () => {
+  it('show history and hide chatbox if contact is stopped', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -197,12 +151,142 @@ describe('temba-contact-chat', () => {
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
+
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
     ) as HTMLDivElement;
-    const displayVal = chatHistoryEl.style.display;
-    expect(displayVal).to.equal('');
+    expect(chatboxDiv).to.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
-      'contacts/contact-stopped-show-chat-history',
+      'contacts/contact-stopped-hide-chatbox',
+      getClip(chat)
+    );
+  });
+});
+
+describe('temba-contact-chat - ticket tests', () => {
+  // map requests for contact history to our static files
+  // we'll just us the same history for everybody for now
+  beforeEach(() => {
+    mockGET(
+      /\/contact\/history\/contact-.*/,
+      '/test-assets/contacts/history.json'
+    );
+  });
+
+  it('show history and show chatbox if contact is active and ticket is open', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-carter-active',
+    });
+
+    const tickets: TicketList = await getTicketList({
+      endpoint: '/test-assets/tickets/ticket-carter-open.json',
+    });
+
+    chat.currentTicket = tickets.items[0];
+    chat.refresh();
+
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
+
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.not.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
+
+    await assertScreenshot(
+      'contacts/contact-active-ticket-open-show-chatbox',
+      getClip(chat)
+    );
+  });
+
+  it('show history and show reopen button if contact is active and ticket is closed', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-carter-active',
+    });
+
+    const tickets: TicketList = await getTicketList({
+      endpoint: '/test-assets/tickets/ticket-carter-closed.json',
+    });
+    chat.currentTicket = tickets.items[0];
+    chat.refresh();
+
+    await waitFor(0);
+    await chat.httpComplete;
+
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
+
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.not.equal(null);
+
+    await assertScreenshot(
+      'contacts/contact-active-ticket-closed-show-reopen-button',
+      getClip(chat)
+    );
+  });
+
+  it('show history and hide chatbox if contact is archived and ticket is closed', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-barack-archived',
+    });
+
+    const tickets: TicketList = await getTicketList({
+      endpoint: '/test-assets/tickets/ticket-barack-closed.json',
+    });
+    chat.currentTicket = tickets.items[0];
+    chat.refresh();
+
+    await waitFor(0);
+    await chat.httpComplete;
+
+    const chatHistoryEl = chat.shadowRoot.querySelector(
+      'temba-contact-history'
+    ) as ContactHistory;
+    expect(chatHistoryEl).to.not.equal(null);
+
+    const chatboxDiv = chat.shadowRoot.querySelector(
+      '.chatbox'
+    ) as HTMLDivElement;
+    expect(chatboxDiv).to.equal(null);
+
+    const reopenButton = chat.shadowRoot.querySelector(
+      'temba-button#reopen-button'
+    ) as HTMLDivElement;
+    expect(reopenButton).to.equal(null);
+
+    await assertScreenshot(
+      'contacts/contact-archived-ticket-closed-hide-chatbox',
       getClip(chat)
     );
   });
