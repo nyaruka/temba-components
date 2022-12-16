@@ -61,7 +61,6 @@ describe(TAG, () => {
       visible: true,
       position: 'left',
     });
-    await delay(200);
     await assertScreenshot('tip/left', getLeftClip(tip));
   });
 
@@ -71,7 +70,6 @@ describe(TAG, () => {
       visible: true,
       position: 'right',
     });
-    await delay(200);
     await assertScreenshot('tip/right', getRightClip(tip));
   });
 
@@ -81,7 +79,6 @@ describe(TAG, () => {
       visible: true,
       position: 'top',
     });
-    await delay(200);
     await assertScreenshot('tip/top', getTopClip(tip));
   });
 
@@ -91,7 +88,6 @@ describe(TAG, () => {
       visible: true,
       position: 'bottom',
     });
-    await delay(200);
     await assertScreenshot('tip/bottom', getBottomClip(tip));
   });
 });
