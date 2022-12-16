@@ -61,6 +61,7 @@ export class Tip extends RapidElement {
       }
     `;
   }
+
   @property({ type: String })
   text: string;
 
@@ -86,10 +87,12 @@ export class Tip extends RapidElement {
   poppedTop: boolean;
 
   arrow: string;
-
   arrowTop: number;
   arrowLeft: number;
   arrowDirection: string;
+
+  lastEnter = 0;
+  failSafe = 0;
 
   public updated(changed: Map<string, any>) {
     if ((changed.has('visible') || changed.has('text')) && this.visible) {
@@ -147,9 +150,6 @@ export class Tip extends RapidElement {
       }
     }
   }
-
-  lastEnter = 0;
-  failSafe = 0;
 
   private handleMouseEnter() {
     this.lastEnter = window.setTimeout(() => {
