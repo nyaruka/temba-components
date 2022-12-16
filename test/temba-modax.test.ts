@@ -58,10 +58,8 @@ const clickPrimary = async (modax: Modax) => {
 
     expect(primary).not.equals(undefined, 'Missing primary button');
     primary.click();
-    await clock.tick(500);
-    await clock.tick(100);
     await waitFor(0);
-    await clock.tick(1000);
+    await clock.runAll();
   }
 };
 
@@ -136,15 +134,8 @@ describe('temba-modax', () => {
 
     // now fetch form from the same modax
     modax.endpoint = '/test-assets/modax/form.html';
-    await modax.updateComplete;
-    await modax.httpComplete;
-    await clock.tick(400);
-
     await open(modax);
     expect(modax.open).equals(true);
-    await modax.httpComplete;
-    await clock.tick(400);
-    await waitFor(100);
 
     // now we should have two buttons, 'Save Everything' and 'Cancel'
     buttons = getButtons(modax);
