@@ -1,8 +1,9 @@
 import { html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Checkbox } from '../checkbox/Checkbox';
 import { Select } from '../select/Select';
 import { capitalize } from '../utils';
+import { Icon } from '../vectoricon';
 import { TembaList } from './TembaList';
 
 const FLOW_COLOR = 'rgb(223, 65, 159)';
@@ -268,7 +269,7 @@ export class RunList extends TembaList {
                       <temba-date
                         value="${this.selectedRun.created_on}"
                         display="duration"
-                      />
+                      ></temba-date>
                     </div>`}
             </div>
           </div>
@@ -286,7 +287,7 @@ export class RunList extends TembaList {
           <temba-icon
             clickable
             style="margin-left:0.75em;"
-            name="trash"
+            name=${Icon.delete}
             onclick="deleteRun(${this.selectedRun.id});"
           ></temba-icon>
         </div>

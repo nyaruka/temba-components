@@ -1,5 +1,5 @@
 import { html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { TembaList } from './TembaList';
 import { timeSince } from '../utils';
 import { Contact } from '../interfaces';

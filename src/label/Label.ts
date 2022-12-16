@@ -1,7 +1,7 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { getClasses } from '../utils';
-import { styleMap } from 'lit-html/directives/style-map';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 export default class Label extends LitElement {
   static get styles() {

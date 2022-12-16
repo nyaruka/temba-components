@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { Store } from '../store/Store';
@@ -143,9 +143,7 @@ export class TembaList extends RapidElement {
     }
 
     if (changedProperties.has('mostRecentItem')) {
-      if (this.mostRecentItem) {
-        this.fireCustomEvent(CustomEventType.Refreshed);
-      }
+      this.fireCustomEvent(CustomEventType.Refreshed);
     }
 
     if (changedProperties.has('cursorIndex')) {

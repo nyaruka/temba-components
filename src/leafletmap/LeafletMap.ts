@@ -9,7 +9,7 @@ import {
   Path,
 } from 'leaflet';
 import { css, html, LitElement } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 import { FeatureProperties } from '../interfaces';
 import { getUrl, WebResponse } from '../utils';

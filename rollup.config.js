@@ -10,6 +10,7 @@ const baseConfig = createSpaConfig({
   // legacyBuild: true,
 
   outputDir: 'dist',
+  // eslint-disable-next-line no-undef
   developmentMode: process.env.ROLLUP_WATCH === 'true',
   injectServiceWorker: false,
 

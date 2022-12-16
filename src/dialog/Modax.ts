@@ -1,6 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html';
+import { property } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
 import { RapidElement } from '../RapidElement';
 import { getUrl, serialize, postUrl, WebResponse } from '../utils';
@@ -10,9 +10,6 @@ import { Dialog } from './Dialog';
 export class Modax extends RapidElement {
   static get styles() {
     return css`
-      :host {
-      }
-
       fieldset {
         border: none;
         margin: 0;
@@ -117,9 +114,6 @@ export class Modax extends RapidElement {
   suspendSubmit = false;
   // private cancelToken: CancelTokenSource;
 
-  // http promise to monitor for completeness
-  public httpComplete: Promise<void | WebResponse>;
-
   private handleSlotClicked(): void {
     this.open = true;
   }
@@ -152,22 +146,22 @@ export class Modax extends RapidElement {
     return html`<temba-loading units="6" size="8"></temba-loading>`;
   }
 
-  private updatePrimaryButton(): void {
+  public updatePrimaryButton(): void {
     if (!this.noSubmit) {
-      window.setTimeout(() => {
+      this.updateComplete.then(()=>{
         const submitButton = this.shadowRoot.querySelector(
           "input[type='submit']"
         ) as any;
 
         if (submitButton) {
           this.primaryName = submitButton.value;
+          this.cancelName = 'Cancel';
         } else {
           this.primaryName = null;
           this.cancelName = 'Ok';
         }
-
         this.submitting = false;
-      }, 0);
+      });
     }
   }
 
@@ -196,7 +190,7 @@ export class Modax extends RapidElement {
       const script = this.ownerDocument.createElement('script');
       const code = scripts[i].innerText;
 
-      if (scripts[i].src) {
+      if (scripts[i].src && scripts[i].src.indexOf("web-dev-server") === -1) {
         script.src = scripts[i].src;
         script.type = 'text/javascript';
         script.async = true;
@@ -219,12 +213,11 @@ export class Modax extends RapidElement {
       this.body = unsafeHTML(div.innerHTML);
     }
 
-    window.setTimeout(() => {
+    this.updateComplete.then(()=>{
       for (const script of toAdd) {
         scriptBlock.appendChild(script);
       }
-    }, 0);
-
+    });
     return !scriptOnly;
   }
 
@@ -239,16 +232,16 @@ export class Modax extends RapidElement {
     // this.cancelToken = CancelToken.source();
     this.fetching = true;
     this.body = this.getLoading();
-    this.httpComplete = getUrl(this.endpoint, null, this.getHeaders()).then(
+    getUrl(this.endpoint, null, this.getHeaders()).then(
       (response: WebResponse) => {
-        this.setBody(response.body);
-        this.updatePrimaryButton();
+        this.setBody(response.body);        
         this.fetching = false;
-        window.setTimeout(() => {
+        this.updateComplete.then(()=>{
+          this.updatePrimaryButton();
           this.fireCustomEvent(CustomEventType.Loaded, {
             body: this.getBody(),
           });
-        }, 0);
+        });
       }
     );
   }
@@ -258,7 +251,7 @@ export class Modax extends RapidElement {
     const form = this.shadowRoot.querySelector('form');
     const postData = form ? serialize(form) : {};
 
-    this.httpComplete = postUrl(
+    postUrl(
       this.endpoint,
       postData,
       this.getHeaders(),
@@ -277,10 +270,10 @@ export class Modax extends RapidElement {
 
           if (redirect) {
             if (redirect === 'hide') {
-              window.setTimeout(() => {
+              this.updateComplete.then(()=>{
                 this.open = false;
                 this.fireCustomEvent(CustomEventType.Submitted);
-              }, 0);
+              });
             } else {
               this.fireCustomEvent(CustomEventType.Redirected, {
                 url: redirect,

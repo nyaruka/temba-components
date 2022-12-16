@@ -1,6 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
 
 export class Checkbox extends FormElement {

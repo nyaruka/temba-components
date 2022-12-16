@@ -1,5 +1,5 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Ticket, TicketStatus } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 import { Icon } from '../vectoricon';

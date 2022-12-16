@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';

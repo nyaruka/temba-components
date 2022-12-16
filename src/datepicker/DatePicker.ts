@@ -1,5 +1,5 @@
 import { TemplateResult, html, css, PropertyValueMap } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { getClasses } from '../utils';
 import { DateTime } from 'luxon';

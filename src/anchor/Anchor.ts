@@ -1,5 +1,5 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 export class Anchor extends LitElement {
   static get styles() {

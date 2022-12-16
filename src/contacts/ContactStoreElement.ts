@@ -1,5 +1,5 @@
 import { PropertyValueMap } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 import { Contact, Group } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 

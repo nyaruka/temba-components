@@ -1,5 +1,5 @@
 import { TemplateResult, html, css, LitElement } from 'lit';
-import { property } from 'lit/decorators';
+import { property } from 'lit/decorators.js';
 
 /**
  * A small wrapper to display labels and help text in a smartmin style.

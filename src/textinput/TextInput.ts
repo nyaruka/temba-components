@@ -1,7 +1,7 @@
 import { TemplateResult, html, css } from 'lit';
-import { property } from 'lit/decorators';
-import { ifDefined } from 'lit-html/directives/if-defined';
-import { styleMap } from 'lit-html/directives/style-map';
+import { property } from 'lit/decorators.js';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { FormElement } from '../FormElement';
 import { Modax } from '../dialog/Modax';
 import { sanitize } from './helpers';

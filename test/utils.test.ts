@@ -1,6 +1,5 @@
 import '../temba-modules';
 import { DateTime } from 'luxon';
-import * as sinon from 'sinon';
 interface Clip {
   x: number;
   y: number;
@@ -8,10 +7,11 @@ interface Clip {
   height: number;
 }
 
-import { stub } from 'sinon';
 import { expect, fixture, html, assert } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
+import { replace, stub } from 'sinon';
+import { fail } from 'assert';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -124,6 +124,7 @@ export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
 };
 
 export const checkTimers = (clock: any) => {
+  expect(!!clock.timers).to.equal(true, 'Expected timers not found');
   expect(
     Object.keys(clock.timers).length,
     `Timers still to be run ${JSON.stringify(clock.timers)}`
@@ -132,7 +133,7 @@ export const checkTimers = (clock: any) => {
 
 export const delay = (millis: number) => {
   return new Promise(function (resolve) {
-    setTimeout(resolve, millis);
+    window.setTimeout(resolve, millis);
   });
 };
 
@@ -142,19 +143,7 @@ export const assertScreenshot = async (
   threshold = 0.1,
   exclude: Clip[] = []
 ) => {
-  // const screenShotsEnabled = !!__karma__.config.args.find(
-  // (option: string) => option === '--screenshots'
-  // );
-
-  await (window as any).waitFor(200);
-
-  // console.log((window as any).watched);
-  if ((window as any).watched) {
-    // return;
-  }
-
-  const mochaUI = document.querySelector('#mocha');
-  mochaUI.classList.add('screenshots');
+  await waitFor(200);
 
   try {
     await (window as any).matchPageSnapshot(
@@ -174,8 +163,6 @@ export const assertScreenshot = async (
       );
     }
     throw new Error(error);
-  } finally {
-    mochaUI.classList.remove('screenshots');
   }
 };
 
@@ -233,7 +220,7 @@ export const loadStore = async () => {
 export const mockNow = (isodate: string) => {
   const now = DateTime.fromISO(isodate);
   // mock the current time
-  sinon.replace(DateTime, 'now', () => {
+  replace(DateTime, 'now', () => {
     return now;
   });
 };
