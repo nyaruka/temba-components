@@ -6,6 +6,8 @@ import {
   Asset,
   WebResponse,
   postUrl,
+  postJSON,
+  postForm,
 } from '../utils';
 import {
   ContactField,
@@ -255,6 +257,14 @@ export class Store extends RapidElement {
     return DateTime.fromISO(dateString)
       .setLocale(this.getLocale())
       .toLocaleString(DateTime.DATETIME_SHORT);
+  }
+
+  public postJSON(url: string, payload: any = '') {
+    return postJSON(url, payload);
+  }
+
+  public postForm(url: string, payload: any | FormData) {
+    return postForm(url, payload);
   }
 
   public postUrl(
