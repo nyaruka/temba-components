@@ -124,7 +124,7 @@ export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
 };
 
 export const checkTimers = (clock: any) => {
-  expect(!!clock.timers).to.equal(true, "Expected timers not found");
+  expect(!!clock.timers).to.equal(true, 'Expected timers not found');
   expect(
     Object.keys(clock.timers).length,
     `Timers still to be run ${JSON.stringify(clock.timers)}`
@@ -143,9 +143,8 @@ export const assertScreenshot = async (
   threshold = 0.1,
   exclude: Clip[] = []
 ) => {
-
   await waitFor(200);
-  
+
   try {
     await (window as any).matchPageSnapshot(
       `${filename}.png`,
