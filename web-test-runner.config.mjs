@@ -196,10 +196,7 @@ const wireScreenshots = async (page, context) => {
   });
 
   await page.exposeFunction('waitFor', millis => {
-    return new Promise(async (resolve, reject) => {
-      await page.waitForTimeout(millis);
-      resolve();
-    });
+    return page.waitForTimeout(millis);
   });
 
   await page.exposeFunction('moveMouse', (x, y) => {
@@ -319,7 +316,7 @@ export default {
           '--disable-web-security',
           '--force-device-scale-factor=1'
         ],
-        headless: true,
+        headless: true,      
       },
       createBrowserContext: ({ browser, config }) =>
         browser.defaultBrowserContext(),

@@ -2,6 +2,7 @@ import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
 import { Modax } from '../src/dialog/Modax';
+import { CustomEventType } from '../src/interfaces';
 import { assertScreenshot, checkTimers, getClip, mockPOST } from './utils.test';
 
 let clock: any;
@@ -22,11 +23,22 @@ const getButtons = (modax: Modax, type: string = null) => {
     );
 };
 
-const open = async (modax: Modax) => {
-  modax.open = true;
-  await modax.updateComplete;
-  await modax.httpComplete;
-  await clock.tick(400);
+const open = async (modax: Modax) => {  
+  return new Promise((resolve: any, reject: any)=>{
+    modax.addEventListener(CustomEventType.Loaded, async (event: CustomEvent)=>{
+      await clock.runAll();
+      resolve(event.detail);
+    });
+
+    modax.addEventListener(CustomEventType.Redirected, async (event: CustomEvent)=>{
+      await clock.runAll();
+      resolve(event.detail);
+    });
+
+    modax.open = true;
+
+
+  });
 };
 
 const clickPrimary = async (modax: Modax) => {
@@ -76,22 +88,16 @@ describe('temba-modax', () => {
     assert.instanceOf(modax, Modax);
   });
 
-  it.only('opens', async () => {
+  it('opens', async () => {
     const modax: Modax = await fixture(
       getModaxHTML('/test-assets/modax/hello.html')
     );
 
-    await click('temba-modax');
+    await open(modax);
     expect(modax.open).equals(true);
-
-    await modax.httpComplete;
-    await clock.runAll();
-    checkTimers(clock);
 
     // Now our body should have our endpoint text
     expect(modax.getBody().innerHTML).to.contain('Hello World');
-
-    console.log('screenshot test!', getDialogClip(modax));
 
     await assertScreenshot('modax/simple', getDialogClip(modax));
   });
@@ -104,7 +110,11 @@ describe('temba-modax', () => {
     await open(modax);
 
     expect(modax.open).to.equal(true);
-    // await assertScreenshot('modax/form', getDialogClip(modax));
+
+    expect(modax.primaryName).to.equal("Save Everything");
+    expect(modax.cancelName).to.equal("Cancel");
+
+    await assertScreenshot('modax/form', getDialogClip(modax));
   });
 
   it('reverts primary name on reuse', async () => {

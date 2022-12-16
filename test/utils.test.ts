@@ -11,6 +11,7 @@ import { expect, fixture, html, assert } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
+import { fail } from 'assert';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -123,6 +124,7 @@ export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
 };
 
 export const checkTimers = (clock: any) => {
+  expect(!!clock.timers).to.equal(true, "Expected timers not found");
   expect(
     Object.keys(clock.timers).length,
     `Timers still to be run ${JSON.stringify(clock.timers)}`
@@ -130,11 +132,8 @@ export const checkTimers = (clock: any) => {
 };
 
 export const delay = (millis: number) => {
-  console.log('triggering timeout');
   return new Promise(function (resolve) {
-    console.log('setting timeout', resolve, millis);
     window.setTimeout(resolve, millis);
-    console.log("it's set!");
   });
 };
 
@@ -144,9 +143,9 @@ export const assertScreenshot = async (
   threshold = 0.1,
   exclude: Clip[] = []
 ) => {
-  console.log(filename);
-  await waitFor(100);
 
+  await waitFor(200);
+  
   try {
     await (window as any).matchPageSnapshot(
       `${filename}.png`,

@@ -128,6 +128,8 @@ const getClipWithOptions = (select: Select) => {
 describe('temba-select', () => {
   beforeEach(function () {
     clock = useFakeTimers();
+
+    clock.tick(400);
     setViewport({ width: 500, height: 1000, deviceScaleFactor: 2 });
   });
 
