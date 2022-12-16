@@ -179,6 +179,8 @@ describe('temba-contact-chat - ticket tests', () => {
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
     );
+
+    mockGET(/\/api\/v2\/tickets\.json.*/, '/test-assets/tickets/empty.json');
   });
 
   it('show history and show chatbox if contact is active and ticket is open', async () => {
