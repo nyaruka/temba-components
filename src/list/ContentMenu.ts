@@ -1,4 +1,4 @@
-import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 
@@ -9,7 +9,6 @@ const HEADERS = {
   'Temba-Content-Menu': '1',
   'Temba-Spa': '1',
 };
-
 export interface ContentMenuItem {
   type: string;
   as_button: boolean;
@@ -87,15 +86,26 @@ export class ContentMenu extends RapidElement {
   @property({ type: String })
   endpoint: string;
 
-  @property({ type: Array })
+  @property({ type: Number })
+  legacy: number;
+
+  @property({ type: String })
+  query: string;
+
+  @property({ type: Array, attribute: false })
   buttons: ContentMenuItem[] = [];
 
-  @property({ type: Array })
+  @property({ type: Array, attribute: false })
   items: ContentMenuItem[] = [];
 
   private fetchContentMenu() {
     if (this.endpoint) {
-      getUrl(this.endpoint, null, HEADERS)
+      const headers = HEADERS;
+      if (this.legacy) {
+        delete headers['Temba-Spa'];
+      }
+
+      getUrl(this.endpoint, null, headers)
         .then((response: WebResponse) => {
           const json = response.json;
           const contentMenu = json.items as ContentMenuItem[];
@@ -123,7 +133,17 @@ export class ContentMenu extends RapidElement {
   }
 
   protected updated(changes: Map<string, any>) {
-    if (changes.has('endpoint')) {
+    super.updated(changes);
+
+    changes.forEach((oldValue, propName) => {
+      console.log(`${propName}, oldValue: ${oldValue}`);
+    });
+    console.log('endpoint, newValue:', this.endpoint);
+    console.log('legacy, newValue:', this.legacy);
+    console.log('buttons, newValue:', this.buttons);
+    console.log('items, newValue:', this.items);
+
+    if (changes.has('endpoint') || changes.has('legacy')) {
       this.fetchContentMenu();
     }
   }
