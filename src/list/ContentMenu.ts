@@ -90,7 +90,7 @@ export class ContentMenu extends RapidElement {
   legacy: number;
 
   @property({ type: String })
-  query: string;
+  query = '';
 
   @property({ type: Array, attribute: false })
   buttons: ContentMenuItem[] = [];
@@ -99,16 +99,32 @@ export class ContentMenu extends RapidElement {
   items: ContentMenuItem[] = [];
 
   private fetchContentMenu() {
-    if (this.endpoint) {
+    let url = this.endpoint;
+    if (url) {
       const headers = HEADERS;
       if (this.legacy) {
         delete headers['Temba-Spa'];
       }
 
-      getUrl(this.endpoint, null, headers)
+      const query = this.query;
+      console.log('fetchContentMenu query', query);
+      console.log('fetchContentMenu url before', url);
+      if (query) {
+        if (url.indexOf('?') > 0) {
+          url += '&' + query;
+        } else {
+          url += '?' + query;
+        }
+      }
+      console.log('fetchContentMenu url after', url);
+
+      //ok, fetch the content menu
+      getUrl(url, null, headers)
         .then((response: WebResponse) => {
           const json = response.json;
           const contentMenu = json.items as ContentMenuItem[];
+
+          //populate (or initialize) the buttons and items
           if (contentMenu) {
             this.buttons = contentMenu.filter(item => item.as_button);
             this.items = contentMenu.filter(item => !item.as_button);
@@ -117,6 +133,7 @@ export class ContentMenu extends RapidElement {
             this.items = [];
           }
 
+          //fire custom loaded event type when we're finished
           this.fireCustomEvent(CustomEventType.Loaded, {
             buttons: this.buttons,
             items: this.items,
@@ -135,15 +152,26 @@ export class ContentMenu extends RapidElement {
   protected updated(changes: Map<string, any>) {
     super.updated(changes);
 
+    //old values
+    console.log(`${changes.size} changes`);
     changes.forEach((oldValue, propName) => {
-      console.log(`${propName}, oldValue: ${oldValue}`);
+      console.log(
+        `changes to ${propName}, oldValue: ${oldValue}, newValue: ${this[propName]}`
+      );
     });
-    console.log('endpoint, newValue:', this.endpoint);
-    console.log('legacy, newValue:', this.legacy);
-    console.log('buttons, newValue:', this.buttons);
-    console.log('items, newValue:', this.items);
 
-    if (changes.has('endpoint') || changes.has('legacy')) {
+    //current values
+    console.log('endpoint, currentValue:', this.endpoint);
+    console.log('legacy, currentValue:', this.legacy);
+    console.log('query, currentValue:', this.query);
+    console.log('buttons, currentValue:', this.buttons);
+    console.log('items, currentValue:', this.items);
+
+    if (
+      changes.has('endpoint') ||
+      changes.has('legacy') ||
+      changes.has('query')
+    ) {
       this.fetchContentMenu();
     }
   }
