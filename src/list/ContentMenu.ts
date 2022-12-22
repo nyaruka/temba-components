@@ -101,14 +101,13 @@ export class ContentMenu extends RapidElement {
   private fetchContentMenu() {
     let url = this.endpoint;
     if (url) {
+      const legacy = this.legacy;
       const headers = HEADERS;
-      if (this.legacy) {
+      if (legacy) {
         delete headers['Temba-Spa'];
       }
 
       const query = this.query;
-      console.log('fetchContentMenu query', query);
-      console.log('fetchContentMenu url before', url);
       if (query) {
         if (url.indexOf('?') > 0) {
           url += '&' + query;
@@ -116,7 +115,6 @@ export class ContentMenu extends RapidElement {
           url += '?' + query;
         }
       }
-      console.log('fetchContentMenu url after', url);
 
       //ok, fetch the content menu
       getUrl(url, null, headers)
@@ -151,21 +149,6 @@ export class ContentMenu extends RapidElement {
 
   protected updated(changes: Map<string, any>) {
     super.updated(changes);
-
-    //old values
-    console.log(`${changes.size} changes`);
-    changes.forEach((oldValue, propName) => {
-      console.log(
-        `changes to ${propName}, oldValue: ${oldValue}, newValue: ${this[propName]}`
-      );
-    });
-
-    //current values
-    console.log('endpoint, currentValue:', this.endpoint);
-    console.log('legacy, currentValue:', this.legacy);
-    console.log('query, currentValue:', this.query);
-    console.log('buttons, currentValue:', this.buttons);
-    console.log('items, currentValue:', this.items);
 
     if (
       changes.has('endpoint') ||
