@@ -97,14 +97,4 @@ describe('temba-content-menu', () => {
     });
     expect(contentMenu.legacy).equals(1);
   });
-
-  it('has search query', async () => {
-    const contentMenu: ContentMenu = await getContentMenu({
-      endpoint: '/test-assets/list/content-menu-contact-read.json',
-      query: 'search=age+%3E+50',
-    });
-    expect(contentMenu.query).equals('search=age+%3E+50');
-    contentMenu.query = 'search=age+%3E+55';
-    expect(contentMenu.query).equals('search=age+%3E+55');
-  });
 });

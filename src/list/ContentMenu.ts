@@ -89,9 +89,6 @@ export class ContentMenu extends RapidElement {
   @property({ type: Number })
   legacy: number;
 
-  @property({ type: String })
-  query = '';
-
   @property({ type: Array, attribute: false })
   buttons: ContentMenuItem[] = [];
 
@@ -99,21 +96,12 @@ export class ContentMenu extends RapidElement {
   items: ContentMenuItem[] = [];
 
   private fetchContentMenu() {
-    let url = this.endpoint;
+    const url = this.endpoint;
     if (url) {
       const legacy = this.legacy;
       const headers = HEADERS;
       if (legacy) {
         delete headers['Temba-Spa'];
-      }
-
-      const query = this.query;
-      if (query) {
-        if (url.indexOf('?') > 0) {
-          url += '&' + query;
-        } else {
-          url += '?' + query;
-        }
       }
 
       //ok, fetch the content menu
