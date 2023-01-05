@@ -15,12 +15,9 @@ const baseConfig = createSpaConfig({
   injectServiceWorker: false,
 
   html: {
-    files: [
-      './templates/components-head.html',
-      './templates/components-body.html',
-    ],
-    flatten: false,
-    transform: [
+    input: [ './templates/components-*.html' ],
+    flattenOutput: false,
+    transformHtml: [
       // inject app version
       (html, args) => {
         if (args.htmlFileName === 'templates/components-body.html') {
@@ -48,10 +45,18 @@ const baseConfig = createSpaConfig({
         );
       },
     ],
-  },
+  }
 });
 
 const rollupConfig = merge(baseConfig, {
+  onwarn(warning, warn) {
+    if (warning.code === 'CIRCULAR_DEPENDENCY') {
+      if(warning.message.includes('luxon')) {
+        return;
+      }
+    }
+    warn(warning);
+  },
   plugins: [
     commonjs({
       include: 'node_modules/**',
