@@ -138,11 +138,7 @@ export class ContentMenu extends RapidElement {
   protected updated(changes: Map<string, any>) {
     super.updated(changes);
 
-    if (
-      changes.has('endpoint') ||
-      changes.has('legacy') ||
-      changes.has('query')
-    ) {
+    if (changes.has('endpoint') || changes.has('legacy')) {
       this.fetchContentMenu();
     }
   }
