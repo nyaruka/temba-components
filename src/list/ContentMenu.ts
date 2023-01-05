@@ -1,4 +1,4 @@
-import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 
@@ -9,7 +9,6 @@ const HEADERS = {
   'Temba-Content-Menu': '1',
   'Temba-Spa': '1',
 };
-
 export interface ContentMenuItem {
   type: string;
   as_button: boolean;
@@ -87,18 +86,31 @@ export class ContentMenu extends RapidElement {
   @property({ type: String })
   endpoint: string;
 
-  @property({ type: Array })
+  @property({ type: Number })
+  legacy: number;
+
+  @property({ type: Array, attribute: false })
   buttons: ContentMenuItem[] = [];
 
-  @property({ type: Array })
+  @property({ type: Array, attribute: false })
   items: ContentMenuItem[] = [];
 
   private fetchContentMenu() {
-    if (this.endpoint) {
-      getUrl(this.endpoint, null, HEADERS)
+    const url = this.endpoint;
+    if (url) {
+      const legacy = this.legacy;
+      const headers = HEADERS;
+      if (legacy) {
+        delete headers['Temba-Spa'];
+      }
+
+      //ok, fetch the content menu
+      getUrl(url, null, headers)
         .then((response: WebResponse) => {
           const json = response.json;
           const contentMenu = json.items as ContentMenuItem[];
+
+          //populate (or initialize) the buttons and items
           if (contentMenu) {
             this.buttons = contentMenu.filter(item => item.as_button);
             this.items = contentMenu.filter(item => !item.as_button);
@@ -107,6 +119,7 @@ export class ContentMenu extends RapidElement {
             this.items = [];
           }
 
+          //fire custom loaded event type when we're finished
           this.fireCustomEvent(CustomEventType.Loaded, {
             buttons: this.buttons,
             items: this.items,
@@ -123,7 +136,9 @@ export class ContentMenu extends RapidElement {
   }
 
   protected updated(changes: Map<string, any>) {
-    if (changes.has('endpoint')) {
+    super.updated(changes);
+
+    if (changes.has('endpoint') || changes.has('legacy')) {
       this.fetchContentMenu();
     }
   }

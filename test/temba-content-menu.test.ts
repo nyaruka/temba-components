@@ -81,4 +81,20 @@ describe('temba-content-menu', () => {
     expect(contentMenu.items.length).equals(0);
     expect(contentMenu.buttons.length).equals(0);
   });
+
+  it('is spa page', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-contact-read.json',
+      legacy: 0,
+    });
+    expect(contentMenu.legacy).equals(0);
+  });
+
+  it('is legacy page', async () => {
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/test-assets/list/content-menu-contact-read.json',
+      legacy: 1,
+    });
+    expect(contentMenu.legacy).equals(1);
+  });
 });
