@@ -23,21 +23,25 @@ const getButtons = (modax: Modax, type: string = null) => {
     );
 };
 
-const open = async (modax: Modax) => {  
-  return new Promise((resolve: any, reject: any)=>{
-    modax.addEventListener(CustomEventType.Loaded, async (event: CustomEvent)=>{
-      await clock.runAll();
-      resolve(event.detail);
-    });
+const open = async (modax: Modax) => {
+  return new Promise((resolve: any, reject: any) => {
+    modax.addEventListener(
+      CustomEventType.Loaded,
+      async (event: CustomEvent) => {
+        await clock.runAll();
+        resolve(event.detail);
+      }
+    );
 
-    modax.addEventListener(CustomEventType.Redirected, async (event: CustomEvent)=>{
-      await clock.runAll();
-      resolve(event.detail);
-    });
+    modax.addEventListener(
+      CustomEventType.Redirected,
+      async (event: CustomEvent) => {
+        await clock.runAll();
+        resolve(event.detail);
+      }
+    );
 
     modax.open = true;
-
-
   });
 };
 
@@ -58,8 +62,6 @@ const clickPrimary = async (modax: Modax) => {
 
     expect(primary).not.equals(undefined, 'Missing primary button');
     primary.click();
-    await waitFor(0);
-    await clock.runAll();
   }
 };
 
@@ -109,8 +111,8 @@ describe('temba-modax', () => {
 
     expect(modax.open).to.equal(true);
 
-    expect(modax.primaryName).to.equal("Save Everything");
-    expect(modax.cancelName).to.equal("Cancel");
+    expect(modax.primaryName).to.equal('Save Everything');
+    expect(modax.cancelName).to.equal('Cancel');
 
     await assertScreenshot('modax/form', getDialogClip(modax));
   });
@@ -156,12 +158,19 @@ describe('temba-modax', () => {
     expect(primary.name).equals('Save Everything');
 
     // click the submit button
-    mockPOST(/\/test-assets\/modax\/form\.html/, '', {
-      'Temba-Success': '/newpage',
+    mockPOST(/\/test-assets\/modax\/form\.html/, 'arst', {
+      'Temba-Success': 'hide',
     });
-    await clickPrimary(modax);
 
-    // our modal should go away as we redirect
-    expect(modax.open).equals(false, 'Modal still visible');
+    const hideTest = new Promise<void>(resolve => {
+      modax.addEventListener(CustomEventType.Submitted, () => {
+        expect(modax.open).equals(false, 'Modal still visible');
+        resolve();
+      });
+    });
+
+    await clickPrimary(modax);
+    await clock.runAllAsync();
+    await hideTest;
   });
 });

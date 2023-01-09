@@ -1,19 +1,40 @@
 import { assert, expect } from '@open-wc/testing';
 import * as sinon from 'sinon';
+import { useFakeTimers } from 'sinon';
+import { CustomEventType } from '../src/interfaces';
 import { TembaList } from '../src/list/TembaList';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
+
+let clock: any;
 
 const TAG = 'temba-list';
 const getList = async (attrs: any = {}) => {
   const list = (await getComponent(TAG, attrs)) as TembaList;
 
-  // wait for the fetch
-  await list.httpComplete;
+  if (!list.endpoint) {
+    return list;
+  }
 
-  return list;
+  return new Promise<TembaList>(resolve => {
+    list.addEventListener(
+      CustomEventType.FetchComplete,
+      async () => {
+        resolve(list);
+      },
+      { once: true }
+    );
+  });
 };
 
 describe('temba-list', () => {
+  beforeEach(function () {
+    clock = useFakeTimers();
+  });
+
+  afterEach(function () {
+    clock.restore();
+  });
+
   it('can be created', async () => {
     const list: TembaList = await getList();
     assert.instanceOf(list, TembaList);
@@ -38,15 +59,15 @@ describe('temba-list', () => {
       endpoint: '/test-assets/list/temba-list.json',
     });
 
-    const changeEvent = sinon.spy();
+    const changeTest = new Promise<void>(resolve => {
+      list.addEventListener('change', () => {
+        resolve();
+      });
+    });
 
-    list.addEventListener('change', changeEvent);
     list.cursorIndex = 1;
 
-    // let our event fire
-    await waitFor(0);
-
-    assert(changeEvent.called, 'change event not fired');
+    await changeTest;
     await assertScreenshot('list/items-selected', getClip(list));
   });
 
@@ -59,13 +80,14 @@ describe('temba-list', () => {
     const changeEvent = sinon.spy();
     list.addEventListener('change', changeEvent);
 
-    // don't let our list reset on endpoint change
-    list.preserve = true;
-    list.endpoint = '/test-assets/list/temba-list-shorter.json';
+    const refreshTest = new Promise<void>(resolve => {
+      list.addEventListener(CustomEventType.FetchComplete, () => {
+        resolve();
+      });
+    });
 
-    // refresh our endpoint and wait for event to fire
-    await waitFor(0);
-    await list.httpComplete;
+    list.endpoint = '/test-assets/list/temba-list-shorter.json';
+    await refreshTest;
 
     assert(changeEvent.called, 'change event not fired');
     await assertScreenshot('list/items-updated', getClip(list));

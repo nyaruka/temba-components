@@ -11,7 +11,7 @@ import {
 const BORING_LIST = html`<temba-field-manager />`;
 
 export const getEle = async (attrs: any = {}) => {
-  const fm = html`<temba-field-manager
+  const fm = `<temba-field-manager
     ${getAttributes(attrs)}
   ></temba-field-manager>`;
   const parentNode = document.createElement('div');

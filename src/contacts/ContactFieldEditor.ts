@@ -75,7 +75,7 @@ export class ContactFieldEditor extends RapidElement {
         opacity: 0;
         cursor: default;
         transform: scale(0.5);
-        transition: all 300ms ease-in-out;
+        transition: all var(--transition-speed) ease-in-out;
         display: flex;
         align-items: stretch;
         z-index: 1000;

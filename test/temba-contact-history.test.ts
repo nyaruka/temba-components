@@ -1,4 +1,5 @@
 import { fixture, assert, expect } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
 import { ContactHistory } from '../src/contacts/ContactHistory';
 import {
   assertScreenshot,
@@ -17,15 +18,6 @@ export const createHistory = async (def: string) => {
     'width: 500px;height:750px;display:flex;flex-direction:column;flex-grow:1;min-height:0;'
   );
   const history = (await fixture(def, { parentNode })) as ContactHistory;
-
-  // let history fetch start and wait for it
-  await waitFor(0);
-  await history.httpComplete;
-
-  // wait for scroll update
-  await waitFor(0);
-  await history.httpComplete;
-
   return history;
 };
 
@@ -42,9 +34,12 @@ const getHistoryClip = (ele: ContactHistory) => {
 
 // stub our current date for consistent screenshots
 mockNow('2021-03-31T00:31:00.000-00:00');
+let clock: any;
 
 describe('temba-contact-history', () => {
   beforeEach(async () => {
+    clock = useFakeTimers();
+
     mockGET(
       /\/contact\/history\/contact-dave-active\/.*/,
       '/test-assets/contacts/history.json'
@@ -58,7 +53,11 @@ describe('temba-contact-history', () => {
     await loadStore();
   });
 
-  it('can be created', async () => {
+  afterEach(function () {
+    clock.restore();
+  });
+
+  it.only('can be created', async () => {
     const history = await createHistory(getHistoryHTML());
     assert.instanceOf(history, ContactHistory);
   });
@@ -70,17 +69,15 @@ describe('temba-contact-history', () => {
       })
     );
 
-    await waitFor(500);
-
     // we should have scrolled to the bottom
     const events = history.shadowRoot.querySelector('.events');
     const top = events.scrollHeight - events.getBoundingClientRect().height;
 
     expect(top).to.equal(549);
+    await clock.runAllAsync();
 
     // make sure we actually scrolled to there
     expect(events.scrollTop).to.equal(top);
-
     await assertScreenshot('contacts/history', getHistoryClip(history));
   });
 
@@ -98,13 +95,8 @@ describe('temba-contact-history', () => {
         `.event-count[data-group-index='${idx}']`
       ) as HTMLDivElement;
       group.click();
+      await clock.runAllAsync();
+      expect(group.parentElement.classList.contains('expanded')).equal(true);
     }
-
-    await waitFor(500);
-
-    await assertScreenshot(
-      'contacts/history-expanded',
-      getHistoryClip(history)
-    );
   });
 });

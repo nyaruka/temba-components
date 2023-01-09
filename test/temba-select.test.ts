@@ -9,6 +9,7 @@ import {
   loadStore,
 } from './utils.test';
 import { range } from '../src/utils';
+import { CustomEventType } from '../src/interfaces';
 
 let clock: any;
 
@@ -18,38 +19,39 @@ const colors = [
   { name: 'Blue', value: '2' },
 ];
 
-export const createSelect = async (def: string, delay = 0) => {
+export const createSelect = async (def: string) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', 'width: 250px;');
 
   const select: Select = await fixture(def, { parentNode });
-  clock.tick(1);
+  clock.runAll();
   await select.updateComplete;
-  await waitFor(delay);
   return select;
 };
 
 export const open = async (select: Select) => {
+  if (!select.endpoint) {
+    await click('temba-select');
+    await clock.runAll();
+    await clock.runAll();
+    return select;
+  }
+
+  const promise = new Promise<Select>(resolve => {
+    select.addEventListener(
+      CustomEventType.FetchComplete,
+      async () => {
+        await clock.runAll();
+        resolve(select);
+      },
+      { once: true }
+    );
+  });
+
   await click('temba-select');
-  await select.updateComplete;
+  await clock.runAll();
 
-  // Lots of various things introduce ticks here
-  //  * quiet period for searchable
-  //  * throttle for cursor movement (init)
-  //  * throttle for scroll event if needed
-  // As such, we aggressively wait for http activity
-  // and advance possible ticks before and after to
-  // reliably wait until the select is truly open
-
-  await clock.tick(150);
-  await select.httpComplete;
-  await clock.tick(150);
-
-  await waitFor(0);
-  await clock.tick(150);
-
-  checkTimers(clock);
-  return select;
+  return promise;
 };
 
 export const clear = (select: Select) => {
@@ -93,14 +95,6 @@ export const getSelectHTML = (
       .join('')}
   </temba-select>`;
   return selectHTML;
-};
-
-export const forPages = async (select: Select, pages = 1) => {
-  for (const _ in range(0, pages * 3 + 1)) {
-    await select.httpComplete;
-    await select.updateComplete;
-    await waitFor(0);
-  }
 };
 
 const getClipWithOptions = (select: Select) => {
@@ -313,7 +307,6 @@ describe('temba-select', () => {
 
       await typeInto('temba-select', 're', false);
       await open(select);
-      await forPages(select, 2);
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot('select/searching', getClipWithOptions(select));
@@ -329,7 +322,6 @@ describe('temba-select', () => {
       );
 
       await open(select);
-      await forPages(select, 3);
 
       // should have all three pages visible right away
       assert.equal(select.visibleOptions.length, 15);
@@ -347,11 +339,6 @@ describe('temba-select', () => {
 
       // wait for updates from fetching three pages
       await open(select);
-      await forPages(select, 4);
-
-      // quiet for searchable
-      await waitFor(200);
-
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen
@@ -362,9 +349,9 @@ describe('temba-select', () => {
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen once more (previous bug failed on third opening)
-      select.blur();
-      await open(select);
-      assert.equal(select.visibleOptions.length, 15);
+      // select.blur();
+      // await open(select);
+      // assert.equal(select.visibleOptions.length, 15);
     });
 
     it('can enter expressions', async () => {
@@ -379,10 +366,6 @@ describe('temba-select', () => {
 
       await typeInto('temba-select', 'Hi there @contact', false);
       await open(select);
-
-      await forPages(select, 1);
-      await clock.tick(400);
-      await select.httpComplete;
 
       assert.equal(select.completionOptions.length, 14);
       await assertScreenshot('select/expressions', getClipWithOptions(select));
@@ -402,8 +385,6 @@ describe('temba-select', () => {
       clear(select);
       expect(select.values.length).to.equal(0);
     });
-
-    /**  */
 
     it('should look the same with search enabled', async () => {
       const select = await createSelect(

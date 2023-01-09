@@ -1,15 +1,20 @@
-import { expect } from '@open-wc/testing';
+import { expect, waitUntil } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { ContactHistory } from '../src/contacts/ContactHistory';
+import { CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
 import {
   assertScreenshot,
-  delay,
   getClip,
   getComponent,
   loadStore,
   mockGET,
+  mockNow,
 } from '../test/utils.test';
+
+let clock: any;
+mockNow('2021-03-31T00:31:00.000-00:00');
 
 const TAG = 'temba-contact-chat';
 const getContactChat = async (attrs: any = {}) => {
@@ -24,18 +29,28 @@ const getContactChat = async (attrs: any = {}) => {
     'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
   )) as ContactChat;
 
-  // wait for our contact to load
-  await delay(100);
-
+  // TODO: this should be waiting for an event instead
+  await waitFor(100);
   return chat;
 };
 
 const list_TAG = 'temba-list';
 const getTicketList = async (attrs: any = {}) => {
   const list = (await getComponent(list_TAG, attrs)) as TicketList;
-  // wait for the fetch
-  await list.httpComplete;
-  return list;
+
+  if (!list.endpoint) {
+    return list;
+  }
+
+  return new Promise<TicketList>(resolve => {
+    list.addEventListener(
+      CustomEventType.FetchComplete,
+      async () => {
+        resolve(list);
+      },
+      { once: true }
+    );
+  });
 };
 
 describe('temba-contact-chat - contact tests', () => {
@@ -46,6 +61,11 @@ describe('temba-contact-chat - contact tests', () => {
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
     );
+    clock = useFakeTimers();
+  });
+
+  afterEach(function () {
+    clock.restore();
   });
 
   it('can be created', async () => {
@@ -152,7 +172,7 @@ describe('temba-contact-chat - contact tests', () => {
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
     ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
+    expect(chatHistoryEl).to.not.equal(null, 'Chat history missing');
 
     const chatboxDiv = chat.shadowRoot.querySelector(
       '.chatbox'
@@ -181,6 +201,11 @@ describe('temba-contact-chat - ticket tests', () => {
     );
 
     mockGET(/\/api\/v2\/tickets\.json.*/, '/test-assets/tickets/empty.json');
+    clock = useFakeTimers();
+  });
+
+  afterEach(function () {
+    clock.restore();
   });
 
   it('show history and show chatbox if contact is active and ticket is open', async () => {
@@ -214,7 +239,12 @@ describe('temba-contact-chat - ticket tests', () => {
 
     await assertScreenshot(
       'contacts/contact-active-ticket-open-show-chatbox',
-      getClip(chat)
+      getClip(chat),
+      {
+        clock: clock,
+        predicate: () =>
+          chat.getContactHistory().getEventsPane().scrollTop === 982,
+      }
     );
   });
 
@@ -231,7 +261,6 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.currentTicket = tickets.items[0];
     chat.refresh();
 
-    await waitFor(0);
     await chat.httpComplete;
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
@@ -251,7 +280,13 @@ describe('temba-contact-chat - ticket tests', () => {
 
     await assertScreenshot(
       'contacts/contact-active-ticket-closed-show-reopen-button',
-      getClip(chat)
+      getClip(chat),
+      {
+        clock: clock,
+        predicate: () => {
+          return chat.getContactHistory().getEventsPane().scrollTop === 918;
+        },
+      }
     );
   });
 
@@ -268,9 +303,6 @@ describe('temba-contact-chat - ticket tests', () => {
     });
     chat.currentTicket = tickets.items[0];
     chat.refresh();
-
-    await waitFor(0);
-    await chat.httpComplete;
 
     const chatHistoryEl = chat.shadowRoot.querySelector(
       'temba-contact-history'
@@ -289,7 +321,13 @@ describe('temba-contact-chat - ticket tests', () => {
 
     await assertScreenshot(
       'contacts/contact-archived-ticket-closed-hide-chatbox',
-      getClip(chat)
+      getClip(chat),
+      {
+        clock: clock,
+        predicate: () => {
+          return chat.getContactHistory().getEventsPane().scrollTop === 867;
+        },
+      }
     );
   });
 });
