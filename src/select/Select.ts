@@ -505,9 +505,6 @@ export class Select extends FormElement {
 
   private lruCache = Lru(20, 60000);
 
-  // http promise to monitor for completeness
-  public httpComplete: Promise<void | WebResponse>;
-
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
@@ -535,6 +532,12 @@ export class Select extends FormElement {
       }, this.quietMillis);
     }
 
+    if (this.endpoint && changedProperties.has('fetching')) {
+      if (!this.fetching && !this.isPastFetchThreshold()) {
+        this.fireCustomEvent(CustomEventType.FetchComplete);
+      }
+    }
+
     // if our cursor changed, lets make sure our scrollbox is showing it
     if (
       (changedProperties.has('cursorIndex') ||
@@ -542,11 +545,7 @@ export class Select extends FormElement {
       this.endpoint &&
       !this.fetching
     ) {
-      if (
-        (this.visibleOptions.length > 0 || this.next) &&
-        !this.complete &&
-        (this.cursorIndex || 0) > this.visibleOptions.length - LOOK_AHEAD
-      ) {
+      if (this.isPastFetchThreshold()) {
         this.fetchOptions(this.query, this.page + 1);
       }
     }
@@ -591,6 +590,14 @@ export class Select extends FormElement {
     this.selectedIndex = -1;
 
     this.fireEvent('change');
+  }
+
+  private isPastFetchThreshold() {
+    return (
+      (this.visibleOptions.length > 0 || this.next) &&
+      !this.complete &&
+      (this.cursorIndex || 0) > this.visibleOptions.length - LOOK_AHEAD
+    );
   }
 
   public handleOptionSelection(event: CustomEvent) {
@@ -745,6 +752,10 @@ export class Select extends FormElement {
     }
 
     this.visibleOptions = options;
+
+    this.fireCustomEvent(CustomEventType.ContentChanged, {
+      options: this.visibleOptions,
+    });
   }
 
   public fetchExpressions() {
@@ -763,6 +774,7 @@ export class Select extends FormElement {
       this.completionOptions = result.options;
       this.visibleOptions = [];
       this.anchorPosition = result.anchorPosition;
+      this.fireCustomEvent(CustomEventType.FetchComplete);
       return;
     }
   }
@@ -850,7 +862,7 @@ export class Select extends FormElement {
             }
           });
         } else {
-          this.httpComplete = getUrl(url)
+          getUrl(url)
             .then((response: WebResponse) => {
               const results = this.getOptions(response).filter(
                 (option: any) => {
@@ -883,7 +895,9 @@ export class Select extends FormElement {
                 });
               }
 
+              // if (!this.next) {
               this.fetching = false;
+              //}
               this.page = page;
             })
             .catch((reason: any) => {

@@ -12,6 +12,11 @@ body {
 
 html input {
   font-weight: 300;
+  caret-color: transparent;
+}
+
+temba-input, temba-modax, temba-dialog {
+  caret-color: transparent;
 }
 
 html {

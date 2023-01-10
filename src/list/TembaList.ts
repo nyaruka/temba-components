@@ -77,9 +77,6 @@ export class TembaList extends RapidElement {
   // used for testing only
   preserve: boolean;
 
-  // http promise to monitor for completeness
-  public httpComplete: Promise<void>;
-
   static get styles() {
     return css`
       :host {
@@ -126,13 +123,15 @@ export class TembaList extends RapidElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('endpoint') && this.endpoint) {
-      // if our tests aren't preserving our properties, reset
-      if (!this.preserve) {
-        this.reset();
-        this.loading = true;
-      }
+      this.reset();
+      this.loading = true;
+      this.fetchItems();
+    }
 
-      this.httpComplete = this.fetchItems();
+    if (changedProperties.has('loading')) {
+      if (!this.loading) {
+        this.fireCustomEvent(CustomEventType.FetchComplete);
+      }
     }
 
     if (
@@ -347,6 +346,7 @@ export class TembaList extends RapidElement {
         this.reset();
 
         console.log('error, resetting');
+        console.log(error);
         return;
       }
 

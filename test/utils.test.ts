@@ -7,11 +7,10 @@ interface Clip {
   height: number;
 }
 
-import { expect, fixture, html, assert } from '@open-wc/testing';
+import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
-import { fail } from 'assert';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -140,10 +139,17 @@ export const delay = (millis: number) => {
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,
-  threshold = 0.1,
-  exclude: Clip[] = []
+  waitFor?: { clock?: any; predicate?: () => boolean }
 ) => {
-  await waitFor(200);
+  if (waitFor) {
+    if (waitFor.clock) {
+      waitFor.clock.restore();
+    }
+    await waitUntil(waitFor.predicate);
+  }
+
+  const threshold = 0.1;
+  const exclude: Clip[] = [];
 
   try {
     await (window as any).matchPageSnapshot(

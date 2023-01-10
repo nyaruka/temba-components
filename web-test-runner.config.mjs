@@ -146,6 +146,8 @@ const wireScreenshots = async (page, context) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
+        await page.waitForNetworkIdle();
+
         if (!(await fileExists(truthFile))) {
           // no truth yet, record it
           await page.screenshot({ path: truthFile, clip });
@@ -323,7 +325,12 @@ export default {
       createPage: async ({ context, config }) => {
         const page = await context.newPage();
         await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
-
+      
+        // const loaded = page.waitForNavigation({
+          // waitUntil: 'load'
+        // });
+        // await page.setContent(testContent);
+        // await loaded
         await page.once('load', async () => {
           await page.addScriptTag({
             content: `
@@ -331,7 +338,9 @@ export default {
           `,
           });
           await wireScreenshots(page, context);
+
         });
+
 
         await page.emulateTimezone('GMT');
 

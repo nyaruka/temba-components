@@ -1,6 +1,6 @@
 import { assert, expect } from '@open-wc/testing';
 import { CustomEventType } from '../src/interfaces';
-import { ContentMenu, ContentMenuItemType } from '../src/list/ContentMenu';
+import { ContentMenu } from '../src/list/ContentMenu';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-content-menu';
@@ -21,9 +21,13 @@ const getContentMenu = async (attrs: any = {}, width = 0) => {
 
   // if we have an endpoint, wait for a loaded event before returning
   return new Promise<ContentMenu>(resolve => {
-    contentMenu.addEventListener(CustomEventType.Loaded, async () => {
-      resolve(contentMenu);
-    });
+    contentMenu.addEventListener(
+      CustomEventType.Loaded,
+      async () => {
+        resolve(contentMenu);
+      },
+      { once: true }
+    );
   });
 };
 
