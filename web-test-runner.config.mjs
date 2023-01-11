@@ -131,7 +131,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
   });
 };
 
-const wireScreenshots = async (page, context) => {
+const wireScreenshots = async (page, context, isCI) => {
   // clear out any past tests
   const diffs = path.resolve(SCREENSHOTS, DIFF);
   const tests = path.resolve(SCREENSHOTS, TEST);
@@ -146,7 +146,10 @@ const wireScreenshots = async (page, context) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
-        await page.waitForNetworkIdle();
+        // if we are on ci, wait for fetches to complete
+        if (isCI) {
+          await page.waitForNetworkIdle();
+        }
 
         if (!(await fileExists(truthFile))) {
           // no truth yet, record it
@@ -267,18 +270,16 @@ const wireScreenshots = async (page, context) => {
   });
 };
 
-
-/*testFramework: {
-  config: {
-    ui: 'bdd',
-    timeout: '3000',
-  },
-},*/
-
 export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
+
+  testFramework: {
+    config: {
+      timeout: '10000',
+    },
+  },
 
   plugins: [
     {
@@ -320,25 +321,19 @@ export default {
         ],
         headless: true,      
       },
-      createBrowserContext: ({ browser, config }) =>
-        browser.defaultBrowserContext(),
       createPage: async ({ context, config }) => {
+        // leave this in for logging on ci
         const page = await context.newPage();
-        await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
-      
-        // const loaded = page.waitForNavigation({
-          // waitUntil: 'load'
-        // });
-        // await page.setContent(testContent);
-        // await loaded
+        await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");      
         await page.once('load', async () => {
           await page.addScriptTag({
             content: `
             window.watched = ${config.watch};
           `,
           });
-          await wireScreenshots(page, context);
 
+          const isCI = config.rootDir.indexOf("/Users/runner") === 0;
+          await wireScreenshots(page, context, isCI);
         });
 
 
