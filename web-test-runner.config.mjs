@@ -275,6 +275,12 @@ export default {
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
 
+  testFramework: {
+    config: {
+      timeout: '10000',
+    },
+  },
+
   plugins: [
     {
       name: 'add-style',
