@@ -18,6 +18,7 @@
     "rootDir": "./",
     "declaration": false,
     "noEmit": false,
+    "jsx": "react-jsx"
   },
   "include": ["**/*.ts"]
 }
