@@ -25,6 +25,12 @@ export class Attachments extends FormElement {
             width: 500px;
         }
 
+        .attachment {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+        }
+
         .uploader {
             
         }
@@ -182,6 +188,7 @@ export class Attachments extends FormElement {
         console.log('uploadFile file', file);
         // todo upload file - send request to RP endpoint
         const attachment = { name: file.name, url: file.name, type: file.type, size: file.size } as Attachment;
+        console.log('attachment', attachment);
         this.addValue(attachment);
         console.log('values', this.values);
         this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
@@ -202,12 +209,12 @@ export class Attachments extends FormElement {
                     ${this.values.map(attachment => {
                         return html`
                             <div class="attachment">
-                                <temba-icon name="${Icon.attachment}" />
-                                ${attachment.name}
-                                ${attachment.url} 
-                                (${attachment.size}) 
-                                ${attachment.type}
-                                <temba-icon name="${Icon.delete_small}" @click="${this.handleRemoveFile}"/>
+                                <div class="detail icon">todo-icon</div>
+                                <div class="detail info">${attachment.name}</div>
+                                <div class="detail info">${attachment.url}</div>
+                                <div class="detail info">(${attachment.size})</div>
+                                <div class="detail info">${attachment.type}</div>
+                                <temba-icon class="detail icon" name="${Icon.delete_small}" @click="${this.handleRemoveFile}"/>
                             </div>`
                     })}
                 </div>
@@ -222,9 +229,7 @@ export class Attachments extends FormElement {
                     @drop="${this.handleDrop}"
                 >
                     <input type="file" id="drop_files" multiple @change="${this.handleUploadFiles}">
-                    <temba-icon name="${Icon.download}">
-                        <label class="button" for="drop_files">Drag and drop to attach files</label>
-                    </temba-icon>
+                    <label class="button" for="drop_files">Drag and drop to attach files <temba-icon name="${Icon.download}" /></label>                    
                 </div>               
             </div>
         `;
