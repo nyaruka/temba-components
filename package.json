@@ -40,7 +40,8 @@
     "marked": "4.0.10",
     "remarkable": "^2.0.1",
     "serialize-javascript": "^3.0.0",
-    "tiny-lru": "^8.0.2"
+    "tiny-lru": "^8.0.2",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@open-wc/building-rollup": "2.2.1",

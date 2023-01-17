@@ -17,8 +17,7 @@
     "inlineSources": true,
     "rootDir": "./",
     "declaration": false,
-    "noEmit": false,
-    "jsx": "react-jsx"
+    "noEmit": false
   },
   "include": ["**/*.ts"]
 }
