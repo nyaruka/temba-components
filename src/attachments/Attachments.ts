@@ -262,12 +262,14 @@ export class Attachments extends FormElement {
           </div>
         </div>
         <div class="item uploaders">
-          <input
-            type="file"
-            id="select_file"
-            @change="${this.handleUploadFile}"
-          />
-          <label class="button" for="select_file">Select a file</label>
+          <div class="uploader">
+            <input
+              type="file"
+              id="select_file"
+              @change="${this.handleUploadFile}"
+            />
+            <label class="button" for="select_file">Select a file</label>
+          </div>
         </div>
       </div>
     `;
