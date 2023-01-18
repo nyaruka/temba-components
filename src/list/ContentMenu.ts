@@ -80,6 +80,10 @@ export class ContentMenu extends RapidElement {
       .item:hover {
         color: rgb(var(--primary-rgb));
       }
+
+      temba-dropdown {
+        z-index: 20;
+      }
     `;
   }
 
