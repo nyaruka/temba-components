@@ -3,7 +3,14 @@ import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
 import { CustomEventType } from '../interfaces';
-import { getUrl, WebResponse } from '../utils';
+import {
+  formatFileSize,
+  formatFileType,
+  getUrl,
+  // postUrl,
+  truncate,
+  WebResponse,
+} from '../utils';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Attachment {
@@ -25,42 +32,63 @@ export class Attachments extends FormElement {
       .item {
         border: 1px solid #ccc;
         border-radius: var(--curvature);
-        flex-grow: 1;
+        flex: 1;
         margin: 0.5em;
       }
 
-      .item.attachments {
+      .attachments {
         display: flex;
         flex-direction: column;
       }
       .attachment {
-        border: 1px solid #ccc;
-        border-radius: var(--curvature);
+        background: rgba(0, 0, 0, 0.05);
+        // border: 1px solid rgba(237, 237, 237, 1);
+        // border-radius: var(--curvature);
+        // color: rgb(102, 102, 102);
+        color: rgb(26, 26, 26);
+        font-family: var(--font-family);
+        font-size: var(--font-size);
+        padding: 0.3em;
+        margin: 0.3em 0.3em 0 0.3em;
+
         display: flex;
-        margin: 0.5em;
+      }
+      .attachment:hover {
+        background: rgba(0, 0, 0, 0.1);
+        // border-radius: var(--curvature);
+        // color: rgb(136, 136, 136);
+      }
+      .detail {
+        flex: 1;
+      }
+      .detail.name {
+        flex: 2;
       }
 
-      .item.uploaders {
+      .uploaders {
         display: flex;
-        justify-content: center;
-        align-items: center;
       }
       .drag_and_drop {
         border: 2px dashed #ccc;
         border-radius: var(--curvature);
-        flex-grow: 1;
-        margin: 0.5em;
+        flex: 1;
+        margin: 0.25em;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
       .drag_and_drop.highlight {
         border-color: rgb(var(--primary-rgb));
       }
       .uploader {
+        flex: 1;
+
         display: flex;
-        flex-grow: 1;
         justify-content: center;
         align-items: center;
       }
-      .button {
+      .upload_button {
         display: inline-block;
         padding: 10px;
         background: var(--color-button-primary);
@@ -72,9 +100,9 @@ export class Attachments extends FormElement {
         font-family: var(--font-family);
         font-weight: 400;
         transition: all 100ms ease-in;
-        margin: 0.5em;
+        // margin: 0.5em;
       }
-      .button:hover {
+      .upload_button:hover {
         background: var(--color-button-primary);
       }
 
@@ -85,8 +113,12 @@ export class Attachments extends FormElement {
     `;
   }
 
+  // endpoint = "/msgmedia/upload/"
   @property({ type: String })
   endpoint: string;
+
+  @property({ type: Boolean })
+  uploading: boolean;
 
   public constructor() {
     super();
@@ -120,13 +152,14 @@ export class Attachments extends FormElement {
   }
 
   public refresh(): void {
-    // this.fetchAttachments();
+    // todo this.fetchAttachments();
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
     console.log('changes', changes);
 
+    // todo
     // if (changes.has('endpoint')) {
     //     this.fetchAttachments();
     // }
@@ -198,79 +231,154 @@ export class Attachments extends FormElement {
 
   private uploadFile(file: File): void {
     console.log('uploadFile file', file);
-    // todo upload file - send request to RP endpoint
-    const attachment = {
-      uuid: uuidv4(),
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    } as Attachment;
-    console.log('attachment', attachment);
-    this.addValue(attachment);
-    console.log('values', this.values);
-    this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+    this.uploading = true;
+
+    window.setTimeout(() => {
+      const attachment = {
+        uuid: uuidv4(),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      } as Attachment;
+      console.log('attachment', attachment);
+      this.addValue(attachment);
+      console.log('values', this.values);
+      this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+      this.uploading = false;
+    }, 1000);
+
+    // const attachment = {
+    //     uuid: uuidv4(),
+    //     name: file.name,
+    //     type: file.type,
+    //     size: file.size,
+    //   } as Attachment;
+    // console.log('attachment', attachment);
+    // this.addValue(attachment);
+    // console.log('values', this.values);
+    // this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+    // this.uploading = false;
+
+    // todo upload file to RP endpoint
+    // const url = "/msgmedia/upload/";
+    // const payload = new FormData();
+    // payload.append('file', file);
+    // const csrf = this.getCookie('csrftoken');
+    // const headers: any = csrf ? { 'X-CSRFToken': csrf } : {};
+    // // mark us as ajax
+    // headers['X-Requested-With'] = 'XMLHttpRequest';
+    // postUrl(url, payload, headers, file.type)
+    //     .then((response: WebResponse) => {
+    //         console.log(response);
+    //         this.uploading = false;
+    //         const json = response.json;
+    //         const uploadedAttachment = json.items[0] as Attachment;
+    //         if (uploadedAttachment) {
+    //             const attachment = {
+    //                 uuid: uploadedAttachment.uuid,
+    //                 name: file.name,
+    //                 type: file.type,
+    //                 size: file.size,
+    //             } as Attachment;
+    //             console.log('attachment', attachment);
+    //             this.addValue(attachment);
+    //             console.log('values', this.values);
+    //             this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+    //         }
+    //     })
+    //     .catch((error: any) => {
+    //         console.error(error);
+    //         this.uploading = false;
+    //     });
   }
+
+  //   private getCookie(name: string): string {
+  //     for (const cookie of document.cookie.split(';')) {
+  //       const idx = cookie.indexOf('=');
+  //       let key = cookie.substr(0, idx);
+  //       let value = cookie.substr(idx + 1);
+
+  //       // no spaces allowed
+  //       key = key.trim();
+  //       value = value.trim();
+
+  //       if (key === name) {
+  //         return value;
+  //       }
+  //     }
+  //     return null;
+  //   };
 
   private handleRemoveFile(evt: Event): void {
     console.log('handleRemoveFile evt', evt);
     const target = evt.target as HTMLDivElement;
-    // todo remove file - send request to RP endpoint
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
     console.log('handleRemoveFile attachment', attachment);
     this.removeValue(attachment);
     console.log('values', this.values);
     this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
+
+    // todo remove file from RP endpoint
   }
 
   public render(): TemplateResult {
     return html`
       <div class="container">
         <div class="item attachments">
-          ${this.values.map(attachment => {
-            return html` <div class="attachment">
-              <div>${attachment.name}</div>
-              <div>(${attachment.size})</div>
-              <div>${attachment.type}</div>
-              <temba-icon
-                id="${attachment.uuid}"
-                name="${Icon.delete_small}"
-                @click="${this.handleRemoveFile}"
-                clickable
-              />
-            </div>`;
-          })}
+           ${this.values.map(attachment => {
+             return html` <div class="attachment">
+               <div class="detail name">${truncate(attachment.name, 35)}</div>
+               <div class="detail">(${formatFileSize(attachment.size, 0)})</div>
+               <div class="detail">${formatFileType(attachment.type)}</div>
+               <temba-icon
+                 id="${attachment.uuid}"
+                 name="${Icon.delete_small}"
+                 @click="${this.handleRemoveFile}"
+                 clickable
+               />
+             </div>`;
+           })}
         </div>
         <div class="item uploaders">
-          <div
-            class="drag_and_drop"
+          <div class="drag_and_drop"
             @dragenter="${this.handleDragEnter}"
             @dragover="${this.handleDragOver}"
             @dragleave="${this.handleDragLeave}"
             @drop="${this.handleDrop}"
           >
             <div class="uploader">
-              <input
-                type="file"
-                id="drop_files"
-                multiple
-                @change="${this.handleUploadFiles}"
-              />
-              <label class="button" for="drop_files"
-                >Drag and drop to attach files</label
-              >
+                ${
+                  this.uploading
+                    ? html`<temba-loading units="3" size="12"></temba-loading>`
+                    : html`<input
+                          type="file"
+                          id="drop_files"
+                          multiple
+                          @change="${this.handleUploadFiles}"
+                        />
+                        <label class="upload_button" for="drop_files"
+                          >Drag and drop to attach files</label
+                        >`
+                }
             </div>
           </div>
         </div>
-        <div class="item uploaders">
+        <!--<div class="item uploaders">
           <div class="uploader">
-            <input
-              type="file"
-              id="select_file"
-              @change="${this.handleUploadFile}"
-            />
-            <label class="button" for="select_file">Select a file</label>
+            ${
+              this.uploading
+                ? html`<temba-loading units="3" size="12"></temba-loading>`
+                : html`<input
+                      type="file"
+                      id="select_file"
+                      @change="${this.handleUploadFile}"
+                    />
+                    <label class="upload_button" for="select_file"
+                      >Select a file</label
+                    >`
+            }
           </div>
-        </div>
+        </div>--!>
       </div>
     `;
   }
