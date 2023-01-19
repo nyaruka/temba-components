@@ -15,7 +15,7 @@ const getAttachments = async (attrs: any = {}, width = 0) => {
   )) as Attachments;
 
   // return right away if we don't have an endpoint
-  if (!attachments.endpoint) {
+  if (!attachments.upload_endpoint) {
     return attachments;
   }
 
@@ -35,6 +35,6 @@ describe('temba-content-menu', () => {
   it('can initially be created without endpoint', async () => {
     const attachments: Attachments = await getAttachments();
     assert.instanceOf(attachments, Attachments);
-    expect(attachments.endpoint).is.undefined;
+    expect(attachments.upload_endpoint).is.undefined;
   });
 });
