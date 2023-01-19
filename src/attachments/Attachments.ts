@@ -25,8 +25,8 @@ export class Attachments extends FormElement {
     return css`
       .container {
         display: flex;
-        flex-direction: row;
-        height: 200px;
+        flex-direction: column;
+        height: 300px;
       }
 
       .item {
@@ -37,6 +37,8 @@ export class Attachments extends FormElement {
       }
 
       .attachments {
+        overflow-y: auto;
+
         display: flex;
         flex-direction: column;
       }
@@ -66,6 +68,8 @@ export class Attachments extends FormElement {
       }
 
       .uploaders {
+        flex: 2;
+
         display: flex;
       }
       .drag_and_drop {
@@ -85,30 +89,27 @@ export class Attachments extends FormElement {
         flex: 1;
 
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
       }
-      .upload_button {
-        display: inline-block;
-        padding: 10px;
-        background: var(--color-button-primary);
-        background-image: var(--button-bg-img);
-        color: var(--color-button-primary-text);
-        box-shadow: var(--button-shadow);
-        cursor: pointer;
-        border-radius: var(--curvature);
-        font-family: var(--font-family);
-        font-weight: 400;
-        transition: all 100ms ease-in;
-        // margin: 0.5em;
-      }
-      .upload_button:hover {
-        background: var(--color-button-primary);
-      }
-
-      #select_file,
-      #drop_files {
+      #drop_files,
+      #select_file {
         display: none;
+      }
+      .upload_button {
+        --button-y: 0.4em;
+        --button-x: 1em;
+      }
+      .help-text {
+        font-size: var(--help-text-size);
+        line-height: normal;
+        color: var(--color-text-help);
+        margin-left: var(--help-text-margin-left);
+        margin-top: -16px;
+        opacity: 0;
+        transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
+        pointer-events: none;
       }
     `;
   }
@@ -208,6 +209,14 @@ export class Attachments extends FormElement {
     evt.stopPropagation();
   }
 
+  private handleUploadClicked(evt: Event): void {
+    console.log('handleUploadClicked evt', evt);
+    const input = this.shadowRoot.querySelector(
+      '#drop_files'
+    ) as HTMLInputElement;
+    this.dispatchEvent(new Event('change'));
+  }
+
   private handleUploadFiles(evt: Event): void {
     console.log('handleUploadFiles evt', evt);
     const target = evt.target as HTMLInputElement;
@@ -219,14 +228,6 @@ export class Attachments extends FormElement {
   private uploadFiles(files: FileList): void {
     console.log('uploadFiles files', files);
     [...files].map(file => this.uploadFile(file));
-  }
-
-  private handleUploadFile(evt: Event): void {
-    console.log('handleUploadFile evt', evt);
-    const target = evt.target as HTMLInputElement;
-    const file = target.files[0];
-    console.log('handleUploadFile file', file);
-    this.uploadFile(file);
   }
 
   private uploadFile(file: File): void {
@@ -324,61 +325,56 @@ export class Attachments extends FormElement {
   public render(): TemplateResult {
     return html`
       <div class="container">
-        <div class="item attachments">
-           ${this.values.map(attachment => {
-             return html` <div class="attachment">
-               <div class="detail name">${truncate(attachment.name, 35)}</div>
-               <div class="detail">(${formatFileSize(attachment.size, 0)})</div>
-               <div class="detail">${formatFileType(attachment.type)}</div>
-               <temba-icon
-                 id="${attachment.uuid}"
-                 name="${Icon.delete_small}"
-                 @click="${this.handleRemoveFile}"
-                 clickable
-               />
-             </div>`;
-           })}
-        </div>
         <div class="item uploaders">
-          <div class="drag_and_drop"
+          <div
+            class="drag_and_drop"
             @dragenter="${this.handleDragEnter}"
             @dragover="${this.handleDragOver}"
             @dragleave="${this.handleDragLeave}"
             @drop="${this.handleDrop}"
           >
             <div class="uploader">
-                ${
-                  this.uploading
-                    ? html`<temba-loading units="3" size="12"></temba-loading>`
-                    : html`<input
-                          type="file"
-                          id="drop_files"
-                          multiple
-                          @change="${this.handleUploadFiles}"
-                        />
-                        <label class="upload_button" for="drop_files"
-                          >Drag and drop to attach files</label
-                        >`
-                }
+              ${this.uploading
+                ? html`<temba-loading units="3" size="12"></temba-loading>`
+                : html` <input
+                      type="file"
+                      id="drop_files"
+                      multiple
+                      @change="${this.handleUploadFiles}"
+                    />
+                    <label for="drop_files">
+                      <temba-button
+                        class="upload_button"
+                        name="Select files to attach"
+                        @click="${this.handleUploadClicked}"
+                      >
+                      </temba-button>
+                    </label>
+                    <div class="help_text">Drag and drop files to attach</div>`}
             </div>
           </div>
         </div>
-        <!--<div class="item uploaders">
-          <div class="uploader">
-            ${
-              this.uploading
-                ? html`<temba-loading units="3" size="12"></temba-loading>`
-                : html`<input
-                      type="file"
-                      id="select_file"
-                      @change="${this.handleUploadFile}"
-                    />
-                    <label class="upload_button" for="select_file"
-                      >Select a file</label
-                    >`
-            }
-          </div>
-        </div>--!>
+        ${this.values.length > 0
+          ? html`<div class="item attachments">
+              ${this.values.map(attachment => {
+                return html` <div class="attachment">
+                  <div class="detail name">
+                    ${truncate(attachment.name, 35)}
+                  </div>
+                  <div class="detail">
+                    (${formatFileSize(attachment.size, 0)})
+                  </div>
+                  <div class="detail">${formatFileType(attachment.type)}</div>
+                  <temba-icon
+                    id="${attachment.uuid}"
+                    name="${Icon.delete_small}"
+                    @click="${this.handleRemoveFile}"
+                    clickable
+                  />
+                </div>`;
+              })}
+            </div>`
+          : null}
       </div>
     `;
   }
