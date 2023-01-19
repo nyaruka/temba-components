@@ -17,7 +17,7 @@
     "inlineSources": true,
     "rootDir": "./",
     "declaration": false,
-    "noEmit": false
+    "noEmit": false,
   },
   "include": ["**/*.ts"]
 }
