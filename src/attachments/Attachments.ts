@@ -7,17 +7,18 @@ import {
   formatFileSize,
   formatFileType,
   getUrl,
-  // postUrl,
+  postFormData,
   truncate,
   WebResponse,
 } from '../utils';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface Attachment {
   uuid: string;
+  content_type: string;
+  type: string; //deprecated
+  url: string;
   name: string;
   size: number;
-  type: string;
 }
 
 export class Attachments extends FormElement {
@@ -114,9 +115,11 @@ export class Attachments extends FormElement {
     `;
   }
 
-  // endpoint = "/msgmedia/upload/"
   @property({ type: String })
-  endpoint: string;
+  list_endpoint: string;
+
+  @property({ type: String })
+  upload_endpoint: string;
 
   @property({ type: Boolean })
   uploading: boolean;
@@ -126,13 +129,17 @@ export class Attachments extends FormElement {
   }
 
   private fetchAttachments(): void {
-    const url = this.endpoint;
-    if (url) {
+    let url = this.list_endpoint;
+
+    // todo add uuids to the request
+    const uuids = this.values.map(({ uuid }) => uuid);
+    url += '?uuid=' + uuids.join(',');
+
+    if (url && uuids.length > 0) {
       const headers = {};
       getUrl(url, null, headers)
         .then((response: WebResponse) => {
-          const json = response.json;
-          const attachments = json.items as Attachment[];
+          const attachments = response.json as Attachment[];
 
           //populate (or initialize) the attachments
           if (attachments) {
@@ -161,8 +168,11 @@ export class Attachments extends FormElement {
     console.log('changes', changes);
 
     // todo
-    // if (changes.has('endpoint')) {
-    //     this.fetchAttachments();
+    // if (changes.has('list_endpoint')) {
+    // }
+    // if (changes.has('upload_endpoint')) {
+    // }
+    // if(changes.has('values')){
     // }
   }
 
@@ -209,22 +219,25 @@ export class Attachments extends FormElement {
     evt.stopPropagation();
   }
 
-  private handleUploadClicked(evt: Event): void {
-    console.log('handleUploadClicked evt', evt);
+  // handles when files are selected manually
+  private handleUploadFileClicked(evt: Event): void {
+    console.log('handleUploadFileClicked evt', evt);
     const input = this.shadowRoot.querySelector(
       '#drop_files'
     ) as HTMLInputElement;
     this.dispatchEvent(new Event('change'));
   }
 
-  private handleUploadFiles(evt: Event): void {
-    console.log('handleUploadFiles evt', evt);
+  // handles when files are selected manually
+  private handleUploadFileChanged(evt: Event): void {
+    console.log('handleUploadFileChanged evt', evt);
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     console.log('handleUploadFiles files', files);
     [...files].map(file => this.uploadFile(file));
   }
 
+  // handles when files are dragged and dropped
   private uploadFiles(files: FileList): void {
     console.log('uploadFiles files', files);
     [...files].map(file => this.uploadFile(file));
@@ -234,92 +247,39 @@ export class Attachments extends FormElement {
     console.log('uploadFile file', file);
     this.uploading = true;
 
-    window.setTimeout(() => {
-      const attachment = {
-        uuid: uuidv4(),
-        name: file.name,
-        type: file.type,
-        size: file.size,
-      } as Attachment;
-      console.log('attachment', attachment);
-      this.addValue(attachment);
-      console.log('values', this.values);
-      this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-      this.uploading = false;
-    }, 1000);
+    const url = this.upload_endpoint;
+    const payload = new FormData();
+    payload.append('file', file);
 
-    // const attachment = {
-    //     uuid: uuidv4(),
-    //     name: file.name,
-    //     type: file.type,
-    //     size: file.size,
-    //   } as Attachment;
-    // console.log('attachment', attachment);
-    // this.addValue(attachment);
-    // console.log('values', this.values);
-    // this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-    // this.uploading = false;
-
-    // todo upload file to RP endpoint
-    // const url = "/msgmedia/upload/";
-    // const payload = new FormData();
-    // payload.append('file', file);
-    // const csrf = this.getCookie('csrftoken');
-    // const headers: any = csrf ? { 'X-CSRFToken': csrf } : {};
-    // // mark us as ajax
-    // headers['X-Requested-With'] = 'XMLHttpRequest';
-    // postUrl(url, payload, headers, file.type)
-    //     .then((response: WebResponse) => {
-    //         console.log(response);
-    //         this.uploading = false;
-    //         const json = response.json;
-    //         const uploadedAttachment = json.items[0] as Attachment;
-    //         if (uploadedAttachment) {
-    //             const attachment = {
-    //                 uuid: uploadedAttachment.uuid,
-    //                 name: file.name,
-    //                 type: file.type,
-    //                 size: file.size,
-    //             } as Attachment;
-    //             console.log('attachment', attachment);
-    //             this.addValue(attachment);
-    //             console.log('values', this.values);
-    //             this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-    //         }
-    //     })
-    //     .catch((error: any) => {
-    //         console.error(error);
-    //         this.uploading = false;
-    //     });
+    postFormData(url, payload)
+      .then((response: WebResponse) => {
+        console.log(response);
+        this.uploading = false;
+        const json = response.json;
+        console.log(json);
+        const attachment = json as Attachment;
+        if (attachment) {
+          console.log('attachment', attachment);
+          this.addValue(attachment);
+          console.log('values', this.values);
+          this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+        }
+      })
+      .catch((error: any) => {
+        console.error(error);
+        this.uploading = false;
+      });
   }
 
-  //   private getCookie(name: string): string {
-  //     for (const cookie of document.cookie.split(';')) {
-  //       const idx = cookie.indexOf('=');
-  //       let key = cookie.substr(0, idx);
-  //       let value = cookie.substr(idx + 1);
-
-  //       // no spaces allowed
-  //       key = key.trim();
-  //       value = value.trim();
-
-  //       if (key === name) {
-  //         return value;
-  //       }
-  //     }
-  //     return null;
-  //   };
-
-  private handleRemoveFile(evt: Event): void {
+  private handleRemoveAttachment(evt: Event): void {
     console.log('handleRemoveFile evt', evt);
     const target = evt.target as HTMLDivElement;
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
     console.log('handleRemoveFile attachment', attachment);
+    // todo confirm whether we need to remove attachment from RP endpoint
     this.removeValue(attachment);
     console.log('values', this.values);
     this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-
-    // todo remove file from RP endpoint
   }
 
   public render(): TemplateResult {
@@ -340,13 +300,13 @@ export class Attachments extends FormElement {
                       type="file"
                       id="drop_files"
                       multiple
-                      @change="${this.handleUploadFiles}"
+                      @change="${this.handleUploadFileChanged}"
                     />
                     <label for="drop_files">
                       <temba-button
                         class="upload_button"
                         name="Select files to attach"
-                        @click="${this.handleUploadClicked}"
+                        @click="${this.handleUploadFileClicked}"
                       >
                       </temba-button>
                     </label>
@@ -368,7 +328,7 @@ export class Attachments extends FormElement {
                   <temba-icon
                     id="${attachment.uuid}"
                     name="${Icon.delete_small}"
-                    @click="${this.handleRemoveFile}"
+                    @click="${this.handleRemoveAttachment}"
                     clickable
                   />
                 </div>`;
