@@ -102,15 +102,10 @@ export class Attachments extends FormElement {
         --button-y: 0.4em;
         --button-x: 1em;
       }
-      .help-text {
-        font-size: var(--help-text-size);
-        line-height: normal;
+      .help_text {
         color: var(--color-text-help);
-        margin-left: var(--help-text-margin-left);
-        margin-top: -16px;
-        opacity: 0;
-        transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
-        pointer-events: none;
+        font-size: var(--help-text-size);
+        margin-top: 5px;
       }
     `;
   }
