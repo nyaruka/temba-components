@@ -94,15 +94,14 @@ export class Attachments extends FormElement {
         justify-content: center;
         align-items: center;
       }
-      #drop_files,
-      #select_file {
+      #upload_files {
         display: none;
       }
       .upload_button {
         --button-y: 0.4em;
         --button-x: 1em;
       }
-      .help_text {
+      .upload_text {
         color: var(--color-text-help);
         font-size: var(--help-text-size);
         margin-top: 5px;
@@ -218,7 +217,7 @@ export class Attachments extends FormElement {
   private handleUploadFileClicked(evt: Event): void {
     console.log('handleUploadFileClicked evt', evt);
     const input = this.shadowRoot.querySelector(
-      '#drop_files'
+      '#upload_files'
     ) as HTMLInputElement;
     this.dispatchEvent(new Event('change'));
   }
@@ -293,11 +292,11 @@ export class Attachments extends FormElement {
                 ? html`<temba-loading units="3" size="12"></temba-loading>`
                 : html` <input
                       type="file"
-                      id="drop_files"
+                      id="upload_files"
                       multiple
                       @change="${this.handleUploadFileChanged}"
                     />
-                    <label for="drop_files">
+                    <label for="upload_files">
                       <temba-button
                         class="upload_button"
                         name="Select files to attach"
@@ -305,7 +304,9 @@ export class Attachments extends FormElement {
                       >
                       </temba-button>
                     </label>
-                    <div class="help_text">Drag and drop files to attach</div>`}
+                    <div class="upload_text">
+                      Drag and drop files to attach
+                    </div>`}
             </div>
           </div>
         </div>
