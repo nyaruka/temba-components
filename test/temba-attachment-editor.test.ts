@@ -1,9 +1,9 @@
 import { assert, expect } from '@open-wc/testing';
 import { CustomEventType } from '../src/interfaces';
-import { Attachments } from '../src/attachments/Attachments';
+import { AttachmentEditor } from '../src/attachments/AttachmentEditor';
 import { getComponent } from './utils.test';
 
-const TAG = 'temba-attachments';
+const TAG = 'temba-attachment-editor';
 const getAttachments = async (attrs: any = {}, width = 0) => {
   const attachments = (await getComponent(
     TAG,
@@ -12,7 +12,7 @@ const getAttachments = async (attrs: any = {}, width = 0) => {
     width,
     0,
     'display:inline-block'
-  )) as Attachments;
+  )) as AttachmentEditor;
 
   // return right away if we don't have an endpoint
   if (!attachments.upload_endpoint) {
@@ -20,7 +20,7 @@ const getAttachments = async (attrs: any = {}, width = 0) => {
   }
 
   // if we have an endpoint, wait for a loaded event before returning
-  return new Promise<Attachments>(resolve => {
+  return new Promise<AttachmentEditor>(resolve => {
     attachments.addEventListener(
       CustomEventType.Loaded,
       async () => {
@@ -31,10 +31,10 @@ const getAttachments = async (attrs: any = {}, width = 0) => {
   });
 };
 
-describe('temba-content-menu', () => {
+describe('temba-attachment-editor', () => {
   it('can initially be created without endpoint', async () => {
-    const attachments: Attachments = await getAttachments();
-    assert.instanceOf(attachments, Attachments);
+    const attachments: AttachmentEditor = await getAttachments();
+    assert.instanceOf(attachments, AttachmentEditor);
     expect(attachments.upload_endpoint).is.undefined;
   });
 });
