@@ -42,12 +42,12 @@ export class Attachments extends FormElement {
   @property({ type: String })
   upload_endpoint: string;
 
+  @property({})
+  counter: number;
+
   public constructor() {
     super();
-  }
-
-  public refresh(): void {
-    // todo
+    this.counter = 0;
   }
 
   public updated(changes: Map<string, any>): void {
@@ -55,7 +55,7 @@ export class Attachments extends FormElement {
     console.log('changes', changes);
   }
 
-  public handleOpenClicked(): void {
+  public handleIconClicked(): void {
     const attachmentEditor = this.shadowRoot.querySelector(
       '#attachment_editor'
     ) as AttachmentEditor;
@@ -68,10 +68,33 @@ export class Attachments extends FormElement {
     dialog.open = true;
   }
 
+  private handleDialogClicked(evt: CustomEvent) {
+    const button = evt.detail.button;
+    const attachmentEditor = this.shadowRoot.querySelector(
+      '#attachment_editor'
+    ) as AttachmentEditor;
+    this.counter = attachmentEditor.counter;
+
+    if (button.name === 'Ok') {
+      this.counter = attachmentEditor.counter;
+      const dialog = this.shadowRoot.querySelector(
+        '#attachment_editor_dialog'
+      ) as Dialog;
+      dialog.open = false;
+    }
+
+    if (button.name === 'Cancel') {
+      // clear out attachments list and reset the counter?
+    }
+  }
+
   public render(): TemplateResult {
     return html`
       <div class="container">
-        <temba-dialog id="attachment_editor_dialog">
+        <temba-dialog
+          id="attachment_editor_dialog"
+          @temba-button-clicked=${this.handleDialogClicked.bind(this)}
+        >
           <temba-attachment-editor id="attachment_editor">
           </temba-attachment-editor>
         </temba-dialog>
@@ -79,11 +102,11 @@ export class Attachments extends FormElement {
           <temba-icon
             class="attachment_icon"
             name="${Icon.attachment}"
-            @click="${this.handleOpenClicked}"
+            @click="${this.handleIconClicked}"
             clickable
           >
           </temba-icon>
-          <div class="attachment_counter">4</div>
+          <div class="attachment_counter">${this.counter}</div>
         </div>
       </div>
     `;

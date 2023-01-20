@@ -113,6 +113,9 @@ export class AttachmentEditor extends FormElement {
   @property({ type: Boolean })
   uploading: boolean;
 
+  @property({ type: Number })
+  counter: number;
+
   public constructor() {
     super();
   }
@@ -254,6 +257,7 @@ export class AttachmentEditor extends FormElement {
         if (attachment) {
           console.log('attachment', attachment);
           this.addValue(attachment);
+          this.counter = this.values.length;
           console.log('values', this.values);
           this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
         }
@@ -273,6 +277,7 @@ export class AttachmentEditor extends FormElement {
     console.log('handleRemoveFile attachment', attachment);
     // todo confirm whether we need to remove attachment from RP endpoint
     this.removeValue(attachment);
+    this.counter = this.values.length;
     console.log('values', this.values);
     this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
   }
