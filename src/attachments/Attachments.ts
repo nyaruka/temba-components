@@ -18,6 +18,7 @@ export class Attachments extends FormElement {
       }
       .attachment_icon {
         color: #404040;
+        margin-top: 5px;
         padding: 20px 20px;
         border: 1px solid #d9d9d9;
         border-radius: var(--curvature);
