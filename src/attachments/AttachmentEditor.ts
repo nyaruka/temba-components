@@ -6,7 +6,7 @@ import { CustomEventType } from '../interfaces';
 import {
   formatFileSize,
   formatFileType,
-  getUrl,
+  // getUrl,
   postFormData,
   truncate,
   WebResponse,
@@ -30,7 +30,7 @@ export class AttachmentEditor extends FormElement {
         height: 300px;
       }
 
-      .item {
+      .items {
         border: 1px solid #ccc;
         border-radius: var(--curvature);
         flex: 1;
@@ -45,9 +45,6 @@ export class AttachmentEditor extends FormElement {
       }
       .attachment {
         background: rgba(0, 0, 0, 0.05);
-        // border: 1px solid rgba(237, 237, 237, 1);
-        // border-radius: var(--curvature);
-        // color: rgb(102, 102, 102);
         color: rgb(26, 26, 26);
         font-family: var(--font-family);
         font-size: var(--font-size);
@@ -58,8 +55,6 @@ export class AttachmentEditor extends FormElement {
       }
       .attachment:hover {
         background: rgba(0, 0, 0, 0.1);
-        // border-radius: var(--curvature);
-        // color: rgb(136, 136, 136);
       }
       .detail {
         flex: 1;
@@ -122,40 +117,40 @@ export class AttachmentEditor extends FormElement {
     super();
   }
 
-  private fetchAttachments(): void {
-    let url = this.list_endpoint;
+  // private fetchAttachments(): void {
+  //   let url = this.list_endpoint;
 
-    // todo add uuids to the request
-    const uuids = this.values.map(({ uuid }) => uuid);
-    url += '?uuid=' + uuids.join(',');
+  //   // todo add uuids to the request
+  //   const uuids = this.values.map(({ uuid }) => uuid);
+  //   url += '?uuid=' + uuids.join(',');
 
-    if (url && uuids.length > 0) {
-      const headers = {};
-      getUrl(url, null, headers)
-        .then((response: WebResponse) => {
-          const attachments = response.json as Attachment[];
+  //   if (url && uuids.length > 0) {
+  //     const headers = {};
+  //     getUrl(url, null, headers)
+  //       .then((response: WebResponse) => {
+  //         const attachments = response.json as Attachment[];
 
-          //populate (or initialize) the attachments
-          if (attachments) {
-            this.setValues(attachments);
-          } else {
-            this.setValues([]);
-          }
+  //         //populate (or initialize) the attachments
+  //         if (attachments) {
+  //           this.setValues(attachments);
+  //         } else {
+  //           this.setValues([]);
+  //         }
 
-          //fire custom loaded event type when we're finished
-          this.fireCustomEvent(CustomEventType.Loaded, {
-            values: this.values,
-          });
-        })
-        .catch((error: any) => {
-          console.error(error);
-        });
-    }
-  }
+  //         //fire custom loaded event type when we're finished
+  //         this.fireCustomEvent(CustomEventType.Loaded, {
+  //           values: this.values,
+  //         });
+  //       })
+  //       .catch((error: any) => {
+  //         console.error(error);
+  //       });
+  //   }
+  // }
 
-  public refresh(): void {
-    this.fetchAttachments();
-  }
+  // public refresh(): void {
+  //   this.fetchAttachments();
+  // }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
@@ -212,9 +207,6 @@ export class AttachmentEditor extends FormElement {
   // handles when files are selected manually
   private handleUploadFileClicked(evt: Event): void {
     console.log('handleUploadFileClicked evt', evt);
-    const input = this.shadowRoot.querySelector(
-      '#upload_files'
-    ) as HTMLInputElement;
     this.dispatchEvent(new Event('change'));
   }
 
@@ -237,41 +229,41 @@ export class AttachmentEditor extends FormElement {
     console.log('uploadFile file', file);
     this.uploading = true;
 
-    const attachment = {
-      uuid: Math.random().toString(36).slice(2, 6),
-      content_type: file.type,
-      type: file.type,
-      name: file.name,
-      url: file.name,
-      size: file.size,
-    };
-    console.log('attachment', attachment);
-    this.addValue(attachment);
-    console.log('values', this.values);
-    this.uploading = false;
+    // const attachment = {
+    //   uuid: Math.random().toString(36).slice(2, 6),
+    //   content_type: file.type,
+    //   type: file.type,
+    //   name: file.name,
+    //   url: file.name,
+    //   size: file.size,
+    // };
+    // console.log('attachment', attachment);
+    // this.addValue(attachment);
+    // console.log('values', this.values);
+    // this.uploading = false;
 
-    // const url = this.upload_endpoint;
-    // const payload = new FormData();
-    // payload.append('file', file);
-    // postFormData(url, payload)
-    //   .then((response: WebResponse) => {
-    //     console.log(response);
-    //     const json = response.json;
-    //     console.log(json);
-    //     const attachment = json as Attachment;
-    //     if (attachment) {
-    //       console.log('attachment', attachment);
-    //       this.addValue(attachment);
-    //       console.log('values', this.values);
-    //       this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-    //     }
-    //   })
-    //   .catch((error: any) => {
-    //     console.error(error);
-    //   })
-    //   .finally(() => {
-    //     this.uploading = false;
-    //   });
+    const url = this.upload_endpoint;
+    const payload = new FormData();
+    payload.append('file', file);
+    postFormData(url, payload)
+      .then((response: WebResponse) => {
+        console.log(response);
+        const json = response.json;
+        console.log(json);
+        const attachment = json as Attachment;
+        if (attachment) {
+          console.log('attachment', attachment);
+          this.addValue(attachment);
+          console.log('values', this.values);
+          this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+        }
+      })
+      .catch((error: any) => {
+        console.error(error);
+      })
+      .finally(() => {
+        this.uploading = false;
+      });
   }
 
   private handleRemoveAttachment(evt: Event): void {
@@ -288,7 +280,7 @@ export class AttachmentEditor extends FormElement {
   public render(): TemplateResult {
     return html`
       <div class="container">
-        <div class="item uploaders">
+        <div class="items uploaders">
           <div
             class="drag_and_drop"
             @dragenter="${this.handleDragEnter}"
@@ -320,7 +312,7 @@ export class AttachmentEditor extends FormElement {
           </div>
         </div>
         ${this.values.length > 0
-          ? html`<div class="item attachments">
+          ? html`<div class="items attachments">
               ${this.values.map(attachment => {
                 return html` <div class="attachment">
                   <div class="detail name">
