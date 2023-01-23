@@ -175,6 +175,7 @@ export class AttachmentEditor extends FormElement {
     this.counter = 0;
   }
 
+  // todo confirm whether we need to fetch attachments from the RP server
   // private fetchAttachments(): void {
   //   let url = this.list_endpoint;
 
@@ -206,17 +207,9 @@ export class AttachmentEditor extends FormElement {
   //   }
   // }
 
-  // public refresh(): void {
-  //   this.fetchAttachments();
-  // }
-
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
     console.log('changes', changes);
-
-    if (changes.has('values')) {
-      // todo
-    }
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -287,43 +280,44 @@ export class AttachmentEditor extends FormElement {
     console.log('uploadFile file', file);
     this.uploading = true;
 
-    const attachment = {
-      uuid: Math.random().toString(36).slice(2, 6),
-      content_type: file.type,
-      type: file.type,
-      name: file.name,
-      url: file.name,
-      size: file.size,
-    };
-    console.log('attachment', attachment);
-    this.addValue(attachment);
-    this.counter = this.values.length;
-    console.log('values', this.values);
-    this.uploading = false;
+    // todo remove for final PR
+    // const attachment = {
+    //   uuid: Math.random().toString(36).slice(2, 6),
+    //   content_type: file.type,
+    //   type: file.type,
+    //   name: file.name,
+    //   url: file.name,
+    //   size: file.size,
+    // };
+    // console.log('attachment', attachment);
+    // this.addValue(attachment);
+    // this.counter = this.values.length;
+    // console.log('values', this.values);
+    // this.uploading = false;
 
-    // const url = this.upload_endpoint;
-    // const payload = new FormData();
-    // payload.append('file', file);
-    // postFormData(url, payload)
-    //   .then((response: WebResponse) => {
-    //     console.log(response);
-    //     const json = response.json;
-    //     console.log(json);
-    //     const attachment = json as Attachment;
-    //     if (attachment) {
-    //       console.log('attachment', attachment);
-    //       this.addValue(attachment);
-    //       this.counter = this.values.length;
-    //       console.log('values', this.values);
-    //       this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-    //     }
-    //   })
-    //   .catch((error: any) => {
-    //     console.error(error);
-    //   })
-    //   .finally(() => {
-    //     this.uploading = false;
-    //   });
+    const url = this.upload_endpoint;
+    const payload = new FormData();
+    payload.append('file', file);
+    postFormData(url, payload)
+      .then((response: WebResponse) => {
+        console.log(response);
+        const json = response.json;
+        console.log(json);
+        const attachment = json as Attachment;
+        if (attachment) {
+          console.log('attachment', attachment);
+          this.addValue(attachment);
+          this.counter = this.values.length;
+          console.log('values', this.values);
+          this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+        }
+      })
+      .catch((error: any) => {
+        console.error(error);
+      })
+      .finally(() => {
+        this.uploading = false;
+      });
   }
 
   private handleRemoveAttachment(evt: Event): void {
@@ -331,7 +325,7 @@ export class AttachmentEditor extends FormElement {
     const target = evt.target as HTMLDivElement;
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
     console.log('handleRemoveFile attachment', attachment);
-    // todo confirm whether we need to remove attachment from RP endpoint
+    // todo confirm whether we need to remove attachment from the RP server
     this.removeValue(attachment);
     this.counter = this.values.length;
     console.log('values', this.values);
@@ -372,30 +366,30 @@ export class AttachmentEditor extends FormElement {
             </div>
           </div>
         </div>
-        ${this.values.length > 0 ? this.getNewAttachmentList() : null}
+        ${this.values.length > 0 ? this.getAttachmentList() : null}
       </div>
     `;
   }
 
-  private getOldAttachmentList(): TemplateResult {
-    return html` <div class="items attachments">
-      ${this.values.map(attachment => {
-        return html` <div class="attachment">
-          <div class="detail name">${truncate(attachment.name, 35)}</div>
-          <div class="detail">(${formatFileSize(attachment.size, 0)})</div>
-          <div class="detail">${formatFileType(attachment.type)}</div>
-          <temba-icon
-            id="${attachment.uuid}"
-            name="${Icon.delete_small}"
-            @click="${this.handleRemoveAttachment}"
-            clickable
-          />
-        </div>`;
-      })}
-    </div>`;
-  }
+  // private getAttachmentList(): TemplateResult {
+  //   return html` <div class="items attachments">
+  //     ${this.values.map(attachment => {
+  //       return html` <div class="attachment">
+  //         <div class="detail name">${truncate(attachment.name, 35)}</div>
+  //         <div class="detail">(${formatFileSize(attachment.size, 0)})</div>
+  //         <div class="detail">${formatFileType(attachment.type)}</div>
+  //         <temba-icon
+  //           id="${attachment.uuid}"
+  //           name="${Icon.delete_small}"
+  //           @click="${this.handleRemoveAttachment}"
+  //           clickable
+  //         />
+  //       </div>`;
+  //     })}
+  //   </div>`;
+  // }
 
-  private getNewAttachmentList(): TemplateResult {
+  private getAttachmentList(): TemplateResult {
     return html`
       <div class="items attachments">
         <div class="select-container">
@@ -415,7 +409,7 @@ export class AttachmentEditor extends FormElement {
                     <span
                       title="${attachment.name} (${formatFileSize(
                         attachment.size,
-                        0
+                        2
                       )}) ${attachment.type}"
                       >${truncate(attachment.name, 25)}
                       (${formatFileSize(attachment.size, 0)})

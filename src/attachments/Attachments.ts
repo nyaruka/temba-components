@@ -18,14 +18,14 @@ export class Attachments extends FormElement {
         align-items: baseline;
       }
       .attachment_icon {
+        background: var(--color-widget-bg);
+        border: 1px solid var(--color-widget-border);
         color: rgb(170, 170, 170);
         padding: 20px 20px;
-        border: 1px solid rgb(240, 240, 240);
         border-radius: var(--curvature);
-        // box-shadow: rgb(0 0 0 / 7%) 2px 1px 3px 2px;
       }
       .attachment_icon:hover {
-        background: rgb(240, 240, 240);
+        background-color: rgb(240, 240, 240);
         color: #000;
         color: rgb(102, 102, 102);
         cursor: pointer;
