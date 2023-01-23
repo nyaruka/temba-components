@@ -101,6 +101,60 @@ export class AttachmentEditor extends FormElement {
         font-size: var(--help-text-size);
         margin-top: 5px;
       }
+
+      .select-container {
+        display: flex;
+        flex-flow: row nowrap;
+        align-items: center;
+        // border: 1px solid var(--color-widget-border);
+        transition: all ease-in-out var(--transition-speed);
+        cursor: pointer;
+        border-radius: var(--curvature-widget);
+        background: var(--color-widget-bg);
+        padding-top: 1px;
+        box-shadow: var(--widget-shadow);
+        position: relative;
+        z-index: 2;
+      }
+      .selected {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: stretch;
+        user-select: none;
+        padding: 0.25em;
+      }
+      .selected-item {
+        vertical-align: middle;
+        background: rgba(100, 100, 100, 0.1);
+        user-select: none;
+        border-radius: 2px;
+        align-items: stretch;
+        flex-flow: row nowrap;
+        margin: 2px;
+        display: flex;
+        overflow: hidden;
+        color: var(--color-widget-text);
+        line-height: var(--temba-select-selected-line-height);
+        --icon-color: var(--color-text-dark);
+      }
+      .remove-item {
+        cursor: pointer;
+        display: inline-block;
+        padding: 3px 6px;
+        border-right: 1px solid rgba(100, 100, 100, 0.2);
+        margin: 0px;
+        background: rgba(100, 100, 100, 0.05);
+      }
+      .option-name {
+        flex: 1 1 auto;
+        align-self: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        padding: 2px 8px;
+      }
     `;
   }
 
@@ -233,42 +287,43 @@ export class AttachmentEditor extends FormElement {
     console.log('uploadFile file', file);
     this.uploading = true;
 
-    // const attachment = {
-    //   uuid: Math.random().toString(36).slice(2, 6),
-    //   content_type: file.type,
-    //   type: file.type,
-    //   name: file.name,
-    //   url: file.name,
-    //   size: file.size,
-    // };
-    // console.log('attachment', attachment);
-    // this.addValue(attachment);
-    // console.log('values', this.values);
-    // this.uploading = false;
+    const attachment = {
+      uuid: Math.random().toString(36).slice(2, 6),
+      content_type: file.type,
+      type: file.type,
+      name: file.name,
+      url: file.name,
+      size: file.size,
+    };
+    console.log('attachment', attachment);
+    this.addValue(attachment);
+    this.counter = this.values.length;
+    console.log('values', this.values);
+    this.uploading = false;
 
-    const url = this.upload_endpoint;
-    const payload = new FormData();
-    payload.append('file', file);
-    postFormData(url, payload)
-      .then((response: WebResponse) => {
-        console.log(response);
-        const json = response.json;
-        console.log(json);
-        const attachment = json as Attachment;
-        if (attachment) {
-          console.log('attachment', attachment);
-          this.addValue(attachment);
-          this.counter = this.values.length;
-          console.log('values', this.values);
-          this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-        }
-      })
-      .catch((error: any) => {
-        console.error(error);
-      })
-      .finally(() => {
-        this.uploading = false;
-      });
+    // const url = this.upload_endpoint;
+    // const payload = new FormData();
+    // payload.append('file', file);
+    // postFormData(url, payload)
+    //   .then((response: WebResponse) => {
+    //     console.log(response);
+    //     const json = response.json;
+    //     console.log(json);
+    //     const attachment = json as Attachment;
+    //     if (attachment) {
+    //       console.log('attachment', attachment);
+    //       this.addValue(attachment);
+    //       this.counter = this.values.length;
+    //       console.log('values', this.values);
+    //       this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+    //     }
+    //   })
+    //   .catch((error: any) => {
+    //     console.error(error);
+    //   })
+    //   .finally(() => {
+    //     this.uploading = false;
+    //   });
   }
 
   private handleRemoveAttachment(evt: Event): void {
@@ -317,27 +372,61 @@ export class AttachmentEditor extends FormElement {
             </div>
           </div>
         </div>
-        ${this.values.length > 0
-          ? html`<div class="items attachments">
+        ${this.values.length > 0 ? this.getNewAttachmentList() : null}
+      </div>
+    `;
+  }
+
+  private getOldAttachmentList(): TemplateResult {
+    return html` <div class="items attachments">
+      ${this.values.map(attachment => {
+        return html` <div class="attachment">
+          <div class="detail name">${truncate(attachment.name, 35)}</div>
+          <div class="detail">(${formatFileSize(attachment.size, 0)})</div>
+          <div class="detail">${formatFileType(attachment.type)}</div>
+          <temba-icon
+            id="${attachment.uuid}"
+            name="${Icon.delete_small}"
+            @click="${this.handleRemoveAttachment}"
+            clickable
+          />
+        </div>`;
+      })}
+    </div>`;
+  }
+
+  private getNewAttachmentList(): TemplateResult {
+    return html`
+      <div class="items attachments">
+        <div class="select-container">
+          <div class="left-side">
+            <div class="selected">
               ${this.values.map(attachment => {
-                return html` <div class="attachment">
-                  <div class="detail name">
-                    ${truncate(attachment.name, 35)}
+                return html` <div class="selected-item">
+                  <div class="remove-item" style="margin-top:1px">
+                    <temba-icon
+                      id="${attachment.uuid}"
+                      name="${Icon.delete_small}"
+                      @click="${this.handleRemoveAttachment}"
+                      clickable
+                    ></temba-icon>
                   </div>
-                  <div class="detail">
-                    (${formatFileSize(attachment.size, 0)})
+                  <div class="option-name" style="display:flex">
+                    <span
+                      title="${attachment.name} (${formatFileSize(
+                        attachment.size,
+                        0
+                      )}) ${attachment.type}"
+                      >${truncate(attachment.name, 25)}
+                      (${formatFileSize(attachment.size, 0)})
+                      ${formatFileType(attachment.type)}</span
+                    >
                   </div>
-                  <div class="detail">${formatFileType(attachment.type)}</div>
-                  <temba-icon
-                    id="${attachment.uuid}"
-                    name="${Icon.delete_small}"
-                    @click="${this.handleRemoveAttachment}"
-                    clickable
-                  />
                 </div>`;
               })}
-            </div>`
-          : null}
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }

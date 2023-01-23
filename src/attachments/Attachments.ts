@@ -15,18 +15,19 @@ export class Attachments extends FormElement {
       .items {
         display: flex;
         flex-direction: row;
-        // align-items: flex-start;
         align-items: baseline;
       }
       .attachment_icon {
-        color: #404040;
+        color: rgb(170, 170, 170);
         padding: 20px 20px;
+        border: 1px solid rgb(240, 240, 240);
         border-radius: var(--curvature);
-        box-shadow: rgb(0 0 0 / 7%) 2px 1px 3px 2px;
+        // box-shadow: rgb(0 0 0 / 7%) 2px 1px 3px 2px;
       }
       .attachment_icon:hover {
-        background: var(--icon-color-circle-hover);
+        background: rgb(240, 240, 240);
         color: #000;
+        color: rgb(102, 102, 102);
         cursor: pointer;
       }
       .attachment_counter {
