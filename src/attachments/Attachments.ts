@@ -14,14 +14,20 @@ export class Attachments extends FormElement {
       }
       .items {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        // align-items: flex-start;
+        align-items: baseline;
       }
       .attachment_icon {
         color: #404040;
-        margin-top: 5px;
         padding: 20px 20px;
-        border: 1px solid #d9d9d9;
         border-radius: var(--curvature);
+        box-shadow: rgb(0 0 0 / 7%) 2px 1px 3px 2px;
+      }
+      .attachment_icon:hover {
+        background: var(--icon-color-circle-hover);
+        color: #000;
+        cursor: pointer;
       }
       .attachment_counter {
         font-size: 10px;
@@ -29,10 +35,9 @@ export class Attachments extends FormElement {
         color: #404040;
         background: #f3f3f3;
         padding: 2px 4px;
-        margin-left: 50px;
-        margin-top: -10px;
         border-radius: 4px;
-        vertical-align: super;
+        margin-left: -7px;
+        margin-top: -7px;
       }
     `;
   }

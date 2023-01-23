@@ -118,6 +118,7 @@ export class AttachmentEditor extends FormElement {
 
   public constructor() {
     super();
+    this.counter = 0;
   }
 
   // private fetchAttachments(): void {
