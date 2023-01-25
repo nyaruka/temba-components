@@ -48,7 +48,7 @@ export class ContactChat extends ContactStoreElement {
 
       .chatbox {
         padding: 1em;
-        background: #f2f2f2;
+        // background: #f2f2f2;
         border-top: 3px solid #e1e1e1;
         display: flex;
         flex-direction: column;
@@ -420,9 +420,11 @@ export class ContactChat extends ContactStoreElement {
             }
           }
         }}
+        placeholder=${'Type something here'}
         textarea
       >
       </temba-completion>
+      <temba-attachment-editor dropzone="chatbox"></temba-attachment-editor>
       <temba-button
         id="send-button"
         name="Send"
