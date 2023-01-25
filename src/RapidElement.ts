@@ -66,14 +66,16 @@ export class RapidElement extends LitElement {
       } else {
         const func = new Function(
           'event',
-          `with(document) {
-          with(this) {
-            let handler = ${ele.getAttribute('-' + event.type)};
-            if(typeof handler === 'function') { 
-              handler(event) ;
+          `
+          with(document) {
+            with(this) {
+              let handler = ${ele.getAttribute('-' + event.type)};
+              if(typeof handler === 'function') { 
+                handler(event);
+              }
             }
           }
-        }`
+        `
         );
         return func.call(ele, event);
       }
