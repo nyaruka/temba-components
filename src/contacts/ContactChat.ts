@@ -40,6 +40,7 @@ export class ContactChat extends ContactStoreElement {
       }
 
       temba-contact-history {
+        border-bottom: 3px solid #e1e1e1;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -49,12 +50,13 @@ export class ContactChat extends ContactStoreElement {
       .chatbox {
         padding: 1em;
         // background: #f2f2f2;
-        border-top: 3px solid #e1e1e1;
+        border-right: 1px solid #e1e1e1;
         display: flex;
         flex-direction: column;
         z-index: 3;
         border-bottom-left-radius: var(--curvature);
         border-bottom-right-radius: var(--curvature);
+        width: 60%;
       }
 
       .chatbox.full {
@@ -424,7 +426,7 @@ export class ContactChat extends ContactStoreElement {
         textarea
       >
       </temba-completion>
-      <temba-attachment-editor dropzone="chatbox"></temba-attachment-editor>
+      <temba-attachment-editor dropzone="chatbox"> </temba-attachment-editor>
       <temba-button
         id="send-button"
         name="Send"

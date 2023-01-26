@@ -15,7 +15,7 @@ const getAttachments = async (attrs: any = {}, width = 0) => {
   )) as AttachmentEditor;
 
   // return right away if we don't have an endpoint
-  if (!attachments.upload_endpoint) {
+  if (!attachments.endpoint) {
     return attachments;
   }
 
@@ -35,6 +35,6 @@ describe('temba-attachment-editor', () => {
   it('can initially be created without endpoint', async () => {
     const attachments: AttachmentEditor = await getAttachments();
     assert.instanceOf(attachments, AttachmentEditor);
-    expect(attachments.upload_endpoint).is.undefined;
+    expect(attachments.endpoint).is.undefined;
   });
 });

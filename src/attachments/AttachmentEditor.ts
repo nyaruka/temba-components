@@ -27,90 +27,28 @@ export class AttachmentEditor extends FormElement {
       .container {
         display: flex;
         flex-direction: column;
-        margin-top: 0.8em;
-        // height: 100px;
+        justify-content: space-between;
       }
-
       .items {
-        // border: 1px solid #ccc;
-        // border-radius: var(--curvature);
-        flex: 1;
-        // margin: 0.5em;
-      }
-
-      .attachments {
-        // height: 100px;
-        // overflow-y: auto;
-
-        display: flex;
-        flex-direction: column;
-      }
-
-      // .attachment {
-      //   background: rgba(0, 0, 0, 0.05);
-      //   color: rgb(26, 26, 26);
-      //   font-family: var(--font-family);
-      //   font-size: var(--font-size);
-      //   padding: 0.3em;
-      //   margin: 0.3em 0.3em 0 0.3em;
-
-      //   display: flex;
-      // }
-      // .attachment:hover {
-      //   background: rgba(0, 0, 0, 0.1);
-      // }
-      // .detail {
-      //   flex: 1;
-      // }
-      // .detail.name {
-      //   flex: 2;
-      // }
-
-      .uploaders {
-        flex: 2;
-
-        display: flex;
-      }
-      .drag-and-drop {
-        // border: 2px dashed #ccc;
-        // border-radius: var(--curvature);
         // flex: 1;
-        // margin: 0.25em;
-
-        // display: flex;
-        // justify-content: center;
-        // align-items: center;
+        margin-top: 0.5em;
       }
-      .highlight {
-        border-color: rgb(var(--primary-rgb));
-        border: 2px dashed #ccc;
-        border-radius: var(--curvature);
-        opacity: 0.5;
-      }
-      .uploader {
-        flex: 1;
-
+      .attachments {
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
+      }
+      .uploaders {
+        // flex: 2;
+        display: flex;
       }
       #upload-files {
         display: none;
       }
-      .upload-icon {
-        position: absolute;
-        bottom: 4.5rem;
+      .upload-error {
+        color: red;
+        font-size: var(--help-text-size);
+        margin-left: 7px;
       }
-      // .upload_button {
-      //   --button-y: 0.4em;
-      //   --button-x: 1em;
-      // }
-      // .upload_text {
-      //   color: var(--color-text-help);
-      //   font-size: var(--help-text-size);
-      //   margin-top: 5px;
-      // }
 
       .select-container {
         display: flex;
@@ -168,30 +106,43 @@ export class AttachmentEditor extends FormElement {
     `;
   }
 
-  @property({ type: String })
-  list_endpoint: string;
+  // @property({ type: String })
+  // list_endpoint: string;
 
   @property({ type: String })
-  upload_endpoint: string;
+  endpoint = '/msgmedia/upload/';
+
+  @property({ type: String })
+  accept: string; //e.g. ".xls,.xlsx"
+
+  @property({ type: String })
+  dropzone: string;
+
+  // @property({ type: Number })
+  // counter: number;
+
+  @property({ type: HTMLDivElement, attribute: false })
+  dropZoneElement: HTMLDivElement;
+
+  @property({ type: Object })
+  dropZoneOriginalStyles: Map<string, string>;
+
+  @property({ type: Object })
+  dropZoneHighlightStyles: Map<string, string>;
 
   @property({ type: Boolean })
   uploading: boolean;
 
   @property({ type: String })
-  accept: string; //".xls,.xlsx"
-
-  @property({ type: Number })
-  counter: number;
-
-  @property({ type: String })
-  dropzone: string;
-
-  @property({ type: HTMLDivElement, attribute: false })
-  dropZoneElement: HTMLDivElement;
+  uploadError: string;
 
   public constructor() {
     super();
-    this.counter = 0;
+    this.dropZoneOriginalStyles = new Map();
+    console.log('dropZoneOriginalStyles', this.dropZoneOriginalStyles);
+
+    this.dropZoneHighlightStyles = new Map();
+    this.dropZoneHighlightStyles.set('opacity', '0.5');
   }
 
   public updated(changes: Map<string, any>): void {
@@ -208,9 +159,13 @@ export class AttachmentEditor extends FormElement {
     } else {
       root = document;
     }
-    const chatboxElement = root.querySelector('.chatbox') as HTMLDivElement;
-    this.dropZoneElement = chatboxElement;
-    // this.dropZoneElement.classList.add('drag-and-drop');
+    this.dropZoneElement = root.querySelector(
+      '.' + this.dropzone
+    ) as HTMLDivElement;
+    const opacity = this.dropZoneElement.style['opacity'];
+    this.dropZoneOriginalStyles.set('opacity', !opacity ? null : opacity);
+    console.log('dropZoneOriginalStyles', this.dropZoneOriginalStyles);
+
     this.dropZoneElement.addEventListener(
       'dragenter',
       this.handleDragEnter.bind(this)
@@ -238,7 +193,7 @@ export class AttachmentEditor extends FormElement {
 
   private handleDragLeave(evt: DragEvent): void {
     console.log('drag leave', evt);
-    // this.unhighlight(evt);
+    this.unhighlight(evt);
   }
 
   private handleDrop(evt: DragEvent): void {
@@ -260,17 +215,16 @@ export class AttachmentEditor extends FormElement {
   private highlight(evt: DragEvent): void {
     console.log('highlight', evt);
     this.preventDefaults(evt);
-    console.log('dropZoneElement', this.dropZoneElement);
+
     this.dropZoneElement.style['opacity'] = '0.5';
-    console.log('dropZoneElement', this.dropZoneElement);
   }
 
   private unhighlight(evt: DragEvent): void {
     console.log('unhighlight', evt);
     this.preventDefaults(evt);
-    console.log('dropZoneElement', this.dropZoneElement);
-    this.dropZoneElement.style['opacity'] = null;
-    console.log('dropZoneElement', this.dropZoneElement);
+
+    const opacity = this.dropZoneOriginalStyles['opacity'];
+    this.dropZoneElement.style['opacity'] = !opacity ? null : opacity;
   }
 
   // handles when files are selected manually
@@ -297,6 +251,7 @@ export class AttachmentEditor extends FormElement {
   private uploadFile(file: File): void {
     console.log('uploadFile file', file);
     this.uploading = true;
+    this.uploadError = '';
 
     // todo remove for final PR
     // const attachment = {
@@ -314,46 +269,51 @@ export class AttachmentEditor extends FormElement {
     // this.uploading = false;
 
     // todo remove for final PR
-    window.setTimeout(() => {
-      const attachment = {
-        uuid: Math.random().toString(36).slice(2, 6),
-        content_type: file.type,
-        type: file.type,
-        name: file.name,
-        url: file.name,
-        size: file.size,
-      };
-      console.log('attachment', attachment);
-      this.addValue(attachment);
-      this.counter = this.values.length;
-      console.log('values', this.values);
-      this.uploading = false;
-    }, 5000);
+    // window.setTimeout(() => {
+    //   const attachment = {
+    //     uuid: Math.random().toString(36).slice(2, 6),
+    //     content_type: file.type,
+    //     type: file.type,
+    //     name: file.name,
+    //     url: file.name,
+    //     size: file.size,
+    //   };
+    //   console.log('attachment', attachment);
+    //   this.addValue(attachment);
+    //   // this.counter = this.values.length;
+    //   console.log('values', this.values);
+    //   this.uploading = false;
+    // }, 5000);
 
-    // const url = this.upload_endpoint;
-    // console.log('url', url);
-    // const payload = new FormData();
-    // payload.append('file', file);
-    // postFormData(url, payload)
-    //   .then((response: WebResponse) => {
-    //     console.log(response);
-    //     const json = response.json;
-    //     console.log(json);
-    //     const attachment = json as Attachment;
-    //     if (attachment) {
-    //       console.log('attachment', attachment);
-    //       this.addValue(attachment);
-    //       this.counter = this.values.length;
-    //       console.log('values', this.values);
-    //       this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
-    //     }
-    //   })
-    //   .catch((error: any) => {
-    //     console.error(error);
-    //   })
-    //   .finally(() => {
-    //     this.uploading = false;
-    //   });
+    const url = this.endpoint;
+    console.log('url', url);
+    const payload = new FormData();
+    payload.append('file', file);
+    postFormData(url, payload)
+      .then((response: WebResponse) => {
+        console.log(response);
+        const json = response.json;
+        console.log(json);
+        const attachment = json as Attachment;
+        if (attachment) {
+          console.log('attachment', attachment);
+          this.addValue(attachment);
+          console.log('values', this.values);
+          this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+        }
+      })
+      .catch((error: WebResponse) => {
+        console.log(error);
+        this.uploadError =
+          'Error uploading "' +
+          file.name +
+          '" - ' +
+          error +
+          '. Please try again.';
+      })
+      .finally(() => {
+        this.uploading = false;
+      });
   }
 
   private handleRemoveAttachment(evt: Event): void {
@@ -363,7 +323,7 @@ export class AttachmentEditor extends FormElement {
     console.log('handleRemoveFile attachment', attachment);
     // todo confirm whether we need to remove attachment from the RP server
     this.removeValue(attachment);
-    this.counter = this.values.length;
+    // this.counter = this.values.length;
     console.log('values', this.values);
     this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
   }
@@ -376,12 +336,13 @@ export class AttachmentEditor extends FormElement {
         </div>
         <div class="items uploaders">
           ${this.uploading
-            ? html`<temba-loading
+            ? html` <temba-loading
                 class="upload-icon"
                 units="3"
                 size="12"
               ></temba-loading>`
-            : html` <input
+            : html`
+                <input
                   type="file"
                   id="upload-files"
                   multiple
@@ -396,7 +357,11 @@ export class AttachmentEditor extends FormElement {
                     clickable
                   >
                   </temba-icon>
-                </label>`}
+                </label>
+                ${this.uploadError
+                  ? html` <div class="upload-error">${this.uploadError}</div>`
+                  : null}
+              `}
         </div>
       </div>
     `;

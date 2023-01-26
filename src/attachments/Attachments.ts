@@ -66,8 +66,8 @@ export class Attachments extends FormElement {
     const attachmentEditor = this.shadowRoot.querySelector(
       '#attachment_editor'
     ) as AttachmentEditor;
-    attachmentEditor.list_endpoint = this.list_endpoint;
-    attachmentEditor.upload_endpoint = this.upload_endpoint;
+    // attachmentEditor.list_endpoint = this.list_endpoint;
+    attachmentEditor.endpoint = this.upload_endpoint;
     const dialog = this.shadowRoot.querySelector(
       '#attachment_editor_dialog'
     ) as Dialog;
@@ -80,10 +80,10 @@ export class Attachments extends FormElement {
     const attachmentEditor = this.shadowRoot.querySelector(
       '#attachment_editor'
     ) as AttachmentEditor;
-    this.counter = attachmentEditor.counter;
+    // this.counter = attachmentEditor.counter;
 
     if (button.name === 'Ok') {
-      this.counter = attachmentEditor.counter;
+      // this.counter = attachmentEditor.counter;
       const dialog = this.shadowRoot.querySelector(
         '#attachment_editor_dialog'
       ) as Dialog;

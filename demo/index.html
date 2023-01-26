@@ -311,7 +311,9 @@
       </temba-tab>
 
       <temba-tab name="attachments" icon="paperclip">        
-        <temba-attachments></temba-attachments>
+        <div class="dropzone">
+          <temba-attachment-editor endpoint="/msgmedia/upload/" dropzone="dropzone"></temba-attachment-editor>
+        </div>
       </temba-tab>
 
     </temba-tabs>
