@@ -27,6 +27,7 @@ export class AttachmentEditor extends FormElement {
       .container {
         display: flex;
         flex-direction: column;
+        margin-top: 0.8em;
         // height: 100px;
       }
 
@@ -34,7 +35,7 @@ export class AttachmentEditor extends FormElement {
         // border: 1px solid #ccc;
         // border-radius: var(--curvature);
         flex: 1;
-        margin: 0.5em;
+        // margin: 0.5em;
       }
 
       .attachments {
@@ -131,7 +132,7 @@ export class AttachmentEditor extends FormElement {
         flex-wrap: wrap;
         align-items: stretch;
         user-select: none;
-        padding: 0.25em;
+        padding: 0.25em 0.25em 0.25em 0;
       }
       .selected-item {
         vertical-align: middle;
@@ -298,19 +299,36 @@ export class AttachmentEditor extends FormElement {
     this.uploading = true;
 
     // todo remove for final PR
-    const attachment = {
-      uuid: Math.random().toString(36).slice(2, 6),
-      content_type: file.type,
-      type: file.type,
-      name: file.name,
-      url: file.name,
-      size: file.size,
-    };
-    console.log('attachment', attachment);
-    this.addValue(attachment);
-    this.counter = this.values.length;
-    console.log('values', this.values);
-    this.uploading = false;
+    // const attachment = {
+    //   uuid: Math.random().toString(36).slice(2, 6),
+    //   content_type: file.type,
+    //   type: file.type,
+    //   name: file.name,
+    //   url: file.name,
+    //   size: file.size,
+    // };
+    // console.log('attachment', attachment);
+    // this.addValue(attachment);
+    // this.counter = this.values.length;
+    // console.log('values', this.values);
+    // this.uploading = false;
+
+    // todo remove for final PR
+    window.setTimeout(() => {
+      const attachment = {
+        uuid: Math.random().toString(36).slice(2, 6),
+        content_type: file.type,
+        type: file.type,
+        name: file.name,
+        url: file.name,
+        size: file.size,
+      };
+      console.log('attachment', attachment);
+      this.addValue(attachment);
+      this.counter = this.values.length;
+      console.log('values', this.values);
+      this.uploading = false;
+    }, 5000);
 
     // const url = this.upload_endpoint;
     // console.log('url', url);
@@ -358,7 +376,11 @@ export class AttachmentEditor extends FormElement {
         </div>
         <div class="items uploaders">
           ${this.uploading
-            ? html`<temba-loading units="3" size="12"></temba-loading>`
+            ? html`<temba-loading
+                class="upload-icon"
+                units="3"
+                size="12"
+              ></temba-loading>`
             : html` <input
                   type="file"
                   id="upload-files"

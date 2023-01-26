@@ -14,12 +14,12 @@ export class TextInput extends FormElement {
         border-radius: var(--curvature-widget);
         cursor: text;
         background: var(--color-widget-bg);
-        // border: 1px solid var(--color-widget-border);
+        border: 1px solid var(--color-widget-border);
         transition: all ease-in-out var(--transition-speed);
         display: flex;
         flex-direction: row;
         align-items: stretch;
-        // box-shadow: var(--widget-box-shadow);
+        box-shadow: var(--widget-box-shadow);
         caret-color: var(--input-caret);
       }
 
@@ -41,15 +41,15 @@ export class TextInput extends FormElement {
       }
 
       .input-container:focus-within {
-        // border-color: var(--color-focus);
-        // background: var(--color-widget-bg-focused);
-        // box-shadow: var(--widget-box-shadow-focused);
+        border-color: var(--color-focus);
+        background: var(--color-widget-bg-focused);
+        box-shadow: var(--widget-box-shadow-focused);
         z-index: 10000;
         position: relative;
       }
 
       .input-container:hover {
-        // background: var(--color-widget-bg-focused);
+        background: var(--color-widget-bg-focused);
       }
 
       textarea {
