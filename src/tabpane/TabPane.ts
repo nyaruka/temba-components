@@ -12,6 +12,7 @@ export class TabPane extends RapidElement {
         display: flex;
         flex-direction: column;
         min-height: 0;
+        z-index: 0;
       }
 
       .tabs {

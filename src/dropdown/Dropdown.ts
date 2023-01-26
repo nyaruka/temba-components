@@ -21,7 +21,7 @@ export class Dropdown extends RapidElement {
       .dropdown {
         position: absolute;
         opacity: 0;
-        z-index: 10;
+        z-index: 2;
         pointer-events: none;
         padding: 0;
         border-radius: var(--curvature);
@@ -55,6 +55,24 @@ export class Dropdown extends RapidElement {
         pointer-events: auto;
         transform: translateY(0.5em);
       }
+
+      .mask {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        opacity: 0;
+        transition: opacity var(--transition-speed) ease-in-out;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .mask.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
     `;
   }
 
@@ -75,6 +93,9 @@ export class Dropdown extends RapidElement {
 
   @property({ type: Number })
   offsetY = 0;
+
+  @property({ type: Boolean })
+  mask = false;
 
   public firstUpdated(props: any) {
     super.firstUpdated(props);
@@ -144,6 +165,10 @@ export class Dropdown extends RapidElement {
 
   public render(): TemplateResult {
     return html`
+      ${this.mask
+        ? html`<div class="mask  ${this.open ? 'open' : ''}" />`
+        : null}
+
       <div class="wrapper ${this.open ? 'open' : ''}">
         <slot
           name="toggle"
