@@ -44,6 +44,9 @@ export class AttachmentEditor extends FormElement {
       #upload-files {
         display: none;
       }
+      .upload-icon {
+        color: rgb(102, 102, 102);
+      }
       .upload-error {
         color: red;
         font-size: var(--help-text-size);
@@ -162,6 +165,7 @@ export class AttachmentEditor extends FormElement {
     this.dropZoneElement = root.querySelector(
       '.' + this.dropzone
     ) as HTMLDivElement;
+
     const opacity = this.dropZoneElement.style['opacity'];
     this.dropZoneOriginalStyles.set('opacity', !opacity ? null : opacity);
     console.log('dropZoneOriginalStyles', this.dropZoneOriginalStyles);

@@ -73,7 +73,7 @@ export class ContactChat extends ContactStoreElement {
       }
 
       temba-completion {
-        --textarea-height: 2.5em;
+        --textarea-height: 5em;
       }
 
       a {
@@ -162,6 +162,14 @@ export class ContactChat extends ContactStoreElement {
         --header-bg: rgb(255, 249, 194);
         --header-text: #555;
         --textarea-height: 5em;
+      }
+
+      temba-completion {
+        --widget-box-shadow: none;
+        --color-widget-border: transparent;
+        --widget-box-shadow-focused: none;
+        --color-focus: transparent;
+        --color-widget-bg-focused: transparent;
       }
     `;
   }
