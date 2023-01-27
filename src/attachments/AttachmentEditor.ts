@@ -231,46 +231,38 @@ export class AttachmentEditor extends FormElement {
     this.dropZoneElement.style['opacity'] = !opacity ? null : opacity;
   }
 
-  // handles when files are selected manually
   private handleUploadFileClicked(evt: Event): void {
     console.log('handleUploadFileClicked evt', evt);
     this.dispatchEvent(new Event('change'));
   }
 
-  // handles when files are selected manually
   private handleUploadFileChanged(evt: Event): void {
     console.log('handleUploadFileChanged evt', evt);
     const target = evt.target as HTMLInputElement;
     const files = target.files;
-    console.log('handleUploadFiles files', files);
-    [...files].map(file => this.uploadFile(file));
+    this.uploadFiles(files);
   }
 
-  // handles when files are dragged and dropped
   private uploadFiles(files: FileList): void {
     console.log('uploadFiles files', files);
-    [...files].map(file => this.uploadFile(file));
+    if (this.values && this.values.length) {
+      [...files].map(file => {
+        const index = this.values.findIndex(
+          value => value.name === file.name && value.size === file.size
+        );
+        if (index == -1) {
+          this.uploadFile(file);
+        }
+      });
+    } else {
+      [...files].map(file => this.uploadFile(file));
+    }
   }
 
   private uploadFile(file: File): void {
     console.log('uploadFile file', file);
     this.uploading = true;
     this.uploadError = '';
-
-    // todo remove for final PR
-    // const attachment = {
-    //   uuid: Math.random().toString(36).slice(2, 6),
-    //   content_type: file.type,
-    //   type: file.type,
-    //   name: file.name,
-    //   url: file.name,
-    //   size: file.size,
-    // };
-    // console.log('attachment', attachment);
-    // this.addValue(attachment);
-    // this.counter = this.values.length;
-    // console.log('values', this.values);
-    // this.uploading = false;
 
     // todo remove for final PR
     // window.setTimeout(() => {
@@ -296,26 +288,31 @@ export class AttachmentEditor extends FormElement {
     postFormData(url, payload)
       .then((response: WebResponse) => {
         console.log(response);
-        const json = response.json;
-        console.log(json);
-        const attachment = json as Attachment;
-        if (attachment) {
-          console.log('attachment', attachment);
-          this.addValue(attachment);
-          console.log('values', this.values);
-          this.fireCustomEvent(CustomEventType.AttachmentUploaded, attachment);
+        if (response.json.error) {
+          console.log(response.json.error);
+          this.uploadError = response.json.error;
+        } else {
+          console.log(response.json);
+          const attachment = response.json as Attachment;
+          if (attachment) {
+            console.log('attachment', attachment);
+            this.addValue(attachment);
+            console.log('values', this.values);
+            this.fireCustomEvent(
+              CustomEventType.AttachmentUploaded,
+              attachment
+            );
+          }
         }
       })
-      .catch((error: WebResponse) => {
+      .catch((error: string) => {
         console.log(error);
-        this.uploadError =
-          'Error uploading "' +
-          file.name +
-          '" - ' +
-          error +
-          '. Please try again.';
+        this.uploadError = error;
       })
       .finally(() => {
+        if (this.uploadError && this.uploadError.length > 0) {
+          this.uploadError += ', please try again';
+        }
         this.uploading = false;
       });
   }
