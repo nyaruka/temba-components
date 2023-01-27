@@ -45,6 +45,7 @@ import { ContentMenu } from './src/list/ContentMenu';
 import { TembaDate } from './src/date/TembaDate';
 import { AttachmentEditor } from './src/attachments/AttachmentEditor';
 import { Attachments } from './src/attachments/Attachments';
+import Remote from './src/remote/Remote';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -88,6 +89,7 @@ addCustomElement('temba-run-list', RunList);
 addCustomElement('temba-flow-details', FlowStoreElement);
 addCustomElement('temba-label', Label);
 addCustomElement('temba-menu', TembaMenu);
+addCustomElement('temba-remote', Remote);
 addCustomElement('temba-contact-search', ContactSearch);
 addCustomElement('temba-icon', VectorIcon);
 addCustomElement('temba-dropdown', Dropdown);
