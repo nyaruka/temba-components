@@ -416,30 +416,7 @@ export class ContactChat extends ContactStoreElement {
 
   private getChatbox(): TemplateResult {
     return html` <div class="chatbox ${this.toolbar ? 'full' : ''}">
-      <temba-completion
-        @change=${this.handleChatChange}
-        .value=${this.currentChat}
-        @keydown=${(e: KeyboardEvent) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            const chat = e.target as Completion;
-            if (!chat.hasVisibleOptions()) {
-              this.handleSend();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }
-        }}
-        placeholder=${'Type something here'}
-        textarea
-      >
-      </temba-completion>
-      <temba-attachment-editor dropzone="chatbox"> </temba-attachment-editor>
-      <temba-button
-        id="send-button"
-        name="Send"
-        @click=${this.handleSend}
-        ?disabled=${this.currentChat.trim().length === 0}
-      ></temba-button>
+      <temba-compose><temba-compose>
     </div>`;
   }
 

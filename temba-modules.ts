@@ -43,9 +43,8 @@ import { FieldManager } from './src/fields/FieldManager';
 import { SortableList } from './src/list/SortableList';
 import { ContentMenu } from './src/list/ContentMenu';
 import { TembaDate } from './src/date/TembaDate';
-import { AttachmentEditor } from './src/attachments/AttachmentEditor';
-import { Attachments } from './src/attachments/Attachments';
 import Remote from './src/remote/Remote';
+import { Compose } from './src/compose/Compose';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -100,5 +99,4 @@ addCustomElement('temba-contact-pending', ContactPending);
 addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
-addCustomElement('temba-attachment-editor', AttachmentEditor);
-addCustomElement('temba-attachments', Attachments);
+addCustomElement('temba-compose', Compose);
