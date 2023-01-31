@@ -87,10 +87,10 @@ export class Compose extends FormElement {
       }
       .upload-label {
         display: flex;
+        align-items: center;
       }
       .upload-icon {
         color: rgb(102, 102, 102);
-        margin: 0;
       }
       .upload-error {
         color: red;
