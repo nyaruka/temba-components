@@ -50,13 +50,12 @@ export class ContactChat extends ContactStoreElement {
       .chatbox {
         padding: 1em;
         // background: #f2f2f2;
-        border-right: 1px solid #e1e1e1;
+        // border-top: 3px solid #e1e1e1;
         display: flex;
         flex-direction: column;
         z-index: 3;
         border-bottom-left-radius: var(--curvature);
         border-bottom-right-radius: var(--curvature);
-        width: 60%;
       }
 
       .chatbox.full {
