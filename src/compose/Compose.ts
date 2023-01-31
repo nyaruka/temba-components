@@ -37,9 +37,7 @@ export class Compose extends FormElement {
         margin-top: 0.5em;
       }
 
-      .chatbox {
-        // none
-      }
+      // chatbox styles
       // todo override styles
       // temba-completion .input-container {
       //   border: none;
@@ -53,12 +51,10 @@ export class Compose extends FormElement {
       //   padding: none;
       // }
 
+      // attachment styles
       .attachments {
         display: flex;
         flex-direction: column;
-      }
-      .select-container {
-        // none
       }
       .selected {
         display: flex;
@@ -85,6 +81,7 @@ export class Compose extends FormElement {
         padding: 2px 8px;
       }
 
+      // action styles
       .actions {
         display: flex;
         justify-content: space-between;
@@ -103,9 +100,6 @@ export class Compose extends FormElement {
         color: red;
         font-size: var(--help-text-size);
         margin-left: 5px;
-      }
-      .send-button {
-        // none
       }
     `;
   }
@@ -340,10 +334,9 @@ export class Compose extends FormElement {
   }
 
   private getAttachments(): TemplateResult {
-    // return html`<div>Hi!</div>`;
     return html`
       ${this.values && this.values.length > 0
-        ? html` <div class="select-container">
+        ? html`
             <div class="selected">
               ${this.values.map(attachment => {
                 return html` <div class="selected-item">
@@ -368,8 +361,7 @@ export class Compose extends FormElement {
                   </div>
                 </div>`;
               })}
-            </div>
-          </div>`
+            </div`
         : null}
     `;
   }
