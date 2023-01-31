@@ -37,22 +37,17 @@ export class Compose extends FormElement {
         margin-top: 0.5em;
       }
 
-      // chatbox styles
-
-      // todo override styles
-      // temba-completion .input-container {
-      //   border: none;
-      //   --color-widget-border: none;
-      //   border-radius: none;
-      //   --curvature-widget: none;
-      //   box-shadow: none;
-      //   --widget-box-shadow: none;
-      // }
-      // temba-completion textarea.textinput {
-      //   padding: none;
-      // }
-
-      // attachment styles
+      temba-completion .input-container {
+        // border: none;
+        // --color-widget-border: none;
+        // border-radius: none;
+        // --curvature-widget: none;
+        // box-shadow: none;
+        // --widget-box-shadow: none;
+      }
+      temba-completion .textinput {
+        // padding: none;
+      }
 
       .attachments {
         display: flex;
@@ -82,8 +77,6 @@ export class Compose extends FormElement {
         font-size: 12px;
         padding: 2px 8px;
       }
-
-      // action styles
 
       .actions {
         display: flex;
