@@ -38,6 +38,7 @@ export class Compose extends FormElement {
       }
 
       // chatbox styles
+
       // todo override styles
       // temba-completion .input-container {
       //   border: none;
@@ -52,6 +53,7 @@ export class Compose extends FormElement {
       // }
 
       // attachment styles
+
       .attachments {
         display: flex;
         flex-direction: column;
@@ -82,6 +84,7 @@ export class Compose extends FormElement {
       }
 
       // action styles
+
       .actions {
         display: flex;
         justify-content: space-between;
