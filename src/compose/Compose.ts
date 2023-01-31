@@ -58,55 +58,29 @@ export class Compose extends FormElement {
         flex-direction: column;
       }
       .select-container {
-        // display: flex;
-        // flex-flow: row nowrap;
-        // align-items: center;
-        // transition: all ease-in-out var(--transition-speed);
-        // cursor: pointer;
-        // border-radius: var(--curvature-widget);
-        // background: var(--color-widget-bg);
-        // padding-top: 1px;
-        // box-shadow: var(--widget-shadow);
-        // position: relative;
-        // z-index: 2;
+        // none
       }
       .selected {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
-        // align-items: stretch;
-        // user-select: none;
-        // padding: 0.25em 0.25em 0.25em 0;
       }
       .selected-item {
-        // vertical-align: middle;
         background: rgba(100, 100, 100, 0.1);
-        // user-select: none;
         border-radius: 2px;
-        // align-items: stretch;
-        // flex-flow: row nowrap;
         margin: 2px;
         display: flex;
-        // overflow: hidden;
         color: var(--color-widget-text);
-        // line-height: var(--temba-select-selected-line-height);
-        // --icon-color: var(--color-text-dark);
       }
       .remove-item {
         cursor: pointer;
-        // display: inline-block;
         padding: 3px 6px;
         border-right: 1px solid rgba(100, 100, 100, 0.2);
-        // margin: 0px;
         margin-top: 1px;
         background: rgba(100, 100, 100, 0.05);
       }
       .option-name {
-        // flex: 1 1 auto;
         align-self: center;
-        // white-space: nowrap;
-        // overflow: hidden;
-        // text-overflow: ellipsis;
         font-size: 12px;
         padding: 2px 8px;
       }
