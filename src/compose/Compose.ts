@@ -37,16 +37,12 @@ export class Compose extends FormElement {
         margin-top: 0.5em;
       }
 
-      temba-completion .input-container {
-        // border: none;
-        // --color-widget-border: none;
-        // border-radius: none;
-        // --curvature-widget: none;
-        // box-shadow: none;
-        // --widget-box-shadow: none;
-      }
-      temba-completion .textinput {
-        // padding: none;
+      temba-completion {
+        --color-widget-border: none;
+        --curvature-widget: none;
+        --widget-box-shadow: none;
+        --widget-box-shadow-focused: none;
+        --temba-textinput-padding: 0;
       }
 
       .attachments {
