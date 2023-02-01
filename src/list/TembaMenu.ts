@@ -740,7 +740,12 @@ export class TembaMenu extends RapidElement {
       }
 
       if (menuItem.endpoint) {
-        this.loadItems(menuItem, true);
+        this.loadItems(menuItem, this.pending.length == 0);
+
+        // make sure change events fire for events with hrefs
+        if (!menuItem.href) {
+          return;
+        }
       } else {
         if (this.pending && this.pending.length > 0) {
           // auto select the next pending click
@@ -750,16 +755,24 @@ export class TembaMenu extends RapidElement {
             const nextItem = findItem(item.items, nextId).item;
             if (nextItem) {
               this.handleItemClicked(null, nextItem);
+              return;
             } else {
               this.fireNoPath(nextId);
+              this.requestUpdate('root');
+              return;
             }
           } else {
             this.fireNoPath(nextId);
+            this.requestUpdate('root');
+            return;
           }
         }
         this.requestUpdate('root');
       }
-      this.dispatchEvent(new Event('change'));
+
+      if (this.pending.length == 0 || this.getMenuItem().href) {
+        this.dispatchEvent(new Event('change'));
+      }
     }
   }
 
