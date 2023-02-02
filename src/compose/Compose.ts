@@ -12,6 +12,7 @@ import {
 } from '../utils';
 import { Completion } from '../completion/Completion';
 import { TextInput } from '../textinput/TextInput';
+import { Button } from '../button/Button';
 
 export interface Attachment {
   uuid: string;
@@ -34,7 +35,7 @@ export class Compose extends FormElement {
         opacity: 0.5;
       }
       .items {
-        margin-top: 0.5em;
+        margin-bottom: 0.5em;
       }
 
       temba-completion {
@@ -96,20 +97,35 @@ export class Compose extends FormElement {
     `;
   }
 
-  @property({ type: String })
+  @property({ type: Boolean })
+  chatbox = true;
+
+  @property({ type: String, attribute: false })
+  currentChat = '';
+
+  @property({ type: Boolean })
+  counter = true;
+
+  @property({ type: Boolean })
+  attachments = true;
+
+  @property({ type: String, attribute: false })
   endpoint = '/msgmedia/upload/';
 
   @property({ type: String })
-  accept: string; //e.g. ".xls,.xlsx"
+  accept = ''; //e.g. ".xls,.xlsx"
 
-  @property({ type: Boolean })
+  @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
-  @property({ type: String })
+  @property({ type: String, attribute: false })
   uploadError: string;
 
+  @property({ type: Boolean })
+  button = true;
+
   @property({ type: String })
-  currentChat = '';
+  buttonName = 'Send';
 
   public constructor() {
     super();
@@ -195,8 +211,8 @@ export class Compose extends FormElement {
 
   private uploadFile(file: File): void {
     console.log('uploadFile file', file);
-    this.uploading = true;
     this.uploadError = '';
+    this.uploading = true;
 
     // todo remove for final PR
     // window.setTimeout(() => {
@@ -252,23 +268,44 @@ export class Compose extends FormElement {
 
   private handleRemoveAttachment(evt: Event): void {
     console.log('handleRemoveFile evt', evt);
+    this.uploadError = '';
     const target = evt.target as HTMLDivElement;
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
     console.log('handleRemoveFile attachment', attachment);
     this.removeValue(attachment);
-    // this.counter = this.values.length;
     console.log('values', this.values);
     this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
   }
 
   private handleChatChange(evt: Event) {
+    console.log('handleChatChange evt', evt);
+    this.uploadError = '';
     this.preventDefaults(evt);
     const completionElement = evt.target as Completion;
-    const textInputElement = completionElement.shadowRoot.querySelector(
-      'temba-textinput'
-    ) as TextInput;
+    const textInputElement = completionElement.textInputElement;
     this.currentChat = textInputElement.value;
-    this.uploadError = '';
+  }
+
+  private toggleButton() {
+    if (this.button) {
+      if (this.chatbox && this.attachments) {
+        return this.currentChat.trim().length === 0 || this.values.length === 0;
+      } else if (this.chatbox) {
+        return this.currentChat.trim().length === 0;
+      } else if (this.attachments) {
+        return this.values.length === 0;
+      } else {
+        return true;
+      }
+    }
+  }
+
+  public handleClick(evt: MouseEvent) {
+    const button = evt.currentTarget as Button;
+    if (!button.disabled) {
+      this.fireCustomEvent(CustomEventType.ButtonClicked, { button });
+      // todo
+    }
   }
 
   private handleSend() {
@@ -291,6 +328,10 @@ export class Compose extends FormElement {
   }
 
   public render(): TemplateResult {
+    console.log('render chatbox', this.chatbox);
+    console.log('render attachments', this.attachments);
+    console.log('render button', this.button);
+
     return html`
       <div
         class="container"
@@ -299,17 +340,26 @@ export class Compose extends FormElement {
         @dragleave="${this.handleDragLeave}"
         @drop="${this.handleDrop}"
       >
-        <div class="items chatbox">${this.getChatbox()}</div>
-        <div class="items attachments">${this.getAttachments()}</div>
+        ${this.chatbox
+          ? html`<div class="items chatbox">${this.getChatbox()}</div>`
+          : null}
+        ${this.attachments
+          ? html`<div class="items attachments">${this.getAttachments()}</div>`
+          : null}
         <div class="items actions">${this.getActions()}</div>
       </div>
     `;
   }
 
   private getChatbox(): TemplateResult {
+    // return html`
+    //   <temba-completion counter="temba-charcount" value=${this.currentChat} gsm textarea></temba-completion>
+    //   <temba-charcount text='count this text'></temba-charcount>`;
+
     return html` <temba-completion
       @change=${this.handleChatChange}
       .value=${this.currentChat}
+      value=${this.currentChat}
       @keydown=${(e: KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           const chat = e.target as Completion;
@@ -319,10 +369,11 @@ export class Compose extends FormElement {
           }
         }
       }}
-      placeholder=${'Type something here'}
+      placeholder="Type something here"
       textarea
     >
     </temba-completion>`;
+    // <temba-charcount></temba-charcount>`;
   }
 
   private getAttachments(): TemplateResult {
@@ -359,34 +410,51 @@ export class Compose extends FormElement {
   }
 
   private getActions(): TemplateResult {
-    // return html`<div>Hi!</div>`;
-    return html`
-      ${this.uploading
-        ? html` <temba-loading units="3" size="12"></temba-loading>`
-        : html` <input
-              type="file"
-              id="upload-files"
-              multiple
-              accept="${this.accept}"
-              @change="${this.handleUploadFileChanged}"
-            />
-            <label class="upload-label" for="upload-files">
-              <temba-icon
-                class="upload-icon"
-                name="${Icon.attachment}"
-                @click="${this.handleUploadFileClicked}"
-                clickable
-              ></temba-icon>
-              ${this.uploadError
-                ? html` <div class="upload-error">${this.uploadError}</div>`
-                : null}
-            </label>
-            <temba-button
-              id="send-button"
-              name="Send"
-              @click=${this.handleSend}
-              ?disabled=${this.currentChat.trim().length === 0}
-            ></temba-button>`}
-    `;
+    if (this.attachments) {
+      if (this.uploading) {
+        return html` <temba-loading units="3" size="12"></temba-loading>`;
+      } else {
+        return html`
+          <input
+            type="file"
+            id="upload-files"
+            multiple
+            accept="${this.accept}"
+            @change="${this.handleUploadFileChanged}"
+          />
+          <label class="upload-label" for="upload-files">
+            <temba-icon
+              class="upload-icon"
+              name="${Icon.attachment}"
+              @click="${this.handleUploadFileClicked}"
+              clickable
+            ></temba-icon>
+            ${this.uploadError
+              ? html` <div class="upload-error">${this.uploadError}</div>`
+              : null}
+          </label>
+          ${this.button
+            ? html` <temba-button
+                id="send-button"
+                name=${this.buttonName}
+                @click=${this.handleClick}
+                ?disabled=${this.toggleButton}
+              ></temba-button>`
+            : null}
+        `;
+      }
+    } else {
+      return html`
+        ${this.button
+          ? html` <div></div>
+              <temba-button
+                id="send-button"
+                name=${this.buttonName}
+                @click=${this.handleClick}
+                ?disabled=${this.toggleButton}
+              ></temba-button>`
+          : null}
+      `;
+    }
   }
 }
