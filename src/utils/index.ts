@@ -179,6 +179,7 @@ export interface WebResponse {
   url?: string;
   headers: Headers;
   controller?: AbortController;
+  redirected?: boolean;
 }
 
 export const postUrl = (
@@ -213,6 +214,8 @@ export const postUrl = (
             json,
             headers: response.headers,
             status: response.status,
+            redirected: response.redirected,
+            url: response.url,
           });
         });
       })
