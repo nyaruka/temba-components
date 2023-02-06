@@ -334,8 +334,8 @@ export class ContactChat extends ContactStoreElement {
           this.refresh(true);
         })
         .catch(err => {
-          // error message dialog?
           console.error(err);
+          // todo display err msg below send button?
         });
     }
   }

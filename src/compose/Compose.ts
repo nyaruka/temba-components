@@ -351,27 +351,27 @@ export class Compose extends FormElement {
 
   private getChatbox(): TemplateResult {
     // return html`
-    //   <temba-completion counter="temba-charcount" value=${this.currentChat} gsm textarea></temba-completion>
+    //   <temba-completion counter="temba-charcount" value="This is a GSM charcounter in a textarea" gsm textarea></temba-completion>
     //   <temba-charcount text='count this text'></temba-charcount>`;
-
     return html` <temba-completion
-      @change=${this.handleChatboxChange}
-      .value=${this.currentChat}
-      value=${this.currentChat}
-      @keydown=${(e: KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          const chat = e.target as Completion;
-          if (!chat.hasVisibleOptions()) {
-            this.handleSendEnter(e);
-            this.preventDefaults(e);
+        ${this.counter ? 'counter="temba-charcount"' : ''}
+        value=${this.currentChat}
+        gsm
+        textarea
+        @change=${this.handleChatboxChange}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            const chat = e.target as Completion;
+            if (!chat.hasVisibleOptions()) {
+              this.handleSendEnter(e);
+              this.preventDefaults(e);
+            }
           }
-        }
-      }}
-      placeholder="Type something here"
-      textarea
-    >
-    </temba-completion>`;
-    // <temba-charcount></temba-charcount>`;
+        }}
+        placeholder="Type something here"
+      >
+      </temba-completion>
+      <temba-charcount text="Type something here"></temba-charcount>`;
   }
 
   private getAttachments(): TemplateResult {
