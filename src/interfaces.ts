@@ -243,6 +243,6 @@ export enum CustomEventType {
   OrderChanged = 'temba-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
-  AttachmentUploaded = 'temba-attachment-uploaded',
+  AttachmentAdded = 'temba-attachment-added',
   AttachmentRemoved = 'temba-attachment-removed',
 }

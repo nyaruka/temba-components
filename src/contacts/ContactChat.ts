@@ -8,6 +8,7 @@ import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Icon } from '../vectoricon';
+import { Compose } from '../compose/Compose';
 
 const DEFAULT_REFRESH = 10000;
 
@@ -301,25 +302,42 @@ export class ContactChat extends ContactStoreElement {
       });
   }
 
-  private handleSend() {
-    const payload = {
-      contacts: [this.currentContact.uuid],
-      text: this.currentChat,
-    };
+  private handleSend(evt: CustomEvent) {
+    console.log('handleSend evt', evt);
+    const buttonName = evt.detail.name;
+    if (buttonName === 'Send') {
+      // add contact uuid
+      const payload = {
+        contacts: [this.currentContact.uuid],
+      };
+      // add translations text, attachments, etc
+      const compose = evt.currentTarget as Compose;
+      if (compose && (compose.currentChat || compose.values)) {
+        const translations = {
+          und: {
+            text: compose.currentChat,
+            attachments: compose.values,
+          },
+        };
+        payload['translations'] = translations;
+      }
+      // add ticket uuid
+      if (this.currentTicket) {
+        payload['ticket'] = this.currentTicket.uuid;
+      }
 
-    if (this.currentTicket) {
-      payload['ticket'] = this.currentTicket.uuid;
+      postJSON(`/api/v2/broadcasts.json`, payload)
+        .then(() => {
+          compose.currentChat = '';
+          compose.values = [];
+          compose.buttonDisabled = true;
+          this.refresh(true);
+        })
+        .catch(err => {
+          // error message dialog?
+          console.error(err);
+        });
     }
-
-    postJSON(`/api/v2/broadcasts.json`, payload)
-      .then(() => {
-        this.currentChat = '';
-        this.refresh(true);
-      })
-      .catch(err => {
-        // error message dialog?
-        console.error(err);
-      });
   }
 
   private handleTicketAssigned() {
@@ -416,7 +434,8 @@ export class ContactChat extends ContactStoreElement {
 
   private getChatbox(): TemplateResult {
     return html` <div class="chatbox ${this.toolbar ? 'full' : ''}">
-      <temba-compose .chatbox="${false}" .button="${false}"></temba-compose>
+      <temba-compose @temba-button-clicked=${this.handleSend.bind(this)}>
+      </temba-compose>
     </div>`;
   }
 
