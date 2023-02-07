@@ -20,6 +20,7 @@ export interface Attachment {
   url: string;
   name: string;
   size: number;
+  error: string;
 }
 
 export class Compose extends FormElement {
@@ -61,12 +62,20 @@ export class Compose extends FormElement {
         display: flex;
         color: var(--color-widget-text);
       }
+      .selected-item.error {
+        background: rgba(250, 0, 0, 0.1);
+        color: rgba(250, 0, 0, 0.75);
+      }
       .remove-item {
         cursor: pointer;
         padding: 3px 6px;
         border-right: 1px solid rgba(100, 100, 100, 0.2);
         margin-top: 1px;
         background: rgba(100, 100, 100, 0.05);
+      }
+      .remove-item.error {
+        background: rgba(250, 0, 0, 0.05);
+        color: rgba(250, 0, 0, 0.75);
       }
       .option-name {
         align-self: center;
@@ -117,8 +126,11 @@ export class Compose extends FormElement {
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
+  @property({ type: String, attribute: false })
+  uploadError = 'Some attachments failed, please remove and try again';
+
   @property({ type: Array, attribute: false })
-  uploadErrors: string[] = [];
+  errorValues: Attachment[] = [];
 
   @property({ type: Boolean })
   button = true;
@@ -138,14 +150,19 @@ export class Compose extends FormElement {
     console.log('changes', changes);
   }
 
+  public reset(): void {
+    this.currentChat = '';
+    this.values = [];
+    this.buttonDisabled = true;
+  }
+
   private handleChatboxChange(evt: Event) {
     console.log('handleChatboxChange evt', evt);
-    this.uploadErrors = [];
     this.preventDefaults(evt);
     const completionElement = evt.target as Completion;
     const textInputElement = completionElement.textInputElement;
     this.currentChat = textInputElement.value;
-    this.toggleButton();
+    this.buttonDisabled = this.toggleButton();
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -195,7 +212,6 @@ export class Compose extends FormElement {
 
   private handleAddAttachments(evt: Event): void {
     console.log('handleAddAttachments evt', evt);
-    this.uploadErrors = [];
     this.dispatchEvent(new Event('change'));
   }
 
@@ -231,22 +247,6 @@ export class Compose extends FormElement {
     console.log('uploadFile file', file);
     this.uploading = true;
 
-    // todo remove for final PR
-    // window.setTimeout(() => {
-    //   const attachment = {
-    //     uuid: Math.random().toString(36).slice(2, 6),
-    //     content_type: file.type,
-    //     type: file.type,
-    //     name: file.name,
-    //     url: file.name,
-    //     size: file.size,
-    //   };
-    //   console.log('attachment', attachment);
-    //   this.addValue(attachment);
-    //   console.log('values', this.values);
-    //   this.uploading = false;
-    // }, 2500);
-
     const url = this.endpoint;
     console.log('url', url);
     const payload = new FormData();
@@ -256,7 +256,7 @@ export class Compose extends FormElement {
         console.log(response);
         if (response.json.error) {
           console.log(response.json.error);
-          this.uploadErrors.push(file.name + ' - ' + response.json.error);
+          this.addErrorValue(file, response.json.error);
         } else {
           console.log(response.json);
           const attachment = response.json as Attachment;
@@ -270,45 +270,76 @@ export class Compose extends FormElement {
       })
       .catch((error: string) => {
         console.log(error);
-        this.uploadErrors.push(file.name + ' - ' + error);
+        this.addErrorValue(file, error);
       })
       .finally(() => {
         this.uploading = false;
-        this.toggleButton();
+        this.buttonDisabled = this.toggleButton();
       });
+  }
+
+  private addErrorValue(file: File, error: string) {
+    const errorValue = {
+      uuid: Math.random().toString(36).slice(2, 6),
+      content_type: file.type,
+      type: file.type,
+      name: file.name,
+      url: file.name,
+      size: file.size,
+      error: error,
+    };
+    this.errorValues.push(errorValue);
+    this.requestUpdate('errorValues');
+  }
+  public removeErrorValue(valueToRemove: any) {
+    this.errorValues = this.errorValues.filter(
+      (value: any) => value !== valueToRemove
+    );
+    this.requestUpdate('errorValues');
   }
 
   private handleRemoveAttachment(evt: Event): void {
     console.log('handleRemoveAttachment evt', evt);
-    this.uploadErrors = [];
     const target = evt.target as HTMLDivElement;
+
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
     console.log('handleRemoveAttachment attachment', attachment);
-    this.removeValue(attachment);
-    console.log('values', this.values);
-    this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-    this.toggleButton();
+    if (attachment) {
+      this.removeValue(attachment);
+      this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
+      console.log('values', this.values);
+    }
+    const errorAttachment = this.errorValues.find(
+      ({ uuid }) => uuid === target.id
+    );
+    console.log('handleRemoveAttachment errorAttachment', errorAttachment);
+    if (errorAttachment) {
+      this.removeErrorValue(errorAttachment);
+      this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
+      console.log('errorValues', this.errorValues);
+    }
+    this.buttonDisabled = this.toggleButton();
   }
 
   private toggleButton() {
     if (this.button) {
       const chatboxEmpty = this.currentChat.trim().length === 0;
       const attachmentsEmpty = this.values.length === 0;
+      const hasErrorAttachments = this.errorValues.length > 0;
       if (this.chatbox && this.attachments) {
-        this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
+        return (chatboxEmpty && attachmentsEmpty) || hasErrorAttachments;
       } else if (this.chatbox) {
-        this.buttonDisabled = chatboxEmpty;
+        return chatboxEmpty;
       } else if (this.attachments) {
-        this.buttonDisabled = attachmentsEmpty;
+        return attachmentsEmpty || hasErrorAttachments;
       } else {
-        this.buttonDisabled = true;
+        return true;
       }
     }
   }
 
-  public handleSendClick(evt: MouseEvent) {
+  private handleSendClick(evt: MouseEvent) {
     console.log('handleClick evt', evt);
-    this.uploadErrors = [];
     const button = evt.target as Button;
     if (!button.disabled) {
       const name = button.name;
@@ -316,9 +347,8 @@ export class Compose extends FormElement {
     }
   }
 
-  public handleSendEnter(evt: KeyboardEvent) {
+  private handleSendEnter(evt: KeyboardEvent) {
     console.log('handleSend evt', evt);
-    this.uploadErrors = [];
     if (this.currentChat && this.currentChat.length > 0) {
       const name = this.buttonName;
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
@@ -350,11 +380,7 @@ export class Compose extends FormElement {
   }
 
   private getChatbox(): TemplateResult {
-    // return html`
-    //   <temba-completion counter="temba-charcount" value="This is a GSM charcounter in a textarea" gsm textarea></temba-completion>
-    //   <temba-charcount text='count this text'></temba-charcount>`;
     return html` <temba-completion
-        ${this.counter ? 'counter="temba-charcount"' : ''}
         value=${this.currentChat}
         gsm
         textarea
@@ -371,12 +397,13 @@ export class Compose extends FormElement {
         placeholder="Type something here"
       >
       </temba-completion>
-      <temba-charcount text="Type something here"></temba-charcount>`;
+      <temba-charcount text="${this.currentChat}"></temba-charcount>`;
   }
 
   private getAttachments(): TemplateResult {
     return html`
-      ${this.values && this.values.length > 0
+      ${(this.values && this.values.length > 0) ||
+      (this.errorValues && this.errorValues.length > 0)
         ? html`
             <div class="selected">
               ${this.values.map(attachment => {
@@ -402,15 +429,47 @@ export class Compose extends FormElement {
                   </div>
                 </div>`;
               })}
+              ${this.errorValues.map(errorAttachment => {
+                return html` <div class="selected-item error">
+                  <div class="remove-item error">
+                    <temba-icon
+                      id="${errorAttachment.uuid}"
+                      name="${Icon.delete_small}"
+                      @click="${this.handleRemoveAttachment}"
+                      clickable
+                    ></temba-icon>
+                  </div>
+                  <div class="option-name">
+                    <span
+                      title="${errorAttachment.name} (${formatFileSize(
+                        0,
+                        0
+                      )}) - Attachment failed - ${errorAttachment.error}"
+                      >${truncate(errorAttachment.name, 25)}
+                      (${formatFileSize(0, 0)}) - Attachment failed</span
+                    >
+                  </div>
+                </div>`;
+              })}
             </div`
         : null}
     `;
   }
 
   private getActions(): TemplateResult {
+    // if(this.errorValues.length > 0){
+    //   if(this.values.length === 0 && this.errorValues.length === 1){
+    //     this.uploadError = 'Attachment failed';
+    //   }
+    //   if(this.errorValues.length > 1){
+    //    this.uploadError = 'Some attachments failed';
+    //   }
+    //   this.uploadError += ', please remove and try again';
+    // }
+
     if (this.attachments) {
       if (this.uploading) {
-        return html` <temba-loading units="3" size="12"></temba-loading>`;
+        return html`<temba-loading units="3" size="12"></temba-loading>`;
       } else {
         return html`
           <input
@@ -427,10 +486,8 @@ export class Compose extends FormElement {
               @click="${this.handleAddAttachments}"
               clickable
             ></temba-icon>
-            ${this.uploadErrors.length > 0
-              ? html` <div class="upload-error">
-                  ${this.uploadErrors.join(', ')}
-                </div>`
+            ${this.errorValues.length > 0
+              ? html` <div class="upload-error">${this.uploadError}</div>`
               : null}
           </label>
           ${this.button ? this.getButton() : null}

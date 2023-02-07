@@ -306,31 +306,28 @@ export class ContactChat extends ContactStoreElement {
     console.log('handleSend evt', evt);
     const buttonName = evt.detail.name;
     if (buttonName === 'Send') {
-      // add contact uuid
       const payload = {
         contacts: [this.currentContact.uuid],
       };
-      // add translations text, attachments, etc
       const compose = evt.currentTarget as Compose;
       if (compose && (compose.currentChat || compose.values)) {
-        const translations = {
-          und: {
+        // todo confirm if this is needed now that we've got translations, request still requiring it
+        payload['text'] = compose.currentChat;
+        payload['translations'] = {
+          lang: {
             text: compose.currentChat,
             attachments: compose.values,
           },
         };
-        payload['translations'] = translations;
       }
-      // add ticket uuid
       if (this.currentTicket) {
         payload['ticket'] = this.currentTicket.uuid;
       }
 
       postJSON(`/api/v2/broadcasts.json`, payload)
-        .then(() => {
-          compose.currentChat = '';
-          compose.values = [];
-          compose.buttonDisabled = true;
+        .then(response => {
+          console.log(response);
+          compose.reset();
           this.refresh(true);
         })
         .catch(err => {

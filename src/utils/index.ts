@@ -606,7 +606,7 @@ export const formatFileType = (type: string): string => {
   return type.split('/')[1];
 };
 export const formatFileSize = (bytes: number, decimalPoint: number): string => {
-  if (bytes == 0) return '0';
+  if (bytes == 0) return '0 KB';
   const k = 1024,
     dm = decimalPoint || 2,
     sizes = ['B', 'KB', 'MB', 'GB'], //, 'TB', 'PB', 'EB', 'ZB', 'YB'],
