@@ -83,13 +83,6 @@ export class ContactChat extends ContactStoreElement {
         color: var(--color-link-primary-hover);
       }
 
-      temba-button#send-button {
-        --button-y: 1px;
-        --button-x: 12px;
-        margin-top: 0.8em;
-        align-self: flex-end;
-      }
-
       temba-button#reopen-button {
         --button-y: 1px;
         --button-x: 12px;

@@ -102,6 +102,13 @@ export class Compose extends FormElement {
         font-size: var(--help-text-size);
         margin-left: 5px;
       }
+
+      temba-button#send-button {
+        --button-y: 1px;
+        --button-x: 12px;
+        margin-top: 0.8em;
+        align-self: flex-end;
+      }
     `;
   }
 
