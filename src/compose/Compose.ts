@@ -457,16 +457,6 @@ export class Compose extends FormElement {
   }
 
   private getActions(): TemplateResult {
-    // if(this.errorValues.length > 0){
-    //   if(this.values.length === 0 && this.errorValues.length === 1){
-    //     this.uploadError = 'Attachment failed';
-    //   }
-    //   if(this.errorValues.length > 1){
-    //    this.uploadError = 'Some attachments failed';
-    //   }
-    //   this.uploadError += ', please remove and try again';
-    // }
-
     if (this.attachments) {
       if (this.uploading) {
         return html`<temba-loading units="3" size="12"></temba-loading>`;
