@@ -50,8 +50,6 @@ export class ContactChat extends ContactStoreElement {
 
       .chatbox {
         padding: 1em;
-        // background: #f2f2f2;
-        // border-top: 3px solid #e1e1e1;
         display: flex;
         flex-direction: column;
         z-index: 3;
@@ -277,14 +275,6 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
-  private handleChatChange(event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
-
-    const chat = event.currentTarget as TextInput;
-    this.currentChat = chat.value;
-  }
-
   private handleTicketReopen() {
     const uuid = this.currentTicket.uuid;
     postJSON(`/api/v2/ticket_actions.json`, {
@@ -311,10 +301,9 @@ export class ContactChat extends ContactStoreElement {
       };
       const compose = evt.currentTarget as Compose;
       if (compose && (compose.currentChat || compose.values)) {
-        // todo confirm if this is needed now that we've got translations, request still requiring it
         payload['text'] = compose.currentChat;
         payload['translations'] = {
-          lang: {
+          und: {
             text: compose.currentChat,
             attachments: compose.values,
           },
