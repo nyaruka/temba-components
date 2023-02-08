@@ -12,6 +12,7 @@ import {
 } from '../utils';
 import { Completion } from '../completion/Completion';
 import { Button } from '../button/Button';
+import { CharCount } from '../charcount/CharCount';
 
 export interface Attachment {
   uuid: string;
@@ -51,19 +52,19 @@ export class Compose extends FormElement {
         display: flex;
         flex-direction: column;
       }
-      .selected {
+      .attachments-list {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
       }
-      .selected-item {
+      .attachment-item {
         background: rgba(100, 100, 100, 0.1);
         border-radius: 2px;
         margin: 2px;
         display: flex;
         color: var(--color-widget-text);
       }
-      .selected-item.error {
+      .attachment-item.error {
         background: rgba(250, 0, 0, 0.1);
         color: rgba(250, 0, 0, 0.75);
       }
@@ -78,7 +79,7 @@ export class Compose extends FormElement {
         background: rgba(250, 0, 0, 0.05);
         color: rgba(250, 0, 0, 0.75);
       }
-      .option-name {
+      .attachment-name {
         align-self: center;
         font-size: 12px;
         padding: 2px 8px;
@@ -107,7 +108,16 @@ export class Compose extends FormElement {
         display: flex;
         align-items: center;
       }
-      temba-button#send-button {
+      temba-charcount {
+        margin-right: 5px;
+        overflow: hidden;
+        --temba-charcount-counts-margin-top: 0px;
+        --temba-charcount-summary-margin-top: 0px;
+        --temba-charcount-summary-position: fixed;
+        --temba-charcount-summary-right: 90px;
+        --temba-charcount-summary-bottom: 95px;
+      }
+      temba-button {
         --button-y: 1px;
         --button-x: 12px;
       }
@@ -409,9 +419,9 @@ export class Compose extends FormElement {
       ${(this.values && this.values.length > 0) ||
       (this.errorValues && this.errorValues.length > 0)
         ? html`
-            <div class="selected">
+            <div class="attachments-list">
               ${this.values.map(attachment => {
-                return html` <div class="selected-item">
+                return html` <div class="attachment-item">
                   <div class="remove-item">
                     <temba-icon
                       id="${attachment.uuid}"
@@ -420,7 +430,7 @@ export class Compose extends FormElement {
                       clickable
                     ></temba-icon>
                   </div>
-                  <div class="option-name">
+                  <div class="attachment-name">
                     <span
                       title="${attachment.name} (${formatFileSize(
                         attachment.size,
@@ -434,7 +444,7 @@ export class Compose extends FormElement {
                 </div>`;
               })}
               ${this.errorValues.map(errorAttachment => {
-                return html` <div class="selected-item error">
+                return html` <div class="attachment-item error">
                   <div class="remove-item error">
                     <temba-icon
                       id="${errorAttachment.uuid}"
@@ -443,7 +453,7 @@ export class Compose extends FormElement {
                       clickable
                     ></temba-icon>
                   </div>
-                  <div class="option-name">
+                  <div class="attachment-name">
                     <span
                       title="${errorAttachment.name} (${formatFileSize(
                         0,
