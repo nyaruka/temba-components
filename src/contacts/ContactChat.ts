@@ -70,10 +70,6 @@ export class ContactChat extends ContactStoreElement {
         align-items: center;
       }
 
-      temba-completion {
-        --textarea-height: 5em;
-      }
-
       a {
         color: var(--color-link-primary);
       }

@@ -44,6 +44,7 @@ export class Compose extends FormElement {
         --widget-box-shadow: none;
         --widget-box-shadow-focused: none;
         --temba-textinput-padding: 0;
+        --textarea-height: 5em;
       }
 
       .attachments {
@@ -102,12 +103,13 @@ export class Compose extends FormElement {
         font-size: var(--help-text-size);
         margin-left: 5px;
       }
-
+      .actions-right {
+        display: flex;
+        align-items: center;
+      }
       temba-button#send-button {
         --button-y: 1px;
         --button-x: 12px;
-        margin-top: 0.8em;
-        align-self: flex-end;
       }
     `;
   }
@@ -132,9 +134,6 @@ export class Compose extends FormElement {
 
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
-
-  @property({ type: String, attribute: false })
-  uploadError = 'Some attachments failed, please remove and try again';
 
   @property({ type: Array, attribute: false })
   errorValues: Attachment[] = [];
@@ -332,13 +331,12 @@ export class Compose extends FormElement {
     if (this.button) {
       const chatboxEmpty = this.currentChat.trim().length === 0;
       const attachmentsEmpty = this.values.length === 0;
-      const hasErrorAttachments = this.errorValues.length > 0;
       if (this.chatbox && this.attachments) {
-        return (chatboxEmpty && attachmentsEmpty) || hasErrorAttachments;
+        return chatboxEmpty && attachmentsEmpty;
       } else if (this.chatbox) {
         return chatboxEmpty;
       } else if (this.attachments) {
-        return attachmentsEmpty || hasErrorAttachments;
+        return attachmentsEmpty;
       } else {
         return true;
       }
@@ -388,23 +386,22 @@ export class Compose extends FormElement {
 
   private getChatbox(): TemplateResult {
     return html` <temba-completion
-        value=${this.currentChat}
-        gsm
-        textarea
-        @change=${this.handleChatboxChange}
-        @keydown=${(e: KeyboardEvent) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            const chat = e.target as Completion;
-            if (!chat.hasVisibleOptions()) {
-              this.handleSendEnter(e);
-              this.preventDefaults(e);
-            }
+      value=${this.currentChat}
+      gsm
+      textarea
+      @change=${this.handleChatboxChange}
+      @keydown=${(e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          const chat = e.target as Completion;
+          if (!chat.hasVisibleOptions()) {
+            this.handleSendEnter(e);
+            this.preventDefaults(e);
           }
-        }}
-        placeholder="Type something here"
-      >
-      </temba-completion>
-      <temba-charcount text="${this.currentChat}"></temba-charcount>`;
+        }
+      }}
+      placeholder="Write something here"
+    >
+    </temba-completion>`;
   }
 
   private getAttachments(): TemplateResult {
@@ -470,24 +467,25 @@ export class Compose extends FormElement {
       } else {
         return html`
           <input
+            class="actions-left"
             type="file"
             id="upload-files"
             multiple
             accept="${this.accept}"
             @change="${this.handleUploadFileChanged}"
           />
-          <label class="upload-label" for="upload-files">
+          <label class="actions-left upload-label" for="upload-files">
             <temba-icon
               class="upload-icon"
               name="${Icon.attachment}"
               @click="${this.handleAddAttachments}"
               clickable
             ></temba-icon>
-            ${this.errorValues.length > 0
-              ? html` <div class="upload-error">${this.uploadError}</div>`
-              : null}
           </label>
-          ${this.button ? this.getButton() : null}
+          <div class="actions-right">
+            <temba-charcount text="${this.currentChat}"></temba-charcount>
+            ${this.button ? this.getButton() : null}
+          </div>
         `;
       }
     } else {
