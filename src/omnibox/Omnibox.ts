@@ -182,6 +182,10 @@ export class Omnibox extends RapidElement {
     return select.values;
   }
 
+  public isMatch() {
+    return true;
+  }
+
   public render(): TemplateResult {
     return html`
       <temba-select
@@ -197,8 +201,8 @@ export class Omnibox extends RapidElement {
         .values=${this.value}
         .renderOption=${this.renderOption.bind(this)}
         .renderSelectedItem=${this.renderSelection.bind(this)}
-        .createArbitraryOption=${this.createArbitraryOption.bind(this)}
         .inputRoot=${this}
+        .isMatch=${this.isMatch}
         searchable
         searchOnFocus
         multi
