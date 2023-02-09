@@ -4,9 +4,9 @@ import { Icon } from '../vectoricon';
 import { ContactStoreElement } from './ContactStoreElement';
 
 const STATUS = {
-  stopped: { name: 'Stopped', icon: 'x-octagon' },
-  blocked: { name: 'Blocked', icon: 'slash' },
-  archived: { name: 'Archived', icon: 'archive' },
+  stopped: { name: 'Stopped' },
+  blocked: { name: 'Blocked' },
+  archived: { name: 'Archived' },
 };
 
 export class ContactBadges extends ContactStoreElement {
@@ -32,9 +32,9 @@ export class ContactBadges extends ContactStoreElement {
           ${status && this.data.status !== 'active'
             ? html`
                 <temba-label
-                  icon="${status.icon}"
+                  icon="icon.contact_${this.data.status}"
                   onclick="goto(event)"
-                  href="/contact/${status.name.toLowerCase()}"
+                  href="/contact/${status.name.toLowerCase()}/"
                   secondary
                   clickable
                   shadow

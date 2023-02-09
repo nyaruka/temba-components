@@ -18,7 +18,6 @@ export interface MenuItem {
   loading?: boolean;
   bottom?: boolean;
   level?: number;
-  trigger?: string;
   href?: string;
   show_header?: boolean;
   items?: MenuItem[];
@@ -122,9 +121,6 @@ export class TembaMenu extends RapidElement {
         display: none;
       }
 
-      .submenu {
-      }
-
       .level-0 > .item,
       .level-0 > temba-dropdown > div[slot='toggle'] > .avatar {
         background: var(--color-primary-dark);
@@ -185,9 +181,6 @@ export class TembaMenu extends RapidElement {
         font-size: 0.7em;
       }
 
-      .level-0.expanding {
-      }
-
       .level-0.expanded {
         background: inherit;
       }
@@ -216,9 +209,6 @@ export class TembaMenu extends RapidElement {
 
       .item > temba-icon {
         margin-right: 0.5em;
-      }
-
-      .item.inline > temba-icon {
       }
 
       .item > .details > .name {
@@ -270,9 +260,6 @@ export class TembaMenu extends RapidElement {
         border-bottom-right-radius: var(--curvature);
       }
 
-      .level-0 > .selected-top {
-      }
-
       .level-0 > .item:hover {
         background: rgba(var(--primary-rgb), 0.85);
         --icon-color: #fff;
@@ -282,12 +269,6 @@ export class TembaMenu extends RapidElement {
         background: inherit;
         --icon-color: var(--color-primary-dark);
         cursor: default;
-      }
-
-      .inline-children {
-      }
-
-      .inline-children .item {
       }
 
       .item.inline {
@@ -330,9 +311,6 @@ export class TembaMenu extends RapidElement {
         transition: min-width var(--transition-speed) !important;
       }
 
-      .level-1 .item .details {
-      }
-
       .collapsed .item {
         overflow: hidden;
         min-width: 0;
@@ -344,12 +322,6 @@ export class TembaMenu extends RapidElement {
         min-height: 1.5em;
         max-height: 1.5em;
         align-items: center;
-      }
-
-      .item .details .name {
-      }
-
-      .item temba-icon {
       }
 
       .collapsed .item {
@@ -536,7 +508,6 @@ export class TembaMenu extends RapidElement {
 
   root: MenuItem;
   selection: string[] = [];
-  pending: string[] = [];
   state: { [id: string]: MenuItemState } = {};
 
   constructor() {
@@ -566,14 +537,6 @@ export class TembaMenu extends RapidElement {
   }
 
   public updated(changes: Map<string, any>) {
-    if (changes.has('value')) {
-      this.setSelection((this.value || '').split('/'));
-    }
-
-    if (changes.has('submenu') && !changes.has('value')) {
-      this.setSelection([this.submenu]);
-    }
-
     if (changes.has('endpoint')) {
       this.root = {
         level: -1,
@@ -582,9 +545,16 @@ export class TembaMenu extends RapidElement {
 
       if (!this.wait) {
         this.loadItems(this.root);
+      } else {
+        this.fireCustomEvent(CustomEventType.Ready);
       }
+    }
 
-      this.fireCustomEvent(CustomEventType.Ready);
+    if (changes.has('root')) {
+      if (this.value) {
+        this.setFocusedItem(this.value);
+        this.value = null;
+      }
     }
   }
 
@@ -592,53 +562,36 @@ export class TembaMenu extends RapidElement {
     this.loadItems(this.root);
   }
 
-  public refresh(path: string[] = null) {
-    if (!path) {
-      path = [...this.selection];
+  public refresh() {
+    const path = [...this.selection];
+    let item = this.root;
+
+    while (path.length > 0) {
+      this.loadItems(item);
+      const id = path.shift();
+      item = item.items.find(_item => _item.id == id);
     }
 
-    // go up the tree until we find an endpoint
-    const item = this.getMenuItemForSelection(path);
-
-    if (item) {
-      if (item.endpoint) {
-        this.loadItems(item, false);
-      } else {
-        path.pop();
-        this.refresh(path);
-      }
-    }
-  }
-
-  private fireNoPath(missingId: string) {
-    const item = this.getMenuItem();
-
-    if (item) {
-      const details = {
-        item: item.id,
-        selection: '/' + this.selection.join('/'),
-        endpoint: item.endpoint,
-        path:
-          missingId + '/' + this.pending.join('/') + document.location.search,
-      };
-
-      // remove any excess from our selection
-      const selection = this.selection.join('/');
-      selection.replace(details.path, '');
-      this.selection = selection.split('/');
-
-      this.fireCustomEvent(CustomEventType.NoPath, details);
-      this.pending = [];
-      this.requestUpdate('root');
-    }
+    this.loadItems(item);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private loadItems(item: MenuItem, selectFirst = true) {
+  private loadItems(item: MenuItem, selectFirst = false) {
     if (item && item.endpoint) {
       item.loading = true;
       this.httpComplete = fetchResults(item.endpoint).then(
         (items: MenuItem[]) => {
+          items.forEach(newItem => {
+            if (!newItem.items) {
+              const prevItem = (item.items || []).find(
+                prev => prev.id == newItem.id
+              );
+              if (prevItem && prevItem.items) {
+                newItem.items = prevItem.items;
+              }
+            }
+          });
+
           // update our item level
           items.forEach(subItem => {
             subItem.level = item.level + 1;
@@ -646,42 +599,30 @@ export class TembaMenu extends RapidElement {
             if (subItem.items) {
               subItem.items.forEach(inlineItem => {
                 inlineItem.level = item.level + 2;
-                // inlineItem.parent = subItem;
               });
             }
           });
 
           item.items = items;
           item.loading = false;
+
+          if (this.submenu && this.selection.length == 0) {
+            const sub = this.getMenuItemForSelection([this.submenu]);
+            this.handleItemClicked(null, sub);
+          }
+
+          if (!this.wait) {
+            this.fireCustomEvent(CustomEventType.Ready);
+            this.wait = true;
+          }
+
+          // once we've set our items check if we need to auto-select
+          if (selectFirst && item.items.length > 0) {
+            this.handleItemClicked(null, item.items[0]);
+          }
+
           this.requestUpdate('root');
           this.scrollSelectedIntoView();
-          if (this.pending && this.pending.length > 0) {
-            // auto select the next pending click
-            const nextId = this.pending.shift();
-            if (nextId && items.length > 0) {
-              const nextItem = findItem(items, nextId);
-              if (nextItem.item) {
-                this.handleItemClicked(null, nextItem.item);
-              } else {
-                this.fireNoPath(nextId);
-              }
-            }
-          } else {
-            // auto select the first item
-            if (
-              selectFirst &&
-              items.length > 0 &&
-              this.selection.length >= 1 &&
-              !item.inline
-            ) {
-              for (const item of items) {
-                if (!item.type) {
-                  this.handleItemClicked(null, item);
-                  break;
-                }
-              }
-            }
-          }
         }
       );
     }
@@ -692,15 +633,27 @@ export class TembaMenu extends RapidElement {
     menuItem: MenuItem,
     parent: MenuItem = null
   ) {
-    this.fireCustomEvent(CustomEventType.ButtonClicked, {
-      item: menuItem,
-      parent,
-    });
     if (parent && parent.popup) {
+      if (event) {
+        this.fireCustomEvent(CustomEventType.ButtonClicked, {
+          item: menuItem,
+          selection: this.getSelection(),
+          parent,
+        });
+      }
+
       return;
     }
 
     if (menuItem.popup) {
+      if (event) {
+        this.fireCustomEvent(CustomEventType.ButtonClicked, {
+          item: menuItem,
+          selection: this.getSelection(),
+          parent,
+        });
+      }
+
       return;
     }
 
@@ -717,63 +670,37 @@ export class TembaMenu extends RapidElement {
       event.stopPropagation();
     }
 
-    if (menuItem.trigger) {
-      new Function(menuItem.trigger)();
+    // update our selection
+    if (menuItem.level >= this.selection.length) {
+      this.selection.push(menuItem.vanity_id || menuItem.id);
     } else {
-      if (menuItem.level === 0) {
-        /* this.expanding = menuItem.id;
-        window.setTimeout(() => {
-          this.expanding = null;
-        }, 60);
-        */
-      }
-
-      // update our selection
-      if (menuItem.level >= this.selection.length) {
-        this.selection.push(menuItem.vanity_id || menuItem.id);
-      } else {
-        this.selection.splice(
-          menuItem.level,
-          this.selection.length - menuItem.level,
-          menuItem.vanity_id || menuItem.id
-        );
-      }
-
-      if (menuItem.endpoint) {
-        this.loadItems(menuItem, this.pending.length == 0);
-
-        // make sure change events fire for events with hrefs
-        if (!menuItem.href) {
-          return;
-        }
-      } else {
-        if (this.pending && this.pending.length > 0) {
-          // auto select the next pending click
-          const nextId = this.pending.shift();
-          const item = this.getMenuItem();
-          if (nextId && item && item.items && item.items.length > 0) {
-            const nextItem = findItem(item.items, nextId).item;
-            if (nextItem) {
-              this.handleItemClicked(null, nextItem);
-              return;
-            } else {
-              this.fireNoPath(nextId);
-              this.requestUpdate('root');
-              return;
-            }
-          } else {
-            this.fireNoPath(nextId);
-            this.requestUpdate('root');
-            return;
-          }
-        }
-        this.requestUpdate('root');
-      }
-
-      if (this.pending.length == 0 || this.getMenuItem().href) {
-        this.dispatchEvent(new Event('change'));
-      }
+      this.selection.splice(
+        menuItem.level,
+        this.selection.length - menuItem.level,
+        menuItem.vanity_id || menuItem.id
+      );
     }
+
+    if (menuItem.endpoint) {
+      this.loadItems(menuItem, !!event);
+
+      // make sure change events fire for events with hrefs
+      if (!menuItem.href) {
+        return;
+      }
+    } else {
+      this.requestUpdate();
+    }
+
+    if (menuItem.href) {
+      this.dispatchEvent(new Event('change'));
+    }
+
+    this.fireCustomEvent(CustomEventType.ButtonClicked, {
+      item: menuItem,
+      selection: this.getSelection(),
+      parent,
+    });
   }
 
   public scrollSelectedIntoView() {
@@ -828,28 +755,6 @@ export class TembaMenu extends RapidElement {
     return this.selection;
   }
 
-  public setSelection(path: string[]) {
-    this.pending = [...path];
-    this.selection = [];
-
-    if (this.wait) {
-      this.wait = false;
-      this.loadItems(this.root);
-    }
-  }
-
-  public setSelectionPath(path: string) {
-    const asPath = path.split('/').filter(step => !!step);
-
-    // first try to click in the current space
-    const clicked = this.clickItem(asPath[asPath.length - 1]);
-
-    if (!clicked) {
-      this.wait = true;
-      this.setSelection(asPath);
-    }
-  }
-
   public handleExpand() {
     this.collapsed = false;
   }
@@ -860,6 +765,9 @@ export class TembaMenu extends RapidElement {
 
   public async setFocusedItem(path: string) {
     const focusedPath = path.split('/').filter(step => !!step);
+    if (!this.root) {
+      return;
+    }
 
     // if we don't match at the first level, we are a noop
     if (focusedPath.length > 0) {
@@ -875,7 +783,7 @@ export class TembaMenu extends RapidElement {
       const nextId = focusedPath.shift();
       if (nextId) {
         if (!level.items) {
-          this.loadItems(level, false);
+          this.loadItems(level);
           await this.httpComplete;
         }
 
