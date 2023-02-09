@@ -289,14 +289,17 @@ export class ContactChat extends ContactStoreElement {
         contacts: [this.currentContact.uuid],
       };
       const compose = evt.currentTarget as Compose;
-      if (compose && (compose.currentChat || compose.values)) {
+      if (compose) {
         payload['text'] = compose.currentChat;
-        payload['translations'] = {
-          und: {
-            text: compose.currentChat,
-            attachments: compose.values,
-          },
-        };
+        payload['attachments'] = compose.values.map(
+          attachment => attachment.url
+        );
+        // payload['translations'] = {
+        //   und: {
+        //     text: compose.currentChat,
+        //     attachments: compose.values,
+        //   },
+        // };
       }
       if (this.currentTicket) {
         payload['ticket'] = this.currentTicket.uuid;
