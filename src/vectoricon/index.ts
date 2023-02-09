@@ -21,6 +21,7 @@ export enum Icon {
   checkbox = 'square',
   checkbox_checked = 'check-square',
   contact = 'user-01',
+  contact_archived = 'archive',
   contact_blocked = 'message-x-square',
   contact_stopped = 'slash-octagon',
   contact_updated = 'user-edit',

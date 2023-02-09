@@ -20,6 +20,10 @@ const getMenu = async (attrs: any = {}, width = 0) => {
   return menu;
 };
 
+const IDX_CHOOSER = 0;
+const IDX_TASKS = 1;
+const IDX_SCHEDULE = 2;
+
 describe('temba-menu', () => {
   it('can be created', async () => {
     const list: TembaMenu = await getMenu();
@@ -29,24 +33,86 @@ describe('temba-menu', () => {
 
   it('renders with endpoint', async () => {
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/list/menu-root.json',
+      endpoint: '/test-assets/menu/menu-root.json',
     });
 
-    expect(menu.root.items.length).to.equal(2);
-    await assertScreenshot('list/menu-root', getClip(menu));
+    expect(menu.root.items.length).to.equal(3);
+    await assertScreenshot('menu/menu-root', getClip(menu));
   });
 
   it('supports submenu', async () => {
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/list/menu-root.json',
+      endpoint: '/test-assets/menu/menu-root.json',
     });
 
-    // click our first item
+    // click our tasks
+    menu.getDiv('#menu-tasks').click();
+    await menu.httpComplete;
+    menu.requestUpdate();
+    // await menu.updateComplete;
+
+    expect(menu.root.items[IDX_TASKS].items.length).to.equal(3);
+    await assertScreenshot('menu/menu-submenu', getClip(menu));
+  });
+
+  it('sets focus', async () => {
+    // setting focus just shows the selection, it does
+    // not trigger events such as loading or dispatching
+
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/menu/menu-root.json',
+    });
+
+    // click our tasks
     menu.getDiv('#menu-tasks').click();
     await menu.httpComplete;
 
-    expect(menu.root.items[0].items.length).to.equal(3);
+    // now set the focus manually
+    menu.setFocusedItem('schedule');
 
-    await assertScreenshot('list/menu-submenu', getClip(menu));
+    // setting focus does NOT fetch items
+    expect(menu.root.items[IDX_SCHEDULE].items).to.equal(undefined);
+
+    // now load the items explicitly
+    menu.getDiv('#menu-schedule').click();
+    await menu.httpComplete;
+    expect(menu.root.items[IDX_SCHEDULE].items.length).to.equal(3);
+
+    await assertScreenshot('menu/menu-focused-with items', getClip(menu));
+
+    menu.setFocusedItem('tasks');
+    await assertScreenshot('menu/menu-tasks', getClip(menu));
+
+    menu.setFocusedItem('tasks/todo');
+    await assertScreenshot('menu/menu-tasks-nextup', getClip(menu));
+  });
+
+  it('refreshes', async () => {
+    // the menu should refresh along the selection path without destroying state
+    const menu: TembaMenu = await getMenu({
+      endpoint: '/test-assets/menu/menu-root.json',
+    });
+
+    // click our tasks
+    menu.getDiv('#menu-tasks').click();
+    menu.requestUpdate();
+    await menu.httpComplete;
+    // await menu.updateComplete;
+
+    // now click on the todo
+    menu.getDiv('#menu-todo').click();
+    menu.requestUpdate();
+    // await menu.updateComplete;
+
+    expect(menu.root.items[IDX_TASKS].items.length).to.equal(3);
+    await assertScreenshot('menu/menu-refresh-1', getClip(menu));
+
+    // now refresh!
+    menu.refresh();
+    await menu.httpComplete;
+
+    // we should still have our task items
+    expect(menu.root.items[IDX_TASKS].items.length).to.equal(3);
+    await assertScreenshot('menu/menu-refresh-2', getClip(menu));
   });
 });
