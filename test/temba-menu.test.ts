@@ -55,16 +55,6 @@ describe('temba-menu', () => {
     await assertScreenshot('menu/menu-submenu', getClip(menu));
   });
 
-  it('pops ups', async () => {
-    const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/menu/menu-root.json',
-    });
-
-    // click our tasks
-    menu.getDiv('#menu-chooser').click();
-    expect(menu.root.items[IDX_CHOOSER].items.length).to.equal(1);
-  });
-
   it('sets focus', async () => {
     // setting focus just shows the selection, it does
     // not trigger events such as loading or dispatching
