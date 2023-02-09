@@ -537,12 +537,6 @@ export class TembaMenu extends RapidElement {
   }
 
   public updated(changes: Map<string, any>) {
-    if (changes.has('value')) {
-      if (this.value) {
-        this.setFocusedItem(this.value);
-      }
-    }
-
     if (changes.has('endpoint')) {
       this.root = {
         level: -1,
@@ -553,6 +547,13 @@ export class TembaMenu extends RapidElement {
         this.loadItems(this.root);
       } else {
         this.fireCustomEvent(CustomEventType.Ready);
+      }
+    }
+
+    if (changes.has('root')) {
+      if (this.value) {
+        this.setFocusedItem(this.value);
+        this.value = null;
       }
     }
   }
