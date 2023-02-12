@@ -358,16 +358,18 @@ export class Compose extends FormElement {
   private handleSendClick(evt: MouseEvent) {
     console.log('handleSendClick evt', evt);
     const button = evt.target as Button;
-    if (!button.disabled) {
-      const name = button.name;
-      this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
-    }
+    this.handleSend(button);
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
     console.log('handleSendEnter evt', evt);
     const button = this.shadowRoot.querySelector('#send-button') as Button;
-    if (!button.disabled && this.currentChat && this.currentChat.length > 0) {
+    this.handleSend(button);
+  }
+
+  private handleSend(btn: Button) {
+    console.log('handleSend btn', btn);
+    if (!btn.disabled) {
       const name = this.buttonName;
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
     }
