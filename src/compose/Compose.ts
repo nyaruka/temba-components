@@ -99,11 +99,6 @@ export class Compose extends FormElement {
       .upload-icon {
         color: rgb(102, 102, 102);
       }
-      .upload-error {
-        color: red;
-        font-size: var(--help-text-size);
-        margin-left: 5px;
-      }
       .actions-right {
         display: flex;
         align-items: center;
@@ -120,6 +115,10 @@ export class Compose extends FormElement {
       temba-button {
         --button-y: 1px;
         --button-x: 12px;
+      }
+      .send-error {
+        color: rgba(250, 0, 0, 0.75);
+        font-size: var(--help-text-size);
       }
     `;
   }
@@ -156,6 +155,9 @@ export class Compose extends FormElement {
 
   @property({ type: Boolean })
   buttonDisabled = true;
+
+  @property({ type: String })
+  buttonError = '';
 
   public constructor() {
     super();
@@ -370,6 +372,11 @@ export class Compose extends FormElement {
     }
   }
 
+  private handleSendBlur(evt: Event) {
+    this.buttonError = '';
+    this.buttonDisabled = this.toggleButton();
+  }
+
   public render(): TemplateResult {
     console.log('render chatbox', this.chatbox);
     console.log('render attachments', this.attachments);
@@ -493,6 +500,9 @@ export class Compose extends FormElement {
             ></temba-icon>
           </label>
           <div class="actions-right">
+            ${this.buttonError
+              ? html`<div class="send-error">${this.buttonError}</div>`
+              : null}
             <temba-charcount text="${this.currentChat}"></temba-charcount>
             ${this.button ? this.getButton() : null}
           </div>
@@ -514,6 +524,7 @@ export class Compose extends FormElement {
       name=${this.buttonName}
       @click=${this.handleSendClick}
       ?disabled=${this.buttonDisabled}
+      @blur=${this.handleSendBlur}
     ></temba-button>`;
   }
 }

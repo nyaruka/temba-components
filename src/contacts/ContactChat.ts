@@ -290,30 +290,55 @@ export class ContactChat extends ContactStoreElement {
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
-        payload['text'] = compose.currentChat;
-        payload['attachments'] = compose.values.map(
-          attachment => attachment.url
-        );
-        // payload['translations'] = {
-        //   und: {
-        //     text: compose.currentChat,
-        //     attachments: compose.values,
-        //   },
-        // };
+        const text = compose.currentChat;
+        payload['text'] = text;
+        const attachments = compose.values.map(attachment => {
+          const content_type = attachment.content_type;
+          const url = new URL(attachment.url, document.baseURI).href;
+          return content_type + ':' + url;
+        });
+        payload['attachments'] = attachments;
       }
       if (this.currentTicket) {
         payload['ticket'] = this.currentTicket.uuid;
       }
 
+      const genericError = buttonName + ' failed, please try again';
+
       postJSON(`/api/v2/broadcasts.json`, payload)
         .then(response => {
           console.log(response);
-          compose.reset();
-          this.refresh(true);
+          if (response.status < 400) {
+            compose.reset();
+            this.refresh(true);
+          } else {
+            if (response.status >= 400 && response.status < 500) {
+              if (response.json.text && response.json.text.length > 0) {
+                compose.buttonError = response.json.text[0].replace(
+                  'Translations',
+                  'Text'
+                );
+              } else if (
+                response.json.attachments &&
+                response.json.attachments.length > 0
+              ) {
+                compose.buttonError = response.json.attachments[0].replace(
+                  'Translations',
+                  'Attachments'
+                );
+              } else {
+                compose.buttonError = genericError;
+              }
+            } else {
+              compose.buttonError = genericError;
+            }
+            compose.buttonDisabled = true;
+          }
         })
-        .catch(err => {
-          console.error(err);
-          // todo display err msg below send button?
+        .catch(error => {
+          console.error(error);
+          compose.buttonError = genericError;
+          compose.buttonDisabled = true;
         });
     }
   }
