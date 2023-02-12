@@ -374,8 +374,10 @@ export class Compose extends FormElement {
   }
 
   private handleSendBlur(evt: Event) {
-    this.buttonError = '';
-    this.buttonDisabled = this.toggleButton();
+    if (this.buttonError.length > 0) {
+      this.buttonError = '';
+      this.buttonDisabled = this.toggleButton();
+    }
   }
 
   public render(): TemplateResult {
