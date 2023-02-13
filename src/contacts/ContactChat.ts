@@ -437,7 +437,13 @@ export class ContactChat extends ContactStoreElement {
 
   private getChatbox(): TemplateResult {
     return html` <div class="chatbox ${this.toolbar ? 'full' : ''}">
-      <temba-compose @temba-button-clicked=${this.handleSend.bind(this)}>
+      <temba-compose
+        chatbox
+        attachments
+        counter
+        button
+        @temba-button-clicked=${this.handleSend.bind(this)}
+      >
       </temba-compose>
     </div>`;
   }

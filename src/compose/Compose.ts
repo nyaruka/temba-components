@@ -12,7 +12,6 @@ import {
 } from '../utils';
 import { Completion } from '../completion/Completion';
 import { Button } from '../button/Button';
-import { CharCount } from '../charcount/CharCount';
 
 export interface Attachment {
   uuid: string;
@@ -124,39 +123,41 @@ export class Compose extends FormElement {
   }
 
   @property({ type: Boolean })
-  chatbox = true;
+  chatbox: boolean;
+
+  @property({ type: Boolean })
+  attachments: boolean;
+
+  // @property({ type: Boolean })
+  // counter: boolean;
+
+  @property({ type: Boolean })
+  button: boolean;
 
   @property({ type: String, attribute: false })
   currentChat = '';
 
-  @property({ type: Boolean })
-  counter = true;
-
-  @property({ type: Boolean })
-  attachments = true;
+  @property({ type: String })
+  accept = ''; //e.g. ".xls,.xlsx"
 
   @property({ type: String, attribute: false })
   endpoint = '/msgmedia/upload/';
 
-  @property({ type: String })
-  accept = ''; //e.g. ".xls,.xlsx"
-
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
+  // values = successfully uploaded attachments
+  // errorValues = failed to upload attachments
   @property({ type: Array, attribute: false })
   errorValues: Attachment[] = [];
-
-  @property({ type: Boolean })
-  button = true;
 
   @property({ type: String })
   buttonName = 'Send';
 
-  @property({ type: Boolean })
+  @property({ type: Boolean, attribute: false })
   buttonDisabled = true;
 
-  @property({ type: String })
+  @property({ type: String, attribute: false })
   buttonError = '';
 
   public constructor() {
@@ -165,7 +166,7 @@ export class Compose extends FormElement {
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
-    console.log('changes', changes);
+    // console.log('changes', changes);
   }
 
   public reset(): void {
@@ -175,31 +176,31 @@ export class Compose extends FormElement {
   }
 
   private handleChatboxChange(evt: Event) {
-    console.log('handleChatboxChange evt', evt);
-    this.preventDefaults(evt);
+    // console.log('handleChatboxChange evt', evt);
     const completionElement = evt.target as Completion;
     const textInputElement = completionElement.textInputElement;
     this.currentChat = textInputElement.value;
     this.buttonDisabled = this.toggleButton();
+    this.preventDefaults(evt);
   }
 
   private handleDragEnter(evt: DragEvent): void {
-    console.log('drag enter', evt);
+    // console.log('drag enter', evt);
     this.highlight(evt);
   }
 
   private handleDragOver(evt: DragEvent): void {
-    console.log('drag over', evt);
+    // console.log('drag over', evt);
     this.highlight(evt);
   }
 
   private handleDragLeave(evt: DragEvent): void {
-    console.log('drag leave', evt);
+    // console.log('drag leave', evt);
     this.unhighlight(evt);
   }
 
   private handleDrop(evt: DragEvent): void {
-    console.log('drag drop', evt);
+    // console.log('drag drop', evt);
     this.unhighlight(evt);
 
     const dt = evt.dataTransfer;
@@ -215,35 +216,38 @@ export class Compose extends FormElement {
   }
 
   private highlight(evt: DragEvent): void {
-    console.log('highlight', evt);
-    this.preventDefaults(evt);
+    // console.log('highlight', evt);
     const dragAndDropZone = evt.target as HTMLDivElement;
     dragAndDropZone.classList.add('highlight');
+    this.preventDefaults(evt);
   }
 
   private unhighlight(evt: DragEvent): void {
-    console.log('unhighlight', evt);
-    this.preventDefaults(evt);
+    // console.log('unhighlight', evt);
     const dragAndDropZone = evt.target as HTMLDivElement;
     dragAndDropZone.classList.remove('highlight');
+    this.preventDefaults(evt);
   }
 
   private handleAddAttachments(evt: Event): void {
-    console.log('handleAddAttachments evt', evt);
+    // console.log('handleAddAttachments evt', evt);
+    this.preventDefaults(evt);
     this.dispatchEvent(new Event('change'));
   }
 
   private handleUploadFileChanged(evt: Event): void {
-    console.log('handleUploadFileChanged evt', evt);
+    // console.log('handleUploadFileChanged evt', evt);
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
+    this.preventDefaults(evt);
   }
 
   private uploadFiles(files: FileList): void {
-    console.log('uploadFiles files', files);
+    // console.log('uploadFiles files', files);
     let filesToUpload = [];
     if (this.values && this.values.length > 0) {
+      //remove duplicate files that have already been uploaded
       filesToUpload = [...files].filter(file => {
         const index = this.values.findIndex(
           value => value.name === file.name && value.size === file.size
@@ -255,33 +259,33 @@ export class Compose extends FormElement {
     } else {
       filesToUpload = [...files];
     }
-    console.log('filesToUpload', filesToUpload);
+    // console.log('filesToUpload', filesToUpload);
     filesToUpload.map(fileToUpload => {
       this.uploadFile(fileToUpload);
     });
   }
 
   private uploadFile(file: File): void {
-    console.log('uploadFile file', file);
+    // console.log('uploadFile file', file);
     this.uploading = true;
 
     const url = this.endpoint;
-    console.log('url', url);
+    // console.log('url', url);
     const payload = new FormData();
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
         console.log(response);
         if (response.json.error) {
-          console.log(response.json.error);
+          // console.log(response.json.error);
           this.addErrorValue(file, response.json.error);
         } else {
-          console.log(response.json);
+          // console.log(response.json);
           const attachment = response.json as Attachment;
           if (attachment) {
-            console.log('attachment', attachment);
+            // console.log('attachment', attachment);
             this.addValue(attachment);
-            console.log('values', this.values);
+            // console.log('values', this.values);
             this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
           }
         }
@@ -317,26 +321,27 @@ export class Compose extends FormElement {
   }
 
   private handleRemoveAttachment(evt: Event): void {
-    console.log('handleRemoveAttachment evt', evt);
+    // console.log('handleRemoveAttachment evt', evt);
     const target = evt.target as HTMLDivElement;
 
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
-    console.log('handleRemoveAttachment attachment', attachment);
+    // console.log('handleRemoveAttachment attachment', attachment);
     if (attachment) {
       this.removeValue(attachment);
       this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-      console.log('values', this.values);
+      // console.log('values', this.values);
     }
     const errorAttachment = this.errorValues.find(
       ({ uuid }) => uuid === target.id
     );
-    console.log('handleRemoveAttachment errorAttachment', errorAttachment);
+    // console.log('handleRemoveAttachment errorAttachment', errorAttachment);
     if (errorAttachment) {
       this.removeErrorValue(errorAttachment);
       this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-      console.log('errorValues', this.errorValues);
+      // console.log('errorValues', this.errorValues);
     }
     this.buttonDisabled = this.toggleButton();
+    this.preventDefaults(evt);
   }
 
   private toggleButton() {
@@ -356,20 +361,24 @@ export class Compose extends FormElement {
   }
 
   private handleSendClick(evt: MouseEvent) {
-    console.log('handleSendClick evt', evt);
+    // console.log('handleSendClick evt', evt);
     const button = evt.target as Button;
     this.handleSend(button);
+    this.preventDefaults(evt);
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
-    console.log('handleSendEnter evt', evt);
+    // console.log('handleSendEnter evt', evt);
     const button = this.shadowRoot.querySelector('#send-button') as Button;
     this.handleSend(button);
+    this.preventDefaults(evt);
   }
 
   private handleSend(btn: Button) {
-    console.log('handleSend btn', btn);
+    // console.log('handleSend btn', btn);
     if (!btn.disabled) {
+      // btn.disabled = true;
+      this.buttonDisabled = true;
       const name = this.buttonName;
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
     }
@@ -380,12 +389,13 @@ export class Compose extends FormElement {
       this.buttonError = '';
       this.buttonDisabled = this.toggleButton();
     }
+    this.preventDefaults(evt);
   }
 
   public render(): TemplateResult {
-    console.log('render chatbox', this.chatbox);
-    console.log('render attachments', this.attachments);
-    console.log('render button', this.button);
+    // console.log('render chatbox', this.chatbox);
+    // console.log('render attachments', this.attachments);
+    // console.log('render button', this.button);
 
     return html`
       <div
@@ -489,39 +499,47 @@ export class Compose extends FormElement {
         return html`<temba-loading units="3" size="12"></temba-loading>`;
       } else {
         return html`
-          <input
-            class="actions-left"
-            type="file"
-            id="upload-files"
-            multiple
-            accept="${this.accept}"
-            @change="${this.handleUploadFileChanged}"
-          />
-          <label class="actions-left upload-label" for="upload-files">
-            <temba-icon
-              class="upload-icon"
-              name="${Icon.attachment}"
-              @click="${this.handleAddAttachments}"
-              clickable
-            ></temba-icon>
-          </label>
+          <div class="actions-left">
+            <input
+              type="file"
+              id="upload-files"
+              multiple
+              accept="${this.accept}"
+              @change="${this.handleUploadFileChanged}"
+            />
+            <label class="actions-left upload-label" for="upload-files">
+              <temba-icon
+                class="upload-icon"
+                name="${Icon.attachment}"
+                @click="${this.handleAddAttachments}"
+                clickable
+              ></temba-icon>
+            </label>
+          </div>
+          <div class="actions-center"></div>
           <div class="actions-right">
             ${this.buttonError
               ? html`<div class="send-error">${this.buttonError}</div>`
               : null}
-            <temba-charcount text="${this.currentChat}"></temba-charcount>
+            ${this.chatbox ? this.getCounter() : null}
             ${this.button ? this.getButton() : null}
           </div>
         `;
       }
     } else {
       return html`
-        ${this.button
-          ? html` <div></div>
-              ${this.getButton()}`
-          : null}
+        <div class="actions-left"></div>
+        <div class="actions-center"></div>
+        <div class="actions-right">
+          ${this.chatbox ? this.getCounter() : null}
+          ${this.button ? this.getButton() : null}
+        </div>
       `;
     }
+  }
+
+  private getCounter(): TemplateResult {
+    return html`<temba-charcount text="${this.currentChat}"></temba-charcount>`;
   }
 
   private getButton(): TemplateResult {
