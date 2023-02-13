@@ -76,123 +76,14 @@ describe('temba-compose chatbox', () => {
   // });
 });
 
-// todo temba-compose attachments
+// todo attachments
+// todo manual upload
+// todo drag and drop upload
+// todo upload with no errors
+// todo upload with errors
 
-// todo temba-compose chatbox and attachments
+// todo chatbox and attachments
+// todo mix of the above
 
-// describe('temba-compose', () => {
-
-// it('with chatbox and attachments no send button', async () => {
-//   const compose: Compose = await getCompose({
-//     endpoint: endpoint,
-//     button: false,
-//   });
-//   assert.instanceOf(compose, Compose);
-//   const chatboxDiv = compose.shadowRoot.querySelector(
-//     '.items .chatbox'
-//   ) as HTMLDivElement;
-//   expect(chatboxDiv).to.not.equal(null);
-//   const attachmentsDiv = compose.shadowRoot.querySelector(
-//     '.items .attachments'
-//   ) as HTMLDivElement;
-//   expect(attachmentsDiv).to.not.equal(null);
-//   const sendButton = compose.shadowRoot.querySelector(
-//     'temba-button#send-button'
-//   ) as Button;
-//   expect(sendButton).to.equal(null);
-// });
-
-// it('with chatbox and attachments and send button', async () => {
-//   const compose: Compose = await getCompose({
-//     endpoint: endpoint,
-//   });
-//   assert.instanceOf(compose, Compose);
-//   const chatboxDiv = compose.shadowRoot.querySelector(
-//     '.items .chatbox'
-//   ) as HTMLDivElement;
-//   expect(chatboxDiv).to.not.equal(null);
-//   const attachmentsDiv = compose.shadowRoot.querySelector(
-//     '.items .attachments'
-//   ) as HTMLDivElement;
-//   expect(attachmentsDiv).to.not.equal(null);
-//   const sendButton = compose.shadowRoot.querySelector(
-//     'temba-button#send-button'
-//   ) as Button;
-//   expect(sendButton).to.not.equal(null);
-//   // todo check value of counter
-//   // todo check value of currentChat
-//   // todo check value of values
-//   // todo check that send button is disabled
-// });
-
-// // todo tests for when all 3 are actively displaying
-
-// it('with attachments no send button', async () => {
-//   const compose: Compose = await getCompose({
-//     endpoint: endpoint,
-//     chatbox: false,
-//     button: false,
-//   });
-//   assert.instanceOf(compose, Compose);
-//   const chatboxDiv = compose.shadowRoot.querySelector(
-//     '.items .chatbox'
-//   ) as HTMLDivElement;
-//   expect(chatboxDiv).to.equal(null);
-//   const attachmentsDiv = compose.shadowRoot.querySelector(
-//     '.items .attachments'
-//   ) as HTMLDivElement;
-//   expect(attachmentsDiv).to.not.equal(null);
-//   const sendButton = compose.shadowRoot.querySelector(
-//     'temba-button#send-button'
-//   ) as Button;
-//   expect(sendButton).to.equal(null);
-//   // todo check value of values
-// });
-
-// it('with attachments and send button', async () => {
-//   const compose: Compose = await getCompose({
-//     endpoint: endpoint,
-//     chatbox: false,
-//   });
-//   assert.instanceOf(compose, Compose);
-//   const chatboxDiv = compose.shadowRoot.querySelector(
-//     '.items .chatbox'
-//   ) as HTMLDivElement;
-//   expect(chatboxDiv).to.equal(null);
-//   const attachmentsDiv = compose.shadowRoot.querySelector(
-//     '.items .attachments'
-//   ) as HTMLDivElement;
-//   expect(attachmentsDiv).to.not.equal(null);
-//   const sendButton = compose.shadowRoot.querySelector(
-//     'temba-button#send-button'
-//   ) as Button;
-//   expect(sendButton).to.not.equal(null);
-//   // todo check value of values
-// });
-
-// it('with attachments list and send button', async () => {
-//   const compose: Compose = await getCompose({
-//     endpoint: endpoint,
-//     chatbox: false,
-//   });
-//   assert.instanceOf(compose, Compose);
-//   const chatboxDiv = compose.shadowRoot.querySelector(
-//     '.items .chatbox'
-//   ) as HTMLDivElement;
-//   expect(chatboxDiv).to.equal(null);
-//   const attachmentsDiv = compose.shadowRoot.querySelector(
-//     '.items .attachments'
-//   ) as HTMLDivElement;
-//   expect(attachmentsDiv).to.not.equal(null);
-//   const sendButton = compose.shadowRoot.querySelector(
-//     'temba-button#send-button'
-//   ) as Button;
-//   expect(sendButton).to.not.equal(null);
-//   // todo check value of values
-// });
-
-// todo test for attachment manual upload
-// todo test for attachment drag and drop upload
-// todo test for attachment upload with errors
-// todo test for attachment send with errors?
-// });
+// todo temba-contactchat tests for handleSend success responses
+// todo temba-contactchat tests for handleSend fail responses
