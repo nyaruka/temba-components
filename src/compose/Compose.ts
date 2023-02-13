@@ -494,47 +494,40 @@ export class Compose extends FormElement {
   }
 
   private getActions(): TemplateResult {
-    if (this.attachments) {
-      if (this.uploading) {
-        return html`<temba-loading units="3" size="12"></temba-loading>`;
-      } else {
-        return html`
-          <div class="actions-left">
-            <input
-              type="file"
-              id="upload-files"
-              multiple
-              accept="${this.accept}"
-              @change="${this.handleUploadFileChanged}"
-            />
-            <label class="actions-left upload-label" for="upload-files">
-              <temba-icon
-                class="upload-icon"
-                name="${Icon.attachment}"
-                @click="${this.handleAddAttachments}"
-                clickable
-              ></temba-icon>
-            </label>
-          </div>
-          <div class="actions-center"></div>
-          <div class="actions-right">
-            ${this.buttonError
-              ? html`<div class="send-error">${this.buttonError}</div>`
-              : null}
-            ${this.chatbox ? this.getCounter() : null}
-            ${this.button ? this.getButton() : null}
-          </div>
-        `;
-      }
+    return html`
+      <div class="actions-left">
+        ${this.attachments ? this.getUploader() : null}
+      </div>
+      <div class="actions-center"></div>
+      <div class="actions-right">
+        ${this.buttonError
+          ? html`<div class="send-error">${this.buttonError}</div>`
+          : null}
+        ${this.chatbox ? this.getCounter() : null}
+        ${this.button ? this.getButton() : null}
+      </div>
+    `;
+  }
+
+  private getUploader(): TemplateResult {
+    if (this.uploading) {
+      return html`<temba-loading units="3" size="12"></temba-loading>`;
     } else {
-      return html`
-        <div class="actions-left"></div>
-        <div class="actions-center"></div>
-        <div class="actions-right">
-          ${this.chatbox ? this.getCounter() : null}
-          ${this.button ? this.getButton() : null}
-        </div>
-      `;
+      return html` <input
+          type="file"
+          id="upload-files"
+          multiple
+          accept="${this.accept}"
+          @change="${this.handleUploadFileChanged}"
+        />
+        <label class="actions-left upload-label" for="upload-files">
+          <temba-icon
+            class="upload-icon"
+            name="${Icon.attachment}"
+            @click="${this.handleAddAttachments}"
+            clickable
+          ></temba-icon>
+        </label>`;
     }
   }
 
