@@ -8,7 +8,6 @@ import { Icon } from '../vectoricon';
 enum OmniType {
   Group = 'group',
   Contact = 'contact',
-  Urn = 'urn',
 }
 
 interface OmniOption {
@@ -51,9 +50,6 @@ export class Omnibox extends RapidElement {
 
   @property({ type: Boolean })
   contacts = false;
-
-  @property({ type: Boolean })
-  urns = false;
 
   @property({ type: Array })
   value: OmniOption[] = [];
@@ -160,26 +156,16 @@ export class Omnibox extends RapidElement {
       types += 'c';
     }
 
-    if (this.urns) {
-      types += 'u';
-    }
-
     return endpoint + types;
-  }
-
-  /** If we support urns, let them enter an arbitrary number */
-  private createArbitraryOption(input: string): any {
-    if (this.urns) {
-      const num = parseFloat(input);
-      if (!isNaN(num) && isFinite(num)) {
-        return { id: 'tel:' + input, name: input, type: 'urn' };
-      }
-    }
   }
 
   public getValues(): any[] {
     const select = this.shadowRoot.querySelector('temba-select') as Select;
     return select.values;
+  }
+
+  public isMatch() {
+    return true;
   }
 
   public render(): TemplateResult {
@@ -197,8 +183,8 @@ export class Omnibox extends RapidElement {
         .values=${this.value}
         .renderOption=${this.renderOption.bind(this)}
         .renderSelectedItem=${this.renderSelection.bind(this)}
-        .createArbitraryOption=${this.createArbitraryOption.bind(this)}
         .inputRoot=${this}
+        .isMatch=${this.isMatch}
         searchable
         searchOnFocus
         multi
