@@ -116,9 +116,7 @@ export class Select extends FormElement {
 
       .left-side {
         flex: 1;
-      }
-
-      .empty .selected {
+        overflow: hidden;
       }
 
       .empty .placeholder {
@@ -223,7 +221,7 @@ export class Select extends FormElement {
 
       .searchable .input-wrapper .searchbox {
         flex-grow: 1;
-        min-width: 100%;
+        min-width: 80%;
         height: 100%;
       }
 
