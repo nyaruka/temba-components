@@ -8,7 +8,6 @@ import {
   getClip,
   loadStore,
 } from './utils.test';
-import { range } from '../src/utils';
 import { CustomEventType } from '../src/interfaces';
 
 let clock: any;
@@ -68,10 +67,11 @@ export const clickOption = async (select: Select, index: number) => {
     `[data-option-index="${index}"]`
   ) as HTMLDivElement;
   option.click();
-  await clock.tick(250);
   await options.updateComplete;
   await select.updateComplete;
-  //checkTimers(clock);
+  await clock.runAll();
+
+  checkTimers(clock);
 };
 
 export const openAndClick = async (select: Select, index: number) => {
@@ -468,6 +468,26 @@ describe('temba-select', () => {
       await open(select);
 
       await assertScreenshot('select/functions', getClipWithOptions(select));
+    });
+
+    it('should truncate selection if necessesary', async () => {
+      const options = [
+        {
+          name: 'this_is_a_long_selection_to_make_sure_it_truncates',
+          value: '0',
+        },
+      ];
+
+      const select = await createSelect(
+        getSelectHTML(options, {
+          value: '0',
+        })
+      );
+
+      await assertScreenshot(
+        'select/truncated-selection',
+        getClipWithOptions(select)
+      );
     });
 
     it('can select expression completion as value', async () => {
