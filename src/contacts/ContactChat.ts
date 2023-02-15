@@ -291,13 +291,17 @@ export class ContactChat extends ContactStoreElement {
       const compose = evt.currentTarget as Compose;
       if (compose) {
         const text = compose.currentChat;
-        payload['text'] = text;
+        if (text.length > 0) {
+          payload['text'] = text;
+        }
         const attachments = compose.values.map(attachment => {
           const content_type = attachment.content_type;
           const url = new URL(attachment.url, document.baseURI).href;
           return content_type + ':' + url;
         });
-        payload['attachments'] = attachments;
+        if (attachments.length > 0) {
+          payload['attachments'] = attachments;
+        }
       }
       if (this.currentTicket) {
         payload['ticket'] = this.currentTicket.uuid;

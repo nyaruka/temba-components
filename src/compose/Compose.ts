@@ -128,8 +128,8 @@ export class Compose extends FormElement {
   @property({ type: Boolean })
   attachments: boolean;
 
-  // @property({ type: Boolean })
-  // counter: boolean;
+  @property({ type: Boolean })
+  counter: boolean;
 
   @property({ type: Boolean })
   button: boolean;
@@ -231,8 +231,8 @@ export class Compose extends FormElement {
 
   private handleAddAttachments(evt: Event): void {
     // console.log('handleAddAttachments evt', evt);
-    this.preventDefaults(evt);
     this.dispatchEvent(new Event('change'));
+    // this.preventDefaults(evt);
   }
 
   private handleUploadFileChanged(evt: Event): void {
@@ -240,10 +240,10 @@ export class Compose extends FormElement {
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
-    this.preventDefaults(evt);
+    // this.preventDefaults(evt);
   }
 
-  private uploadFiles(files: FileList): void {
+  public uploadFiles(files: FileList): void {
     // console.log('uploadFiles files', files);
     let filesToUpload = [];
     if (this.values && this.values.length > 0) {
@@ -341,7 +341,7 @@ export class Compose extends FormElement {
       // console.log('errorValues', this.errorValues);
     }
     this.buttonDisabled = this.toggleButton();
-    this.preventDefaults(evt);
+    // this.preventDefaults(evt);
   }
 
   private toggleButton() {
@@ -364,14 +364,14 @@ export class Compose extends FormElement {
     // console.log('handleSendClick evt', evt);
     const button = evt.target as Button;
     this.handleSend(button);
-    this.preventDefaults(evt);
+    // this.preventDefaults(evt);
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
     // console.log('handleSendEnter evt', evt);
     const button = this.shadowRoot.querySelector('#send-button') as Button;
     this.handleSend(button);
-    this.preventDefaults(evt);
+    // this.preventDefaults(evt);
   }
 
   private handleSend(btn: Button) {
@@ -389,11 +389,12 @@ export class Compose extends FormElement {
       this.buttonError = '';
       this.buttonDisabled = this.toggleButton();
     }
-    this.preventDefaults(evt);
+    // this.preventDefaults(evt);
   }
 
   public render(): TemplateResult {
     // console.log('render chatbox', this.chatbox);
+    // console.log('render counter', this.counter);
     // console.log('render attachments', this.attachments);
     // console.log('render button', this.button);
 
@@ -503,7 +504,7 @@ export class Compose extends FormElement {
         ${this.buttonError
           ? html`<div class="send-error">${this.buttonError}</div>`
           : null}
-        ${this.chatbox ? this.getCounter() : null}
+        ${this.counter ? this.getCounter() : null}
         ${this.button ? this.getButton() : null}
       </div>
     `;
