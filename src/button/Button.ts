@@ -17,7 +17,7 @@ export class Button extends LitElement {
         background-image: var(--button-bg-img);
         color: var(--button-text);
         box-shadow: var(--button-shadow);
-        transition: all 100ms ease-in;
+        transition: all calc(var(--transition-speed) / 2) ease-in;
       }
 
       .button-container {
@@ -26,7 +26,7 @@ export class Button extends LitElement {
         display: block;
         border-radius: var(--curvature);
         outline: none;
-        transition: background ease-in 200ms;
+        transition: background ease-in var(--transition-speed);
         user-select: none;
         -webkit-user-select: none;
         text-align: center;
@@ -61,7 +61,7 @@ export class Button extends LitElement {
         padding: var(--button-y) var(--button-x);
         border-radius: var(--curvature);
         border: 1px solid transparent;
-        transition: all ease-in 200ms;
+        transition: var(--transition-speed);
         background: var(--button-mask);
       }
 
