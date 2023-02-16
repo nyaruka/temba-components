@@ -211,8 +211,8 @@ describe('temba-compose attachments', () => {
       uuid: s1, //file.uuid,
       content_type: 'image/png', //file.type,
       type: 'image/png', //file.type,
-      name: 'success_name_' + s1, //file.name,
-      url: 'success_url_' + s1, //file.name,
+      name: 'name_' + s1, //file.name,
+      url: 'url_' + s1, //file.name,
       size: 1024, //file.size,
       error: null,
     } as Attachment;
@@ -222,8 +222,8 @@ describe('temba-compose attachments', () => {
       uuid: s2, //file.uuid,
       content_type: 'image/jpeg', //file.type,
       type: 'image/jpeg', //file.type,
-      name: 'success_name_' + s2, //file.name,
-      url: 'success_url_' + s2, //file.name,
+      name: 'name_' + s2, //file.name,
+      url: 'url_' + s2, //file.name,
       size: 1024, //file.size,
       error: null,
     } as Attachment;
@@ -251,8 +251,8 @@ describe('temba-compose attachments', () => {
       uuid: f1, //file.uuid,
       content_type: 'image/png', //file.type,
       type: 'image/png', //file.type,
-      name: 'fail_name_' + f1, //file.name,
-      url: 'fail_url_' + f1, //file.name,
+      name: 'name_' + f1, //file.name,
+      url: 'url_' + f1, //file.name,
       size: 26624, //file.size,
       error: 'Limit for file uploads is 25.0 MB',
     } as Attachment;
@@ -261,8 +261,8 @@ describe('temba-compose attachments', () => {
       uuid: f2, //file.uuid,
       content_type: 'application/octet-stream', //file.type,
       type: 'application/json', //file.type,
-      name: 'fail_name_' + f2, //file.name,
-      url: 'fail_url_' + f2, //file.name,
+      name: 'name_' + f2, //file.name,
+      url: 'url_' + f2, //file.name,
       size: 1024, //file.size,
       error: 'Unsupported file type',
     } as Attachment;
