@@ -131,7 +131,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
   });
 };
 
-const wireScreenshots = async (page, context, isCI) => {
+const wireScreenshots = async (page, context, wait) => {
   // clear out any past tests
   const diffs = path.resolve(SCREENSHOTS, DIFF);
   const tests = path.resolve(SCREENSHOTS, TEST);
@@ -146,8 +146,7 @@ const wireScreenshots = async (page, context, isCI) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
-        // if we are on ci, wait for fetches to complete
-        if (isCI) {
+        if (wait) {
           await page.waitForNetworkIdle();
         }
 
@@ -322,7 +321,7 @@ export default {
         headless: true,      
       },
       createPage: async ({ context, config }) => {
-        // leave this in for logging on ci
+        const wait = !(config["unknown"] || []).includes("--fast");
         const page = await context.newPage();
         await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");      
         await page.once('load', async () => {
@@ -332,8 +331,7 @@ export default {
           `,
           });
 
-          const isCI = config.rootDir.indexOf("/Users/runner") === 0;
-          await wireScreenshots(page, context, isCI);
+          await wireScreenshots(page, context, wait);
         });
 
 

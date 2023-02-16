@@ -27,6 +27,7 @@ export interface MenuItem {
   bubble?: string;
   popup?: boolean;
   avatar?: string;
+  trigger?: boolean;
 }
 
 interface MenuItemState {
@@ -668,6 +669,15 @@ export class TembaMenu extends RapidElement {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
+    }
+
+    if (menuItem.trigger) {
+      this.fireCustomEvent(CustomEventType.ButtonClicked, {
+        item: menuItem,
+        selection: this.getSelection(),
+        parent,
+      });
+      return;
     }
 
     // update our selection
