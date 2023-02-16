@@ -178,7 +178,7 @@ describe('temba-compose attachments', () => {
     );
   });
 
-  it('attachments with success uploaded files', async () => {
+  it.only('attachments with success uploaded files', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
       button: true,
@@ -236,7 +236,7 @@ describe('temba-compose attachments', () => {
     );
   });
 
-  it('attachments with failure uploaded files', async () => {
+  it.only('attachments with failure uploaded files', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
       button: true,

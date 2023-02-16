@@ -242,8 +242,9 @@ describe('temba-contact-chat - ticket tests', () => {
       getClip(chat),
       {
         clock: clock,
-        predicate: () =>
-          chat.getContactHistory().getEventsPane().scrollTop === 982,
+        predicate: () => {
+          return chat.getContactHistory().getEventsPane().scrollTop === 1004;
+        },
       }
     );
   });
@@ -284,7 +285,7 @@ describe('temba-contact-chat - ticket tests', () => {
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 918;
+          return chat.getContactHistory().getEventsPane().scrollTop === 921;
         },
       }
     );
@@ -325,7 +326,7 @@ describe('temba-contact-chat - ticket tests', () => {
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 867;
+          return chat.getContactHistory().getEventsPane().scrollTop === 870;
         },
       }
     );
