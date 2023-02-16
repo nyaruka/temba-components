@@ -146,7 +146,6 @@ const wireScreenshots = async (page, context, wait) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
-        // if we are on ci, wait for fetches to complete
         if (wait) {
           await page.waitForNetworkIdle();
         }
