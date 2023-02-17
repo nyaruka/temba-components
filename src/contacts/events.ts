@@ -1040,7 +1040,7 @@ export const renderTicketOpened = (
         <span
           class="linked"
           onclick="goto(event)"
-          href="/tickets/all/open/${event.ticket.uuid}"
+          href="/ticket/all/open/${event.ticket.uuid}"
           >ticket</span
         >
         was opened
