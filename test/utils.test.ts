@@ -195,7 +195,7 @@ export const getClip = (ele: HTMLElement) => {
     left: x,
   };
 
-  console.log(newClip);
+  // console.log(newClip);
 
   return newClip;
 };
