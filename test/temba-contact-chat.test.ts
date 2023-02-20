@@ -1,9 +1,12 @@
 import { expect } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
+import { Button } from '../src/button/Button';
+import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { ContactHistory } from '../src/contacts/ContactHistory';
 import { CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
+import { postJSON, WebResponse } from '../src/utils';
 import {
   assertScreenshot,
   getClip,
@@ -192,30 +195,79 @@ describe('temba-contact-chat - contact tests', () => {
   });
 });
 
-// handleSend success responses
-// with text, no attachments
-// no text, with attachments
-// with text and no attachments
-
-// handleSend fail responses
-// text contains more than 640 chars
-// attachments contain more than 10+ items
-// text contains more than 640 chars AND attachments contain more than 10+ items
-// generic error
-
 describe('temba-contact-chat - contact tests - handle send tests - text no attachments', () => {
-  it('with text no attachments - success response', async () => {
+  // beforeEach(function () {
+  //   clock = useFakeTimers();
+  // });
+
+  // afterEach(function () {
+  //   clock.restore();
+  // });
+
+  it.only('with text no attachments - success response', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-dave-active',
     });
 
-    const data = { text: { eng: 'blah' }, attachments: { eng: [] } };
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    compose.currentChat = 'sà-wàd-dee!';
+
+    // todo - this is the same as what's contained in /test-assets/compose/compose-text-no-attachments-success-request (json)
+    const request_payload = {
+      contacts: ['contact-dave-active'],
+      text: 'sà-wàd-dee!',
+      attachments: [],
+    };
+
+    // todo - this is the same as what's contained in /test-assets/compose/compose-text-no-attachments-success-response (json)
+    const response_body = {
+      contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
+      text: { eng: 'sà-wàd-dee!' },
+      attachments: { eng: [] },
+    };
+
+    // todo - this is just copy/pasted from the browser response.body
+    // "{\"id\":87,\"urns\":[],\"contacts\":[{\"uuid\":\"8e4630e9-7cbd-4dce-a2d2-cce2a49e42af\",\"name\":\"Sue Rwanda\"}],
+    // \"groups\":[],\"text\":{\"eng\":\"blah\"},\"attachments\":{\"eng\":[]},\"base_language\":\"eng\",\"status\":\"queued\",
+    // \"created_on\":\"2023-02-20T09:45:41.390513Z\"}"
+
+    // click the send button
     mockPOST(
-      /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-no-attachments-success/,
-      data
+      /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-no-attachments-success-request/,
+      response_body
     );
+
+    expect(compose.buttonError).equals('');
+    expect(compose.currentChat).equals('');
+    expect(compose.values).equals([]);
+    expect(compose.buttonDisabled).equals(true);
+
+    // const sendClick = new Promise<WebResponse>((resolve, reject) => {
+    //   chat.addEventListener(CustomEventType.ButtonClicked, () => {
+    //     postJSON('/api/v2/broadcasts.json', request_payload)
+    //       .then((response) => {
+    //         console.log('response', response);
+    //         expect(response.json.contacts).equals(response_body.contacts);
+    //         expect(response.json.text).equals(response_body.text);
+    //         expect(response.json.attachments).equals(response_body.attachments);
+    //         expect(compose.buttonError).equals('');
+    //         expect(compose.currentChat).equals('');
+    //         expect(compose.values).equals([]);
+    //         expect(compose.buttonDisabled).equals(true);
+    //         resolve(response);
+    //       })
+    //       .catch((error) => {
+    //         console.log('error', error);
+    //         reject(error);
+    //       });
+    //   });
+    // });
+    // const send = compose.shadowRoot.querySelector('temba-button') as Button;
+    // send.click();
+    // await clock.runAllAsync();
+    // await sendClick;
   });
   it('with text no attachments - failure response', async () => {
     // we are a StoreElement, so load a store first

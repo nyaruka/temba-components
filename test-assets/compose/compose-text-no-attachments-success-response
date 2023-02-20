@@ -1,0 +1,5 @@
+{ 
+  "contacts":[{"uuid":"contact-dave-active","name": "Dave Matthews"}],
+  "text": { "eng": "sà-wàd-dee!" }, 
+  "attachments": { "eng": [] } 
+}
