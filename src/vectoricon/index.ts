@@ -66,6 +66,7 @@ export enum Icon {
   featured = 'star-01',
   resthooks = 'share-07',
   restore = 'play',
+  retry = 'refresh-cw-05',
   runs = 'rows-03',
   search = 'search-refraction',
   select_open = 'chevron-down',
