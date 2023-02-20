@@ -1,0 +1,105 @@
+{
+  "contacts": ["contact-dave-active"],
+  "text": "sà-wàd-dee!",
+  "attachments": [
+    {
+      "uuid": "s1",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s1",
+      "url": "url_s1",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s2",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s2",
+      "url": "url_s2",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s3",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s3",
+      "url": "url_s3",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s4",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s4",
+      "url": "url_s4",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s5",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s5",
+      "url": "url_s5",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s6",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s6",
+      "url": "url_s6",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s7",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s7",
+      "url": "url_s7",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s8",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s8",
+      "url": "url_s8",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s9",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s9",
+      "url": "url_s9",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s10",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s10",
+      "url": "url_s10",
+      "size": 1024,
+      "error": null
+    },
+    {
+      "uuid": "s11",
+      "content_type": "image/png",
+      "type": "image/png",
+      "name": "name_s11",
+      "url": "url_s11",
+      "size": 1024,
+      "error": null
+    }
+  ]
+}

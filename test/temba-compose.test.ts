@@ -565,7 +565,3 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     );
   });
 });
-
-// todo contactchat:
-// handleSend success responses
-// handleSend fail responses

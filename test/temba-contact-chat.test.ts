@@ -1,4 +1,4 @@
-import { expect, waitUntil } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { ContactHistory } from '../src/contacts/ContactHistory';
@@ -11,6 +11,7 @@ import {
   loadStore,
   mockGET,
   mockNow,
+  mockPOST,
 } from '../test/utils.test';
 
 let clock: any;
@@ -188,6 +189,129 @@ describe('temba-contact-chat - contact tests', () => {
       'contacts/contact-stopped-hide-chatbox',
       getClip(chat)
     );
+  });
+});
+
+// handleSend success responses
+// with text, no attachments
+// no text, with attachments
+// with text and no attachments
+
+// handleSend fail responses
+// text contains more than 640 chars
+// attachments contain more than 10+ items
+// text contains more than 640 chars AND attachments contain more than 10+ items
+// generic error
+
+describe('temba-contact-chat - contact tests - handle send tests - text no attachments', () => {
+  it('with text no attachments - success response', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    const data = { text: { eng: 'blah' }, attachments: { eng: [] } };
+    mockPOST(
+      /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-no-attachments-success/,
+      data
+    );
+  });
+  it('with text no attachments - failure response', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    const data = {
+      text: ['Translations must have no more than 640 characters.'],
+    };
+    mockPOST(
+      /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-no-attachments-failure/,
+      data
+    );
+  });
+});
+
+describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
+  it('with attachments no text - success response', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    // todo
+    // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+    // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-attachments-no-text-success/, data);
+    expect(true).equals(false);
+  });
+  it('with attachments no text - failure response', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    // todo
+    // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+    // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-attachments-no-text-failure/, data);
+    expect(true).equals(false);
+  });
+});
+
+describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
+  it('with text and attachments - success response', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    // todo
+    // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+    // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-success/, data);
+    expect(true).equals(false);
+  });
+  it('with text and attachments - failure response due to text', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    const data = {
+      text: ['Translations must have no more than 640 characters.'],
+    };
+    mockPOST(
+      /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-text/,
+      data
+    );
+  });
+  it('with text and attachments - failure response due to attachments', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    // todo
+    // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+    // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-attachments/, data);
+    expect(true).equals(false);
+  });
+  it('with text and attachments - failure response due to both', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+
+    // todo
+    // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+    // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-all/, data);
+    expect(true).equals(false);
   });
 });
 
