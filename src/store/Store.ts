@@ -64,7 +64,6 @@ export class Store extends RapidElement {
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
 
-
   // http promise to monitor for completeness
   public httpComplete: Promise<void | WebResponse[]>;
 
@@ -226,7 +225,7 @@ export class Store extends RapidElement {
   }
 
   public getFieldKeys(): string[] {
-    return this.keyedAssets['fields'];
+    return this.keyedAssets['fields'] || [];
   }
 
   public getContactField(key: string): ContactField {
