@@ -141,7 +141,7 @@ describe('temba-compose chatbox', () => {
   });
 
   // todo - button is enabled but should be disabled
-  it('chatbox with text and click send', async () => {
+  it.only('chatbox with text and click send', async () => {
     console.log('chatbox with text and click send');
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -153,14 +153,15 @@ describe('temba-compose chatbox', () => {
       'temba-button#send-button'
     ) as Button;
 
-    console.log('compose send disabled ' + send.disabled);
-    console.log('compose buttonDisabled ' + compose.buttonDisabled);
-
+    console.log('compose send disabled ' + send.disabled); //this should be false but its true
+    console.log('compose buttonDisabled ' + compose.buttonDisabled); //this should be false but its true
     console.log('just before click');
-    click('temba-button#send-button');
-    // send.click();
-    console.log('just after click');
 
+    // await click('temba-button#send-button'); // this doesn't work
+    // click('temba-button#send-button'); // this works, but handleSend is never called
+    send.click(); // this works, but since the button is disabled, the custom event is never firing
+
+    console.log('just after click');
     console.log('compose send disabled ' + send.disabled);
     console.log('compose buttonDisabled ' + compose.buttonDisabled);
 
