@@ -2,7 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { fetchResults, getClasses } from '../utils';
+import { debounce, fetchResults, getClasses } from '../utils';
 import { Icon } from '../vectoricon';
 import ColorHash from 'color-hash';
 
@@ -563,18 +563,20 @@ export class TembaMenu extends RapidElement {
     this.loadItems(this.root);
   }
 
-  public refresh() {
+  public doRefresh() {
     const path = [...this.selection];
     let item = this.root;
 
     while (path.length > 0) {
       this.loadItems(item);
       const id = path.shift();
-      item = item.items.find(_item => _item.id == id);
+      item = (item.items || []).find(_item => _item.id == id);
     }
 
     this.loadItems(item);
   }
+
+  public refresh = debounce(this.doRefresh, 200);
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private loadItems(item: MenuItem, selectFirst = false) {
@@ -807,6 +809,7 @@ export class TembaMenu extends RapidElement {
     }
 
     this.selection = newPath;
+    this.refresh();
     this.requestUpdate('root');
   }
 
