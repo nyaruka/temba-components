@@ -166,7 +166,13 @@ export class Compose extends FormElement {
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
-    // console.log('changes', changes);
+    if (
+      changes.has('currentChat') ||
+      changes.has('values') ||
+      changes.has('buttonError')
+    ) {
+      this.toggleButton();
+    }
   }
 
   public reset(): void {
@@ -180,7 +186,7 @@ export class Compose extends FormElement {
     const completionElement = evt.target as Completion;
     const textInputElement = completionElement.textInputElement;
     this.currentChat = textInputElement.value;
-    this.buttonDisabled = this.toggleButton();
+    // this.toggleButton();
     this.preventDefaults(evt);
   }
 
@@ -270,7 +276,6 @@ export class Compose extends FormElement {
     this.uploading = true;
 
     const url = this.endpoint;
-    // console.log('url', url);
     const payload = new FormData();
     payload.append('file', file);
     postFormData(url, payload)
@@ -296,7 +301,7 @@ export class Compose extends FormElement {
       })
       .finally(() => {
         this.uploading = false;
-        this.buttonDisabled = this.toggleButton();
+        // this.toggleButton();
       });
   }
 
@@ -340,24 +345,30 @@ export class Compose extends FormElement {
       this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
       // console.log('errorValues', this.errorValues);
     }
-    this.buttonDisabled = this.toggleButton();
+    // this.toggleButton();
     // this.preventDefaults(evt);
   }
 
-  private toggleButton() {
+  public toggleButton() {
+    // console.log('toggleButton buttonDisabled '+this.buttonDisabled);
     if (this.button) {
-      const chatboxEmpty = this.currentChat.trim().length === 0;
-      const attachmentsEmpty = this.values.length === 0;
-      if (this.chatbox && this.attachments) {
-        return chatboxEmpty && attachmentsEmpty;
-      } else if (this.chatbox) {
-        return chatboxEmpty;
-      } else if (this.attachments) {
-        return attachmentsEmpty;
+      if (this.buttonError && this.buttonError.length > 0) {
+        this.buttonDisabled = true;
       } else {
-        return true;
+        const chatboxEmpty = this.currentChat.trim().length === 0;
+        const attachmentsEmpty = this.values.length === 0;
+        if (this.chatbox && this.attachments) {
+          this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
+        } else if (this.chatbox) {
+          this.buttonDisabled = chatboxEmpty;
+        } else if (this.attachments) {
+          this.buttonDisabled = attachmentsEmpty;
+        } else {
+          this.buttonDisabled = true;
+        }
       }
     }
+    // console.log('toggleButton buttonDisabled '+this.buttonDisabled);
   }
 
   private handleSendClick(evt: MouseEvent) {
@@ -376,9 +387,11 @@ export class Compose extends FormElement {
 
   private handleSend(btn: Button) {
     // console.log('handleSend btn', btn);
+    // console.log('handleSend btn disabled', btn.disabled);
     if (!btn.disabled) {
       // btn.disabled = true;
       this.buttonDisabled = true;
+      // console.log('handleSend btn disabled', btn.disabled);
       const name = this.buttonName;
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
     }
@@ -387,7 +400,7 @@ export class Compose extends FormElement {
   private handleSendBlur(evt: Event) {
     if (this.buttonError.length > 0) {
       this.buttonError = '';
-      this.buttonDisabled = this.toggleButton();
+      // this.toggleButton();
     }
     // this.preventDefaults(evt);
   }

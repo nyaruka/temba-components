@@ -1,10 +1,11 @@
 import { assert, expect, fixture } from '@open-wc/testing';
 import { Attachment, Compose } from '../src/compose/Compose';
-import { assertScreenshot, getClip, getComponent } from './utils.test';
+import { assertScreenshot, delay, getClip, getComponent } from './utils.test';
 import { Button } from '../src/button/Button';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
+  console.log('getCompose width ' + height);
   console.log('getCompose height ' + height);
   const compose = (await getComponent(
     TAG,
@@ -139,7 +140,9 @@ describe('temba-compose chatbox', () => {
     await assertScreenshot('compose/chatbox-with-text', getClip(compose));
   });
 
+  // todo - button is enabled but should be disabled
   it('chatbox with text and click send', async () => {
+    console.log('chatbox with text and click send');
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
@@ -149,7 +152,18 @@ describe('temba-compose chatbox', () => {
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
-    send.click();
+
+    console.log('compose send disabled ' + send.disabled);
+    console.log('compose buttonDisabled ' + compose.buttonDisabled);
+
+    console.log('just before click');
+    click('temba-button#send-button');
+    // send.click();
+    console.log('just after click');
+
+    console.log('compose send disabled ' + send.disabled);
+    console.log('compose buttonDisabled ' + compose.buttonDisabled);
+
     await assertScreenshot(
       'compose/chatbox-with-text-and-click-send',
       getClip(compose)
@@ -202,6 +216,7 @@ describe('temba-compose attachments', () => {
       button: true,
     });
     compose.values = getSuccessFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/attachments-with-success-files',
       getClip(compose)
@@ -214,6 +229,7 @@ describe('temba-compose attachments', () => {
       button: true,
     });
     compose.errorValues = getFailFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/attachments-with-failure-files',
       getClip(compose)
@@ -227,6 +243,7 @@ describe('temba-compose attachments', () => {
     });
     compose.values = getSuccessFiles();
     compose.errorValues = getFailFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/attachments-with-all-files',
       getClip(compose)
@@ -242,7 +259,9 @@ describe('temba-compose attachments', () => {
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
+    // await click('temba-button#send-button');
     send.click();
+    await delay(1);
     await assertScreenshot(
       'compose/attachments-with-success-files-and-click-send',
       getClip(compose)
@@ -260,6 +279,7 @@ describe('temba-compose attachments', () => {
       'temba-button#send-button'
     ) as Button;
     send.click();
+    await delay(1);
     await assertScreenshot(
       'compose/attachments-with-all-files-and-click-send',
       getClip(compose)
@@ -374,6 +394,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       button: true,
     });
     compose.values = getSuccessFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-success-files',
       getClip(compose)
@@ -387,6 +408,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       button: true,
     });
     compose.errorValues = getFailFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-failure-files',
       getClip(compose)
@@ -401,6 +423,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     });
     compose.values = getSuccessFiles();
     compose.errorValues = getFailFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-all-files',
       getClip(compose)
@@ -419,6 +442,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       'temba-button#send-button'
     ) as Button;
     send.click();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-success-files-and-click-send',
       getClip(compose)
@@ -437,6 +461,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       'temba-button#send-button'
     ) as Button;
     send.click();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-all-files-and-click-send',
       getClip(compose)
@@ -453,6 +478,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     });
     compose.currentChat = 'sà-wàd-dee!';
     compose.values = getSuccessFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-success-files',
       getClip(compose)
@@ -467,6 +493,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     });
     compose.currentChat = 'sà-wàd-dee!';
     compose.errorValues = getFailFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-failure-files',
       getClip(compose)
@@ -482,6 +509,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     compose.currentChat = 'sà-wàd-dee!';
     compose.values = getSuccessFiles();
     compose.errorValues = getFailFiles();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-all-files',
       getClip(compose)
@@ -500,6 +528,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       'temba-button#send-button'
     ) as Button;
     send.click();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-success-files-and-click-send',
       getClip(compose)
@@ -519,6 +548,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       'temba-button#send-button'
     ) as Button;
     send.click();
+    await delay(1);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-all-files-and-click-send',
       getClip(compose)

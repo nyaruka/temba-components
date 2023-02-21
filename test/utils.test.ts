@@ -46,6 +46,8 @@ export const getComponent = async (
   height = 0,
   style = ''
 ) => {
+  console.log('getComponent width ' + width);
+  console.log('getComponent height ' + height);
   const spec = `<${tag} ${getAttributes(attrs)}>${slot}</${tag}>`;
   const parentNode = document.createElement('div');
   const styleAttribute = `
@@ -53,9 +55,15 @@ export const getComponent = async (
     ${height > 0 ? `height:${height}px;` : ``}
     ${style ? style : ``}
   `;
-
   parentNode.setAttribute('style', styleAttribute);
-  return await fixture(spec, { parentNode });
+  console.log('getComponent parentNode clientWidth ' + parentNode.clientWidth);
+  console.log(
+    'getComponent parentNode clientHeight ' + parentNode.clientHeight
+  );
+  const component = await fixture(spec, { parentNode });
+  console.log('getComponent component clientWidth ' + component.clientWidth);
+  console.log('getComponent component clientHeight ' + component.clientHeight);
+  return component;
 };
 
 const createResponse = mocked => {
@@ -174,6 +182,8 @@ export const assertScreenshot = async (
 
 export const getClip = (ele: HTMLElement) => {
   let clip: any = ele.getBoundingClientRect();
+  console.log('getClip width ' + clip.width);
+  console.log('getClip height ' + clip.width);
   if (!clip.width || !clip.height) {
     clip = ele.shadowRoot.firstElementChild.getBoundingClientRect();
   }
@@ -195,7 +205,8 @@ export const getClip = (ele: HTMLElement) => {
     left: x,
   };
 
-  // console.log(newClip);
+  console.log('newClip width ' + clip.width);
+  console.log('newClip height ' + clip.width);
 
   return newClip;
 };
