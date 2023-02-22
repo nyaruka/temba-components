@@ -513,6 +513,7 @@ export class TembaMenu extends RapidElement {
 
   constructor() {
     super();
+    this.doRefresh = this.doRefresh.bind(this);
   }
 
   public setBubble(id: string, color: string) {
@@ -563,12 +564,14 @@ export class TembaMenu extends RapidElement {
     this.loadItems(this.root);
   }
 
-  public doRefresh() {
+  public async doRefresh() {
     const path = [...this.selection];
     let item = this.root;
 
     while (path.length > 0) {
       this.loadItems(item);
+      // we need to wait until the load is complete before doing the replace
+      await this.httpComplete;
       const id = path.shift();
       item = (item.items || []).find(_item => _item.id == id);
     }
