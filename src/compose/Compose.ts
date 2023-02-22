@@ -390,11 +390,15 @@ export class Compose extends FormElement {
     // this.preventDefaults(evt);
   }
 
-  private handleSendEnter() {
+  private handleSendEnter(evt: KeyboardEvent) {
     // console.log('handleSendEnter evt', evt);
-    // const button = this.shadowRoot.querySelector('#send-button') as Button;
-    this.handleSend();
-    // this.preventDefaults(evt);
+    if (evt.key === 'Enter' && !evt.shiftKey) {
+      const chat = e.target as Completion;
+      if (!chat.hasVisibleOptions()) {
+        this.handleSend();
+        // this.preventDefaults(evt);
+      }
+    }
   }
 
   private handleSend() {
@@ -452,15 +456,7 @@ export class Compose extends FormElement {
       gsm
       textarea
       @change=${this.handleChatboxChange}
-      @keydown=${(e: KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          const chat = e.target as Completion;
-          if (!chat.hasVisibleOptions()) {
-            this.handleSendEnter(e);
-            this.preventDefaults(e);
-          }
-        }
-      }}
+      @keydown=${this.handleSendEnter}
       placeholder="Write something here"
       @blur=${this.handleSendBlur}
     >
