@@ -386,24 +386,25 @@ export class Compose extends FormElement {
   }
 
   private handleSend(btn: Button) {
-    console.log('handleSend before fireCustomEvent btn.disabled', btn.disabled);
-    console.log(
-      'handleSend before fireCustomEventbtn this.buttonDisabled',
-      this.buttonDisabled
-    );
-    if (!btn.disabled) {
+    // console.log('handleSend before fireCustomEvent btn.disabled', btn.disabled);
+    // console.log(
+    //   'handleSend before fireCustomEventbtn this.buttonDisabled',
+    //   this.buttonDisabled
+    // );
+    // if (!btn.disabled) {
+    if (!this.buttonDisabled) {
       // btn.disabled = true;
       this.buttonDisabled = true;
       // console.log('handleSend btn disabled', btn.disabled);
       const name = this.buttonName;
-      console.log(
-        'handleSend JUST before fireCustomEvent btn.disabled',
-        btn.disabled
-      );
-      console.log(
-        'handleSend JUST before fireCustomEventbtn this.buttonDisabled',
-        this.buttonDisabled
-      );
+      // console.log(
+      //   'handleSend JUST before fireCustomEvent btn.disabled',
+      //   btn.disabled
+      // );
+      // console.log(
+      //   'handleSend JUST before fireCustomEventbtn this.buttonDisabled',
+      //   this.buttonDisabled
+      // );
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
     }
   }

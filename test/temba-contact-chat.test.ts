@@ -204,7 +204,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
   //   clock.restore();
   // });
 
-  it('with text no attachments - success response', async () => {
+  it.only('with text no attachments - success response', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -214,60 +214,27 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     compose.currentChat = 'sà-wàd-dee!';
 
-    // todo - this is the same as what's contained in /test-assets/compose/compose-text-no-attachments-success-request (json)
-    const request_payload = {
-      contacts: ['contact-dave-active'],
-      text: 'sà-wàd-dee!',
-      attachments: [],
-    };
-
     // todo - this is the same as what's contained in /test-assets/compose/compose-text-no-attachments-success-response (json)
+    // todo - this is just copy/pasted from the browser response.body
     const response_body = {
       contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
       text: { eng: 'sà-wàd-dee!' },
       attachments: { eng: [] },
     };
+    mockPOST(/api\/v2\/broadcasts\.json/, response_body);
 
-    // todo - this is just copy/pasted from the browser response.body
-    // "{\"id\":87,\"urns\":[],\"contacts\":[{\"uuid\":\"8e4630e9-7cbd-4dce-a2d2-cce2a49e42af\",\"name\":\"Sue Rwanda\"}],
-    // \"groups\":[],\"text\":{\"eng\":\"blah\"},\"attachments\":{\"eng\":[]},\"base_language\":\"eng\",\"status\":\"queued\",
-    // \"created_on\":\"2023-02-20T09:45:41.390513Z\"}"
-
-    // click the send button
-    mockPOST(
-      /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-no-attachments-success-request/,
-      response_body
-    );
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+    // await chat.updateComplete;
+    await compose.updateComplete;
+    // await send.updateComplete;
 
     expect(compose.buttonError).equals('');
     expect(compose.currentChat).equals('');
     expect(compose.values).equals([]);
     expect(compose.buttonDisabled).equals(true);
-
-    // const sendClick = new Promise<WebResponse>((resolve, reject) => {
-    //   chat.addEventListener(CustomEventType.ButtonClicked, () => {
-    //     postJSON('/api/v2/broadcasts.json', request_payload)
-    //       .then((response) => {
-    //         console.log('response', response);
-    //         expect(response.json.contacts).equals(response_body.contacts);
-    //         expect(response.json.text).equals(response_body.text);
-    //         expect(response.json.attachments).equals(response_body.attachments);
-    //         expect(compose.buttonError).equals('');
-    //         expect(compose.currentChat).equals('');
-    //         expect(compose.values).equals([]);
-    //         expect(compose.buttonDisabled).equals(true);
-    //         resolve(response);
-    //       })
-    //       .catch((error) => {
-    //         console.log('error', error);
-    //         reject(error);
-    //       });
-    //   });
-    // });
-    // const send = compose.shadowRoot.querySelector('temba-button') as Button;
-    // send.click();
-    // await clock.runAllAsync();
-    // await sendClick;
   });
   // it('with text no attachments - failure response', async () => {
   //   // we are a StoreElement, so load a store first
@@ -284,88 +251,87 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
   //     data
   //   );
   // });
+
+  // describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
+  //   it('with attachments no text - success response', async () => {
+  //     // we are a StoreElement, so load a store first
+  //     await loadStore();
+  //     const chat: ContactChat = await getContactChat({
+  //       contact: 'contact-dave-active',
+  //     });
+
+  //     // todo
+  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-attachments-no-text-success/, data);
+  //     expect(true).equals(false);
+  //   });
+  //   it('with attachments no text - failure response', async () => {
+  //     // we are a StoreElement, so load a store first
+  //     await loadStore();
+  //     const chat: ContactChat = await getContactChat({
+  //       contact: 'contact-dave-active',
+  //     });
+
+  //     // todo
+  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-attachments-no-text-failure/, data);
+  //     expect(true).equals(false);
+  //   });
+  // });
+
+  // describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
+  //   it('with text and attachments - success response', async () => {
+  //     // we are a StoreElement, so load a store first
+  //     await loadStore();
+  //     const chat: ContactChat = await getContactChat({
+  //       contact: 'contact-dave-active',
+  //     });
+
+  //     // todo
+  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-success/, data);
+  //     expect(true).equals(false);
+  //   });
+  //   it('with text and attachments - failure response due to text', async () => {
+  //     // we are a StoreElement, so load a store first
+  //     await loadStore();
+  //     const chat: ContactChat = await getContactChat({
+  //       contact: 'contact-dave-active',
+  //     });
+
+  //     const data = {
+  //       text: ['Translations must have no more than 640 characters.'],
+  //     };
+  //     mockPOST(
+  //       /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-text/,
+  //       data
+  //     );
+  //   });
+  //   it('with text and attachments - failure response due to attachments', async () => {
+  //     // we are a StoreElement, so load a store first
+  //     await loadStore();
+  //     const chat: ContactChat = await getContactChat({
+  //       contact: 'contact-dave-active',
+  //     });
+
+  //     // todo
+  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-attachments/, data);
+  //     expect(true).equals(false);
+  //   });
+  //   it('with text and attachments - failure response due to both', async () => {
+  //     // we are a StoreElement, so load a store first
+  //     await loadStore();
+  //     const chat: ContactChat = await getContactChat({
+  //       contact: 'contact-dave-active',
+  //     });
+
+  //     // todo
+  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
+  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-all/, data);
+  //     expect(true).equals(false);
+  //   });
 });
-
-// describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
-//   it('with attachments no text - success response', async () => {
-//     // we are a StoreElement, so load a store first
-//     await loadStore();
-//     const chat: ContactChat = await getContactChat({
-//       contact: 'contact-dave-active',
-//     });
-
-//     // todo
-//     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-//     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-attachments-no-text-success/, data);
-//     expect(true).equals(false);
-//   });
-//   it('with attachments no text - failure response', async () => {
-//     // we are a StoreElement, so load a store first
-//     await loadStore();
-//     const chat: ContactChat = await getContactChat({
-//       contact: 'contact-dave-active',
-//     });
-
-//     // todo
-//     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-//     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-attachments-no-text-failure/, data);
-//     expect(true).equals(false);
-//   });
-// });
-
-// describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
-//   it('with text and attachments - success response', async () => {
-//     // we are a StoreElement, so load a store first
-//     await loadStore();
-//     const chat: ContactChat = await getContactChat({
-//       contact: 'contact-dave-active',
-//     });
-
-//     // todo
-//     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-//     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-success/, data);
-//     expect(true).equals(false);
-//   });
-//   it('with text and attachments - failure response due to text', async () => {
-//     // we are a StoreElement, so load a store first
-//     await loadStore();
-//     const chat: ContactChat = await getContactChat({
-//       contact: 'contact-dave-active',
-//     });
-
-//     const data = {
-//       text: ['Translations must have no more than 640 characters.'],
-//     };
-//     mockPOST(
-//       /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-text/,
-//       data
-//     );
-//   });
-//   it('with text and attachments - failure response due to attachments', async () => {
-//     // we are a StoreElement, so load a store first
-//     await loadStore();
-//     const chat: ContactChat = await getContactChat({
-//       contact: 'contact-dave-active',
-//     });
-
-//     // todo
-//     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-//     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-attachments/, data);
-//     expect(true).equals(false);
-//   });
-//   it('with text and attachments - failure response due to both', async () => {
-//     // we are a StoreElement, so load a store first
-//     await loadStore();
-//     const chat: ContactChat = await getContactChat({
-//       contact: 'contact-dave-active',
-//     });
-
-//     // todo
-//     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-//     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-all/, data);
-//     expect(true).equals(false);
-//   });
-// });
 
 describe('temba-contact-chat - ticket tests', () => {
   // map requests for contact history to our static files
