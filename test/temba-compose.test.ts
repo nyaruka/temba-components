@@ -148,7 +148,7 @@ describe('temba-compose chatbox', () => {
   });
 
   it('chatbox with text and click send', async () => {
-    console.log('chatbox with text and click send');
+    // console.log('chatbox with text and click send');
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,

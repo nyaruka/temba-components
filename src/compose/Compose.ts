@@ -393,7 +393,7 @@ export class Compose extends FormElement {
   private handleSendEnter(evt: KeyboardEvent) {
     // console.log('handleSendEnter evt', evt);
     if (evt.key === 'Enter' && !evt.shiftKey) {
-      const chat = e.target as Completion;
+      const chat = evt.target as Completion;
       if (!chat.hasVisibleOptions()) {
         this.handleSend();
         // this.preventDefaults(evt);
