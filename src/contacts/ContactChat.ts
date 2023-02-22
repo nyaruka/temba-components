@@ -335,13 +335,11 @@ export class ContactChat extends ContactStoreElement {
             } else {
               compose.buttonError = genericError;
             }
-            compose.buttonDisabled = true;
           }
         })
         .catch(error => {
           console.error(error);
           compose.buttonError = genericError;
-          compose.buttonDisabled = true;
         });
     }
   }

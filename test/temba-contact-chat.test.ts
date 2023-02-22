@@ -6,7 +6,6 @@ import { ContactChat } from '../src/contacts/ContactChat';
 import { ContactHistory } from '../src/contacts/ContactHistory';
 import { CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
-import { postJSON, WebResponse } from '../src/utils';
 import {
   assertScreenshot,
   getClip,
@@ -204,15 +203,15 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
   //   clock.restore();
   // });
 
-  it.only('with text no attachments - success response', async () => {
+  it('with text no attachments - success response', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-dave-active',
     });
-
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     compose.currentChat = 'sà-wàd-dee!';
+    await compose.updateComplete;
 
     // todo - this is the same as what's contained in /test-assets/compose/compose-text-no-attachments-success-response (json)
     // todo - this is just copy/pasted from the browser response.body
@@ -227,30 +226,47 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
       'temba-button#send-button'
     ) as Button;
     send.click();
-    // await chat.updateComplete;
-    await compose.updateComplete;
-    // await send.updateComplete;
 
-    expect(compose.buttonError).equals('');
-    expect(compose.currentChat).equals('');
-    expect(compose.values).equals([]);
-    expect(compose.buttonDisabled).equals(true);
+    await assertScreenshot(
+      'contacts/compose-chatbox-with-text-no-attachments-success',
+      getClip(chat)
+    );
   });
-  // it('with text no attachments - failure response', async () => {
-  //   // we are a StoreElement, so load a store first
-  //   await loadStore();
-  //   const chat: ContactChat = await getContactChat({
-  //     contact: 'contact-dave-active',
-  //   });
 
-  //   const data = {
-  //     text: ['Translations must have no more than 640 characters.'],
-  //   };
-  //   mockPOST(
-  //     /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-no-attachments-failure/,
-  //     data
-  //   );
-  // });
+  it.only('with text no attachments - failure response', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    // set the chatbox to a string that is 640+ chars
+    compose.currentChat =
+      "p}h<r0P<?SCIbV1+pwW1Hj8g^J&=Sm2f)K=5LjFFUZ№5@ybpoLZ7DJ(27qdWxQMaO)I1nB4(D%d3c(H)QXOF6F?4>&d{lhd5?0`Lio!yAGMO№*AxN5{z5s.IO*dy?tm}vXJ#Lf-HlD;xmNp}0<P42=w#ll9)B-e9>Q#'{~Vp<dl:xC9`T^lhh@TosCZ^:(H<Ji<E(~PojvYk^rPB+poYy^Ne~Su1:9?IgH'4S5Q9v0g№FEIUc~!{S7;746j'Sd@Nfu3=x?CsuR;YLP4j+AOzDARZG?0(Ji(NMg=r%n0Fq?R1?E%Yf`bcoVZAJ^bl0J'^@;lH>T.HmxYxwS;1?(bfrh?pRdd73:iMxrfx5luQ(}<dCD1b3g'G0CtkB№;8KkbL=>krG{RO%Va4wwr%P>jE*+n(E11}Ju9#<.f^)<MTH09^b{RQv7~H`#@Hda6{MV&H@xdyEKq#M@nZng8WTU66!F@*!)w*EpQ+65XKuQCaESgq=PHmtqi@l;F?PHvl^g@Z:+}}Xyr`IC2=3?20^I'qSU*tkyinM^JF.ZI>}~XzRQJn№v3o-w?Vy&gC:c.l(&9{`M#-'N}{T#7lw8(4:iY621'>C^.&hVZn:R!G}Ek){D#'KkiJWawq#7~GLBN*?V!ncw)d%&(tXj";
+    await compose.updateComplete;
+
+    const response_body = {
+      text: ['Translations must have no more than 640 characters.'],
+    };
+    const response_headers = {};
+    const response_status = '401';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
+
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+
+    await assertScreenshot(
+      'contacts/compose-chatbox-with-text-no-attachments-failure',
+      getClip(chat)
+    );
+  });
 
   // describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
   //   it('with attachments no text - success response', async () => {

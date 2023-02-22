@@ -11,7 +11,6 @@ import {
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
-import { Button } from '../button/Button';
 
 export interface Attachment {
   uuid: string;
@@ -146,8 +145,8 @@ export class Compose extends FormElement {
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
-  // values = successfully uploaded attachments
-  // errorValues = failed to upload attachments
+  // values = valid and uploaded attachments
+  // errorValues = invalid and not-uploaded attachments
   @property({ type: Array, attribute: false })
   errorValues: Attachment[] = [];
 
@@ -166,6 +165,18 @@ export class Compose extends FormElement {
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
+
+    // console.log('old values...');
+    // changes.forEach((oldValue, propName) => {
+    //   console.log(`${propName} oldValue: ${oldValue}`);
+    // });
+    // console.log('new values...');
+    // console.log('currentChat newValue: ' + this.currentChat);
+    // console.log('values newValue: '+this.values);
+    // console.log('errorValues newValue: '+this.errorValues);
+    // console.log('buttonDisabled newValue: '+this.buttonDisabled);
+    // console.log('buttonError newValue: '+this.buttonError);
+
     if (
       changes.has('currentChat') ||
       changes.has('values') ||
@@ -178,7 +189,8 @@ export class Compose extends FormElement {
   public reset(): void {
     this.currentChat = '';
     this.values = [];
-    this.buttonDisabled = true;
+    this.errorValues = [];
+    this.buttonError = '';
   }
 
   private handleChatboxChange(evt: Event) {
@@ -235,7 +247,7 @@ export class Compose extends FormElement {
     this.preventDefaults(evt);
   }
 
-  private handleAddAttachments(evt: Event): void {
+  private handleAddAttachments(): void {
     // console.log('handleAddAttachments evt', evt);
     this.dispatchEvent(new Event('change'));
     // this.preventDefaults(evt);
@@ -371,36 +383,28 @@ export class Compose extends FormElement {
     // console.log('toggleButton buttonDisabled '+this.buttonDisabled);
   }
 
-  private handleSendClick(evt: MouseEvent) {
+  private handleSendClick() {
     // console.log('handleSendClick evt', evt);
-    const button = evt.target as Button;
-    this.handleSend(button);
+    // const button = evt.target as Button;
+    this.handleSend();
     // this.preventDefaults(evt);
   }
 
-  private handleSendEnter(evt: KeyboardEvent) {
+  private handleSendEnter() {
     // console.log('handleSendEnter evt', evt);
-    const button = this.shadowRoot.querySelector('#send-button') as Button;
-    this.handleSend(button);
+    // const button = this.shadowRoot.querySelector('#send-button') as Button;
+    this.handleSend();
     // this.preventDefaults(evt);
   }
 
-  private handleSend(btn: Button) {
-    // console.log('handleSend before fireCustomEvent btn.disabled', btn.disabled);
+  private handleSend() {
     // console.log(
     //   'handleSend before fireCustomEventbtn this.buttonDisabled',
     //   this.buttonDisabled
     // );
-    // if (!btn.disabled) {
     if (!this.buttonDisabled) {
-      // btn.disabled = true;
       this.buttonDisabled = true;
-      // console.log('handleSend btn disabled', btn.disabled);
       const name = this.buttonName;
-      // console.log(
-      //   'handleSend JUST before fireCustomEvent btn.disabled',
-      //   btn.disabled
-      // );
       // console.log(
       //   'handleSend JUST before fireCustomEventbtn this.buttonDisabled',
       //   this.buttonDisabled
@@ -409,7 +413,7 @@ export class Compose extends FormElement {
     }
   }
 
-  private handleSendBlur(evt: Event) {
+  private handleSendBlur() {
     if (this.buttonError.length > 0) {
       this.buttonError = '';
       // this.toggleButton();

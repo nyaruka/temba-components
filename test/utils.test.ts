@@ -16,6 +16,7 @@ export interface CodeMock {
   endpoint: RegExp;
   body: string;
   headers: any;
+  status: string;
 }
 
 const gets: CodeMock[] = [];
@@ -68,7 +69,7 @@ export const getComponent = async (
 
 const createResponse = mocked => {
   const mockResponse = new window.Response(mocked.body, {
-    status: 200,
+    status: mocked.status,
     headers: {
       'Content-type': 'text/html',
       ...mocked.headers,
@@ -80,7 +81,7 @@ const createResponse = mocked => {
 
 const createJSONResponse = mocked => {
   const mockResponse = new window.Response(JSON.stringify(mocked.body), {
-    status: 200,
+    status: mocked.status,
     headers: {
       'Content-type': 'application/json',
       ...mocked.headers,
@@ -122,12 +123,22 @@ after(() => {
   (window.fetch as any).restore();
 });
 
-export const mockGET = (endpoint: RegExp, body: any, headers: any = {}) => {
-  gets.push({ endpoint, body, headers });
+export const mockGET = (
+  endpoint: RegExp,
+  body: any,
+  headers: any = {},
+  status = '200'
+) => {
+  gets.push({ endpoint, body, headers, status });
 };
 
-export const mockPOST = (endpoint: RegExp, body: any, headers: any = {}) => {
-  posts.push({ endpoint, body, headers });
+export const mockPOST = (
+  endpoint: RegExp,
+  body: any,
+  headers: any = {},
+  status = '200'
+) => {
+  posts.push({ endpoint, body, headers, status });
 };
 
 export const checkTimers = (clock: any) => {
