@@ -552,19 +552,19 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    console.log('just after getCompose client width ' + compose.clientWidth);
-    console.log('just after getCompose offset width ' + compose.offsetWidth);
-    console.log('just after getCompose scroll width ' + compose.scrollWidth);
-    console.log('just after getCompose client height ' + compose.clientHeight);
-    console.log('just after getCompose offset height ' + compose.offsetHeight);
-    console.log('just after getCompose scroll height ' + compose.scrollHeight);
+    // console.log('just after getCompose client width ' + compose.clientWidth);
+    // console.log('just after getCompose offset width ' + compose.offsetWidth);
+    // console.log('just after getCompose scroll width ' + compose.scrollWidth);
+    // console.log('just after getCompose client height ' + compose.clientHeight);
+    // console.log('just after getCompose offset height ' + compose.offsetHeight);
+    // console.log('just after getCompose scroll height ' + compose.scrollHeight);
     await updateChatbox(compose);
     await getSuccessFiles(compose);
     await getFailFiles(compose);
     await pressKey('Enter', 1);
     const newClip = getClip(compose);
-    console.log('just after getClip');
-    console.log(newClip);
+    // console.log('just after getClip');
+    // console.log(newClip);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-all-files-and-hit-enter',
       newClip
