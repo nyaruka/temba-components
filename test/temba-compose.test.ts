@@ -25,9 +25,7 @@ export const updateChatbox = async (
   compose: Compose,
   text?: string
 ): Promise<void> => {
-  // console.log('text ' + text);
   compose.currentChat = text ? text : getSuccessText();
-  // console.log('currentChat ' + compose.currentChat);
   await compose.updateComplete;
 };
 export const getSuccessText = () => {
@@ -165,7 +163,6 @@ describe('temba-compose chatbox', () => {
   });
 
   it('chatbox with text and click send', async () => {
-    // console.log('chatbox with text and click send');
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,

@@ -166,17 +166,6 @@ export class Compose extends FormElement {
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    // console.log('old values...');
-    // changes.forEach((oldValue, propName) => {
-    //   console.log(`${propName} oldValue: ${oldValue}`);
-    // });
-    // console.log('new values...');
-    // console.log('currentChat newValue: ' + this.currentChat);
-    // console.log('values newValue: '+this.values);
-    // console.log('errorValues newValue: '+this.errorValues);
-    // console.log('buttonDisabled newValue: '+this.buttonDisabled);
-    // console.log('buttonError newValue: '+this.buttonError);
-
     if (
       changes.has('currentChat') ||
       changes.has('values') ||
@@ -194,31 +183,25 @@ export class Compose extends FormElement {
   }
 
   private handleChatboxChange(evt: Event) {
-    // console.log('handleChatboxChange evt', evt);
     const completionElement = evt.target as Completion;
     const textInputElement = completionElement.textInputElement;
     this.currentChat = textInputElement.value;
-    // this.toggleButton();
     this.preventDefaults(evt);
   }
 
   private handleDragEnter(evt: DragEvent): void {
-    // console.log('drag enter', evt);
     this.highlight(evt);
   }
 
   private handleDragOver(evt: DragEvent): void {
-    // console.log('drag over', evt);
     this.highlight(evt);
   }
 
   private handleDragLeave(evt: DragEvent): void {
-    // console.log('drag leave', evt);
     this.unhighlight(evt);
   }
 
   private handleDrop(evt: DragEvent): void {
-    // console.log('drag drop', evt);
     this.unhighlight(evt);
 
     const dt = evt.dataTransfer;
@@ -234,35 +217,28 @@ export class Compose extends FormElement {
   }
 
   private highlight(evt: DragEvent): void {
-    // console.log('highlight', evt);
     const dragAndDropZone = evt.target as HTMLDivElement;
     dragAndDropZone.classList.add('highlight');
     this.preventDefaults(evt);
   }
 
   private unhighlight(evt: DragEvent): void {
-    // console.log('unhighlight', evt);
     const dragAndDropZone = evt.target as HTMLDivElement;
     dragAndDropZone.classList.remove('highlight');
     this.preventDefaults(evt);
   }
 
   private handleAddAttachments(): void {
-    // console.log('handleAddAttachments evt', evt);
     this.dispatchEvent(new Event('change'));
-    // this.preventDefaults(evt);
   }
 
   private handleUploadFileChanged(evt: Event): void {
-    // console.log('handleUploadFileChanged evt', evt);
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
-    // this.preventDefaults(evt);
   }
 
   public uploadFiles(files: FileList): void {
-    // console.log('uploadFiles files', files);
     let filesToUpload = [];
     if (this.values && this.values.length > 0) {
       //remove duplicate files that have already been uploaded
@@ -277,14 +253,12 @@ export class Compose extends FormElement {
     } else {
       filesToUpload = [...files];
     }
-    // console.log('filesToUpload', filesToUpload);
     filesToUpload.map(fileToUpload => {
       this.uploadFile(fileToUpload);
     });
   }
 
   private uploadFile(file: File): void {
-    // console.log('uploadFile file', file);
     this.uploading = true;
 
     const url = this.endpoint;
@@ -294,15 +268,11 @@ export class Compose extends FormElement {
       .then((response: WebResponse) => {
         console.log(response);
         if (response.json.error) {
-          // console.log(response.json.error);
           this.addErrorValue(file, response.json.error);
         } else {
-          // console.log(response.json);
           const attachment = response.json as Attachment;
           if (attachment) {
-            // console.log('attachment', attachment);
             this.addValue(attachment);
-            // console.log('values', this.values);
             this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
           }
         }
@@ -313,7 +283,6 @@ export class Compose extends FormElement {
       })
       .finally(() => {
         this.uploading = false;
-        // this.toggleButton();
       });
   }
 
@@ -338,31 +307,23 @@ export class Compose extends FormElement {
   }
 
   private handleRemoveAttachment(evt: Event): void {
-    // console.log('handleRemoveAttachment evt', evt);
     const target = evt.target as HTMLDivElement;
 
     const attachment = this.values.find(({ uuid }) => uuid === target.id);
-    // console.log('handleRemoveAttachment attachment', attachment);
     if (attachment) {
       this.removeValue(attachment);
       this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-      // console.log('values', this.values);
     }
     const errorAttachment = this.errorValues.find(
       ({ uuid }) => uuid === target.id
     );
-    // console.log('handleRemoveAttachment errorAttachment', errorAttachment);
     if (errorAttachment) {
       this.removeErrorValue(errorAttachment);
       this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-      // console.log('errorValues', this.errorValues);
     }
-    // this.toggleButton();
-    // this.preventDefaults(evt);
   }
 
   public toggleButton() {
-    // console.log('toggleButton buttonDisabled '+this.buttonDisabled);
     if (this.button) {
       if (this.buttonError && this.buttonError.length > 0) {
         this.buttonDisabled = true;
@@ -380,18 +341,13 @@ export class Compose extends FormElement {
         }
       }
     }
-    // console.log('toggleButton buttonDisabled '+this.buttonDisabled);
   }
 
   private handleSendClick() {
-    // console.log('handleSendClick evt', evt);
-    // const button = evt.target as Button;
     this.handleSend();
-    // this.preventDefaults(evt);
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
-    // console.log('handleSendEnter evt', evt);
     if (evt.key === 'Enter' && !evt.shiftKey) {
       const chat = evt.target as Completion;
       if (!chat.hasVisibleOptions()) {
@@ -402,17 +358,9 @@ export class Compose extends FormElement {
   }
 
   private handleSend() {
-    // console.log(
-    //   'handleSend before fireCustomEventbtn this.buttonDisabled',
-    //   this.buttonDisabled
-    // );
     if (!this.buttonDisabled) {
       this.buttonDisabled = true;
       const name = this.buttonName;
-      // console.log(
-      //   'handleSend JUST before fireCustomEventbtn this.buttonDisabled',
-      //   this.buttonDisabled
-      // );
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
     }
   }
@@ -420,17 +368,10 @@ export class Compose extends FormElement {
   private handleSendBlur() {
     if (this.buttonError.length > 0) {
       this.buttonError = '';
-      // this.toggleButton();
     }
-    // this.preventDefaults(evt);
   }
 
   public render(): TemplateResult {
-    // console.log('render chatbox', this.chatbox);
-    // console.log('render counter', this.counter);
-    // console.log('render attachments', this.attachments);
-    // console.log('render button', this.button);
-
     return html`
       <div
         class="container"
