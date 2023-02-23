@@ -29,7 +29,23 @@ export class Compose extends FormElement {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+
+        border-radius: var(--curvature-widget);
+        background: var(--color-widget-bg);
+        border: 1px solid var(--color-widget-border);
+        transition: all ease-in-out var(--transition-speed);
+        box-shadow: var(--widget-box-shadow);
+        caret-color: var(--input-caret);
+        padding: var(--temba-textinput-padding);
       }
+      .container:focus-within {
+        border-color: var(--color-focus);
+        background: var(--color-widget-bg-focused);
+        box-shadow: var(--widget-box-shadow-focused);
+        z-index: 10000;
+        position: relative;
+      }
+
       .highlight {
         opacity: 0.5;
       }
@@ -107,8 +123,8 @@ export class Compose extends FormElement {
         --temba-charcount-counts-margin-top: 0px;
         --temba-charcount-summary-margin-top: 0px;
         --temba-charcount-summary-position: fixed;
-        --temba-charcount-summary-right: 90px;
-        --temba-charcount-summary-bottom: 95px;
+        --temba-charcount-summary-right: 105px;
+        --temba-charcount-summary-bottom: 105px;
       }
       temba-button {
         --button-y: 1px;

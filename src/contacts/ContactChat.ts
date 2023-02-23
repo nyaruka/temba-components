@@ -48,6 +48,7 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
+        background: rgb(242, 242, 242);
         padding: 1em;
         display: flex;
         flex-direction: column;
@@ -315,19 +316,20 @@ export class ContactChat extends ContactStoreElement {
             this.refresh(true);
           } else {
             if (response.status >= 400 && response.status < 500) {
-              if (response.json.text && response.json.text.length > 0) {
-                compose.buttonError = response.json.text[0].replace(
-                  'Translations',
-                  'Text'
-                );
+              if (
+                response.json.text &&
+                response.json.text[0] &&
+                response.json.text[0].length > 0
+              ) {
+                compose.buttonError =
+                  'Text must have no more than 640 characters.';
               } else if (
                 response.json.attachments &&
-                response.json.attachments.length > 0
+                response.json.attachments[0] &&
+                response.json.attachments[0].length > 0
               ) {
-                compose.buttonError = response.json.attachments[0].replace(
-                  'Translations',
-                  'Attachments'
-                );
+                compose.buttonError =
+                  'Attachments must have no more than 10 files.';
               } else {
                 compose.buttonError = genericError;
               }
