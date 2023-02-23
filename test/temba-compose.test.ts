@@ -2,6 +2,7 @@ import { assert, expect, fixture } from '@open-wc/testing';
 import { Attachment, Compose } from '../src/compose/Compose';
 import { assertScreenshot, delay, getClip, getComponent } from './utils.test';
 import { Button } from '../src/button/Button';
+import { Completion } from '../src/completion/Completion';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
@@ -24,10 +25,16 @@ export const updateChatbox = async (
   compose: Compose,
   text?: string
 ): Promise<void> => {
-  console.log('text ' + text);
-  compose.currentChat = text ? text : 'sà-wàd-dee!';
-  console.log('currentChat ' + compose.currentChat);
+  // console.log('text ' + text);
+  compose.currentChat = text ? text : getSuccessText();
+  // console.log('currentChat ' + compose.currentChat);
   await compose.updateComplete;
+};
+export const getSuccessText = () => {
+  return 'sà-wàd-dee!';
+};
+export const getFailText = () => {
+  return "p}h<r0P<?SCIbV1+pwW1Hj8g^J&=Sm2f)K=5LjFFUZ№5@ybpoLZ7DJ(27qdWxQMaO)I1nB4(D%d3c(H)QXOF6F?4>&d{lhd5?0`Lio!yAGMO№*AxN5{z5s.IO*dy?tm}vXJ#Lf-HlD;xmNp}0<P42=w#ll9)B-e9>Q#'{~Vp<dl:xC9`T^lhh@TosCZ^:(H<Ji<E(~PojvYk^rPB+poYy^Ne~Su1:9?IgH'4S5Q9v0g№FEIUc~!{S7;746j'Sd@Nfu3=x?CsuR;YLP4j+AOzDARZG?0(Ji(NMg=r%n0Fq?R1?E%Yf`bcoVZAJ^bl0J'^@;lH>T.HmxYxwS;1?(bfrh?pRdd73:iMxrfx5luQ(}<dCD1b3g'G0CtkB№;8KkbL=>krG{RO%Va4wwr%P>jE*+n(E11}Ju9#<.f^)<MTH09^b{RQv7~H`#@Hda6{MV&H@xdyEKq#M@nZng8WTU66!F@*!)w*EpQ+65XKuQCaESgq=PHmtqi@l;F?PHvl^g@Z:+}}Xyr`IC2=3?20^I'qSU*tkyinM^JF.ZI>}~XzRQJn№v3o-w?Vy&gC:c.l(&9{`M#-'N}{T#7lw8(4:iY621'>C^.&hVZn:R!G}Ek){D#'KkiJWawq#7~GLBN*?V!ncw)d%&(tXj";
 };
 
 export const updateAttachments = async (
@@ -182,7 +189,10 @@ describe('temba-compose chatbox', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await pressKey('Enter', 1);
+    const completion = compose.shadowRoot.querySelector(
+      'temba-completion'
+    ) as Completion;
+    completion.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-and-hit-enter',
       getClip(compose)
@@ -374,7 +384,10 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       button: true,
     });
     compose.currentChat = 'sà-wàd-dee!';
-    await pressKey('Enter', 1);
+    const completion = compose.shadowRoot.querySelector(
+      'temba-completion'
+    ) as Completion;
+    completion.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-no-files-and-hit-enter',
       getClip(compose)
@@ -549,7 +562,10 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     });
     await updateChatbox(compose);
     await updateAttachments(compose);
-    await pressKey('Enter', 1);
+    const completion = compose.shadowRoot.querySelector(
+      'temba-completion'
+    ) as Completion;
+    completion.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-success-files-and-hit-enter',
       getClip(compose)
@@ -571,7 +587,10 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     await updateChatbox(compose);
     await updateAttachments(compose);
     await updateErrorAttachments(compose);
-    await pressKey('Enter', 1);
+    const completion = compose.shadowRoot.querySelector(
+      'temba-completion'
+    ) as Completion;
+    completion.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     const newClip = getClip(compose);
     // console.log('just after getClip');
     // console.log(newClip);

@@ -306,7 +306,7 @@ export class ContactChat extends ContactStoreElement {
         payload['ticket'] = this.currentTicket.uuid;
       }
 
-      const genericError = buttonName + ' failed, please try again';
+      const genericError = buttonName + ' failed, please try again.';
 
       postJSON(`/api/v2/broadcasts.json`, payload)
         .then(response => {

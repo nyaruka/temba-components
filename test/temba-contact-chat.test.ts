@@ -16,7 +16,9 @@ import {
   mockPOST,
 } from '../test/utils.test';
 import {
+  getFailText,
   getSuccessFiles,
+  getSuccessText,
   updateAttachments,
   updateChatbox,
 } from './temba-compose.test';
@@ -200,7 +202,14 @@ describe('temba-contact-chat - contact tests', () => {
 });
 
 describe('temba-contact-chat - contact tests - handle send tests - text no attachments', () => {
-  it('with text no attachments - success response', async () => {
+  beforeEach(() => {
+    //todo
+  });
+  afterEach(() => {
+    //todo
+  });
+
+  it('with text no attachments - success', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -222,12 +231,12 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     send.click();
 
     await assertScreenshot(
-      'contacts/compose-chatbox-with-text-no-attachments-success',
+      'contacts/compose-text-no-attachments-success',
       getClip(chat)
     );
   });
 
-  it('with text no attachments - more than 640 chars - failure response', async () => {
+  it('with text no attachments - failure - more than 640 chars', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -235,12 +244,11 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
-    const text =
-      "p}h<r0P<?SCIbV1+pwW1Hj8g^J&=Sm2f)K=5LjFFUZ№5@ybpoLZ7DJ(27qdWxQMaO)I1nB4(D%d3c(H)QXOF6F?4>&d{lhd5?0`Lio!yAGMO№*AxN5{z5s.IO*dy?tm}vXJ#Lf-HlD;xmNp}0<P42=w#ll9)B-e9>Q#'{~Vp<dl:xC9`T^lhh@TosCZ^:(H<Ji<E(~PojvYk^rPB+poYy^Ne~Su1:9?IgH'4S5Q9v0g№FEIUc~!{S7;746j'Sd@Nfu3=x?CsuR;YLP4j+AOzDARZG?0(Ji(NMg=r%n0Fq?R1?E%Yf`bcoVZAJ^bl0J'^@;lH>T.HmxYxwS;1?(bfrh?pRdd73:iMxrfx5luQ(}<dCD1b3g'G0CtkB№;8KkbL=>krG{RO%Va4wwr%P>jE*+n(E11}Ju9#<.f^)<MTH09^b{RQv7~H`#@Hda6{MV&H@xdyEKq#M@nZng8WTU66!F@*!)w*EpQ+65XKuQCaESgq=PHmtqi@l;F?PHvl^g@Z:+}}Xyr`IC2=3?20^I'qSU*tkyinM^JF.ZI>}~XzRQJn№v3o-w?Vy&gC:c.l(&9{`M#-'N}{T#7lw8(4:iY621'>C^.&hVZn:R!G}Ek){D#'KkiJWawq#7~GLBN*?V!ncw)d%&(tXj";
+    const text = getFailText();
     await updateChatbox(compose, text);
 
     const response_body = {
-      text: ['Translations must have no more than 640 characters.'],
+      text: ['Text must have no more than 640 characters.'],
     };
     const response_headers = {};
     const response_status = '401';
@@ -257,133 +265,264 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     send.click();
 
     await assertScreenshot(
-      'contacts/compose-chatbox-with-text-no-attachments-failure',
+      'contacts/compose-text-no-attachments-failure',
+      getClip(chat)
+    );
+  });
+});
+
+describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
+  beforeEach(() => {
+    //todo
+  });
+  afterEach(() => {
+    //todo
+  });
+
+  it('with attachments no text - success', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    await updateAttachments(compose);
+
+    const attachments = getSuccessFiles();
+    const response_body = {
+      contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
+      text: { eng: '' },
+      attachments: { eng: attachments },
+    };
+    const response_headers = {};
+    const response_status = '200';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
+
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+
+    await assertScreenshot(
+      'contacts/compose-attachments-no-text-success',
+      getClip(chat)
+    );
+  });
+  it('with attachments no text - failure - more than 10 items', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    // set the attachments to a list that is 10+ items
+    const attachments = getSuccessFiles(11);
+    await updateAttachments(compose, attachments);
+
+    const response_body = {
+      attachments: ['Attachments must have no more than 10 items.'],
+    };
+    const response_headers = {};
+    const response_status = '401';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
+
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+
+    await assertScreenshot(
+      'contacts/compose-attachments-no-text-failure',
+      getClip(chat)
+    );
+  });
+});
+
+describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
+  beforeEach(() => {
+    //todo
+  });
+  afterEach(() => {
+    //todo
+  });
+
+  it('with text and attachments - success', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    await updateChatbox(compose);
+    await updateAttachments(compose);
+
+    const text = getSuccessText();
+    const attachments = getSuccessFiles();
+    const response_body = {
+      contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
+      text: { eng: text },
+      attachments: { eng: attachments },
+    };
+    mockPOST(/api\/v2\/broadcasts\.json/, response_body);
+
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+
+    await assertScreenshot(
+      'contacts/compose-text-and-attachments-success',
       getClip(chat)
     );
   });
 
-  describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
-    it('with attachments no text - success response', async () => {
-      // we are a StoreElement, so load a store first
-      await loadStore();
-      const chat: ContactChat = await getContactChat({
-        contact: 'contact-dave-active',
-      });
-      const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-      await updateAttachments(compose);
-
-      const attachments = getSuccessFiles();
-      const response_body = {
-        contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
-        text: { eng: '' },
-        attachments: { eng: attachments },
-      };
-      const response_headers = {};
-      const response_status = '200';
-      mockPOST(
-        /api\/v2\/broadcasts\.json/,
-        response_body,
-        response_headers,
-        response_status
-      );
-
-      const send = compose.shadowRoot.querySelector(
-        'temba-button#send-button'
-      ) as Button;
-      send.click();
-
-      await assertScreenshot(
-        'contacts/compose-chatbox-no-text-with-attachments-success',
-        getClip(chat)
-      );
+  it('with text and attachments - failure - more than 640 chars', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
     });
-    it.only('with attachments no text - more than 10 items - failure response', async () => {
-      // we are a StoreElement, so load a store first
-      await loadStore();
-      const chat: ContactChat = await getContactChat({
-        contact: 'contact-dave-active',
-      });
-      const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-      // set the attachments to a list that is 10+ items
-      const attachments = getSuccessFiles(11);
-      await updateAttachments(compose, attachments);
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    // set the chatbox to a string that is 640+ chars
+    const text = getFailText();
+    await updateChatbox(compose, text);
+    await updateAttachments(compose);
 
-      const response_body = {
-        attachments: ['Attachments must have no more than 10 items.'],
-      };
-      const response_headers = {};
-      const response_status = '401';
-      mockPOST(
-        /api\/v2\/broadcasts\.json/,
-        response_body,
-        response_headers,
-        response_status
-      );
+    const response_body = {
+      text: ['Text must have no more than 640 characters.'],
+    };
+    const response_headers = {};
+    const response_status = '401';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
 
-      const send = compose.shadowRoot.querySelector(
-        'temba-button#send-button'
-      ) as Button;
-      send.click();
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
 
-      await assertScreenshot(
-        'contacts/compose-chatbox-no-text-with-attachments-failure',
-        getClip(chat)
-      );
-    });
+    await assertScreenshot(
+      'contacts/compose-text-and-attachments-failure-text',
+      getClip(chat)
+    );
   });
 
-  // describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
-  //   it('with text and attachments - success response', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
-  //     const chat: ContactChat = await getContactChat({
-  //       contact: 'contact-dave-active',
-  //     });
+  it('with text and attachments - failure - more than 10 items', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    await updateChatbox(compose);
+    // set the attachments to a list that is 10+ items
+    const attachments = getSuccessFiles(11);
+    await updateAttachments(compose, attachments);
 
-  //     // todo
-  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-success/, data);
-  //     expect(true).equals(false);
-  //   });
-  //   it('with text and attachments - failure response due to text', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
-  //     const chat: ContactChat = await getContactChat({
-  //       contact: 'contact-dave-active',
-  //     });
+    const response_body = {
+      attachments: ['Attachments must have no more than 10 items.'],
+    };
+    const response_headers = {};
+    const response_status = '401';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
 
-  //     const data = {
-  //       text: ['Translations must have no more than 640 characters.'],
-  //     };
-  //     mockPOST(
-  //       /api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-text/,
-  //       data
-  //     );
-  //   });
-  //   it('with text and attachments - failure response due to attachments', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
-  //     const chat: ContactChat = await getContactChat({
-  //       contact: 'contact-dave-active',
-  //     });
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
 
-  //     // todo
-  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-attachments/, data);
-  //     expect(true).equals(false);
-  //   });
-  //   it('with text and attachments - failure response due to both', async () => {
-  //     // we are a StoreElement, so load a store first
-  //     await loadStore();
-  //     const chat: ContactChat = await getContactChat({
-  //       contact: 'contact-dave-active',
-  //     });
+    await assertScreenshot(
+      'contacts/compose-text-and-attachments-failure-attachments',
+      getClip(chat)
+    );
+  });
 
-  //     // todo
-  //     // const data = {"text":{"eng":""},"attachments":{"eng":[]}}
-  //     // mockPOST(/api\/v2\/broadcasts\.json\?payload=\/test-assets\/compose\/compose-text-and-attachments-failure-all/, data);
-  //     expect(true).equals(false);
-  //   });
+  it('with text and attachments - failure - more than 640 chars and more than 10 items', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    // set the chatbox to a string that is 640+ chars
+    const text = getFailText();
+    await updateChatbox(compose, text);
+    // set the attachments to a list that is 10+ items
+    const attachments = getSuccessFiles(11);
+    await updateAttachments(compose, attachments);
+
+    const response_body = {
+      text: ['Text must have no more than 640 characters.'],
+    };
+    const response_headers = {};
+    const response_status = '401';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
+
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+
+    await assertScreenshot(
+      'contacts/compose-text-and-attachments-failure-text-and-attachments',
+      getClip(chat)
+    );
+  });
+
+  it.only('with text and attachments - failure - generic', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active',
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    await updateChatbox(compose);
+    await updateAttachments(compose);
+
+    const response_body = {};
+    const response_headers = {};
+    const response_status = '500';
+    mockPOST(
+      /api\/v2\/broadcasts\.json/,
+      response_body,
+      response_headers,
+      response_status
+    );
+
+    const send = compose.shadowRoot.querySelector(
+      'temba-button#send-button'
+    ) as Button;
+    send.click();
+
+    await assertScreenshot(
+      'contacts/compose-text-and-attachments-failure-generic',
+      getClip(chat)
+    );
+  });
 });
 
 describe('temba-contact-chat - ticket tests', () => {
