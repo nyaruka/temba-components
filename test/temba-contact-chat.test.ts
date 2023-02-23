@@ -1,7 +1,7 @@
 import { expect } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
-import { Attachment, Compose } from '../src/compose/Compose';
+import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { ContactHistory } from '../src/contacts/ContactHistory';
 import { CustomEventType } from '../src/interfaces';
@@ -202,10 +202,15 @@ describe('temba-contact-chat - contact tests', () => {
 
 describe('temba-contact-chat - contact tests - handle send tests - text no attachments', () => {
   beforeEach(() => {
-    //todo
+    mockGET(
+      /\/contact\/history\/contact-.*/,
+      '/test-assets/contacts/history.json'
+    );
+    clock = useFakeTimers();
   });
-  afterEach(() => {
-    //todo
+
+  afterEach(function () {
+    clock.restore();
   });
 
   it('with text no attachments - success', async () => {
@@ -271,10 +276,15 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
 
 describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
   beforeEach(() => {
-    //todo
+    mockGET(
+      /\/contact\/history\/contact-.*/,
+      '/test-assets/contacts/history.json'
+    );
+    clock = useFakeTimers();
   });
-  afterEach(() => {
-    //todo
+
+  afterEach(function () {
+    clock.restore();
   });
 
   it('with attachments no text - success', async () => {
@@ -346,10 +356,15 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
 
 describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
   beforeEach(() => {
-    //todo
+    mockGET(
+      /\/contact\/history\/contact-.*/,
+      '/test-assets/contacts/history.json'
+    );
+    clock = useFakeTimers();
   });
-  afterEach(() => {
-    //todo
+
+  afterEach(function () {
+    clock.restore();
   });
 
   it('with text and attachments - success', async () => {

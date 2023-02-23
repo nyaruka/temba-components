@@ -1,6 +1,6 @@
 import { assert, expect, fixture } from '@open-wc/testing';
 import { Attachment, Compose } from '../src/compose/Compose';
-import { assertScreenshot, delay, getClip, getComponent } from './utils.test';
+import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Button } from '../src/button/Button';
 import { Completion } from '../src/completion/Completion';
 
