@@ -19,8 +19,7 @@ import {
   getFailText,
   getSuccessFiles,
   getSuccessText,
-  updateAttachments,
-  updateChatbox,
+  updateComponent,
 } from './temba-compose.test';
 
 let clock: any;
@@ -216,7 +215,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
       contact: 'contact-dave-active',
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    await updateChatbox(compose);
+    await updateComponent(compose, getSuccessText());
 
     const response_body = {
       contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
@@ -244,8 +243,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
-    const text = getFailText();
-    await updateChatbox(compose, text);
+    await updateComponent(compose, getFailText());
 
     const response_body = {
       text: ['Text must have no more than 640 characters.'],
@@ -286,9 +284,8 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
       contact: 'contact-dave-active',
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    await updateAttachments(compose);
-
     const attachments = getSuccessFiles();
+    await updateComponent(compose, null, attachments);
     const response_body = {
       contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
       text: { eng: '' },
@@ -321,8 +318,7 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the attachments to a list that is 10+ items
-    const attachments = getSuccessFiles(11);
-    await updateAttachments(compose, attachments);
+    await updateComponent(compose, null, getSuccessFiles(11));
 
     const response_body = {
       attachments: ['Attachments must have no more than 10 items.'],
@@ -363,8 +359,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       contact: 'contact-dave-active',
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    await updateChatbox(compose);
-    await updateAttachments(compose);
+    await updateComponent(compose, getSuccessText(), getSuccessFiles());
 
     const text = getSuccessText();
     const attachments = getSuccessFiles();
@@ -394,9 +389,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
-    const text = getFailText();
-    await updateChatbox(compose, text);
-    await updateAttachments(compose);
+    await updateComponent(compose, getFailText(), getSuccessFiles());
 
     const response_body = {
       text: ['Text must have no more than 640 characters.'],
@@ -428,10 +421,8 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       contact: 'contact-dave-active',
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    await updateChatbox(compose);
     // set the attachments to a list that is 10+ items
-    const attachments = getSuccessFiles(11);
-    await updateAttachments(compose, attachments);
+    await updateComponent(compose, getSuccessText(), getSuccessFiles(11));
 
     const response_body = {
       attachments: ['Attachments must have no more than 10 items.'],
@@ -464,11 +455,8 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
-    const text = getFailText();
-    await updateChatbox(compose, text);
     // set the attachments to a list that is 10+ items
-    const attachments = getSuccessFiles(11);
-    await updateAttachments(compose, attachments);
+    await updateComponent(compose, getFailText(), getSuccessFiles(11));
 
     const response_body = {
       text: ['Text must have no more than 640 characters.'],
@@ -493,15 +481,14 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     );
   });
 
-  it.only('with text and attachments - failure - generic', async () => {
+  it('with text and attachments - failure - generic', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
       contact: 'contact-dave-active',
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    await updateChatbox(compose);
-    await updateAttachments(compose);
+    await updateComponent(compose, getSuccessText(), getSuccessFiles());
 
     const response_body = {};
     const response_headers = {};
