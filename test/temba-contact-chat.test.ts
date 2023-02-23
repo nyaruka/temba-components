@@ -251,10 +251,10 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     await updateComponent(compose, getFailText());
 
     const response_body = {
-      text: ['Text must have no more than 640 characters.'],
+      text: { eng: ['Ensure this field has no more than 640 characters.'] },
     };
     const response_headers = {};
-    const response_status = '401';
+    const response_status = '400';
     mockPOST(
       /api\/v2\/broadcasts\.json/,
       response_body,
@@ -320,7 +320,7 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
       getClip(chat)
     );
   });
-  it('with attachments no text - failure - more than 10 items', async () => {
+  it('with attachments no text - failure - more than 10 files', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -331,10 +331,10 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     await updateComponent(compose, null, getSuccessFiles(11));
 
     const response_body = {
-      attachments: ['Attachments must have no more than 10 items.'],
+      attachments: { eng: ['Ensure this field has no more than 10 elements.'] },
     };
     const response_headers = {};
-    const response_status = '401';
+    const response_status = '400';
     mockPOST(
       /api\/v2\/broadcasts\.json/,
       response_body,
@@ -407,10 +407,10 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     await updateComponent(compose, getFailText(), getSuccessFiles());
 
     const response_body = {
-      text: ['Text must have no more than 640 characters.'],
+      text: { eng: ['Ensure this field has no more than 640 characters.'] },
     };
     const response_headers = {};
-    const response_status = '401';
+    const response_status = '400';
     mockPOST(
       /api\/v2\/broadcasts\.json/,
       response_body,
@@ -429,7 +429,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     );
   });
 
-  it('with text and attachments - failure - more than 10 items', async () => {
+  it('with text and attachments - failure - more than 10 files', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -440,10 +440,10 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     await updateComponent(compose, getSuccessText(), getSuccessFiles(11));
 
     const response_body = {
-      attachments: ['Attachments must have no more than 10 items.'],
+      attachments: { eng: ['Ensure this field has no more than 10 elements.'] },
     };
     const response_headers = {};
-    const response_status = '401';
+    const response_status = '400';
     mockPOST(
       /api\/v2\/broadcasts\.json/,
       response_body,
@@ -462,7 +462,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     );
   });
 
-  it('with text and attachments - failure - more than 640 chars and more than 10 items', async () => {
+  it.only('with text and attachments - failure - more than 640 chars and more than 10 files', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -474,10 +474,10 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     await updateComponent(compose, getFailText(), getSuccessFiles(11));
 
     const response_body = {
-      text: ['Text must have no more than 640 characters.'],
+      text: { eng: ['Ensure this field has no more than 640 characters.'] },
     };
     const response_headers = {};
-    const response_status = '401';
+    const response_status = '400';
     mockPOST(
       /api\/v2\/broadcasts\.json/,
       response_body,
