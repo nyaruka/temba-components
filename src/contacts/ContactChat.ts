@@ -281,7 +281,7 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private handleSend(evt: CustomEvent) {
-    console.log('handleSend evt', evt);
+    // console.log('handleSend evt', evt);
     const buttonName = evt.detail.name;
     if (buttonName === 'Send') {
       const payload = {

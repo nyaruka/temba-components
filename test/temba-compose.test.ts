@@ -20,39 +20,50 @@ const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
 
 const upload_endpoint = '/msgmedia/upload/';
 
-const updateChatbox = async (compose: Compose): Promise<void> => {
-  compose.currentChat = 'sà-wàd-dee!';
+export const updateChatbox = async (
+  compose: Compose,
+  text?: string
+): Promise<void> => {
+  console.log('text ' + text);
+  compose.currentChat = text ? text : 'sà-wàd-dee!';
+  console.log('currentChat ' + compose.currentChat);
   await compose.updateComplete;
 };
 
-const getSuccessFiles = async (compose: Compose): Promise<void> => {
-  const s1 = 's1';
-  const success1 = {
-    uuid: s1,
-    content_type: 'image/png',
-    type: 'image/png',
-    name: 'name_' + s1,
-    url: 'url_' + s1,
-    size: 1024,
-    error: null,
-  } as Attachment;
-
-  const s2 = 's2';
-  const success2 = {
-    uuid: s2,
-    content_type: 'image/jpeg',
-    type: 'image/jpeg',
-    name: 'name_' + s2,
-    url: 'url_' + s2,
-    size: 1024,
-    error: null,
-  } as Attachment;
-
-  compose.values = [success1, success2];
+export const updateAttachments = async (
+  compose: Compose,
+  attachments?: Attachment[]
+): Promise<void> => {
+  compose.values = attachments ? attachments : getSuccessFiles();
   await compose.updateComplete;
 };
+export const getSuccessFiles = (numFiles = 2): Attachment[] => {
+  const attachments = [];
+  let index = 1;
+  while (index <= numFiles) {
+    const s = 's' + index;
+    const attachment = {
+      uuid: s,
+      content_type: 'image/png',
+      type: 'image/png',
+      name: 'name_' + s,
+      url: 'url_' + s,
+      size: 1024,
+      error: null,
+    } as Attachment;
+    attachments.push(attachment);
+    index++;
+  }
+  return attachments;
+};
 
-const getFailFiles = async (compose: Compose): Promise<void> => {
+export const updateErrorAttachments = async (
+  compose: Compose
+): Promise<void> => {
+  compose.errorValues = getFailFiles();
+  await compose.updateComplete;
+};
+export const getFailFiles = (): Attachment[] => {
   const f1 = 'f1';
   const fail1 = {
     uuid: f1,
@@ -74,8 +85,7 @@ const getFailFiles = async (compose: Compose): Promise<void> => {
     error: 'Unsupported file type',
   } as Attachment;
 
-  compose.errorValues = [fail1, fail2];
-  await compose.updateComplete;
+  return [fail1, fail2];
 };
 
 describe('temba-compose chatbox', () => {
@@ -207,7 +217,7 @@ describe('temba-compose attachments', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     await assertScreenshot(
       'compose/attachments-with-success-files',
       getClip(compose)
@@ -219,7 +229,7 @@ describe('temba-compose attachments', () => {
       attachments: true,
       button: true,
     });
-    await getFailFiles(compose);
+    await updateErrorAttachments(compose);
     await assertScreenshot(
       'compose/attachments-with-failure-files',
       getClip(compose)
@@ -231,8 +241,8 @@ describe('temba-compose attachments', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     await assertScreenshot(
       'compose/attachments-with-all-files',
       getClip(compose)
@@ -244,7 +254,7 @@ describe('temba-compose attachments', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
@@ -260,8 +270,8 @@ describe('temba-compose attachments', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
@@ -379,7 +389,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-success-files',
       getClip(compose)
@@ -392,7 +402,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    await getFailFiles(compose);
+    await updateErrorAttachments(compose);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-failure-files',
       getClip(compose)
@@ -405,8 +415,8 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-all-files',
       getClip(compose)
@@ -420,7 +430,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
@@ -437,8 +447,8 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
@@ -458,7 +468,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-success-files',
       getClip(compose)
@@ -472,7 +482,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await getFailFiles(compose);
+    await updateErrorAttachments(compose);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-failure-files',
       getClip(compose)
@@ -486,8 +496,8 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-all-files',
       getClip(compose)
@@ -501,7 +511,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
@@ -519,8 +529,8 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
@@ -538,7 +548,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
     });
     await updateChatbox(compose);
-    await getSuccessFiles(compose);
+    await updateAttachments(compose);
     await pressKey('Enter', 1);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-success-files-and-hit-enter',
@@ -559,8 +569,8 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     // console.log('just after getCompose offset height ' + compose.offsetHeight);
     // console.log('just after getCompose scroll height ' + compose.scrollHeight);
     await updateChatbox(compose);
-    await getSuccessFiles(compose);
-    await getFailFiles(compose);
+    await updateAttachments(compose);
+    await updateErrorAttachments(compose);
     await pressKey('Enter', 1);
     const newClip = getClip(compose);
     // console.log('just after getClip');
