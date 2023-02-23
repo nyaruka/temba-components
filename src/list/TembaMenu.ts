@@ -946,8 +946,6 @@ export class TembaMenu extends RapidElement {
           if (menuItem.level > 0) {
             this.pressedItem = menuItem;
           }
-
-          console.log('pressing', menuItem);
         }}
         @mouseleave=${() => {
           this.pressedItem = null;
