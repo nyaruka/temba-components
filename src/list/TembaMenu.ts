@@ -101,7 +101,8 @@ export class TembaMenu extends RapidElement {
         --icon-color: var(--color-text-dark);
       }
 
-      .item.selected {
+      .item.selected,
+      .item.pressed {
         background: var(--color-selection);
         color: var(--color-primary-dark);
         --icon-color: var(--color-primary-dark);
@@ -503,6 +504,9 @@ export class TembaMenu extends RapidElement {
 
   @property({ type: Boolean })
   collapsed: boolean;
+
+  @property({ type: Object })
+  pressedItem: MenuItem;
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
@@ -921,6 +925,7 @@ export class TembaMenu extends RapidElement {
       expanding: this.expanding && this.expanding === menuItem.id,
       expanded: this.isExpanded(menuItem),
       iconless: !icon && !collapsedIcon && !menuItem.avatar,
+      pressed: this.pressedItem && this.pressedItem.id == menuItem.id,
     });
 
     if (menuItem.avatar) {
@@ -930,12 +935,22 @@ export class TembaMenu extends RapidElement {
     const item = html` <div
         class="item-top ${isSelected ? 'selected' : null} "
       ></div>
-
       <div
         id="menu-${menuItem.id}"
         class="${itemClasses}"
         @click=${event => {
+          this.pressedItem = null;
           this.handleItemClicked(event, menuItem, parent);
+        }}
+        @mousedown=${() => {
+          if (menuItem.level > 0) {
+            this.pressedItem = menuItem;
+          }
+
+          console.log('pressing', menuItem);
+        }}
+        @mouseleave=${() => {
+          this.pressedItem = null;
         }}
       >
         ${menuItem.level === 0
