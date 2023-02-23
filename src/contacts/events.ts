@@ -306,6 +306,7 @@ export const getEventStyles = () => {
 
     .event .description {
       flex-grow: 1;
+      word-break: break-all;
     }
 
     .msg-summary {
