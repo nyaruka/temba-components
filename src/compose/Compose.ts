@@ -191,6 +191,15 @@ export class Compose extends FormElement {
     }
   }
 
+  firstUpdated(): void {
+    const completion = this.shadowRoot.querySelector(
+      'temba-completion'
+    ) as Completion;
+    window.setTimeout(() => {
+      completion.click();
+    }, 0);
+  }
+
   public reset(): void {
     this.currentChat = '';
     this.values = [];
@@ -199,9 +208,9 @@ export class Compose extends FormElement {
   }
 
   private handleChatboxChange(evt: Event) {
-    const completionElement = evt.target as Completion;
-    const textInputElement = completionElement.textInputElement;
-    this.currentChat = textInputElement.value;
+    const completion = evt.target as Completion;
+    const textInput = completion.textInputElement;
+    this.currentChat = textInput.value;
     this.preventDefaults(evt);
   }
 

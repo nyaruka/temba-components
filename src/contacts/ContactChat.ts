@@ -2,7 +2,6 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
-import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
@@ -244,23 +243,6 @@ export class ContactChat extends ContactStoreElement {
       changedProperties.has('currentContact')
     ) {
       this.currentContact = this.data;
-      // focus our completion on load
-      const prevContact = changedProperties.get('contact');
-      if (
-        !prevContact ||
-        (this.currentContact &&
-          this.currentContact.ticket &&
-          this.currentContact.ticket.uuid !== prevContact.ticket.uuid)
-      ) {
-        const completion = this.shadowRoot.querySelector(
-          'temba-completion'
-        ) as Completion;
-        if (completion) {
-          window.setTimeout(() => {
-            completion.click();
-          }, 0);
-        }
-      }
     }
   }
 
