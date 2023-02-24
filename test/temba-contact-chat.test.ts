@@ -8,6 +8,7 @@ import { CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
 import {
   assertScreenshot,
+  clearMockPosts,
   getClip,
   getComponent,
   loadStore,
@@ -202,6 +203,7 @@ describe('temba-contact-chat - contact tests', () => {
 
 describe('temba-contact-chat - contact tests - handle send tests - text no attachments', () => {
   beforeEach(() => {
+    clearMockPosts();
     mockGET(
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
@@ -276,6 +278,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
 
 describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
   beforeEach(() => {
+    clearMockPosts();
     mockGET(
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
@@ -356,6 +359,7 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
 
 describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
   beforeEach(() => {
+    clearMockPosts();
     mockGET(
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
@@ -462,7 +466,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     );
   });
 
-  it.only('with text and attachments - failure - more than 640 chars and more than 10 files', async () => {
+  it('with text and attachments - failure - more than 640 chars and more than 10 files', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({

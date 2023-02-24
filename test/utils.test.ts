@@ -20,7 +20,7 @@ export interface CodeMock {
 }
 
 const gets: CodeMock[] = [];
-const posts: CodeMock[] = [];
+let posts: CodeMock[] = [];
 let normalFetch;
 
 export const showMouse = async () => {
@@ -139,6 +139,10 @@ export const mockPOST = (
   status = '200'
 ) => {
   posts.push({ endpoint, body, headers, status });
+};
+
+export const clearMockPosts = () => {
+  posts = [];
 };
 
 export const checkTimers = (clock: any) => {
