@@ -377,7 +377,6 @@ export class Compose extends FormElement {
       const chat = evt.target as Completion;
       if (!chat.hasVisibleOptions()) {
         this.handleSend();
-        // this.preventDefaults(evt);
       }
     }
   }
