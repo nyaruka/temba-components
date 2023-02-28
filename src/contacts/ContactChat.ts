@@ -292,7 +292,7 @@ export class ContactChat extends ContactStoreElement {
 
       postJSON(`/api/v2/broadcasts.json`, payload)
         .then(response => {
-          console.log(response);
+          // console.log(response);
           if (response.status < 400) {
             compose.reset();
             this.refresh(true);

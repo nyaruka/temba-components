@@ -195,11 +195,11 @@ export class Compose extends FormElement {
     const completion = this.shadowRoot.querySelector(
       'temba-completion'
     ) as Completion;
-    if(completion){
+    if (completion) {
       window.setTimeout(() => {
         completion.click();
       }, 0);
-    }    
+    }
   }
 
   public reset(): void {
@@ -293,7 +293,7 @@ export class Compose extends FormElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        console.log(response);
+        // console.log(response);
         if (response.json.error) {
           this.addErrorValue(file, response.json.error);
         } else {

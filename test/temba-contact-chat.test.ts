@@ -509,7 +509,7 @@ describe('temba-contact-chat - ticket tests', () => {
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 1004;
+          return chat.getContactHistory().getEventsPane().scrollTop === 1024;
         },
       }
     );
