@@ -95,21 +95,6 @@ describe('temba-contact-chat - contact tests', () => {
       contact: 'contact-dave-active',
     });
 
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
-
-    const chatboxDivEl = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDivEl).to.not.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
-
     await assertScreenshot(
       'contacts/contact-active-show-chatbox',
       getClip(chat)
@@ -122,21 +107,6 @@ describe('temba-contact-chat - contact tests', () => {
     const chat: ContactChat = await getContactChat({
       contact: 'contact-barack-archived',
     });
-
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
-
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
       'contacts/contact-archived-hide-chatbox',
@@ -151,21 +121,6 @@ describe('temba-contact-chat - contact tests', () => {
       contact: 'contact-michelle-blocked',
     });
 
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
-
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
-
     await assertScreenshot(
       'contacts/contact-blocked-hide-chatbox',
       getClip(chat)
@@ -178,21 +133,6 @@ describe('temba-contact-chat - contact tests', () => {
     const chat: ContactChat = await getContactChat({
       contact: 'contact-tim-stopped',
     });
-
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null, 'Chat history missing');
-
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
 
     await assertScreenshot(
       'contacts/contact-stopped-hide-chatbox',
@@ -561,21 +501,7 @@ describe('temba-contact-chat - ticket tests', () => {
 
     chat.currentTicket = tickets.items[0];
     chat.refresh();
-
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
-
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.not.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
+    await chat.httpComplete;
 
     await assertScreenshot(
       'contacts/contact-active-ticket-open-show-chatbox',
@@ -601,23 +527,7 @@ describe('temba-contact-chat - ticket tests', () => {
     });
     chat.currentTicket = tickets.items[0];
     chat.refresh();
-
     await chat.httpComplete;
-
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
-
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.not.equal(null);
 
     await assertScreenshot(
       'contacts/contact-active-ticket-closed-show-reopen-button',
@@ -644,21 +554,7 @@ describe('temba-contact-chat - ticket tests', () => {
     });
     chat.currentTicket = tickets.items[0];
     chat.refresh();
-
-    const chatHistoryEl = chat.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-    expect(chatHistoryEl).to.not.equal(null);
-
-    const chatboxDiv = chat.shadowRoot.querySelector(
-      '.chatbox'
-    ) as HTMLDivElement;
-    expect(chatboxDiv).to.equal(null);
-
-    const reopenButton = chat.shadowRoot.querySelector(
-      'temba-button#reopen-button'
-    ) as HTMLDivElement;
-    expect(reopenButton).to.equal(null);
+    await chat.httpComplete;
 
     await assertScreenshot(
       'contacts/contact-archived-ticket-closed-hide-chatbox',

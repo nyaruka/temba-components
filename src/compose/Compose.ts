@@ -195,9 +195,11 @@ export class Compose extends FormElement {
     const completion = this.shadowRoot.querySelector(
       'temba-completion'
     ) as Completion;
-    window.setTimeout(() => {
-      completion.click();
-    }, 0);
+    if(completion){
+      window.setTimeout(() => {
+        completion.click();
+      }, 0);
+    }    
   }
 
   public reset(): void {

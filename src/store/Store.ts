@@ -242,7 +242,9 @@ export class Store extends RapidElement {
 
   public isDynamicGroup(uuid: string): boolean {
     const group = this.groups[uuid];
-    if (group && group.query) {
+    // we treat missing groups as dynamic since the
+    // api excludes initializing groups
+    if (!group || group.query) {
       return true;
     }
     return false;

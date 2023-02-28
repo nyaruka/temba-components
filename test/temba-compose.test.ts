@@ -6,8 +6,6 @@ import { Completion } from '../src/completion/Completion';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
-  // console.log('getCompose width ' + height);
-  // console.log('getCompose height ' + height);
   const compose = (await getComponent(
     TAG,
     attrs,
@@ -562,12 +560,6 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       attachments: true,
       button: true,
     });
-    // console.log('just after getCompose client width ' + compose.clientWidth);
-    // console.log('just after getCompose offset width ' + compose.offsetWidth);
-    // console.log('just after getCompose scroll width ' + compose.scrollWidth);
-    // console.log('just after getCompose client height ' + compose.clientHeight);
-    // console.log('just after getCompose offset height ' + compose.offsetHeight);
-    // console.log('just after getCompose scroll height ' + compose.scrollHeight);
     await updateComponent(
       compose,
       getSuccessText(),
@@ -579,8 +571,6 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     ) as Completion;
     completion.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     const newClip = getClip(compose);
-    // console.log('just after getClip');
-    // console.log(newClip);
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-all-files-and-hit-enter',
       newClip
