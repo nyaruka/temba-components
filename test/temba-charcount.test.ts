@@ -7,6 +7,10 @@ parentNode.setAttribute('style', ' width: 250px;');
 
 const getCharCount = async (html: string) => {
   const counter: CharCount = await fixture(html, { parentNode });
+  // console.log('getCharCount parentNode clientWidth ' + parentNode.clientWidth);
+  // console.log('getCharCount parentNode clientHeight ' + parentNode.clientHeight);
+  // console.log('getCharCount counter clientWidth ' + counter.clientWidth);
+  // console.log('getCharCount counter clientHeight ' + counter.clientHeight);
   return counter;
 };
 
