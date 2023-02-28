@@ -93,4 +93,7 @@ export enum Icon {
   webhook = 'link-external-01',
   workspace = 'folder',
   zendesk = 'zendesk',
+
+  ext = 'lightning-01',
+  fcm = 'lightning-01',
 }
