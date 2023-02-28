@@ -57,7 +57,7 @@ describe('temba-contact-history', () => {
     clock.restore();
   });
 
-  it.only('can be created', async () => {
+  it('can be created', async () => {
     const history = await createHistory(getHistoryHTML());
     assert.instanceOf(history, ContactHistory);
   });
