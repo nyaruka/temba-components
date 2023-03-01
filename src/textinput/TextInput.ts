@@ -105,6 +105,7 @@ export class TextInput extends FormElement {
         font-weight: 300;
         width: 100%;
         visibility: hidden;
+        word-break: break-word;
       }
 
       .grow-wrap textarea {

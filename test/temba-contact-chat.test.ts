@@ -1,9 +1,7 @@
-import { expect } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
 import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
-import { ContactHistory } from '../src/contacts/ContactHistory';
 import { CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
 import {
