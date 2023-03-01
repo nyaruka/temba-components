@@ -307,7 +307,6 @@ export class Compose extends FormElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        // console.log(response);
         if (response.json.error) {
           this.addErrorValue(file, response.json.error);
         } else {
