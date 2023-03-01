@@ -49,17 +49,18 @@ export class Compose extends FormElement {
       .highlight {
         opacity: 0.5;
       }
+
       .items {
-        margin-bottom: 0.5em;
       }
 
       temba-completion {
+        margin-left: 0.3em;
+        margin-top: 0.3em;
         --color-widget-border: none;
         --curvature-widget: none;
         --widget-box-shadow: none;
         --widget-box-shadow-focused: none;
         --temba-textinput-padding: 0;
-        --textarea-height: 5em;
       }
 
       .attachments {
@@ -74,7 +75,7 @@ export class Compose extends FormElement {
       .attachment-item {
         background: rgba(100, 100, 100, 0.1);
         border-radius: 2px;
-        margin: 2px;
+        margin: 0.3em;
         display: flex;
         color: var(--color-widget-text);
       }
@@ -83,12 +84,21 @@ export class Compose extends FormElement {
         color: rgba(250, 0, 0, 0.75);
       }
       .remove-item {
-        cursor: pointer;
+        cursor: pointer !important;
         padding: 3px 6px;
         border-right: 1px solid rgba(100, 100, 100, 0.2);
         margin-top: 1px;
         background: rgba(100, 100, 100, 0.05);
       }
+
+      .remove-item:hover {
+        background: rgba(100, 100, 100, 0.1);
+      }
+
+      .remove-item.error:hover {
+        background: rgba(250, 0, 0, 0.1);
+      }
+
       .remove-item.error {
         background: rgba(250, 0, 0, 0.05);
         color: rgba(250, 0, 0, 0.75);
@@ -102,7 +112,11 @@ export class Compose extends FormElement {
       .actions {
         display: flex;
         justify-content: space-between;
+        align-items: center;
+        margin-left: 0.25em;
+        padding: 0.2em;
       }
+
       #upload-files {
         display: none;
       }
@@ -422,6 +436,7 @@ export class Compose extends FormElement {
       value=${this.currentChat}
       gsm
       textarea
+      autogrow
       @change=${this.handleChatboxChange}
       @keydown=${this.handleSendEnter}
       placeholder="Write something here"
@@ -438,12 +453,13 @@ export class Compose extends FormElement {
             <div class="attachments-list">
               ${this.values.map(attachment => {
                 return html` <div class="attachment-item">
-                  <div class="remove-item">
+                  <div
+                    class="remove-item"
+                    @click="${this.handleRemoveAttachment}"
+                  >
                     <temba-icon
                       id="${attachment.uuid}"
                       name="${Icon.delete_small}"
-                      @click="${this.handleRemoveAttachment}"
-                      clickable
                     ></temba-icon>
                   </div>
                   <div class="attachment-name">
@@ -461,12 +477,13 @@ export class Compose extends FormElement {
               })}
               ${this.errorValues.map(errorAttachment => {
                 return html` <div class="attachment-item error">
-                  <div class="remove-item error">
+                  <div
+                    class="remove-item error"
+                    @click="${this.handleRemoveAttachment}"
+                  >
                     <temba-icon
                       id="${errorAttachment.uuid}"
                       name="${Icon.delete_small}"
-                      @click="${this.handleRemoveAttachment}"
-                      clickable
                     ></temba-icon>
                   </div>
                   <div class="attachment-name">
