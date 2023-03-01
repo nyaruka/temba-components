@@ -6,6 +6,7 @@ import { CustomEventType } from '../interfaces';
 import {
   formatFileSize,
   formatFileType,
+  getClasses,
   postFormData,
   truncate,
   WebResponse,
@@ -29,6 +30,7 @@ export class Compose extends FormElement {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        position: relative;
 
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
@@ -42,12 +44,36 @@ export class Compose extends FormElement {
         border-color: var(--color-focus);
         background: var(--color-widget-bg-focused);
         box-shadow: var(--widget-box-shadow-focused);
-        z-index: 10000;
-        position: relative;
       }
 
-      .highlight {
-        opacity: 0.5;
+      .drop-mask {
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+        z-index: 1;
+        height: 100%;
+        width: 100%;
+        bottom: 0;
+        right: 0;
+        background: rgba(210, 243, 184, 0.8);
+        border-radius: var(--curvature-widget);
+        margin: -0.5em;
+        padding: 0.5em;
+        transition: opacity ease-in-out var(--transition-speed);
+        display: flex;
+        align-items: center;
+        text-align: center;
+      }
+
+      .highlight .drop-mask {
+        opacity: 1;
+      }
+
+      .drop-mask > div {
+        margin: auto;
+        border-radius: var(--curvature-widget);
+        font-weight: 400;
+        color: rgba(0, 0, 0, 0.5);
       }
 
       .items {
@@ -161,6 +187,9 @@ export class Compose extends FormElement {
   counter: boolean;
 
   @property({ type: Boolean })
+  pendingDrop: boolean;
+
+  @property({ type: Boolean })
   button: boolean;
 
   @property({ type: String, attribute: false })
@@ -258,14 +287,12 @@ export class Compose extends FormElement {
   }
 
   private highlight(evt: DragEvent): void {
-    const dragAndDropZone = evt.target as HTMLDivElement;
-    dragAndDropZone.classList.add('highlight');
+    this.pendingDrop = true;
     this.preventDefaults(evt);
   }
 
   private unhighlight(evt: DragEvent): void {
-    const dragAndDropZone = evt.target as HTMLDivElement;
-    dragAndDropZone.classList.remove('highlight');
+    this.pendingDrop = false;
     this.preventDefaults(evt);
   }
 
@@ -413,12 +440,14 @@ export class Compose extends FormElement {
   public render(): TemplateResult {
     return html`
       <div
-        class="container"
+        class=${getClasses({ container: true, highlight: this.pendingDrop })}
         @dragenter="${this.handleDragEnter}"
         @dragover="${this.handleDragOver}"
         @dragleave="${this.handleDragLeave}"
         @drop="${this.handleDrop}"
       >
+        <div class="drop-mask"><div>Upload Attachment</div></div>
+
         ${this.chatbox
           ? html`<div class="items chatbox">${this.getChatbox()}</div>`
           : null}
@@ -448,56 +477,55 @@ export class Compose extends FormElement {
     return html`
       ${(this.values && this.values.length > 0) ||
       (this.errorValues && this.errorValues.length > 0)
-        ? html`
-            <div class="attachments-list">
-              ${this.values.map(attachment => {
-                return html` <div class="attachment-item">
-                  <div
-                    class="remove-item"
-                    @click="${this.handleRemoveAttachment}"
+        ? html` <div class="attachments-list">
+            ${this.values.map(attachment => {
+              return html` <div class="attachment-item">
+                <div
+                  class="remove-item"
+                  @click="${this.handleRemoveAttachment}"
+                >
+                  <temba-icon
+                    id="${attachment.uuid}"
+                    name="${Icon.delete_small}"
+                  ></temba-icon>
+                </div>
+                <div class="attachment-name">
+                  <span
+                    title="${attachment.name} (${formatFileSize(
+                      attachment.size,
+                      2
+                    )}) ${attachment.type}"
+                    >${truncate(attachment.name, 25)}
+                    (${formatFileSize(attachment.size, 0)})
+                    ${formatFileType(attachment.type)}</span
                   >
-                    <temba-icon
-                      id="${attachment.uuid}"
-                      name="${Icon.delete_small}"
-                    ></temba-icon>
-                  </div>
-                  <div class="attachment-name">
-                    <span
-                      title="${attachment.name} (${formatFileSize(
-                        attachment.size,
-                        2
-                      )}) ${attachment.type}"
-                      >${truncate(attachment.name, 25)}
-                      (${formatFileSize(attachment.size, 0)})
-                      ${formatFileType(attachment.type)}</span
-                    >
-                  </div>
-                </div>`;
-              })}
-              ${this.errorValues.map(errorAttachment => {
-                return html` <div class="attachment-item error">
-                  <div
-                    class="remove-item error"
-                    @click="${this.handleRemoveAttachment}"
+                </div>
+              </div>`;
+            })}
+            ${this.errorValues.map(errorAttachment => {
+              return html` <div class="attachment-item error">
+                <div
+                  class="remove-item error"
+                  @click="${this.handleRemoveAttachment}"
+                >
+                  <temba-icon
+                    id="${errorAttachment.uuid}"
+                    name="${Icon.delete_small}"
+                  ></temba-icon>
+                </div>
+                <div class="attachment-name">
+                  <span
+                    title="${errorAttachment.name} (${formatFileSize(
+                      0,
+                      0
+                    )}) - Attachment failed - ${errorAttachment.error}"
+                    >${truncate(errorAttachment.name, 25)}
+                    (${formatFileSize(0, 0)}) - Attachment failed</span
                   >
-                    <temba-icon
-                      id="${errorAttachment.uuid}"
-                      name="${Icon.delete_small}"
-                    ></temba-icon>
-                  </div>
-                  <div class="attachment-name">
-                    <span
-                      title="${errorAttachment.name} (${formatFileSize(
-                        0,
-                        0
-                      )}) - Attachment failed - ${errorAttachment.error}"
-                      >${truncate(errorAttachment.name, 25)}
-                      (${formatFileSize(0, 0)}) - Attachment failed</span
-                    >
-                  </div>
-                </div>`;
-              })}
-            </div`
+                </div>
+              </div>`;
+            })}
+          </div>`
         : null}
     `;
   }
