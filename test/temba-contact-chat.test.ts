@@ -501,13 +501,22 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.refresh();
     await chat.httpComplete;
 
+    // we want to wait until our scroll is finished before taking our screenshot
+    // once we have two scrollTops that are the same, we'll assume we're ready
+    let lastScroll = 0;
     await assertScreenshot(
       'contacts/contact-active-ticket-open-show-chatbox',
       getClip(chat),
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 1024;
+          const currentScroll = chat
+            .getContactHistory()
+            .getEventsPane().scrollTop;
+          if (currentScroll !== 0 && currentScroll === lastScroll) {
+            return true;
+          }
+          lastScroll = currentScroll;
         },
       }
     );
