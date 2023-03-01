@@ -34,8 +34,10 @@ export const getSuccessText = () => {
   return 'sà-wàd-dee!';
 };
 export const getFailText = () => {
+  // return a string that is 640+ chars
   return "p}h<r0P<?SCIbV1+pwW1Hj8g^J&=Sm2f)K=5LjFFUZ№5@ybpoLZ7DJ(27qdWxQMaO)I1nB4(D%d3c(H)QXOF6F?4>&d{lhd5?0`Lio!yAGMO№*AxN5{z5s.IO*dy?tm}vXJ#Lf-HlD;xmNp}0<P42=w#ll9)B-e9>Q#'{~Vp<dl:xC9`T^lhh@TosCZ^:(H<Ji<E(~PojvYk^rPB+poYy^Ne~Su1:9?IgH'4S5Q9v0g№FEIUc~!{S7;746j'Sd@Nfu3=x?CsuR;YLP4j+AOzDARZG?0(Ji(NMg=r%n0Fq?R1?E%Yf`bcoVZAJ^bl0J'^@;lH>T.HmxYxwS;1?(bfrh?pRdd73:iMxrfx5luQ(}<dCD1b3g'G0CtkB№;8KkbL=>krG{RO%Va4wwr%P>jE*+n(E11}Ju9#<.f^)<MTH09^b{RQv7~H`#@Hda6{MV&H@xdyEKq#M@nZng8WTU66!F@*!)w*EpQ+65XKuQCaESgq=PHmtqi@l;F?PHvl^g@Z:+}}Xyr`IC2=3?20^I'qSU*tkyinM^JF.ZI>}~XzRQJn№v3o-w?Vy&gC:c.l(&9{`M#-'N}{T#7lw8(4:iY621'>C^.&hVZn:R!G}Ek){D#'KkiJWawq#7~GLBN*?V!ncw)d%&(tXj";
 };
+
 export const getSuccessFiles = (numFiles = 2): Attachment[] => {
   const attachments = [];
   let index = 1;
@@ -78,6 +80,19 @@ export const getFailFiles = (): Attachment[] => {
   } as Attachment;
 
   return [fail1, fail2];
+};
+
+const getLongTextWithSpaces = () => {
+  // for a test width of 500, return a string that is 60+ chars with spaces
+  return 'bbbbbbbbbb bbbbbbbbbb bbbbbbbbbb bbbbbbbbbb bbbbbbbbbb bbbbbbbbbb bbbbbbbbbb ';
+};
+const getLongTextWithNoSpaces = () => {
+  // for a test width of 500, return a string that is 60+ chars with no spaces
+  return 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+};
+const getLongTextWithUrl = () => {
+  // for a test width of 500, return a url that is 60+ chars with no spaces
+  return 'http://www.yourmomyourmomyourmomyourmomyourmomyourmomyourmomyourmomyourmomyourmomyourmom.com';
 };
 
 describe('temba-compose chatbox', () => {
@@ -145,8 +160,47 @@ describe('temba-compose chatbox', () => {
       counter: true,
       button: true,
     });
-    compose.currentChat = 'sà-wàd-dee!';
+    await updateComponent(compose, getSuccessText());
     await assertScreenshot('compose/chatbox-with-text', getClip(compose));
+  });
+
+  it('chatbox with text and spaces', async () => {
+    const compose: Compose = await getCompose({
+      chatbox: true,
+      counter: true,
+      button: true,
+    });
+    await updateComponent(compose, getLongTextWithSpaces());
+    await assertScreenshot(
+      'compose/chatbox-with-text-and-spaces',
+      getClip(compose)
+    );
+  });
+
+  it('chatbox with text and no spaces', async () => {
+    const compose: Compose = await getCompose({
+      chatbox: true,
+      counter: true,
+      button: true,
+    });
+    await updateComponent(compose, getLongTextWithNoSpaces());
+    await assertScreenshot(
+      'compose/chatbox-with-text-no-spaces',
+      getClip(compose)
+    );
+  });
+
+  it('chatbox with text and url', async () => {
+    const compose: Compose = await getCompose({
+      chatbox: true,
+      counter: true,
+      button: true,
+    });
+    await updateComponent(compose, getLongTextWithUrl());
+    await assertScreenshot(
+      'compose/chatbox-with-text-and-url',
+      getClip(compose)
+    );
   });
 
   it('chatbox with text and click send', async () => {

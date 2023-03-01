@@ -169,6 +169,7 @@ export const getEventStyles = () => {
       border-radius: 8px;
       border: 2px solid rgba(100, 100, 100, 0.1);
       max-width: 300px;
+      word-break: break-word;
     }
 
     .event.msg_received .msg {
