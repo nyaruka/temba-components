@@ -51,10 +51,11 @@ export class CharCount extends RapidElement {
         transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33)
           var(--transition-speed);
         visibility: hidden;
-        margin-top: 5px;
-        right: 0px;
+        margin-top: var(--temba-charcount-summary-margin-top);
+        right: var(--temba-charcount-summary-right);
+        bottom: var(--temba-charcount-summary-bottom);
         text-align: left;
-        position: absolute;
+        position: var(--temba-charcount-summary-position);
         z-index: 1000;
       }
 
@@ -86,7 +87,7 @@ export class CharCount extends RapidElement {
         display: inline-block;
         padding: 2px 6px;
         border-radius: var(--curvature);
-        margin-top: 4px;
+        margin-top: var(--temba-charcount-counts-margin-top);
       }
 
       .segments {

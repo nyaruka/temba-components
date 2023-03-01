@@ -115,6 +115,9 @@ export class Completion extends FormElement {
   @property({ type: String })
   counter: string;
 
+  @property({ type: Boolean })
+  autogrow = false;
+
   private hiddenElement: HTMLInputElement;
   private query: string;
 
@@ -258,6 +261,7 @@ export class Completion extends FormElement {
             @input=${this.handleInput}
             @blur=${this.handleOptionCanceled}
             .value=${this.value}
+            ?autogrow=${this.autogrow}
             ?textarea=${this.textarea}
             ?submitOnEnter=${this.submitOnEnter}
           >

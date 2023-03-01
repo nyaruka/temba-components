@@ -601,3 +601,15 @@ export enum COOKIE_KEYS {
 
 export const capitalize = ([first, ...rest], locale = navigator.language) =>
   first === undefined ? '' : first.toLocaleUpperCase(locale) + rest.join('');
+
+export const formatFileType = (type: string): string => {
+  return type.split('/')[1];
+};
+export const formatFileSize = (bytes: number, decimalPoint: number): string => {
+  if (bytes == 0) return '0 KB';
+  const k = 1024,
+    dm = decimalPoint || 2,
+    sizes = ['B', 'KB', 'MB', 'GB'], //, 'TB', 'PB', 'EB', 'ZB', 'YB'],
+    i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};

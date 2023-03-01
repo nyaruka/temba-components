@@ -418,7 +418,7 @@ export class ContactHistory extends RapidElement {
         }
 
         let forceOpen = false;
-        const fetchedEvents = results.events.reverse();
+        const fetchedEvents = results.events ? results.events.reverse() : [];
 
         // reflow our last event group in case it merges with our new groups
         if (this.eventGroups.length > 0) {

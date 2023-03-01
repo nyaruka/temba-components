@@ -20,6 +20,7 @@ export enum Icon {
   check = 'check',
   checkbox = 'square',
   checkbox_checked = 'check-square',
+  compose = 'send-01',
   contact = 'user-01',
   contact_archived = 'archive',
   contact_blocked = 'message-x-square',

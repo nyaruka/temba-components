@@ -18,6 +18,10 @@ export const createHistory = async (def: string) => {
     'width: 500px;height:750px;display:flex;flex-direction:column;flex-grow:1;min-height:0;'
   );
   const history = (await fixture(def, { parentNode })) as ContactHistory;
+
+  // make sure our initial fetch is made
+  await history.httpComplete;
+
   return history;
 };
 
@@ -57,7 +61,7 @@ describe('temba-contact-history', () => {
     clock.restore();
   });
 
-  it.only('can be created', async () => {
+  it('can be created', async () => {
     const history = await createHistory(getHistoryHTML());
     assert.instanceOf(history, ContactHistory);
   });
@@ -69,13 +73,14 @@ describe('temba-contact-history', () => {
       })
     );
 
-    // we should have scrolled to the bottom
+    // we should have scrolled to the bottom, but the scroll
+    // happens in a window timeout
+    await clock.runAllAsync();
+    await history.updateComplete;
+
     const events = history.shadowRoot.querySelector('.events');
     const top = events.scrollHeight - events.getBoundingClientRect().height;
-
     expect(top).to.equal(549);
-    await clock.runAllAsync();
-
     // make sure we actually scrolled to there
     expect(events.scrollTop).to.equal(top);
     await assertScreenshot('contacts/history', getHistoryClip(history));

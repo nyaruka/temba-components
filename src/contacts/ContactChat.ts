@@ -2,12 +2,11 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
-import { TextInput } from '../textinput/TextInput';
-import { Completion } from '../completion/Completion';
 import { ContactHistory } from './ContactHistory';
 import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Icon } from '../vectoricon';
+import { Compose } from '../compose/Compose';
 
 const DEFAULT_REFRESH = 10000;
 
@@ -40,6 +39,7 @@ export class ContactChat extends ContactStoreElement {
       }
 
       temba-contact-history {
+        border-bottom: 3px solid #e1e1e1;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -47,9 +47,8 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
+        background: rgb(242, 242, 242);
         padding: 1em;
-        background: #f2f2f2;
-        border-top: 3px solid #e1e1e1;
         display: flex;
         flex-direction: column;
         z-index: 3;
@@ -70,10 +69,6 @@ export class ContactChat extends ContactStoreElement {
         align-items: center;
       }
 
-      temba-completion {
-        --textarea-height: 2.5em;
-      }
-
       a {
         color: var(--color-link-primary);
       }
@@ -81,13 +76,6 @@ export class ContactChat extends ContactStoreElement {
       a:hover {
         text-decoration: underline;
         color: var(--color-link-primary-hover);
-      }
-
-      temba-button#send-button {
-        --button-y: 1px;
-        --button-x: 12px;
-        margin-top: 0.8em;
-        align-self: flex-end;
       }
 
       temba-button#reopen-button {
@@ -160,6 +148,14 @@ export class ContactChat extends ContactStoreElement {
         --header-bg: rgb(255, 249, 194);
         --header-text: #555;
         --textarea-height: 5em;
+      }
+
+      temba-completion {
+        --widget-box-shadow: none;
+        --color-widget-border: transparent;
+        --widget-box-shadow-focused: none;
+        --color-focus: transparent;
+        --color-widget-bg-focused: transparent;
       }
     `;
   }
@@ -247,32 +243,7 @@ export class ContactChat extends ContactStoreElement {
       changedProperties.has('currentContact')
     ) {
       this.currentContact = this.data;
-      // focus our completion on load
-      const prevContact = changedProperties.get('contact');
-      if (
-        !prevContact ||
-        (this.currentContact &&
-          this.currentContact.ticket &&
-          this.currentContact.ticket.uuid !== prevContact.ticket.uuid)
-      ) {
-        const completion = this.shadowRoot.querySelector(
-          'temba-completion'
-        ) as Completion;
-        if (completion) {
-          window.setTimeout(() => {
-            completion.click();
-          }, 0);
-        }
-      }
     }
-  }
-
-  private handleChatChange(event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
-
-    const chat = event.currentTarget as TextInput;
-    this.currentChat = chat.value;
   }
 
   private handleTicketReopen() {
@@ -292,25 +263,65 @@ export class ContactChat extends ContactStoreElement {
       });
   }
 
-  private handleSend() {
-    const payload = {
-      contacts: [this.currentContact.uuid],
-      text: this.currentChat,
-    };
+  private handleSend(evt: CustomEvent) {
+    const buttonName = evt.detail.name;
+    if (buttonName === 'Send') {
+      const payload = {
+        contacts: [this.currentContact.uuid],
+      };
+      const compose = evt.currentTarget as Compose;
+      if (compose) {
+        const text = compose.currentChat;
+        if (text.length > 0) {
+          payload['text'] = text;
+        }
+        const attachments = compose.values.map(attachment => {
+          const content_type = attachment.content_type;
+          const url = new URL(attachment.url, document.baseURI).href;
+          return content_type + ':' + url;
+        });
+        if (attachments.length > 0) {
+          payload['attachments'] = attachments;
+        }
+      }
+      if (this.currentTicket) {
+        payload['ticket'] = this.currentTicket.uuid;
+      }
 
-    if (this.currentTicket) {
-      payload['ticket'] = this.currentTicket.uuid;
+      const genericError = buttonName + ' failed, please try again.';
+
+      postJSON(`/api/v2/broadcasts.json`, payload)
+        .then(response => {
+          if (response.status < 400) {
+            compose.reset();
+            this.refresh(true);
+          } else if (response.status < 500) {
+            if (
+              response.json.text &&
+              response.json.text.eng &&
+              response.json.text.eng.length > 0
+            ) {
+              compose.buttonError =
+                'Text must have no more than 640 characters.';
+            } else if (
+              response.json.attachments &&
+              response.json.attachments.eng &&
+              response.json.attachments.eng.length > 0
+            ) {
+              compose.buttonError =
+                'Attachments must have no more than 10 files.';
+            } else {
+              compose.buttonError = genericError;
+            }
+          } else {
+            compose.buttonError = genericError;
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          compose.buttonError = genericError;
+        });
     }
-
-    postJSON(`/api/v2/broadcasts.json`, payload)
-      .then(() => {
-        this.currentChat = '';
-        this.refresh(true);
-      })
-      .catch(err => {
-        // error message dialog?
-        console.error(err);
-      });
   }
 
   private handleTicketAssigned() {
@@ -407,28 +418,14 @@ export class ContactChat extends ContactStoreElement {
 
   private getChatbox(): TemplateResult {
     return html` <div class="chatbox ${this.toolbar ? 'full' : ''}">
-      <temba-completion
-        @change=${this.handleChatChange}
-        .value=${this.currentChat}
-        @keydown=${(e: KeyboardEvent) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            const chat = e.target as Completion;
-            if (!chat.hasVisibleOptions()) {
-              this.handleSend();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }
-        }}
-        textarea
+      <temba-compose
+        chatbox
+        attachments
+        counter
+        button
+        @temba-button-clicked=${this.handleSend.bind(this)}
       >
-      </temba-completion>
-      <temba-button
-        id="send-button"
-        name="Send"
-        @click=${this.handleSend}
-        ?disabled=${this.currentChat.trim().length === 0}
-      ></temba-button>
+      </temba-compose>
     </div>`;
   }
 

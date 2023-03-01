@@ -44,7 +44,6 @@ export class TextInput extends FormElement {
         border-color: var(--color-focus);
         background: var(--color-widget-bg-focused);
         box-shadow: var(--widget-box-shadow-focused);
-        z-index: 10000;
         position: relative;
       }
 
@@ -54,6 +53,7 @@ export class TextInput extends FormElement {
 
       textarea {
         height: var(--textarea-height);
+        overflow: hidden;
       }
 
       .textinput {
@@ -104,6 +104,8 @@ export class TextInput extends FormElement {
         resize: none;
         font-weight: 300;
         width: 100%;
+        visibility: hidden;
+        word-break: break-word;
       }
 
       .grow-wrap textarea {

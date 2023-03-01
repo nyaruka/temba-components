@@ -149,6 +149,7 @@
     <div class="header">temba-components</div>
 
     <temba-tabs collapses>
+      
       <temba-tab name="Overview" icon="list">
         <div style="display:flex;flex-wrap: wrap;">
           <temba-checkbox label="Check this out" checked></temba-checkbox>
@@ -167,6 +168,7 @@
         <temba-textinput value="plain text"></temba-textinput>
         <temba-completion value="you complete me @cont"></temba-completion>
       </temba-tab>
+
       <temba-tab name="datepicker" icon="calendar">
         <div style="display:flex;flex-wrap: wrap;">
           <temba-datepicker time value="2020-01-20T14:00+00:00" timezone="UTC" onChange="handleDateChange(event)"></temba-datepicker>
@@ -201,6 +203,7 @@
         </div>
 
       </temba-tab>
+
       <temba-tab name="select" icon="browser">
 
         <div class="example">
@@ -306,6 +309,25 @@
           <temba-charcount text='count this text'></temba-charcount>
         </div>
       </temba-tab>
+
+      <temba-tab name="compose" icon="compose">
+        <div class="example">
+          <temba-compose chatbox counter></temba-compose>
+        </div>
+        <div class="example">
+          <temba-compose chatbox counter button></temba-compose>
+        </div>
+        <div class="example">
+          <temba-compose attachments></temba-compose>
+        </div>
+        <div class="example">
+          <temba-compose attachments button></temba-compose>
+        </div>
+        <div class="example">
+          <temba-compose chatbox attachments counter button></temba-compose>
+        </div>        
+      </temba-tab>
+
     </temba-tabs>
   </body>
 </html>
