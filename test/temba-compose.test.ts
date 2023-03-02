@@ -17,7 +17,7 @@ const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
   return compose;
 };
 
-const upload_endpoint = '/msgmedia/upload/';
+const upload_endpoint = '/api/v2/media.json';
 
 export const updateComponent = async (
   compose: Compose,
@@ -47,7 +47,7 @@ export const getSuccessFiles = (numFiles = 2): Attachment[] => {
       uuid: s,
       content_type: 'image/png',
       type: 'image/png',
-      name: 'name_' + s,
+      filename: 'name_' + s,
       url: 'url_' + s,
       size: 1024,
       error: null,
@@ -63,7 +63,7 @@ export const getFailFiles = (): Attachment[] => {
     uuid: f1,
     content_type: 'image/png',
     type: 'image/png',
-    name: 'name_' + f1,
+    filename: 'name_' + f1,
     url: 'url_' + f1,
     size: 26624,
     error: 'Limit for file uploads is 25.0 MB',
@@ -73,7 +73,7 @@ export const getFailFiles = (): Attachment[] => {
     uuid: f2,
     content_type: 'application/octet-stream',
     type: 'application/octet-stream',
-    name: 'name_' + f2,
+    filename: 'name_' + f2,
     url: 'url_' + f2,
     size: 1024,
     error: 'Unsupported file type',
