@@ -4,6 +4,7 @@ import { getUrl, postJSON, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { FormElement } from '../FormElement';
+import { Icon } from '../vectoricon';
 
 import { property } from 'lit/decorators.js';
 
@@ -259,7 +260,7 @@ export class AliasEditor extends LitElement {
                       evt.stopPropagation();
                     }}
                   >
-                    <temba-icon name="edit" />
+                    <temba-icon name="${Icon.updated}" />
                   </div>
                 `
               : ''}
