@@ -420,6 +420,7 @@ export class Compose extends FormElement {
       if (!chat.hasVisibleOptions()) {
         this.handleSend();
       }
+      this.preventDefaults(evt);
     }
   }
 
