@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
+import { upload_endpoint } from '../compose/Compose';
 import { Dialog } from '../dialog/Dialog';
 import { ContactField, Ticket } from '../interfaces';
 
@@ -238,12 +239,16 @@ export const postFormData = (
       .then(response => {
         if (response.status >= 200 && response.status < 300) {
           resolve(response);
+        } else {
+          if (url === upload_endpoint) {
+            reject(response);
+          } else {
+            reject('Server failure');
+          }
         }
-        const reason =
-          response && response.body ? response.body : 'Server failure';
-        reject(reason);
       })
       .catch(err => {
+        console.error(err);
         reject(err);
       });
   });

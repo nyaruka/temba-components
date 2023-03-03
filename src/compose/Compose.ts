@@ -22,6 +22,8 @@ export interface Attachment {
   error: string;
 }
 
+export const upload_endpoint = '/api/v2/media.json';
+
 export class Compose extends FormElement {
   static get styles() {
     return css`
@@ -198,7 +200,7 @@ export class Compose extends FormElement {
   accept = ''; //e.g. ".xls,.xlsx"
 
   @property({ type: String, attribute: false })
-  endpoint = '/api/v2/media.json';
+  endpoint = upload_endpoint;
 
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
@@ -333,25 +335,25 @@ export class Compose extends FormElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        if (response.json && response.json.error) {
-          const error = response.json.error;
-          console.error(error);
-          this.addErrorValue(file, error);
-        } else {
-          const attachment = response.json as Attachment;
-          if (attachment) {
-            this.addValue(attachment);
-            this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
-          }
+        const attachment = response.json as Attachment;
+        if (attachment) {
+          this.addValue(attachment);
+          this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
         }
       })
-      .catch((error: string) => {
+      .catch((error: WebResponse) => {
         console.error(error);
-        const errorJson = JSON.parse(error);
-        const fileError =
-          errorJson && errorJson.file && errorJson.file[0]
-            ? errorJson.file[0]
-            : error;
+        let fileError = '';
+        if (error.status === 413) {
+          //check for nginx error
+          fileError = 'Limit for file uploads is 25.0 MB';
+        } else if (error.status === 400) {
+          //check for django errors
+          fileError = error.json.file[0];
+        } else {
+          //generic server error
+          fileError = 'Server failure';
+        }
         console.error(fileError);
         this.addErrorValue(file, fileError);
       })
