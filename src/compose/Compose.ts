@@ -333,8 +333,10 @@ export class Compose extends FormElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        if (response.json.error) {
-          this.addErrorValue(file, response.json.error);
+        if (response.json && response.json.error) {
+          const error = response.json.error;
+          console.error(error);
+          this.addErrorValue(file, error);
         } else {
           const attachment = response.json as Attachment;
           if (attachment) {
@@ -344,8 +346,14 @@ export class Compose extends FormElement {
         }
       })
       .catch((error: string) => {
-        console.log(error);
-        this.addErrorValue(file, error);
+        console.error(error);
+        const errorJson = JSON.parse(error);
+        const fileError =
+          errorJson && errorJson.file && errorJson.file[0]
+            ? errorJson.file[0]
+            : error;
+        console.error(fileError);
+        this.addErrorValue(file, fileError);
       })
       .finally(() => {
         this.uploading = false;

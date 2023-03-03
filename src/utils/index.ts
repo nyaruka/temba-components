@@ -239,7 +239,9 @@ export const postFormData = (
         if (response.status >= 200 && response.status < 300) {
           resolve(response);
         }
-        reject('Server failure');
+        const reason =
+          response && response.body ? response.body : 'Server failure';
+        reject(reason);
       })
       .catch(err => {
         reject(err);
