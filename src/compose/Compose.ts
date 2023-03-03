@@ -346,7 +346,7 @@ export class Compose extends FormElement {
         let fileError = '';
         if (error.status === 413) {
           //check for nginx error
-          fileError = 'Limit for file uploads is 25.0 MB';
+          fileError = 'Limit for file uploads is 25.0 MB.';
         } else if (error.status === 400) {
           //check for django errors
           fileError = error.json.file[0];
