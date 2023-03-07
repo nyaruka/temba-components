@@ -290,7 +290,7 @@ export class ContactChat extends ContactStoreElement {
 
       const genericError = buttonName + ' failed, please try again.';
 
-      postJSON(`/api/v2/broadcasts.json`, payload)
+      postJSON(`/api/v2/messages.json`, payload)
         .then(response => {
           if (response.status < 400) {
             compose.reset();
