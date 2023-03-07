@@ -7,6 +7,8 @@ import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Icon } from '../vectoricon';
 import { Compose } from '../compose/Compose';
+import { Completion } from '../completion/Completion';
+import { VectorIcon } from '../vectoricon/VectorIcon';
 
 const DEFAULT_REFRESH = 10000;
 
@@ -320,6 +322,46 @@ export class ContactChat extends ContactStoreElement {
         .catch(error => {
           console.error(error);
           compose.buttonError = genericError;
+        })
+        .finally(() => {
+          //return focus to chatbox or attachments
+          if (compose.chatbox) {
+            const completion = compose.shadowRoot.querySelector(
+              'temba-completion'
+            ) as Completion;
+            if (completion) {
+              //1
+              window.setTimeout(() => {
+                completion.click();
+              }, 0);
+              //2
+              // window.setTimeout(() => {
+              //   completion.focus();
+              // }, 0);
+              //3
+              // completion.click();
+              //4
+              // completion.focus();
+            }
+          } else {
+            const attachments = compose.shadowRoot.querySelector(
+              'temba-icon.upload-icon'
+            ) as VectorIcon;
+            if (attachments) {
+              //1
+              window.setTimeout(() => {
+                attachments.click();
+              }, 0);
+              //2
+              // window.setTimeout(() => {
+              //   attachments.focus();
+              // }, 0);
+              //3
+              // attachments.click();
+              //4
+              // attachments.focus();
+            }
+          }
         });
     }
   }
