@@ -63,14 +63,12 @@ export class Lightbox extends RapidElement {
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     if (changed.has('show') && this.show) {
-      console.log('show changed..');
       window.setTimeout(() => {
         this.zoom = true;
       }, 0);
     }
 
     if (changed.has('zoom') && !this.zoom && this.show) {
-      console.log('zoom changed..');
       window.setTimeout(() => {
         this.show = false;
       }, this.animationTime);
@@ -122,7 +120,7 @@ export class Lightbox extends RapidElement {
 
   public render() {
     const styles = {
-      transition: `transform ${this.animationTime}ms ease, box-shadow 0.4s ease`,
+      transition: `transform ${this.animationTime}ms ease, box-shadow ${this.animationTime}ms ease`,
     };
 
     if (this.show) {
@@ -149,7 +147,7 @@ export class Lightbox extends RapidElement {
       >
         <div
           class=${getClasses({ mask: true })}
-          style="transition: all ${this.animationTime}ms ease;"
+          style="transition: all ${this.animationTime}ms; ease"
         ></div>
         <div class=${getClasses({ matte: true })} style=${styleMap(styles)}>
           ${this.show ? this.ele : null}

@@ -15,14 +15,17 @@ describe('temba-lightbox', () => {
       "<img style='width:100px;height:auto' src='./test-assets/img/meow.jpg'/>"
     );
 
-    assert.instanceOf(lightbox, Lightbox);
-
-    lightbox.showElement(img as HTMLElement);
-    await lightbox.updateComplete;
-    await waitFor(0);
-    await waitForNetworkIdle();
-
     await assertScreenshot('lightbox/img', {
+      x: 28,
+      y: 28,
+      width: 1024,
+      height: 768,
+    });
+
+    assert.instanceOf(lightbox, Lightbox);
+    lightbox.showElement(img as HTMLElement);
+
+    await assertScreenshot('lightbox/img-zoomed', {
       x: 28,
       y: 28,
       width: 1024,
