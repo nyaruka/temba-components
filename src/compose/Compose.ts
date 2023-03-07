@@ -342,16 +342,10 @@ export class Compose extends FormElement {
         }
       })
       .catch((error: WebResponse) => {
-        console.error(error);
         let fileError = '';
-        if (error.status === 413) {
-          //check for nginx error
-          fileError = 'Limit for file uploads is 25.0 MB.';
-        } else if (error.status === 400) {
-          //check for django errors
+        if (error.status === 400) {
           fileError = error.json.file[0];
         } else {
-          //generic server error
           fileError = 'Server failure';
         }
         console.error(fileError);
