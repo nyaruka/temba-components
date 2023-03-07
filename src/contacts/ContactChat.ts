@@ -277,8 +277,7 @@ export class ContactChat extends ContactStoreElement {
         }
         const attachments = compose.values.map(attachment => {
           const content_type = attachment.content_type;
-          const url = new URL(attachment.url, document.baseURI).href;
-          return content_type + ':' + url;
+          return content_type + ':' + attachment.url;
         });
         if (attachments.length > 0) {
           payload['attachments'] = attachments;

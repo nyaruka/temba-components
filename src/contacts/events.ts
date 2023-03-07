@@ -1,6 +1,13 @@
 import { css, html, TemplateResult } from 'lit';
 import { Msg, ObjectReference, User } from '../interfaces';
-import { getClasses, oxford, oxfordFn, oxfordNamed, timeSince } from '../utils';
+import {
+  getClasses,
+  oxford,
+  oxfordFn,
+  oxfordNamed,
+  renderAvatar,
+  timeSince,
+} from '../utils';
 import { Icon } from '../vectoricon';
 import { getDisplayName } from './helpers';
 
@@ -165,11 +172,20 @@ export const getEventStyles = () => {
     }
 
     .msg {
-      padding: var(--event-padding);
-      border-radius: 8px;
+      border-radius: calc(var(--curvature) * 2.5);
       border: 2px solid rgba(100, 100, 100, 0.1);
       max-width: 300px;
       word-break: break-word;
+      overflow: hidden;
+    }
+
+    .msg.attachments-1.no-message {
+      border: 2px solid transparent;
+      background-color: transparent !important;
+    }
+
+    .msg .text {
+      padding: var(--event-padding);
     }
 
     .event.msg_received .msg {
@@ -186,7 +202,13 @@ export const getEventStyles = () => {
     .event.msg_created .msg,
     .event.broadcast_created .msg,
     .event.ivr_created .msg {
-      background: rgb(231, 243, 255);
+      background: var(--color-primary-dark);
+      color: white;
+      font-weight: 400;
+    }
+
+    .msg.automated {
+      background: var(--color-automated) !important;
     }
 
     .webhook_called {
@@ -439,7 +461,17 @@ export const getEventStyles = () => {
     }
 
     .attachments {
-      margin-top: 1em;
+      display: flex;
+      flex-wrap: wrap;
+      margin: -0.2em;
+    }
+
+    .attachment {
+      flex: 1 0 45%;
+      border-top: 0.05em solid transparent;
+      border-left: 0.05em solid transparent;
+      margin-top: 0.05em;
+      margin-left: 0.05em;
     }
   `;
 };
@@ -636,36 +668,10 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   return 'verbose';
 };
 
-export const renderAvatar = (user: User, agent = '') => {
-  const current = user && user.email === agent;
-  if (user.email === FLOW_USER_ID || !user || !user.first_name) {
-    return html`<temba-tip text="Automated message" position="top"
-      ><div class="avatar flow" style="margin-top:0.5em">
-        <temba-icon size="1" name="${Icon.flow_user}" /></div
-    ></temba-tip>`;
-  } else {
-    return html`<temba-tip
-      text="${user.first_name + ' ' + user.last_name}"
-      position="top"
-    >
-      <div
-        class="avatar"
-        style="
-          border-radius: 9999px; 
-          display:flex;
-          align-items:center;
-          border: 2px solid rgba(0,0,0,.05);
-          background: ${current ? 'var(--color-primary-dark)' : '#eee'};
-          color: ${current ? '#fff' : '#999'} ;
-          font-weight: 400;
-          padding: 0.5em;
-          line-height:1.2em;
-        "
-      >
-        ${user.first_name[0] + user.last_name[0]}
-      </div>
-    </temba-tip>`;
-  }
+export const renderUserAvatar = (user: User) => {
+  return html`<div style="width:3.5em;font-size:0.8em">
+    ${renderAvatar({ user, position: 'left' })}
+  </div>`;
 };
 
 export const renderAttachment = (attachment: string): TemplateResult => {
@@ -676,10 +682,12 @@ export const renderAttachment = (attachment: string): TemplateResult => {
 
   let inner = null;
   if (mediaType === 'image') {
-    inner = html`<div class="linked" onclick="goto(event)" href="${url}"><img src="${url}" style="width:100%;height:auto;display:block"></img></a>`;
+    inner = html`
+      <img src="${url}" style="height:auto;width:100%;display:block;" />
+    `;
   } else if (ext === 'pdf') {
     return html`<div
-      style="width:100%;height:300px;border-radius:var(--curvature);box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);overflow:hidden"
+      style="width:100%;height:300px;border-radius:calc(var(--curvature) * 2.5);box-shadow:0px 0px 12px 0px rgba(0,0,0,.1), 0px 0px 2px 0px rgba(0,0,0,.15);overflow:hidden"
     ><embed src="${url}#view=Fit" type="application/pdf" frameBorder="0" scrolling="auto" height="100%" width="100%"></embed></div>`;
   } else if (mediaType === 'video') {
     return html`<video
@@ -724,11 +732,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
     </div>`;
   }
 
-  return html`<div
-    style="width:100%;max-width:300px;border-radius:var(--curvature); box-shadow:0px 0px 6px 0px rgba(0,0,0,.15);overflow:hidden"
-  >
-    ${inner}
-  </div>`;
+  return html`<div style="">${inner}</div>`;
 };
 
 export const renderMsgEvent = (
@@ -741,6 +745,7 @@ export const renderMsgEvent = (
 
   // summary items which appear under the message bubble
   const summary: TemplateResult[] = [];
+
   if (event.logs_url) {
     summary.push(html` <div class="icon-link">
       <temba-icon
@@ -786,17 +791,32 @@ export const renderMsgEvent = (
 
   return html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
-      ${event.msg.text ? html`<div class="msg">${event.msg.text}</div>` : null}
-      ${event.msg.attachments
-        ? html`<div class="attachments">
-            ${event.msg.attachments.map(attachment =>
-              renderAttachment(attachment)
-            )}
-          </div> `
-        : null}
+      <div
+        class="${event.msg.text ? '' : 'no-message'} attachments-${(
+          event.msg.attachments || []
+        ).length} ${getClasses({
+          msg: true,
+          automated: !isInbound && !event.msg.created_by,
+        })}"
+      >
+        ${event.msg.text
+          ? html` <div class="text">${event.msg.text}</div> `
+          : null}
+        ${event.msg.attachments
+          ? html`<div class="attachments">
+              ${event.msg.attachments.map(
+                attachment =>
+                  html` <div class="attachment">
+                    ${renderAttachment(attachment)}
+                  </div>`
+              )}
+            </div> `
+          : null}
+      </div>
       ${!event.msg.text && !event.msg.attachments
         ? html`<div class="unsupported">Unsupported Message</div>`
         : null}
+
       <div
         class="msg-summary"
         style="flex-direction:row${isInbound ? '-reverse' : ''}"
@@ -807,12 +827,10 @@ export const renderMsgEvent = (
     </div>
 
     ${!isInbound
-      ? html`<div style="margin-left:0.8em;margin-top:0.3em">
+      ? html`<div style="margin-left:0.8em;margin-top:0.3em;font-size:0.9em">
           ${event.msg.created_by
-            ? html`<div style="font-size:0.8em">
-                ${renderAvatar(event.msg.created_by, agent)}
-              </div>`
-            : renderAvatar({ email: FLOW_USER_ID })}
+            ? renderUserAvatar(event.msg.created_by)
+            : renderUserAvatar(null)}
         </div>`
       : null}
   </div>`;
@@ -934,10 +952,7 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
   `;
 };
 
-export const renderNoteCreated = (
-  event: TicketEvent,
-  agent: string
-): TemplateResult => {
+export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
   return html`<div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
       <div class="description">${event.note}</div>
@@ -951,7 +966,7 @@ export const renderNoteCreated = (
       </div>
     </div>
     <div style="margin-left:0.8em;margin-top:0.3em;font-size:0.8em">
-      ${renderAvatar(event.created_by, agent)}
+      ${renderUserAvatar(event.created_by)}
     </div>
   </div>`;
 };
@@ -1187,16 +1202,16 @@ export const renderCampaignFiredEvent = (
       Campaign
       <span
         class="linked"
-        onclick="goto(event)"
-        href="/campaign/read/${event.campaign.uuid}"
+        onclick="goto(event, this)"
+        href="/campaign/read/${event.campaign.uuid}/"
         >${event.campaign.name}</span
       >
       ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
       <span
         class="linked"
-        onclick="goto(event)"
+        onclick="goto(event, this)"
         href="/campaignevent/read/${event.campaign.uuid}/${event.campaign_event
-          .id}"
+          .id}/"
       >
         ${event.campaign_event.offset_display}
         ${event.campaign_event.relative_to.name}</span

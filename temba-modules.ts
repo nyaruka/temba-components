@@ -45,6 +45,7 @@ import { ContentMenu } from './src/list/ContentMenu';
 import { TembaDate } from './src/date/TembaDate';
 import Remote from './src/remote/Remote';
 import { Compose } from './src/compose/Compose';
+import { Lightbox } from './src/lightbox/Lightbox';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -63,6 +64,7 @@ addCustomElement('temba-checkbox', Checkbox);
 addCustomElement('temba-select', Select);
 addCustomElement('temba-options', Options);
 addCustomElement('temba-loading', Loading);
+addCustomElement('temba-lightbox', Lightbox);
 addCustomElement('temba-button', Button);
 addCustomElement('temba-omnibox', Omnibox);
 addCustomElement('temba-tip', Tip);
