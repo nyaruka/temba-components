@@ -50,6 +50,9 @@ export class Lightbox extends RapidElement {
   @property({ type: Boolean })
   zoom = false;
 
+  @property({ type: Number })
+  zoomPct = 0.9;
+
   private ele: HTMLElement;
   private left: number;
   private top: number;
@@ -93,13 +96,13 @@ export class Lightbox extends RapidElement {
 
     // set our destination and size
     if (this.height > this.width) {
-      desiredHeight = window.innerHeight * 0.8;
+      desiredHeight = window.innerHeight * this.zoomPct;
       this.scale = desiredHeight / this.height;
       desiredWidth = this.width * this.scale;
     }
     // landscape
     else {
-      desiredWidth = window.innerWidth * 0.8;
+      desiredWidth = window.innerWidth * this.zoomPct;
       this.scale = desiredWidth / this.width;
       desiredHeight = this.height * this.scale;
     }
