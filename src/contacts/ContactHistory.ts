@@ -55,6 +55,7 @@ import {
   MIN_CHAT_REFRESH,
   SCROLL_THRESHOLD,
 } from './helpers';
+import { Lightbox } from '../lightbox/Lightbox';
 
 // when images load, make sure we are on the bottom of the scroll window if necessary
 export const loadHandler = function (event) {
@@ -128,6 +129,7 @@ export class ContactHistory extends RapidElement {
         flex-grow: 1;
         min-height: 0;
         padding-top: 3em;
+        padding-bottom: 1em;
       }
 
       temba-loading {
@@ -221,6 +223,10 @@ export class ContactHistory extends RapidElement {
       .sticky .attn,
       .sticky-bin .attn {
         color: var(--color-text);
+      }
+
+      .attachment img {
+        cursor: pointer;
       }
     `;
   }
@@ -756,7 +762,7 @@ export class ContactHistory extends RapidElement {
         return renderTicketOpened(ticketEvent, closeHandler, !this.ticket);
       }
       case Events.TICKET_NOTE_ADDED:
-        return renderNoteCreated(event as TicketEvent, this.agent);
+        return renderNoteCreated(event as TicketEvent);
 
       case Events.TICKET_ASSIGNED:
         return renderTicketAssigned(event as TicketEvent);
@@ -851,12 +857,24 @@ export class ContactHistory extends RapidElement {
     return !this.ticketEvents[ticket.uuid];
   }
 
+  private handleEventClicked(event) {
+    const ele = event.target as HTMLDivElement;
+    if (ele.tagName == 'IMG') {
+      // if we have one, show in our lightbox
+      const lightbox = document.querySelector('temba-lightbox') as Lightbox;
+      if (lightbox) {
+        lightbox.showElement(ele);
+      }
+    }
+  }
+
   private renderEventContainer(event: ContactEvent) {
     const stickyId = this.getStickyId(event);
     const isSticky = !!stickyId;
 
     const renderedEvent = html`
       <div
+        @click=${this.handleEventClicked}
         class="${this.ticket
           ? 'active-ticket'
           : ''} event ${event.type} ${isSticky ? 'has-sticky' : ''}"

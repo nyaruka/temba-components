@@ -105,6 +105,8 @@
     --color-error: rgb(var(--error-rgb));
     --color-alert: rgb(var(--error-rgb));
 
+    --color-automated: rgb(78,205,106);
+
     --icon-color: var(--text-color);
     --icon-color-hover: var(--icon-color);
     --icon-color-circle-hover: rgba(245, 245, 245, .8);
@@ -139,7 +141,6 @@
     --button-y: 6px;  
     --button-x: 14px;
 
-    --menu-padding: 1em;
     --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --temba-charcount-counts-margin-top: 4px;
@@ -147,6 +148,8 @@
     --temba-charcount-summary-position: absolute;
     --temba-charcount-summary-right: 0px;
     --temba-charcount-summary-bottom: 0px;
+
+    --color-automated: rgb(78,205,106);
 
   }
 

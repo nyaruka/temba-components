@@ -536,13 +536,20 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.refresh();
     await chat.httpComplete;
 
+    let lastScroll = 0;
     await assertScreenshot(
       'contacts/contact-active-ticket-closed-show-reopen-button',
       getClip(chat),
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 921;
+          const currentScroll = chat
+            .getContactHistory()
+            .getEventsPane().scrollTop;
+          if (currentScroll !== 0 && currentScroll === lastScroll) {
+            return true;
+          }
+          lastScroll = currentScroll;
         },
       }
     );
@@ -562,14 +569,20 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.currentTicket = tickets.items[0];
     chat.refresh();
     await chat.httpComplete;
-
+    let lastScroll = 0;
     await assertScreenshot(
       'contacts/contact-archived-ticket-closed-hide-chatbox',
       getClip(chat),
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 870;
+          const currentScroll = chat
+            .getContactHistory()
+            .getEventsPane().scrollTop;
+          if (currentScroll !== 0 && currentScroll === lastScroll) {
+            return true;
+          }
+          lastScroll = currentScroll;
         },
       }
     );

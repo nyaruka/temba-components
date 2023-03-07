@@ -3,7 +3,7 @@ import { property } from 'lit/decorators.js';
 import { TembaList } from './TembaList';
 import { timeSince } from '../utils';
 import { Contact } from '../interfaces';
-import { renderAvatar } from '../contacts/events';
+import { renderUserAvatar } from '../contacts/events';
 import { Icon } from '../vectoricon';
 
 export class TicketList extends TembaList {
@@ -84,7 +84,7 @@ export class TicketList extends TembaList {
               </div>
               <div style="font-size:0.7em;">
                 ${!contact.ticket.closed_on && contact.ticket.assignee
-                  ? html`${renderAvatar(contact.ticket.assignee, this.agent)}`
+                  ? html`${renderUserAvatar(contact.ticket.assignee)}`
                   : null}
               </div>
             </div>
