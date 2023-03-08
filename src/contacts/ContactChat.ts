@@ -267,7 +267,7 @@ export class ContactChat extends ContactStoreElement {
     const buttonName = evt.detail.name;
     if (buttonName === 'Send') {
       const payload = {
-        contacts: [this.currentContact.uuid],
+        contact: this.currentContact.uuid,
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
