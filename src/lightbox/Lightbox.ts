@@ -93,18 +93,20 @@ export class Lightbox extends RapidElement {
 
     let desiredWidth = this.width;
     let desiredHeight = this.height;
+    let desiredScale = this.scale;
 
-    // set our destination and size
-    if (this.height > this.width) {
+    const maxHeight = window.innerHeight * this.zoomPct;
+    const maxWidth = window.innerWidth * this.zoomPct;
+
+    // if the width fits, constrain by height
+    if (this.width * (maxHeight / this.height) < maxWidth) {
       desiredHeight = window.innerHeight * this.zoomPct;
-      this.scale = desiredHeight / this.height;
-      desiredWidth = this.width * this.scale;
-    }
-    // landscape
-    else {
+      desiredScale = desiredHeight / this.height;
+      desiredWidth = this.width * desiredScale;
+    } else {
       desiredWidth = window.innerWidth * this.zoomPct;
-      this.scale = desiredWidth / this.width;
-      desiredHeight = this.height * this.scale;
+      desiredScale = desiredWidth / this.width;
+      desiredHeight = this.height * desiredScale;
     }
 
     const xGrowth = (desiredWidth - this.width) / 2;
@@ -114,6 +116,8 @@ export class Lightbox extends RapidElement {
     const yGrowth = (desiredHeight - this.height) / 2;
     const yDest = (window.innerHeight - desiredHeight) / 2;
     this.yTrans = yDest - this.top + yGrowth + 'px';
+
+    this.scale = desiredScale;
     this.show = true;
   }
 
