@@ -1,5 +1,5 @@
 import { assert, expect, fixture } from '@open-wc/testing';
-import { Attachment, Compose } from '../src/compose/Compose';
+import { Attachment, Compose, upload_endpoint } from '../src/compose/Compose';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Button } from '../src/button/Button';
 import { Completion } from '../src/completion/Completion';
@@ -17,8 +17,6 @@ const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
   return compose;
 };
 
-const upload_endpoint = '/msgmedia/upload/';
-
 export const updateComponent = async (
   compose: Compose,
   text?: string,
@@ -34,7 +32,7 @@ export const getSuccessText = () => {
   return 'sà-wàd-dee!';
 };
 export const getFailText = () => {
-  // return a string that is 640+ chars
+  // for a server limit of 640 chars, return a string that is 640+ chars
   return "p}h<r0P<?SCIbV1+pwW1Hj8g^J&=Sm2f)K=5LjFFUZ№5@ybpoLZ7DJ(27qdWxQMaO)I1nB4(D%d3c(H)QXOF6F?4>&d{lhd5?0`Lio!yAGMO№*AxN5{z5s.IO*dy?tm}vXJ#Lf-HlD;xmNp}0<P42=w#ll9)B-e9>Q#'{~Vp<dl:xC9`T^lhh@TosCZ^:(H<Ji<E(~PojvYk^rPB+poYy^Ne~Su1:9?IgH'4S5Q9v0g№FEIUc~!{S7;746j'Sd@Nfu3=x?CsuR;YLP4j+AOzDARZG?0(Ji(NMg=r%n0Fq?R1?E%Yf`bcoVZAJ^bl0J'^@;lH>T.HmxYxwS;1?(bfrh?pRdd73:iMxrfx5luQ(}<dCD1b3g'G0CtkB№;8KkbL=>krG{RO%Va4wwr%P>jE*+n(E11}Ju9#<.f^)<MTH09^b{RQv7~H`#@Hda6{MV&H@xdyEKq#M@nZng8WTU66!F@*!)w*EpQ+65XKuQCaESgq=PHmtqi@l;F?PHvl^g@Z:+}}Xyr`IC2=3?20^I'qSU*tkyinM^JF.ZI>}~XzRQJn№v3o-w?Vy&gC:c.l(&9{`M#-'N}{T#7lw8(4:iY621'>C^.&hVZn:R!G}Ek){D#'KkiJWawq#7~GLBN*?V!ncw)d%&(tXj";
 };
 
@@ -47,7 +45,7 @@ export const getSuccessFiles = (numFiles = 2): Attachment[] => {
       uuid: s,
       content_type: 'image/png',
       type: 'image/png',
-      name: 'name_' + s,
+      filename: 'name_' + s,
       url: 'url_' + s,
       size: 1024,
       error: null,
@@ -63,7 +61,7 @@ export const getFailFiles = (): Attachment[] => {
     uuid: f1,
     content_type: 'image/png',
     type: 'image/png',
-    name: 'name_' + f1,
+    filename: 'name_' + f1,
     url: 'url_' + f1,
     size: 26624,
     error: 'Limit for file uploads is 25.0 MB',
@@ -73,7 +71,7 @@ export const getFailFiles = (): Attachment[] => {
     uuid: f2,
     content_type: 'application/octet-stream',
     type: 'application/octet-stream',
-    name: 'name_' + f2,
+    filename: 'name_' + f2,
     url: 'url_' + f2,
     size: 1024,
     error: 'Unsupported file type',

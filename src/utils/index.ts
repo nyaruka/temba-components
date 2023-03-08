@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
+import { upload_endpoint } from '../compose/Compose';
 import { Dialog } from '../dialog/Dialog';
 import { ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
@@ -241,10 +242,16 @@ export const postFormData = (
       .then(response => {
         if (response.status >= 200 && response.status < 300) {
           resolve(response);
+        } else {
+          if (url === upload_endpoint) {
+            reject(response);
+          } else {
+            reject('Server failure');
+          }
         }
-        reject('Server failure');
       })
       .catch(err => {
+        console.error(err);
         reject(err);
       });
   });
