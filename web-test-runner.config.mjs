@@ -195,6 +195,10 @@ const wireScreenshots = async (page, context, wait) => {
     }
   );
 
+  await page.exposeFunction('waitForNetworkIdle', async () =>{
+    await page.waitForNetworkIdle();
+  });
+  
   await page.exposeFunction('setViewport', async options => {
     await page.setViewport(options);
   });
