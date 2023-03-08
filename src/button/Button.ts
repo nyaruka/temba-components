@@ -49,6 +49,7 @@ export class Button extends LitElement {
         margin: 0;
       }
 
+      // todo - confirm whether this is causing the "double focus" bug in contact chat compose component
       .button-container:focus {
         box-shadow: var(--widget-box-shadow-focused);
       }
