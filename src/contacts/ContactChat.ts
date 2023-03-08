@@ -267,7 +267,7 @@ export class ContactChat extends ContactStoreElement {
     const buttonName = evt.detail.name;
     if (buttonName === 'Send') {
       const payload = {
-        contacts: [this.currentContact.uuid],
+        contact: this.currentContact.uuid,
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
@@ -289,7 +289,7 @@ export class ContactChat extends ContactStoreElement {
 
       const genericError = buttonName + ' failed, please try again.';
 
-      postJSON(`/api/v2/broadcasts.json`, payload)
+      postJSON(`/api/v2/messages.json`, payload)
         .then(response => {
           if (response.status < 400) {
             compose.reset();
