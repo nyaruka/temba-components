@@ -40,7 +40,7 @@ export enum Icon {
   flow_interrupted = 'x-close',
   flow_ivr = 'phone-call-01',
   flow_message = 'message-square-02',
-  flow_user = 'activity',
+  flow_user = 'hard-drive',
   flows = 'flow',
   group = 'users-01',
   group_smart = 'atom-01',

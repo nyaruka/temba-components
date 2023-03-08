@@ -3,7 +3,10 @@ import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
 import { upload_endpoint } from '../compose/Compose';
 import { Dialog } from '../dialog/Dialog';
-import { ContactField, Ticket } from '../interfaces';
+import { ContactField, Ticket, User } from '../interfaces';
+import ColorHash from 'color-hash';
+
+const colorHash = new ColorHash();
 
 export type Asset = KeyedAsset & Ticket & ContactField;
 
@@ -109,7 +112,7 @@ export const getClasses = (map: ClassMap): string => {
   if (result.trim().length > 0) {
     result = ' ' + result;
   }
-  return result;
+  return result.trim();
 };
 
 export const fetchResultsPage = (
@@ -619,4 +622,67 @@ export const formatFileSize = (bytes: number, decimalPoint: number): string => {
     sizes = ['B', 'KB', 'MB', 'GB'], //, 'TB', 'PB', 'EB', 'ZB', 'YB'],
     i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
+export const renderAvatar = (input: {
+  name?: string;
+  user?: User;
+  icon?: string;
+  image?: string;
+  position?: string;
+}) => {
+  if (!input.position) {
+    input.position = 'right';
+  }
+
+  // just a url
+  if (input.image) {
+    return html`<img src="${input.image}" />`;
+  }
+
+  let text = input.name;
+  if (input.user) {
+    text = `${input.user.first_name} ${input.user.last_name}`;
+  }
+
+  if (!text) {
+    return null;
+  }
+
+  const color = colorHash.hex(text);
+  let second = text.indexOf(' ') + 1;
+  if (second < 1) {
+    second = text.length > 1 ? 1 : 0;
+  }
+  let initials = text.substring(0, 1) + text.substring(second, second + 1);
+  initials = initials.toUpperCase();
+
+  return html`
+    <temba-tip text=${text} position=${input.position}>
+      <div
+        style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"
+      >
+        <div
+          class="avatar-circle"
+          style="
+            display: flex;
+            height: 2em;
+            width: 2em;
+            flex-direction: row;
+            align-items: center;
+            color: #fff;
+            border-radius: 100%;
+            font-weight: 400;
+            border: 0.3em solid rgba(0,0,0,.05);
+            background:${color}"
+        >
+          <div
+            style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
+          >
+            <div style="border:0px solid blue;">${initials}</div>
+          </div>
+        </div>
+      </div>
+    </temba-tip>
+  `;
 };

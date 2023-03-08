@@ -143,6 +143,7 @@ html {
   --button-x: 14px;
 
   --menu-padding: 1em;
+  --color-automated: rgb(78,205,106);
 }
 
 temba-button {

@@ -2,9 +2,8 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { debounce, fetchResults, getClasses } from '../utils';
+import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
 import { Icon } from '../vectoricon';
-import ColorHash from 'color-hash';
 
 export interface MenuItem {
   id?: string;
@@ -164,19 +163,6 @@ export class TembaMenu extends RapidElement {
 
       .avatar {
         align-items: center;
-      }
-
-      .avatar-circle {
-        box-shadow: 0 0 0px 3px rgba(0, 0, 0, 0.075);
-        display: flex;
-        margin: 0.4em 0em;
-        height: 2em;
-        width: 2em;
-        flex-direction: row;
-        align-items: center;
-        color: #fff;
-        border-radius: 100%;
-        font-weight: 400;
       }
 
       temba-dropdown > div[slot='dropdown'] .avatar .avatar-circle {
@@ -836,35 +822,6 @@ export class TembaMenu extends RapidElement {
     return expanded;
   }
 
-  private renderAvatar(avatar: string) {
-    const hash = new ColorHash();
-    const color = hash.hex(avatar);
-
-    let second = avatar.indexOf(' ') + 1;
-    if (second < 1) {
-      second = avatar.length > 1 ? 1 : 0;
-    }
-    let name = avatar.substring(0, 1) + avatar.substring(second, second + 1);
-    name = name.toUpperCase();
-
-    return html`
-      <div
-        style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"
-      >
-        <div
-          class="avatar-circle"
-          style="border: 0px solid rgba(0,0,0,.1);background:${color}"
-        >
-          <div
-            style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
-          >
-            <div style="border:0px solid blue;">${name}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   private renderMenuItem = (
     menuItem: MenuItem,
     parent: MenuItem = null
@@ -929,7 +886,7 @@ export class TembaMenu extends RapidElement {
     });
 
     if (menuItem.avatar) {
-      icon = this.renderAvatar(menuItem.avatar);
+      icon = renderAvatar({ name: menuItem.avatar });
     }
 
     const item = html` <div
