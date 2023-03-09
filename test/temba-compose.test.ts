@@ -471,7 +471,6 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     );
   });
 
-  // todo fix this test - button should be enabled
   it('chatbox no text, attachments with success uploaded files, and click send', async () => {
     const compose: Compose = await getCompose({
       chatbox: true,
