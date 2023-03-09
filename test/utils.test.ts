@@ -55,8 +55,7 @@ export const getComponent = async (
     ${style ? style : ``}
   `;
   parentNode.setAttribute('style', styleAttribute);
-  const component = await fixture(spec, { parentNode });
-  return component;
+  return await fixture(spec, { parentNode });
 };
 
 const createResponse = mocked => {

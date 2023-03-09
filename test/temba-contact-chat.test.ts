@@ -163,11 +163,11 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     await updateComponent(compose, getSuccessText());
 
     const response_body = {
-      contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
+      contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
       text: { eng: 'sà-wàd-dee!' },
       attachments: { eng: [] },
     };
-    mockPOST(/api\/v2\/broadcasts\.json/, response_body);
+    mockPOST(/api\/v2\/messages\.json/, response_body);
 
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
@@ -196,7 +196,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     const response_headers = {};
     const response_status = '400';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -238,14 +238,14 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     const attachments = getSuccessFiles();
     await updateComponent(compose, null, attachments);
     const response_body = {
-      contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
+      contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
       text: { eng: '' },
       attachments: { eng: attachments },
     };
     const response_headers = {};
     const response_status = '200';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -277,7 +277,7 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     const response_headers = {};
     const response_status = '400';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -321,11 +321,11 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     const text = getSuccessText();
     const attachments = getSuccessFiles();
     const response_body = {
-      contacts: [{ uuid: 'contact-dave-active', name: 'Dave Matthews' }],
+      contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
       text: { eng: text },
       attachments: { eng: attachments },
     };
-    mockPOST(/api\/v2\/broadcasts\.json/, response_body);
+    mockPOST(/api\/v2\/messages\.json/, response_body);
 
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
@@ -354,7 +354,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     const response_headers = {};
     const response_status = '400';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -387,7 +387,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     const response_headers = {};
     const response_status = '400';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -421,7 +421,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     const response_headers = {};
     const response_status = '400';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -451,7 +451,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     const response_headers = {};
     const response_status = '500';
     mockPOST(
-      /api\/v2\/broadcasts\.json/,
+      /api\/v2\/messages\.json/,
       response_body,
       response_headers,
       response_status
@@ -536,13 +536,20 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.refresh();
     await chat.httpComplete;
 
+    let lastScroll = 0;
     await assertScreenshot(
       'contacts/contact-active-ticket-closed-show-reopen-button',
       getClip(chat),
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 921;
+          const currentScroll = chat
+            .getContactHistory()
+            .getEventsPane().scrollTop;
+          if (currentScroll !== 0 && currentScroll === lastScroll) {
+            return true;
+          }
+          lastScroll = currentScroll;
         },
       }
     );
@@ -562,14 +569,20 @@ describe('temba-contact-chat - ticket tests', () => {
     chat.currentTicket = tickets.items[0];
     chat.refresh();
     await chat.httpComplete;
-
+    let lastScroll = 0;
     await assertScreenshot(
       'contacts/contact-archived-ticket-closed-hide-chatbox',
       getClip(chat),
       {
         clock: clock,
         predicate: () => {
-          return chat.getContactHistory().getEventsPane().scrollTop === 870;
+          const currentScroll = chat
+            .getContactHistory()
+            .getEventsPane().scrollTop;
+          if (currentScroll !== 0 && currentScroll === lastScroll) {
+            return true;
+          }
+          lastScroll = currentScroll;
         },
       }
     );

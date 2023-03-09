@@ -18,12 +18,13 @@ import { Button } from '../button/Button';
 export interface Attachment {
   uuid: string;
   content_type: string;
-  type: string; //deprecated
   url: string;
-  name: string;
+  filename: string;
   size: number;
   error: string;
 }
+
+export const upload_endpoint = '/api/v2/media.json';
 
 export class Compose extends FormElement {
   static get styles() {
@@ -201,7 +202,7 @@ export class Compose extends FormElement {
   accept = ''; //e.g. ".xls,.xlsx"
 
   @property({ type: String, attribute: false })
-  endpoint = '/msgmedia/upload/';
+  endpoint = upload_endpoint;
 
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
@@ -340,19 +341,21 @@ export class Compose extends FormElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        if (response.json.error) {
-          this.addErrorValue(file, response.json.error);
-        } else {
-          const attachment = response.json as Attachment;
-          if (attachment) {
-            this.addValue(attachment);
-            this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
-          }
+        const attachment = response.json as Attachment;
+        if (attachment) {
+          this.addValue(attachment);
+          this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
         }
       })
-      .catch((error: string) => {
-        console.log(error);
-        this.addErrorValue(file, error);
+      .catch((error: WebResponse) => {
+        let fileError = '';
+        if (error.status === 400) {
+          fileError = error.json.file[0];
+        } else {
+          fileError = 'Server failure';
+        }
+        console.error(fileError);
+        this.addErrorValue(file, fileError);
       })
       .finally(() => {
         this.uploading = false;
@@ -363,12 +366,11 @@ export class Compose extends FormElement {
     const errorValue = {
       uuid: Math.random().toString(36).slice(2, 6),
       content_type: file.type,
-      type: file.type,
-      name: file.name,
+      filename: file.name,
       url: file.name,
       size: file.size,
       error: error,
-    };
+    } as Attachment;
     this.errorValues.push(errorValue);
     this.requestUpdate('errorValues');
   }
@@ -490,13 +492,13 @@ export class Compose extends FormElement {
                 </div>
                 <div class="attachment-name">
                   <span
-                    title="${attachment.name} (${formatFileSize(
+                    title="${attachment.filename} (${formatFileSize(
                       attachment.size,
                       2
-                    )}) ${attachment.type}"
-                    >${truncate(attachment.name, 25)}
+                    )}) ${attachment.content_type}"
+                    >${truncate(attachment.filename, 25)}
                     (${formatFileSize(attachment.size, 0)})
-                    ${formatFileType(attachment.type)}</span
+                    ${formatFileType(attachment.content_type)}</span
                   >
                 </div>
               </div>`;
@@ -514,11 +516,11 @@ export class Compose extends FormElement {
                 </div>
                 <div class="attachment-name">
                   <span
-                    title="${errorAttachment.name} (${formatFileSize(
+                    title="${errorAttachment.filename} (${formatFileSize(
                       0,
                       0
                     )}) - Attachment failed - ${errorAttachment.error}"
-                    >${truncate(errorAttachment.name, 25)}
+                    >${truncate(errorAttachment.filename, 25)}
                     (${formatFileSize(0, 0)}) - Attachment failed</span
                   >
                 </div>
