@@ -7,8 +7,6 @@ import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Icon } from '../vectoricon';
 import { Compose } from '../compose/Compose';
-import { Completion } from '../completion/Completion';
-import { VectorIcon } from '../vectoricon/VectorIcon';
 
 const DEFAULT_REFRESH = 10000;
 
