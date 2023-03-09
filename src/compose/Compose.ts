@@ -234,7 +234,9 @@ export class Compose extends FormElement {
   }
 
   firstUpdated(): void {
-    this.setFocusOnChatbox();
+    if (this.chatbox) {
+      this.setFocusOnChatbox();
+    }
   }
 
   setFocusOnChatbox(): void {
