@@ -234,20 +234,20 @@ export class Compose extends FormElement {
   }
 
   firstUpdated(): void {
-    if (this.chatbox) {
-      this.setFocusOnChatbox();
-    }
+    this.setFocusOnChatbox();
   }
 
   setFocusOnChatbox(): void {
-    const completion = this.shadowRoot.querySelector(
-      'temba-completion'
-    ) as Completion;
-    if (completion) {
-      //simulate a click inside the completion to set focus
-      window.setTimeout(() => {
-        completion.click();
-      }, 0);
+    if (this.chatbox) {
+      const completion = this.shadowRoot.querySelector(
+        'temba-completion'
+      ) as Completion;
+      if (completion) {
+        //simulate a click inside the completion to set focus
+        window.setTimeout(() => {
+          completion.click();
+        }, 0);
+      }
     }
   }
 
@@ -433,9 +433,7 @@ export class Compose extends FormElement {
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
 
       //after send, return focus to chatbox
-      if (this.chatbox) {
-        this.setFocusOnChatbox();
-      }
+      this.setFocusOnChatbox();
     }
   }
 
