@@ -215,14 +215,12 @@ export class Dialog extends RapidElement {
           this.animationEnd = false;
         }, 400);
 
-        const scrollbarWidth = window.outerWidth - body.clientWidth;
         this.scrollOffset = -document.documentElement.scrollTop;
         body.style.position = 'fixed';
         body.style.overflowY = 'scroll';
         body.style.top = this.scrollOffset + 'px';
         body.style.width = '100%';
         body.style.overflowY = 'hidden';
-        body.style.paddingRight = scrollbarWidth + 'px';
       } else {
         body.style.position = '';
         body.style.overflowY = '';

@@ -124,17 +124,39 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .item,
       .level-0 > temba-dropdown > div[slot='toggle'] > .avatar {
-        background: var(--color-primary-dark);
+        padding: 0px;
         --icon-color: rgba(255, 255, 255, 0.7);
         font-size: 1em;
+        flex-direction: column;
+        border: 0px solid green;
+        width: 100%;
+        display: flex;
+        align-items: center;
       }
 
-      .level-0 > .top {
-        padding-top: var(--menu-padding);
+      .level-0 > .item.selected::before,
+      .level-0 > .item.selected::after {
+        content: ' ';
+        height: var(--curvature);
         background: var(--color-primary-dark);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        display: block;
+        width: 100%;
+      }
+
+      .level-0 > .item.selected::before {
+        border-bottom-right-radius: var(--curvature);
+      }
+
+      .level-0 > .item > temba-tip {
+        padding: 1em;
+      }
+
+      .level-0 > .item.selected::after {
+        border-top-right-radius: var(--curvature);
+      }
+
+      .level-0 {
+        padding-top: var(--menu-padding) !important;
       }
 
       .level-0 > .empty {
@@ -145,6 +167,14 @@ export class TembaMenu extends RapidElement {
 
       .level-0 > .bottom {
         height: 1em;
+        background: var(--color-primary-dark);
+      }
+
+      .level-0 > temba-dropdown.open > div[slot='toggle'] > .avatar {
+        background: transparent !important;
+      }
+
+      .level-0 {
         background: var(--color-primary-dark);
       }
 
@@ -174,7 +204,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0 > .item.selected {
-        background: inherit;
+        background: white;
         --icon-color: var(--color-primary-dark);
       }
 
@@ -184,7 +214,12 @@ export class TembaMenu extends RapidElement {
 
       .level-0 {
         padding: 0px;
-        z-index: 500;
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
       }
 
       .item {
@@ -208,7 +243,6 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0 > .item {
-        padding: 1em 1em;
         margin-top: 0em;
         border-radius: 0px;
         min-width: inherit;
@@ -249,12 +283,12 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0 > .item:hover {
-        background: rgba(var(--primary-rgb), 0.85);
+        background: rgba(255, 255, 255, 0.15);
         --icon-color: #fff;
       }
 
       .level-0 > .item.selected:hover {
-        background: inherit;
+        background: white;
         --icon-color: var(--color-primary-dark);
         cursor: default;
       }
@@ -272,13 +306,11 @@ export class TembaMenu extends RapidElement {
       .level-1 {
         transition: opacity 100ms linear, margin 200ms linear;
         overflow-y: scroll;
-        z-index: 150;
       }
 
       .level-2 {
         background: #fbfbfb;
         overflow-y: auto;
-        z-index: 1000;
       }
 
       .level-2 .item .details {
@@ -889,9 +921,7 @@ export class TembaMenu extends RapidElement {
       icon = renderAvatar({ name: menuItem.avatar });
     }
 
-    const item = html` <div
-        class="item-top ${isSelected ? 'selected' : null} "
-      ></div>
+    const item = html`
       <div
         id="menu-${menuItem.id}"
         class="${itemClasses}"
@@ -946,8 +976,7 @@ export class TembaMenu extends RapidElement {
         </div>
         <div class="right"></div>
       </div>
-
-      <div class="item-bottom ${isSelected ? 'selected' : null}"></div>`;
+    `;
 
     if (menuItem.popup) {
       return html`

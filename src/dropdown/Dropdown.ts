@@ -65,7 +65,6 @@ export class Dropdown extends RapidElement {
         background: rgba(0, 0, 0, 0.7);
         opacity: 0;
         transition: opacity var(--transition-speed) ease-in-out;
-        z-index: 1;
         pointer-events: none;
       }
 
