@@ -263,7 +263,6 @@ export class Compose extends FormElement {
     const completion = evt.target as Completion;
     const textInput = completion.textInputElement;
     this.currentChat = textInput.value;
-    this.preventDefaults(evt);
   }
 
   private handleDragEnter(evt: DragEvent): void {
