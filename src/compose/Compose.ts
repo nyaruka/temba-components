@@ -12,6 +12,8 @@ import {
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
+import { VectorIcon } from '../vectoricon/VectorIcon';
+import { Button } from '../button/Button';
 
 export interface Attachment {
   uuid: string;
@@ -226,23 +228,27 @@ export class Compose extends FormElement {
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    if (
-      changes.has('currentChat') ||
-      changes.has('values') ||
-      changes.has('buttonError')
-    ) {
+    if (changes.has('currentChat') || changes.has('values')) {
+      this.buttonError = '';
       this.toggleButton();
     }
   }
 
   firstUpdated(): void {
-    const completion = this.shadowRoot.querySelector(
-      'temba-completion'
-    ) as Completion;
-    if (completion) {
-      window.setTimeout(() => {
-        completion.click();
-      }, 0);
+    this.setFocusOnChatbox();
+  }
+
+  setFocusOnChatbox(): void {
+    if (this.chatbox) {
+      const completion = this.shadowRoot.querySelector(
+        'temba-completion'
+      ) as Completion;
+      if (completion) {
+        //simulate a click inside the completion to set focus
+        window.setTimeout(() => {
+          completion.click();
+        }, 0);
+      }
     }
   }
 
@@ -394,20 +400,16 @@ export class Compose extends FormElement {
 
   public toggleButton() {
     if (this.button) {
-      if (this.buttonError && this.buttonError.length > 0) {
-        this.buttonDisabled = true;
+      const chatboxEmpty = this.currentChat.trim().length === 0;
+      const attachmentsEmpty = this.values.length === 0;
+      if (this.chatbox && this.attachments) {
+        this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
+      } else if (this.chatbox) {
+        this.buttonDisabled = chatboxEmpty;
+      } else if (this.attachments) {
+        this.buttonDisabled = attachmentsEmpty;
       } else {
-        const chatboxEmpty = this.currentChat.trim().length === 0;
-        const attachmentsEmpty = this.values.length === 0;
-        if (this.chatbox && this.attachments) {
-          this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
-        } else if (this.chatbox) {
-          this.buttonDisabled = chatboxEmpty;
-        } else if (this.attachments) {
-          this.buttonDisabled = attachmentsEmpty;
-        } else {
-          this.buttonDisabled = true;
-        }
+        this.buttonDisabled = true;
       }
     }
   }
@@ -431,12 +433,9 @@ export class Compose extends FormElement {
       this.buttonDisabled = true;
       const name = this.buttonName;
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
-    }
-  }
 
-  private handleSendBlur() {
-    if (this.buttonError.length > 0) {
-      this.buttonError = '';
+      //after send, return focus to chatbox
+      this.setFocusOnChatbox();
     }
   }
 
@@ -471,7 +470,6 @@ export class Compose extends FormElement {
       @change=${this.handleChatboxChange}
       @keydown=${this.handleSendEnter}
       placeholder="Write something here"
-      @blur=${this.handleSendBlur}
     >
     </temba-completion>`;
   }
@@ -581,7 +579,6 @@ export class Compose extends FormElement {
       name=${this.buttonName}
       @click=${this.handleSendClick}
       ?disabled=${this.buttonDisabled}
-      @blur=${this.handleSendBlur}
     ></temba-button>`;
   }
 }
