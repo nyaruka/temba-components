@@ -604,7 +604,7 @@ export class TembaMenu extends RapidElement {
   public refresh = debounce(this.doRefresh, 200);
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private loadItems(item: MenuItem, selectFirst = false) {
+  private loadItems(item: MenuItem, event: MouseEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;
       this.httpComplete = fetchResults(item.endpoint).then(
@@ -636,7 +636,7 @@ export class TembaMenu extends RapidElement {
 
           if (this.submenu && this.selection.length == 0) {
             const sub = this.getMenuItemForSelection([this.submenu]);
-            this.handleItemClicked(null, sub);
+            this.handleItemClicked(event, sub);
           }
 
           if (!this.wait) {
@@ -645,8 +645,8 @@ export class TembaMenu extends RapidElement {
           }
 
           // once we've set our items check if we need to auto-select
-          if (selectFirst && item.items.length > 0) {
-            this.handleItemClicked(null, item.items[0]);
+          if (event && item.items.length > 0) {
+            this.handleItemClicked(event, item.items[0]);
           }
 
           this.requestUpdate('root');
@@ -669,7 +669,6 @@ export class TembaMenu extends RapidElement {
           parent,
         });
       }
-
       return;
     }
 
@@ -681,8 +680,16 @@ export class TembaMenu extends RapidElement {
           parent,
         });
       }
-
       return;
+    }
+
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.metaKey && menuItem.href) {
+        window.open(menuItem.href, '_blank');
+        return;
+      }
     }
 
     if (parent && parent.inline) {
@@ -691,11 +698,6 @@ export class TembaMenu extends RapidElement {
 
     if (this.collapsed) {
       this.collapsed = false;
-    }
-
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
     }
 
     if (menuItem.trigger) {
@@ -719,7 +721,7 @@ export class TembaMenu extends RapidElement {
     }
 
     if (menuItem.endpoint) {
-      this.loadItems(menuItem, !!event);
+      this.loadItems(menuItem, event);
 
       // make sure change events fire for events with hrefs
       if (!menuItem.href) {
