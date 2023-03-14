@@ -143,8 +143,8 @@ export class ContentMenu extends RapidElement {
     }
   }
 
-  private handleItemClicked(item: ContentMenuItem) {
-    this.fireCustomEvent(CustomEventType.Selection, item);
+  private handleItemClicked(item: ContentMenuItem, event: MouseEvent) {
+    this.fireCustomEvent(CustomEventType.Selection, { item, event });
   }
 
   public render(): TemplateResult {
@@ -154,7 +154,7 @@ export class ContentMenu extends RapidElement {
           return html`<temba-button
             class="${button.primary ? 'primary_button_item' : 'button_item'}"
             name=${button.label}
-            @click=${() => this.handleItemClicked(button)}
+            @click=${event => this.handleItemClicked(button, event)}
           >
             ${button.label}
           </temba-button>`;
@@ -177,7 +177,7 @@ export class ContentMenu extends RapidElement {
                     return html` <div
                       class="item"
                       name=${item.label}
-                      @click=${() => this.handleItemClicked(item)}
+                      @click=${event => this.handleItemClicked(item, event)}
                     >
                       ${item.label}
                     </div>`;
