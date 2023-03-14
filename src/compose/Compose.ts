@@ -221,6 +221,12 @@ export class Compose extends FormElement {
   @property({ type: String, attribute: false })
   buttonError = '';
 
+  @property({ type: Boolean, attribute: 'widget_only' })
+  widgetOnly: boolean;
+
+  @property({ type: Array })
+  errors: string[];
+
   public constructor() {
     super();
   }
@@ -440,23 +446,31 @@ export class Compose extends FormElement {
 
   public render(): TemplateResult {
     return html`
-      <div
-        class=${getClasses({ container: true, highlight: this.pendingDrop })}
-        @dragenter="${this.handleDragEnter}"
-        @dragover="${this.handleDragOver}"
-        @dragleave="${this.handleDragLeave}"
-        @drop="${this.handleDrop}"
+      <temba-field
+        name=${this.name}
+        .errors=${this.errors}
+        .widgetOnly=${this.widgetOnly}
       >
-        <div class="drop-mask"><div>Upload Attachment</div></div>
+        <div
+          class=${getClasses({ container: true, highlight: this.pendingDrop })}
+          @dragenter="${this.handleDragEnter}"
+          @dragover="${this.handleDragOver}"
+          @dragleave="${this.handleDragLeave}"
+          @drop="${this.handleDrop}"
+        >
+          <div class="drop-mask"><div>Upload Attachment</div></div>
 
-        ${this.chatbox
-          ? html`<div class="items chatbox">${this.getChatbox()}</div>`
-          : null}
-        ${this.attachments
-          ? html`<div class="items attachments">${this.getAttachments()}</div>`
-          : null}
-        <div class="items actions">${this.getActions()}</div>
-      </div>
+          ${this.chatbox
+            ? html`<div class="items chatbox">${this.getChatbox()}</div>`
+            : null}
+          ${this.attachments
+            ? html`<div class="items attachments">
+                ${this.getAttachments()}
+              </div>`
+            : null}
+          <div class="items actions">${this.getActions()}</div>
+        </div>
+      </temba-field>
     `;
   }
 
