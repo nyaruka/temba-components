@@ -276,8 +276,7 @@ export class ContactChat extends ContactStoreElement {
           payload['text'] = text;
         }
         const attachments = compose.values.map(attachment => {
-          const content_type = attachment.content_type;
-          return content_type + ':' + attachment.url;
+          return attachment.uuid;
         });
         if (attachments.length > 0) {
           payload['attachments'] = attachments;
@@ -297,18 +296,22 @@ export class ContactChat extends ContactStoreElement {
           } else if (response.status < 500) {
             if (
               response.json.text &&
-              response.json.text.eng &&
-              response.json.text.eng.length > 0
+              response.json.text.length > 0 &&
+              response.json.text[0].length > 0
             ) {
-              compose.buttonError =
-                'Text must have no more than 640 characters.';
+              let textError = response.json.text[0];
+              textError = textError.replace('this field', 'text');
+              compose.buttonError = textError;
             } else if (
               response.json.attachments &&
-              response.json.attachments.eng &&
-              response.json.attachments.eng.length > 0
+              response.json.attachments.length > 0 &&
+              response.json.attachments[0].length > 0
             ) {
-              compose.buttonError =
-                'Attachments must have no more than 10 files.';
+              let attachmentError = response.json.attachments[0];
+              attachmentError = attachmentError
+                .replace('this field has', 'attachments have')
+                .replace('elements', 'files');
+              compose.buttonError = attachmentError;
             } else {
               compose.buttonError = genericError;
             }
