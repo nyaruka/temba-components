@@ -207,8 +207,8 @@ export class Compose extends FormElement {
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
-  // values = uploaded attachments that are sent to the server when the user clicks send
-  // errorValues = not-uploaded attachments that are not sent to the server when the user clicks send
+  // values = attachments that are uploaded sent to the server when the user clicks send
+  // errorValues = attachments that are not uploaded and are not sent to the server when the user clicks send
   @property({ type: Array, attribute: false })
   errorValues: Attachment[] = [];
 
