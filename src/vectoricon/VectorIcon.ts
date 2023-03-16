@@ -95,7 +95,7 @@ export class VectorIcon extends LitElement {
       }
 
       .circled {
-        background: rgb(240, 240, 240);
+        background: var(--icon-color-circle);
         padding: 0.15em;
         margin: -0.15em;
         box-shadow: var(--shadow);
