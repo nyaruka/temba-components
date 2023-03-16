@@ -12,8 +12,6 @@ import {
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
-import { VectorIcon } from '../vectoricon/VectorIcon';
-import { Button } from '../button/Button';
 
 export interface Attachment {
   uuid: string;
@@ -180,6 +178,7 @@ export class Compose extends FormElement {
     `;
   }
 
+  // todo - rename to textbox?
   @property({ type: Boolean })
   chatbox: boolean;
 
@@ -195,6 +194,7 @@ export class Compose extends FormElement {
   @property({ type: Boolean })
   button: boolean;
 
+  // todo - rename to text?
   @property({ type: String, attribute: false })
   currentChat = '';
 
@@ -207,6 +207,8 @@ export class Compose extends FormElement {
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
+  // todo - rename values to validUploads?
+  // todo - rename errorValues to invalidUploads?
   // values = valid and uploaded attachments
   // errorValues = invalid and not-uploaded attachments
   @property({ type: Array, attribute: false })
@@ -226,6 +228,17 @@ export class Compose extends FormElement {
 
   @property({ type: Array })
   errors: string[];
+
+  @property({ type: {} })
+  value: any;
+
+  public serializeValue(value: any): string {
+    value = {
+      text: this.currentChat,
+      attachments: this.values,
+    };
+    return super.serializeValue(value);
+  }
 
   public constructor() {
     super();
@@ -450,6 +463,7 @@ export class Compose extends FormElement {
         name=${this.name}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
+        .value=${this.value}
       >
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
