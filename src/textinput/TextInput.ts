@@ -53,7 +53,6 @@ export class TextInput extends FormElement {
 
       textarea {
         height: var(--textarea-height);
-        overflow: hidden;
       }
 
       .textinput {
