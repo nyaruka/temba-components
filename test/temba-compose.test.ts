@@ -385,8 +385,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       counter: true,
       button: true,
     });
-    // todo switch to updateComponent?
-    compose.currentText = 'sà-wàd-dee!';
+    updateComponent(compose, getSuccessText());
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-no-files',
       getClip(compose)
@@ -400,8 +399,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       counter: true,
       button: true,
     });
-    // todo switch to updateComponent?
-    compose.currentText = 'sà-wàd-dee!';
+    updateComponent(compose, getSuccessText());
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;

@@ -22,10 +22,10 @@ export interface Attachment {
   error: string;
 }
 
-// interface ComposeValue {
-//   text: string;
-//   attachments: Attachment[];
-// }
+interface ComposeValue {
+  text: string;
+  attachments: Attachment[];
+}
 
 export const upload_endpoint = '/api/v2/media.json';
 
@@ -233,37 +233,23 @@ export class Compose extends FormElement {
   @property({ type: Array })
   errors: string[];
 
-  @property({ type: {} })
-  value: any;
+  @property({ type: String })
+  value = '';
 
-  public serializeValue(value: any): string {
-    value = {
-      text: this.currentText,
-      attachments: this.currentAttachments,
-    };
-    return super.serializeValue(value);
-  }
-
-  // @property({ type: Object })
-  // value: any;
-
-  // @property({ type: Object })
-  // composeValue: ComposeValue;
-
-  // @property({ type: String })
-  // composePayload: string;
+  @property({ type: Object })
+  composeValue: ComposeValue;
 
   public constructor() {
     super();
   }
 
   firstUpdated(): void {
-    // this.getInitialComposeValue();
+    // this.deserializeComposeValue();
     this.setFocusOnChatbox();
   }
 
-  // getInitialComposeValue(): void{
-  //   console.log('compose getInitialValue value', this.value);
+  // private deserializeComposeValue(): void{
+  //   console.log('deserializeComposeValue this.value', this.value);
   //   this.composeValue = JSON.parse(this.value) as ComposeValue;
   //   if (this.chatbox) {
   //     this.currentText = this.composeValue.text;
@@ -273,7 +259,7 @@ export class Compose extends FormElement {
   //   }
   // }
 
-  setFocusOnChatbox(): void {
+  private setFocusOnChatbox(): void {
     if (this.chatbox) {
       const completion = this.shadowRoot.querySelector(
         'temba-completion'
@@ -292,22 +278,19 @@ export class Compose extends FormElement {
 
     if (changes.has('currentText') || changes.has('currentAttachments')) {
       this.toggleButton();
-      this.value = this.serializeValue(this.value);
-      super.setValue(this.value);
-      // console.log('updated this.value', this.value);
-      // console.log('updated this.values', this.values);
-      // this.setFinalComposePayload();
+      this.serializeComposeValue();
+      // this.setValue(this.value);
     }
   }
 
-  // public setFinalComposePayload(): void {
-  //   const composeValue = {
-  //     text: this.currentText,
-  //     attachments: this.currentAttachments
-  //   }
-  //   this.composePayload = super.serializeValue(composeValue);
-  //   this.value = this.composePayload;
-  // }
+  private serializeComposeValue(): void {
+    this.composeValue = {
+      text: this.currentText,
+      attachments: this.currentAttachments,
+    } as ComposeValue;
+    this.value = super.serializeValue(this.composeValue);
+    super.setValue(this.value);
+  }
 
   public reset(): void {
     this.currentText = '';
@@ -319,11 +302,7 @@ export class Compose extends FormElement {
   private handleChatboxChange(evt: Event) {
     const completion = evt.target as Completion;
     const textInput = completion.textInputElement;
-    // console.log('handleChatboxChange this.currentText before', this.currentText);
-    // console.log('handleChatboxChange textInput.value before', textInput.value);
     this.currentText = textInput.value;
-    // console.log('handleChatboxChange this.currentText after', this.currentText);
-    // console.log('handleChatboxChange textInput.value after', textInput.value);
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -403,29 +382,39 @@ export class Compose extends FormElement {
       .then((response: WebResponse) => {
         const attachment = response.json as Attachment;
         if (attachment) {
-          // todo put inside of helper method
-          this.currentAttachments.push(attachment);
-          this.requestUpdate('currentAttachments');
-          this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
+          this.addCurrentAttachment(attachment);
         }
       })
       .catch((error: WebResponse) => {
-        let fileError = '';
+        let uploadError = '';
         if (error.status === 400) {
-          fileError = error.json.file[0];
+          uploadError = error.json.file[0];
         } else {
-          fileError = 'Server failure';
+          uploadError = 'Server failure';
         }
-        console.error(fileError);
-        this.addErrorValue(file, fileError);
+        console.error(uploadError);
+        this.addFailedAttachment(file, uploadError);
       })
       .finally(() => {
         this.uploading = false;
       });
   }
 
-  private addErrorValue(file: File, error: string) {
-    const errorValue = {
+  private addCurrentAttachment(attachmentToAdd: any) {
+    this.currentAttachments.push(attachmentToAdd);
+    this.requestUpdate('currentAttachments');
+    this.fireCustomEvent(CustomEventType.AttachmentAdded, attachmentToAdd);
+  }
+  private removeCurrentAttachment(attachmentToRemove: any) {
+    this.currentAttachments = this.currentAttachments.filter(
+      currentAttachment => currentAttachment !== attachmentToRemove
+    );
+    this.requestUpdate('currentAttachments');
+    this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachmentToRemove);
+  }
+
+  private addFailedAttachment(file: File, error: string) {
+    const failedAttachment = {
       uuid: Math.random().toString(36).slice(2, 6),
       content_type: file.type,
       filename: file.name,
@@ -433,46 +422,32 @@ export class Compose extends FormElement {
       size: file.size,
       error: error,
     } as Attachment;
-    this.failedAttachments.push(errorValue);
+    this.failedAttachments.push(failedAttachment);
     this.requestUpdate('failedAttachments');
   }
-  public removeErrorValue(valueToRemove: any) {
+  private removeFailedAttachment(attachmentToRemove: any) {
     this.failedAttachments = this.failedAttachments.filter(
-      (value: any) => value !== valueToRemove
+      (failedAttachment: any) => failedAttachment !== attachmentToRemove
     );
     this.requestUpdate('failedAttachments');
+    this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachmentToRemove);
   }
 
   private handleRemoveAttachment(evt: Event): void {
     const target = evt.target as HTMLDivElement;
 
-    const validAttachmentToRemove = this.currentAttachments.find(
+    const currentAttachmentToRemove = this.currentAttachments.find(
       ({ uuid }) => uuid === target.id
     );
-    if (validAttachmentToRemove) {
-      // todo put inside of helper method
-      this.currentAttachments = this.currentAttachments.filter(
-        validAttachment => validAttachment !== validAttachmentToRemove
-      );
-      this.requestUpdate('currentAttachments');
-      this.fireCustomEvent(
-        CustomEventType.AttachmentRemoved,
-        validAttachmentToRemove
-      );
+    if (currentAttachmentToRemove) {
+      this.removeCurrentAttachment(currentAttachmentToRemove);
     }
 
-    const invalidAttachmentToRemove = this.failedAttachments.find(
+    const failedAttachmentToRemove = this.failedAttachments.find(
       ({ uuid }) => uuid === target.id
     );
-    if (invalidAttachmentToRemove) {
-      this.failedAttachments = this.failedAttachments.filter(
-        invalidAttachment => invalidAttachmentToRemove !== invalidAttachment
-      );
-      this.requestUpdate('failedAttachments');
-      this.fireCustomEvent(
-        CustomEventType.AttachmentRemoved,
-        validAttachmentToRemove
-      );
+    if (failedAttachmentToRemove) {
+      this.removeFailedAttachment(failedAttachmentToRemove);
     }
   }
 
