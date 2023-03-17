@@ -43,6 +43,7 @@ export enum Icon {
   flow_message = 'message-square-02',
   flow_user = 'hard-drive',
   flows = 'flow',
+  global = 'at-sign',
   group = 'users-01',
   group_smart = 'atom-01',
   help = 'help-circle',
