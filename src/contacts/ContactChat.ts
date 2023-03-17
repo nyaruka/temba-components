@@ -300,7 +300,10 @@ export class ContactChat extends ContactStoreElement {
               response.json.text[0].length > 0
             ) {
               let textError = response.json.text[0];
-              textError = textError.replace('this field', 'text');
+              textError = textError.replace(
+                'Ensure this field has no more than',
+                'Maximum allowed text is'
+              );
               compose.buttonError = textError;
             } else if (
               response.json.attachments &&
@@ -309,7 +312,10 @@ export class ContactChat extends ContactStoreElement {
             ) {
               let attachmentError = response.json.attachments[0];
               attachmentError = attachmentError
-                .replace('this field has', 'attachments have')
+                .replace(
+                  'Ensure this field has no more than',
+                  'Maximum allowed attachments is'
+                )
                 .replace('elements', 'files');
               compose.buttonError = attachmentError;
             } else {

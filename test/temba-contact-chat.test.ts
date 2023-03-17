@@ -67,9 +67,8 @@ const getResponseSuccessFiles = (attachments: Attachment[]) => {
   });
   return response_attachments;
 };
-const responseTextError = 'Ensure text has no more than 640 characters.';
-const responseAttachmentError =
-  'Ensure attachments have no more than 10 files.';
+const responseTextError = 'Maximum allowed text is 640 characters.';
+const responseAttachmentError = 'Maximum allowed attachments is 10 files.';
 
 describe('temba-contact-chat - contact tests', () => {
   // map requests for contact history to our static files
