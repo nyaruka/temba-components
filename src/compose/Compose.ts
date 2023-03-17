@@ -22,6 +22,11 @@ export interface Attachment {
   error: string;
 }
 
+// interface ComposeValue {
+//   text: string;
+//   attachments: Attachment[];
+// }
+
 export const upload_endpoint = '/api/v2/media.json';
 
 export class Compose extends FormElement {
@@ -196,7 +201,7 @@ export class Compose extends FormElement {
 
   // todo - rename to text?
   @property({ type: String, attribute: false })
-  currentChat = '';
+  currentText = '';
 
   @property({ type: String })
   accept = ''; //e.g. ".xls,.xlsx"
@@ -207,12 +212,11 @@ export class Compose extends FormElement {
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
-  // todo - rename values to validUploads?
-  // todo - rename errorValues to invalidUploads?
-  // values = valid and uploaded attachments
-  // errorValues = invalid and not-uploaded attachments
   @property({ type: Array, attribute: false })
-  errorValues: Attachment[] = [];
+  currentAttachments: Attachment[] = [];
+
+  @property({ type: Array, attribute: false })
+  failedAttachments: Attachment[] = [];
 
   @property({ type: String })
   buttonName = 'Send';
@@ -234,28 +238,40 @@ export class Compose extends FormElement {
 
   public serializeValue(value: any): string {
     value = {
-      text: this.currentChat,
-      attachments: this.values,
+      text: this.currentText,
+      attachments: this.currentAttachments,
     };
     return super.serializeValue(value);
   }
+
+  // @property({ type: Object })
+  // value: any;
+
+  // @property({ type: Object })
+  // composeValue: ComposeValue;
+
+  // @property({ type: String })
+  // composePayload: string;
 
   public constructor() {
     super();
   }
 
-  public updated(changes: Map<string, any>): void {
-    super.updated(changes);
-
-    if (changes.has('currentChat') || changes.has('values')) {
-      this.buttonError = '';
-      this.toggleButton();
-    }
-  }
-
   firstUpdated(): void {
+    // this.getInitialComposeValue();
     this.setFocusOnChatbox();
   }
+
+  // getInitialComposeValue(): void{
+  //   console.log('compose getInitialValue value', this.value);
+  //   this.composeValue = JSON.parse(this.value) as ComposeValue;
+  //   if (this.chatbox) {
+  //     this.currentText = this.composeValue.text;
+  //   }
+  //   if(this.attachments){
+  //     this.currentAttachments = this.composeValue.attachments;
+  //   }
+  // }
 
   setFocusOnChatbox(): void {
     if (this.chatbox) {
@@ -271,17 +287,43 @@ export class Compose extends FormElement {
     }
   }
 
+  public updated(changes: Map<string, any>): void {
+    super.updated(changes);
+
+    if (changes.has('currentText') || changes.has('currentAttachments')) {
+      this.toggleButton();
+      this.value = this.serializeValue(this.value);
+      super.setValue(this.value);
+      // console.log('updated this.value', this.value);
+      // console.log('updated this.values', this.values);
+      // this.setFinalComposePayload();
+    }
+  }
+
+  // public setFinalComposePayload(): void {
+  //   const composeValue = {
+  //     text: this.currentText,
+  //     attachments: this.currentAttachments
+  //   }
+  //   this.composePayload = super.serializeValue(composeValue);
+  //   this.value = this.composePayload;
+  // }
+
   public reset(): void {
-    this.currentChat = '';
-    this.values = [];
-    this.errorValues = [];
+    this.currentText = '';
+    this.currentAttachments = [];
+    this.failedAttachments = [];
     this.buttonError = '';
   }
 
   private handleChatboxChange(evt: Event) {
     const completion = evt.target as Completion;
     const textInput = completion.textInputElement;
-    this.currentChat = textInput.value;
+    // console.log('handleChatboxChange this.currentText before', this.currentText);
+    // console.log('handleChatboxChange textInput.value before', textInput.value);
+    this.currentText = textInput.value;
+    // console.log('handleChatboxChange this.currentText after', this.currentText);
+    // console.log('handleChatboxChange textInput.value after', textInput.value);
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -333,11 +375,11 @@ export class Compose extends FormElement {
 
   public uploadFiles(files: FileList): void {
     let filesToUpload = [];
-    if (this.values && this.values.length > 0) {
+    if (this.currentAttachments && this.currentAttachments.length > 0) {
       //remove duplicate files that have already been uploaded
       filesToUpload = [...files].filter(file => {
-        const index = this.values.findIndex(
-          value => value.name === file.name && value.size === file.size
+        const index = this.currentAttachments.findIndex(
+          value => value.filename === file.name && value.size === file.size
         );
         if (index === -1) {
           return file;
@@ -361,7 +403,9 @@ export class Compose extends FormElement {
       .then((response: WebResponse) => {
         const attachment = response.json as Attachment;
         if (attachment) {
-          this.addValue(attachment);
+          // todo put inside of helper method
+          this.currentAttachments.push(attachment);
+          this.requestUpdate('currentAttachments');
           this.fireCustomEvent(CustomEventType.AttachmentAdded, attachment);
         }
       })
@@ -389,37 +433,54 @@ export class Compose extends FormElement {
       size: file.size,
       error: error,
     } as Attachment;
-    this.errorValues.push(errorValue);
-    this.requestUpdate('errorValues');
+    this.failedAttachments.push(errorValue);
+    this.requestUpdate('failedAttachments');
   }
   public removeErrorValue(valueToRemove: any) {
-    this.errorValues = this.errorValues.filter(
+    this.failedAttachments = this.failedAttachments.filter(
       (value: any) => value !== valueToRemove
     );
-    this.requestUpdate('errorValues');
+    this.requestUpdate('failedAttachments');
   }
 
   private handleRemoveAttachment(evt: Event): void {
     const target = evt.target as HTMLDivElement;
 
-    const attachment = this.values.find(({ uuid }) => uuid === target.id);
-    if (attachment) {
-      this.removeValue(attachment);
-      this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
-    }
-    const errorAttachment = this.errorValues.find(
+    const validAttachmentToRemove = this.currentAttachments.find(
       ({ uuid }) => uuid === target.id
     );
-    if (errorAttachment) {
-      this.removeErrorValue(errorAttachment);
-      this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachment);
+    if (validAttachmentToRemove) {
+      // todo put inside of helper method
+      this.currentAttachments = this.currentAttachments.filter(
+        validAttachment => validAttachment !== validAttachmentToRemove
+      );
+      this.requestUpdate('currentAttachments');
+      this.fireCustomEvent(
+        CustomEventType.AttachmentRemoved,
+        validAttachmentToRemove
+      );
+    }
+
+    const invalidAttachmentToRemove = this.failedAttachments.find(
+      ({ uuid }) => uuid === target.id
+    );
+    if (invalidAttachmentToRemove) {
+      this.failedAttachments = this.failedAttachments.filter(
+        invalidAttachment => invalidAttachmentToRemove !== invalidAttachment
+      );
+      this.requestUpdate('failedAttachments');
+      this.fireCustomEvent(
+        CustomEventType.AttachmentRemoved,
+        validAttachmentToRemove
+      );
     }
   }
 
   public toggleButton() {
     if (this.button) {
-      const chatboxEmpty = this.currentChat.trim().length === 0;
-      const attachmentsEmpty = this.values.length === 0;
+      this.buttonError = '';
+      const chatboxEmpty = this.currentText.trim().length === 0;
+      const attachmentsEmpty = this.currentAttachments.length === 0;
       if (this.chatbox && this.attachments) {
         this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
       } else if (this.chatbox) {
@@ -463,7 +524,7 @@ export class Compose extends FormElement {
         name=${this.name}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
-        .value=${this.value}
+        value=${this.value}
       >
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
@@ -490,7 +551,7 @@ export class Compose extends FormElement {
 
   private getChatbox(): TemplateResult {
     return html` <temba-completion
-      value=${this.currentChat}
+      value=${this.currentText}
       gsm
       textarea
       autogrow
@@ -503,51 +564,51 @@ export class Compose extends FormElement {
 
   private getAttachments(): TemplateResult {
     return html`
-      ${(this.values && this.values.length > 0) ||
-      (this.errorValues && this.errorValues.length > 0)
+      ${(this.currentAttachments && this.currentAttachments.length > 0) ||
+      (this.failedAttachments && this.failedAttachments.length > 0)
         ? html` <div class="attachments-list">
-            ${this.values.map(attachment => {
+            ${this.currentAttachments.map(validAttachment => {
               return html` <div class="attachment-item">
                 <div
                   class="remove-item"
                   @click="${this.handleRemoveAttachment}"
                 >
                   <temba-icon
-                    id="${attachment.uuid}"
+                    id="${validAttachment.uuid}"
                     name="${Icon.delete_small}"
                   ></temba-icon>
                 </div>
                 <div class="attachment-name">
                   <span
-                    title="${attachment.filename} (${formatFileSize(
-                      attachment.size,
+                    title="${validAttachment.filename} (${formatFileSize(
+                      validAttachment.size,
                       2
-                    )}) ${attachment.content_type}"
-                    >${truncate(attachment.filename, 25)}
-                    (${formatFileSize(attachment.size, 0)})
-                    ${formatFileType(attachment.content_type)}</span
+                    )}) ${validAttachment.content_type}"
+                    >${truncate(validAttachment.filename, 25)}
+                    (${formatFileSize(validAttachment.size, 0)})
+                    ${formatFileType(validAttachment.content_type)}</span
                   >
                 </div>
               </div>`;
             })}
-            ${this.errorValues.map(errorAttachment => {
+            ${this.failedAttachments.map(invalidAttachment => {
               return html` <div class="attachment-item error">
                 <div
                   class="remove-item error"
                   @click="${this.handleRemoveAttachment}"
                 >
                   <temba-icon
-                    id="${errorAttachment.uuid}"
+                    id="${invalidAttachment.uuid}"
                     name="${Icon.delete_small}"
                   ></temba-icon>
                 </div>
                 <div class="attachment-name">
                   <span
-                    title="${errorAttachment.filename} (${formatFileSize(
+                    title="${invalidAttachment.filename} (${formatFileSize(
                       0,
                       0
-                    )}) - Attachment failed - ${errorAttachment.error}"
-                    >${truncate(errorAttachment.filename, 25)}
+                    )}) - Attachment failed - ${invalidAttachment.error}"
+                    >${truncate(invalidAttachment.filename, 25)}
                     (${formatFileSize(0, 0)}) - Attachment failed</span
                   >
                 </div>
@@ -597,7 +658,7 @@ export class Compose extends FormElement {
   }
 
   private getCounter(): TemplateResult {
-    return html`<temba-charcount text="${this.currentChat}"></temba-charcount>`;
+    return html`<temba-charcount text="${this.currentText}"></temba-charcount>`;
   }
 
   private getButton(): TemplateResult {
