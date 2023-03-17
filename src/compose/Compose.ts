@@ -279,7 +279,6 @@ export class Compose extends FormElement {
     if (changes.has('currentText') || changes.has('currentAttachments')) {
       this.toggleButton();
       this.serializeComposeValue();
-      // this.setValue(this.value);
     }
   }
 
