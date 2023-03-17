@@ -167,9 +167,6 @@ export class ContactChat extends ContactStoreElement {
   contactsEndpoint = '/api/v2/contacts.json';
 
   @property({ type: String })
-  currentChat = '';
-
-  @property({ type: String })
   currentNote = '';
 
   @property({ type: Boolean })
@@ -271,7 +268,7 @@ export class ContactChat extends ContactStoreElement {
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
-        const text = compose.currentChat;
+        const text = compose.currentText;
         if (text.length > 0) {
           payload['text'] = text;
         }

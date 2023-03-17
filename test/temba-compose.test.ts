@@ -23,9 +23,9 @@ export const updateComponent = async (
   attachments?: Attachment[],
   errorAttachments?: Attachment[]
 ): Promise<void> => {
-  compose.currentChat = text ? text : '';
-  compose.values = attachments ? attachments : [];
-  compose.errorValues = errorAttachments ? errorAttachments : [];
+  compose.currentText = text ? text : '';
+  compose.currentAttachments = attachments ? attachments : [];
+  compose.failedAttachments = errorAttachments ? errorAttachments : [];
   await compose.updateComplete;
 };
 export const getSuccessText = () => {
@@ -385,7 +385,8 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       counter: true,
       button: true,
     });
-    compose.currentChat = 'sà-wàd-dee!';
+    // todo switch to updateComponent?
+    compose.currentText = 'sà-wàd-dee!';
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-no-files',
       getClip(compose)
@@ -399,7 +400,8 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       counter: true,
       button: true,
     });
-    compose.currentChat = 'sà-wàd-dee!';
+    // todo switch to updateComponent?
+    compose.currentText = 'sà-wàd-dee!';
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;
