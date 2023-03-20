@@ -244,9 +244,9 @@ export class Compose extends FormElement {
   }
 
   firstUpdated(): void {
-    this.setFocusOnChatbox();
     // todo - infinite loop troubleshooting
     // this.deserializeComposeValue();
+    this.setFocusOnChatbox();
   }
 
   // private deserializeComposeValue(): void{
