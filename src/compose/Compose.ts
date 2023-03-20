@@ -200,7 +200,7 @@ export class Compose extends FormElement {
   button: boolean;
 
   // todo - rename to text?
-  @property({ type: String, attribute: false })
+  @property({ type: String })
   currentText = '';
 
   @property({ type: String })
@@ -212,7 +212,7 @@ export class Compose extends FormElement {
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
-  @property({ type: Array, attribute: false })
+  @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
   @property({ type: Array, attribute: false })
@@ -244,8 +244,9 @@ export class Compose extends FormElement {
   }
 
   firstUpdated(): void {
-    // this.deserializeComposeValue();
     this.setFocusOnChatbox();
+    // todo - infinite loop troubleshooting
+    // this.deserializeComposeValue();
   }
 
   // private deserializeComposeValue(): void{
@@ -253,9 +254,11 @@ export class Compose extends FormElement {
   //   this.composeValue = JSON.parse(this.value) as ComposeValue;
   //   if (this.chatbox) {
   //     this.currentText = this.composeValue.text;
+  //     this.requestUpdate('currentText');
   //   }
   //   if(this.attachments){
   //     this.currentAttachments = this.composeValue.attachments;
+  //     this.requestUpdate('currentAttachments');
   //   }
   // }
 
@@ -265,6 +268,9 @@ export class Compose extends FormElement {
         'temba-completion'
       ) as Completion;
       if (completion) {
+        // todo - infinite loop troubleshooting
+        // completion.setValue(this.composeValue.text);
+
         //simulate a click inside the completion to set focus
         window.setTimeout(() => {
           completion.click();
