@@ -165,6 +165,12 @@ export class Store extends RapidElement {
     return 'en';
   }
 
+  public refreshGlobals() {
+    getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
+      this.keyedAssets['globals'] = assets.map((asset: Asset) => asset.key);
+    });
+  }
+
   public refreshFields() {
     return getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
       this.keyedAssets['fields'] = [];
