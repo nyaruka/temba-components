@@ -149,7 +149,7 @@ export class Compose extends FormElement {
         padding: 0.2em;
       }
 
-      #upload-files {
+      #upload-input {
         display: none;
       }
       .upload-label {
@@ -273,7 +273,9 @@ export class Compose extends FormElement {
 
         //simulate a click inside the completion to set focus
         window.setTimeout(() => {
-          completion.click();
+          const textInput = completion.textInputElement;
+          const inputElement = textInput.inputElement;
+          inputElement.focus();
         }, 0);
       }
     }
@@ -302,6 +304,14 @@ export class Compose extends FormElement {
     this.currentAttachments = [];
     this.failedAttachments = [];
     this.buttonError = '';
+  }
+
+  // todo - figure out why this is still being called even when
+  // todo - an overriding(?) click event does evt.stopPropagation()
+  private handleContainerClick(evt: Event) {
+    // console.log('handleContainerClick evt', evt);
+    // console.log('handleContainerClick target', evt.target);
+    this.setFocusOnChatbox();
   }
 
   private handleChatboxChange(evt: Event) {
@@ -347,11 +357,15 @@ export class Compose extends FormElement {
     this.preventDefaults(evt);
   }
 
-  private handleAddAttachments(): void {
+  private handleUploadFileIconClicked(evt: Event): void {
+    // console.log('handleUploadFileIconClicked evt', evt);
+    // evt.stopPropagation();
     this.dispatchEvent(new Event('change'));
   }
 
-  private handleUploadFileChanged(evt: Event): void {
+  private handleUploadFileInputChanged(evt: Event): void {
+    // console.log('handleUploadFileInputChanged evt', evt);
+    // evt.stopPropagation();
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
@@ -402,6 +416,8 @@ export class Compose extends FormElement {
       })
       .finally(() => {
         this.uploading = false;
+        //after upload, return focus to chatbox
+        this.setFocusOnChatbox();
       });
   }
 
@@ -438,7 +454,9 @@ export class Compose extends FormElement {
     this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachmentToRemove);
   }
 
-  private handleRemoveAttachment(evt: Event): void {
+  private handleRemoveFileClicked(evt: Event): void {
+    // console.log('handleRemoveAttachmentClicked evt', evt);
+    // evt.stopPropagation();
     const target = evt.target as HTMLDivElement;
 
     const currentAttachmentToRemove = this.currentAttachments.find(
@@ -454,6 +472,8 @@ export class Compose extends FormElement {
     if (failedAttachmentToRemove) {
       this.removeFailedAttachment(failedAttachmentToRemove);
     }
+    //after remove, return focus to chatbox
+    this.setFocusOnChatbox();
   }
 
   public toggleButton() {
@@ -473,21 +493,27 @@ export class Compose extends FormElement {
     }
   }
 
-  private handleSendClick() {
-    this.handleSend();
+  private handleSendClick(evt: Event) {
+    // console.log('handleSendClick evt', evt);
+    // evt.stopPropagation();
+    this.handleSend(evt);
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
+    // console.log('handleSendEnter evt', evt);
+    // evt.stopPropagation();
     if (evt.key === 'Enter' && !evt.shiftKey) {
       const chat = evt.target as Completion;
       if (!chat.hasVisibleOptions()) {
-        this.handleSend();
+        this.handleSend(evt);
       }
       this.preventDefaults(evt);
     }
   }
 
-  private handleSend() {
+  private handleSend(evt: Event) {
+    // console.log('handleSend evt', evt);
+    // evt.stopPropagation();
     if (!this.buttonDisabled) {
       this.buttonDisabled = true;
       const name = this.buttonName;
@@ -508,6 +534,7 @@ export class Compose extends FormElement {
       >
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
+          @click="${this.handleContainerClick}"
           @dragenter="${this.handleDragEnter}"
           @dragover="${this.handleDragOver}"
           @dragleave="${this.handleDragLeave}"
@@ -551,7 +578,7 @@ export class Compose extends FormElement {
               return html` <div class="attachment-item">
                 <div
                   class="remove-item"
-                  @click="${this.handleRemoveAttachment}"
+                  @click="${this.handleRemoveFileClicked}"
                 >
                   <temba-icon
                     id="${validAttachment.uuid}"
@@ -575,7 +602,7 @@ export class Compose extends FormElement {
               return html` <div class="attachment-item error">
                 <div
                   class="remove-item error"
-                  @click="${this.handleRemoveAttachment}"
+                  @click="${this.handleRemoveFileClicked}"
                 >
                   <temba-icon
                     id="${invalidAttachment.uuid}"
@@ -621,16 +648,21 @@ export class Compose extends FormElement {
     } else {
       return html` <input
           type="file"
-          id="upload-files"
+          id="upload-input"
           multiple
           accept="${this.accept}"
-          @change="${this.handleUploadFileChanged}"
+          @change="${this.handleUploadFileInputChanged}"
         />
-        <label class="actions-left upload-label" for="upload-files">
+        <label
+          id="upload-label"
+          class="actions-left upload-label"
+          for="upload-input"
+        >
           <temba-icon
+            id="upload-icon"
             class="upload-icon"
             name="${Icon.attachment}"
-            @click="${this.handleAddAttachments}"
+            @click="${this.handleUploadFileIconClicked}"
             clickable
           ></temba-icon>
         </label>`;
