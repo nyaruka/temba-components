@@ -237,56 +237,21 @@ export class Compose extends FormElement {
   value = '';
 
   @property({ type: Object })
-  composeValue: ComposeValue;
+  composeValue: ComposeValue = { text: '', attachments: [] };
 
   public constructor() {
     super();
   }
 
-  firstUpdated(): void {
-    // todo - infinite loop troubleshooting
-    // this.deserializeComposeValue();
-    this.setFocusOnChatbox();
-  }
-
-  // private deserializeComposeValue(): void{
-  //   console.log('deserializeComposeValue this.value', this.value);
-  //   this.composeValue = JSON.parse(this.value) as ComposeValue;
-  //   if (this.chatbox) {
-  //     this.currentText = this.composeValue.text;
-  //     this.requestUpdate('currentText');
-  //   }
-  //   if(this.attachments){
-  //     this.currentAttachments = this.composeValue.attachments;
-  //     this.requestUpdate('currentAttachments');
-  //   }
-  // }
-
-  private setFocusOnChatbox(): void {
-    if (this.chatbox) {
-      const completion = this.shadowRoot.querySelector(
-        'temba-completion'
-      ) as Completion;
-      if (completion) {
-        // todo - infinite loop troubleshooting
-        // completion.setValue(this.composeValue.text);
-
-        //simulate a click inside the completion to set focus
-        window.setTimeout(() => {
-          const textInput = completion.textInputElement;
-          const inputElement = textInput.inputElement;
-          inputElement.focus();
-        }, 0);
-      }
+  private deserializeComposeValue(): void {
+    if (this.value) {
+      this.composeValue = JSON.parse(this.value) as ComposeValue;
     }
-  }
-
-  public updated(changes: Map<string, any>): void {
-    super.updated(changes);
-
-    if (changes.has('currentText') || changes.has('currentAttachments')) {
-      this.toggleButton();
-      this.serializeComposeValue();
+    if (this.chatbox) {
+      this.currentText = this.composeValue.text;
+    }
+    if (this.attachments) {
+      this.currentAttachments = this.composeValue.attachments;
     }
   }
 
@@ -299,6 +264,41 @@ export class Compose extends FormElement {
     super.setValue(this.value);
   }
 
+  public firstUpdated(changes: Map<string, any>): void {
+    super.firstUpdated(changes);
+
+    this.deserializeComposeValue();
+    this.setFocusOnChatbox();
+  }
+
+  public updated(changes: Map<string, any>): void {
+    super.updated(changes);
+
+    if (changes.has('currentText') || changes.has('currentAttachments')) {
+      this.toggleButton();
+      this.setFocusOnChatbox();
+      this.serializeComposeValue();
+    }
+
+    if (changes.has('buttonError')) {
+      this.setFocusOnChatbox();
+    }
+  }
+
+  private setFocusOnChatbox(): void {
+    if (this.chatbox) {
+      const completion = this.shadowRoot.querySelector(
+        'temba-completion'
+      ) as Completion;
+      if (completion) {
+        //simulate a click inside the completion to set focus
+        window.setTimeout(() => {
+          completion.click();
+        }, 0);
+      }
+    }
+  }
+
   public reset(): void {
     this.currentText = '';
     this.currentAttachments = [];
@@ -306,18 +306,9 @@ export class Compose extends FormElement {
     this.buttonError = '';
   }
 
-  // todo - figure out why this is still being called even when
-  // todo - an overriding(?) click event does evt.stopPropagation()
-  private handleContainerClick(evt: Event) {
-    // console.log('handleContainerClick evt', evt);
-    // console.log('handleContainerClick target', evt.target);
-    this.setFocusOnChatbox();
-  }
-
   private handleChatboxChange(evt: Event) {
     const completion = evt.target as Completion;
-    const textInput = completion.textInputElement;
-    this.currentText = textInput.value;
+    this.currentText = completion.value;
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -358,14 +349,10 @@ export class Compose extends FormElement {
   }
 
   private handleUploadFileIconClicked(evt: Event): void {
-    // console.log('handleUploadFileIconClicked evt', evt);
-    // evt.stopPropagation();
     this.dispatchEvent(new Event('change'));
   }
 
   private handleUploadFileInputChanged(evt: Event): void {
-    // console.log('handleUploadFileInputChanged evt', evt);
-    // evt.stopPropagation();
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
@@ -416,8 +403,6 @@ export class Compose extends FormElement {
       })
       .finally(() => {
         this.uploading = false;
-        //after upload, return focus to chatbox
-        this.setFocusOnChatbox();
       });
   }
 
@@ -455,8 +440,6 @@ export class Compose extends FormElement {
   }
 
   private handleRemoveFileClicked(evt: Event): void {
-    // console.log('handleRemoveAttachmentClicked evt', evt);
-    // evt.stopPropagation();
     const target = evt.target as HTMLDivElement;
 
     const currentAttachmentToRemove = this.currentAttachments.find(
@@ -472,8 +455,6 @@ export class Compose extends FormElement {
     if (failedAttachmentToRemove) {
       this.removeFailedAttachment(failedAttachmentToRemove);
     }
-    //after remove, return focus to chatbox
-    this.setFocusOnChatbox();
   }
 
   public toggleButton() {
@@ -494,14 +475,12 @@ export class Compose extends FormElement {
   }
 
   private handleSendClick(evt: Event) {
-    // console.log('handleSendClick evt', evt);
-    // evt.stopPropagation();
+    console.log('handleSendClick evt', evt);
+    evt.stopPropagation();
     this.handleSend(evt);
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
-    // console.log('handleSendEnter evt', evt);
-    // evt.stopPropagation();
     if (evt.key === 'Enter' && !evt.shiftKey) {
       const chat = evt.target as Completion;
       if (!chat.hasVisibleOptions()) {
@@ -512,15 +491,10 @@ export class Compose extends FormElement {
   }
 
   private handleSend(evt: Event) {
-    // console.log('handleSend evt', evt);
-    // evt.stopPropagation();
     if (!this.buttonDisabled) {
       this.buttonDisabled = true;
       const name = this.buttonName;
       this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
-
-      //after send, return focus to chatbox
-      this.setFocusOnChatbox();
     }
   }
 
@@ -534,7 +508,6 @@ export class Compose extends FormElement {
       >
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
-          @click="${this.handleContainerClick}"
           @dragenter="${this.handleDragEnter}"
           @dragover="${this.handleDragOver}"
           @dragleave="${this.handleDragLeave}"

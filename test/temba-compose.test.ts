@@ -397,7 +397,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       counter: true,
       button: true,
     });
-    updateComponent(compose, getSuccessText());
+    updateComponent(compose, getValidText());
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-no-files',
       getClip(compose)
@@ -411,7 +411,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       counter: true,
       button: true,
     });
-    updateComponent(compose, getSuccessText());
+    updateComponent(compose, getValidText());
     const send = compose.shadowRoot.querySelector(
       'temba-button#send-button'
     ) as Button;

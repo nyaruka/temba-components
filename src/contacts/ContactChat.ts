@@ -268,15 +268,16 @@ export class ContactChat extends ContactStoreElement {
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
-        const text = compose.currentText;
-        if (text.length > 0) {
+        const text = compose.composeValue.text;
+        if (text && text.length > 0) {
           payload['text'] = text;
         }
-        const attachments = compose.values.map(attachment => {
-          return attachment.uuid;
-        });
-        if (attachments.length > 0) {
-          payload['attachments'] = attachments;
+        const attachments = compose.composeValue.attachments;
+        if (attachments && attachments.length > 0) {
+          const attachment_uuids = attachments.map(
+            attachment => attachment.uuid
+          );
+          payload['attachments'] = attachment_uuids;
         }
       }
       if (this.currentTicket) {
