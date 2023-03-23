@@ -1,4 +1,4 @@
-import { html, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Checkbox } from '../checkbox/Checkbox';
 import { Select } from '../select/Select';
@@ -25,6 +25,26 @@ export class RunList extends TembaList {
   selectedRun: any;
 
   private resultKeys = {};
+
+  static get styles() {
+    return css`
+      :host {
+        overflow-y: auto !important;
+      }
+
+      @media only screen and (max-height: 768px) {
+        temba-options {
+          max-height: 20vh;
+        }
+      }
+
+      temba-options {
+        display: block;
+        width: 100%;
+        flex-grow: 1;
+      }
+    `;
+  }
 
   public firstUpdated(changedProperties: Map<string, any>) {
     super.firstUpdated(changedProperties);
@@ -294,9 +314,7 @@ export class RunList extends TembaList {
 
         ${resultKeys.length > 0
           ? html`
-              <div
-                style="padding:1em;overflow-y:auto;overflow-x:hidden;max-height:15vh;"
-              >
+              <div style="padding:1em;">
                 <div
                   style="display:flex;font-size:1.2em;position:relative;right:0px"
                 >
