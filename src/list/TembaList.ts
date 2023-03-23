@@ -79,9 +79,6 @@ export class TembaList extends RapidElement {
 
   static get styles() {
     return css`
-      :host {
-      }
-
       temba-options {
         display: block;
         width: 100%;
