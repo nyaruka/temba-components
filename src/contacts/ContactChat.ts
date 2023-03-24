@@ -268,11 +268,11 @@ export class ContactChat extends ContactStoreElement {
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
-        const text = compose.composeValue.text;
+        const text = compose.currentText;
         if (text && text.length > 0) {
           payload['text'] = text;
         }
-        const attachments = compose.composeValue.attachments;
+        const attachments = compose.currentAttachments;
         if (attachments && attachments.length > 0) {
           const attachment_uuids = attachments.map(
             attachment => attachment.uuid
