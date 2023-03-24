@@ -22,11 +22,6 @@ export interface Attachment {
   error: string;
 }
 
-interface ComposeValue {
-  text: string;
-  attachments: Attachment[];
-}
-
 export const upload_endpoint = '/api/v2/media.json';
 
 export class Compose extends FormElement {
@@ -236,32 +231,34 @@ export class Compose extends FormElement {
   @property({ type: String })
   value = '';
 
-  @property({ type: Object })
-  composeValue: ComposeValue = { text: '', attachments: [] };
-
   public constructor() {
     super();
   }
 
   private deserializeComposeValue(): void {
     if (this.value) {
-      this.composeValue = JSON.parse(this.value) as ComposeValue;
-    }
-    if (this.chatbox) {
-      this.currentText = this.composeValue.text;
-    }
-    if (this.attachments) {
-      this.currentAttachments = this.composeValue.attachments;
+      const parsed_value = JSON.parse(this.value);
+      if (this.chatbox) {
+        this.currentText = parsed_value.text;
+      }
+      if (this.attachments) {
+        this.currentAttachments = parsed_value.attachments;
+      }
     }
   }
 
   private serializeComposeValue(): void {
-    this.composeValue = {
+    const composeValue = {
       text: this.currentText,
       attachments: this.currentAttachments,
-    } as ComposeValue;
-    this.value = super.serializeValue(this.composeValue);
-    super.setValue(this.value);
+    };
+    const stringified_value = JSON.stringify(composeValue);
+    // update this.value...
+    this.value = stringified_value;
+    // and then also update this.values...
+    // but leave this un-stringified, because FormElement
+    // takes care of serializing (stringifying) this.values and updating the hidden input(s)
+    super.setValue(composeValue);
   }
 
   public firstUpdated(changes: Map<string, any>): void {
