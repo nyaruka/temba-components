@@ -252,9 +252,8 @@ export class Compose extends FormElement {
       text: this.currentText,
       attachments: this.currentAttachments,
     };
-    const stringified_value = JSON.stringify(composeValue);
     // update this.value...
-    this.value = stringified_value;
+    this.value = JSON.stringify(composeValue);
     // and then also update this.values...
     // so that the hidden input is updated via FormElement.updateInputs()
     this.values = [composeValue];
