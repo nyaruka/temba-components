@@ -345,7 +345,7 @@ export class Compose extends FormElement {
     this.preventDefaults(evt);
   }
 
-  private handleUploadFileIconClicked(evt: Event): void {
+  private handleUploadFileIconClicked(): void {
     this.dispatchEvent(new Event('change'));
   }
 
@@ -472,22 +472,21 @@ export class Compose extends FormElement {
   }
 
   private handleSendClick(evt: Event) {
-    console.log('handleSendClick evt', evt);
     evt.stopPropagation();
-    this.handleSend(evt);
+    this.handleSend();
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
     if (evt.key === 'Enter' && !evt.shiftKey) {
       const chat = evt.target as Completion;
       if (!chat.hasVisibleOptions()) {
-        this.handleSend(evt);
+        this.handleSend();
       }
       this.preventDefaults(evt);
     }
   }
 
-  private handleSend(evt: Event) {
+  private handleSend() {
     if (!this.buttonDisabled) {
       this.buttonDisabled = true;
       const name = this.buttonName;
