@@ -256,9 +256,8 @@ export class Compose extends FormElement {
     // update this.value...
     this.value = stringified_value;
     // and then also update this.values...
-    // but leave this un-stringified, because FormElement
-    // takes care of serializing (stringifying) this.values and updating the hidden input(s)
-    super.setValue(composeValue);
+    // so that the hidden input is updated via FormElement.updateInputs()
+    this.values = [composeValue];
   }
 
   public firstUpdated(changes: Map<string, any>): void {
