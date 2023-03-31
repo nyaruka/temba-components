@@ -178,7 +178,6 @@ export class Compose extends FormElement {
     `;
   }
 
-  // todo - rename to textbox?
   @property({ type: Boolean })
   chatbox: boolean;
 
@@ -194,7 +193,6 @@ export class Compose extends FormElement {
   @property({ type: Boolean })
   button: boolean;
 
-  // todo - rename to text?
   @property({ type: String })
   currentText = '';
 
