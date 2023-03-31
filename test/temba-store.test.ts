@@ -4,7 +4,7 @@ import './utils.test';
 
 const createStore = async (def: string): Promise<Store> => {
   const store = (await fixture(def)) as Store;
-  await store.httpComplete;
+  await store.initialHttpComplete;
   return store;
 };
 

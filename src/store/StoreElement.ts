@@ -1,4 +1,4 @@
-import { PropertyValueMap } from 'lit';
+import { html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -11,6 +11,9 @@ import { Store } from './Store';
 export class StoreElement extends RapidElement {
   @property({ type: String })
   url: string;
+
+  @property({ type: Boolean })
+  showLoading = false;
 
   @property({ type: Object, attribute: false })
   data: any;
@@ -29,11 +32,12 @@ export class StoreElement extends RapidElement {
   }
 
   private handleStoreUpdated(event: CustomEvent) {
-    if (event.detail.url === this.url) {
-      this.data = event.detail.data;
-      this.fireCustomEvent(CustomEventType.Refreshed, { data: this.data });
-      // console.log("Updated!", this.data);
-    }
+    this.store.initialHttpComplete.then(() => {
+      if (event.detail.url === this.url) {
+        this.data = event.detail.data;
+        this.fireCustomEvent(CustomEventType.Refreshed, { data: this.data });
+      }
+    });
   }
 
   protected updated(
@@ -67,6 +71,12 @@ export class StoreElement extends RapidElement {
         CustomEventType.StoreUpdated,
         this.handleStoreUpdated
       );
+    }
+  }
+
+  public render(): TemplateResult {
+    if (!this.store.ready && this.showLoading) {
+      return html`<temba-loading></temba-loading>`;
     }
   }
 }

@@ -1003,12 +1003,7 @@ export class TembaMenu extends RapidElement {
 
   public render(): TemplateResult {
     if (!this.root || !this.root.items) {
-      return html`<temba-loading
-        units="3"
-        size="10"
-        direction="column"
-        style="margin:1em;margin-right:0em"
-      />`;
+      return null;
     }
 
     let items = this.root.items || [];

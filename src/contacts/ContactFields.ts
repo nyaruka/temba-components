@@ -184,6 +184,6 @@ export class ContactFields extends ContactStoreElement {
       `;
     }
 
-    return null;
+    return super.render();
   }
 }
