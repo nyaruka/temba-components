@@ -21,13 +21,35 @@ import {
 import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
 import { DateTime } from 'luxon';
+import { css, html } from 'lit';
 
 export class Store extends RapidElement {
+  public static get styles() {
+    return css`
+      :host {
+        position: fixed;
+        z-index: 1000;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        top: 0.5em;
+      }
+    `;
+  }
+
   @property({ type: Number })
   ttl = 60000;
 
   @property({ type: Number })
   max = 20;
+
+  @property({ type: Boolean })
+  ready = false;
+
+  @property({ type: Boolean })
+  loader = false;
 
   @property({ type: String, attribute: 'completion' })
   completionEndpoint: string;
@@ -65,7 +87,7 @@ export class Store extends RapidElement {
   private featuredFields: ContactField[] = [];
 
   // http promise to monitor for completeness
-  public httpComplete: Promise<void | WebResponse[]>;
+  public initialHttpComplete: Promise<void | WebResponse[]>;
 
   private cache: any;
 
@@ -151,7 +173,11 @@ export class Store extends RapidElement {
       );
     }
 
-    this.httpComplete = Promise.all(fetches);
+    this.initialHttpComplete = Promise.all(fetches);
+
+    this.initialHttpComplete.then(() => {
+      this.ready = true;
+    });
   }
 
   public firstUpdated() {
@@ -379,6 +405,12 @@ export class Store extends RapidElement {
         this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
         delete this.fetching[url];
       });
+    }
+  }
+
+  public render() {
+    if (!this.ready && this.loader) {
+      return html`<temba-loading size="10" units="8"></temba-loading>`;
     }
   }
 }

@@ -231,8 +231,8 @@ export const loadStore = async () => {
       fields='/test-assets/store/fields.json'
     />`
   );
-  await store.httpComplete;
-  await store.httpComplete;
+  await store.initialHttpComplete;
+  await store.initialHttpComplete;
 
   return store;
 };

@@ -24,8 +24,9 @@ export class ContactNameFetch extends ContactStoreElement {
       return html` <temba-contact-name
           name=${this.data.name || this.data.anon_display}
           urn=${this.data.urns.length > 0 ? this.data.urns[0] : null}
-        />
+        ></temba-contact-name>
         <slot></slot>`;
     }
+    return super.render();
   }
 }
