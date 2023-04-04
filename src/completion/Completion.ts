@@ -225,11 +225,11 @@ export class Completion extends FormElement {
     }
   }
 
-  public click() {
-    super.click();
+  public focus() {
+    super.focus();
     const input = this.shadowRoot.querySelector('temba-textinput') as TextInput;
     if (input) {
-      input.click();
+      input.focus();
     }
   }
 
