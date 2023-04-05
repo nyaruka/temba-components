@@ -310,6 +310,10 @@ export const executeCompletionQuery = (
     query: null,
   };
 
+  if (!ele) {
+    return;
+  }
+
   // we need a store to do anything useful
   if (!store) {
     return result;

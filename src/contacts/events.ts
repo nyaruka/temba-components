@@ -6,7 +6,6 @@ import {
   oxfordFn,
   oxfordNamed,
   renderAvatar,
-  timeSince,
 } from '../utils';
 import { Icon } from '../vectoricon';
 import { getDisplayName } from './helpers';
@@ -195,7 +194,7 @@ export const getEventStyles = () => {
     .event.msg_created,
     .event.broadcast_created,
     .event.ivr_created,
-    .tickets .event.ticket_note_added {
+    .event.ticket_note_added {
       align-self: flex-end;
     }
 
@@ -255,11 +254,11 @@ export const getEventStyles = () => {
       background: rgba(10, 10, 10, 0.02);
     }
 
-    .tickets .ticket_note_added {
+    .ticket_note_added {
       max-width: 300px;
     }
 
-    .tickets .note-summary {
+    .note-summary {
       display: flex;
       flex-direction: row;
       font-size: 85%;
@@ -268,11 +267,13 @@ export const getEventStyles = () => {
       padding: 8px 3px;
     }
 
-    .tickets .ticket_note_added .description {
+    .ticket_note_added .description {
       border: 2px solid rgba(100, 100, 100, 0.1);
       background: rgb(255, 249, 194);
       padding: var(--event-padding);
-      border-radius: 8px;
+      font-weight: 400;
+      color: rgba(0, 0, 0, 0.6);
+      border-radius: calc(var(--curvature) * 2.5);
     }
 
     .channel_event {
@@ -292,14 +293,6 @@ export const getEventStyles = () => {
 
     .active-ticket.ticket_opened {
       padding: 0em 1em;
-    }
-
-    .ticket_opened temba-icon.clickable[name='check'] {
-      --icon-color: rgba(100, 100, 100, 1);
-    }
-
-    .ticket_opened .active {
-      color: var(--color-text);
     }
 
     .ticket_closed .inactive .subtext {
@@ -476,8 +469,6 @@ export const getEventStyles = () => {
   `;
 };
 
-const FLOW_USER_ID = 'flow';
-
 export interface EventGroup {
   type: string;
   events: ContactEvent[];
@@ -641,9 +632,9 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   if (!event) {
     return 'messages';
   }
+
   switch (event.type) {
     case Events.TICKET_ASSIGNED:
-    case Events.TICKET_NOTE_ADDED:
     case Events.TICKET_OPENED:
     case Events.TICKET_CLOSED:
     case Events.TICKET_REOPENED:
@@ -663,6 +654,8 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
     case Events.MESSAGE_CREATED:
     case Events.MESSAGE_RECEIVED:
     case Events.IVR_CREATED:
+    case Events.TICKET_NOTE_ADDED:
+    case Events.NOTE_CREATED:
       return 'messages';
   }
   return 'verbose';
@@ -826,11 +819,9 @@ export const renderMsgEvent = (
       </div>
     </div>
 
-    ${!isInbound
+    ${!isInbound && event.msg.created_by
       ? html`<div style="margin-left:0.8em;margin-top:0.3em;font-size:0.9em">
-          ${event.msg.created_by
-            ? renderUserAvatar(event.msg.created_by)
-            : renderUserAvatar(null)}
+          ${renderUserAvatar(event.msg.created_by)}
         </div>`
       : null}
   </div>`;
@@ -953,7 +944,7 @@ export const renderLabelsAdded = (event: LabelsAddedEvent): TemplateResult => {
 };
 
 export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
-  return html`<div style="display:flex;align-items:flex-start">
+  return html` <div style="display:flex;align-items:flex-start">
     <div style="display:flex;flex-direction:column">
       <div class="description">${event.note}</div>
       <div class="note-summary">
@@ -996,7 +987,7 @@ export const renderTicketAction = (
         <span
           onclick="goto(event)"
           class="linked"
-          href="/ticket/all/open/${event.ticket.uuid}"
+          href="/ticket/all/open/${event.ticket.uuid}/"
         >
           ticket
         </span>
@@ -1007,12 +998,14 @@ export const renderTicketAction = (
   return html`
     <div class="assigned active">
       <div style="text-align:center">
-        ${getDisplayName(event.created_by)} ${action} this ticket
+        ${event.created_by
+          ? html` ${getDisplayName(event.created_by)} ${action} this ticket `
+          : html` This ticket was ${action} `}
       </div>
       <div class="subtext" style="justify-content:center">
         <temba-date
           class="time"
-          value="${reopened}"
+          value="${event.created_on}"
           display="duration"
         ></temba-date>
       </div>
@@ -1065,30 +1058,18 @@ export const renderTicketOpened = (
     </div>`;
   } else {
     return html`
-      <temba-icon size="1.5" name="${icon}"></temba-icon>
-
-      <div class="active" style="flex-grow:1;">
-        Opened
-        <div class="attn">
-          ${event.ticket.topic ? event.ticket.topic.name : 'General'}
+      <div>
+        <div style="text-align:center">
+          ${getDisplayName(event.created_by)} opened this ticket
         </div>
-        <div class="subtext">${timeSince(new Date(event.created_on))}</div>
+        <div class="subtext" style="justify-content:center">
+          <temba-date
+            class="time"
+            value="${event.created_on}"
+            display="duration"
+          ></temba-date>
+        </div>
       </div>
-      ${handleClose
-        ? html`
-            <temba-tip text="Resolve" position="left" style="width:1.5em">
-              <temba-icon
-                class="clickable"
-                size="1.5"
-                name="${Icon.check}"
-                @click=${() => {
-                  handleClose(event.ticket.uuid);
-                }}
-                ?clickable=${open}
-              />
-            </temba-tip>
-          `
-        : null}
     `;
   }
 };

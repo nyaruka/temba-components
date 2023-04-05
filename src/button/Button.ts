@@ -12,6 +12,12 @@ export class Button extends LitElement {
         font-weight: 400;
       }
 
+      .small {
+        font-size: 0.8em;
+        --button-y: 0px;
+        --button-x: 0.5em;
+      }
+
       .v-2.button-container {
         background: var(--button-bg);
         background-image: var(--button-bg-img);
@@ -172,6 +178,9 @@ export class Button extends LitElement {
   @property({ type: Boolean })
   active: boolean;
 
+  @property({ type: Boolean })
+  small: boolean;
+
   @property({ type: String })
   href: string;
 
@@ -231,6 +240,7 @@ export class Button extends LitElement {
           'attention-button': this.attention,
           'destructive-button': this.destructive,
           'light-button': this.light,
+          small: this.small,
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}
