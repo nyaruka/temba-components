@@ -47,7 +47,7 @@ export enum Icon {
   group = 'users-01',
   group_smart = 'atom-01',
   help = 'help-circle',
-  home = 'home-01',
+  home = 'settings-02',
   inbox = 'inbox-01',
   label = 'tag-01',
   language = 'globe-01',
