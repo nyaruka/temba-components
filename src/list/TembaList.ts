@@ -341,8 +341,6 @@ export class TembaList extends RapidElement {
       } catch (error) {
         // aborted
         this.reset();
-
-        console.log('error, resetting');
         console.log(error);
         return;
       }

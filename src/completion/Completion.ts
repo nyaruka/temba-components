@@ -169,6 +169,9 @@ export class Completion extends FormElement {
 
   private executeQuery(ele: TextInput) {
     const store: Store = document.querySelector('temba-store');
+    if (!ele.inputElement) {
+      return;
+    }
     const result = executeCompletionQuery(
       ele.inputElement,
       store,

@@ -152,10 +152,14 @@ export const getAssetPage = (url: string): Promise<AssetPage> => {
   return new Promise<AssetPage>((resolve, reject) => {
     getUrl(url)
       .then((response: WebResponse) => {
-        resolve({
-          assets: response.json.results,
-          next: response.json.next,
-        });
+        if (response.status >= 200 && response.status < 300) {
+          resolve({
+            assets: response.json.results,
+            next: response.json.next,
+          });
+        } else {
+          reject(response);
+        }
       })
       .catch(error => reject(error));
   });
@@ -170,8 +174,12 @@ export const getAssets = async (url: string): Promise<Asset[]> => {
   let pageUrl = url;
   while (pageUrl) {
     const assetPage = await getAssetPage(pageUrl);
-    assets = assets.concat(assetPage.assets);
-    pageUrl = assetPage.next;
+    if (assetPage.assets) {
+      assets = assets.concat(assetPage.assets);
+      pageUrl = assetPage.next;
+    } else {
+      pageUrl = null;
+    }
   }
   return assets;
 };

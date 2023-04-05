@@ -41,9 +41,15 @@ export class TembaDate extends RapidElement {
     changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changedProperties);
+    this.store = document.querySelector('temba-store');
+  }
+
+  protected updated(
+    changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.updated(changedProperties);
     if (changedProperties.has('value')) {
       this.datetime = DateTime.fromISO(this.value);
-      this.store = document.querySelector('temba-store');
     }
   }
 
