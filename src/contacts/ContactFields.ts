@@ -1,6 +1,6 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { postJSON } from '../utils';
+import { getClasses, postJSON } from '../utils';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Checkbox } from '../checkbox/Checkbox';
@@ -11,11 +11,9 @@ export class ContactFields extends ContactStoreElement {
   static get styles() {
     return css`
       :host {
-        --curvature-widget: 0px;
       }
 
       .fields {
-        box-shadow: var(--widget-box-shadow);
       }
 
       .field {
@@ -66,12 +64,15 @@ export class ContactFields extends ContactStoreElement {
       temba-contact-field {
       }
 
-      .footer {
-        margin-bottom: 0;
+      .toggle {
         display: flex;
         background: #fff;
         align-items: center;
-        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+      }
+
+      .disabled .toggle {
+        display: none;
       }
     `;
   }
@@ -90,6 +91,9 @@ export class ContactFields extends ContactStoreElement {
 
   @property({ type: String })
   timezone: string;
+
+  @property({ type: Boolean })
+  disabled = false;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -160,27 +164,32 @@ export class ContactFields extends ContactStoreElement {
           type=${field.value_type}
           @change=${this.handleFieldChanged}
           timezone=${this.timezone}
+          ?disabled=${this.disabled}
         ></temba-contact-field>`;
       });
 
       return html`
-        <div class="fields ${this.showAll || this.featured ? 'show-all' : ''}">
-          ${fields}
-        </div>
+        <div class=${getClasses({ disabled: this.disabled })}>
+          ${!this.featured &&
+          Object.keys(this.data.fields).length >= MIN_FOR_FILTER
+            ? html`<div class="toggle">
+                <div style="flex-grow: 1"></div>
+                <div>
+                  <temba-checkbox
+                    ?checked=${this.showAll}
+                    @change=${this.handleToggle}
+                    label="Show All"
+                  />
+                </div>
+              </div>`
+            : null}
 
-        ${!this.featured &&
-        Object.keys(this.data.fields).length >= MIN_FOR_FILTER
-          ? html`<div class="footer">
-              <div style="flex-grow: 1"></div>
-              <div>
-                <temba-checkbox
-                  ?checked=${this.showAll}
-                  @change=${this.handleToggle}
-                  label="Show All"
-                />
-              </div>
-            </div>`
-          : null}
+          <div
+            class="fields ${this.showAll || this.featured ? 'show-all' : ''}"
+          >
+            ${fields}
+          </div>
+        </div>
       `;
     }
 
