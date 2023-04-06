@@ -138,7 +138,7 @@ export class TembaList extends RapidElement {
       this.refreshTop();
     }
 
-    if (changedProperties.has('mostRecentItem')) {
+    if (changedProperties.has('mostRecentItem') && this.mostRecentItem) {
       this.fireCustomEvent(CustomEventType.Refreshed);
     }
 
