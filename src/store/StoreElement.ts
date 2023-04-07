@@ -34,8 +34,12 @@ export class StoreElement extends RapidElement {
   private handleStoreUpdated(event: CustomEvent) {
     this.store.initialHttpComplete.then(() => {
       if (event.detail.url === this.url) {
+        const previous = this.data;
         this.data = event.detail.data;
-        this.fireCustomEvent(CustomEventType.Refreshed, { data: this.data });
+        this.fireCustomEvent(CustomEventType.Refreshed, {
+          data: event.detail.data,
+          previous,
+        });
       }
     });
   }
@@ -47,6 +51,8 @@ export class StoreElement extends RapidElement {
     if (properties.has('url')) {
       if (this.url) {
         this.store.makeRequest(this.url, { prepareData: this.prepareData });
+      } else {
+        this.data = null;
       }
     }
   }

@@ -598,11 +598,17 @@ export class Options extends RapidElement {
     }
 
     const containerStyle = {
-      top: this.top ? `${this.top}px` : '0px',
-      left: this.left ? `${this.left}px` : '0px',
       'margin-left': `${this.marginHorizontal}px`,
       'margin-top': `${vertical}px`,
     };
+
+    if (this.top) {
+      containerStyle['top'] = `${this.top}px`;
+    }
+
+    if (this.left) {
+      containerStyle['left'] = `${this.left}px`;
+    }
 
     const optionsStyle = {};
     if (this.width) {

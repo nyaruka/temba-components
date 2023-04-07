@@ -1,12 +1,19 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Ticket, TicketStatus } from '../interfaces';
+import { CustomEventType, Ticket, TicketStatus } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
+import { getClasses, postJSON, renderAvatar } from '../utils';
 import { Icon } from '../vectoricon';
 
 export class ContactTickets extends StoreElement {
   @property({ type: String })
   contact: string;
+
+  @property({ type: String })
+  ticket: string;
+
+  @property({ type: Boolean })
+  clickable = false;
 
   @property({ type: Object, attribute: false })
   data: Ticket[];
@@ -14,13 +21,12 @@ export class ContactTickets extends StoreElement {
   static get styles() {
     return css`
       :host {
-        padding: 1em;
       }
 
       :hover {
       }
 
-      .ticket:hover {
+      .ticket.clickable:hover {
         cursor: pointer;
         box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
           0 0 0px 2px var(--color-link-primary);
@@ -36,6 +42,7 @@ export class ContactTickets extends StoreElement {
       }
 
       .ticket {
+        background: #fff;
         display: flex;
         margin-bottom: 0.5em;
         border-radius: var(--curvature);
@@ -49,7 +56,15 @@ export class ContactTickets extends StoreElement {
       .ticket .body {
         flex-grow: 1;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        padding: 0.1em;
+      }
+
+      .date {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
         padding: 0.1em;
@@ -57,7 +72,6 @@ export class ContactTickets extends StoreElement {
 
       .ticket > div {
         padding: 0.5em 1em;
-        pointer-events: none;
       }
 
       .status {
@@ -67,6 +81,11 @@ export class ContactTickets extends StoreElement {
       .ticket.closed {
         background: #f9f9f9;
         color: #888;
+      }
+
+      .resolve {
+        margin-right: 1em;
+        color: var(--color-primary-dark);
       }
     `;
   }
@@ -103,38 +122,100 @@ export class ContactTickets extends StoreElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
-    if (changes.has('contact')) {
+    if (changes.has('contact') || changes.has('ticket')) {
       if (this.contact) {
-        this.url = `/api/v2/tickets.json?contact=${this.contact}`;
+        this.url = `/api/v2/tickets.json?contact=${this.contact}${
+          this.ticket ? '&ticket=' + this.ticket : ''
+        }`;
       } else {
         this.url = null;
       }
     }
   }
 
+  private handleClose(uuid: string) {
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'close',
+    })
+      .then(() => {
+        this.refresh();
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
+  private handleReopen(uuid: string) {
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'reopen',
+    })
+      .then(() => {
+        this.refresh();
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
   public renderTicket(ticket: Ticket) {
-    const date =
-      ticket.status === TicketStatus.Open ? ticket.opened_on : ticket.closed_on;
+    const date = ticket.opened_on;
     return html`
       <div
-        class="ticket ${ticket.status}"
-        href="/ticket/all/open/${ticket.uuid}"
-        onclick="goto(event)"
+        @click=${() => {
+          if (this.clickable) {
+            this.fireCustomEvent(CustomEventType.ButtonClicked, { ticket });
+          }
+        }}
+        class="ticket ${ticket.status} ${getClasses({
+          clickable: this.clickable,
+        })}"
       >
         <div class="topic">${ticket.topic.name}</div>
         <div class="body">${ticket.body}</div>
 
         <div class="date">
-          <temba-tip direction="left" text=${this.store.formatDate(date)}>
-            ${this.store.getShortDurationFromIso(date)}
-          </temba-tip>
+          <temba-date value="${date}" display="duration"></temba-date>
         </div>
 
         ${ticket.status === TicketStatus.Closed
-          ? html`<div class="status">
-              <temba-icon name="${Icon.check}"></temba-icon>
+          ? html`<div class="reopen">
+              <temba-button
+                primary
+                small
+                name="Reopen"
+                @click=${(event: MouseEvent) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  this.handleReopen(ticket.uuid);
+                }}
+              ></temba-button>
             </div>`
-          : null}
+          : html`
+              <div style="font-size:.5em">
+                ${ticket.assignee
+                  ? renderAvatar({ name: ticket.assignee.name })
+                  : null}
+              </div>
+              <temba-tip
+                text="Resolve"
+                position="left"
+                style="width:1.5em"
+                class="resolve"
+              >
+                <temba-icon
+                  size="1.25"
+                  name="${Icon.check}"
+                  @click=${(event: MouseEvent) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.handleClose(ticket.uuid);
+                  }}
+                  ?clickable=${open}
+                />
+              </temba-tip>
+            `}
       </div>
     `;
   }
@@ -144,7 +225,6 @@ export class ContactTickets extends StoreElement {
       const tickets = this.data.map(ticket => {
         return this.renderTicket(ticket);
       });
-
       return html`${tickets}`;
     }
 

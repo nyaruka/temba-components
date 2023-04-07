@@ -17,11 +17,13 @@ export default class DatePicker extends FormElement {
         display: flex;
         cursor: pointer;
         box-shadow: var(--widget-box-shadow);
+        flex-wrap: wrap;
+        overflow: hidden;
       }
 
       .input-wrapper {
         padding: var(--temba-textinput-padding);
-        flex-grow: 1;
+        flex-grow: 20;
       }
 
       .tz {
@@ -36,7 +38,7 @@ export default class DatePicker extends FormElement {
         padding: 0em 1em;
         font-weight: 400;
         cursor: pointer;
-        margin: auto;
+        margin: auto 0;
       }
 
       .tz .label {
@@ -53,11 +55,11 @@ export default class DatePicker extends FormElement {
 
       .tz-wrapper {
         background: #efefef;
-        border-top-right-radius: var(--curvature);
-        border-bottom-right-radius: var(--curvature);
         display: flex;
         flex-direction: row;
         align-items: center;
+        flex-grow: 1;
+        padding: 0.4em 0em;
       }
 
       .container:focus-within {
@@ -89,6 +91,14 @@ export default class DatePicker extends FormElement {
 
       input:focus {
         outline: none;
+      }
+
+      .disabled ::-webkit-calendar-picker-indicator {
+        display: none;
+      }
+
+      .disabled .tz-wrapper {
+        border-radius: var(--curvature);
       }
 
       ::-webkit-calendar-picker-indicator {
@@ -202,6 +212,7 @@ export default class DatePicker extends FormElement {
 
     return html`
       <temba-field
+        class=${getClasses({ disabled: this.disabled })}
         name=${this.name}
         .label="${this.label}"
         .helpText="${this.helpText}"
