@@ -247,7 +247,13 @@ export class ContactTickets extends StoreElement {
       });
   }
 
-  private handleTicketAssignment(uuid: string, email: string) {
+  public handleTicketAssignment(uuid: string, email: string) {
+    // if its already assigned to use, it's a noop
+    const ticket = this.data.find(ticket => ticket.uuid === uuid);
+    if (ticket.assignee && ticket.assignee.email === email) {
+      return;
+    }
+
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
       action: 'assign',
