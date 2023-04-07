@@ -76,11 +76,11 @@ export class TicketList extends TembaList {
               style="font-size:0.8em;display:flex;flex-direction:column;align-items:flex-end;max-width:60px;min-width:30px;border:0px solid green;text-align:right"
             >
               <div style="padding:4px;padding-bottom:2px">
-                ${timeSince(
-                  new Date(
-                    contact.ticket.closed_on || contact.ticket.last_activity_on
-                  )
-                )}
+                <temba-date
+                  value=${contact.ticket.closed_on ||
+                  contact.ticket.last_activity_on}
+                  display="duration"
+                ></temba-date>
               </div>
               <div style="font-size:0.7em;">
                 ${!contact.ticket.closed_on && contact.ticket.assignee
