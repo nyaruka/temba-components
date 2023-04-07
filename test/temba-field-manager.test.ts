@@ -33,7 +33,6 @@ describe('temba-field-manager', () => {
     (fm.shadowRoot.querySelector('#search') as TextInput).focus();
     fm.query = 'at';
     await fm.updateComplete;
-
     expect(fm.featuredFields.length).to.equal(1);
     expect(fm.otherFieldKeys.length).to.equal(2);
     await assertScreenshot('list/fields-filtered', getClip(fm));
