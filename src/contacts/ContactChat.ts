@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Contact, Ticket } from '../interfaces';
+import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { COOKIE_KEYS, getCookieBoolean, postJSON } from '../utils';
 import { ContactHistory } from './ContactHistory';
 import { ContactStoreElement } from './ContactStoreElement';
@@ -204,6 +204,7 @@ export class ContactChat extends ContactStoreElement {
           if (response.status < 400) {
             compose.reset();
             this.refresh(true);
+            this.fireCustomEvent(CustomEventType.MessageSent, { msg: payload });
           } else if (response.status < 500) {
             if (
               response.json.text &&
