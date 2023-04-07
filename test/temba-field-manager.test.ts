@@ -1,6 +1,7 @@
-import { fixture } from '@open-wc/testing';
+import { expect, fixture } from '@open-wc/testing';
 import { html } from 'lit';
 import { FieldManager } from '../src/fields/FieldManager';
+import { TextInput } from '../src/textinput/TextInput';
 import {
   assertScreenshot,
   getAttributes,
@@ -29,8 +30,12 @@ describe('temba-field-manager', () => {
   it('filters', async () => {
     await loadStore();
     const fm: FieldManager = await getEle();
-    (fm.shadowRoot.querySelector('#search') as HTMLDivElement).click();
-    await type('at');
+    (fm.shadowRoot.querySelector('#search') as TextInput).focus();
+    fm.query = 'at';
+    await fm.updateComplete;
+
+    expect(fm.featuredFields.length).to.equal(1);
+    expect(fm.otherFieldKeys.length).to.equal(2);
     await assertScreenshot('list/fields-filtered', getClip(fm));
   });
 

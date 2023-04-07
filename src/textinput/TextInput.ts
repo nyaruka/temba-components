@@ -318,6 +318,11 @@ export class TextInput extends FormElement {
     }
   }
 
+  public click(): void {
+    super.click();
+    this.handleContainerClick();
+  }
+
   public focus(): void {
     super.focus();
     this.handleContainerFocus();

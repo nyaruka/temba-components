@@ -4,6 +4,7 @@ import { ContactField, CustomEventType } from '../interfaces';
 
 import { SortableList } from '../list/SortableList';
 import { StoreElement } from '../store/StoreElement';
+import { TextInput } from '../textinput/TextInput';
 import { postJSON } from '../utils';
 
 const TYPE_NAMES = {
@@ -304,6 +305,7 @@ export class FieldManager extends StoreElement {
         placeholder="Search"
         @change=${this.handleSearch}
         clearable
+        value=${this.query}
       ></temba-textinput>
 
       ${this.featuredFields.length > 0
