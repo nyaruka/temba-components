@@ -2,8 +2,6 @@ import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
 import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
-import { CustomEventType } from '../src/interfaces';
-import { TicketList } from '../src/list/TicketList';
 import {
   assertScreenshot,
   clearMockPosts,
@@ -40,25 +38,6 @@ const getContactChat = async (attrs: any = {}) => {
   // TODO: this should be waiting for an event instead
   await waitFor(100);
   return chat;
-};
-
-const list_TAG = 'temba-list';
-const getTicketList = async (attrs: any = {}) => {
-  const list = (await getComponent(list_TAG, attrs)) as TicketList;
-
-  if (!list.endpoint) {
-    return list;
-  }
-
-  return new Promise<TicketList>(resolve => {
-    list.addEventListener(
-      CustomEventType.FetchComplete,
-      async () => {
-        resolve(list);
-      },
-      { once: true }
-    );
-  });
 };
 
 describe('temba-contact-chat - contact tests', () => {
@@ -465,126 +444,6 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     await assertScreenshot(
       'contacts/compose-text-and-attachments-failure-generic',
       getClip(chat)
-    );
-  });
-});
-
-describe('temba-contact-chat - ticket tests', () => {
-  // map requests for contact history to our static files
-  // we'll just us the same history for everybody for now
-  beforeEach(() => {
-    mockGET(
-      /\/contact\/history\/contact-.*/,
-      '/test-assets/contacts/history.json'
-    );
-
-    mockGET(/\/api\/v2\/tickets\.json.*/, '/test-assets/tickets/empty.json');
-    clock = useFakeTimers();
-  });
-
-  afterEach(function () {
-    clock.restore();
-  });
-
-  it('show history and show chatbox if contact is active and ticket is open', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-carter-active',
-    });
-
-    const tickets: TicketList = await getTicketList({
-      endpoint: '/test-assets/tickets/ticket-carter-open.json',
-    });
-
-    chat.currentTicket = tickets.items[0];
-    chat.refresh();
-    await chat.httpComplete;
-
-    // we want to wait until our scroll is finished before taking our screenshot
-    // once we have two scrollTops that are the same, we'll assume we're ready
-    let lastScroll = 0;
-    await assertScreenshot(
-      'contacts/contact-active-ticket-open-show-chatbox',
-      getClip(chat),
-      {
-        clock: clock,
-        predicate: () => {
-          const currentScroll = chat
-            .getContactHistory()
-            .getEventsPane().scrollTop;
-          if (currentScroll !== 0 && currentScroll === lastScroll) {
-            return true;
-          }
-          lastScroll = currentScroll;
-        },
-      }
-    );
-  });
-
-  it('show history and show reopen button if contact is active and ticket is closed', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-carter-active',
-    });
-
-    const tickets: TicketList = await getTicketList({
-      endpoint: '/test-assets/tickets/ticket-carter-closed.json',
-    });
-    chat.currentTicket = tickets.items[0];
-    chat.refresh();
-    await chat.httpComplete;
-
-    let lastScroll = 0;
-    await assertScreenshot(
-      'contacts/contact-active-ticket-closed-show-reopen-button',
-      getClip(chat),
-      {
-        clock: clock,
-        predicate: () => {
-          const currentScroll = chat
-            .getContactHistory()
-            .getEventsPane().scrollTop;
-          if (currentScroll !== 0 && currentScroll === lastScroll) {
-            return true;
-          }
-          lastScroll = currentScroll;
-        },
-      }
-    );
-  });
-
-  it('show history and hide chatbox if contact is archived and ticket is closed', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-barack-archived',
-    });
-
-    const tickets: TicketList = await getTicketList({
-      endpoint: '/test-assets/tickets/ticket-barack-closed.json',
-    });
-    chat.currentTicket = tickets.items[0];
-    chat.refresh();
-    await chat.httpComplete;
-    let lastScroll = 0;
-    await assertScreenshot(
-      'contacts/contact-archived-ticket-closed-hide-chatbox',
-      getClip(chat),
-      {
-        clock: clock,
-        predicate: () => {
-          const currentScroll = chat
-            .getContactHistory()
-            .getEventsPane().scrollTop;
-          if (currentScroll !== 0 && currentScroll === lastScroll) {
-            return true;
-          }
-          lastScroll = currentScroll;
-        },
-      }
     );
   });
 });

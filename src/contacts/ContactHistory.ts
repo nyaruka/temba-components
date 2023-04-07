@@ -90,15 +90,6 @@ export class ContactHistory extends RapidElement {
     this.shadowRoot.removeEventListener('load', loadHandler, true);
   }
 
-  private getStickyId = (event: ContactEvent) => {
-    if (event.type === Events.TICKET_OPENED) {
-      const ticket = this.getTicketForEvent(event as TicketEvent);
-      if (ticket && ticket.status === 'open') {
-        return ticket.uuid;
-      }
-    }
-  };
-
   private getTicketForEvent(event: TicketEvent) {
     return this.getTicket((event as TicketEvent).ticket.uuid);
   }
@@ -183,48 +174,6 @@ export class ContactHistory extends RapidElement {
         font-weight: 400;
       }
 
-      .sticky-bin {
-        border-top-left-radius: var(--curvature);
-        z-index: 2;
-        box-shadow: rgb(0 0 0 / 15%) 0px 3px 3px 0px;
-        background: rgb(240, 240, 240);
-      }
-
-      .sticky-bin temba-icon {
-        margin-right: 0.75em;
-      }
-
-      .sticky-bin temba-icon[name='check'] {
-        margin-right: 0;
-      }
-
-      .sticky {
-        display: flex;
-        margin: 1em -2em;
-        padding: 1em 2em;
-        background: rgba(240, 240, 240, 0.95);
-        border-bottom: 1px solid rgba(220, 220, 220, 1);
-      }
-
-      .sticky.featured {
-        visibility: hidden;
-      }
-
-      .sticky-bin .event {
-        margin: 0;
-        padding: 1em 2em;
-        border-radius: 0px;
-      }
-
-      .sticky .event {
-        margin-bottom: 0;
-      }
-
-      .sticky .attn,
-      .sticky-bin .attn {
-        color: var(--color-text);
-      }
-
       .attachment img {
         cursor: pointer;
       }
@@ -291,7 +240,11 @@ export class ContactHistory extends RapidElement {
     super.updated(changedProperties);
 
     // fire an event if we get a new event
-    if (changedProperties.has('mostRecentEvent')) {
+    if (
+      changedProperties.has('mostRecentEvent') &&
+      changedProperties.get('mostRecentEvent') &&
+      this.mostRecentEvent
+    ) {
       this.fireCustomEvent(CustomEventType.Refreshed);
     }
 
@@ -508,24 +461,6 @@ export class ContactHistory extends RapidElement {
       this.fetching = true;
       this.empty = true;
     }
-
-    // when our tickets change, make sure we don't have any manual pins
-    if (changedProperties.has('tickets')) {
-      const stickyBin = this.getDiv('.sticky-bin');
-
-      const closedTickets = (this.tickets || []).filter(
-        ticket => ticket && ticket.status === 'closed'
-      );
-
-      for (const closed of closedTickets) {
-        const child = stickyBin.querySelector(
-          `[data-sticky-id="${closed.uuid}"]`
-        );
-        if (child) {
-          stickyBin.removeChild(child);
-        }
-      }
-    }
   }
 
   private refreshTickets() {
@@ -624,14 +559,6 @@ export class ContactHistory extends RapidElement {
   }
 
   private reset() {
-    // clear out our sticky bin which we manipulated manually
-    const stickyBin = this.getDiv('.sticky-bin');
-    if (stickyBin) {
-      while (stickyBin.childElementCount > 0) {
-        stickyBin.removeChild(stickyBin.firstElementChild);
-      }
-    }
-
     this.endpoint = null;
     this.tickets = null;
     this.ticketEvents = {};
@@ -668,30 +595,6 @@ export class ContactHistory extends RapidElement {
 
   private handleScroll() {
     const events = this.getEventsPane();
-
-    // check if any of our sticky elements are off the screen
-    const stickies = this.getEventsPane().querySelectorAll('.sticky');
-    const stickyBin = this.getDiv('.sticky-bin');
-
-    stickies.forEach((sticky: HTMLDivElement) => {
-      const scrollBoundary = events.scrollTop + stickyBin.clientHeight + 136;
-      if (!sticky.classList.contains('featured')) {
-        const eventElement = sticky.firstElementChild as HTMLDivElement;
-        if (scrollBoundary > sticky.offsetTop) {
-          sticky.style.height = eventElement.clientHeight + 'px';
-          sticky.classList.add('featured');
-          (sticky as any).eventElement = eventElement;
-          stickyBin.appendChild(eventElement);
-        }
-      } else {
-        const eventElement = (sticky as any).eventElement;
-        if (scrollBoundary < sticky.offsetTop + sticky.offsetHeight) {
-          sticky.appendChild(eventElement);
-          sticky.classList.remove('featured');
-        }
-      }
-    });
-
     if (events.scrollTop <= SCROLL_THRESHOLD) {
       if (this.eventGroups.length > 0 && !this.fetching && !this.complete) {
         this.fetching = true;
@@ -750,16 +653,7 @@ export class ContactHistory extends RapidElement {
         return renderLabelsAdded(event as LabelsAddedEvent);
 
       case Events.TICKET_OPENED: {
-        const ticketEvent = event as TicketEvent;
-        const activeTicket =
-          !this.ticket || ticketEvent.ticket.uuid === this.ticket;
-
-        let closeHandler = null;
-        const ticket = this.getTicketForEvent(ticketEvent);
-        if (activeTicket && ticket && ticket.status === 'open') {
-          closeHandler = this.handleClose;
-        }
-        return renderTicketOpened(ticketEvent, closeHandler, !this.ticket);
+        return renderTicketAction(event as TicketEvent, 'opened', !this.ticket);
       }
       case Events.TICKET_NOTE_ADDED:
         return renderNoteCreated(event as TicketEvent);
@@ -869,26 +763,15 @@ export class ContactHistory extends RapidElement {
   }
 
   private renderEventContainer(event: ContactEvent) {
-    const stickyId = this.getStickyId(event);
-    const isSticky = !!stickyId;
-
     const renderedEvent = html`
       <div
         @click=${this.handleEventClicked}
-        class="${this.ticket
-          ? 'active-ticket'
-          : ''} event ${event.type} ${isSticky ? 'has-sticky' : ''}"
-        data-sticky-id="${stickyId}"
+        class="${this.ticket ? 'active-ticket' : ''} event ${event.type}"
       >
         ${this.renderEvent(event)}
       </div>
       ${this.debug ? html`<pre>${JSON.stringify(event, null, 2)}</pre>` : null}
     `;
-
-    if (stickyId) {
-      return html`<div class="sticky">${renderedEvent}</div>`;
-    }
-
     return renderedEvent;
   }
 
@@ -925,11 +808,6 @@ export class ContactHistory extends RapidElement {
         : null;
 
     return html`
-      ${
-        this.ticket
-          ? html`<div class="sticky-bin">${unfetchedTickets}</div>`
-          : null
-      }
       ${
         this.fetching
           ? html`<temba-loading units="5" size="10"></temba-loading>`

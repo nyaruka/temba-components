@@ -23,7 +23,8 @@
     --selection-dark-rgb: 180, 180, 180;
   
     --select-input-height: inherit;
-  
+
+    --disabled-opacity: 0.6;
     --curvature: 6px;
     --curvature-widget: 6px;
     --color-focus: #a4cafe;

@@ -5,6 +5,7 @@ import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { TextInput } from '../textinput/TextInput';
 import { Icon } from '../vectoricon';
+import { getClasses } from '../utils';
 
 export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
@@ -28,37 +29,43 @@ export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
   iconClass = '';
 
+  @property({ type: Boolean })
+  disabled = false;
+
   static get styles() {
     return css`
       .wrapper {
         --widget-box-shadow: none;
+        --temba-textinput-padding: 1.4em 0.8em 0.4em 0.8em;
+        --disabled-opacity: 1;
+        position: relative;
       }
 
       .prefix {
-        background: rgba(0, 0, 0, 0.05);
         border-top-left-radius: var(--curvature-widget);
         border-bottom-left-radius: var(--curvature-widget);
         color: #888;
         cursor: pointer;
-        width: 200px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: flex;
         padding: 0em 0.5em;
+        position: absolute;
+        margin-top: 0.2em;
       }
 
       .wrapper {
-        margin-bottom: -1px;
+        margin-bottom: 0.5em;
       }
 
       .prefix .name {
-        padding: 0.5em 0em;
-        color: #888;
-        width: 200px;
+        padding: 0em 0.4em;
+        color: #999;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-size: 0.8em;
       }
 
       .postfix {
@@ -104,6 +111,16 @@ export class ContactFieldEditor extends RapidElement {
         transform: scale(1);
       }
 
+      .disabled temba-textinput .postfix {
+        display: none;
+      }
+
+      .disabled {
+        --color-widget-border: transparent;
+        padding-bottom: 0.4em;
+        border-bottom: 1px solid #e6e6e6;
+      }
+
       .unset temba-textinput:focus .popper,
       .unset temba-textinput:hover .popper {
         opacity: 0;
@@ -122,7 +139,6 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       temba-datepicker {
-        --curvature: 0px;
         position: relative;
       }
     `;
@@ -186,13 +202,21 @@ export class ContactFieldEditor extends RapidElement {
 
   public render(): TemplateResult {
     return html`
-      <div class="wrapper ${this.value ? 'set' : 'unset'}">
+      <div
+        class=${getClasses({
+          wrapper: true,
+          set: !!this.value,
+          unset: !this.value,
+          disabled: this.disabled,
+        })}
+      >
         ${this.type === 'datetime'
           ? html`
               <temba-datepicker
                 timezone=${this.timezone}
                 value="${this.value ? this.value : ''}"
                 @change=${this.handleSubmit}
+                ?disabled=${this.disabled}
                 time
               >
                 <div class="prefix" slot="prefix">
@@ -206,6 +230,7 @@ export class ContactFieldEditor extends RapidElement {
                 @blur=${this.handleSubmit}
                 @keydown=${this.handleInput}
                 @change=${this.handleChange}
+                ?disabled=${this.disabled}
               >
                 <div class="prefix" slot="prefix">
                   <div class="name">${this.name}</div>

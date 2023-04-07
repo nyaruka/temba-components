@@ -53,7 +53,7 @@ export interface Ticket {
   contact: ObjectReference;
   ticketer: ObjectReference;
   topic: ObjectReference;
-  assignee?: User;
+  assignee?: { email: string; name: string };
 }
 
 export interface FlowResult {

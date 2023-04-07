@@ -1,11 +1,9 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { COOKIE_KEYS, getCookieBoolean, postJSON, setCookie } from '../utils';
+import { Contact, Ticket } from '../interfaces';
+import { COOKIE_KEYS, getCookieBoolean, postJSON } from '../utils';
 import { ContactHistory } from './ContactHistory';
-import { Modax } from '../dialog/Modax';
 import { ContactStoreElement } from './ContactStoreElement';
-import { Icon } from '../vectoricon';
 import { Compose } from '../compose/Compose';
 
 const DEFAULT_REFRESH = 10000;
@@ -36,6 +34,7 @@ export class ContactChat extends ContactStoreElement {
         flex-direction: column;
         overflow: hidden;
         min-height: 0;
+        border-radius: var(--curvature);
       }
 
       temba-contact-history {
@@ -83,73 +82,6 @@ export class ContactChat extends ContactStoreElement {
         --button-x: 12px;
       }
 
-      .toolbar {
-        position: relative;
-        width: 2.5em;
-        background: #e6e6e6;
-        transition: all 600ms ease-in;
-        z-index: 10;
-        flex-shrink: 0;
-        border-top-right-radius: var(--curvature);
-        border-bottom-right-radius: var(--curvature);
-        padding: 0.5em 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        overflow: hidden;
-      }
-
-      .toolbar temba-icon {
-        fill: rgb(60, 60, 60);
-        margin-bottom: 0.5em;
-      }
-
-      .toolbar.closed {
-        box-shadow: inset 10px 0px 10px -11px rgb(0 0 0 / 15%);
-      }
-
-      temba-contact-details {
-        flex-basis: 16em;
-        flex-grow: 0;
-        flex-shrink: 0;
-        transition: margin 600ms cubic-bezier(0.68, -0.55, 0.265, 1.05),
-          opacity 600ms ease-in-out 200ms;
-        z-index: 5;
-      }
-
-      temba-contact-details.hidden {
-        margin-right: -16em;
-        opacity: 0;
-      }
-
-      @media only screen and (max-width: 768px) {
-        temba-contact-details {
-          flex-basis: 12em;
-          flex-shrink: 0;
-        }
-
-        temba-contact-details.hidden {
-          margin-right: -12em;
-        }
-      }
-
-      #close-button,
-      #open-button {
-        margin-top: 1em;
-      }
-
-      #details-button {
-        margin-top: 0.25em;
-        transform: rotate(180deg);
-      }
-
-      #note-dialog,
-      #assign-dialog {
-        --header-bg: rgb(255, 249, 194);
-        --header-text: #555;
-        --textarea-height: 5em;
-      }
-
       temba-completion {
         --widget-box-shadow: none;
         --color-widget-border: transparent;
@@ -171,9 +103,6 @@ export class ContactChat extends ContactStoreElement {
 
   @property({ type: Boolean })
   showDetails = true;
-
-  @property({ type: Boolean })
-  toolbar = false;
 
   @property({ type: Boolean })
   monitor = false;
@@ -228,6 +157,7 @@ export class ContactChat extends ContactStoreElement {
         contactHistory.scrollToBottom();
       }
       contactHistory.refresh();
+      // super.refresh();
     }
   }
 
@@ -241,23 +171,6 @@ export class ContactChat extends ContactStoreElement {
     ) {
       this.currentContact = this.data;
     }
-  }
-
-  private handleTicketReopen() {
-    const uuid = this.currentTicket.uuid;
-    postJSON(`/api/v2/ticket_actions.json`, {
-      tickets: [uuid],
-      action: 'reopen',
-    })
-      .then(() => {
-        this.refresh();
-        this.fireCustomEvent(CustomEventType.ContentChanged, {
-          ticket: { uuid, status: 'open' },
-        });
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
   }
 
   private handleSend(evt: CustomEvent) {
@@ -320,16 +233,6 @@ export class ContactChat extends ContactStoreElement {
     }
   }
 
-  private handleTicketAssigned() {
-    this.refresh();
-    this.getContactHistory().checkForAgentAssignmentEvent(this.agent);
-  }
-
-  private handleDetailSlider(): void {
-    this.showDetails = !this.showDetails;
-    setCookie(COOKIE_KEYS.TICKET_SHOW_DETAILS, this.showDetails);
-  }
-
   public render(): TemplateResult {
     const contactHistory = this.currentContact
       ? this.getTembaContactHistory()
@@ -342,31 +245,6 @@ export class ContactChat extends ContactStoreElement {
     >
       <div class="chat-wrapper">${contactHistory} ${chatbox}</div>
     </div>`;
-
-    if (this.toolbar) {
-      const contactDetails = this.currentContact
-        ? this.getTembaContactDetails()
-        : null;
-      const toggleContactDetails = this.currentContact
-        ? this.getToggleDetailsTembaTip()
-        : null;
-      const addNoteAndAssignTicketTembaTips =
-        this.currentContact && this.currentTicket
-          ? this.getAddNoteAndAssignTicketTembaTips()
-          : null;
-      const addNoteAndAssignTicketTembaModaxes = this.currentTicket
-        ? this.getAddNoteAndAssignTicketTembaModaxes()
-        : null;
-
-      const contactDetailsAndActions = html`${contactDetails}
-        <div class="toolbar ${this.showDetails ? '' : 'closed'}">
-          ${toggleContactDetails} ${addNoteAndAssignTicketTembaTips}
-        </div>
-        ${addNoteAndAssignTicketTembaModaxes}`;
-
-      return html`${contactHistoryAndChatbox} ${contactDetailsAndActions}`;
-    }
-
     return html`${contactHistoryAndChatbox}`;
   }
 
@@ -387,18 +265,11 @@ export class ContactChat extends ContactStoreElement {
         //no chatbox for archived, blocked, or stopped contacts
         return null;
       } else {
-        if (this.currentTicket.closed_on) {
-          //reopen button for active contacts with a closed ticket
-          return html` <div class="closed-footer">
-            <temba-button
-              id="reopen-button"
-              name="Reopen"
-              @click=${this.handleTicketReopen}
-            ></temba-button>
-          </div>`;
-        } else {
+        if (!this.currentTicket.closed_on) {
           //chatbox for active contacts with an open ticket
           return this.getChatbox();
+        } else {
+          return null;
         }
       }
     }
@@ -413,7 +284,7 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getChatbox(): TemplateResult {
-    return html` <div class="chatbox ${this.toolbar ? 'full' : ''}">
+    return html`<div class="chatbox">
       <temba-compose
         chatbox
         attachments
@@ -423,82 +294,5 @@ export class ContactChat extends ContactStoreElement {
       >
       </temba-compose>
     </div>`;
-  }
-
-  private getTembaContactDetails(): TemplateResult {
-    return html` <temba-contact-details
-      style="z-index: 10"
-      class="${this.showDetails ? '' : 'hidden'}"
-      showGroups="true"
-      .visible=${this.showDetails}
-      .ticket=${this.currentTicket}
-      .contact=${this.currentContact}
-    >
-    </temba-contact-details>`;
-  }
-
-  private getToggleDetailsTembaTip(): TemplateResult {
-    return html` <temba-tip
-      style="margin-top:5px"
-      text="${this.showDetails ? 'Hide Details' : 'Show Details'}"
-      position="left"
-      hideOnChange
-    >
-      <temba-icon
-        id="details-button"
-        name="${this.showDetails ? Icon.menu_collapse : 'layout-left'}"
-        @click="${this.handleDetailSlider}"
-        clickable
-        animatechange="spin"
-      ></temba-icon>
-    </temba-tip>`;
-  }
-
-  private getAddNoteAndAssignTicketTembaTips(): TemplateResult {
-    return html` <temba-tip
-        style="margin-top:5px"
-        text="Assign"
-        position="left"
-      >
-        <temba-icon
-          id="assign-button"
-          name="${Icon.users}"
-          @click="${() => {
-            const modax = this.shadowRoot.getElementById(
-              'assign-dialog'
-            ) as Modax;
-            modax.open = true;
-          }}"
-          clickable
-        ></temba-icon>
-      </temba-tip>
-      <temba-tip style="margin-top:5px" text="Add Note" position="left">
-        <temba-icon
-          id="add-note-button"
-          name="${Icon.add_note}"
-          @click="${() => {
-            const note = this.shadowRoot.getElementById('note-dialog') as Modax;
-            note.open = true;
-          }}"
-          clickable
-        ></temba-icon>
-      </temba-tip>`;
-  }
-
-  private getAddNoteAndAssignTicketTembaModaxes(): TemplateResult {
-    return html` <temba-modax
-        header="Add Note"
-        id="note-dialog"
-        @temba-submitted=${this.refresh}
-        endpoint="/ticket/note/${this.currentTicket.uuid}/"
-      >
-      </temba-modax>
-      <temba-modax
-        header="Assign Ticket"
-        id="assign-dialog"
-        @temba-submitted=${this.handleTicketAssigned}
-        endpoint="/ticket/assign/${this.currentTicket.uuid}/"
-      >
-      </temba-modax>`;
   }
 }
