@@ -138,7 +138,11 @@ export class Dropdown extends RapidElement {
         dropdown.style.marginLeft =
           '-' + (dropdown.clientWidth - this.clientWidth - this.offsetX) + 'px';
       } else {
-        dropdown.style.marginLeft = this.offsetX + 'px';
+        if (this.dropAlign === 'right') {
+          dropdown.style.marginRight = this.offsetX + 'px';
+        } else {
+          dropdown.style.marginLeft = this.offsetX + 'px';
+        }
       }
     }
 
@@ -151,7 +155,9 @@ export class Dropdown extends RapidElement {
     }
   }
 
-  public handleToggleClicked(): void {
+  public handleToggleClicked(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
     if (!this.open) {
       this.open = true;
 

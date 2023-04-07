@@ -17,6 +17,7 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
+  User,
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
@@ -69,6 +70,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'workspace' })
   workspaceEndpoint: string;
 
+  @property({ type: String, attribute: 'users' })
+  usersEndpoint: string;
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -83,6 +87,7 @@ export class Store extends RapidElement {
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
   private languages: any = {};
+  private users: User[];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
 
@@ -173,11 +178,25 @@ export class Store extends RapidElement {
       );
     }
 
+    if (this.usersEndpoint) {
+      fetches.push(
+        getAssets(this.usersEndpoint).then((users: any[]) => {
+          this.users = users;
+        })
+      );
+    }
+
     this.initialHttpComplete = Promise.all(fetches);
 
     this.initialHttpComplete.then(() => {
       this.ready = true;
     });
+  }
+
+  public getAssignableUsers() {
+    return this.users.filter((user: User) =>
+      ['administrator', 'editor', 'agent'].includes(user.role)
+    );
   }
 
   public firstUpdated() {

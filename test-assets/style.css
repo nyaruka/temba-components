@@ -125,6 +125,7 @@ html {
   font-size: var(--font-size);
   font-weight: 300;
   font-family: var(--font-family);
+  --dropdown-shadow: rgb(0 0 0 / 30%) 0px 0px 60px, rgb(0 0 0 / 12%) 0px 6px 12px;
 
   --icon-color: var(--text-color);
   --icon-color-hover: var(--icon-color);
@@ -139,7 +140,7 @@ html {
   --color-text-help: rgb(120,120,120);
   --label-size: 14px;
   
-  --button-y: 6px;  
+  --button-y: 6px;
   --button-x: 14px;
 
   --menu-padding: 1em;

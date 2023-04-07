@@ -1,11 +1,21 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType, Ticket, TicketStatus } from '../interfaces';
+import { CustomEventType, Ticket, TicketStatus, User } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
-import { getClasses, postJSON, renderAvatar } from '../utils';
+import {
+  getAssets,
+  getClasses,
+  getFullName,
+  postJSON,
+  renderAvatar,
+  stopEvent,
+} from '../utils';
 import { Icon } from '../vectoricon';
 
 export class ContactTickets extends StoreElement {
+  @property({ type: String })
+  agent: string;
+
   @property({ type: String })
   contact: string;
 
@@ -87,6 +97,74 @@ export class ContactTickets extends StoreElement {
         margin-right: 1em;
         color: var(--color-primary-dark);
       }
+
+      .dropdown {
+        color: rgb(45, 45, 45);
+        z-index: 50;
+        width: 18em;
+      }
+
+      .option-group {
+        padding: 0.4em;
+        border-bottom: 1px solid #f3f3f3;
+      }
+
+      .assigned .user {
+        flex-grow: 1;
+      }
+
+      .assigned {
+        display: flex;
+        align-items: center;
+      }
+
+      .assigned temba-button {
+        margin-right: 0.75em;
+      }
+
+      .assigned .user:hover {
+        cursor: default;
+        background: none;
+      }
+
+      .options {
+        max-height: 40vh;
+        overflow-y: auto;
+        border-bottom: none;
+      }
+
+      .user {
+        display: flex;
+        padding: 0.4em 0.7em;
+        align-items: center;
+        border-radius: var(--curvature);
+        cursor: pointer;
+      }
+
+      .user:hover {
+        background: var(--color-selection);
+      }
+
+      .user .avatar {
+        font-size: 0.5em;
+        margin-right: 1em;
+      }
+
+      .user .name {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex-grow: 1;
+      }
+
+      .user temba-button {
+        margin-left: 0.5em;
+      }
+
+      .current-user {
+        font-weight: 400;
+      }
     `;
   }
 
@@ -133,6 +211,16 @@ export class ContactTickets extends StoreElement {
     }
   }
 
+  private renderUser(user: User) {
+    if (!user) {
+      return null;
+    }
+    return html`<div class="user">
+      <div class="avatar">${renderAvatar({ user: user })}</div>
+      <div class="name">${getFullName(user)}</div>
+    </div>`;
+  }
+
   private handleClose(uuid: string) {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
@@ -159,8 +247,24 @@ export class ContactTickets extends StoreElement {
       });
   }
 
+  private handleTicketAssignment(uuid: string, email: string) {
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'assign',
+      assignee: email,
+    })
+      .then(() => {
+        this.refresh();
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
   public renderTicket(ticket: Ticket) {
     const date = ticket.opened_on;
+    const users = this.store.getAssignableUsers();
+    const agent = users.find(user => user.email === this.agent);
     return html`
       <div
         @click=${() => {
@@ -193,10 +297,110 @@ export class ContactTickets extends StoreElement {
               ></temba-button>
             </div>`
           : html`
-              <div style="font-size:.5em">
-                ${ticket.assignee
-                  ? renderAvatar({ name: ticket.assignee.name })
-                  : null}
+              <div>
+                <temba-dropdown
+                  drop_align="right"
+                  arrowsize="8"
+                  arrowoffset="-44"
+                  offsety="8"
+                  offsetx=${ticket.assignee ? -42 : -28}
+                >
+                  <div slot="toggle" class="toggle">
+                    ${ticket.assignee
+                      ? html`
+                          <div style="font-size:0.5em">
+                            ${renderAvatar({
+                              name: ticket.assignee.name,
+                              position: 'left',
+                            })}
+                          </div>
+                        `
+                      : html`
+                          <temba-button
+                            name="Assign"
+                            primary
+                            small
+                          ></temba-button>
+                        `}
+                  </div>
+
+                  <div
+                    slot="dropdown"
+                    class="dropdown"
+                    @click=${(event: MouseEvent) => {
+                      stopEvent(event);
+                    }}
+                  >
+                    ${ticket.assignee
+                      ? html`
+                          <div
+                            class="assigned option-group ${agent &&
+                            ticket.assignee.email == agent.email
+                              ? 'current-user'
+                              : ''}"
+                          >
+                            ${this.renderUser(
+                              users.find(
+                                user => user.email === ticket.assignee.email
+                              )
+                            )}
+                            <temba-button
+                              name="Unassign"
+                              primary
+                              small
+                              @click=${(event: MouseEvent) => {
+                                stopEvent(event);
+                                this.handleTicketAssignment(ticket.uuid, null);
+                              }}
+                            ></temba-button>
+                          </div>
+                        `
+                      : null}
+                    ${agent &&
+                    (!ticket.assignee || agent.email !== ticket.assignee.email)
+                      ? html`
+                          <div
+                            class="current-user option-group"
+                            @click=${(event: MouseEvent) => {
+                              stopEvent(event);
+                              this.handleTicketAssignment(
+                                ticket.uuid,
+                                agent.email
+                              );
+                            }}
+                          >
+                            ${this.renderUser(agent)}
+                          </div>
+                        `
+                      : null}
+
+                    <div class="options option-group">
+                      ${this.store.getAssignableUsers().map(user => {
+                        if (
+                          ticket.assignee &&
+                          user.email === ticket.assignee.email
+                        ) {
+                          return null;
+                        }
+
+                        if (user.email === this.agent) {
+                          return null;
+                        }
+                        return html`<div
+                          @click=${(event: MouseEvent) => {
+                            stopEvent(event);
+                            this.handleTicketAssignment(
+                              ticket.uuid,
+                              user.email
+                            );
+                          }}
+                        >
+                          ${this.renderUser(user)}
+                        </div>`;
+                      })}
+                    </div>
+                  </div>
+                </temba-dropdown>
               </div>
               <temba-tip
                 text="Resolve"
