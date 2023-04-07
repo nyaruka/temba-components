@@ -249,7 +249,15 @@ export class TextInput extends FormElement {
     if (this.disabled) {
       return;
     }
+    if (this.inputElement) {
+      this.inputElement.click();
+    }
+  }
 
+  private handleContainerFocus(): void {
+    if (this.disabled) {
+      return;
+    }
     if (this.inputElement) {
       this.inputElement.focus();
     }
@@ -313,6 +321,11 @@ export class TextInput extends FormElement {
   public click(): void {
     super.click();
     this.handleContainerClick();
+  }
+
+  public focus(): void {
+    super.focus();
+    this.handleContainerFocus();
   }
 
   // TODO make this a formelement and have contactsearch set the root

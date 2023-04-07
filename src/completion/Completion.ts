@@ -236,6 +236,14 @@ export class Completion extends FormElement {
     }
   }
 
+  public focus() {
+    super.focus();
+    const input = this.shadowRoot.querySelector('temba-textinput') as TextInput;
+    if (input) {
+      input.focus();
+    }
+  }
+
   public render(): TemplateResult {
     const anchorStyles = this.anchorPosition
       ? {

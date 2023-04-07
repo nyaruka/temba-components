@@ -269,13 +269,10 @@ export class Compose extends FormElement {
 
     if (changes.has('currentText') || changes.has('currentAttachments')) {
       this.toggleButton();
-      this.setFocusOnChatbox();
       this.serializeComposeValue();
     }
 
-    if (changes.has('buttonError')) {
-      this.setFocusOnChatbox();
-    }
+    this.setFocusOnChatbox();
   }
 
   private setFocusOnChatbox(): void {
@@ -284,9 +281,8 @@ export class Compose extends FormElement {
         'temba-completion'
       ) as Completion;
       if (completion) {
-        //simulate a click inside the completion to set focus
         window.setTimeout(() => {
-          completion.click();
+          completion.focus();
         }, 0);
       }
     }
@@ -297,6 +293,10 @@ export class Compose extends FormElement {
     this.currentAttachments = [];
     this.failedAttachments = [];
     this.buttonError = '';
+  }
+
+  private handleContainerClick(evt: Event) {
+    this.setFocusOnChatbox();
   }
 
   private handleChatboxChange(evt: Event) {
@@ -500,6 +500,7 @@ export class Compose extends FormElement {
       >
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
+          @click="${this.handleContainerClick}"
           @dragenter="${this.handleDragEnter}"
           @dragover="${this.handleDragOver}"
           @dragleave="${this.handleDragLeave}"
