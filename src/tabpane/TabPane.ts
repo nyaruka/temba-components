@@ -21,11 +21,11 @@ export class TabPane extends RapidElement {
 
       .tab {
         user-select: none;
-        padding: 0.5em 1em;
+        padding: 0.5em 0.7em;
         margin: 0em 0em;
         cursor: pointer;
         display: flex;
-        font-size: 1.1em;
+        font-size: 1.01em;
         align-items: center;
         border-radius: var(--curvature);
         border-bottom-right-radius: 0px;
@@ -72,15 +72,19 @@ export class TabPane extends RapidElement {
       }
 
       .tab {
-        transform: scale(0.9) translateY(-0.05em);
+        transform: scale(0.9) translate(0em, -0.05em);
         --icon-color: #aaa;
         color: #aaa;
+      }
+
+      .tab.selected {
+        z-index: 2 !important;
       }
 
       .tab.selected,
       .tab.selected:hover {
         cursor: default;
-        box-shadow: 2px 1px 3px 2px rgba(0, 0, 0, 0.07);
+        box-shadow: 0px -3px 3px 1px rgba(0, 0, 0, 0.02);
         background: #fff;
         transform: scale(1) translateY(0em);
         z-index: 0;
@@ -161,6 +165,17 @@ export class TabPane extends RapidElement {
         }
       }
       this.fireEvent(CustomEventType.ContextChanged);
+    }
+
+    // if our current tab is hidden, select the first visible one
+    if (this.getTab(this.index).hidden) {
+      for (let i = 0; i < this.children.length; i++) {
+        const tab = this.getTab(i);
+        if (!tab.hidden) {
+          this.index = i;
+          return;
+        }
+      }
     }
   }
 
