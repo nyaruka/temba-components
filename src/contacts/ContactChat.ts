@@ -208,18 +208,28 @@ export class ContactChat extends ContactStoreElement {
           } else if (response.status < 500) {
             if (
               response.json.text &&
-              response.json.text.eng &&
-              response.json.text.eng.length > 0
+              response.json.text.length > 0 &&
+              response.json.text[0].length > 0
             ) {
-              compose.buttonError =
-                'Text must have no more than 640 characters.';
+              let textError = response.json.text[0];
+              textError = textError.replace(
+                'Ensure this field has no more than',
+                'Maximum allowed text is'
+              );
+              compose.buttonError = textError;
             } else if (
               response.json.attachments &&
-              response.json.attachments.eng &&
-              response.json.attachments.eng.length > 0
+              response.json.attachments.length > 0 &&
+              response.json.attachments[0].length > 0
             ) {
-              compose.buttonError =
-                'Attachments must have no more than 10 files.';
+              let attachmentError = response.json.attachments[0];
+              attachmentError = attachmentError
+                .replace(
+                  'Ensure this field has no more than',
+                  'Maximum allowed attachments is'
+                )
+                .replace('elements', 'files');
+              compose.buttonError = attachmentError;
             } else {
               compose.buttonError = genericError;
             }
