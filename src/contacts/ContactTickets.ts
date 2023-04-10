@@ -3,7 +3,6 @@ import { property } from 'lit/decorators.js';
 import { CustomEventType, Ticket, TicketStatus, User } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 import {
-  getAssets,
   getClasses,
   getFullName,
   postJSON,
@@ -25,6 +24,12 @@ export class ContactTickets extends StoreElement {
   @property({ type: Boolean })
   clickable = false;
 
+  @property({ type: Boolean })
+  expandable = false;
+
+  @property({ type: Boolean })
+  expanded = false;
+
   @property({ type: Object, attribute: false })
   data: Ticket[];
 
@@ -36,6 +41,7 @@ export class ContactTickets extends StoreElement {
       :hover {
       }
 
+      .ticket.expandable:hover,
       .ticket.clickable:hover {
         cursor: pointer;
         box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
@@ -61,27 +67,58 @@ export class ContactTickets extends StoreElement {
         align-items: center;
         box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
           0 0 0px 1px rgba(0, 0, 0, 0.02);
+        transition: all 200ms ease-in-out;
       }
 
       .ticket .body {
+        flex-grow: 5;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 200px;
+      }
+
+      .ticket .topic {
         flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0 0.75em;
+        width: 60px;
+      }
+
+      .ticket.expanded .topic {
+        display: none;
+      }
+
+      .ticket.expanded .topic-expanded {
         display: -webkit-box;
+      }
+
+      .topic-expanded {
+        flex-grow: 1;
+        display: none;
         -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        padding: 0.1em;
       }
 
-      .date {
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        padding: 0.1em;
+      .ticket.expanded {
+        flex-direction: column-reverse;
+        align-items: stretch;
       }
 
-      .ticket > div {
-        padding: 0.5em 1em;
+      .ticket.expanded .body {
+        display: block;
+        max-height: 40vh;
+        overflow-y: auto;
+        -webkit-line-clamp: none;
+        border-top: 1px solid #e6e6e6;
+        // 6px solid #f9f9f9;
+        margin-bottom: 0.5em;
+        padding: 0.5em 1em 0em 1em;
+        white-space: normal;
+        width: initial;
       }
 
       .status {
@@ -94,7 +131,6 @@ export class ContactTickets extends StoreElement {
       }
 
       .resolve {
-        margin-right: 1em;
         color: var(--color-primary-dark);
       }
 
@@ -164,6 +200,21 @@ export class ContactTickets extends StoreElement {
 
       .current-user {
         font-weight: 400;
+      }
+
+      .details {
+        display: flex;
+        align-items: center;
+        padding: 0.5em 1em;
+        flex-shrink: 1;
+      }
+
+      .details .date {
+        padding: 0em 0.75em;
+      }
+
+      .details .toggle {
+        padding-right: 0.75em;
       }
     `;
   }
@@ -277,156 +328,168 @@ export class ContactTickets extends StoreElement {
         @click=${() => {
           if (this.clickable) {
             this.fireCustomEvent(CustomEventType.ButtonClicked, { ticket });
+          } else if (this.expandable) {
+            this.expanded = !this.expanded;
           }
         }}
         class="ticket ${ticket.status} ${getClasses({
           clickable: this.clickable,
+          expandable: this.expandable,
+          expanded: this.expanded,
         })}"
       >
         <div class="topic">${ticket.topic.name}</div>
         <div class="body">${ticket.body}</div>
 
-        <div class="date">
-          <temba-date value="${date}" display="duration"></temba-date>
-        </div>
+        <div class="details">
+          <div class="topic-expanded">${ticket.topic.name}</div>
 
-        ${ticket.status === TicketStatus.Closed
-          ? html`<div class="reopen">
-              <temba-button
-                primary
-                small
-                name="Reopen"
-                @click=${(event: MouseEvent) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  this.handleReopen(ticket.uuid);
-                }}
-              ></temba-button>
-            </div>`
-          : html`
-              <div>
-                <temba-dropdown
-                  drop_align="right"
-                  arrowsize="8"
-                  arrowoffset="-44"
-                  offsety="8"
-                  offsetx=${ticket.assignee ? -42 : -28}
-                >
-                  <div slot="toggle" class="toggle">
-                    ${ticket.assignee
-                      ? html`
-                          <div style="font-size:0.5em">
-                            ${renderAvatar({
-                              name: ticket.assignee.name,
-                              position: 'left',
-                            })}
-                          </div>
-                        `
-                      : html`
-                          <temba-button
-                            name="Assign"
-                            primary
-                            small
-                          ></temba-button>
-                        `}
-                  </div>
+          <div class="date">
+            <temba-date value="${date}" display="duration"></temba-date>
+          </div>
 
-                  <div
-                    slot="dropdown"
-                    class="dropdown"
-                    @click=${(event: MouseEvent) => {
-                      stopEvent(event);
-                    }}
+          ${ticket.status === TicketStatus.Closed
+            ? html`<div class="reopen">
+                <temba-button
+                  primary
+                  small
+                  name="Reopen"
+                  @click=${(event: MouseEvent) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.handleReopen(ticket.uuid);
+                  }}
+                ></temba-button>
+              </div>`
+            : html`
+                <div>
+                  <temba-dropdown
+                    drop_align="right"
+                    arrowsize="8"
+                    arrowoffset="-44"
+                    offsety="8"
+                    offsetx=${ticket.assignee ? -42 : -28}
                   >
-                    ${ticket.assignee
-                      ? html`
-                          <div
-                            class="assigned option-group ${agent &&
-                            ticket.assignee.email == agent.email
-                              ? 'current-user'
-                              : ''}"
-                          >
-                            ${this.renderUser(
-                              users.find(
-                                user => user.email === ticket.assignee.email
-                              )
-                            )}
+                    <div slot="toggle" class="toggle">
+                      ${ticket.assignee
+                        ? html`
+                            <div style="font-size:0.5em">
+                              ${renderAvatar({
+                                name: ticket.assignee.name,
+                                position: 'left',
+                              })}
+                            </div>
+                          `
+                        : html`
                             <temba-button
-                              name="Unassign"
+                              name="Assign"
                               primary
                               small
+                            ></temba-button>
+                          `}
+                    </div>
+
+                    <div
+                      slot="dropdown"
+                      class="dropdown"
+                      @click=${(event: MouseEvent) => {
+                        stopEvent(event);
+                      }}
+                    >
+                      ${ticket.assignee
+                        ? html`
+                            <div
+                              class="assigned option-group ${agent &&
+                              ticket.assignee.email == agent.email
+                                ? 'current-user'
+                                : ''}"
+                            >
+                              ${this.renderUser(
+                                users.find(
+                                  user => user.email === ticket.assignee.email
+                                )
+                              )}
+                              <temba-button
+                                name="Unassign"
+                                primary
+                                small
+                                @click=${(event: MouseEvent) => {
+                                  stopEvent(event);
+                                  this.handleTicketAssignment(
+                                    ticket.uuid,
+                                    null
+                                  );
+                                }}
+                              ></temba-button>
+                            </div>
+                          `
+                        : null}
+                      ${agent &&
+                      (!ticket.assignee ||
+                        agent.email !== ticket.assignee.email)
+                        ? html`
+                            <div
+                              class="current-user option-group"
                               @click=${(event: MouseEvent) => {
                                 stopEvent(event);
-                                this.handleTicketAssignment(ticket.uuid, null);
+                                this.handleTicketAssignment(
+                                  ticket.uuid,
+                                  agent.email
+                                );
                               }}
-                            ></temba-button>
-                          </div>
-                        `
-                      : null}
-                    ${agent &&
-                    (!ticket.assignee || agent.email !== ticket.assignee.email)
-                      ? html`
-                          <div
-                            class="current-user option-group"
+                            >
+                              ${this.renderUser(agent)}
+                            </div>
+                          `
+                        : null}
+
+                      <div class="options option-group">
+                        ${this.store.getAssignableUsers().map(user => {
+                          if (
+                            ticket.assignee &&
+                            user.email === ticket.assignee.email
+                          ) {
+                            return null;
+                          }
+
+                          if (user.email === this.agent) {
+                            return null;
+                          }
+                          return html`<div
                             @click=${(event: MouseEvent) => {
                               stopEvent(event);
                               this.handleTicketAssignment(
                                 ticket.uuid,
-                                agent.email
+                                user.email
                               );
                             }}
                           >
-                            ${this.renderUser(agent)}
-                          </div>
-                        `
-                      : null}
-
-                    <div class="options option-group">
-                      ${this.store.getAssignableUsers().map(user => {
-                        if (
-                          ticket.assignee &&
-                          user.email === ticket.assignee.email
-                        ) {
-                          return null;
-                        }
-
-                        if (user.email === this.agent) {
-                          return null;
-                        }
-                        return html`<div
-                          @click=${(event: MouseEvent) => {
-                            stopEvent(event);
-                            this.handleTicketAssignment(
-                              ticket.uuid,
-                              user.email
-                            );
-                          }}
-                        >
-                          ${this.renderUser(user)}
-                        </div>`;
-                      })}
+                            ${this.renderUser(user)}
+                          </div>`;
+                        })}
+                      </div>
                     </div>
-                  </div>
-                </temba-dropdown>
-              </div>
-              <temba-tip
-                text="Resolve"
-                position="left"
-                style="width:1.5em"
-                class="resolve"
-              >
-                <temba-icon
-                  size="1.25"
-                  name="${Icon.check}"
-                  @click=${(event: MouseEvent) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    this.handleClose(ticket.uuid);
-                  }}
-                  ?clickable=${open}
-                />
-              </temba-tip>
-            `}
+                  </temba-dropdown>
+                </div>
+                <temba-tip
+                  text="Resolve"
+                  position="left"
+                  style="width:1.5em"
+                  class="resolve"
+                >
+                  <temba-icon
+                    size="1.25"
+                    name="${Icon.check}"
+                    @click=${(event: MouseEvent) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      this.handleClose(ticket.uuid);
+                    }}
+                    ?clickable=${open}
+                  />
+                </temba-tip>
+              `}
+        </div>
       </div>
     `;
   }
