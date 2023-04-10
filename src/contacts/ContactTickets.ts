@@ -265,6 +265,7 @@ export class ContactTickets extends StoreElement {
       .catch((response: any) => {
         console.error(response);
       });
+    return true;
   }
 
   public renderTicket(ticket: Ticket) {
