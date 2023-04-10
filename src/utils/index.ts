@@ -632,6 +632,21 @@ export const formatFileSize = (bytes: number, decimalPoint: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+export const stopEvent = (event: Event) => {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+};
+
+export const getFullName = (user: User) => {
+  if (user.first_name && user.last_name) {
+    return `${user.first_name} ${user.last_name}`;
+  }
+
+  return user.email;
+};
+
 export const renderAvatar = (input: {
   name?: string;
   user?: User;

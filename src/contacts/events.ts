@@ -373,6 +373,10 @@ export const getEventStyles = () => {
       padding: 0.3em 1px;
     }
 
+    .subtext .time {
+      padding: 0em;
+    }
+
     .status {
       padding: 0.3em 3px;
     }

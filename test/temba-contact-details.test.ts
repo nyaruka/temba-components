@@ -1,13 +1,40 @@
-import { fixture, assert } from '@open-wc/testing';
+import { assert, waitUntil } from '@open-wc/testing';
 import { ContactDetails } from '../src/contacts/ContactDetails';
-import './utils.test';
-export const getHTML = () => {
-  return `<temba-contact-details></temba-contact-details>`;
+import {
+  assertScreenshot,
+  getClip,
+  getComponent,
+  loadStore,
+  mockGET,
+} from './utils.test';
+
+const TAG = 'temba-contact-details';
+const getContactDetails = async (attrs: any = {}) => {
+  const contactDetails = (await getComponent(
+    TAG,
+    attrs,
+    '',
+    400
+  )) as ContactDetails;
+  // wait for our contact to load
+  await waitUntil(() => !!contactDetails.data);
+  return contactDetails;
 };
 
-describe('temba-contact-details', () => {
-  it('can be created', async () => {
-    const ele: ContactDetails = await fixture(getHTML());
-    assert.instanceOf(ele, ContactDetails);
+describe('temba-contact-tickets', () => {
+  beforeEach(() => {
+    mockGET(
+      /\/api\/v2\/contacts.json\?uuid=24d64810-3315-4ff5-be85-48e3fe055bf9/,
+      '/test-assets/contacts/contact-dave-active'
+    );
+    loadStore();
+  });
+
+  it('renders default', async () => {
+    const contactDetails: ContactDetails = await getContactDetails({
+      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+    });
+    assert.instanceOf(contactDetails, ContactDetails);
+    await assertScreenshot('contacts/details', getClip(contactDetails));
   });
 });

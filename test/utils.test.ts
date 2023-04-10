@@ -229,6 +229,7 @@ export const loadStore = async () => {
       groups='/test-assets/store/groups.json'
       languages='/test-assets/store/languages.json'
       fields='/test-assets/store/fields.json'
+      users='/test-assets/store/users.json'
     />`
   );
   await store.initialHttpComplete;

@@ -49,6 +49,7 @@ export enum Icon {
   help = 'help-circle',
   home = 'settings-02',
   inbox = 'inbox-01',
+  info = 'user-square',
   label = 'tag-01',
   language = 'globe-01',
   link = 'link-external-01',

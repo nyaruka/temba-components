@@ -235,6 +235,7 @@ export enum CustomEventType {
   ContentChanged = 'temba-content-changed',
   ContextChanged = 'temba-context-changed',
   FetchComplete = 'temba-fetch-complete',
+  MessageSent = 'temba-message-sent',
   Submitted = 'temba-submitted',
   Redirected = 'temba-redirected',
   NoPath = 'temba-no-path',
