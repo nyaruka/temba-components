@@ -75,7 +75,7 @@ export class ContactTickets extends StoreElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        width: 200px;
+        width: 40px;
       }
 
       .ticket .topic {
