@@ -1,10 +1,10 @@
 import { css, html, TemplateResult } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
 import { Icon } from '../vectoricon';
-
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -491,6 +491,11 @@ export class TembaMenu extends RapidElement {
         --icon-color: var(--color-link-primary);
       }
 
+      a {
+        text-decoration: none;
+        color: var(--color-text-dark);
+      }
+
       slot[name='header'] {
         display: none;
       }
@@ -924,7 +929,8 @@ export class TembaMenu extends RapidElement {
     }
 
     const item = html`
-      <div
+      <a
+        href=${ifDefined(menuItem.href ? menuItem.href : undefined)}
         id="menu-${menuItem.id}"
         class="${itemClasses}"
         @click=${event => {
@@ -977,7 +983,7 @@ export class TembaMenu extends RapidElement {
             : null}
         </div>
         <div class="right"></div>
-      </div>
+      </a>
     `;
 
     if (menuItem.popup) {
