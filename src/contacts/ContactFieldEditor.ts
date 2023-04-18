@@ -35,7 +35,6 @@ export class ContactFieldEditor extends RapidElement {
   static get styles() {
     return css`
       .wrapper {
-        --widget-box-shadow: none;
         --temba-textinput-padding: 1.4em 0.8em 0.4em 0.8em;
         --disabled-opacity: 1;
         position: relative;
@@ -116,6 +115,7 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       .disabled {
+        --widget-box-shadow: none;
         --color-widget-border: transparent;
         padding-bottom: 0.4em;
         border-bottom: 1px solid #e6e6e6;
