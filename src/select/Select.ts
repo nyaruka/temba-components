@@ -89,8 +89,7 @@ export class Select extends FormElement {
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
         padding-top: 1px;
-        box-shadow: var(--widget-shadow);
-
+        box-shadow: var(--widget-box-shadow);
         position: relative;
         z-index: 2;
       }
