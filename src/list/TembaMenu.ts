@@ -988,7 +988,7 @@ export class TembaMenu extends RapidElement {
 
     if (menuItem.popup) {
       return html`
-        <temba-dropdown offsetx="10" arrowoffset="8" mask>
+        <temba-dropdown offsetx="10" arrowoffset="8" arrowSize="0" mask>
           <div slot="toggle">${item}</div>
           <div
             slot="dropdown"

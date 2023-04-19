@@ -43,10 +43,6 @@ export class Modax extends RapidElement {
         z-index: 10000;
       }
 
-      temba-dialog {
-        --transition-speed: var(--transition-speed);
-      }
-
       temba-loading {
         margin: 0 auto;
         display: block;
@@ -148,7 +144,7 @@ export class Modax extends RapidElement {
 
   public updatePrimaryButton(): void {
     if (!this.noSubmit) {
-      this.updateComplete.then(()=>{
+      this.updateComplete.then(() => {
         const submitButton = this.shadowRoot.querySelector(
           "input[type='submit']"
         ) as any;
@@ -190,7 +186,7 @@ export class Modax extends RapidElement {
       const script = this.ownerDocument.createElement('script');
       const code = scripts[i].innerText;
 
-      if (scripts[i].src && scripts[i].src.indexOf("web-dev-server") === -1) {
+      if (scripts[i].src && scripts[i].src.indexOf('web-dev-server') === -1) {
         script.src = scripts[i].src;
         script.type = 'text/javascript';
         script.async = true;
@@ -213,7 +209,7 @@ export class Modax extends RapidElement {
       this.body = unsafeHTML(div.innerHTML);
     }
 
-    this.updateComplete.then(()=>{
+    this.updateComplete.then(() => {
       for (const script of toAdd) {
         scriptBlock.appendChild(script);
       }
@@ -234,9 +230,9 @@ export class Modax extends RapidElement {
     this.body = this.getLoading();
     getUrl(this.endpoint, null, this.getHeaders()).then(
       (response: WebResponse) => {
-        this.setBody(response.body);        
+        this.setBody(response.body);
         this.fetching = false;
-        this.updateComplete.then(()=>{
+        this.updateComplete.then(() => {
           this.updatePrimaryButton();
           this.fireCustomEvent(CustomEventType.Loaded, {
             body: this.getBody(),
@@ -270,7 +266,7 @@ export class Modax extends RapidElement {
 
           if (redirect) {
             if (redirect === 'hide') {
-              this.updateComplete.then(()=>{
+              this.updateComplete.then(() => {
                 this.open = false;
                 this.fireCustomEvent(CustomEventType.Submitted);
               });

@@ -32,10 +32,15 @@ export class Dialog extends RapidElement {
         left: 0px;
         top: 0px;
         align-items: center;
+        height: 100vh;
       }
 
-      .flex-grow {
+      .grow-top {
         flex-grow: 1;
+      }
+
+      .grow-bottom {
+        flex-grow: 3;
       }
 
       .bottom-padding {
@@ -44,6 +49,7 @@ export class Dialog extends RapidElement {
 
       .dialog-mask {
         width: 100%;
+        height: 100%;
         background: rgba(0, 0, 0, 0.5);
         opacity: 0;
         position: fixed;
@@ -53,17 +59,16 @@ export class Dialog extends RapidElement {
         pointer-events: none;
       }
 
-      .dialog-container {
-        margin-top: -10000px;
+      .dialog-mask .dialog-container {
         position: relative;
-        transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33)
-            var(--transition-speed),
+        transition: transform var(--transition-speed) var(--bounce),
           opacity ease-in-out calc(var(--transition-speed) - 50ms);
         border-radius: var(--curvature);
         box-shadow: 0px 0px 2px 4px rgba(0, 0, 0, 0.06);
         overflow: hidden;
-        transform: scale(0.7);
+        transform: scale(0.9) translatey(2em);
         background: white;
+        margin: auto;
       }
 
       .dialog-body {
@@ -82,12 +87,10 @@ export class Dialog extends RapidElement {
       }
 
       .dialog-mask.dialog-animation-end .dialog-container {
-        margin-top: 10vh;
         transform: scale(1) !important;
       }
 
       .dialog-mask.dialog-ready .dialog-container {
-        margin-top: 10vh;
         transform: none;
       }
 
@@ -328,12 +331,6 @@ export class Dialog extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const height = this.getDocumentHeight();
-
-    const maskStyle = {
-      height: `${height + 100}px`,
-    };
-
     const dialogStyle = {
       width: this.width,
       minWidth: '250px',
@@ -361,7 +358,6 @@ export class Dialog extends RapidElement {
           'dialog-animation-end': this.animationEnd,
           'dialog-ready': this.ready,
         })}"
-        style=${styleMap(maskStyle)}
       >
         <div style="position: absolute; width: 100%;">
           <temba-loading
@@ -373,7 +369,7 @@ export class Dialog extends RapidElement {
         </div>
 
         <div class="flex">
-          <div class="flex-grow"></div>
+          <div class="grow-top"></div>
           <div
             @keyup=${this.handleKeyUp}
             style=${styleMap(dialogStyle)}
@@ -408,8 +404,7 @@ export class Dialog extends RapidElement {
                 ></temba-button>
               </div>
             </div>
-            <div class="flex-grow bottom-padding"></div>
-            <div class="bottom-padding"></div>
+            <div class="grow-bottom"></div>
           </div>
         </div>
       </div>
