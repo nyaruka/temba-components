@@ -26,8 +26,8 @@ export class Dropdown extends RapidElement {
         padding: 0;
         border-radius: var(--curvature);
         background: #fff;
-        transform: translateY(-1em);
-        transition: all calc(0.6 * var(--transition-speed)) linear;
+        transform: translateY(1em) scale(0.9);
+        transition: all calc(0.8 * var(--transition-speed)) var(--bounce);
         user-select: none;
         margin-top: 0px;
         margin-left: 0px;
@@ -53,7 +53,7 @@ export class Dropdown extends RapidElement {
       .open .dropdown {
         opacity: 1;
         pointer-events: auto;
-        transform: translateY(0.5em);
+        transform: translateY(0.5em) scale(1);
       }
 
       .mask {
