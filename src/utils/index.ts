@@ -653,6 +653,7 @@ export const renderAvatar = (input: {
   icon?: string;
   image?: string;
   position?: string;
+  tip?: boolean;
 }) => {
   if (!input.position) {
     input.position = 'right';
@@ -680,14 +681,13 @@ export const renderAvatar = (input: {
   let initials = text.substring(0, 1) + text.substring(second, second + 1);
   initials = initials.toUpperCase();
 
-  return html`
-    <temba-tip text=${text} position=${input.position}>
+  const avatar = html`
+    <div
+      style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"
+    >
       <div
-        style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"
-      >
-        <div
-          class="avatar-circle"
-          style="
+        class="avatar-circle"
+        style="
             display: flex;
             height: 2em;
             width: 2em;
@@ -698,14 +698,20 @@ export const renderAvatar = (input: {
             font-weight: 400;
             border: 0.3em solid rgba(0,0,0,.05);
             background:${color}"
+      >
+        <div
+          style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
         >
-          <div
-            style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
-          >
-            <div style="border:0px solid blue;">${initials}</div>
-          </div>
+          <div style="border:0px solid blue;">${initials}</div>
         </div>
       </div>
-    </temba-tip>
+    </div>
   `;
+  return input.tip
+    ? html`
+        <temba-tip text=${text} position=${input.position}>
+          ${avatar}
+        </temba-tip>
+      `
+    : avatar;
 };

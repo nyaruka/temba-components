@@ -58,6 +58,7 @@ export enum Icon {
   menu_collapse = 'chevron-left-double',
   message = 'message-square-02',
   messages = 'message-square-02',
+  notification = 'bell-01',
   org_active = 'credit-card-02',
   org_anonymous = 'glasses-01',
   org_bulk = 'credit-card-plus',

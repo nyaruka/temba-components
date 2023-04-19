@@ -62,14 +62,26 @@ export class TembaMenu extends RapidElement {
       }
 
       .bubble {
-        width: 8px;
-        height: 8px;
-        left: 14px;
-        bottom: -1px;
-        border-radius: 99px;
-        border: 1px solid rgb(255, 255, 255);
+        width: 0.6em;
+        height: 0.6em;
+        right: 0em;
+        bottom: 0em;
+        border-radius: 99em;
+        border: 0.12em solid rgba(0, 0, 0, 0.1);
+        position: absolute;
+      }
+
+      .bubble.count {
         position: relative;
-        margin-top: -10px;
+        width: inherit;
+        height: inherit;
+        right: inherit;
+        bottom: inherit;
+        color: #fff;
+        line-height: 1em;
+        padding: 0.12em;
+        min-width: 1em;
+        text-align: center;
       }
 
       .section {
@@ -96,7 +108,6 @@ export class TembaMenu extends RapidElement {
         user-select: none;
         -webkit-user-select: none;
         display: flex;
-        font-size: 1em;
         --icon-color: var(--color-text-dark);
       }
 
@@ -126,12 +137,15 @@ export class TembaMenu extends RapidElement {
       .level-0 > temba-dropdown > div[slot='toggle'] > .avatar {
         padding: 0px;
         --icon-color: rgba(255, 255, 255, 0.7);
-        font-size: 1em;
         flex-direction: column;
         border: 0px solid green;
         width: 100%;
         display: flex;
         align-items: center;
+      }
+
+      .level-0 > temba-dropdown .icon-wrapper {
+        padding: 0.2em 0.4em 0.2em 0.4em;
       }
 
       .level-0 > .item.selected::before,
@@ -148,7 +162,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0 > .item > temba-tip {
-        padding: 1em;
+        padding: 0.5em;
       }
 
       .level-0 > .item.selected::after {
@@ -186,6 +200,10 @@ export class TembaMenu extends RapidElement {
         margin-left: 0.75em;
       }
 
+      temba-dropdown > div[slot='dropdown'] .bubble.count {
+        margin-right: 0.75em;
+      }
+
       .level-0 > .item > .details,
       .level-0 > temba-dropdown > div[slot='toggle'] > .avatar > .details {
         display: none !important;
@@ -195,7 +213,8 @@ export class TembaMenu extends RapidElement {
         align-items: center;
       }
 
-      temba-dropdown > div[slot='dropdown'] .avatar .avatar-circle {
+      temba-dropdown > div[slot='dropdown'] .avatar .avatar-circle,
+      temba-dropdown > div[slot='dropdown'] .avatar .bubble {
         font-size: 0.7em;
       }
 
@@ -228,6 +247,7 @@ export class TembaMenu extends RapidElement {
         border-radius: var(--curvature);
         display: flex;
         min-width: 12em;
+        position: relative;
       }
 
       .item > temba-icon {
@@ -417,7 +437,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .sub-section {
-        font-size: 1rem;
+        font-size: 0.9rem;
         color: #888;
         margin-top: 1rem;
         margin-left: 0.3rem;
@@ -502,6 +522,15 @@ export class TembaMenu extends RapidElement {
 
       slot[name='header'].show-header {
         display: block;
+      }
+
+      .icon-wrapper {
+        position: relative;
+        padding: 0.2em 0.4em 0.2em 0em;
+      }
+
+      .level-0 .icon-wrapper {
+        padding: 0.4em;
       }
     `;
   }
@@ -891,16 +920,18 @@ export class TembaMenu extends RapidElement {
       isSelected && this.selection.length > menuItem.level + 1;
 
     let icon = menuItem.icon
-      ? html`<temba-icon
+      ? html`<div class="icon-wrapper">
+          <temba-icon
             size="${menuItem.level === 0 ? '1.5' : '1'}"
             name="${menuItem.icon}"
           ></temba-icon
-          >${menuItem.bubble
+          >${menuItem.bubble && !menuItem.count
             ? html`<div
                 style="background-color: ${menuItem.bubble}"
                 class="bubble"
               ></div>`
-            : null}`
+            : null}
+        </div>`
       : null;
 
     const collapsedIcon = menuItem.collapsed_icon
@@ -925,7 +956,16 @@ export class TembaMenu extends RapidElement {
     });
 
     if (menuItem.avatar) {
-      icon = renderAvatar({ name: menuItem.avatar });
+      icon = renderAvatar({ name: menuItem.avatar, tip: false });
+      if (menuItem.bubble) {
+        icon = html`${icon}${menuItem.bubble
+          ? html`<div
+              style="background-color: ${menuItem.bubble}"
+              class="bubble"
+            ></div>`
+          : null}`;
+      }
+      icon = html`<div style="position:relative; padding: 0em">${icon}</div>`;
     }
 
     const item = html`
@@ -975,7 +1015,10 @@ export class TembaMenu extends RapidElement {
                 ></temba-icon>`
               : html`${menuItem.count || menuItem.count == 0
                   ? html`
-                      <div class="count">
+                      <div
+                        class="count ${menuItem.bubble ? 'bubble' : ''}"
+                        style="background-color: ${menuItem.bubble}"
+                      >
                         ${menuItem.count.toLocaleString()}
                       </div>
                     `
@@ -997,7 +1040,7 @@ export class TembaMenu extends RapidElement {
             <div style="max-height:400px;overflow-y:auto">
               ${(menuItem.items || []).map((child: MenuItem) => {
                 child.level = menuItem.level + 1;
-                return this.renderMenuItem(child, menuItem);
+                return html`${this.renderMenuItem(child, menuItem)}`;
               })}
             </div>
           </div>
