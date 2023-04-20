@@ -113,7 +113,7 @@ export class Dropdown extends RapidElement {
       '.dropdown'
     ) as HTMLDivElement;
 
-    dropdown.addEventListener('blur', () => {
+    dropdown.addEventListener('blur', (event: any) => {
       // we nest this to deal with clicking the toggle to close
       // as we don't want it to toggle an immediate open, probably
       // a better way to deal with this
@@ -168,6 +168,12 @@ export class Dropdown extends RapidElement {
     }
   }
 
+  private handleDropdownMouseDown(event: MouseEvent): void {
+    // block mouse down when clicking inside dropdown so we don't lose focus yet
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   public render(): TemplateResult {
     return html`
       ${this.mask
@@ -178,11 +184,12 @@ export class Dropdown extends RapidElement {
         <slot
           name="toggle"
           class="toggle"
-          @click="${this.handleToggleClicked}"
+          @click=${this.handleToggleClicked}
         ></slot>
         <div
           class="dropdown"
           tabindex="0"
+          @mousedown=${this.handleDropdownMouseDown}
           style="${this.dropAlign == 'right' ? 'right:0' : ''}"
         >
           <div class="arrow"></div>
