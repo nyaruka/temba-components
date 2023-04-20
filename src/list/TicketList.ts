@@ -34,7 +34,7 @@ export class TicketList extends TembaList {
           >
             <div style="flex: 1; color:#333;">
               <div
-                style="font-weight:400;line-height:1.6;border:0px solid purple;"
+                style="font-weight:400;line-height:1.6;display:-webkit-box;-webkit-box-orient: vertical; -webkit-line-clamp: 1;overflow: hidden;"
               >
                 ${contact.name}
               </div>

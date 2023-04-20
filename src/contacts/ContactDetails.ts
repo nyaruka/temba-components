@@ -76,7 +76,6 @@ export class ContactDetails extends ContactStoreElement {
                   href="/contact/filter/${group.uuid}/"
                   icon=${group.is_dynamic ? Icon.group_smart : Icon.group}
                   clickable
-                  shadow
                 >
                   ${group.name}
                 </temba-label>`;
