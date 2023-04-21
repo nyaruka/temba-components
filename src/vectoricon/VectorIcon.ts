@@ -1,11 +1,8 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Icon } from '.';
+import { Icon, SVG_FINGERPRINT } from '.';
 
 import { getClasses } from '../utils';
-
-// for cache busting, increase whenever the icon set changes
-const ICON_VERSION = 15;
 
 export class VectorIcon extends LitElement {
   @property({ type: String })
@@ -223,7 +220,7 @@ export class VectorIcon extends LitElement {
               ? this.src
               : `${
                   this.prefix || (window as any).static_url || '/static/'
-                }svg/index.svg?v=${ICON_VERSION}#${name}`}"
+                }svg/index.svg?v=${SVG_FINGERPRINT}#${name}`}"
           />
         </svg>
       </div>
