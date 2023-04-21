@@ -5,6 +5,7 @@ import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
 import { Icon } from '../vectoricon';
+import { Dropdown } from '../dropdown/Dropdown';
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -696,6 +697,13 @@ export class TembaMenu extends RapidElement {
     parent: MenuItem = null
   ) {
     if (parent && parent.popup) {
+      const dropdown = this.shadowRoot.querySelector(
+        'temba-dropdown'
+      ) as Dropdown;
+      if (dropdown) {
+        dropdown.blur();
+      }
+
       if (event) {
         this.fireCustomEvent(CustomEventType.ButtonClicked, {
           item: menuItem,
@@ -974,6 +982,7 @@ export class TembaMenu extends RapidElement {
         id="menu-${menuItem.id}"
         class="${itemClasses}"
         @click=${event => {
+          event.preventDefault();
           this.pressedItem = null;
           this.handleItemClicked(event, menuItem, parent);
         }}
@@ -1130,7 +1139,7 @@ export class TembaMenu extends RapidElement {
 
                     ${index == 0 && !this.collapsed
                       ? html`<temba-icon
-                          name="${Icon.menu_collapse}"
+                          name=${Icon.menu_collapse}
                           size="1.1"
                           @click=${this.handleCollapse}
                         ></temba-icon>`
