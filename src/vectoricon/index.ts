@@ -24,18 +24,19 @@ export enum Icon {
   channel = 'zap',
 
   channel_android = 'channel-android',
+  channel_clickatell = 'clickatell',
   channel_facebook = 'facebook-official',
   channel_freshchat = 'freshchat',
   channel_jiochat = 'jiochat',
   channel_junebug = 'junebug',
-  channel_kannel = 'kannel',
+  channel_kannel = 'channel-kannel',
   channel_line = 'line',
   channel_mtarget = 'mtarget',
-  channel_plivo = 'plivo',
+  channel_plivo = 'channel-plivo',
   channel_signalwire = 'signalwire',
   channel_thinq = 'thinq',
   channel_telegram = 'telegram',
-  channel_twilio = 'twilio-original',
+  channel_twilio = 'channel-twilio',
   channel_twitter = 'twitter',
   channel_viber = 'viber',
   channel_vk = 'vk',
@@ -141,4 +142,8 @@ export enum Icon {
 
   ext = 'lightning-01',
   fcm = 'lightning-01',
+
+  bothub = 'bothub',
+  chatbase = 'chatbase',
+  dtone = 'dtone',
 }
