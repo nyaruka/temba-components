@@ -142,8 +142,7 @@ async function main() {
   const stream = fs.createReadStream(OUTPUT_FILE_NAME);
   const file = fs.readFileSync(OUTPUT_FILE_NAME);
   const md5 = digestSync(file, 'md5');
-
-  modifyFileContent(USAGE_FILE, 'export const SVG_FINGERPRINT = "(.*)";', 1, md5);
+  modifyFileContent(USAGE_FILE, "export const SVG_FINGERPRINT = '(.*)';", 1, md5);
 
 }
 

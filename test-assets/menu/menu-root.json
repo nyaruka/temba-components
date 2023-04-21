@@ -19,13 +19,13 @@
     {
       "id": "tasks",
       "name": "Tasks",
-      "icon": "coffee",
+      "icon": "icon.tickets_mine",
       "endpoint": "/test-assets/menu/menu-tasks.json"
     },
     {
       "id": "schedule",
       "name": "Schedule",
-      "icon": "calendar",
+      "icon": "icon.triggers",
       "endpoint": "/test-assets/menu/menu-schedule.json"
 
     }

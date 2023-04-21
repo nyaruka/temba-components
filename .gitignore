@@ -27,3 +27,6 @@
 
 # svg working directory
 /static/svg/work/
+
+# dont check in diffs
+/screenshots/diff/
