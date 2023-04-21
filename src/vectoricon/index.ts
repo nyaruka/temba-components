@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = 'e07feb2ee6291f13bd9371687e12aee9';
+export const SVG_FINGERPRINT = 'cda7f9d00330ac4f7aa18ecf16bc26b1';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -43,8 +43,6 @@ export enum Icon {
   channel_vonage = 'vonage',
   channel_wechat = 'wechat',
   channel_whatsapp = 'whatsapp',
-
-  test = 'check-heart',
 
   children = 'git-branch-01',
   check = 'check',
