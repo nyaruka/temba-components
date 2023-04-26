@@ -209,7 +209,16 @@ const wireScreenshots = async (page, context, wait) => {
 
   await page.exposeFunction('moveMouse', (x, y) => {
     return new Promise(async (resolve, reject) => {
+      await page.mouse.move(x, y, {steps: 5});
+      resolve();
+    });
+  });
+
+  await page.exposeFunction('mouseClick', (x, y) => {
+    return new Promise(async (resolve, reject) => {
       await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.up();
       resolve();
     });
   });

@@ -150,7 +150,31 @@
 
     <temba-tabs collapses>
       
-      <temba-tab name="Overview" icon="list">
+      <temba-tab name="Color Picker" icon="colors">
+        <div style="display:flex;flex-wrap: wrap;">
+          <div style="width:400px">
+            <temba-color-picker            
+              style="margin-bottom:1em"
+              name="primary"
+              label="Primary Color"
+              help_text="Choose a color that looks good under white text"
+              value="#2387ca"
+            >
+            </temba-color-picker>
+
+            <temba-color-picker
+              name="secondary"
+              label="Secondary Color"
+              value="#8c338c"
+            >
+            </temba-color-picker>
+
+            
+          </div>
+        </div>
+      </temba-tab>
+
+      <temba-tab name="Overview" icon="default">
         <div style="display:flex;flex-wrap: wrap;">
           <temba-checkbox label="Check this out" checked></temba-checkbox>
           <temba-select placeholder="Select a color" clearable>
@@ -169,7 +193,7 @@
         <temba-completion value="you complete me @cont"></temba-completion>
       </temba-tab>
 
-      <temba-tab name="datepicker" icon="calendar">
+      <temba-tab name="datepicker" icon="datepicker">
         <div style="display:flex;flex-wrap: wrap;">
           <temba-datepicker time value="2020-01-20T14:00+00:00" timezone="UTC" onChange="handleDateChange(event)"></temba-datepicker>
           <temba-datepicker value="2022-10-09" onChange="handleDateChange(event)"></temba-datepicker>
@@ -189,7 +213,7 @@
 
       </temba-tab>
       
-      <temba-tab name="slider" icon="sliders-02">
+      <temba-tab name="slider" icon="slider">
 
 
         <div class="example">
@@ -204,7 +228,7 @@
 
       </temba-tab>
 
-      <temba-tab name="select" icon="browser">
+      <temba-tab name="select" icon="select">
 
         <div class="example">
           <temba-select

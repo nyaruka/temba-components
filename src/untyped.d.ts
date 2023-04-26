@@ -15,5 +15,6 @@ declare function waitFor(millis: number);
 declare function moveMouse(x: number, y: number);
 declare function mouseDown();
 declare function mouseUp();
+declare function mouseClick(x: number, y: number);
 declare function setViewport({}: any);
 declare function waitForNetworkIdle();
