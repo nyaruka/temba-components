@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = 'cda7f9d00330ac4f7aa18ecf16bc26b1';
+export const SVG_FINGERPRINT = 'ab3b364cd6b019b3e25727a700261cd0';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -49,6 +49,7 @@ export enum Icon {
   checkbox = 'square',
   checkbox_checked = 'check-square',
   compose = 'send-01',
+  colors = 'palette',
   contact = 'user-01',
   contact_archived = 'archive',
   contact_blocked = 'message-x-square',
@@ -146,4 +147,11 @@ export enum Icon {
   bothub = 'bothub',
   chatbase = 'chatbase',
   dtone = 'dtone',
+
+  // demo
+  default = 'list',
+  datepicker = 'calendar',
+  slider = 'sliders-02',
+  select = 'browser',
+  input = 'edit-05',
 }

@@ -46,6 +46,7 @@ import { TembaDate } from './src/date/TembaDate';
 import Remote from './src/remote/Remote';
 import { Compose } from './src/compose/Compose';
 import { Lightbox } from './src/lightbox/Lightbox';
+import { ColorPicker } from './src/colorpicker/ColorPicker';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -102,3 +103,4 @@ addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
 addCustomElement('temba-compose', Compose);
+addCustomElement('temba-color-picker', ColorPicker);
