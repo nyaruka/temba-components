@@ -1,4 +1,4 @@
-import { html, css } from 'lit';
+import { html, css, PropertyValueMap } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { getClasses, hslToHex } from '../utils';
@@ -133,6 +133,13 @@ export class ColorPicker extends FormElement {
         outline: none;
       }
     `;
+  }
+
+  protected firstUpdated(
+    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(_changedProperties);
+    this.setValue(this.value);
   }
 
   public updated(changed: Map<string, any>): void {
