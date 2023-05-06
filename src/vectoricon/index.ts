@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = 'f469b4b2409b0601ce9d11e1ca9e36e2';
+export const SVG_FINGERPRINT = '4895893f4a3a2f33536aaf322d65b4e3';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -25,8 +25,10 @@ export enum Icon {
 
   channel_android = 'channel-android',
   channel_clickatell = 'clickatell',
+  channel_external = 'globe-02',
   channel_facebook = 'facebook-official',
   channel_freshchat = 'freshchat',
+  channel_instagram = 'channel-instagram',
   channel_jiochat = 'jiochat',
   channel_junebug = 'junebug',
   channel_kannel = 'channel-kannel',
@@ -56,6 +58,7 @@ export enum Icon {
   contact_stopped = 'slash-octagon',
   contact_updated = 'user-edit',
   contacts = 'user-01',
+  conversation = 'message-chat-square',
   copy = 'copy-04',
   dashboard = 'pie-chart-01',
   delete = 'trash-03',
@@ -79,6 +82,7 @@ export enum Icon {
   home = 'settings-02',
   image = 'image-01',
   inbox = 'inbox-01',
+  incoming_call = 'phone-incoming-01',
   info = 'user-square',
   label = 'tag-01',
   language = 'globe-01',
@@ -90,6 +94,7 @@ export enum Icon {
   message = 'message-square-02',
   messages = 'message-square-02',
   missing = 'maximize-02',
+  missed_call = 'phone-x',
   new = 'plus',
   notification = 'bell-01',
   org_active = 'credit-card-02',
@@ -102,6 +107,7 @@ export enum Icon {
   overview = 'pie-chart-01',
   prometheus = 'prometheus',
   featured = 'star-01',
+  referral = 'user-right-01',
   resthooks = 'share-07',
   restore = 'play',
   retry = 'refresh-cw-05',
