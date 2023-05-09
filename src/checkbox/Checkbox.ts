@@ -65,6 +65,9 @@ export class Checkbox extends FormElement {
   checked: boolean;
 
   @property({ type: Boolean })
+  partial: boolean;
+
+  @property({ type: Boolean })
   disabled = false;
 
   @property({ type: Number })
@@ -76,7 +79,7 @@ export class Checkbox extends FormElement {
   public updated(changes: Map<string, any>) {
     super.updated(changes);
     if (changes.has('checked')) {
-      if (this.checked) {
+      if (this.checked || this.partial) {
         this.setValue(1);
       } else {
         this.setValue('');
@@ -103,7 +106,11 @@ export class Checkbox extends FormElement {
 
   public render(): TemplateResult {
     const icon = html`<temba-icon
-      name="${this.checked ? Icon.checkbox_checked : Icon.checkbox}"
+      name="${this.checked
+        ? Icon.checkbox_checked
+        : this.partial
+        ? Icon.checkbox_partial
+        : Icon.checkbox}"
       size="${this.size}"
       animatechange="${this.animateChange}"
     />`;
