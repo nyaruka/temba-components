@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.49.1",
+  "version": "0.50.1",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
@@ -23,11 +23,11 @@
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "format": "yarn format:eslint && yarn format:prettier",
     "test-file": "rimraf out-tsc && tsc && web-test-runner --node-resolve --coverage",
-    "test": "yarn svg && wtr --node-resolve --coverage",
+    "test": "wtr --node-resolve --coverage",
     "test:watch": "wtr --node-resolve --watch",
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
     "storybook:build": "build-storybook",
-    "svg": "rimraf static/svg/work && node svg.js --resolution=100",
+    "svg": "rimraf static/svg/work && node svg.js --resolution=150",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md"
   },
   "dependencies": {

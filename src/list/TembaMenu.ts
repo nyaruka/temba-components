@@ -679,11 +679,6 @@ export class TembaMenu extends RapidElement {
             this.wait = true;
           }
 
-          // once we've set our items check if we need to auto-select
-          if (event && item.items.length > 0) {
-            this.handleItemClicked(event, item.items[0]);
-          }
-
           this.requestUpdate('root');
           this.scrollSelectedIntoView();
         }

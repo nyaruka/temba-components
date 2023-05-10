@@ -78,7 +78,7 @@ export class ContentMenu extends RapidElement {
       }
 
       .item:hover {
-        color: rgb(var(--primary-rgb));
+        color: var(--color-link-primary);
       }
     `;
   }

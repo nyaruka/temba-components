@@ -184,7 +184,13 @@ export class VectorIcon extends LitElement {
   public render(): TemplateResult {
     // let icon name mappings take precedence
     let name = this.lastName || this.name;
-    name = Icon[name.replace('icon.', '')] || name;
+
+    // special case our channel icon fallback
+    if (this.name.startsWith('channel_') && !Icon[name]) {
+      name = Icon.channel_ex;
+    } else {
+      name = Icon[name.replace('icon.', '')] || name;
+    }
 
     // referencing icons by id is explicit
     if (!name) {
