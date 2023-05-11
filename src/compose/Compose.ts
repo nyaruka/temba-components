@@ -270,6 +270,7 @@ export class Compose extends FormElement {
     if (changes.has('currentText') || changes.has('currentAttachments')) {
       this.toggleButton();
       this.serializeComposeValue();
+      this.fireCustomEvent(CustomEventType.ContentChanged, this.value);
     }
 
     this.setFocusOnChatbox();
@@ -402,14 +403,12 @@ export class Compose extends FormElement {
   private addCurrentAttachment(attachmentToAdd: any) {
     this.currentAttachments.push(attachmentToAdd);
     this.requestUpdate('currentAttachments');
-    this.fireCustomEvent(CustomEventType.AttachmentAdded, attachmentToAdd);
   }
   private removeCurrentAttachment(attachmentToRemove: any) {
     this.currentAttachments = this.currentAttachments.filter(
       currentAttachment => currentAttachment !== attachmentToRemove
     );
     this.requestUpdate('currentAttachments');
-    this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachmentToRemove);
   }
 
   private addFailedAttachment(file: File, error: string) {
@@ -429,7 +428,6 @@ export class Compose extends FormElement {
       (failedAttachment: any) => failedAttachment !== attachmentToRemove
     );
     this.requestUpdate('failedAttachments');
-    this.fireCustomEvent(CustomEventType.AttachmentRemoved, attachmentToRemove);
   }
 
   private handleRemoveFileClicked(evt: Event): void {
