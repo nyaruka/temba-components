@@ -67,11 +67,7 @@ export class Attachments extends FormElement {
 
   private handleAttachmentsAdded(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
-    this.failedAttachments = evt.detail.failedAttachments;
-    
-    const attachmentsList = this.shadowRoot.querySelector('temba-attachments-list') as AttachmentsList;
-    attachmentsList.currentAttachments = this.currentAttachments;
-    attachmentsList.failedAttachments = this.failedAttachments;
+    this.failedAttachments = evt.detail.failedAttachments;  
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
