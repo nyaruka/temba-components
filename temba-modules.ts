@@ -49,6 +49,8 @@ import { Lightbox } from './src/lightbox/Lightbox';
 import { ColorPicker } from './src/colorpicker/ColorPicker';
 import { Attachments } from './src/attachments/Attachments';
 import { AttachmentsDropZone } from './src/attachments/AttachmentsDropZone';
+import { AttachmentsUploader } from './src/attachments/AttachmentsUploader';
+import { AttachmentsList } from './src/attachments/AttachmentsList';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -108,3 +110,5 @@ addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-attachments', Attachments);
 addCustomElement('temba-attachments-drop-zone', AttachmentsDropZone);
+addCustomElement('temba-attachments-uploader', AttachmentsUploader);
+addCustomElement('temba-attachments-list', AttachmentsList);

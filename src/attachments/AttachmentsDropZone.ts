@@ -83,7 +83,6 @@ export class AttachmentsDropZone extends FormElement {
 
   private handleDragDropped(evt: DragEvent): void {
     this.unhighlight(evt);
-    debugger;
     this.fireCustomEvent(CustomEventType.DragDropped, { de: evt });
   }
 
