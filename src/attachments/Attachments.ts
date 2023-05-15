@@ -83,10 +83,7 @@ export class Attachments extends FormElement {
       <temba-attachments-drop-zone
         @temba-drag-dropped=${this.handleDragDropped.bind(this)}
       >
-        <div
-          slot="inner-attachments-components"
-          class="inner-attachments-components"
-        >
+        <div slot="inner-components" class="inner-components">
           <div class="items attachments">${this.getAttachments()}</div>
           <div class="items actions">${this.getActions()}</div>
         </div>
