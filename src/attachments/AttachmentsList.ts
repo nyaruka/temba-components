@@ -3,20 +3,12 @@ import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
 import { CustomEventType } from '../interfaces';
-import {
-  formatFileSize,
-  formatFileType,
-  truncate,
-} from '../utils';
+import { formatFileSize, formatFileType, truncate } from '../utils';
 import { Attachment } from './Attachments';
 
 export class AttachmentsList extends FormElement {
   static get styles() {
     return css`
-      .attachments {
-        display: flex;
-        flex-direction: column;
-      }
       .attachments-list {
         display: flex;
         flex-direction: row;
@@ -72,11 +64,10 @@ export class AttachmentsList extends FormElement {
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      this.fireCustomEvent(CustomEventType.ContentChanged, 
-        { 
-          currentAttachments: this.currentAttachments, 
-          failedAttachments: this.failedAttachments
-        });
+      this.fireCustomEvent(CustomEventType.ContentChanged, {
+        currentAttachments: this.currentAttachments,
+        failedAttachments: this.failedAttachments,
+      });
     }
   }
 

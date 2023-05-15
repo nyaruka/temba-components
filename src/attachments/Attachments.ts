@@ -3,7 +3,6 @@ import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { AttachmentsUploader } from './AttachmentsUploader';
-import { AttachmentsList } from './AttachmentsList';
 
 export interface Attachment {
   uuid: string;
