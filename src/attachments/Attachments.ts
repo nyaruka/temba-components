@@ -48,7 +48,10 @@ export class Attachments extends FormElement {
     super.updated(changes);
 
     if (changes.has('currentAttachments')) {
-      this.fireCustomEvent(CustomEventType.ContentChanged, this.currentAttachments);
+      this.fireCustomEvent(
+        CustomEventType.ContentChanged,
+        this.currentAttachments
+      );
     }
   }
 
@@ -67,7 +70,7 @@ export class Attachments extends FormElement {
 
   private handleAttachmentsAdded(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
-    this.failedAttachments = evt.detail.failedAttachments;  
+    this.failedAttachments = evt.detail.failedAttachments;
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
@@ -80,10 +83,11 @@ export class Attachments extends FormElement {
       <temba-attachments-drop-zone
         @temba-drag-dropped=${this.handleDragDropped.bind(this)}
       >
-        <div slot="inner-components" class="inner-components">
-          <div class="items attachments">
-            ${this.getAttachments()}
-          </div>
+        <div
+          slot="inner-attachments-components"
+          class="inner-attachments-components"
+        >
+          <div class="items attachments">${this.getAttachments()}</div>
           <div class="items actions">${this.getActions()}</div>
         </div>
       </temba-attachments-drop-zone>
@@ -101,12 +105,9 @@ export class Attachments extends FormElement {
 
   private getActions(): TemplateResult {
     return html`
-      <div class="actions-left">
-        ${this.getUploader()}
-      </div>
+      <div class="actions-left">${this.getUploader()}</div>
       <div class="actions-center"></div>
-      <div class="actions-right">
-      </div>
+      <div class="actions-right"></div>
     `;
   }
 

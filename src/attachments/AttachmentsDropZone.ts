@@ -2,9 +2,7 @@ import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
-import {
-  getClasses
-} from '../utils';
+import { getClasses } from '../utils';
 
 export class AttachmentsDropZone extends FormElement {
   static get styles() {
@@ -114,8 +112,8 @@ export class AttachmentsDropZone extends FormElement {
           <div>Upload Attachment</div>
         </div>
         <slot
-          name="inner-components"
-          class="inner-components"
+          name="inner-attachments-components"
+          class="inner-attachments-components"
         ></slot>
       </div>
     `;
