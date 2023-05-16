@@ -80,9 +80,9 @@ export class Attachments extends FormElement {
   public render(): TemplateResult {
     return html`
       <temba-attachments-drop-zone
-        @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+        @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
       >
-        <div slot="inner-components" class="inner-components">
+        <div slot="inner-components">
           <div class="items attachments">${this.getAttachments()}</div>
           <div class="items actions">${this.getActions()}</div>
         </div>
@@ -93,7 +93,7 @@ export class Attachments extends FormElement {
   private getAttachments(): TemplateResult {
     return html`
       <temba-attachments-list
-        @temba-content-changed="${this.handleAttachmentsRemoved.bind(this)}
+        @temba-content-changed="${this.handleAttachmentsRemoved.bind(this)}"
       >
       </temba-attachments-list>
     `;
@@ -110,7 +110,7 @@ export class Attachments extends FormElement {
   private getUploader(): TemplateResult {
     return html`
       <temba-attachments-uploader
-        @temba-content-changed="${this.handleAttachmentsAdded.bind(this)}
+        @temba-content-changed="${this.handleAttachmentsAdded.bind(this)}"
       >
       </temba-attachments-uploader>
     `;
