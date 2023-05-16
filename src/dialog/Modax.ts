@@ -124,10 +124,16 @@ export class Modax extends RapidElement {
         // open can get reflected into undefined, make sure we've been open before
         if (changes.get('open') !== undefined) {
           // hide our body after our hiding animation is done
-          window.setTimeout(() => {
-            this.body = this.getLoading();
-            this.submitting = false;
-          }, 500);
+          if (this.open) {
+            window.setTimeout(() => {
+              this.body = this.getLoading();
+              this.submitting = false;
+            }, 500);
+          } else {
+            // clear the modal body out when closed, note that js functions declared on the
+            // window will hang around
+            this.setBody('');
+          }
         }
       }
     }
@@ -172,13 +178,6 @@ export class Modax extends RapidElement {
     const div = this.ownerDocument.createElement('div');
     div.innerHTML = body;
     const scripts = div.getElementsByTagName('script');
-
-    // IE bleeds through, avoid bootstrap form spans that breaks layout
-    const spans = div.getElementsByClassName('span12') as any;
-    for (const span of spans) {
-      span.className = '';
-    }
-
     const toAdd: any = [];
     // now add them in
     for (let i = scripts.length - 1; i >= 0; i--) {
