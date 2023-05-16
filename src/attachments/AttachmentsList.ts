@@ -61,9 +61,18 @@ export class AttachmentsList extends FormElement {
   }
 
   public updated(changes: Map<string, any>): void {
+    console.log('AttachmentsList - updated');
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
+      console.log('AttachmentsList - updated - old values...');
+      changes.forEach((oldValue, propName) => {
+        console.log(`${propName} changed. oldValue: ${oldValue}`);
+      });
+      console.log('AttachmentsList - updated - new values...');
+      console.log('currentAttachments', this.currentAttachments);
+      console.log('failedAttachments', this.failedAttachments);
+
       this.fireCustomEvent(CustomEventType.ContentChanged, {
         currentAttachments: this.currentAttachments,
         failedAttachments: this.failedAttachments,
@@ -71,21 +80,8 @@ export class AttachmentsList extends FormElement {
     }
   }
 
-  private removeCurrentAttachment(attachmentToRemove: any) {
-    this.currentAttachments = this.currentAttachments.filter(
-      currentAttachment => currentAttachment !== attachmentToRemove
-    );
-    this.requestUpdate('currentAttachments');
-  }
-
-  private removeFailedAttachment(attachmentToRemove: any) {
-    this.failedAttachments = this.failedAttachments.filter(
-      (failedAttachment: any) => failedAttachment !== attachmentToRemove
-    );
-    this.requestUpdate('failedAttachments');
-  }
-
   private handleRemoveFileClicked(evt: Event): void {
+    console.log('AttachmentsList - handleRemoveFileClicked');
     const target = evt.target as HTMLDivElement;
 
     const currentAttachmentToRemove = this.currentAttachments.find(
@@ -103,7 +99,24 @@ export class AttachmentsList extends FormElement {
     }
   }
 
+  private removeCurrentAttachment(attachmentToRemove: any) {
+    console.log('AttachmentsList - removeCurrentAttachment');
+    this.currentAttachments = this.currentAttachments.filter(
+      currentAttachment => currentAttachment !== attachmentToRemove
+    );
+    this.requestUpdate('currentAttachments');
+  }
+
+  private removeFailedAttachment(attachmentToRemove: any) {
+    console.log('AttachmentsList - removeFailedAttachment');
+    this.failedAttachments = this.failedAttachments.filter(
+      (failedAttachment: any) => failedAttachment !== attachmentToRemove
+    );
+    this.requestUpdate('failedAttachments');
+  }
+
   public render(): TemplateResult {
+    console.log('AttachmentsList - render');
     return html`
       ${(this.currentAttachments && this.currentAttachments.length > 0) ||
       (this.failedAttachments && this.failedAttachments.length > 0)
