@@ -57,11 +57,6 @@ export class Attachments extends FormElement {
       console.log('currentAttachments', this.currentAttachments);
       console.log('failedAttachments', this.failedAttachments);
 
-      // this.fireCustomEvent(CustomEventType.ContentChanged, {
-      //   currentAttachments: this.currentAttachments,
-      //   failedAttachments: this.failedAttachments,
-      // });
-
       console.log('Attachments - updated - uploader...');
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
@@ -124,15 +119,7 @@ export class Attachments extends FormElement {
       console.log('failedAttachments', attachmentsList.failedAttachments);
     }
 
-    // const attachmentsList = this.shadowRoot.querySelector(
-    //   'temba-attachments-list'
-    // ) as AttachmentsList;
-    if (attachmentsList) {
-      attachmentsList.requestUpdate('currentAttachments');
-      attachmentsList.requestUpdate('failedAttachments');
-      // attachmentsList.currentAttachments = this.currentAttachments;
-      // attachmentsList.failedAttachments = this.failedAttachments;
-    }
+    attachmentsList.requestUpdate();
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
@@ -161,13 +148,7 @@ export class Attachments extends FormElement {
       console.log('failedAttachments', attachmentsList.failedAttachments);
     }
 
-    // const attachmentsUploader = this.shadowRoot.querySelector(
-    //   'temba-attachments-uploader'
-    // ) as AttachmentsUploader;
-    // if(attachmentsUploader){
-    //   attachmentsUploader.currentAttachments = this.currentAttachments;
-    //   attachmentsUploader.failedAttachments = this.failedAttachments;
-    // }
+    attachmentsUploader.requestUpdate();
   }
 
   public render(): TemplateResult {
