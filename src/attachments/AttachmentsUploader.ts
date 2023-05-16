@@ -48,18 +48,9 @@ export class AttachmentsUploader extends FormElement {
   }
 
   public updated(changes: Map<string, any>): void {
-    console.log('AttachmentsUploader - updated');
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      console.log('AttachmentsUploader - updated - old values...');
-      changes.forEach((oldValue, propName) => {
-        console.log(`${propName} changed. oldValue: ${oldValue}`);
-      });
-      console.log('AttachmentsUploader - updated - new values...');
-      console.log('currentAttachments', this.currentAttachments);
-      console.log('failedAttachments', this.failedAttachments);
-
       this.fireCustomEvent(CustomEventType.ContentChanged, {
         currentAttachments: this.currentAttachments,
         failedAttachments: this.failedAttachments,
@@ -68,19 +59,16 @@ export class AttachmentsUploader extends FormElement {
   }
 
   private handleUploadFileIconClicked(): void {
-    console.log('AttachmentsUploader - handleUploadFileIconClicked');
     this.dispatchEvent(new Event('change'));
   }
 
   private handleUploadFileInputChanged(evt: Event): void {
-    console.log('AttachmentsUploader - handleUploadFileInputChanged');
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
   }
 
   public uploadFiles(files: FileList): void {
-    console.log('AttachmentsUploader - uploadFiles');
     let filesToUpload = [];
     if (this.currentAttachments && this.currentAttachments.length > 0) {
       //remove duplicate files that have already been uploaded
@@ -101,7 +89,6 @@ export class AttachmentsUploader extends FormElement {
   }
 
   private uploadFile(file: File): void {
-    console.log('AttachmentsUploader - uploadFile');
     this.uploading = true;
 
     const url = this.endpoint;
@@ -130,13 +117,11 @@ export class AttachmentsUploader extends FormElement {
   }
 
   private addCurrentAttachment(attachmentToAdd: Attachment) {
-    console.log('AttachmentsUploader - addCurrentAttachment');
     this.currentAttachments.push(attachmentToAdd);
     this.requestUpdate('currentAttachments');
   }
 
   private addFailedAttachment(file: File, error: string) {
-    console.log('AttachmentsUploader - addFailedAttachment');
     const failedAttachment = {
       uuid: Math.random().toString(36).slice(2, 6),
       content_type: file.type,
@@ -150,7 +135,6 @@ export class AttachmentsUploader extends FormElement {
   }
 
   public render(): TemplateResult {
-    console.log('AttachmentsUploader - render');
     if (this.uploading) {
       return html`<temba-loading units="3" size="12"></temba-loading>`;
     } else {

@@ -44,43 +44,10 @@ export class Attachments extends FormElement {
   }
 
   public updated(changes: Map<string, any>): void {
-    console.log('Attachments - updated');
     super.updated(changes);
-
-    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      console.log('Attachments - updated - old values...');
-      changes.forEach((oldValue, propName) => {
-        console.log(`${propName} changed. oldValue: ${oldValue}`);
-      });
-      console.log('Attachments - updated - new values...');
-      console.log('currentAttachments', this.currentAttachments);
-      console.log('failedAttachments', this.failedAttachments);
-
-      console.log('Attachments - updated - uploader...');
-      const attachmentsUploader = this.shadowRoot.querySelector(
-        'temba-attachments-uploader'
-      ) as AttachmentsUploader;
-      if (attachmentsUploader) {
-        console.log(
-          'currentAttachments',
-          attachmentsUploader.currentAttachments
-        );
-        console.log('failedAttachments', attachmentsUploader.failedAttachments);
-      }
-
-      console.log('Attachments - updated - list...');
-      const attachmentsList = this.shadowRoot.querySelector(
-        'temba-attachments-list'
-      ) as AttachmentsList;
-      if (attachmentsList) {
-        console.log('currentAttachments', attachmentsList.currentAttachments);
-        console.log('failedAttachments', attachmentsList.failedAttachments);
-      }
-    }
   }
 
   private handleDragDropped(evt: CustomEvent): void {
-    console.log('Attachments - handleDragDropped');
     const de = evt.detail.de as DragEvent;
     const dt = de.dataTransfer;
     if (dt) {
@@ -93,65 +60,26 @@ export class Attachments extends FormElement {
   }
 
   private handleAttachmentsAdded(evt: CustomEvent): void {
-    console.log('Attachments - handleAttachmentsAdded');
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
-    console.log('currentAttachments', this.currentAttachments);
-    console.log('failedAttachments', this.failedAttachments);
-
-    console.log('Attachments - handleAttachmentsAdded - uploader...');
-    const attachmentsUploader = this.shadowRoot.querySelector(
-      'temba-attachments-uploader'
-    ) as AttachmentsUploader;
-    if (attachmentsUploader) {
-      console.log('currentAttachments', attachmentsUploader.currentAttachments);
-      console.log('failedAttachments', attachmentsUploader.failedAttachments);
-    }
-
-    console.log('Attachments - handleAttachmentsAdded - list...');
     const attachmentsList = this.shadowRoot.querySelector(
       'temba-attachments-list'
     ) as AttachmentsList;
-    if (attachmentsList) {
-      console.log('currentAttachments', attachmentsList.currentAttachments);
-      console.log('failedAttachments', attachmentsList.failedAttachments);
-    }
-
     attachmentsList.requestUpdate();
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
-    console.log('Attachments - handleAttachmentsRemoved');
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
-    console.log('currentAttachments', this.currentAttachments);
-    console.log('failedAttachments', this.failedAttachments);
-
-    console.log('Attachments - handleAttachmentsRemoved - uploader...');
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
     ) as AttachmentsUploader;
-    if (attachmentsUploader) {
-      console.log('currentAttachments', attachmentsUploader.currentAttachments);
-      console.log('failedAttachments', attachmentsUploader.failedAttachments);
-    }
-
-    console.log('Attachments - handleAttachmentsRemoved - list...');
-    const attachmentsList = this.shadowRoot.querySelector(
-      'temba-attachments-list'
-    ) as AttachmentsList;
-    if (attachmentsList) {
-      console.log('currentAttachments', attachmentsList.currentAttachments);
-      console.log('failedAttachments', attachmentsList.failedAttachments);
-    }
-
     attachmentsUploader.requestUpdate();
   }
 
   public render(): TemplateResult {
-    console.log('Attachments - render');
     return html`
       <temba-attachments-drop-zone
         @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
@@ -165,7 +93,6 @@ export class Attachments extends FormElement {
   }
 
   private getAttachments(): TemplateResult {
-    console.log('Attachments - getAttachments');
     return html`
       <temba-attachments-list
         .currentAttachments="${this.currentAttachments}"
@@ -177,7 +104,6 @@ export class Attachments extends FormElement {
   }
 
   private getActions(): TemplateResult {
-    console.log('Attachments - getActions');
     return html`
       <div class="actions-left">${this.getUploader()}</div>
       <div class="actions-center"></div>
@@ -186,7 +112,6 @@ export class Attachments extends FormElement {
   }
 
   private getUploader(): TemplateResult {
-    console.log('Attachments - getUploader');
     return html`
       <temba-attachments-uploader
         .currentAttachments="${this.currentAttachments}"
