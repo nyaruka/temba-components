@@ -1,7 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
 import { AttachmentsUploader } from './AttachmentsUploader';
 import { AttachmentsList } from './AttachmentsList';
 
