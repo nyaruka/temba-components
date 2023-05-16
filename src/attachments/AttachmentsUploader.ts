@@ -4,7 +4,15 @@ import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
 import { CustomEventType } from '../interfaces';
 import { postFormData, WebResponse } from '../utils';
-import { Attachment } from './Attachments';
+
+export interface Attachment {
+  uuid: string;
+  content_type: string;
+  url: string;
+  filename: string;
+  size: number;
+  error: string;
+}
 
 export const upload_endpoint = '/api/v2/media.json';
 
@@ -40,7 +48,7 @@ export class AttachmentsUploader extends FormElement {
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
-  @property({ type: Array, attribute: false })
+  @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
   public constructor() {

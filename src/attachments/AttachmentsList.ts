@@ -4,7 +4,7 @@ import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
 import { CustomEventType } from '../interfaces';
 import { formatFileSize, formatFileType, truncate } from '../utils';
-import { Attachment } from './Attachments';
+import { Attachment } from './AttachmentsUploader';
 
 export class AttachmentsList extends FormElement {
   static get styles() {
@@ -53,7 +53,7 @@ export class AttachmentsList extends FormElement {
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
-  @property({ type: Array, attribute: false })
+  @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
   public constructor() {

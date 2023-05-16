@@ -1,19 +1,8 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
-import { AttachmentsUploader } from './AttachmentsUploader';
+import { Attachment, AttachmentsUploader } from './AttachmentsUploader';
 import { AttachmentsList } from './AttachmentsList';
-
-export interface Attachment {
-  uuid: string;
-  content_type: string;
-  url: string;
-  filename: string;
-  size: number;
-  error: string;
-}
-
-export const upload_endpoint = '/api/v2/media.json';
 
 export class Attachments extends FormElement {
   static get styles() {
@@ -36,7 +25,7 @@ export class Attachments extends FormElement {
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
-  @property({ type: Array, attribute: false })
+  @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
   public constructor() {
