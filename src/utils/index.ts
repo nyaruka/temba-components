@@ -248,7 +248,7 @@ export const postFormData = (
   return new Promise<WebResponse>((resolve, reject) => {
     postUrl(url, formData, true)
       .then(response => {
-        if (response.status >= 200 && response.status < 300) {
+        if (response.status >= 200 && response.status < 400) {
           resolve(response);
         } else {
           if (url === upload_endpoint) {
@@ -613,6 +613,7 @@ export const getCookieBoolean = (name: string) => {
 };
 
 export enum COOKIE_KEYS {
+  SETTINGS = 'settings',
   MENU_COLLAPSED = 'menu-collapsed',
   TICKET_SHOW_DETAILS = 'tickets.show-details',
 }
