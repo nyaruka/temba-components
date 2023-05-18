@@ -105,8 +105,12 @@ export class Store extends RapidElement {
     return this.locale[0];
   }
 
-  public reset() {
+  public clearCache() {
     this.cache = Lru(this.max, this.ttl);
+  }
+
+  public reset() {
+    this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
 
     /* 
