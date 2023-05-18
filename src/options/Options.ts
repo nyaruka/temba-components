@@ -25,7 +25,6 @@ export class Options extends RapidElement {
         transition: transform var(--transition-speed)
             cubic-bezier(0.71, 0.18, 0.61, 1.33),
           opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
-        z-index: 10000;
         pointer-events: none;
         opacity: 0;
         border: 1px transparent;
@@ -47,7 +46,6 @@ export class Options extends RapidElement {
 
       :host([block]) .options-scroll {
         height: 100%;
-        z-index: 9000;
         visibility: visible;
         overflow-y: auto;
         flex-grow: 1;
@@ -100,11 +98,11 @@ export class Options extends RapidElement {
       }
 
       .show {
-        z-index: 10000;
         transform: scaleY(1) translateY(0);
         border: 1px solid var(--color-widget-border);
         pointer-events: auto;
         opacity: 1;
+        z-index: 1;
       }
 
       .option {

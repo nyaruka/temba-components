@@ -47,6 +47,7 @@ import Remote from './src/remote/Remote';
 import { Compose } from './src/compose/Compose';
 import { Lightbox } from './src/lightbox/Lightbox';
 import { ColorPicker } from './src/colorpicker/ColorPicker';
+import { Resizer } from './src/resizer/Resizer';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -104,3 +105,4 @@ addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
 addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
+addCustomElement('temba-resizer', Resizer);
