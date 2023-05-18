@@ -50,6 +50,9 @@ export class AttachmentsList extends FormElement {
     `;
   }
 
+  @property({ type: String })
+  removeIcon = 'delete_small';
+
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
@@ -116,7 +119,7 @@ export class AttachmentsList extends FormElement {
                 >
                   <temba-icon
                     id="${validAttachment.uuid}"
-                    name="${Icon.delete_small}"
+                    name="icon.${this.removeIcon}"
                   ></temba-icon>
                 </div>
                 <div class="attachment-name">

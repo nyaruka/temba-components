@@ -14,7 +14,9 @@ export interface Attachment {
   error: string;
 }
 
+export const upload_icon = 'attachment';
 export const upload_endpoint = '/api/v2/media.json';
+export const max_attachments = 3;
 
 export class AttachmentsUploader extends FormElement {
   static get styles() {
@@ -29,15 +31,17 @@ export class AttachmentsUploader extends FormElement {
       .upload-icon {
         color: rgb(102, 102, 102);
       }
-      .actions-right {
-        display: flex;
-        align-items: center;
-      }
     `;
   }
 
   @property({ type: String })
   accept = ''; //e.g. ".xls,.xlsx"
+
+  @property({ type: Number })
+  maxAttachments = max_attachments;
+
+  @property({ type: String })
+  uploadIcon = upload_icon;
 
   @property({ type: String, attribute: false })
   endpoint = upload_endpoint;
@@ -78,19 +82,40 @@ export class AttachmentsUploader extends FormElement {
 
   public uploadFiles(files: FileList): void {
     let filesToUpload = [];
-    if (this.currentAttachments && this.currentAttachments.length > 0) {
-      //remove duplicate files that have already been uploaded
-      filesToUpload = [...files].filter(file => {
-        const index = this.currentAttachments.findIndex(
-          value => value.filename === file.name && value.size === file.size
-        );
-        if (index === -1) {
-          return file;
-        }
-      });
+
+    if (this.maxAttachments === 1) {
+      filesToUpload = [files.item(0)];
     } else {
-      filesToUpload = [...files];
+      //remove files that will exceed max attachments
+      let totalAttachments = this.currentAttachments.length + files.length;
+      if (totalAttachments > this.maxAttachments) {
+        if (this.currentAttachments.length === this.maxAttachments) {
+          return;
+        } else {
+          let idx = 0;
+          while (totalAttachments > this.maxAttachments) {
+            filesToUpload.push(files.item(idx));
+            totalAttachments =
+              this.currentAttachments.length + filesToUpload.length;
+            idx++;
+          }
+        }
+      }
+      if (this.currentAttachments.length > 0) {
+        //remove duplicate files that have already been uploaded
+        filesToUpload = [...files].filter(file => {
+          const index = this.currentAttachments.findIndex(
+            value => value.filename === file.name && value.size === file.size
+          );
+          if (index === -1) {
+            return file;
+          }
+        });
+      } else {
+        filesToUpload = [...files];
+      }
     }
+
     filesToUpload.map(fileToUpload => {
       this.uploadFile(fileToUpload);
     });
@@ -125,8 +150,12 @@ export class AttachmentsUploader extends FormElement {
   }
 
   private addCurrentAttachment(attachmentToAdd: Attachment) {
-    this.currentAttachments.push(attachmentToAdd);
-    this.requestUpdate('currentAttachments');
+    if (this.maxAttachments === 1) {
+      this.currentAttachments = [attachmentToAdd];
+    } else {
+      this.currentAttachments.push(attachmentToAdd);
+      this.requestUpdate('currentAttachments');
+    }
   }
 
   private addFailedAttachment(file: File, error: string) {
@@ -138,8 +167,13 @@ export class AttachmentsUploader extends FormElement {
       size: file.size,
       error: error,
     } as Attachment;
-    this.failedAttachments.push(failedAttachment);
-    this.requestUpdate('failedAttachments');
+
+    if (this.maxAttachments === 1) {
+      this.failedAttachments = [failedAttachment];
+    } else {
+      this.failedAttachments.push(failedAttachment);
+      this.requestUpdate('failedAttachments');
+    }
   }
 
   public render(): TemplateResult {
@@ -149,7 +183,7 @@ export class AttachmentsUploader extends FormElement {
       return html` <input
           type="file"
           id="upload-input"
-          multiple
+          ${this.maxAttachments > 1 ? 'multiple' : 'single'}
           accept="${this.accept}"
           @change="${this.handleUploadFileInputChanged}"
         />
@@ -161,7 +195,7 @@ export class AttachmentsUploader extends FormElement {
           <temba-icon
             id="upload-icon"
             class="upload-icon"
-            name="${Icon.attachment}"
+            name="icon.${this.uploadIcon}"
             @click="${this.handleUploadFileIconClicked}"
             clickable
           ></temba-icon>
