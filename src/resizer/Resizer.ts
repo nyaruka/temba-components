@@ -10,7 +10,6 @@ export class Resizer extends RapidElement {
       display: block;
       position: relative;
       width: var(--box-width, 200px);
-      max-width: var(--box-width, 700px);
       --resizer-handle-size: 15px;
     }
 
@@ -25,17 +24,19 @@ export class Resizer extends RapidElement {
 
     .resizer-handle {
       position: relative;
-      width: 1px;
+      width: 4px;
       background: rgba(0, 0, 0, 0);
       height: 100%;
     }
 
     .resizer:hover .resizer-handle {
-      background: rgba(0, 0, 0, 0.1);
+      background: rgba(0, 0, 0, 0.05);
+      width: 3px;
+      margin-right: -1px;
     }
 
     .resizing .resizer-handle {
-      background: rgba(0, 0, 0, 0.3) !important;
+      background: rgba(0, 0, 0, 0.1) !important;
       width: 3px;
       margin-right: -1px;
     }
@@ -48,7 +49,11 @@ export class Resizer extends RapidElement {
 
   initialX: number;
   boxWidth: number;
+
+  @property({ type: Number })
   minWidth = 200;
+
+  @property({ type: Number })
   maxWidth = 2000;
 
   @property({ type: Boolean })
@@ -69,9 +74,13 @@ export class Resizer extends RapidElement {
   ): void {
     super.updated(_changedProperties);
     if (_changedProperties.has('currentWidth')) {
-      console.log('width changed', this.currentWidth);
       this.style.setProperty('--box-width', `${this.currentWidth}px`);
     }
+  }
+
+  public setWidth(width: number) {
+    const newWidth = Math.min(Math.max(width, this.minWidth), this.maxWidth);
+    this.currentWidth = newWidth;
   }
 
   startResize(e: MouseEvent) {
@@ -86,13 +95,7 @@ export class Resizer extends RapidElement {
 
   resize(event: MouseEvent) {
     const dx = event.x - this.initialX;
-    const newWidth = Math.min(
-      Math.max(this.boxWidth + dx, this.minWidth),
-      this.maxWidth
-    );
-
-    this.currentWidth = newWidth;
-    this.style.setProperty('--box-width', `${newWidth}px`);
+    this.setWidth(this.boxWidth + dx);
   }
 
   stopResize() {
