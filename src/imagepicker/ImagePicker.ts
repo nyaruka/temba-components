@@ -16,12 +16,12 @@ export class ImagePicker extends FormElement {
       }
       .image-item img {
         border-radius: 50%;
-        height: 200px;
-        width: 200px;
+        height: 36px;
+        width: 36px;
       }
       .remove-item {
         cursor: pointer !important;
-        padding: 3px 6px;
+        padding: 2px; //padding: 3px 6px;
         background: rgba(100, 100, 100, 0.05);
       }
       .remove-item:hover {
@@ -35,20 +35,24 @@ export class ImagePicker extends FormElement {
         margin-left: 0.25em;
         padding: 0.2em;
       }
+      .actions-left,
       .actions-right {
         display: flex;
         align-items: center;
+      }
+      .remove-icon {
+        color: rgb(102, 102, 102);
       }
     `;
   }
 
   @property({ type: String })
-  uploadIcon = 'attachment_logo';
+  uploadIcon = 'attachment_image';
 
   @property({ type: String })
   removeIcon = 'delete_small';
 
-  @property({})
+  @property({ type: Object })
   currentAttachment: Attachment;
 
   @property({ type: Array })
@@ -111,16 +115,13 @@ export class ImagePicker extends FormElement {
       <temba-attachments-drop-zone
         @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
       >
-        <div slot="inner-components">
-          <div class="items image">${this.getImage()}</div>
-          <div class="items actions">${this.getActions()}</div>
-        </div>
+        <div class="items image">${this.getImage()}</div>
+        <div class="items actions">${this.getActions()}</div>
       </temba-attachments-drop-zone>
     `;
   }
 
   private getImage(): TemplateResult {
-    // todo display x or trash to delete
     return html`
       ${this.currentAttachment
         ? html`
@@ -131,8 +132,10 @@ export class ImagePicker extends FormElement {
           <div class="remove-item">
             <temba-icon
               id=${this.currentAttachment.uuid}
+              class="remove-icon"
               name="icon.${this.removeIcon}"
               @click=${this.handleAttachmentRemoved}
+              clickable
             >
             </temba-icon>
           </div>`
@@ -142,7 +145,21 @@ export class ImagePicker extends FormElement {
 
   private getActions(): TemplateResult {
     return html`
-      <div class="actions-left">${this.getUploader()}</div>
+      <div class="actions-left">
+        ${this.getUploader()}
+        ${this.currentAttachment
+          ? html` <div class="remove-item">
+              <temba-icon
+                id=${this.currentAttachment.uuid}
+                class="remove-icon"
+                name="icon.${this.removeIcon}"
+                @click=${this.handleAttachmentRemoved}
+                clickable
+              >
+              </temba-icon>
+            </div>`
+          : null}
+      </div>
       <div class="actions-center"></div>
       <div class="actions-right"></div>
     `;
@@ -153,8 +170,8 @@ export class ImagePicker extends FormElement {
       <temba-attachments-uploader
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
-        maxAttachments="1"
         uploadIcon="${this.uploadIcon}"
+        maxAttachments="1"
         @temba-content-changed="${this.handleAttachmentAdded.bind(this)}"
       >
       </temba-attachments-uploader>

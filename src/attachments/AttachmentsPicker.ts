@@ -32,6 +32,9 @@ export class AttachmentsPicker extends FormElement {
   @property({ type: String })
   removeIcon = 'delete_small';
 
+  @property({ type: Number })
+  maxAttachments = 3;
+
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
@@ -83,11 +86,9 @@ export class AttachmentsPicker extends FormElement {
       <temba-attachments-drop-zone
         @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
       >
-        <div slot="inner-components">
-          <slot></slot>
-          <div class="items attachments">${this.getAttachments()}</div>
-          <div class="items actions">${this.getActions()}</div>
-        </div>
+        <slot></slot>
+        <div class="items attachments">${this.getAttachments()}</div>
+        <div class="items actions">${this.getActions()}</div>
       </temba-attachments-drop-zone>
     `;
   }
@@ -118,6 +119,7 @@ export class AttachmentsPicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
+        maxAttachments="${this.maxAttachments}"
         @temba-content-changed="${this.handleAttachmentsAdded.bind(this)}"
       >
       </temba-attachments-uploader>

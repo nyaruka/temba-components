@@ -1,7 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
-import { Icon } from '../vectoricon';
 import { CustomEventType } from '../interfaces';
 import { postFormData, WebResponse } from '../utils';
 
@@ -14,9 +13,7 @@ export interface Attachment {
   error: string;
 }
 
-export const upload_icon = 'attachment';
 export const upload_endpoint = '/api/v2/media.json';
-export const max_attachments = 3;
 
 export class AttachmentsUploader extends FormElement {
   static get styles() {
@@ -37,14 +34,14 @@ export class AttachmentsUploader extends FormElement {
   @property({ type: String })
   accept = ''; //e.g. ".xls,.xlsx"
 
-  @property({ type: Number })
-  maxAttachments = max_attachments;
-
   @property({ type: String })
-  uploadIcon = upload_icon;
+  uploadIcon: string;
 
   @property({ type: String, attribute: false })
   endpoint = upload_endpoint;
+
+  @property({ type: Number })
+  maxAttachments: number;
 
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
@@ -180,13 +177,7 @@ export class AttachmentsUploader extends FormElement {
     if (this.uploading) {
       return html`<temba-loading units="3" size="12"></temba-loading>`;
     } else {
-      return html` <input
-          type="file"
-          id="upload-input"
-          ${this.maxAttachments > 1 ? 'multiple' : 'single'}
-          accept="${this.accept}"
-          @change="${this.handleUploadFileInputChanged}"
-        />
+      return html` ${this.getInput()}
         <label
           id="upload-label"
           class="actions-left upload-label"
@@ -200,6 +191,26 @@ export class AttachmentsUploader extends FormElement {
             clickable
           ></temba-icon>
         </label>`;
+    }
+  }
+
+  private getInput(): TemplateResult {
+    if (this.maxAttachments > 1) {
+      return html`<input
+        type="file"
+        id="upload-input"
+        multiple
+        accept="${this.accept}"
+        @change="${this.handleUploadFileInputChanged}"
+      />`;
+    } else {
+      return html`<input
+        type="file"
+        id="upload-input"
+        single
+        accept="${this.accept}"
+        @change="${this.handleUploadFileInputChanged}"
+      />`;
     }
   }
 }

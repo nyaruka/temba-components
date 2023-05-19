@@ -111,7 +111,7 @@ export class AttachmentsDropZone extends FormElement {
         <div class="drop-mask">
           <div>Upload Attachment</div>
         </div>
-        <slot name="inner-components"></slot>
+        <slot></slot>
       </div>
     `;
   }
