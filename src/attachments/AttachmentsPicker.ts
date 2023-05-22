@@ -19,10 +19,6 @@ export class AttachmentsPicker extends FormElement {
         margin-left: 0.25em;
         padding: 0.2em;
       }
-      .actions-right {
-        display: flex;
-        align-items: center;
-      }
     `;
   }
 
@@ -106,11 +102,7 @@ export class AttachmentsPicker extends FormElement {
   }
 
   private getActions(): TemplateResult {
-    return html`
-      <div class="actions-left">${this.getUploader()}</div>
-      <div class="actions-center"></div>
-      <div class="actions-right"></div>
-    `;
+    return html` <div class="action-item">${this.getUploader()}</div> `;
   }
 
   private getUploader(): TemplateResult {

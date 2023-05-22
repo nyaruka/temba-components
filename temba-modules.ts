@@ -52,6 +52,7 @@ import { AttachmentsDropZone } from './src/attachments/AttachmentsDropZone';
 import { AttachmentsUploader } from './src/attachments/AttachmentsUploader';
 import { AttachmentsList } from './src/attachments/AttachmentsList';
 import { ImagePicker } from './src/imagepicker/ImagePicker';
+import { Compose2 } from './src/compose/Compose2';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -107,10 +108,11 @@ addCustomElement('temba-contact-pending', ContactPending);
 addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
-addCustomElement('temba-compose', Compose);
+// addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-attachments-picker', AttachmentsPicker);
 addCustomElement('temba-attachments-drop-zone', AttachmentsDropZone);
 addCustomElement('temba-attachments-uploader', AttachmentsUploader);
 addCustomElement('temba-attachments-list', AttachmentsList);
 addCustomElement('temba-image-picker', ImagePicker);
+addCustomElement('temba-compose2', Compose2);

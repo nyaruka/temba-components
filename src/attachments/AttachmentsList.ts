@@ -63,10 +63,20 @@ export class AttachmentsList extends FormElement {
     super();
   }
 
+  public firstUpdated(changes: Map<string, any>): void {
+    // console.log('AttachmentsList firstUpdated');
+    super.firstUpdated(changes);
+    // console.log('AttachmentsList firstUpdated old currentAttachments', changes.get('currentAttachments'));
+    // console.log('AttachmentsList firstUpdated currentAttachments', this.currentAttachments);
+  }
+
   public updated(changes: Map<string, any>): void {
+    // console.log('AttachmentsList updated');
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
+      // console.log('AttachmentsList updated old currentAttachments', changes.get('currentAttachments'));
+      // console.log('AttachmentsList updated currentAttachments', this.currentAttachments);
       this.fireCustomEvent(CustomEventType.ContentChanged, {
         currentAttachments: this.currentAttachments,
         failedAttachments: this.failedAttachments,

@@ -70,6 +70,10 @@ export class AttachmentsDropZone extends FormElement {
     super();
   }
 
+  private handleContainerClicked(evt: Event): void {
+    this.fireCustomEvent(CustomEventType.ContainerClicked);
+  }
+
   private handleDragEnter(evt: DragEvent): void {
     this.highlight(evt);
   }
@@ -106,6 +110,7 @@ export class AttachmentsDropZone extends FormElement {
     return html`
       <div
         class=${getClasses({ container: true, highlight: this.pendingDrop })}
+        @click="${this.handleContainerClicked}"
         @dragenter="${this.handleDragEnter}"
         @dragover="${this.handleDragOver}"
         @dragleave="${this.handleDragLeave}"

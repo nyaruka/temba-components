@@ -244,5 +244,6 @@ export enum CustomEventType {
   OrderChanged = 'temba-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
-  DragDropped = 'temba-drag-dropped'
+  DragDropped = 'temba-drag-dropped',
+  ContainerClicked = 'temba-container-clicked',
 }
