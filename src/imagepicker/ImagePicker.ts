@@ -14,28 +14,15 @@ export class ImagePicker extends FormElement {
         display: flex;
         justify-content: center;
       }
-      .image-item {
-        display: flex;
-        align-items: flex-end;
-      }
       .image-item img {
         border-radius: 50%;
         height: 100px;
         width: 100px;
       }
-      .remove-item {
-        cursor: pointer !important;
-        padding: 2px; //padding: 3px 6px;
-        background: rgba(100, 100, 100, 0.05);
-        margin-left: -15px;
-      }
-      .remove-item:hover {
-        background: rgba(100, 100, 100, 0.1);
-      }
 
       .actions {
         display: flex;
-        justify-content: space-between;
+        justify-content: space-between; //todo finalize re: space-between vs. space-around vs. space-evenly
         align-items: center;
         margin-left: 0.25em;
         padding: 0.2em;
@@ -129,15 +116,6 @@ export class ImagePicker extends FormElement {
         ? html`
           <div class="image-item">
             <img src=${this.currentAttachment.url}></img>
-            <div class="remove-item">
-              <temba-icon
-                id=${this.currentAttachment.uuid}
-                class="remove-icon"
-                name="icon.${this.removeIcon}"
-                @click=${this.handleAttachmentRemoved}
-                clickable
-              >
-              </temba-icon>
             </div>
           </div>`
         : null}
