@@ -128,9 +128,7 @@ export class ImagePicker extends FormElement {
     return html`
       ${this.currentAttachment
         ? html`
-          <div class="${
-            this.currentAttachment.error ? 'error-item' : 'image-item'
-          }">
+          <div class="image-item">
             <img 
               src="${this.currentAttachment.url}"
               title="${
