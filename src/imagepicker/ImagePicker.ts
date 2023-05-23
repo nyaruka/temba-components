@@ -6,6 +6,7 @@ import {
   AttachmentsUploader,
 } from '../attachments/AttachmentsUploader';
 import { AttachmentsList } from '../attachments/AttachmentsList';
+import { Icon } from '../vectoricon';
 
 export class ImagePicker extends FormElement {
   static get styles() {
@@ -19,15 +20,21 @@ export class ImagePicker extends FormElement {
         height: 100px;
         width: 100px;
       }
+      //todo - remove if we display custom image
+      .error-item img {
+        border-radius: 0%;
+        height: 20px;
+        width: 20px;
+        margin: 5px;
+      }
 
       .actions {
         display: flex;
-        justify-content: space-between; //todo finalize re: space-between vs. space-around vs. space-evenly
+        justify-content: space-between;
         align-items: center;
         margin-left: 0.25em;
         padding: 0.2em;
       }
-
       .remove-icon {
         color: rgb(102, 102, 102);
       }
@@ -38,7 +45,10 @@ export class ImagePicker extends FormElement {
   uploadIcon = 'attachment_image';
 
   @property({ type: String })
-  removeIcon = 'delete_small';
+  uploadText = 'Upload Image';
+
+  @property({ type: String })
+  removeIcon = 'delete';
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -73,10 +83,13 @@ export class ImagePicker extends FormElement {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
-    //temporary hack
-    if (this.failedAttachments.length > 0) {
+    if (this.currentAttachments.length > 0) {
+      this.currentAttachment = this.currentAttachments[0];
+    } else if (this.failedAttachments.length > 0) {
       this.currentAttachment = this.failedAttachments[0];
-      this.currentAttachment.url = './../test-assets/img/meow.jpg';
+      //todo - temporary hack
+      this.currentAttachment.url =
+        './../test-assets/img/no_image_available.jpeg';
     } else {
       this.currentAttachment = null;
     }
@@ -102,6 +115,7 @@ export class ImagePicker extends FormElement {
     return html`
       <temba-attachments-drop-zone
         customWidth="125px"
+        dropText="${this.uploadText}"
         @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
       >
         <div class="items image">${this.getImage()}</div>
@@ -114,8 +128,16 @@ export class ImagePicker extends FormElement {
     return html`
       ${this.currentAttachment
         ? html`
-          <div class="image-item">
-            <img src=${this.currentAttachment.url}></img>
+          <div class="${
+            this.currentAttachment.error ? 'error-item' : 'image-item'
+          }">
+            <img 
+              src="${this.currentAttachment.url}"
+              title="${
+                this.currentAttachment.error
+                  ? 'Upload failed - ' + this.currentAttachment.error
+                  : null
+              }"></img>
             </div>
           </div>`
         : null}
@@ -125,18 +147,9 @@ export class ImagePicker extends FormElement {
   private getActions(): TemplateResult {
     return html`
       <div class="action-item">${this.getUploader()}</div>
-      ${this.currentAttachment
-        ? html` <div class="action-item">
-            <temba-icon
-              id=${this.currentAttachment.uuid}
-              class="remove-icon"
-              name="icon.${this.removeIcon}"
-              @click=${this.handleAttachmentRemoved}
-              clickable
-            >
-            </temba-icon>
-          </div>`
-        : null}
+      <div class="action-item">
+        ${this.currentAttachment ? this.getRemoveAction() : null}
+      </div>
     `;
   }
 
@@ -146,10 +159,22 @@ export class ImagePicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
+        uploadText="${this.uploadText}"
         maxAttachments="1"
         @temba-content-changed="${this.handleAttachmentAdded.bind(this)}"
       >
       </temba-attachments-uploader>
     `;
+  }
+
+  private getRemoveAction(): TemplateResult {
+    return html` <temba-icon
+      id=${this.currentAttachment.uuid}
+      class="remove-icon"
+      name="${Icon.delete}"
+      @click=${this.handleAttachmentRemoved}
+      clickable
+    >
+    </temba-icon>`;
   }
 }

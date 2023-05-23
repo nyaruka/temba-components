@@ -26,6 +26,9 @@ export class AttachmentsPicker extends FormElement {
   uploadIcon = 'attachment';
 
   @property({ type: String })
+  uploadText = 'Upload Attachment';
+
+  @property({ type: String })
   removeIcon = 'delete_small';
 
   @property({ type: Number })
@@ -80,6 +83,7 @@ export class AttachmentsPicker extends FormElement {
   public render(): TemplateResult {
     return html`
       <temba-attachments-drop-zone
+        dropText="${this.uploadText}"
         @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
       >
         <slot></slot>

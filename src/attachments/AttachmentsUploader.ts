@@ -28,6 +28,12 @@ export class AttachmentsUploader extends FormElement {
       .upload-icon {
         color: rgb(102, 102, 102);
       }
+      .upload-text {
+        margin-left: 5px;
+      }
+      .upload-text:hover {
+        cursor: pointer;
+      }
     `;
   }
 
@@ -36,6 +42,9 @@ export class AttachmentsUploader extends FormElement {
 
   @property({ type: String })
   uploadIcon: string;
+
+  @property({ type: String })
+  uploadText: string;
 
   @property({ type: String, attribute: false })
   endpoint = upload_endpoint;
@@ -200,6 +209,17 @@ export class AttachmentsUploader extends FormElement {
             @click="${this.handleUploadFileIconClicked}"
             clickable
           ></temba-icon>
+          ${this.uploadText
+            ? this.currentAttachments.length === 0 &&
+              this.failedAttachments.length === 0
+              ? html` <div
+                  class="upload-text"
+                  @click="${this.handleUploadFileIconClicked}"
+                >
+                  ${this.uploadText}
+                </div>`
+              : null
+            : null}
         </label>`;
     }
   }
