@@ -2,7 +2,7 @@ import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
-import { postFormData, WebResponse } from '../utils';
+import { formatFileSize, postFormData, WebResponse } from '../utils';
 
 export interface Attachment {
   uuid: string;
@@ -52,6 +52,12 @@ export class AttachmentsUploader extends FormElement {
   @property({ type: Number })
   maxAttachments: number;
 
+  @property({ type: Number })
+  minFileSize: number;
+
+  @property({ type: Number })
+  maxFileSize: number;
+
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
@@ -99,7 +105,18 @@ export class AttachmentsUploader extends FormElement {
     let filesToUpload = [];
 
     if (this.maxAttachments === 1) {
+      this.currentAttachments = [];
+      this.failedAttachments = [];
       filesToUpload = [files.item(0)];
+
+      const fileToUpload = filesToUpload[0];
+      if (
+        (this.minFileSize > 0 && fileToUpload.size < this.minFileSize) ||
+        (this.maxFileSize > 0 && fileToUpload.size > this.maxFileSize)
+      ) {
+        this.addFailedAttachment(fileToUpload, this.getUploadFileSizeError());
+        return;
+      }
     } else {
       //remove files that will exceed max attachments
       let totalAttachments = this.currentAttachments.length + files.length;
@@ -116,8 +133,8 @@ export class AttachmentsUploader extends FormElement {
           }
         }
       }
+      //remove duplicate files that have already been uploaded
       if (this.currentAttachments.length > 0) {
-        //remove duplicate files that have already been uploaded
         filesToUpload = [...files].filter(file => {
           const index = this.currentAttachments.findIndex(
             value => value.filename === file.name && value.size === file.size
@@ -128,6 +145,21 @@ export class AttachmentsUploader extends FormElement {
         });
       } else {
         filesToUpload = [...files];
+      }
+      //remove files that are not within the min and max file size
+      if (this.minFileSize > 0 || this.maxFileSize > 0) {
+        filesToUpload = filesToUpload.filter(fileToUpload => {
+          let validFileSize = true;
+          if (
+            (this.minFileSize > 0 && fileToUpload.size < this.minFileSize) ||
+            (this.maxFileSize > 0 && fileToUpload.size > this.maxFileSize)
+          ) {
+            validFileSize = false;
+          }
+          if (validFileSize) {
+            return fileToUpload;
+          }
+        });
       }
     }
 
@@ -191,6 +223,27 @@ export class AttachmentsUploader extends FormElement {
     }
   }
 
+  private getUploadFileSizeError(): string {
+    if (this.minFileSize > 0 && this.maxFileSize > 0) {
+      return `Limit for file uploads is between ${formatFileSize(
+        this.minFileSize,
+        0
+      )} and ${formatFileSize(this.maxFileSize, 0)}.`;
+    }
+    if (this.minFileSize > 0) {
+      return `Minimum limit for file uploads is ${formatFileSize(
+        this.minFileSize,
+        0
+      )}.`;
+    }
+    if (this.maxFileSize > 0) {
+      return `Maximum limit for file uploads is ${formatFileSize(
+        this.maxFileSize,
+        0
+      )}.`;
+    }
+  }
+
   public render(): TemplateResult {
     if (this.uploading) {
       return html`<temba-loading units="3" size="12"></temba-loading>`;
@@ -205,7 +258,7 @@ export class AttachmentsUploader extends FormElement {
             id="upload-icon"
             class="upload-icon"
             name="icon.${this.uploadIcon}"
-            @click="${this.handleUploadFileIconClicked}"
+            @click=${this.handleUploadFileIconClicked}
             clickable
           ></temba-icon>
           ${this.uploadText
@@ -213,7 +266,7 @@ export class AttachmentsUploader extends FormElement {
               this.failedAttachments.length === 0
               ? html` <div
                   class="upload-text"
-                  @click="${this.handleUploadFileIconClicked}"
+                  @click=${this.handleUploadFileIconClicked}
                 >
                   ${this.uploadText}
                 </div>`
@@ -230,7 +283,7 @@ export class AttachmentsUploader extends FormElement {
         id="upload-input"
         multiple
         accept="${this.accept}"
-        @change="${this.handleUploadFileInputChanged}"
+        @change=${this.handleUploadFileInputChanged}
       />`;
     } else {
       return html`<input
@@ -238,7 +291,7 @@ export class AttachmentsUploader extends FormElement {
         id="upload-input"
         single
         accept="${this.accept}"
-        @change="${this.handleUploadFileInputChanged}"
+        @change=${this.handleUploadFileInputChanged}
       />`;
     }
   }

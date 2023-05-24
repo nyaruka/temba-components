@@ -15,17 +15,16 @@ export class ImagePicker extends FormElement {
         display: flex;
         justify-content: center;
       }
-      .image-item img {
-        border-radius: 50%;
+      .image-item {
+        display: flex;
         height: 100px;
         width: 100px;
       }
-      //todo - remove if we display custom image
-      .error-item img {
-        border-radius: 0%;
-        height: 20px;
-        width: 20px;
-        margin: 5px;
+      .image-item img {
+        border-radius: 50%;
+      }
+      .missing-icon {
+        color: rgb(102, 102, 102, 0.25);
       }
 
       .actions {
@@ -83,21 +82,17 @@ export class ImagePicker extends FormElement {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
+    this.currentAttachment = null;
+    this.helpText = '';
+    this.errors = [];
+
     if (this.currentAttachments.length > 0) {
       this.currentAttachment = this.currentAttachments[0];
     } else if (this.failedAttachments.length > 0) {
       this.currentAttachment = this.failedAttachments[0];
-      //todo - temporary hack
-      this.currentAttachment.url =
-        './../test-assets/img/no_image_available.jpeg';
-    } else {
-      this.currentAttachment = null;
+      this.helpText = this.currentAttachment.error;
+      // this.errors = [this.currentAttachment.error];
     }
-
-    const attachmentsList = this.shadowRoot.querySelector(
-      'temba-attachments-uploader'
-    ) as AttachmentsList;
-    attachmentsList.requestUpdate();
   }
 
   private handleAttachmentRemoved(evt: Event): void {
@@ -113,41 +108,54 @@ export class ImagePicker extends FormElement {
 
   public render(): TemplateResult {
     return html`
-      <temba-attachments-drop-zone
-        customWidth="125px"
-        dropText="${this.uploadText}"
-        @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
+      <temba-field
+        name=${this.name}
+        .helpText=${this.helpText}
+        .errors=${this.errors}
+        .widgetOnly=${this.widgetOnly}
+        value=${this.value}
       >
-        <div class="items image">${this.getImage()}</div>
-        <div class="items actions">${this.getActions()}</div>
-      </temba-attachments-drop-zone>
+        <temba-attachments-drop-zone
+          customWidth="125px"
+          dropText="${this.uploadText}"
+          @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+        >
+          <div class="items image">${this.getImage()}</div>
+          <div class="items actions">${this.getActions()}</div>
+        </temba-attachments-drop-zone>
+      </temba-field>
     `;
   }
 
   private getImage(): TemplateResult {
     return html`
       ${this.currentAttachment
-        ? html`
-          <div class="image-item">
-            <img 
-              src="${this.currentAttachment.url}"
-              title="${
-                this.currentAttachment.error
-                  ? 'Upload failed - ' + this.currentAttachment.error
-                  : null
-              }"></img>
-            </div>
+        ? html` <div class="image-item">
+            ${this.currentAttachment.error
+              ? html` <temba-icon
+                  class="missing-icon"
+                  name="${Icon.attachment_error}"
+                  size="5"
+                ></temba-icon>`
+              : html`
+                    <img
+                      src="${this.currentAttachment.url}">
+                    </img>`}
           </div>`
-        : null}
+        : html` <div class="image-item">
+            <temba-icon
+              class="missing-icon"
+              name="${Icon.attachment_upload}"
+              size="5"
+            ></temba-icon>
+          </div>`}
     `;
   }
 
   private getActions(): TemplateResult {
     return html`
       <div class="action-item">${this.getUploader()}</div>
-      <div class="action-item">
-        ${this.currentAttachment ? this.getRemoveAction() : null}
-      </div>
+      ${this.currentAttachment ? this.getRemoveAction() : null}
     `;
   }
 
@@ -159,20 +167,24 @@ export class ImagePicker extends FormElement {
         uploadIcon="${this.uploadIcon}"
         uploadText="${this.uploadText}"
         maxAttachments="1"
-        @temba-content-changed="${this.handleAttachmentAdded.bind(this)}"
+        minFileSize="2048"
+        maxFileSize="512000"
+        @temba-content-changed=${this.handleAttachmentAdded.bind(this)}
       >
       </temba-attachments-uploader>
     `;
   }
 
   private getRemoveAction(): TemplateResult {
-    return html` <temba-icon
-      id=${this.currentAttachment.uuid}
-      class="remove-icon"
-      name="${Icon.delete}"
-      @click=${this.handleAttachmentRemoved}
-      clickable
-    >
-    </temba-icon>`;
+    return html` <div class="action-item">
+      <temba-icon
+        id=${this.currentAttachment.uuid}
+        class="remove-icon"
+        name="${Icon.delete}"
+        @click=${this.handleAttachmentRemoved}
+        clickable
+      >
+      </temba-icon>
+    </div>`;
   }
 }

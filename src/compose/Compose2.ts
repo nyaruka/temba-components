@@ -291,23 +291,19 @@ export class Compose2 extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          @temba-container-clicked="${this.handleContainerClicked.bind(this)}
-          @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
+          @temba-container-clicked=${this.handleContainerClicked.bind(this)}
+          @temba-drag-dropped=${this.handleDragDropped.bind(this)}
         >
-          ${
-            this.chatbox
-              ? html`<div class="items chatbox">${this.getChatbox()}</div>`
-              : null
-          }
-          ${
-            this.attachments
-              ? html`<div class="items attachments">
-                  ${this.getAttachments()}
-                </div>`
-              : null
-          }
+          ${this.chatbox
+            ? html`<div class="items chatbox">${this.getChatbox()}</div>`
+            : null}
+          ${this.attachments
+            ? html`<div class="items attachments">
+                ${this.getAttachments()}
+              </div>`
+            : null}
           <div class="items actions">${this.getActions()}</div>
-        </temba-attachments-drop-zone>        
+        </temba-attachments-drop-zone>
       </temba-field>
     `;
   }
@@ -331,7 +327,7 @@ export class Compose2 extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         removeIcon="${this.removeIcon}"
-        @temba-content-changed="${this.handleAttachmentsRemoved.bind(this)}"
+        @temba-content-changed=${this.handleAttachmentsRemoved.bind(this)}
       >
       </temba-attachments-list>
     `;
@@ -360,7 +356,7 @@ export class Compose2 extends FormElement {
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
         maxAttachments="${this.maxAttachments}"
-        @temba-content-changed="${this.handleAttachmentsAdded.bind(this)}"
+        @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}
       >
       </temba-attachments-uploader>
     `;

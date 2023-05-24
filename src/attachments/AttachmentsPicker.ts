@@ -84,7 +84,7 @@ export class AttachmentsPicker extends FormElement {
     return html`
       <temba-attachments-drop-zone
         dropText="${this.uploadText}"
-        @temba-drag-dropped="${this.handleDragDropped.bind(this)}"
+        @temba-drag-dropped=${this.handleDragDropped.bind(this)}
       >
         <slot></slot>
         <div class="items attachments">${this.getAttachments()}</div>
@@ -99,7 +99,7 @@ export class AttachmentsPicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         removeIcon="${this.removeIcon}"
-        @temba-content-changed="${this.handleAttachmentsRemoved.bind(this)}"
+        @temba-content-changed=${this.handleAttachmentsRemoved.bind(this)}
       >
       </temba-attachments-list>
     `;
@@ -116,7 +116,7 @@ export class AttachmentsPicker extends FormElement {
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
         maxAttachments="${this.maxAttachments}"
-        @temba-content-changed="${this.handleAttachmentsAdded.bind(this)}"
+        @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}
       >
       </temba-attachments-uploader>
     `;

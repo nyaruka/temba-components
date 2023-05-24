@@ -122,10 +122,7 @@ export class AttachmentsList extends FormElement {
         ? html` <div class="attachments-list">
             ${this.currentAttachments.map(validAttachment => {
               return html` <div class="attachment-item">
-                <div
-                  class="remove-item"
-                  @click="${this.handleRemoveFileClicked}"
-                >
+                <div class="remove-item" @click=${this.handleRemoveFileClicked}>
                   <temba-icon
                     id="${validAttachment.uuid}"
                     name="icon.${this.removeIcon}"
@@ -148,7 +145,7 @@ export class AttachmentsList extends FormElement {
               return html` <div class="attachment-item error">
                 <div
                   class="remove-item error"
-                  @click="${this.handleRemoveFileClicked}"
+                  @click=${this.handleRemoveFileClicked}
                 >
                   <temba-icon
                     id="${invalidAttachment.uuid}"

@@ -113,11 +113,11 @@ export class AttachmentsDropZone extends FormElement {
     return html`
       <div
         class=${getClasses({ container: true, highlight: this.pendingDrop })}
-        @click="${this.handleContainerClicked}"
-        @dragenter="${this.handleDragEnter}"
-        @dragover="${this.handleDragOver}"
-        @dragleave="${this.handleDragLeave}"
-        @drop="${this.handleDragDropped}"
+        @click=${this.handleContainerClicked}
+        @dragenter=${this.handleDragEnter}
+        @dragover=${this.handleDragOver}
+        @dragleave=${this.handleDragLeave}
+        @drop=${this.handleDragDropped}
         style="width:${this.customWidth}"
       >
         <div class="drop-mask">
