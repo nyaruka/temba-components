@@ -100,7 +100,7 @@ export class RapidElement extends LitElement {
   protected firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
-    super.updated(changes);
+    super.firstUpdated(changes);
     showUpdates(this, changes, true);
   }
 
