@@ -79,10 +79,15 @@ export class AttachmentsUploader extends FormElement {
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
       // console.log('AttachmentsUploader updated old currentAttachments', changes.get('currentAttachments'));
       // console.log('AttachmentsUploader updated currentAttachments', this.currentAttachments);
-      this.fireCustomEvent(CustomEventType.ContentChanged, {
-        currentAttachments: this.currentAttachments,
-        failedAttachments: this.failedAttachments,
-      });
+      if (
+        changes.get('currentAttachments') !== undefined ||
+        changes.get('failedAttachments') !== undefined
+      ) {
+        this.fireCustomEvent(CustomEventType.ContentChanged, {
+          currentAttachments: this.currentAttachments,
+          failedAttachments: this.failedAttachments,
+        });
+      }
     }
   }
 

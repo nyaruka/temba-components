@@ -140,7 +140,10 @@ export class Compose2 extends FormElement {
         // console.log('deseralizeComposeValue this.currentText', this.currentText);
       }
       if (this.attachments) {
-        // console.log('deseralizeComposeValue attachments', this.attachments);
+        // console.log(
+        // 'deseralizeComposeValue attachments',
+        // parsed_value.attachments
+        // );
         this.currentAttachments = parsed_value.attachments;
         // console.log('deseralizeComposeValue this.currentAttachments', this.currentAttachments);
       }
@@ -188,8 +191,23 @@ export class Compose2 extends FormElement {
     super.updated(changes);
 
     // changes.forEach((oldValue, propName) => {
-    // console.log(`Compose2 updated ${propName} changed. oldValue: ${oldValue}`);
+    //console.log(propName);
+    // if (Object.hasOwn(this, propName)) {
+    // console.log(
+    // `${propName}: ${oldValue} -> ${JSON.stringify(this[propName])}`
+    // );
+    // }
     // });
+
+    if (changes.has('currentAttachments')) {
+      console.log(
+        'C2',
+        changes.get('currentAttachments'),
+        '->',
+        this.currentAttachments
+      );
+    }
+
     // console.log('Compose2 updated this.currentText', this.currentText);
     // console.log('Compose2 updated this.currentAttachments', this.currentAttachments);
     // console.log('Compose2 updated this.value', this.value);
@@ -218,6 +236,7 @@ export class Compose2 extends FormElement {
   }
 
   public reset(): void {
+    console.log('resetting..');
     this.currentText = '';
     this.currentAttachments = [];
     this.failedAttachments = [];
@@ -247,7 +266,7 @@ export class Compose2 extends FormElement {
 
   private handleAttachmentsAdded(evt: CustomEvent): void {
     // console.log('handleAttachmentsAdded');
-    // console.log('handleAttachmentsAdded evt.detail', evt.detail);
+    console.log('handleAttachmentsAdded evt.detail', evt.detail);
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
@@ -259,7 +278,7 @@ export class Compose2 extends FormElement {
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
     // console.log('handleAttachmentsRemoved');
-    // console.log('handleAttachmentsRemoved evt.detail', evt.detail);
+    console.log('handleAttachmentsRemoved evt.detail', evt.detail);
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 

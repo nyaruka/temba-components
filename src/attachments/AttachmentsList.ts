@@ -54,10 +54,10 @@ export class AttachmentsList extends FormElement {
   removeIcon = 'delete_small';
 
   @property({ type: Array })
-  currentAttachments: Attachment[] = [];
+  currentAttachments: Attachment[];
 
   @property({ type: Array })
-  failedAttachments: Attachment[] = [];
+  failedAttachments: Attachment[];
 
   public constructor() {
     super();
@@ -75,12 +75,22 @@ export class AttachmentsList extends FormElement {
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      // console.log('AttachmentsList updated old currentAttachments', changes.get('currentAttachments'));
-      // console.log('AttachmentsList updated currentAttachments', this.currentAttachments);
-      this.fireCustomEvent(CustomEventType.ContentChanged, {
-        currentAttachments: this.currentAttachments,
-        failedAttachments: this.failedAttachments,
-      });
+      console.log(
+        'AL',
+        changes.get('currentAttachments'),
+        '->',
+        this.currentAttachments
+      );
+
+      if (
+        changes.get('currentAttachments') !== undefined &&
+        changes.get('failedAttachments') !== undefined
+      ) {
+        this.fireCustomEvent(CustomEventType.ContentChanged, {
+          currentAttachments: this.currentAttachments,
+          failedAttachments: this.failedAttachments,
+        });
+      }
     }
   }
 

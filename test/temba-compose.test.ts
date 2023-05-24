@@ -703,35 +703,37 @@ describe('temba-compose chatbox with text and attachments with files', () => {
   });
 
   //todo - fix this test
-  // it('chatbox with text, attachments with success uploaded files deserialize and serialize', async () => {
-  //   const initialValue = getInitialValue(getValidText(), getValidAttachments());
-  //   const composeValue = getCompose2Value(initialValue);
-  //   const composeValues = getCompose2Values(initialValue);
+  it.only('chatbox with text, attachments with success uploaded files deserialize and serialize', async () => {
+    const initialValue = getInitialValue(getValidText(), getValidAttachments());
+    const composeValue = getCompose2Value(initialValue);
+    const composeValues = getCompose2Values(initialValue);
 
-  //   // console.log('UnitTest composeValue', composeValue);
-  //   // console.log('UnitTest composeValues', composeValues);
+    console.log(initialValue);
 
-  //   const compose: Compose2 = await getCompose2({
-  //     chatbox: true,
-  //     attachments: true,
-  //     button: true,
-  //     value: composeValue,
-  //   });
+    // console.log('UnitTest composeValue', composeValue);
+    // console.log('UnitTest composeValues', composeValues);
 
-  //   // console.log('UnitTest currentText', compose.currentText);
-  //   // console.log('UnitTest currentAttachments', compose.currentAttachments);
+    const compose: Compose2 = await getCompose2({
+      chatbox: true,
+      attachments: true,
+      button: true,
+      value: composeValue,
+    });
 
-  //   // deserialize
-  //   expect(compose.currentText).to.equal(getValidText());
-  //   expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
+    // console.log('UnitTest currentText', compose.currentText);
+    // console.log('UnitTest currentAttachments', compose.currentAttachments);
 
-  //   // console.log('UnitTest value', compose.value);
-  //   // console.log('UnitTest values', compose.values);
+    // deserialize
+    expect(compose.currentText).to.equal(getValidText());
+    expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
 
-  //   // serialize
-  //   expect(compose.value).to.equal(composeValue);
-  //   expect(compose.values).to.deep.equal(composeValues);
-  // });
+    // console.log('UnitTest value', compose.value);
+    // console.log('UnitTest values', compose.values);
+
+    // serialize
+    expect(compose.value).to.equal(composeValue);
+    expect(compose.values).to.deep.equal(composeValues);
+  });
 
   it('chatbox with text, attachments with failure uploaded files', async () => {
     const compose: Compose2 = await getCompose2({
