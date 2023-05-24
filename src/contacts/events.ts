@@ -26,6 +26,7 @@ export const getEventStyles = () => {
       margin-right: -16px;
       padding-right: 16px;
       margin-bottom: 1.3em;
+      max-width: 100%;
     }
 
     .grouping .items {
@@ -322,7 +323,6 @@ export const getEventStyles = () => {
 
     .event .description {
       flex-grow: 1;
-      word-break: break-all;
     }
 
     .msg-summary {
@@ -399,6 +399,8 @@ export const getEventStyles = () => {
       display: inline-block;
       font-weight: 500;
       margin: 0px 2px;
+      word-break: break-all;
+      white-space: break-spaces;
     }
 
     .subtext {

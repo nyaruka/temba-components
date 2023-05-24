@@ -41,7 +41,6 @@ export class Select extends FormElement {
       temba-options {
         --temba-options-font-size: var(--temba-select-selected-font-size);
         --icon-color: var(--color-text-dark);
-        z-index: 3;
       }
 
       :host:focus {
@@ -91,7 +90,6 @@ export class Select extends FormElement {
         padding-top: 1px;
         box-shadow: var(--widget-box-shadow);
         position: relative;
-        z-index: 2;
       }
 
       temba-icon.select-open:hover,
@@ -322,7 +320,6 @@ export class Select extends FormElement {
         font-size: 0.9em;
         color: rgba(0, 0, 0, 0.5);
         box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%);
-        z-index: 1;
         position: relative;
       }
 

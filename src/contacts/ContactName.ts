@@ -22,9 +22,20 @@ export class ContactName extends RapidElement {
       temba-urn {
         margin-right: 0.2em;
       }
+
+      .name {
+        font-size: 1.5rem;
+        overflow: hidden;
+        max-height: 2rem;
+        line-height: 2rem;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        margin: auto;
+      }
     `;
   }
-
   public render(): TemplateResult {
     const urn = this.urn
       ? html`<temba-urn size=${this.size} urn=${this.urn}></temba-urn>`

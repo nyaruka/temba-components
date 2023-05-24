@@ -53,6 +53,7 @@ import { AttachmentsUploader } from './src/attachments/AttachmentsUploader';
 import { AttachmentsList } from './src/attachments/AttachmentsList';
 import { ImagePicker } from './src/imagepicker/ImagePicker';
 import { Compose2 } from './src/compose/Compose2';
+import { Resizer } from './src/resizer/Resizer';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -116,3 +117,4 @@ addCustomElement('temba-attachments-uploader', AttachmentsUploader);
 addCustomElement('temba-attachments-list', AttachmentsList);
 addCustomElement('temba-image-picker', ImagePicker);
 addCustomElement('temba-compose2', Compose2);
+addCustomElement('temba-resizer', Resizer);

@@ -8,6 +8,9 @@ import {
   postUrl,
   postJSON,
   postForm,
+  getCookie,
+  setCookie,
+  COOKIE_KEYS,
 } from '../utils';
 import {
   ContactField,
@@ -39,6 +42,8 @@ export class Store extends RapidElement {
       }
     `;
   }
+
+  settings = {};
 
   @property({ type: Number })
   ttl = 60000;
@@ -100,8 +105,13 @@ export class Store extends RapidElement {
     return this.locale[0];
   }
 
-  public reset() {
+  public clearCache() {
     this.cache = Lru(this.max, this.ttl);
+  }
+
+  public reset() {
+    this.clearCache();
+    this.settings = JSON.parse(getCookie('settings') || '{}');
 
     /* 
     // This will create a shorthand unit
@@ -425,6 +435,16 @@ export class Store extends RapidElement {
         delete this.fetching[url];
       });
     }
+  }
+
+  public get(key: string, defaultValue: any = null) {
+    return this.settings[key] || defaultValue;
+  }
+
+  public set(key: string, value: string) {
+    this.settings[key] = value;
+    // not sure yet if we really want to perist these
+    // setCookie(COOKIE_KEYS.SETTINGS, JSON.stringify(this.settings), '/');
   }
 
   public render() {
