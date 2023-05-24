@@ -1,5 +1,62 @@
-import { LitElement } from 'lit';
+import { LitElement, PropertyValueMap } from 'lit';
 import { CustomEventType } from './interfaces';
+
+enum Color {
+  YELLOW = 33,
+  PURPLE = 35,
+  WHITE = 37,
+  BLUE = 34,
+  RED = 31,
+  CYAN = 36,
+  GREEN = 32,
+  BLACK = 30,
+}
+
+const colorize = (text: string, color: Color) => {
+  return `\x1b[${color}m${text}\x1b[0m`;
+};
+
+const tag = (ele: HTMLElement) => {
+  return colorize(ele.tagName.padEnd(30), Color.PURPLE);
+};
+
+const showUpdates = (
+  ele: HTMLElement,
+  changes: Map<PropertyKey, unknown>,
+  firstUpdated = false
+) => {
+  if (ele['DEBUG_UPDATES'] || ele['DEBUG']) {
+    if (changes.size > 0) {
+      console.log(
+        tag(ele),
+        firstUpdated
+          ? colorize('<updated>', Color.YELLOW)
+          : colorize('<first-updated>', Color.BLACK)
+      );
+      for (const [key, value] of changes.entries()) {
+        console.log(
+          '  ' + String(key).padEnd(30),
+          value,
+          colorize('=>', Color.WHITE),
+          ele[key]
+        );
+      }
+    }
+  }
+};
+
+const showEvent = (ele: HTMLElement, type: string, details = undefined) => {
+  if (ele['DEBUG_EVENTS'] || ele['DEBUG']) {
+    console.log(
+      tag(ele),
+      details !== undefined
+        ? colorize('<custom-event>', Color.RED)
+        : colorize('<event>       ', Color.CYAN),
+      colorize(type, Color.BLUE),
+      details !== undefined ? details : ''
+    );
+  }
+};
 
 export interface EventHandler {
   event: string;
@@ -8,6 +65,10 @@ export interface EventHandler {
 }
 
 export class RapidElement extends LitElement {
+  DEBUG = false;
+  DEBUG_UPDATES = false;
+  DEBUG_EVENTS = false;
+
   private eles: { [selector: string]: HTMLDivElement } = {};
   public getEventHandlers(): EventHandler[] {
     return [];
@@ -36,7 +97,23 @@ export class RapidElement extends LitElement {
     super.disconnectedCallback();
   }
 
+  protected firstUpdated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changes);
+    showUpdates(this, changes, true);
+  }
+
+  protected updated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.updated(changes);
+    showUpdates(this, changes, false);
+  }
+
   public fireEvent(type: string): any {
+    showEvent(this, type);
+
     return this.dispatchEvent(
       new Event(type, {
         bubbles: true,
@@ -46,6 +123,10 @@ export class RapidElement extends LitElement {
   }
 
   public fireCustomEvent(type: CustomEventType, detail: any = {}): any {
+    if (this['DEBUG_EVENTS']) {
+      showEvent(this, type, detail);
+    }
+
     const event = new CustomEvent(type, {
       detail,
       bubbles: true,
