@@ -65,7 +65,7 @@ function copyFilesInDict(sourceDir, targetDir, matchDict) {
 
         try {
           fs.copyFileSync(sourcePath, targetPath);
-          // console.log(`Copied file '${file}' to the target directory.`);
+          console.log(`Copied file '${file}' to the target directory.`);
         } catch (err) {
           console.error(`Error copying file '${file}':`, err);
         }

@@ -708,11 +708,6 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const composeValue = getCompose2Value(initialValue);
     const composeValues = getCompose2Values(initialValue);
 
-    console.log(initialValue);
-
-    // console.log('UnitTest composeValue', composeValue);
-    // console.log('UnitTest composeValues', composeValues);
-
     const compose: Compose2 = await getCompose2({
       chatbox: true,
       attachments: true,
@@ -720,15 +715,9 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       value: composeValue,
     });
 
-    // console.log('UnitTest currentText', compose.currentText);
-    // console.log('UnitTest currentAttachments', compose.currentAttachments);
-
     // deserialize
     expect(compose.currentText).to.equal(getValidText());
     expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
-
-    // console.log('UnitTest value', compose.value);
-    // console.log('UnitTest values', compose.values);
 
     // serialize
     expect(compose.value).to.equal(composeValue);

@@ -129,42 +129,27 @@ export class Compose2 extends FormElement {
   }
 
   private deserializeComposeValue(): void {
-    // console.log('deseralizeComposeValue');
-    // console.log('deseralizeComposeValue value', this.value);
     if (this.value) {
       const parsed_value = JSON.parse(this.value);
-      // console.log('deseralizeComposeValue parsed_value', parsed_value);
       if (this.chatbox) {
-        // console.log('deseralizeComposeValue chatbox', this.chatbox);
         this.currentText = parsed_value.text;
-        // console.log('deseralizeComposeValue this.currentText', this.currentText);
       }
       if (this.attachments) {
-        // console.log(
-        // 'deseralizeComposeValue attachments',
-        // parsed_value.attachments
-        // );
         this.currentAttachments = parsed_value.attachments;
-        // console.log('deseralizeComposeValue this.currentAttachments', this.currentAttachments);
       }
     }
   }
 
   private serializeComposeValue(): void {
-    // console.log('seralizeComposeValue');
-    // console.log('seralizeComposeValue this.currentText', this.currentText);
-    // console.log('seralizeComposeValue this.currentAttachments', this.currentAttachments);
     const composeValue = {
       text: this.currentText,
       attachments: this.currentAttachments,
     };
     // update this.value...
     this.value = JSON.stringify(composeValue);
-    // console.log('seralizeComposeValue value', this.value);
     // and then also update this.values...
     // so that the hidden input is updated via FormElement.updateInputs()
     this.values = [composeValue];
-    // console.log('seralizeComposeValue values', this.values);
 
     const attachmentsList = this.shadowRoot.querySelector(
       'temba-attachments-list'
@@ -178,40 +163,13 @@ export class Compose2 extends FormElement {
   }
 
   public firstUpdated(changes: Map<string, any>): void {
-    // console.log('firstUpdated');
     super.firstUpdated(changes);
-
     this.deserializeComposeValue();
-
     this.setFocusOnChatbox();
   }
 
   public updated(changes: Map<string, any>): void {
-    // console.log('Compose2 updated');
     super.updated(changes);
-
-    // changes.forEach((oldValue, propName) => {
-    //console.log(propName);
-    // if (Object.hasOwn(this, propName)) {
-    // console.log(
-    // `${propName}: ${oldValue} -> ${JSON.stringify(this[propName])}`
-    // );
-    // }
-    // });
-
-    if (changes.has('currentAttachments')) {
-      console.log(
-        'C2',
-        changes.get('currentAttachments'),
-        '->',
-        this.currentAttachments
-      );
-    }
-
-    // console.log('Compose2 updated this.currentText', this.currentText);
-    // console.log('Compose2 updated this.currentAttachments', this.currentAttachments);
-    // console.log('Compose2 updated this.value', this.value);
-    // console.log('Compose2 updated this.values', this.values);
 
     if (changes.has('currentText') || changes.has('currentAttachments')) {
       this.toggleButton();
@@ -236,7 +194,6 @@ export class Compose2 extends FormElement {
   }
 
   public reset(): void {
-    console.log('resetting..');
     this.currentText = '';
     this.currentAttachments = [];
     this.failedAttachments = [];
@@ -265,8 +222,6 @@ export class Compose2 extends FormElement {
   }
 
   private handleAttachmentsAdded(evt: CustomEvent): void {
-    // console.log('handleAttachmentsAdded');
-    console.log('handleAttachmentsAdded evt.detail', evt.detail);
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
@@ -277,8 +232,6 @@ export class Compose2 extends FormElement {
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
-    // console.log('handleAttachmentsRemoved');
-    console.log('handleAttachmentsRemoved evt.detail', evt.detail);
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
 
