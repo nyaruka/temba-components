@@ -41,22 +41,19 @@ export class AttachmentsUploader extends FormElement {
   accept = ''; //e.g. ".xls,.xlsx"
 
   @property({ type: String })
-  uploadIcon: string;
+  uploadIcon = 'attachment';
 
   @property({ type: String })
-  uploadText: string;
+  uploadText = '';
 
   @property({ type: String, attribute: false })
   endpoint = upload_endpoint;
 
   @property({ type: Number })
-  maxAttachments: number;
+  maxAttachments = 3;
 
   @property({ type: Number })
-  minFileSize: number;
-
-  @property({ type: Number })
-  maxFileSize: number;
+  maxFileSize = 26214400; //25 MB
 
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
@@ -102,70 +99,150 @@ export class AttachmentsUploader extends FormElement {
   }
 
   public uploadFiles(files: FileList): void {
-    let filesToUpload = [];
+    let filesToUpload = [...files];
 
     if (this.maxAttachments === 1) {
       this.currentAttachments = [];
       this.failedAttachments = [];
-      filesToUpload = [files.item(0)];
-
-      const fileToUpload = filesToUpload[0];
-      if (
-        (this.minFileSize > 0 && fileToUpload.size < this.minFileSize) ||
-        (this.maxFileSize > 0 && fileToUpload.size > this.maxFileSize)
-      ) {
-        this.addFailedAttachment(fileToUpload, this.getUploadFileSizeError());
-        return;
+      filesToUpload = this.validateMaxFileSize(filesToUpload, false);
+      if (filesToUpload.length > 0) {
+        filesToUpload = this.validateFileDimensions(filesToUpload, false);
       }
     } else {
-      //remove files that will exceed max attachments
-      let totalAttachments = this.currentAttachments.length + files.length;
-      if (totalAttachments > this.maxAttachments) {
-        if (this.currentAttachments.length === this.maxAttachments) {
-          return;
-        } else {
-          let idx = 0;
-          while (totalAttachments > this.maxAttachments) {
-            filesToUpload.push(files.item(idx));
-            totalAttachments =
-              this.currentAttachments.length + filesToUpload.length;
-            idx++;
-          }
-        }
+      filesToUpload = this.validateDuplicateFiles(filesToUpload);
+      if (filesToUpload.length > 0) {
+        filesToUpload = this.validateMaxAttachments(filesToUpload);
       }
-      //remove duplicate files that have already been uploaded
-      if (this.currentAttachments.length > 0) {
-        filesToUpload = [...files].filter(file => {
-          const index = this.currentAttachments.findIndex(
-            value => value.filename === file.name && value.size === file.size
-          );
-          if (index === -1) {
-            return file;
-          }
-        });
-      } else {
-        filesToUpload = [...files];
-      }
-      //remove files that are not within the min and max file size
-      if (this.minFileSize > 0 || this.maxFileSize > 0) {
-        filesToUpload = filesToUpload.filter(fileToUpload => {
-          let validFileSize = true;
-          if (
-            (this.minFileSize > 0 && fileToUpload.size < this.minFileSize) ||
-            (this.maxFileSize > 0 && fileToUpload.size > this.maxFileSize)
-          ) {
-            validFileSize = false;
-          }
-          if (validFileSize) {
-            return fileToUpload;
-          }
-        });
+      if (filesToUpload.length > 0) {
+        filesToUpload = this.validateMaxFileSize(filesToUpload);
       }
     }
 
     filesToUpload.map(fileToUpload => {
       this.uploadFile(fileToUpload);
     });
+  }
+
+  private validateDuplicateFiles(
+    files: File[],
+    removeInvalidFiles = true
+  ): File[] {
+    if (this.currentAttachments.length === 0) {
+      return files;
+    } else {
+      const validFiles: File[] = [];
+      const invalidFiles: File[] = [];
+      files.map(file => {
+        const index = this.currentAttachments.findIndex(
+          value => value.filename === file.name && value.size === file.size
+        );
+        if (index === -1) {
+          validFiles.push(file);
+        } else {
+          invalidFiles.push(file);
+        }
+      });
+      if (!removeInvalidFiles) {
+        invalidFiles.map(file => {
+          this.addFailedAttachment(file, `Duplicate file.`);
+        });
+      }
+      return validFiles;
+    }
+  }
+
+  private validateMaxAttachments(
+    files: File[],
+    removeInvalidFiles = true
+  ): File[] {
+    if (this.currentAttachments.length === this.maxAttachments) {
+      return files;
+    } else if (
+      this.currentAttachments.length + files.length <=
+      this.maxAttachments
+    ) {
+      return files;
+    } else {
+      let totalAttachments = this.currentAttachments.length + files.length;
+      const validFiles: File[] = [];
+      const invalidFiles: File[] = [];
+      files.map(file => {
+        totalAttachments = this.currentAttachments.length + validFiles.length;
+        if (totalAttachments < this.maxAttachments) {
+          validFiles.push(file);
+        } else {
+          invalidFiles.push(file);
+        }
+      });
+      if (!removeInvalidFiles) {
+        invalidFiles.map(file => {
+          this.addFailedAttachment(
+            file,
+            `Maximum allowed attachments is ${this.maxAttachments} files.`
+          );
+        });
+      }
+      return validFiles;
+    }
+  }
+
+  private validateMaxFileSize(
+    files: File[],
+    removeInvalidFiles = true
+  ): File[] {
+    const validFiles: File[] = [];
+    const invalidFiles: File[] = [];
+    files.map(file => {
+      if (file.size <= this.maxFileSize) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(file);
+      }
+    });
+    if (!removeInvalidFiles) {
+      invalidFiles.map(file => {
+        this.addFailedAttachment(
+          file,
+          `Limit for file uploads is ${formatFileSize(this.maxFileSize, 0)}.`
+        );
+      });
+    }
+    return validFiles;
+  }
+
+  private validateFileDimensions(
+    files: File[],
+    removeInvalidFiles = true
+  ): File[] {
+    const validFiles: File[] = [];
+    const invalidFiles: File[] = [];
+
+    files.map(file => {
+      const reader = new FileReader();
+      reader.onload = function (e: ProgressEvent<FileReader>) {
+        const image = new Image();
+        image.onload = function () {
+          if (image.width === image.height) {
+            validFiles.push(file);
+          } else {
+            invalidFiles.push(file);
+          }
+        };
+        image.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (!removeInvalidFiles) {
+      invalidFiles.map(file => {
+        this.addFailedAttachment(
+          file,
+          'Dimensions of file uploads must be equal.'
+        );
+      });
+    }
+
+    return validFiles;
   }
 
   private uploadFile(file: File): void {
@@ -220,27 +297,6 @@ export class AttachmentsUploader extends FormElement {
     } else {
       this.failedAttachments.push(failedAttachment);
       this.requestUpdate('failedAttachments');
-    }
-  }
-
-  private getUploadFileSizeError(): string {
-    if (this.minFileSize > 0 && this.maxFileSize > 0) {
-      return `Limit for file uploads is between ${formatFileSize(
-        this.minFileSize,
-        0
-      )} and ${formatFileSize(this.maxFileSize, 0)}.`;
-    }
-    if (this.minFileSize > 0) {
-      return `Minimum limit for file uploads is ${formatFileSize(
-        this.minFileSize,
-        0
-      )}.`;
-    }
-    if (this.maxFileSize > 0) {
-      return `Maximum limit for file uploads is ${formatFileSize(
-        this.maxFileSize,
-        0
-      )}.`;
     }
   }
 

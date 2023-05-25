@@ -34,6 +34,9 @@ export class AttachmentsPicker extends FormElement {
   @property({ type: Number })
   maxAttachments = 3;
 
+  @property({ type: Number })
+  maxFileSize = 26214400; //25 MB
+
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
@@ -116,6 +119,7 @@ export class AttachmentsPicker extends FormElement {
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
         maxAttachments="${this.maxAttachments}"
+        maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}
       >
       </temba-attachments-uploader>

@@ -109,7 +109,7 @@ addCustomElement('temba-contact-pending', ContactPending);
 addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
-// addCustomElement('temba-compose', Compose);
+addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-attachments-picker', AttachmentsPicker);
 addCustomElement('temba-attachments-drop-zone', AttachmentsDropZone);

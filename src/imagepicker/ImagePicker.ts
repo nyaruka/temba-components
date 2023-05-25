@@ -5,7 +5,6 @@ import {
   Attachment,
   AttachmentsUploader,
 } from '../attachments/AttachmentsUploader';
-import { AttachmentsList } from '../attachments/AttachmentsList';
 import { Icon } from '../vectoricon';
 
 export class ImagePicker extends FormElement {
@@ -46,6 +45,9 @@ export class ImagePicker extends FormElement {
   @property({ type: String })
   uploadText = 'Upload Image';
 
+  @property({ type: Number })
+  maxFileSize = 204800; //200 KB //26214400; //25 MB
+
   @property({ type: String })
   removeIcon = 'delete';
 
@@ -81,24 +83,21 @@ export class ImagePicker extends FormElement {
   private handleAttachmentAdded(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
-
     this.currentAttachment = null;
-    this.helpText = '';
     this.errors = [];
 
     if (this.currentAttachments.length > 0) {
       this.currentAttachment = this.currentAttachments[0];
     } else if (this.failedAttachments.length > 0) {
       this.currentAttachment = this.failedAttachments[0];
-      this.helpText = this.currentAttachment.error;
-      // this.errors = [this.currentAttachment.error];
+      this.errors = [this.currentAttachment.error];
     }
   }
 
-  private handleAttachmentRemoved(evt: Event): void {
-    this.currentAttachment = null;
+  private handleAttachmentRemoved(): void {
     this.currentAttachments = [];
     this.failedAttachments = [];
+    this.currentAttachment = null;
 
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
@@ -110,7 +109,6 @@ export class ImagePicker extends FormElement {
     return html`
       <temba-field
         name=${this.name}
-        .helpText=${this.helpText}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         value=${this.value}
@@ -142,13 +140,7 @@ export class ImagePicker extends FormElement {
                       src="${this.currentAttachment.url}">
                     </img>`}
           </div>`
-        : html` <div class="image-item">
-            <temba-icon
-              class="missing-icon"
-              name="${Icon.attachment_upload}"
-              size="5"
-            ></temba-icon>
-          </div>`}
+        : null}
     `;
   }
 
@@ -167,8 +159,7 @@ export class ImagePicker extends FormElement {
         uploadIcon="${this.uploadIcon}"
         uploadText="${this.uploadText}"
         maxAttachments="1"
-        minFileSize="2048"
-        maxFileSize="512000"
+        maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentAdded.bind(this)}
       >
       </temba-attachments-uploader>
@@ -180,7 +171,7 @@ export class ImagePicker extends FormElement {
       <temba-icon
         id=${this.currentAttachment.uuid}
         class="remove-icon"
-        name="${Icon.delete}"
+        name="icon.${this.removeIcon}"
         @click=${this.handleAttachmentRemoved}
         clickable
       >
