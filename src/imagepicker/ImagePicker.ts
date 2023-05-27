@@ -83,6 +83,9 @@ export class ImagePicker extends FormElement {
   @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
+  @property({ type: String })
+  helpText = 'todo';
+
   public constructor() {
     super();
   }
@@ -157,16 +160,16 @@ export class ImagePicker extends FormElement {
     return html`
       <temba-field
         name=${this.name}
-        .help_text=${this.helpText}"
+        .helpText=${this.helpText}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         value=${this.value}
       >
         <temba-attachments-drop-zone
           customWidth="125px"
-          dropText="${
-            this.uploadText + ' ' + capitalize(this.imageType as any)
-          }"
+          dropText="${this.uploadText +
+          ' ' +
+          capitalize(this.imageType as any)}"
           @temba-drag-dropped=${this.handleDragDropped.bind(this)}
         >
           <div class="items image">${this.getImage()}</div>

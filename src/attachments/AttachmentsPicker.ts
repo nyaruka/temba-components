@@ -52,6 +52,9 @@ export class AttachmentsPicker extends FormElement {
   @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
+  @property({ type: String })
+  helpText = 'todo';
+
   public constructor() {
     super();
   }
@@ -122,14 +125,22 @@ export class AttachmentsPicker extends FormElement {
 
   public render(): TemplateResult {
     return html`
-      <temba-attachments-drop-zone
-        dropText="${this.uploadText}"
-        @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+      <temba-field
+        name=${this.name}
+        .helpText=${this.helpText}
+        .errors=${this.errors}
+        .widgetOnly=${this.widgetOnly}
+        value=${this.value}
       >
-        <slot></slot>
-        <div class="items attachments">${this.getAttachments()}</div>
-        <div class="items actions">${this.getActions()}</div>
-      </temba-attachments-drop-zone>
+        <temba-attachments-drop-zone
+          dropText="${this.uploadText}"
+          @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+        >
+          <slot></slot>
+          <div class="items attachments">${this.getAttachments()}</div>
+          <div class="items actions">${this.getActions()}</div>
+        </temba-attachments-drop-zone>
+      </temba-field>
     `;
   }
 
