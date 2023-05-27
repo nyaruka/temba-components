@@ -2,7 +2,7 @@ import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
-import { formatFileSize, postFormData, WebResponse } from '../utils';
+import { postFormData, WebResponse } from '../utils';
 
 export interface Attachment {
   uuid: string;
@@ -11,6 +11,16 @@ export interface Attachment {
   filename: string;
   size: number;
   error: string;
+}
+
+export interface InvalidFile {
+  file: File;
+  error: string;
+}
+
+export interface UploadValidationResult {
+  validFiles: File[];
+  invalidFiles: InvalidFile[];
 }
 
 export const upload_endpoint = '/api/v2/media.json';
@@ -95,154 +105,31 @@ export class AttachmentsUploader extends FormElement {
   private handleUploadFileInputChanged(evt: Event): void {
     const target = evt.target as HTMLInputElement;
     const files = target.files;
-    this.uploadFiles(files);
+    this.validateFiles(files);
   }
 
-  public uploadFiles(files: FileList): void {
-    let filesToUpload = [...files];
+  public validateFiles(files: FileList): void {
+    const filesToValidate = [...files];
+    this.fireCustomEvent(CustomEventType.UploadStarted, {
+      files: filesToValidate,
+    });
+  }
 
-    if (this.maxAttachments === 1) {
-      this.currentAttachments = [];
-      this.failedAttachments = [];
-      filesToUpload = this.validateMaxFileSize(filesToUpload, false);
-      if (filesToUpload.length > 0) {
-        filesToUpload = this.validateFileDimensions(filesToUpload, false);
-      }
-    } else {
-      filesToUpload = this.validateDuplicateFiles(filesToUpload);
-      if (filesToUpload.length > 0) {
-        filesToUpload = this.validateMaxAttachments(filesToUpload);
-      }
-      if (filesToUpload.length > 0) {
-        filesToUpload = this.validateMaxFileSize(filesToUpload);
-      }
+  // parent components that only want to display server-side failures should only populate validFiles
+  // parent components that want to display both client-side and server-side failures should populate both
+  public uploadFiles(uploadFileValidationResult: UploadValidationResult): void {
+    // add any invalidFiles (files that failed client-side validation) to failedAttachments
+    if (uploadFileValidationResult.invalidFiles) {
+      uploadFileValidationResult.invalidFiles.map(invalidFile => {
+        this.addFailedAttachment(invalidFile.file, invalidFile.error);
+      });
     }
 
+    // upload the validFiles
+    const filesToUpload = uploadFileValidationResult.validFiles;
     filesToUpload.map(fileToUpload => {
       this.uploadFile(fileToUpload);
     });
-  }
-
-  private validateDuplicateFiles(
-    files: File[],
-    removeInvalidFiles = true
-  ): File[] {
-    if (this.currentAttachments.length === 0) {
-      return files;
-    } else {
-      const validFiles: File[] = [];
-      const invalidFiles: File[] = [];
-      files.map(file => {
-        const index = this.currentAttachments.findIndex(
-          value => value.filename === file.name && value.size === file.size
-        );
-        if (index === -1) {
-          validFiles.push(file);
-        } else {
-          invalidFiles.push(file);
-        }
-      });
-      if (!removeInvalidFiles) {
-        invalidFiles.map(file => {
-          this.addFailedAttachment(file, `Duplicate file.`);
-        });
-      }
-      return validFiles;
-    }
-  }
-
-  private validateMaxAttachments(
-    files: File[],
-    removeInvalidFiles = true
-  ): File[] {
-    if (this.currentAttachments.length === this.maxAttachments) {
-      return files;
-    } else if (
-      this.currentAttachments.length + files.length <=
-      this.maxAttachments
-    ) {
-      return files;
-    } else {
-      let totalAttachments = this.currentAttachments.length + files.length;
-      const validFiles: File[] = [];
-      const invalidFiles: File[] = [];
-      files.map(file => {
-        totalAttachments = this.currentAttachments.length + validFiles.length;
-        if (totalAttachments < this.maxAttachments) {
-          validFiles.push(file);
-        } else {
-          invalidFiles.push(file);
-        }
-      });
-      if (!removeInvalidFiles) {
-        invalidFiles.map(file => {
-          this.addFailedAttachment(
-            file,
-            `Maximum allowed attachments is ${this.maxAttachments} files.`
-          );
-        });
-      }
-      return validFiles;
-    }
-  }
-
-  private validateMaxFileSize(
-    files: File[],
-    removeInvalidFiles = true
-  ): File[] {
-    const validFiles: File[] = [];
-    const invalidFiles: File[] = [];
-    files.map(file => {
-      if (file.size <= this.maxFileSize) {
-        validFiles.push(file);
-      } else {
-        invalidFiles.push(file);
-      }
-    });
-    if (!removeInvalidFiles) {
-      invalidFiles.map(file => {
-        this.addFailedAttachment(
-          file,
-          `Limit for file uploads is ${formatFileSize(this.maxFileSize, 0)}.`
-        );
-      });
-    }
-    return validFiles;
-  }
-
-  private validateFileDimensions(
-    files: File[],
-    removeInvalidFiles = true
-  ): File[] {
-    const validFiles: File[] = [];
-    const invalidFiles: File[] = [];
-
-    files.map(file => {
-      const reader = new FileReader();
-      reader.onload = function (e: ProgressEvent<FileReader>) {
-        const image = new Image();
-        image.onload = function () {
-          if (image.width === image.height) {
-            validFiles.push(file);
-          } else {
-            invalidFiles.push(file);
-          }
-        };
-        image.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    if (!removeInvalidFiles) {
-      invalidFiles.map(file => {
-        this.addFailedAttachment(
-          file,
-          'Dimensions of file uploads must be equal.'
-        );
-      });
-    }
-
-    return validFiles;
   }
 
   private uploadFile(file: File): void {
@@ -317,16 +204,13 @@ export class AttachmentsUploader extends FormElement {
             @click=${this.handleUploadFileIconClicked}
             clickable
           ></temba-icon>
-          ${this.uploadText
-            ? this.currentAttachments.length === 0 &&
-              this.failedAttachments.length === 0
-              ? html` <div
-                  class="upload-text"
-                  @click=${this.handleUploadFileIconClicked}
-                >
-                  ${this.uploadText}
-                </div>`
-              : null
+          ${this.uploadText && this.currentAttachments.length === 0
+            ? html` <div
+                class="upload-text"
+                @click=${this.handleUploadFileIconClicked}
+              >
+                ${this.uploadText}
+              </div>`
             : null}
         </label>`;
     }

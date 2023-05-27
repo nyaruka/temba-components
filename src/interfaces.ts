@@ -247,4 +247,5 @@ export enum CustomEventType {
   DragDropped = 'temba-drag-dropped',
   ContainerClicked = 'temba-container-clicked',
   Resized = 'temba-resized',
+  UploadStarted = 'temba-upload-started',
 }

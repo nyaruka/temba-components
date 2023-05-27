@@ -200,7 +200,7 @@ export class Compose2 extends FormElement {
     this.buttonError = '';
   }
 
-  private handleContainerClicked(evt: Event) {
+  private handleContainerClicked() {
     this.setFocusOnChatbox();
   }
 
@@ -217,7 +217,7 @@ export class Compose2 extends FormElement {
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
       ) as AttachmentsUploader;
-      attachmentsUploader.uploadFiles(files);
+      attachmentsUploader.validateFiles(files);
     }
   }
 

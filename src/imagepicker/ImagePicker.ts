@@ -4,8 +4,17 @@ import { property } from 'lit/decorators.js';
 import {
   Attachment,
   AttachmentsUploader,
+  UploadValidationResult,
 } from '../attachments/AttachmentsUploader';
+import { validateMaxFileSize } from '../attachments/attachments';
+import { capitalize } from '../utils';
 import { Icon } from '../vectoricon';
+
+enum ImageType {
+  Image = 'image',
+  Avatar = 'avatar',
+  Logo = 'logo',
+}
 
 export class ImagePicker extends FormElement {
   static get styles() {
@@ -16,11 +25,19 @@ export class ImagePicker extends FormElement {
       }
       .image-item {
         display: flex;
+      }
+      .avatar {
         height: 100px;
         width: 100px;
       }
-      .image-item img {
+      .avatar img {
         border-radius: 50%;
+      }
+      .logo {
+        //todo
+      }
+      .logo img {
+        //todo
       }
       .missing-icon {
         color: rgb(102, 102, 102, 0.25);
@@ -40,16 +57,22 @@ export class ImagePicker extends FormElement {
   }
 
   @property({ type: String })
+  imageType = 'image';
+
+  @property({ type: String })
   uploadIcon = 'attachment_image';
 
   @property({ type: String })
-  uploadText = 'Upload Image';
-
-  @property({ type: Number })
-  maxFileSize = 204800; //200 KB //26214400; //25 MB
+  uploadText = 'Upload';
 
   @property({ type: String })
   removeIcon = 'delete';
+
+  @property({ type: Number })
+  maxAttachments = 1;
+
+  @property({ type: Number })
+  maxFileSize = 204800; //200 KB //26214400; //25 MB
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -76,8 +99,33 @@ export class ImagePicker extends FormElement {
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
       ) as AttachmentsUploader;
-      attachmentsUploader.uploadFiles(files);
+      attachmentsUploader.validateFiles(files);
     }
+  }
+
+  private handleUploadValidation(evt: CustomEvent): void {
+    const files: File[] = [evt.detail.files[0]];
+
+    let result: UploadValidationResult = { validFiles: [], invalidFiles: [] };
+    console.log('maxFileSize', this.maxFileSize);
+    result = validateMaxFileSize(files, [], this.maxFileSize);
+    // if(this.imageType === ImageType.Avatar){
+    //   let invalidFiles = result.invalidFiles;
+    //   const dimResult = validateFileDimensions(result.validFiles);
+    //   invalidFiles = invalidFiles.concat(result.invalidFiles);
+    //   result = {validFiles: dimResult.validFiles, invalidFiles: invalidFiles};
+    // }
+
+    //we care about both client-side and server-side failures, so return both validFiles and invalidFiles
+    const finalResult = {
+      validFiles: result.validFiles,
+      invalidFiles: result.invalidFiles,
+    };
+
+    const attachmentsUploader = this.shadowRoot.querySelector(
+      'temba-attachments-uploader'
+    ) as AttachmentsUploader;
+    attachmentsUploader.uploadFiles(finalResult);
   }
 
   private handleAttachmentAdded(evt: CustomEvent): void {
@@ -109,13 +157,16 @@ export class ImagePicker extends FormElement {
     return html`
       <temba-field
         name=${this.name}
+        .help_text=${this.helpText}"
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         value=${this.value}
       >
         <temba-attachments-drop-zone
           customWidth="125px"
-          dropText="${this.uploadText}"
+          dropText="${
+            this.uploadText + ' ' + capitalize(this.imageType as any)
+          }"
           @temba-drag-dropped=${this.handleDragDropped.bind(this)}
         >
           <div class="items image">${this.getImage()}</div>
@@ -125,10 +176,27 @@ export class ImagePicker extends FormElement {
     `;
   }
 
+  // private getImage(): TemplateResult {
+  //   return html`
+  //     ${this.currentAttachment && !this.currentAttachment.error
+  //       ? html`
+  //           <div class="image-item ${this.imageType !== ImageType.Image ? this.imageType : null}">
+  //             <img
+  //               src="${this.currentAttachment.url}">
+  //             </img>
+  //           </div>`
+  //       : null}
+  //   `;
+  // }
+
   private getImage(): TemplateResult {
     return html`
       ${this.currentAttachment
-        ? html` <div class="image-item">
+        ? html` <div
+            class="image-item ${this.imageType !== ImageType.Image
+              ? this.imageType
+              : null}"
+          >
             ${this.currentAttachment.error
               ? html` <temba-icon
                   class="missing-icon"
@@ -136,9 +204,9 @@ export class ImagePicker extends FormElement {
                   size="5"
                 ></temba-icon>`
               : html`
-                    <img
-                      src="${this.currentAttachment.url}">
-                    </img>`}
+                  <img
+                    src="${this.currentAttachment.url}">
+                  </img>`}
           </div>`
         : null}
     `;
@@ -147,7 +215,9 @@ export class ImagePicker extends FormElement {
   private getActions(): TemplateResult {
     return html`
       <div class="action-item">${this.getUploader()}</div>
-      ${this.currentAttachment ? this.getRemoveAction() : null}
+      ${this.currentAttachment && !this.currentAttachment.error
+        ? this.getRemoveAction()
+        : null}
     `;
   }
 
@@ -157,10 +227,13 @@ export class ImagePicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
-        uploadText="${this.uploadText}"
+        uploadText="${this.uploadText +
+        ' ' +
+        capitalize(this.imageType as any)}"
         maxAttachments="1"
         maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentAdded.bind(this)}
+        @temba-upload-started=${this.handleUploadValidation.bind(this)}
       >
       </temba-attachments-uploader>
     `;

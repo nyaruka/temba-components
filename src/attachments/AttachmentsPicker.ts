@@ -1,8 +1,17 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
-import { Attachment, AttachmentsUploader } from './AttachmentsUploader';
+import {
+  Attachment,
+  AttachmentsUploader,
+  UploadValidationResult,
+} from './AttachmentsUploader';
 import { AttachmentsList } from './AttachmentsList';
+import {
+  validateDuplicateFiles,
+  validateMaxAttachments,
+  validateMaxFileSize,
+} from './attachments';
 
 export class AttachmentsPicker extends FormElement {
   static get styles() {
@@ -26,7 +35,7 @@ export class AttachmentsPicker extends FormElement {
   uploadIcon = 'attachment';
 
   @property({ type: String })
-  uploadText = 'Upload Attachment';
+  uploadText = 'Upload Attachments';
 
   @property({ type: String })
   removeIcon = 'delete_small';
@@ -59,8 +68,36 @@ export class AttachmentsPicker extends FormElement {
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
       ) as AttachmentsUploader;
-      attachmentsUploader.uploadFiles(files);
+      attachmentsUploader.validateFiles(files);
     }
+  }
+
+  private handleUploadValidation(evt: CustomEvent): void {
+    this.currentAttachments = [];
+    this.failedAttachments = [];
+    const files: File[] = evt.detail.files;
+
+    let result: UploadValidationResult = { validFiles: [], invalidFiles: [] };
+    result = validateDuplicateFiles(files, [], this.currentAttachments);
+    result = validateMaxAttachments(
+      result.validFiles,
+      result.invalidFiles,
+      this.currentAttachments,
+      this.maxAttachments
+    );
+    result = validateMaxFileSize(
+      result.validFiles,
+      result.invalidFiles,
+      this.maxFileSize
+    );
+
+    //we only care about the server-side failures, so only return the validFiles
+    const finalResult = { validFiles: result.validFiles, invalidFiles: [] };
+
+    const attachmentsUploader = this.shadowRoot.querySelector(
+      'temba-attachments-uploader'
+    ) as AttachmentsUploader;
+    attachmentsUploader.uploadFiles(finalResult);
   }
 
   private handleAttachmentsAdded(evt: CustomEvent): void {
@@ -118,9 +155,11 @@ export class AttachmentsPicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
+        uploadText="${this.uploadText}"
         maxAttachments="${this.maxAttachments}"
         maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}
+        @temba-upload-started=${this.handleUploadValidation.bind(this)}
       >
       </temba-attachments-uploader>
     `;
