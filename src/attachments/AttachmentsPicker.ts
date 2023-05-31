@@ -1,13 +1,12 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
-import {
-  Attachment,
-  AttachmentsUploader,
-  UploadValidationResult,
-} from './AttachmentsUploader';
+import { AttachmentsUploader } from './AttachmentsUploader';
 import { AttachmentsList } from './AttachmentsList';
 import {
+  Attachment,
+  UploadFile,
+  UploadValidationResult,
   validateDuplicateFiles,
   validateMaxAttachments,
   validateMaxFileSize,
@@ -79,10 +78,16 @@ export class AttachmentsPicker extends FormElement {
   private handleUploadValidation(evt: CustomEvent): void {
     this.currentAttachments = [];
     this.failedAttachments = [];
-    const files: File[] = evt.detail.files;
-
-    let result: UploadValidationResult = { validFiles: [], invalidFiles: [] };
-    result = validateDuplicateFiles(files, [], this.currentAttachments);
+    const files: UploadFile[] = evt.detail.files;
+    let result: UploadValidationResult = {
+      validFiles: files,
+      invalidFiles: [],
+    };
+    result = validateDuplicateFiles(
+      result.validFiles,
+      result.invalidFiles,
+      this.currentAttachments
+    );
     result = validateMaxAttachments(
       result.validFiles,
       result.invalidFiles,
@@ -94,14 +99,10 @@ export class AttachmentsPicker extends FormElement {
       result.invalidFiles,
       this.maxFileSize
     );
-
-    //we only care about the server-side failures, so only return the validFiles
-    const finalResult = { validFiles: result.validFiles, invalidFiles: [] };
-
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
     ) as AttachmentsUploader;
-    attachmentsUploader.uploadFiles(finalResult);
+    attachmentsUploader.uploadFiles(result);
   }
 
   private handleAttachmentsAdded(evt: CustomEvent): void {

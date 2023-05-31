@@ -4,7 +4,7 @@ import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
 import { CustomEventType } from '../interfaces';
 import { formatFileSize, formatFileType, truncate } from '../utils';
-import { Attachment } from './AttachmentsUploader';
+import { Attachment } from './attachments';
 
 export class AttachmentsList extends FormElement {
   static get styles() {

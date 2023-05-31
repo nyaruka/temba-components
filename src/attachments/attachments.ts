@@ -1,29 +1,49 @@
 import { formatFileSize } from '../utils';
-import {
-  Attachment,
-  UploadValidationResult,
-  InvalidFile,
-} from './AttachmentsUploader';
+
+export interface UploadFile {
+  file: File;
+  width: number;
+  height: number;
+}
+
+export interface InvalidUploadFile {
+  uploadFile: UploadFile;
+  error: string;
+}
+
+export interface UploadValidationResult {
+  validFiles: UploadFile[];
+  invalidFiles: InvalidUploadFile[];
+}
+
+export interface Attachment {
+  uuid: string;
+  content_type: string;
+  url: string;
+  filename: string;
+  size: number;
+  error: string;
+}
 
 export function validateDuplicateFiles(
-  files: File[],
-  invalidFiles: InvalidFile[],
+  uploadFiles: UploadFile[],
+  invalidFiles: InvalidUploadFile[],
   currentAttachments: Attachment[]
 ): UploadValidationResult {
-  console.log('validateDuplicateFiles');
-  console.log('currentAttachments', currentAttachments.length);
   if (currentAttachments.length === 0) {
-    return { validFiles: files, invalidFiles: invalidFiles };
+    return { validFiles: uploadFiles, invalidFiles: invalidFiles };
   } else {
-    const validFiles: File[] = [];
-    files.map(file => {
+    const validFiles: UploadFile[] = [];
+    uploadFiles.map(uploadFile => {
       const index = currentAttachments.findIndex(
-        value => value.filename === file.name && value.size === file.size
+        value =>
+          value.filename === uploadFile.file.name &&
+          value.size === uploadFile.file.size
       );
       if (index === -1) {
-        validFiles.push(file);
+        validFiles.push(uploadFile);
       } else {
-        invalidFiles.push({ file: file, error: 'Duplicate file.' });
+        invalidFiles.push({ uploadFile: uploadFile, error: 'Duplicate file.' });
       }
     });
     return { validFiles: validFiles, invalidFiles: invalidFiles };
@@ -31,25 +51,23 @@ export function validateDuplicateFiles(
 }
 
 export function validateMaxAttachments(
-  files: File[],
-  invalidFiles: InvalidFile[],
+  uploadFiles: UploadFile[],
+  invalidFiles: InvalidUploadFile[],
   currentAttachments: Attachment[],
   maxAttachments: number
 ): UploadValidationResult {
-  console.log('validateMaxAttachments');
-  console.log('maxAttachments', maxAttachments);
-  let totalAttachments = currentAttachments.length + files.length;
+  let totalAttachments = currentAttachments.length + uploadFiles.length;
   if (totalAttachments <= maxAttachments) {
-    return { validFiles: files, invalidFiles: invalidFiles };
+    return { validFiles: uploadFiles, invalidFiles: invalidFiles };
   } else {
-    const validFiles: File[] = [];
-    files.map(file => {
+    const validFiles: UploadFile[] = [];
+    uploadFiles.map(uploadFile => {
       totalAttachments = currentAttachments.length + validFiles.length;
       if (totalAttachments < maxAttachments) {
-        validFiles.push(file);
+        validFiles.push(uploadFile);
       } else {
         invalidFiles.push({
-          file: file,
+          uploadFile: uploadFile,
           error: `Maximum allowed attachments is ${maxAttachments} files.`,
         });
       }
@@ -59,20 +77,17 @@ export function validateMaxAttachments(
 }
 
 export function validateMaxFileSize(
-  files: File[],
-  invalidFiles: InvalidFile[],
+  uploadFiles: UploadFile[],
+  invalidFiles: InvalidUploadFile[],
   maxFileSize: number
 ): UploadValidationResult {
-  console.log('validateMaxFileSize');
-  console.log('maxFileSize', maxFileSize);
-  const validFiles: File[] = [];
-  files.map(file => {
-    if (file.size <= maxFileSize) {
-      validFiles.push(file);
+  const validFiles: UploadFile[] = [];
+  uploadFiles.map(uploadFile => {
+    if (uploadFile.file.size <= maxFileSize) {
+      validFiles.push(uploadFile);
     } else {
-      console.log('maxFileSize', maxFileSize);
       invalidFiles.push({
-        file: file,
+        uploadFile: uploadFile,
         error: `Limit for file uploads is ${formatFileSize(maxFileSize, 0)}.`,
       });
     }
@@ -80,26 +95,47 @@ export function validateMaxFileSize(
   return { validFiles: validFiles, invalidFiles: invalidFiles };
 }
 
-export function validateFileDimensions(files: File[]): UploadValidationResult {
-  const validFiles: File[] = [];
-  const invalidFiles: InvalidFile[] = [];
-  files.map(file => {
+export function validateFileDimensions(
+  uploadFiles: UploadFile[],
+  invalidFiles: InvalidUploadFile[],
+  maxFileDimension: number
+): UploadValidationResult {
+  const validFiles: UploadFile[] = [];
+  uploadFiles.map(uploadFile => {
+    if (
+      uploadFile.width === maxFileDimension &&
+      uploadFile.height === maxFileDimension
+    ) {
+      validFiles.push(uploadFile);
+    } else {
+      invalidFiles.push({
+        uploadFile: uploadFile,
+        error: `Dimensions of file uploads must be ${maxFileDimension}px by ${maxFileDimension}px.`,
+      });
+    }
+  });
+  return { validFiles: validFiles, invalidFiles: invalidFiles };
+}
+
+export function getFileDimensions({
+  file,
+}: {
+  file: File;
+}): Promise<UploadFile> {
+  return new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = function (e: ProgressEvent<FileReader>) {
       const image = new Image();
       image.onload = function () {
-        if (image.width === image.height) {
-          validFiles.push(file);
-        } else {
-          invalidFiles.push({
-            file: file,
-            error: 'Dimensions of file uploads must be equal.',
-          });
-        }
+        const uploadFile: UploadFile = {
+          file: file,
+          width: image.width,
+          height: image.height,
+        };
+        resolve(uploadFile);
       };
       image.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   });
-  return { validFiles: validFiles, invalidFiles: invalidFiles };
 }

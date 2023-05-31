@@ -3,25 +3,12 @@ import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { postFormData, WebResponse } from '../utils';
-
-export interface Attachment {
-  uuid: string;
-  content_type: string;
-  url: string;
-  filename: string;
-  size: number;
-  error: string;
-}
-
-export interface InvalidFile {
-  file: File;
-  error: string;
-}
-
-export interface UploadValidationResult {
-  validFiles: File[];
-  invalidFiles: InvalidFile[];
-}
+import {
+  Attachment,
+  UploadFile,
+  UploadValidationResult,
+  getFileDimensions,
+} from './attachments';
 
 export const upload_endpoint = '/api/v2/media.json';
 
@@ -108,9 +95,14 @@ export class AttachmentsUploader extends FormElement {
     this.inspectFiles(files);
   }
 
-  public inspectFiles(files: FileList): void {
-    const filesToValidate = [...files];
-    // todo - get the dimensions and add it to a File wrapper object
+  public async inspectFiles(files: FileList): Promise<void> {
+    const filesToInspect = [...files];
+    const getFileDimPromises = [];
+    filesToInspect.map(fileToInspect => {
+      const getFileDimPromise = getFileDimensions({ file: fileToInspect });
+      getFileDimPromises.push(getFileDimPromise);
+    });
+    const filesToValidate: UploadFile[] = await Promise.all(getFileDimPromises);
     this.fireCustomEvent(CustomEventType.UploadStarted, {
       files: filesToValidate,
     });
@@ -122,14 +114,17 @@ export class AttachmentsUploader extends FormElement {
     // add any invalidFiles (files that failed client-side validation) to failedAttachments
     if (uploadFileValidationResult.invalidFiles) {
       uploadFileValidationResult.invalidFiles.map(invalidFile => {
-        this.addFailedAttachment(invalidFile.file, invalidFile.error);
+        this.addFailedAttachment(
+          invalidFile.uploadFile.file,
+          invalidFile.error
+        );
       });
     }
 
     // upload the validFiles
     const filesToUpload = uploadFileValidationResult.validFiles;
     filesToUpload.map(fileToUpload => {
-      this.uploadFile(fileToUpload);
+      this.uploadFile(fileToUpload.file);
     });
   }
 

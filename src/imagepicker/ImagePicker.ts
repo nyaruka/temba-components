@@ -1,12 +1,11 @@
 import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
+import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
 import {
   Attachment,
-  AttachmentsUploader,
+  UploadFile,
   UploadValidationResult,
-} from '../attachments/AttachmentsUploader';
-import {
   validateFileDimensions,
   validateMaxFileSize,
 } from '../attachments/attachments';
@@ -34,7 +33,7 @@ export class ImagePicker extends FormElement {
         width: 100px;
       }
       .avatar img {
-        border-radius: 50%;
+        border-radius: var(--curvature-widget); //50%;
       }
       .logo {
         //todo
@@ -44,6 +43,8 @@ export class ImagePicker extends FormElement {
       }
       .missing-icon {
         color: rgb(102, 102, 102, 0.25);
+        background-color: rgba(100, 100, 100, 0.05);
+        border-radius: var(--curvature-widget);
       }
 
       .actions {
@@ -76,6 +77,9 @@ export class ImagePicker extends FormElement {
 
   @property({ type: Number })
   maxFileSize = 204800; //200 KB //26214400; //25 MB
+
+  @property({ type: Number })
+  maxFileDimension = 100;
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -110,28 +114,28 @@ export class ImagePicker extends FormElement {
   }
 
   private handleUploadValidation(evt: CustomEvent): void {
-    const files: File[] = [evt.detail.files[0]];
+    const files: UploadFile[] = [evt.detail.files[0]];
 
-    let result: UploadValidationResult = { validFiles: [], invalidFiles: [] };
-    console.log('maxFileSize', this.maxFileSize);
-    result = validateMaxFileSize(files, [], this.maxFileSize);
-    if (this.imageType === ImageType.Avatar) {
-      let invalidFiles = result.invalidFiles;
-      const dimResult = validateFileDimensions(result.validFiles);
-      invalidFiles = invalidFiles.concat(result.invalidFiles);
-      result = { validFiles: dimResult.validFiles, invalidFiles: invalidFiles };
-    }
-
-    //we care about both client-side and server-side failures, so return both validFiles and invalidFiles
-    const finalResult = {
-      validFiles: result.validFiles,
-      invalidFiles: result.invalidFiles,
+    let result: UploadValidationResult = {
+      validFiles: files,
+      invalidFiles: [],
     };
-
+    result = validateMaxFileSize(
+      result.validFiles,
+      result.invalidFiles,
+      this.maxFileSize
+    );
+    if (this.imageType === ImageType.Avatar) {
+      result = validateFileDimensions(
+        result.validFiles,
+        result.invalidFiles,
+        this.maxFileDimension
+      );
+    }
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
     ) as AttachmentsUploader;
-    attachmentsUploader.uploadFiles(finalResult);
+    attachmentsUploader.uploadFiles(result);
   }
 
   private handleAttachmentAdded(evt: CustomEvent): void {
