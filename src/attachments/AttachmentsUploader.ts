@@ -105,11 +105,12 @@ export class AttachmentsUploader extends FormElement {
   private handleUploadFileInputChanged(evt: Event): void {
     const target = evt.target as HTMLInputElement;
     const files = target.files;
-    this.validateFiles(files);
+    this.inspectFiles(files);
   }
 
-  public validateFiles(files: FileList): void {
+  public inspectFiles(files: FileList): void {
     const filesToValidate = [...files];
+    // todo - get the dimensions and add it to a File wrapper object
     this.fireCustomEvent(CustomEventType.UploadStarted, {
       files: filesToValidate,
     });

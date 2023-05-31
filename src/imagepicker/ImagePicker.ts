@@ -6,7 +6,10 @@ import {
   AttachmentsUploader,
   UploadValidationResult,
 } from '../attachments/AttachmentsUploader';
-import { validateMaxFileSize } from '../attachments/attachments';
+import {
+  validateFileDimensions,
+  validateMaxFileSize,
+} from '../attachments/attachments';
 import { capitalize } from '../utils';
 import { Icon } from '../vectoricon';
 
@@ -83,8 +86,8 @@ export class ImagePicker extends FormElement {
   @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
-  @property({ type: String })
-  helpText = 'todo';
+  // @property({ type: String })
+  // helpText = 'todo';
 
   public constructor() {
     super();
@@ -102,7 +105,7 @@ export class ImagePicker extends FormElement {
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
       ) as AttachmentsUploader;
-      attachmentsUploader.validateFiles(files);
+      attachmentsUploader.inspectFiles(files);
     }
   }
 
@@ -112,12 +115,12 @@ export class ImagePicker extends FormElement {
     let result: UploadValidationResult = { validFiles: [], invalidFiles: [] };
     console.log('maxFileSize', this.maxFileSize);
     result = validateMaxFileSize(files, [], this.maxFileSize);
-    // if(this.imageType === ImageType.Avatar){
-    //   let invalidFiles = result.invalidFiles;
-    //   const dimResult = validateFileDimensions(result.validFiles);
-    //   invalidFiles = invalidFiles.concat(result.invalidFiles);
-    //   result = {validFiles: dimResult.validFiles, invalidFiles: invalidFiles};
-    // }
+    if (this.imageType === ImageType.Avatar) {
+      let invalidFiles = result.invalidFiles;
+      const dimResult = validateFileDimensions(result.validFiles);
+      invalidFiles = invalidFiles.concat(result.invalidFiles);
+      result = { validFiles: dimResult.validFiles, invalidFiles: invalidFiles };
+    }
 
     //we care about both client-side and server-side failures, so return both validFiles and invalidFiles
     const finalResult = {

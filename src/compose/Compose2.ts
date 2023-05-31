@@ -115,19 +115,17 @@ export class Compose2 extends FormElement {
   @property({ type: String, attribute: false })
   buttonError = '';
 
-  @property({ type: String })
-  helpText = 'todo';
+  // @property({ type: String })
+  // helpText = 'todo';
 
-  // todo confirm if we explicitly need to define this here (since FormElement already has it)
-  @property({ type: Boolean, attribute: 'widget_only' })
-  widgetOnly: boolean;
+  // @property({ type: Boolean, attribute: 'widget_only' })
+  // widgetOnly: boolean;
 
-  // todo confirm if we explicitly need to define this here (since FormElement already has it)
-  @property({ type: Array })
-  errors: string[];
+  // @property({ type: Array })
+  // errors: string[];
 
-  @property({ type: String })
-  value = '';
+  // @property({ type: String })
+  // value = '';
 
   public constructor() {
     super();
@@ -222,7 +220,7 @@ export class Compose2 extends FormElement {
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
       ) as AttachmentsUploader;
-      attachmentsUploader.validateFiles(files);
+      attachmentsUploader.inspectFiles(files);
     }
   }
 

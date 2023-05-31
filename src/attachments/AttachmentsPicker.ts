@@ -52,8 +52,9 @@ export class AttachmentsPicker extends FormElement {
   @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
-  @property({ type: String })
-  helpText = 'todo';
+  // todo
+  // @property({ type: String })
+  // helpText = 'todo';
 
   public constructor() {
     super();
@@ -71,7 +72,7 @@ export class AttachmentsPicker extends FormElement {
       const attachmentsUploader = this.shadowRoot.querySelector(
         'temba-attachments-uploader'
       ) as AttachmentsUploader;
-      attachmentsUploader.validateFiles(files);
+      attachmentsUploader.inspectFiles(files);
     }
   }
 
