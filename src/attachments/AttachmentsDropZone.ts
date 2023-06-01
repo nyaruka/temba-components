@@ -61,7 +61,7 @@ export class AttachmentsDropZone extends FormElement {
   }
 
   @property({ type: String })
-  customWidth = 'auto';
+  dropWidth = 'auto';
 
   @property({ type: String })
   dropText: string;
@@ -118,7 +118,7 @@ export class AttachmentsDropZone extends FormElement {
         @dragover=${this.handleDragOver}
         @dragleave=${this.handleDragLeave}
         @drop=${this.handleDragDropped}
-        style="width:${this.customWidth}"
+        style="width:${this.dropWidth}px"
       >
         <div class="drop-mask">
           <div>${this.dropText}</div>

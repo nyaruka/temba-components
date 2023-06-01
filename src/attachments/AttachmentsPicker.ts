@@ -168,7 +168,6 @@ export class AttachmentsPicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
-        uploadText="${this.uploadText}"
         maxAttachments="${this.maxAttachments}"
         maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}

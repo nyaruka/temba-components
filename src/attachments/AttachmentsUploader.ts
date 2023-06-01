@@ -200,7 +200,9 @@ export class AttachmentsUploader extends FormElement {
             @click=${this.handleUploadFileIconClicked}
             clickable
           ></temba-icon>
-          ${this.uploadText && this.currentAttachments.length === 0
+          ${this.uploadText &&
+          this.currentAttachments.length === 0 &&
+          this.failedAttachments.length === 0
             ? html` <div
                 class="upload-text"
                 @click=${this.handleUploadFileIconClicked}

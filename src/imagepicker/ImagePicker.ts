@@ -4,19 +4,14 @@ import { property } from 'lit/decorators.js';
 import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
 import {
   Attachment,
+  ImageType,
   UploadFile,
   UploadValidationResult,
-  validateFileDimensions,
+  validateImageDimensions,
   validateMaxFileSize,
 } from '../attachments/attachments';
 import { capitalize } from '../utils';
 import { Icon } from '../vectoricon';
-
-enum ImageType {
-  Image = 'image',
-  Avatar = 'avatar',
-  Logo = 'logo',
-}
 
 export class ImagePicker extends FormElement {
   static get styles() {
@@ -28,18 +23,32 @@ export class ImagePicker extends FormElement {
       .image-item {
         display: flex;
       }
-      .avatar {
-        height: 100px;
+
+      .image-image,
+      .avatar-image,
+      .logo-image {
+        background-image: none;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+      }
+      .image-image,
+      .missing-image {
+        border-radius: var(--curvature-widget);
         width: 100px;
+        height: 100px;
+        margin: 5px 0px;
       }
-      .avatar img {
-        border-radius: var(--curvature-widget); //50%;
+      .avatar-image {
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
       }
-      .logo {
-        //todo
-      }
-      .logo img {
-        //todo
+      .logo-image {
+        border-radius: var(--curvature-widget);
+        width: 200px;
+        height: 125px;
+        margin: 15px 0px;
       }
       .missing-icon {
         color: rgb(102, 102, 102, 0.25);
@@ -69,6 +78,9 @@ export class ImagePicker extends FormElement {
   @property({ type: String })
   uploadText = 'Upload';
 
+  // @property({ type: Number })
+  // dropWidth = 125; //px
+
   @property({ type: String })
   removeIcon = 'delete';
 
@@ -76,10 +88,13 @@ export class ImagePicker extends FormElement {
   maxAttachments = 1;
 
   @property({ type: Number })
-  maxFileSize = 204800; //200 KB //26214400; //25 MB
+  maxFileSize = 26214400; //bytes, 204800 = 200KB, 1024000 = 1MB, 26214400 = 25MB
 
-  @property({ type: Number })
-  maxFileDimension = 100;
+  // @property({ type: Number })
+  // imageWidth = 100; //px
+
+  // @property({ type: Number })
+  // imageHeight = 100; //px
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -125,17 +140,25 @@ export class ImagePicker extends FormElement {
       result.invalidFiles,
       this.maxFileSize
     );
-    if (this.imageType === ImageType.Avatar) {
-      result = validateFileDimensions(
-        result.validFiles,
-        result.invalidFiles,
-        this.maxFileDimension
-      );
-    }
+
+    const [imageWidth, imageHeight] = this.getImageDimensions();
+
+    result = validateImageDimensions(
+      result.validFiles,
+      result.invalidFiles,
+      imageWidth,
+      imageHeight,
+      this.imageType
+    );
+
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
     ) as AttachmentsUploader;
     attachmentsUploader.uploadFiles(result);
+  }
+
+  private getImageDimensions(): [number, number] {
+    return this.imageType === ImageType.Logo ? [200, 125] : [100, 100];
   }
 
   private handleAttachmentAdded(evt: CustomEvent): void {
@@ -149,6 +172,11 @@ export class ImagePicker extends FormElement {
     } else if (this.failedAttachments.length > 0) {
       this.currentAttachment = this.failedAttachments[0];
       this.errors = [this.currentAttachment.error];
+
+      // temp hack - spoof a successful file upload
+      // this.currentAttachment.url = '../../test-assets/img/meow.jpg'
+      // this.currentAttachment.error = '';
+      // this.errors = [];
     }
   }
 
@@ -163,6 +191,14 @@ export class ImagePicker extends FormElement {
     attachmentsUploader.requestUpdate();
   }
 
+  private getDropZoneWidth(): number {
+    return this.imageType === ImageType.Logo ? 250 : 125;
+  }
+
+  private getDropZoneText(): string {
+    return this.uploadText + ' ' + capitalize(this.imageType as any);
+  }
+
   public render(): TemplateResult {
     return html`
       <temba-field
@@ -173,10 +209,8 @@ export class ImagePicker extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          customWidth="125px"
-          dropText="${this.uploadText +
-          ' ' +
-          capitalize(this.imageType as any)}"
+          dropWidth="${this.getDropZoneWidth()}"
+          dropText="${this.getDropZoneText()}"
           @temba-drag-dropped=${this.handleDragDropped.bind(this)}
         >
           <div class="items image">${this.getImage()}</div>
@@ -186,38 +220,21 @@ export class ImagePicker extends FormElement {
     `;
   }
 
-  // private getImage(): TemplateResult {
-  //   return html`
-  //     ${this.currentAttachment && !this.currentAttachment.error
-  //       ? html`
-  //           <div class="image-item ${this.imageType !== ImageType.Image ? this.imageType : null}">
-  //             <img
-  //               src="${this.currentAttachment.url}">
-  //             </img>
-  //           </div>`
-  //       : null}
-  //   `;
-  // }
-
   private getImage(): TemplateResult {
     return html`
       ${this.currentAttachment
-        ? html` <div
-            class="image-item ${this.imageType !== ImageType.Image
-              ? this.imageType
-              : null}"
-          >
-            ${this.currentAttachment.error
-              ? html` <temba-icon
-                  class="missing-icon"
-                  name="${Icon.attachment_error}"
-                  size="5"
-                ></temba-icon>`
-              : html`
-                  <img
-                    src="${this.currentAttachment.url}">
-                  </img>`}
-          </div>`
+        ? this.currentAttachment.error
+          ? html` <div class="image-item missing-image">
+              <temba-icon
+                class="missing-icon"
+                name="${Icon.attachment_error}"
+                size="5"
+              ></temba-icon>
+            </div>`
+          : html` <div
+              class="image-item ${this.imageType}-image"
+              style="background-image:url(${this.currentAttachment.url});"
+            ></div>`
         : null}
     `;
   }
@@ -225,7 +242,7 @@ export class ImagePicker extends FormElement {
   private getActions(): TemplateResult {
     return html`
       <div class="action-item">${this.getUploader()}</div>
-      ${this.currentAttachment && !this.currentAttachment.error
+      ${this.currentAttachment //&& !this.currentAttachment.error
         ? this.getRemoveAction()
         : null}
     `;

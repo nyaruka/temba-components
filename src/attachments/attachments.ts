@@ -1,5 +1,11 @@
 import { formatFileSize } from '../utils';
 
+export enum ImageType {
+  Image = 'image',
+  Avatar = 'avatar',
+  Logo = 'logo',
+}
+
 export interface UploadFile {
   file: File;
   width: number;
@@ -95,22 +101,37 @@ export function validateMaxFileSize(
   return { validFiles: validFiles, invalidFiles: invalidFiles };
 }
 
-export function validateFileDimensions(
+export function validateImageDimensions(
   uploadFiles: UploadFile[],
   invalidFiles: InvalidUploadFile[],
-  maxFileDimension: number
+  imageWidth: number,
+  imageHeight: number,
+  imageType = 'image'
 ): UploadValidationResult {
   const validFiles: UploadFile[] = [];
   uploadFiles.map(uploadFile => {
     if (
-      uploadFile.width === maxFileDimension &&
-      uploadFile.height === maxFileDimension
+      imageType === ImageType.Avatar &&
+      uploadFile.width === imageWidth &&
+      uploadFile.width === uploadFile.height
     ) {
       validFiles.push(uploadFile);
+    } else if (
+      imageType === ImageType.Logo &&
+      uploadFile.width === imageWidth &&
+      uploadFile.height === imageHeight
+    ) {
+      validFiles.push(uploadFile);
+    } else if (imageType === ImageType.Image) {
+      validFiles.push(uploadFile);
     } else {
+      const error =
+        imageWidth === imageHeight
+          ? `File uploads must have a width and height of ${imageWidth}px.`
+          : `File uploads must have a width of ${imageWidth}px and a height of ${imageHeight}px.`;
       invalidFiles.push({
         uploadFile: uploadFile,
-        error: `Dimensions of file uploads must be ${maxFileDimension}px by ${maxFileDimension}px.`,
+        error: error,
       });
     }
   });
