@@ -129,6 +129,7 @@ export enum Icon {
   progress_spinner = 'refresh-cw-04',
   featured = 'star-01',
   referral = 'user-right-01',
+  resend = 'refresh-cw-05',
   resthooks = 'share-07',
   restore = 'play',
   retry = 'refresh-cw-05',
