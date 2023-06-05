@@ -54,6 +54,9 @@ import { AttachmentsList } from './src/attachments/AttachmentsList';
 import { ImagePicker } from './src/imagepicker/ImagePicker';
 import { Compose2 } from './src/compose/Compose2';
 import { Resizer } from './src/resizer/Resizer';
+import { Parent } from './src/parentchild/Parent';
+import { Child1 } from './src/parentchild/Child1';
+import { Child2 } from './src/parentchild/Child2';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -118,3 +121,7 @@ addCustomElement('temba-attachments-list', AttachmentsList);
 addCustomElement('temba-image-picker', ImagePicker);
 addCustomElement('temba-compose2', Compose2);
 addCustomElement('temba-resizer', Resizer);
+
+addCustomElement('temba-parent', Parent);
+addCustomElement('temba-child1', Child1);
+addCustomElement('temba-child2', Child2);
