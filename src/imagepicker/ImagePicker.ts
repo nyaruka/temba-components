@@ -4,7 +4,10 @@ import { property } from 'lit/decorators.js';
 import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
 import {
   Attachment,
+  AvatarDimensions,
+  ImageDimensions,
   ImageType,
+  LogoDimensions,
   UploadFile,
   UploadValidationResult,
   validateImageDimensions,
@@ -158,7 +161,14 @@ export class ImagePicker extends FormElement {
   }
 
   private getImageDimensions(): [number, number] {
-    return this.imageType === ImageType.Logo ? [200, 125] : [100, 100];
+    switch (this.imageType) {
+      case ImageType.Avatar:
+        return [AvatarDimensions.imageWidth, AvatarDimensions.imageHeight];
+      case ImageType.Logo:
+        return [LogoDimensions.imageWidth, LogoDimensions.imageHeight];
+      default:
+        return [ImageDimensions.imageWidth, ImageDimensions.imageHeight];
+    }
   }
 
   private handleAttachmentAdded(evt: CustomEvent): void {
@@ -174,7 +184,7 @@ export class ImagePicker extends FormElement {
       this.errors = [this.currentAttachment.error];
 
       // temp hack - spoof a successful file upload
-      // this.currentAttachment.url = '../../test-assets/img/meow.jpg'
+      // this.currentAttachment.url = '../../test-assets/img/20mb.jpg'
       // this.currentAttachment.error = '';
       // this.errors = [];
     }
@@ -192,7 +202,14 @@ export class ImagePicker extends FormElement {
   }
 
   private getDropZoneWidth(): number {
-    return this.imageType === ImageType.Logo ? 250 : 125;
+    switch (this.imageType) {
+      case ImageType.Avatar:
+        return AvatarDimensions.dropWidth;
+      case ImageType.Logo:
+        return LogoDimensions.dropWidth;
+      default:
+        return ImageDimensions.dropWidth;
+    }
   }
 
   private getDropZoneText(): string {
