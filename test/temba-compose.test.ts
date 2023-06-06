@@ -355,24 +355,23 @@ describe('temba-compose attachments', () => {
     );
   });
 
-  //todo - fix this test
-  // it('attachments with success uploaded files deserialize and serialize', async () => {
-  //   const initialValue = getInitialValue(null, getValidAttachments());
-  //   const composeValue = getCompose2Value(initialValue);
-  //   const composeValues = getCompose2Values(initialValue);
+  it('attachments with success uploaded files deserialize and serialize', async () => {
+    const initialValue = getInitialValue(null, getValidAttachments());
+    const composeValue = getCompose2Value(initialValue);
+    const composeValues = getCompose2Values(initialValue);
 
-  //   const compose: Compose2 = await getCompose2({
-  //     attachments: true,
-  //     button: true,
-  //     value: composeValue,
-  //   });
-  //   // deserialize
-  //   expect(compose.currentText).to.equal('');
-  //   expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
-  //   // serialize
-  //   expect(compose.value).to.equal(composeValue);
-  //   expect(compose.values).to.deep.equal(composeValues);
-  // });
+    const compose: Compose2 = await getCompose2({
+      attachments: true,
+      button: true,
+      value: composeValue,
+    });
+    // deserialize
+    expect(compose.currentText).to.equal('');
+    expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
+    // serialize
+    expect(compose.value).to.equal(composeValue);
+    expect(compose.values).to.deep.equal(composeValues);
+  });
 
   it('attachments with failure uploaded files', async () => {
     const compose: Compose2 = await getCompose2({
@@ -597,25 +596,24 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     );
   });
 
-  //todo - fix this test
-  // it('chatbox no text, attachments with success uploaded files deserialize and serialize', async () => {
-  //   const initialValue = getInitialValue(null, getValidAttachments());
-  //   const composeValue = getCompose2Value(initialValue);
-  //   const composeValues = getCompose2Values(initialValue);
+  it('chatbox no text, attachments with success uploaded files deserialize and serialize', async () => {
+    const initialValue = getInitialValue(null, getValidAttachments());
+    const composeValue = getCompose2Value(initialValue);
+    const composeValues = getCompose2Values(initialValue);
 
-  //   const compose: Compose2 = await getCompose2({
-  //     chatbox: true,
-  //     attachments: true,
-  //     button: true,
-  //     value: composeValue,
-  //   });
-  //   // deserialize
-  //   expect(compose.currentText).to.equal('');
-  //   expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
-  //   // serialize
-  //   expect(compose.value).to.equal(composeValue);
-  //   expect(compose.values).to.deep.equal(composeValues);
-  // });
+    const compose: Compose2 = await getCompose2({
+      chatbox: true,
+      attachments: true,
+      button: true,
+      value: composeValue,
+    });
+    // deserialize
+    expect(compose.currentText).to.equal('');
+    expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
+    // serialize
+    expect(compose.value).to.equal(composeValue);
+    expect(compose.values).to.deep.equal(composeValues);
+  });
 
   it('chatbox no text, attachments with failure uploaded files', async () => {
     const compose: Compose2 = await getCompose2({
@@ -702,8 +700,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     );
   });
 
-  //todo - fix this test
-  it.only('chatbox with text, attachments with success uploaded files deserialize and serialize', async () => {
+  it('chatbox with text, attachments with success uploaded files deserialize and serialize', async () => {
     const initialValue = getInitialValue(getValidText(), getValidAttachments());
     const composeValue = getCompose2Value(initialValue);
     const composeValues = getCompose2Values(initialValue);
