@@ -184,6 +184,9 @@ export class Button extends LitElement {
   @property({ type: String })
   href: string;
 
+  @property({ type: Number })
+  index?: number;
+
   private handleClick(evt: MouseEvent) {
     if (this.disabled) {
       evt.preventDefault();
