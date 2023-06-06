@@ -52,7 +52,7 @@ export class AttachmentsUploader extends FormElement {
   @property({ type: Number })
   maxFileSize = 26214400; //25 MB
 
-  @property({ type: Boolean, attribute: false })
+  @property({ type: Boolean })
   uploading: boolean;
 
   @property({ type: Array })

@@ -113,16 +113,16 @@ export class Compose2 extends FormElement {
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
-  @property({ type: Array, attribute: false })
+  @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
   @property({ type: String })
   buttonName = 'Send';
 
-  @property({ type: Boolean, attribute: false })
+  @property({ type: Boolean })
   buttonDisabled = true;
 
-  @property({ type: String, attribute: false })
+  @property({ type: String })
   buttonError = '';
 
   public constructor() {

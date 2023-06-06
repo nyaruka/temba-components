@@ -80,14 +80,12 @@ export class AttachmentsList extends FormElement {
 
   private handleRemoveFileClicked(evt: Event): void {
     const target = evt.target as HTMLDivElement;
-
     const currentAttachmentToRemove = this.currentAttachments.find(
       ({ uuid }) => uuid === target.id
     );
     if (currentAttachmentToRemove) {
       this.removeCurrentAttachment(currentAttachmentToRemove);
     }
-
     const failedAttachmentToRemove = this.failedAttachments.find(
       ({ uuid }) => uuid === target.id
     );
@@ -100,14 +98,12 @@ export class AttachmentsList extends FormElement {
     this.currentAttachments = this.currentAttachments.filter(
       currentAttachment => currentAttachment !== attachmentToRemove
     );
-    this.requestUpdate('currentAttachments');
   }
 
   private removeFailedAttachment(attachmentToRemove: any) {
     this.failedAttachments = this.failedAttachments.filter(
       (failedAttachment: any) => failedAttachment !== attachmentToRemove
     );
-    this.requestUpdate('failedAttachments');
   }
 
   public render(): TemplateResult {
