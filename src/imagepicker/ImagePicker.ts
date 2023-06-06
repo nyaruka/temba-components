@@ -88,7 +88,7 @@ export class ImagePicker extends FormElement {
   maxAttachments = 1;
 
   @property({ type: Number })
-  maxFileSize = 26214400; //bytes, 204800 = 200KB, 1024000 = 1MB, 26214400 = 25MB
+  maxFileSize = 26214400; //25 MB
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -214,7 +214,7 @@ export class ImagePicker extends FormElement {
     }
   }
 
-  private getDropZoneText(): string {
+  private getUploadText(): string {
     return this.uploadText + ' ' + capitalize(this.imageType as any);
   }
 
@@ -229,7 +229,7 @@ export class ImagePicker extends FormElement {
       >
         <temba-attachments-drop-zone
           dropWidth="${this.getDropZoneWidth()}"
-          dropText="${this.getDropZoneText()}"
+          uploadText="${this.getUploadText()}"
           @temba-drag-dropped=${this.handleDragDropped}
         >
           <div class="items image">${this.getImage()}</div>
@@ -273,9 +273,7 @@ export class ImagePicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
-        uploadText="${this.uploadText +
-        ' ' +
-        capitalize(this.imageType as any)}"
+        uploadText="${this.getUploadText()}"
         maxAttachments="1"
         maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentAdded}

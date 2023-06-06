@@ -324,7 +324,7 @@ export class Compose2 extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          dropText="${this.uploadText}"
+          uploadText="${this.uploadText}"
           @temba-container-clicked=${this.handleContainerClicked}
           @temba-drag-dropped=${this.handleDragDropped}
         >

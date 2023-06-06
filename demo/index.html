@@ -334,29 +334,6 @@
         </div>
       </temba-tab>
 
-      <temba-tab name="parent/child" icon="attachment_image">
-        <div class="example">
-          <temba-parent></temba-parent>
-        </div>
-      </temba-tab>
-
-      <temba-tab name="attachments" icon="paperclip">
-        <div class="example">
-          <temba-attachments-picker>
-            <textarea></textarea>
-          </temba-attachments-picker>
-        </div>
-        <div class="example">
-          <temba-image-picker></temba-image-picker>
-        </div>
-        <div class="example">
-          <temba-image-picker imageType="avatar"></temba-image-picker>
-        </div>
-        <div class="example">
-          <temba-image-picker imageType="logo"></temba-image-picker>
-        </div>
-      </temba-tab>
-
       <temba-tab name="compose" icon="compose">
         <div class="example">
           <temba-compose chatbox counter></temba-compose>
@@ -373,6 +350,30 @@
         <div class="example">
           <temba-compose chatbox attachments counter button></temba-compose>
         </div>        
+      </temba-tab>
+
+      <temba-tab name="attachments" icon="paperclip">
+        <div class="example">
+          <temba-attachments-picker uploadText="Upload Attachments"></temba-attachments-picker>
+        </div>
+        <div class="example">
+          <temba-attachments-picker></temba-attachments-picker>
+        </div>
+        <div class="example">
+          <temba-image-picker imageType="logo"></temba-image-picker>
+        </div>
+        <div class="example">
+          <temba-image-picker imageType="avatar"></temba-image-picker>
+        </div>
+        <div class="example">
+          <temba-image-picker></temba-image-picker>
+        </div>
+      </temba-tab>      
+
+      <temba-tab name="parent/child" icon="attachment_image">
+        <div class="example">
+          <temba-parent></temba-parent>
+        </div>
       </temba-tab>
 
     </temba-tabs>
