@@ -121,7 +121,6 @@ addCustomElement('temba-attachments-list', AttachmentsList);
 addCustomElement('temba-image-picker', ImagePicker);
 addCustomElement('temba-compose2', Compose2);
 addCustomElement('temba-resizer', Resizer);
-
 addCustomElement('temba-parent', Parent);
 addCustomElement('temba-child1', Child1);
 addCustomElement('temba-child2', Child2);

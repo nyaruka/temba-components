@@ -103,8 +103,6 @@ export class AttachmentsUploader extends FormElement {
     });
   }
 
-  // parent components that only want to display server-side failures should only populate validFiles
-  // parent components that want to display both client-side and server-side failures should populate both
   public uploadFiles(uploadFileValidationResult: UploadValidationResult): void {
     // add any invalidFiles (files that failed client-side validation) to failedAttachments
     if (uploadFileValidationResult.invalidFiles) {
