@@ -5,6 +5,13 @@ import { CustomEventType } from '../interfaces';
 import { Completion } from '../completion/Completion';
 import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
 import { AttachmentsList } from '../attachments/AttachmentsList';
+import {
+  UploadFile,
+  UploadValidationResult,
+  validateDuplicateFiles,
+  validateMaxAttachments,
+  validateMaxFileSize,
+} from '../attachments/attachments';
 
 export interface Attachment {
   uuid: string;
@@ -85,9 +92,6 @@ export class Compose2 extends FormElement {
   @property({ type: String })
   currentText = '';
 
-  @property({ type: String })
-  accept = ''; //e.g. ".xls,.xlsx"
-
   @property({ type: String, attribute: false })
   endpoint = upload_endpoint;
 
@@ -95,10 +99,16 @@ export class Compose2 extends FormElement {
   uploadIcon = 'attachment';
 
   @property({ type: String })
+  uploadText = 'Upload Attachments';
+
+  @property({ type: String })
   removeIcon = 'delete_small';
 
   @property({ type: Number })
   maxAttachments = 3;
+
+  @property({ type: Number })
+  maxFileSize = 26214400; //25 MB
 
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
@@ -115,20 +125,48 @@ export class Compose2 extends FormElement {
   @property({ type: String, attribute: false })
   buttonError = '';
 
-  // @property({ type: String })
-  // helpText = 'todo';
-
-  // @property({ type: Boolean, attribute: 'widget_only' })
-  // widgetOnly: boolean;
-
-  // @property({ type: Array })
-  // errors: string[];
-
-  // @property({ type: String })
-  // value = '';
-
   public constructor() {
     super();
+  }
+
+  public firstUpdated(changes: Map<string, any>): void {
+    super.firstUpdated(changes);
+
+    this.deserializeComposeValue();
+    this.setFocusOnChatbox();
+  }
+
+  public updated(changes: Map<string, any>): void {
+    super.updated(changes);
+
+    if (
+      changes.has('currentText') ||
+      changes.has('currentAttachments') ||
+      changes.has('failedAttachments')
+    ) {
+      this.toggleButton();
+      this.serializeComposeValue();
+    }
+
+    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
+      const attachmentsUploader = this.shadowRoot.querySelector(
+        'temba-attachments-uploader'
+      ) as AttachmentsUploader;
+      if (attachmentsUploader) {
+        attachmentsUploader.currentAttachments = this.currentAttachments;
+        attachmentsUploader.failedAttachments = this.failedAttachments;
+      }
+
+      const attachmentsList = this.shadowRoot.querySelector(
+        'temba-attachments-list'
+      ) as AttachmentsList;
+      if (attachmentsList) {
+        attachmentsList.currentAttachments = this.currentAttachments;
+        attachmentsList.failedAttachments = this.failedAttachments;
+      }
+    }
+
+    this.setFocusOnChatbox();
   }
 
   private deserializeComposeValue(): void {
@@ -153,34 +191,6 @@ export class Compose2 extends FormElement {
     // and then also update this.values...
     // so that the hidden input is updated via FormElement.updateInputs()
     this.values = [composeValue];
-
-    const attachmentsList = this.shadowRoot.querySelector(
-      'temba-attachments-list'
-    ) as AttachmentsList;
-    attachmentsList.requestUpdate();
-
-    const attachmentsUploader = this.shadowRoot.querySelector(
-      'temba-attachments-uploader'
-    ) as AttachmentsUploader;
-    attachmentsUploader.requestUpdate();
-  }
-
-  public firstUpdated(changes: Map<string, any>): void {
-    super.firstUpdated(changes);
-    this.deserializeComposeValue();
-    this.setFocusOnChatbox();
-  }
-
-  public updated(changes: Map<string, any>): void {
-    super.updated(changes);
-
-    if (changes.has('currentText') || changes.has('currentAttachments')) {
-      this.toggleButton();
-      this.serializeComposeValue();
-      this.fireCustomEvent(CustomEventType.ContentChanged, this.value);
-    }
-
-    this.setFocusOnChatbox();
   }
 
   private setFocusOnChatbox(): void {
@@ -224,24 +234,44 @@ export class Compose2 extends FormElement {
     }
   }
 
+  private handleUploadValidation(evt: CustomEvent): void {
+    this.currentAttachments = [];
+    this.failedAttachments = [];
+    const files: UploadFile[] = evt.detail.files;
+    let result: UploadValidationResult = {
+      validFiles: files,
+      invalidFiles: [],
+    };
+    result = validateDuplicateFiles(
+      result.validFiles,
+      result.invalidFiles,
+      this.currentAttachments
+    );
+    result = validateMaxAttachments(
+      result.validFiles,
+      result.invalidFiles,
+      this.currentAttachments,
+      this.maxAttachments
+    );
+    result = validateMaxFileSize(
+      result.validFiles,
+      result.invalidFiles,
+      this.maxFileSize
+    );
+    const attachmentsUploader = this.shadowRoot.querySelector(
+      'temba-attachments-uploader'
+    ) as AttachmentsUploader;
+    attachmentsUploader.uploadFiles(result);
+  }
+
   private handleAttachmentsAdded(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
-
-    const attachmentsList = this.shadowRoot.querySelector(
-      'temba-attachments-list'
-    ) as AttachmentsList;
-    attachmentsList.requestUpdate();
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
-
-    const attachmentsUploader = this.shadowRoot.querySelector(
-      'temba-attachments-uploader'
-    ) as AttachmentsUploader;
-    attachmentsUploader.requestUpdate();
   }
 
   public toggleButton() {
@@ -294,8 +324,9 @@ export class Compose2 extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          @temba-container-clicked=${this.handleContainerClicked.bind(this)}
-          @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+          dropText="${this.uploadText}"
+          @temba-container-clicked=${this.handleContainerClicked}
+          @temba-drag-dropped=${this.handleDragDropped}
         >
           ${this.chatbox
             ? html`<div class="items chatbox">${this.getChatbox()}</div>`
@@ -330,7 +361,7 @@ export class Compose2 extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         removeIcon="${this.removeIcon}"
-        @temba-content-changed=${this.handleAttachmentsRemoved.bind(this)}
+        @temba-content-changed=${this.handleAttachmentsRemoved}
       >
       </temba-attachments-list>
     `;
@@ -359,7 +390,9 @@ export class Compose2 extends FormElement {
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
         maxAttachments="${this.maxAttachments}"
-        @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}
+        maxFileSize="${this.maxFileSize}"
+        @temba-content-changed=${this.handleAttachmentsAdded}
+        @temba-upload-started=${this.handleUploadValidation}
       >
       </temba-attachments-uploader>
     `;

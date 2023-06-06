@@ -37,22 +37,24 @@ export class Parent extends FormElement {
 
     const failedAttachment = addFailedAttachment(this.failedAttachments.length);
     this.failedAttachments = [...this.failedAttachments, ...[failedAttachment]];
-
-    const child1 = this.shadowRoot.querySelector('temba-child1') as Child1;
-    if (child1) {
-      child1.currentAttachments = this.currentAttachments;
-      child1.failedAttachments = this.failedAttachments;
-    }
-
-    const child2 = this.shadowRoot.querySelector('temba-child2') as Child2;
-    if (child2) {
-      child2.currentAttachments = this.currentAttachments;
-      child2.failedAttachments = this.failedAttachments;
-    }
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
+
+    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
+      const child1 = this.shadowRoot.querySelector('temba-child1') as Child1;
+      if (child1) {
+        child1.currentAttachments = this.currentAttachments;
+        child1.failedAttachments = this.failedAttachments;
+      }
+
+      const child2 = this.shadowRoot.querySelector('temba-child2') as Child2;
+      if (child2) {
+        child2.currentAttachments = this.currentAttachments;
+        child2.failedAttachments = this.failedAttachments;
+      }
+    }
   }
 
   private handleChild1Added(evt: CustomEvent): void {

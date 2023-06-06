@@ -51,16 +51,34 @@ export class AttachmentsPicker extends FormElement {
   @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
-  // todo
-  // @property({ type: String })
-  // helpText = 'todo';
-
   public constructor() {
     super();
   }
 
+  public firstUpdated(changes: Map<string, any>): void {
+    super.firstUpdated(changes);
+  }
+
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
+
+    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
+      const attachmentsUploader = this.shadowRoot.querySelector(
+        'temba-attachments-uploader'
+      ) as AttachmentsUploader;
+      if (attachmentsUploader) {
+        attachmentsUploader.currentAttachments = this.currentAttachments;
+        attachmentsUploader.failedAttachments = this.failedAttachments;
+      }
+
+      const attachmentsList = this.shadowRoot.querySelector(
+        'temba-attachments-list'
+      ) as AttachmentsList;
+      if (attachmentsList) {
+        attachmentsList.currentAttachments = this.currentAttachments;
+        attachmentsList.failedAttachments = this.failedAttachments;
+      }
+    }
   }
 
   private handleDragDropped(evt: CustomEvent): void {
@@ -108,21 +126,11 @@ export class AttachmentsPicker extends FormElement {
   private handleAttachmentsAdded(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
-
-    const attachmentsList = this.shadowRoot.querySelector(
-      'temba-attachments-list'
-    ) as AttachmentsList;
-    attachmentsList.requestUpdate();
   }
 
   private handleAttachmentsRemoved(evt: CustomEvent): void {
     this.currentAttachments = evt.detail.currentAttachments;
     this.failedAttachments = evt.detail.failedAttachments;
-
-    const attachmentsUploader = this.shadowRoot.querySelector(
-      'temba-attachments-uploader'
-    ) as AttachmentsUploader;
-    attachmentsUploader.requestUpdate();
   }
 
   public render(): TemplateResult {
@@ -136,7 +144,7 @@ export class AttachmentsPicker extends FormElement {
       >
         <temba-attachments-drop-zone
           dropText="${this.uploadText}"
-          @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+          @temba-drag-dropped=${this.handleDragDropped}
         >
           <slot></slot>
           <div class="items attachments">${this.getAttachments()}</div>
@@ -152,7 +160,7 @@ export class AttachmentsPicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         removeIcon="${this.removeIcon}"
-        @temba-content-changed=${this.handleAttachmentsRemoved.bind(this)}
+        @temba-content-changed=${this.handleAttachmentsRemoved}
       >
       </temba-attachments-list>
     `;
@@ -170,8 +178,8 @@ export class AttachmentsPicker extends FormElement {
         uploadIcon="${this.uploadIcon}"
         maxAttachments="${this.maxAttachments}"
         maxFileSize="${this.maxFileSize}"
-        @temba-content-changed=${this.handleAttachmentsAdded.bind(this)}
-        @temba-upload-started=${this.handleUploadValidation.bind(this)}
+        @temba-content-changed=${this.handleAttachmentsAdded}
+        @temba-upload-started=${this.handleUploadValidation}
       >
       </temba-attachments-uploader>
     `;

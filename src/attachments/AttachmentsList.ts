@@ -71,15 +71,10 @@ export class AttachmentsList extends FormElement {
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      if (
-        changes.get('currentAttachments') !== undefined &&
-        changes.get('failedAttachments') !== undefined
-      ) {
-        this.fireCustomEvent(CustomEventType.ContentChanged, {
-          currentAttachments: this.currentAttachments,
-          failedAttachments: this.failedAttachments,
-        });
-      }
+      this.fireCustomEvent(CustomEventType.ContentChanged, {
+        currentAttachments: this.currentAttachments,
+        failedAttachments: this.failedAttachments,
+      });
     }
   }
 

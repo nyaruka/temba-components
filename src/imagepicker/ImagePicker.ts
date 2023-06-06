@@ -81,9 +81,6 @@ export class ImagePicker extends FormElement {
   @property({ type: String })
   uploadText = 'Upload';
 
-  // @property({ type: Number })
-  // dropWidth = 125; //px
-
   @property({ type: String })
   removeIcon = 'delete';
 
@@ -92,12 +89,6 @@ export class ImagePicker extends FormElement {
 
   @property({ type: Number })
   maxFileSize = 26214400; //bytes, 204800 = 200KB, 1024000 = 1MB, 26214400 = 25MB
-
-  // @property({ type: Number })
-  // imageWidth = 100; //px
-
-  // @property({ type: Number })
-  // imageHeight = 100; //px
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -108,15 +99,26 @@ export class ImagePicker extends FormElement {
   @property({ type: Array })
   failedAttachments: Attachment[] = [];
 
-  // @property({ type: String })
-  // helpText = 'todo';
-
   public constructor() {
     super();
   }
 
+  public firstUpdated(changes: Map<string, any>): void {
+    super.firstUpdated(changes);
+  }
+
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
+
+    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
+      const attachmentsUploader = this.shadowRoot.querySelector(
+        'temba-attachments-uploader'
+      ) as AttachmentsUploader;
+      if (attachmentsUploader) {
+        attachmentsUploader.currentAttachments = this.currentAttachments;
+        attachmentsUploader.failedAttachments = this.failedAttachments;
+      }
+    }
   }
 
   private handleDragDropped(evt: CustomEvent): void {
@@ -228,7 +230,7 @@ export class ImagePicker extends FormElement {
         <temba-attachments-drop-zone
           dropWidth="${this.getDropZoneWidth()}"
           dropText="${this.getDropZoneText()}"
-          @temba-drag-dropped=${this.handleDragDropped.bind(this)}
+          @temba-drag-dropped=${this.handleDragDropped}
         >
           <div class="items image">${this.getImage()}</div>
           <div class="items actions">${this.getActions()}</div>
@@ -276,8 +278,8 @@ export class ImagePicker extends FormElement {
         capitalize(this.imageType as any)}"
         maxAttachments="1"
         maxFileSize="${this.maxFileSize}"
-        @temba-content-changed=${this.handleAttachmentAdded.bind(this)}
-        @temba-upload-started=${this.handleUploadValidation.bind(this)}
+        @temba-content-changed=${this.handleAttachmentAdded}
+        @temba-upload-started=${this.handleUploadValidation}
       >
       </temba-attachments-uploader>
     `;

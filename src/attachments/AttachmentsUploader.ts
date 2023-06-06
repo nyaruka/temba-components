@@ -73,15 +73,10 @@ export class AttachmentsUploader extends FormElement {
     super.updated(changes);
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      if (
-        changes.get('currentAttachments') !== undefined ||
-        changes.get('failedAttachments') !== undefined
-      ) {
-        this.fireCustomEvent(CustomEventType.ContentChanged, {
-          currentAttachments: this.currentAttachments,
-          failedAttachments: this.failedAttachments,
-        });
-      }
+      this.fireCustomEvent(CustomEventType.ContentChanged, {
+        currentAttachments: this.currentAttachments,
+        failedAttachments: this.failedAttachments,
+      });
     }
   }
 
@@ -156,12 +151,14 @@ export class AttachmentsUploader extends FormElement {
       });
   }
 
-  private addCurrentAttachment(attachmentToAdd: Attachment) {
+  private addCurrentAttachment(currentAttachment: Attachment) {
     if (this.maxAttachments === 1) {
-      this.currentAttachments = [attachmentToAdd];
+      this.currentAttachments = [currentAttachment];
     } else {
-      this.currentAttachments.push(attachmentToAdd);
-      this.requestUpdate('currentAttachments');
+      this.currentAttachments = [
+        ...this.currentAttachments,
+        ...[currentAttachment],
+      ];
     }
   }
 
@@ -178,8 +175,10 @@ export class AttachmentsUploader extends FormElement {
     if (this.maxAttachments === 1) {
       this.failedAttachments = [failedAttachment];
     } else {
-      this.failedAttachments.push(failedAttachment);
-      this.requestUpdate('failedAttachments');
+      this.failedAttachments = [
+        ...this.failedAttachments,
+        ...[failedAttachment],
+      ];
     }
   }
 

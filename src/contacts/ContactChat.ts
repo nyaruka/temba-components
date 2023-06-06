@@ -301,7 +301,7 @@ export class ContactChat extends ContactStoreElement {
         attachments
         counter
         button
-        @temba-button-clicked=${this.handleSend.bind(this)}
+        @temba-button-clicked=${this.handleSend}
       >
       </temba-compose>
     </div>`;
