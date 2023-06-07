@@ -48,6 +48,9 @@ import { Compose } from './src/compose/Compose';
 import { Lightbox } from './src/lightbox/Lightbox';
 import { ColorPicker } from './src/colorpicker/ColorPicker';
 import { Resizer } from './src/resizer/Resizer';
+import { Parent } from './src/parentchild/Parent';
+import { Child1 } from './src/parentchild/Child1';
+import { Child2 } from './src/parentchild/Child2';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -106,3 +109,6 @@ addCustomElement('temba-content-menu', ContentMenu);
 addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-resizer', Resizer);
+addCustomElement('temba-parent', Parent);
+addCustomElement('temba-child1', Child1);
+addCustomElement('temba-child2', Child2);
