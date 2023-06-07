@@ -68,13 +68,13 @@ export class Parent extends FormElement {
   }
 
   private handleChild1Added(evt: CustomEvent): void {
-    this.currentAttachments = evt.detail.currentAttachments;
-    this.failedAttachments = evt.detail.failedAttachments;
+    this.currentAttachments = evt.detail.child1CurrentAttachments;
+    this.failedAttachments = evt.detail.child1FailedAttachments;
   }
 
   private handleChild2Removed(evt: CustomEvent): void {
-    this.currentAttachments = evt.detail.currentAttachments;
-    this.failedAttachments = evt.detail.failedAttachments;
+    this.currentAttachments = evt.detail.child2CurrentAttachments;
+    this.failedAttachments = evt.detail.child2FailedAttachments;
   }
 
   public render(): TemplateResult {

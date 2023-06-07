@@ -28,8 +28,8 @@ export class Child2 extends FormElement {
 
     if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
       this.fireCustomEvent(CustomEventType.ContentChanged, {
-        currentAttachments: this.currentAttachments,
-        failedAttachments: this.failedAttachments,
+        child2CurrentAttachments: this.currentAttachments,
+        child2FailedAttachments: this.failedAttachments,
       });
     }
   }
