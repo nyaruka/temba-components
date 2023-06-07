@@ -43,7 +43,7 @@ export class AttachmentsPicker extends FormElement {
   maxAttachments = 3;
 
   @property({ type: Number })
-  maxFileSize = 26214400; //25 MB
+  maxFileSize = 26214400; //25 MB, accepts bytes
 
   @property({ type: Array })
   currentAttachments: Attachment[] = [];

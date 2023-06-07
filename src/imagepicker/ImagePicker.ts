@@ -63,16 +63,16 @@ export class ImagePicker extends FormElement {
   maxAttachments = 1;
 
   @property({ type: Number })
-  maxFileSize = 26214400; //25 MB
+  maxFileSize = 26214400; //25 MB, accepts bytes
 
   @property({ type: Number })
-  imageWidth = 100; //px
+  imageWidth = 100; //accepts pixels
 
   @property({ type: Number })
-  imageHeight = 100; //px
+  imageHeight = 100; //accepts pixels
 
   @property({ type: String })
-  imageRadius = 'var(--curvature-widget)'; //px or percentage
+  imageRadius = 'var(--curvature-widget)'; //accepts pixels or percentage
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -225,9 +225,7 @@ export class ImagePicker extends FormElement {
   private getActions(): TemplateResult {
     return html`
       <div class="action-item">${this.getUploader()}</div>
-      ${this.currentAttachment //&& !this.currentAttachment.error
-        ? this.getRemoveAction()
-        : null}
+      ${this.currentAttachment ? this.getRemoveAction() : null}
     `;
   }
 
