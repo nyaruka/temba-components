@@ -51,10 +51,6 @@ export class Child1 extends FormElement {
     super();
   }
 
-  public firstUpdated(changes: Map<string, any>): void {
-    super.firstUpdated(changes);
-  }
-
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
