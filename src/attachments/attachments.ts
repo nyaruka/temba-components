@@ -1,27 +1,5 @@
 import { capitalize, formatFileSize } from '../utils';
 
-export enum ImageType {
-  Image = 'image',
-  Avatar = 'avatar',
-  Logo = 'logo',
-}
-
-export const ImageDimensions = {
-  dropWidth: 125,
-  imageWidth: 100,
-  imageHeight: 100,
-};
-export const AvatarDimensions = {
-  dropWidth: 125,
-  imageWidth: 100,
-  imageHeight: 100,
-};
-export const LogoDimensions = {
-  dropWidth: 250,
-  imageWidth: 200,
-  imageHeight: 125,
-};
-
 export interface UploadFile {
   file: File;
   width: number;
@@ -121,34 +99,17 @@ export function validateImageDimensions(
   uploadFiles: UploadFile[],
   invalidFiles: InvalidUploadFile[],
   imageWidth: number,
-  imageHeight: number,
-  imageType = 'image'
+  imageHeight: number
 ): UploadValidationResult {
   const validFiles: UploadFile[] = [];
   uploadFiles.map(uploadFile => {
-    if (
-      imageType === ImageType.Avatar &&
-      uploadFile.width === imageWidth &&
-      uploadFile.width === uploadFile.height
-    ) {
-      validFiles.push(uploadFile);
-    } else if (
-      imageType === ImageType.Logo &&
-      uploadFile.width === imageWidth &&
-      uploadFile.height === imageHeight
-    ) {
-      validFiles.push(uploadFile);
-    } else if (imageType === ImageType.Image) {
+    if (imageWidth === uploadFile.width && imageHeight === uploadFile.height) {
       validFiles.push(uploadFile);
     } else {
       const error =
         imageWidth === imageHeight
-          ? `${capitalize(
-              imageType as any
-            )}s must have a width and height of ${imageWidth}px.`
-          : `${capitalize(
-              imageType as any
-            )}s must have a width of ${imageWidth}px and a height of ${imageHeight}px.`;
+          ? `Images must have a width and height of ${imageWidth}px.`
+          : `Images must have a width of ${imageWidth}px and a height of ${imageHeight}px.`;
       invalidFiles.push({
         uploadFile: uploadFile,
         error: error,

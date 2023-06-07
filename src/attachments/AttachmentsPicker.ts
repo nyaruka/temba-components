@@ -34,7 +34,7 @@ export class AttachmentsPicker extends FormElement {
   uploadIcon = 'attachment';
 
   @property({ type: String })
-  uploadText = '';
+  uploadLabel = '';
 
   @property({ type: String })
   removeIcon = 'delete_small';
@@ -143,7 +143,7 @@ export class AttachmentsPicker extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          uploadText="${this.uploadText}"
+          uploadLabel="${this.uploadLabel}"
           @temba-drag-dropped=${this.handleDragDropped}
         >
           <slot></slot>
@@ -176,7 +176,7 @@ export class AttachmentsPicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
-        uploadText="${this.uploadText}"
+        uploadLabel="${this.uploadLabel}"
         maxAttachments="${this.maxAttachments}"
         maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentsAdded}

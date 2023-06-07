@@ -64,7 +64,7 @@ export class AttachmentsDropZone extends FormElement {
   dropWidth = 'auto';
 
   @property({ type: String })
-  uploadText: string;
+  uploadLabel: string;
 
   @property({ type: Boolean })
   pendingDrop: boolean;
@@ -121,7 +121,7 @@ export class AttachmentsDropZone extends FormElement {
         style="width:${this.dropWidth}px"
       >
         <div class="drop-mask">
-          <div>${this.uploadText}</div>
+          <div>${this.uploadLabel}</div>
         </div>
         <slot></slot>
       </div>

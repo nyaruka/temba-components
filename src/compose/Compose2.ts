@@ -99,7 +99,7 @@ export class Compose2 extends FormElement {
   uploadIcon = 'attachment';
 
   @property({ type: String })
-  uploadText = 'Upload Attachments';
+  uploadLabel = 'Upload Attachments';
 
   @property({ type: String })
   removeIcon = 'delete_small';
@@ -324,7 +324,7 @@ export class Compose2 extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          uploadText="${this.uploadText}"
+          uploadLabel="${this.uploadLabel}"
           @temba-container-clicked=${this.handleContainerClicked}
           @temba-drag-dropped=${this.handleDragDropped}
         >

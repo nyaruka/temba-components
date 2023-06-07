@@ -41,7 +41,7 @@ export class AttachmentsUploader extends FormElement {
   uploadIcon = 'attachment';
 
   @property({ type: String })
-  uploadText = '';
+  uploadLabel = '';
 
   @property({ type: String, attribute: false })
   endpoint = upload_endpoint;
@@ -197,14 +197,14 @@ export class AttachmentsUploader extends FormElement {
             @click=${this.handleUploadFileIconClicked}
             clickable
           ></temba-icon>
-          ${this.uploadText &&
+          ${this.uploadLabel &&
           this.currentAttachments.length === 0 &&
           this.failedAttachments.length === 0
             ? html` <div
                 class="upload-text"
                 @click=${this.handleUploadFileIconClicked}
               >
-                ${this.uploadText}
+                ${this.uploadLabel}
               </div>`
             : null}
         </label>`;

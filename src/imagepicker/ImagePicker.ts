@@ -4,10 +4,6 @@ import { property } from 'lit/decorators.js';
 import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
 import {
   Attachment,
-  AvatarDimensions,
-  ImageDimensions,
-  ImageType,
-  LogoDimensions,
   UploadFile,
   UploadValidationResult,
   validateImageDimensions,
@@ -24,39 +20,21 @@ export class ImagePicker extends FormElement {
         justify-content: center;
       }
       .image-item {
+        border-radius: var(--curvature-widget);
+        width: 100px;
+        height: 100px;
         display: flex;
-      }
-
-      .image-image,
-      .avatar-image,
-      .logo-image {
-        background-image: none;
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: cover;
-      }
-      .image-image,
-      .missing-image {
-        border-radius: var(--curvature-widget);
-        width: 100px;
-        height: 100px;
-        margin: 5px 0px;
-      }
-      .avatar-image {
-        border-radius: 50%;
-        width: 100px;
-        height: 100px;
-      }
-      .logo-image {
-        border-radius: var(--curvature-widget);
-        width: 200px;
-        height: 125px;
-        margin: 15px 0px;
+        margin: 10px 0px;
       }
       .missing-icon {
         color: rgb(102, 102, 102, 0.25);
         background-color: rgba(100, 100, 100, 0.05);
-        border-radius: var(--curvature-widget);
+      }
+      .attachment-image {
+        background-image: none;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
       }
 
       .actions {
@@ -73,13 +51,10 @@ export class ImagePicker extends FormElement {
   }
 
   @property({ type: String })
-  imageType = 'image';
-
-  @property({ type: String })
   uploadIcon = 'attachment_image';
 
   @property({ type: String })
-  uploadText = 'Upload';
+  uploadLabel = '';
 
   @property({ type: String })
   removeIcon = 'delete';
@@ -89,6 +64,15 @@ export class ImagePicker extends FormElement {
 
   @property({ type: Number })
   maxFileSize = 26214400; //25 MB
+
+  @property({ type: Number })
+  imageWidth = 100; //px
+
+  @property({ type: Number })
+  imageHeight = 100; //px
+
+  @property({ type: String })
+  imageRadius = 'var(--curvature-widget)'; //px or percentage
 
   @property({ type: Object })
   currentAttachment: Attachment;
@@ -146,31 +130,17 @@ export class ImagePicker extends FormElement {
       this.maxFileSize
     );
 
-    const [imageWidth, imageHeight] = this.getImageDimensions();
-
     result = validateImageDimensions(
       result.validFiles,
       result.invalidFiles,
-      imageWidth,
-      imageHeight,
-      this.imageType
+      this.imageWidth,
+      this.imageHeight
     );
 
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
     ) as AttachmentsUploader;
     attachmentsUploader.uploadFiles(result);
-  }
-
-  private getImageDimensions(): [number, number] {
-    switch (this.imageType) {
-      case ImageType.Avatar:
-        return [AvatarDimensions.imageWidth, AvatarDimensions.imageHeight];
-      case ImageType.Logo:
-        return [LogoDimensions.imageWidth, LogoDimensions.imageHeight];
-      default:
-        return [ImageDimensions.imageWidth, ImageDimensions.imageHeight];
-    }
   }
 
   private handleAttachmentAdded(evt: CustomEvent): void {
@@ -186,7 +156,7 @@ export class ImagePicker extends FormElement {
       this.errors = [this.currentAttachment.error];
 
       // temp hack - spoof a successful file upload
-      // this.currentAttachment.url = '../../test-assets/img/meow.jpg'
+      // this.currentAttachment.url = '../../test-assets/img/20mb.jpg'
       // this.currentAttachment.error = '';
       // this.errors = [];
     }
@@ -204,18 +174,11 @@ export class ImagePicker extends FormElement {
   }
 
   private getDropZoneWidth(): number {
-    switch (this.imageType) {
-      case ImageType.Avatar:
-        return AvatarDimensions.dropWidth;
-      case ImageType.Logo:
-        return LogoDimensions.dropWidth;
-      default:
-        return ImageDimensions.dropWidth;
-    }
+    return this.imageWidth + 25;
   }
 
-  private getUploadText(): string {
-    return this.uploadText + ' ' + capitalize(this.imageType as any);
+  private getUploadLabel(): string {
+    return capitalize(this.uploadLabel as any);
   }
 
   public render(): TemplateResult {
@@ -229,7 +192,7 @@ export class ImagePicker extends FormElement {
       >
         <temba-attachments-drop-zone
           dropWidth="${this.getDropZoneWidth()}"
-          uploadText="${this.getUploadText()}"
+          uploadLabel="${this.getUploadLabel()}"
           @temba-drag-dropped=${this.handleDragDropped}
         >
           <div class="items image">${this.getImage()}</div>
@@ -251,8 +214,10 @@ export class ImagePicker extends FormElement {
               ></temba-icon>
             </div>`
           : html` <div
-              class="image-item ${this.imageType}-image"
-              style="background-image:url(${this.currentAttachment.url});"
+              class="image-item attachment-image"
+              style="background-image:url(${this.currentAttachment
+                .url});border-radius:${this.imageRadius};width:${this
+                .imageWidth}px;height:${this.imageHeight}px;"
             ></div>`
         : null}
     `;
@@ -273,7 +238,7 @@ export class ImagePicker extends FormElement {
         .currentAttachments="${this.currentAttachments}"
         .failedAttachments="${this.failedAttachments}"
         uploadIcon="${this.uploadIcon}"
-        uploadText="${this.getUploadText()}"
+        uploadLabel="${this.getUploadLabel()}"
         maxAttachments="1"
         maxFileSize="${this.maxFileSize}"
         @temba-content-changed=${this.handleAttachmentAdded}
