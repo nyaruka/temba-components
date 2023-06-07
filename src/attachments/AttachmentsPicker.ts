@@ -94,13 +94,12 @@ export class AttachmentsPicker extends FormElement {
   }
 
   private handleUploadValidation(evt: CustomEvent): void {
-    this.currentAttachments = [];
-    this.failedAttachments = [];
     const files: UploadFile[] = evt.detail.files;
     let result: UploadValidationResult = {
       validFiles: files,
       invalidFiles: [],
     };
+
     result = validateDuplicateFiles(
       result.validFiles,
       result.invalidFiles,
@@ -117,6 +116,7 @@ export class AttachmentsPicker extends FormElement {
       result.invalidFiles,
       this.maxFileSize
     );
+
     const attachmentsUploader = this.shadowRoot.querySelector(
       'temba-attachments-uploader'
     ) as AttachmentsUploader;

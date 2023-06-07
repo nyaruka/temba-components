@@ -119,17 +119,16 @@ export class ImagePicker extends FormElement {
 
   private handleUploadValidation(evt: CustomEvent): void {
     const files: UploadFile[] = [evt.detail.files[0]];
-
     let result: UploadValidationResult = {
       validFiles: files,
       invalidFiles: [],
     };
+
     result = validateMaxFileSize(
       result.validFiles,
       result.invalidFiles,
       this.maxFileSize
     );
-
     result = validateImageDimensions(
       result.validFiles,
       result.invalidFiles,
