@@ -186,7 +186,7 @@ export class ImagePicker extends FormElement {
       this.errors = [this.currentAttachment.error];
 
       // temp hack - spoof a successful file upload
-      // this.currentAttachment.url = '../../test-assets/img/20mb.jpg'
+      // this.currentAttachment.url = '../../test-assets/img/meow.jpg'
       // this.currentAttachment.error = '';
       // this.errors = [];
     }
