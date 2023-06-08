@@ -3,7 +3,7 @@ import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
 import { Modax } from '../src/dialog/Modax';
 import { CustomEventType } from '../src/interfaces';
-import { assertScreenshot, checkTimers, getClip, mockPOST } from './utils.test';
+import { assertScreenshot, getClip, mockPOST } from './utils.test';
 
 let clock: any;
 
@@ -111,8 +111,8 @@ describe('temba-modax', () => {
 
     expect(modax.open).to.equal(true);
 
-    expect(modax.primaryName).to.equal('Save Everything');
-    expect(modax.cancelName).to.equal('Cancel');
+    expect(modax.buttons[1].name).to.equal('Save Everything');
+    expect(modax.buttons[0].name).to.equal('Cancel');
 
     await assertScreenshot('modax/form', getDialogClip(modax));
   });

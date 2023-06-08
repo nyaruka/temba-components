@@ -1,10 +1,23 @@
 import { property } from 'lit/decorators.js';
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { Button } from '../button/Button';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { getClasses } from '../utils';
+
+export enum ButtonType {
+  PRIMARY = 'primary',
+  SECONDARY = 'secondary',
+  DESTRUCTIVE = 'destructive',
+}
+export class DialogButton {
+  name?: string;
+  id?: string;
+  details?: any;
+  type?: string;
+  closes?: boolean;
+}
 
 export class Dialog extends RapidElement {
   static get widths(): { [size: string]: string } {
@@ -22,6 +35,10 @@ export class Dialog extends RapidElement {
         z-index: 10000;
         font-family: var(--font-family);
         background: white;
+      }
+
+      .flex-grow {
+        flex-grow: 1;
       }
 
       .flex {
@@ -99,6 +116,9 @@ export class Dialog extends RapidElement {
       }
 
       .header-text {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         font-size: 20px;
         padding: 12px 20px;
         font-weight: 300;
@@ -106,11 +126,21 @@ export class Dialog extends RapidElement {
         background: var(--header-bg);
       }
 
+      .header-text .title {
+        flex-grow: 1;
+      }
+
+      .header-text .status {
+        font-size: 0.6em;
+        font-weight: bold;
+      }
+
       .dialog-footer {
         background: var(--color-primary-light);
         padding: 10px;
         display: flex;
-        flex-flow: row-reverse;
+        flex-flow: row;
+        align-items: center;
       }
 
       temba-button {
@@ -198,6 +228,9 @@ export class Dialog extends RapidElement {
   @property()
   ready: boolean;
 
+  @property({ type: Array })
+  buttons: DialogButton[] = [];
+
   @property({ attribute: false })
   onButtonClicked: (button: Button) => void;
 
@@ -205,6 +238,25 @@ export class Dialog extends RapidElement {
 
   public constructor() {
     super();
+  }
+
+  protected firstUpdated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    if (changes.has('cancelButtonName') && this.cancelButtonName) {
+      this.buttons.push({
+        name: this.cancelButtonName,
+        type: ButtonType.SECONDARY,
+        closes: true,
+      });
+    }
+
+    if (changes.has('primaryButtonName') && this.primaryButtonName) {
+      this.buttons.push({
+        name: this.primaryButtonName,
+        type: ButtonType.PRIMARY,
+      });
+    }
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -270,8 +322,13 @@ export class Dialog extends RapidElement {
   public handleClick(evt: MouseEvent) {
     const button = evt.currentTarget as Button;
     if (!button.disabled) {
-      this.fireCustomEvent(CustomEventType.ButtonClicked, { button });
-      if (button.name === this.cancelButtonName) {
+      let detail: DialogButton = {};
+      if (button.index >= 0 && button.index < this.buttons.length) {
+        detail = this.buttons[button.index];
+      }
+
+      this.fireCustomEvent(CustomEventType.ButtonClicked, { button, detail });
+      if (button.name === this.cancelButtonName || (detail && detail.closes)) {
         this.open = false;
       }
     }
@@ -343,7 +400,9 @@ export class Dialog extends RapidElement {
     const header = this.header
       ? html`
           <div class="dialog-header">
-            <div class="header-text">${this.header}</div>
+            <div class="header-text">
+              <div class="title">${this.header}</div>
+            </div>
           </div>
         `
       : null;
@@ -382,26 +441,23 @@ export class Dialog extends RapidElement {
             </div>
 
             <div class="dialog-footer">
-                ${
-                  this.primaryButtonName
-                    ? html`
-                        <temba-button
-                          @click=${this.handleClick}
-                          .name=${this.primaryButtonName}
-                          ?destructive=${this.destructive}
-                          ?primary=${!this.destructive}
-                          ?submitting=${this.submitting}
-                          ?disabled=${this.disabled}
-                          >}</temba-button
-                        >
-                      `
-                    : null
-                }
-                <temba-button
-                  @click=${this.handleClick}
-                  name=${this.cancelButtonName}
-                  secondary
-                ></temba-button>
+              <div class="flex-grow">
+                <slot name="gutter"></slot>
+              </div>
+              ${this.buttons.map(
+                (button: DialogButton, index) => html`
+                  <temba-button
+                    name=${button.name}
+                    ?destructive=${button.type == 'primary' && this.destructive}
+                    ?primary=${button.type == 'primary' && !this.destructive}
+                    ?secondary=${button.type == 'secondary'}
+                    ?submitting=${this.submitting}
+                    ?disabled=${this.disabled}
+                    index=${index}
+                    @click=${this.handleClick}
+                  ></temba-button>
+                `
+              )}
               </div>
             </div>
             <div class="grow-bottom"></div>
