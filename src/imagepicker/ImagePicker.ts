@@ -89,20 +89,44 @@ export class ImagePicker extends FormElement {
 
   public firstUpdated(changes: Map<string, any>): void {
     super.firstUpdated(changes);
+
+    // initialize all children component's properties
+    this.deserializeAttachmentsValue();
+
+    // initialize all children component's properties
+    const attachmentsUploader = this.shadowRoot.querySelector(
+      'temba-attachments-uploader'
+    ) as AttachmentsUploader;
+    if (attachmentsUploader) {
+      attachmentsUploader.currentAttachments = this.currentAttachments;
+      attachmentsUploader.failedAttachments = this.failedAttachments;
+    }
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      const attachmentsUploader = this.shadowRoot.querySelector(
-        'temba-attachments-uploader'
-      ) as AttachmentsUploader;
-      if (attachmentsUploader) {
-        attachmentsUploader.currentAttachments = this.currentAttachments;
-        attachmentsUploader.failedAttachments = this.failedAttachments;
-      }
+    if (changes.has('currentAttachments')) {
+      this.serializeAttachmentsValue();
     }
+  }
+
+  private deserializeAttachmentsValue(): void {
+    if (this.value) {
+      const parsedValue = JSON.parse(this.value);
+      this.currentAttachments = parsedValue.attachments;
+    }
+  }
+
+  private serializeAttachmentsValue(): void {
+    const attachmentsValue = {
+      attachments: this.currentAttachments,
+    };
+    // update this.value...
+    this.value = JSON.stringify(attachmentsValue);
+    // and then also update this.values...
+    // so that the hidden input is updated via FormElement.updateInputs()
+    this.values = [attachmentsValue];
   }
 
   private handleDragDropped(evt: CustomEvent): void {

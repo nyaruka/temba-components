@@ -57,28 +57,51 @@ export class AttachmentsPicker extends FormElement {
 
   public firstUpdated(changes: Map<string, any>): void {
     super.firstUpdated(changes);
+
+    // initialize this parent component's properties
+    this.deserializeAttachmentsValue();
+
+    // initialize all children component's properties
+    const attachmentsUploader = this.shadowRoot.querySelector(
+      'temba-attachments-uploader'
+    ) as AttachmentsUploader;
+    if (attachmentsUploader) {
+      attachmentsUploader.currentAttachments = this.currentAttachments;
+      attachmentsUploader.failedAttachments = this.failedAttachments;
+    }
+    const attachmentsList = this.shadowRoot.querySelector(
+      'temba-attachments-list'
+    ) as AttachmentsList;
+    if (attachmentsList) {
+      attachmentsList.currentAttachments = this.currentAttachments;
+      attachmentsList.failedAttachments = this.failedAttachments;
+    }
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      const attachmentsUploader = this.shadowRoot.querySelector(
-        'temba-attachments-uploader'
-      ) as AttachmentsUploader;
-      if (attachmentsUploader) {
-        attachmentsUploader.currentAttachments = this.currentAttachments;
-        attachmentsUploader.failedAttachments = this.failedAttachments;
-      }
-
-      const attachmentsList = this.shadowRoot.querySelector(
-        'temba-attachments-list'
-      ) as AttachmentsList;
-      if (attachmentsList) {
-        attachmentsList.currentAttachments = this.currentAttachments;
-        attachmentsList.failedAttachments = this.failedAttachments;
-      }
+    if (changes.has('currentAttachments')) {
+      this.serializeAttachmentsValue();
     }
+  }
+
+  private deserializeAttachmentsValue(): void {
+    if (this.value) {
+      const parsedValue = JSON.parse(this.value);
+      this.currentAttachments = parsedValue.attachments;
+    }
+  }
+
+  private serializeAttachmentsValue(): void {
+    const attachmentsValue = {
+      attachments: this.currentAttachments,
+    };
+    // update this.value...
+    this.value = JSON.stringify(attachmentsValue);
+    // and then also update this.values...
+    // so that the hidden input is updated via FormElement.updateInputs()
+    this.values = [attachmentsValue];
   }
 
   private handleDragDropped(evt: CustomEvent): void {

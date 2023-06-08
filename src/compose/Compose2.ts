@@ -132,38 +132,34 @@ export class Compose2 extends FormElement {
   public firstUpdated(changes: Map<string, any>): void {
     super.firstUpdated(changes);
 
+    // initialize this parent component's properties
     this.deserializeComposeValue();
+
+    // initialize all children component's properties
+    const attachmentsUploader = this.shadowRoot.querySelector(
+      'temba-attachments-uploader'
+    ) as AttachmentsUploader;
+    if (attachmentsUploader) {
+      attachmentsUploader.currentAttachments = this.currentAttachments;
+      attachmentsUploader.failedAttachments = this.failedAttachments;
+    }
+    const attachmentsList = this.shadowRoot.querySelector(
+      'temba-attachments-list'
+    ) as AttachmentsList;
+    if (attachmentsList) {
+      attachmentsList.currentAttachments = this.currentAttachments;
+      attachmentsList.failedAttachments = this.failedAttachments;
+    }
+
     this.setFocusOnChatbox();
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    if (
-      changes.has('currentText') ||
-      changes.has('currentAttachments') ||
-      changes.has('failedAttachments')
-    ) {
+    if (changes.has('currentText') || changes.has('currentAttachments')) {
       this.toggleButton();
       this.serializeComposeValue();
-    }
-
-    if (changes.has('currentAttachments') || changes.has('failedAttachments')) {
-      const attachmentsUploader = this.shadowRoot.querySelector(
-        'temba-attachments-uploader'
-      ) as AttachmentsUploader;
-      if (attachmentsUploader) {
-        attachmentsUploader.currentAttachments = this.currentAttachments;
-        attachmentsUploader.failedAttachments = this.failedAttachments;
-      }
-
-      const attachmentsList = this.shadowRoot.querySelector(
-        'temba-attachments-list'
-      ) as AttachmentsList;
-      if (attachmentsList) {
-        attachmentsList.currentAttachments = this.currentAttachments;
-        attachmentsList.failedAttachments = this.failedAttachments;
-      }
     }
 
     this.setFocusOnChatbox();
@@ -171,12 +167,12 @@ export class Compose2 extends FormElement {
 
   private deserializeComposeValue(): void {
     if (this.value) {
-      const parsed_value = JSON.parse(this.value);
+      const parsedValue = JSON.parse(this.value);
       if (this.chatbox) {
-        this.currentText = parsed_value.text;
+        this.currentText = parsedValue.text;
       }
       if (this.attachments) {
-        this.currentAttachments = parsed_value.attachments;
+        this.currentAttachments = parsedValue.attachments;
       }
     }
   }
