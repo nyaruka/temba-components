@@ -90,7 +90,7 @@ export class ImagePicker extends FormElement {
   public firstUpdated(changes: Map<string, any>): void {
     super.firstUpdated(changes);
 
-    // initialize all children component's properties
+    // initialize this parent component's properties
     this.deserializeAttachmentsValue();
 
     // initialize all children component's properties

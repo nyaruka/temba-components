@@ -355,7 +355,7 @@ export class Compose extends FormElement {
   public uploadFiles(files: FileList): void {
     let filesToUpload = [];
     if (this.currentAttachments && this.currentAttachments.length > 0) {
-      //remove duplicate files that have already been uploaded
+      // remove duplicate files that have already been uploaded
       filesToUpload = [...files].filter(file => {
         const index = this.currentAttachments.findIndex(
           value => value.filename === file.name && value.size === file.size
