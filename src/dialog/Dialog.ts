@@ -187,9 +187,6 @@ export class Dialog extends RapidElement {
   header: string;
 
   @property()
-  headerStatus: string;
-
-  @property()
   body: string;
 
   @property({ type: Boolean })
@@ -280,7 +277,6 @@ export class Dialog extends RapidElement {
         body.style.width = '100%';
         body.style.overflowY = 'hidden';
       } else {
-        this.headerStatus = '';
         body.style.position = '';
         body.style.overflowY = '';
         body.style.width = '';
@@ -406,7 +402,6 @@ export class Dialog extends RapidElement {
           <div class="dialog-header">
             <div class="header-text">
               <div class="title">${this.header}</div>
-              <div class="status">${this.headerStatus}</div>
             </div>
           </div>
         `
