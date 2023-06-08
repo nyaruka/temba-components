@@ -281,14 +281,19 @@ export class Modax extends RapidElement {
     this.body = this.getLoading();
     getUrl(this.endpoint, null, this.getHeaders()).then(
       (response: WebResponse) => {
-        this.setBody(response.body);
-        this.fetching = false;
-        this.updateComplete.then(() => {
-          this.updatePrimaryButton();
-          this.fireCustomEvent(CustomEventType.Loaded, {
-            body: this.getBody(),
+        // if it's a full page, breakout of the modal
+        if (response.body.indexOf('<!DOCTYPE HTML>') == 0) {
+          document.location = response.url;
+        } else {
+          this.setBody(response.body);
+          this.fetching = false;
+          this.updateComplete.then(() => {
+            this.updatePrimaryButton();
+            this.fireCustomEvent(CustomEventType.Loaded, {
+              body: this.getBody(),
+            });
           });
-        });
+        }
       }
     );
   }
@@ -356,7 +361,6 @@ export class Modax extends RapidElement {
     const button = evt.detail.button;
     const detail = evt.detail.detail;
     if (!button.disabled && !button.submitting) {
-      console.log('button', button);
       if (button.primary || button.destructive) {
         if (!this.suspendSubmit) {
           this.submit();

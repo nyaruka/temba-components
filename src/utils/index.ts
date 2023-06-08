@@ -85,6 +85,7 @@ export const getUrl = (
             controller,
             body,
             json,
+            url: response.url,
             headers: response.headers,
             status: response.status,
           });
