@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
-import { upload_endpoint } from '../compose/Compose';
 import { Dialog } from '../dialog/Dialog';
 import { ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
+import { upload_endpoint } from '../attachments/attachments';
 
 const colorHash = new ColorHash();
 

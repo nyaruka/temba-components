@@ -16,10 +16,10 @@ import {
 } from '../test/utils.test';
 import {
   getInvalidText,
-  getValidAttachments,
   getValidText,
   updateComponent,
 } from './temba-compose.test';
+import { getValidAttachments } from './temba-attachments-picker.test';
 
 let clock: any;
 mockNow('2021-03-31T00:31:00.000-00:00');

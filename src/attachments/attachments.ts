@@ -1,4 +1,4 @@
-import { capitalize, formatFileSize } from '../utils';
+import { formatFileSize } from '../utils';
 
 export interface UploadFile {
   file: File;
@@ -24,6 +24,8 @@ export interface Attachment {
   size: number;
   error: string;
 }
+
+export const upload_endpoint = '/api/v2/media.json';
 
 export function validateDuplicateFiles(
   uploadFiles: UploadFile[],
