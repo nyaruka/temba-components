@@ -3,25 +3,19 @@ import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { Completion } from '../completion/Completion';
-import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
+import {
+  AttachmentsUploader,
+  upload_endpoint,
+} from '../attachments/AttachmentsUploader';
 import { AttachmentsList } from '../attachments/AttachmentsList';
 import {
+  Attachment,
   UploadFile,
   UploadValidationResult,
-  upload_endpoint,
   validateDuplicateFiles,
   validateMaxAttachments,
   validateMaxFileSize,
 } from '../attachments/attachments';
-
-export interface Attachment {
-  uuid: string;
-  content_type: string;
-  url: string;
-  filename: string;
-  size: number;
-  error: string;
-}
 
 export class Compose extends FormElement {
   static get styles() {

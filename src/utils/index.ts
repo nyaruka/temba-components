@@ -4,7 +4,7 @@ import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
 import { ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
-import { upload_endpoint } from '../attachments/attachments';
+import { upload_endpoint } from '../attachments/AttachmentsUploader';
 
 const colorHash = new ColorHash();
 

@@ -1,6 +1,6 @@
 import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
-import { Attachment, Compose } from '../src/compose/Compose';
+import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
@@ -20,6 +20,7 @@ import {
   updateComponent,
 } from './temba-compose.test';
 import { getValidAttachments } from './temba-attachments-picker.test';
+import { Attachment } from '../src/attachments/attachments';
 
 let clock: any;
 mockNow('2021-03-31T00:31:00.000-00:00');

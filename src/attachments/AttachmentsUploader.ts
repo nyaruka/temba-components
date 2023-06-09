@@ -8,8 +8,9 @@ import {
   UploadFile,
   UploadValidationResult,
   getFileDimensions,
-  upload_endpoint,
 } from './attachments';
+
+export const upload_endpoint = '/api/v2/media.json';
 
 export class AttachmentsUploader extends FormElement {
   static get styles() {

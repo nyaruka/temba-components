@@ -4,11 +4,11 @@ import { Button } from '../src/button/Button';
 import { Completion } from '../src/completion/Completion';
 import { Compose } from '../src/compose/Compose';
 import { Attachment } from '../src/attachments/attachments';
-import { upload_endpoint } from '../src/attachments/attachments';
 import {
   getInvalidAttachments,
   getValidAttachments,
 } from './temba-attachments-picker.test';
+import { upload_endpoint } from '../src/attachments/AttachmentsUploader';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {

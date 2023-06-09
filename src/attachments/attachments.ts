@@ -25,8 +25,6 @@ export interface Attachment {
   error: string;
 }
 
-export const upload_endpoint = '/api/v2/media.json';
-
 export function validateDuplicateFiles(
   uploadFiles: UploadFile[],
   invalidFiles: InvalidUploadFile[],
