@@ -452,7 +452,7 @@ export class Dialog extends RapidElement {
                     ?primary=${button.type == 'primary' && !this.destructive}
                     ?secondary=${button.type == 'secondary'}
                     ?submitting=${this.submitting}
-                    ?disabled=${this.disabled}
+                    ?disabled=${this.disabled && !button.closes}
                     index=${index}
                     @click=${this.handleClick}
                   ></temba-button>
