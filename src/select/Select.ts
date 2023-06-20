@@ -22,6 +22,7 @@ import {
 import { Store } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../vectoricon';
+import { msg } from '@lit/localize';
 
 const LOOK_AHEAD = 20;
 
@@ -1333,7 +1334,7 @@ export class Select extends FormElement {
             `
           : null
       }
-      <div class="footer">Tab to complete, enter to select</div>
+      <div class="footer">${msg('Tab to complete, enter to select')}</div>
     </temba-options>
 
 
