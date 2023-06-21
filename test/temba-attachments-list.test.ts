@@ -1,4 +1,4 @@
-import { assert, expect } from '@open-wc/testing';
+import { assert } from '@open-wc/testing';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Attachment } from '../src/attachments/attachments';
 import {
