@@ -5,7 +5,7 @@ import { ImagePicker } from '../src/imagepicker/ImagePicker';
 import {
   getInvalidAttachments,
   getValidAttachments,
-} from './temba-attachments-picker.test';
+} from './temba-attachments-uploader.test';
 
 const TAG = 'temba-image-picker';
 const getImagePicker = async (attrs: any = {}, width = 500, height = 500) => {
@@ -63,7 +63,7 @@ describe('temba-image-picker', () => {
       getValidAttachments(1, getValidUrl())
     );
     await assertScreenshot(
-      'image-picker/image-different-upload-icon',
+      'image-picker/different-upload-icon',
       getClip(imagePicker)
     );
   });
@@ -73,7 +73,7 @@ describe('temba-image-picker', () => {
       uploadLabel: 'Upload Image',
     });
     await assertScreenshot(
-      'image-picker/image-different-upload-label',
+      'image-picker/different-upload-label',
       getClip(imagePicker)
     );
   });
@@ -88,7 +88,7 @@ describe('temba-image-picker', () => {
       getValidAttachments(1, getValidUrl())
     );
     await assertScreenshot(
-      'image-picker/image-different-remove-icon',
+      'image-picker/different-remove-icon',
       getClip(imagePicker)
     );
   });
@@ -103,7 +103,7 @@ describe('temba-image-picker', () => {
       getValidAttachments(1, getValidUrl())
     );
     await assertScreenshot(
-      'image-picker/image-different-image-width',
+      'image-picker/different-image-width',
       getClip(imagePicker)
     );
   });
@@ -118,7 +118,7 @@ describe('temba-image-picker', () => {
       getValidAttachments(1, getValidUrl())
     );
     await assertScreenshot(
-      'image-picker/image-different-image-height',
+      'image-picker/different-image-height',
       getClip(imagePicker)
     );
   });
@@ -133,7 +133,7 @@ describe('temba-image-picker', () => {
       getValidAttachments(1, getValidUrl())
     );
     await assertScreenshot(
-      'image-picker/image-different-border-radius',
+      'image-picker/different-border-radius',
       getClip(imagePicker)
     );
   });
@@ -145,10 +145,7 @@ describe('temba-image-picker', () => {
       null,
       getValidAttachments(1, getValidUrl())
     );
-    await assertScreenshot(
-      'image-picker/image-with-success-file',
-      getClip(imagePicker)
-    );
+    await assertScreenshot('image-picker/success-file', getClip(imagePicker));
   });
 
   it('image with success uploaded files deserialize and serialize', async () => {
@@ -174,9 +171,6 @@ describe('temba-image-picker', () => {
   it('image with failure uploaded file', async () => {
     const imagePicker: ImagePicker = await getImagePicker();
     await updateAttachments(imagePicker, null, getInvalidAttachments(1));
-    await assertScreenshot(
-      'image-picker/image-with-failure-file',
-      getClip(imagePicker)
-    );
+    await assertScreenshot('image-picker/failure-file', getClip(imagePicker));
   });
 });

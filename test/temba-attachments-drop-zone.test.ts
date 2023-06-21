@@ -6,7 +6,6 @@ import {
   showMouse,
 } from './utils.test';
 import { AttachmentsDropZone } from '../src/attachments/AttachmentsDropZone';
-import { CustomEventType } from '../src/interfaces';
 
 const TAG = 'temba-attachments-drop-zone';
 const getAttachmentsDropZone = async (
@@ -50,7 +49,7 @@ describe('temba-attachments-drop-zone', () => {
     await moveMouse(x, y);
     attachmentsDropZone.pendingDrop = true;
     await assertScreenshot(
-      'attachments-drop-zone/drop-zone-1-before-drop',
+      'attachments-drop-zone/1-before-drop',
       getClip(attachmentsDropZone)
     );
 
@@ -58,7 +57,7 @@ describe('temba-attachments-drop-zone', () => {
     await mouseUp();
     attachmentsDropZone.pendingDrop = false;
     await assertScreenshot(
-      'attachments-drop-zone/drop-zone-2-after-drop',
+      'attachments-drop-zone/2-after-drop',
       getClip(attachmentsDropZone)
     );
 
@@ -91,7 +90,7 @@ describe('temba-attachments-drop-zone', () => {
     await moveMouse(x, y);
     attachmentsDropZone.pendingDrop = true;
     await assertScreenshot(
-      'attachments-drop-zone/drop-zone-1-before-drop-different-upload-label',
+      'attachments-drop-zone/1-before-drop-different-upload-label',
       getClip(attachmentsDropZone)
     );
 
@@ -99,7 +98,7 @@ describe('temba-attachments-drop-zone', () => {
     await mouseUp();
     attachmentsDropZone.pendingDrop = false;
     await assertScreenshot(
-      'attachments-drop-zone/drop-zone-2-after-drop-different-upload-label',
+      'attachments-drop-zone/2-after-drop-different-upload-label',
       getClip(attachmentsDropZone)
     );
 
@@ -118,12 +117,12 @@ describe('temba-attachments-drop-zone', () => {
         dropWidth: 125,
       });
     await assertScreenshot(
-      'attachments-drop-zone/drop-zone-different-drop-width-125',
+      'attachments-drop-zone/different-drop-width-125',
       getClip(attachmentsDropZone)
     );
     attachmentsDropZone.dropWidth = 250;
     await assertScreenshot(
-      'attachments-drop-zone/drop-zone-different-drop-width-250',
+      'attachments-drop-zone/different-drop-width-250',
       getClip(attachmentsDropZone)
     );
   });

@@ -19,7 +19,7 @@ import {
   getValidText,
   updateComponent,
 } from './temba-compose.test';
-import { getValidAttachments } from './temba-attachments-picker.test';
+import { getValidAttachments } from './temba-attachments-uploader.test';
 import { Attachment } from '../src/attachments/attachments';
 
 let clock: any;

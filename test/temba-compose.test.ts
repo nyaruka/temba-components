@@ -7,7 +7,7 @@ import { Attachment } from '../src/attachments/attachments';
 import {
   getInvalidAttachments,
   getValidAttachments,
-} from './temba-attachments-picker.test';
+} from './temba-attachments-uploader.test';
 import { upload_endpoint } from '../src/attachments/AttachmentsUploader';
 
 const TAG = 'temba-compose';
