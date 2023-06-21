@@ -57,7 +57,13 @@ describe('temba-attachments-list', () => {
     const attachmentsList: AttachmentsList = await getAttachmentsList();
     await updateAttachments(attachmentsList, getValidAttachments());
     await assertScreenshot(
-      'attachments-list/success-files',
+      'attachments-list/success-files-1-before-remove',
+      getClip(attachmentsList)
+    );
+    const attachmentToRemove = attachmentsList.currentAttachments[1];
+    attachmentsList.removeCurrentAttachment(attachmentToRemove);
+    await assertScreenshot(
+      'attachments-list/success-files-2-after-remove',
       getClip(attachmentsList)
     );
   });
@@ -66,7 +72,13 @@ describe('temba-attachments-list', () => {
     const attachmentsList: AttachmentsList = await getAttachmentsList();
     await updateAttachments(attachmentsList, null, getInvalidAttachments());
     await assertScreenshot(
-      'attachments-list/failure-files',
+      'attachments-list/failure-files-1-before-remove',
+      getClip(attachmentsList)
+    );
+    const attachmentToRemove = attachmentsList.failedAttachments[1];
+    attachmentsList.removeFailedAttachment(attachmentToRemove);
+    await assertScreenshot(
+      'attachments-list/failure-files-2-after-remove',
       getClip(attachmentsList)
     );
   });

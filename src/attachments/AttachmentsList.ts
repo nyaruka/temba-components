@@ -94,13 +94,13 @@ export class AttachmentsList extends FormElement {
     }
   }
 
-  private removeCurrentAttachment(attachmentToRemove: any) {
+  public removeCurrentAttachment(attachmentToRemove: any) {
     this.currentAttachments = this.currentAttachments.filter(
       currentAttachment => currentAttachment !== attachmentToRemove
     );
   }
 
-  private removeFailedAttachment(attachmentToRemove: any) {
+  public removeFailedAttachment(attachmentToRemove: any) {
     this.failedAttachments = this.failedAttachments.filter(
       (failedAttachment: any) => failedAttachment !== attachmentToRemove
     );
