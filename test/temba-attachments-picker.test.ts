@@ -1,4 +1,4 @@
-import { expect } from '@open-wc/testing';
+import { assert, expect } from '@open-wc/testing';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { AttachmentsPicker } from '../src/attachments/AttachmentsPicker';
 import { Attachment } from '../src/attachments/attachments';
@@ -102,7 +102,12 @@ export const getInvalidAttachments = (numFiles = 2): Attachment[] => {
 };
 
 describe('temba-attachments-picker', () => {
-  it('attachments with different upload icon', async () => {
+  it('can be created', async () => {
+    const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker();
+    assert.instanceOf(attachmentsPicker, AttachmentsPicker);
+  });
+
+  it('can have different upload icon', async () => {
     const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
       uploadIcon: 'attachment_image',
     });
@@ -112,7 +117,7 @@ describe('temba-attachments-picker', () => {
     );
   });
 
-  it('attachments with different upload label', async () => {
+  it('can have different upload label', async () => {
     const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
       uploadLabel: 'Upload Attachments',
     });
@@ -122,7 +127,7 @@ describe('temba-attachments-picker', () => {
     );
   });
 
-  it('attachments with different remove icon', async () => {
+  it('can have different remove icon', async () => {
     const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
       removeIcon: 'delete',
     });

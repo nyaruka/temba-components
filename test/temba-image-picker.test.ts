@@ -1,4 +1,4 @@
-import { expect } from '@open-wc/testing';
+import { assert, expect } from '@open-wc/testing';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Attachment } from '../src/attachments/attachments';
 import { ImagePicker } from '../src/imagepicker/ImagePicker';
@@ -48,7 +48,12 @@ const getValidUrl = () => {
 };
 
 describe('temba-image-picker', () => {
-  it('image with different upload icon', async () => {
+  it('can be created', async () => {
+    const imagePicker: ImagePicker = await getImagePicker();
+    assert.instanceOf(imagePicker, ImagePicker);
+  });
+
+  it('can have different upload icon', async () => {
     const imagePicker: ImagePicker = await getImagePicker({
       uploadIcon: 'attachment',
     });
@@ -63,7 +68,7 @@ describe('temba-image-picker', () => {
     );
   });
 
-  it('image with different upload label', async () => {
+  it('can have different upload label', async () => {
     const imagePicker: ImagePicker = await getImagePicker({
       uploadLabel: 'Upload Image',
     });
@@ -73,7 +78,7 @@ describe('temba-image-picker', () => {
     );
   });
 
-  it('image with different remove icon', async () => {
+  it('can have different remove icon', async () => {
     const imagePicker: ImagePicker = await getImagePicker({
       removeIcon: 'delete_small',
     });
@@ -88,7 +93,7 @@ describe('temba-image-picker', () => {
     );
   });
 
-  it('image with different image width', async () => {
+  it('can have different image width', async () => {
     const imagePicker: ImagePicker = await getImagePicker({
       imageWidth: '200',
     });
@@ -103,7 +108,7 @@ describe('temba-image-picker', () => {
     );
   });
 
-  it('image with different image height', async () => {
+  it('can have different image height', async () => {
     const imagePicker: ImagePicker = await getImagePicker({
       imageHeight: '200',
     });
@@ -118,7 +123,7 @@ describe('temba-image-picker', () => {
     );
   });
 
-  it('image with different border radius', async () => {
+  it('can have different border radius', async () => {
     const imagePicker: ImagePicker = await getImagePicker({
       imageRadius: '50%',
     });

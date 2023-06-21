@@ -60,14 +60,14 @@ export class AttachmentsDropZone extends FormElement {
     `;
   }
 
-  @property({ type: String })
-  dropWidth = 'auto';
+  @property({ type: Number })
+  dropWidth = 0; //accepts pixels
 
   @property({ type: String })
-  uploadLabel: string;
+  uploadLabel = '';
 
   @property({ type: Boolean })
-  pendingDrop: boolean;
+  pendingDrop = false;
 
   public constructor() {
     super();
@@ -118,7 +118,7 @@ export class AttachmentsDropZone extends FormElement {
         @dragover=${this.handleDragOver}
         @dragleave=${this.handleDragLeave}
         @drop=${this.handleDragDropped}
-        style="width:${this.dropWidth}px"
+        style="width:${this.dropWidth > 0 ? this.dropWidth + 'px' : 'auto'}"
       >
         <div class="drop-mask">
           <div>${this.uploadLabel}</div>
