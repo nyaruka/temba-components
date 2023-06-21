@@ -26,6 +26,14 @@ import { RapidElement } from '../RapidElement';
 import Lru from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
+import { configureLocalization } from '@lit/localize';
+import { sourceLocale, targetLocales } from '../locales/locale-codes.js';
+
+const { getLocale, setLocale } = configureLocalization({
+  sourceLocale,
+  targetLocales,
+  loadLocale: locale => import(`../locales/${locale}.js`),
+});
 
 export class Store extends RapidElement {
   public static get styles() {
@@ -110,6 +118,7 @@ export class Store extends RapidElement {
   }
 
   public reset() {
+    this.ready = false;
     this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
 
@@ -271,6 +280,17 @@ export class Store extends RapidElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    if (changedProperties.has('ready') && this.ready) {
+      const locale = this.getLanguageCode();
+      const target = targetLocales.find(
+        targetLocale => targetLocale === locale
+      );
+
+      if (target) {
+        setLocale(target);
+      }
+    }
   }
 
   public getCompletionSchema(): CompletionSchema {
