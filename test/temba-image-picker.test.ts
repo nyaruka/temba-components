@@ -1,4 +1,4 @@
-import { assert, expect } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Attachment } from '../src/attachments/attachments';
 import { ImagePicker } from '../src/imagepicker/ImagePicker';
@@ -43,18 +43,114 @@ const getAttachmentsValues = (value: any): any[] => {
   return [value];
 };
 
+const getValidUrl = () => {
+  return '../../test-assets/img/meow.jpg';
+};
+
 describe('temba-image-picker', () => {
-  it('attachments with success uploaded files', async () => {
-    const imagePicker: ImagePicker = await getImagePicker();
-    await updateAttachments(imagePicker, null, getValidAttachments(1));
+  it('image with different upload icon', async () => {
+    const imagePicker: ImagePicker = await getImagePicker({
+      uploadIcon: 'attachment',
+    });
+    await updateAttachments(
+      imagePicker,
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
     await assertScreenshot(
-      'image-picker/attachments-with-success-files',
+      'image-picker/image-different-upload-icon',
       getClip(imagePicker)
     );
   });
 
-  it('attachments with success uploaded files deserialize and serialize', async () => {
-    const initialValue = getInitialValue(null, getValidAttachments(1));
+  it('image with different upload label', async () => {
+    const imagePicker: ImagePicker = await getImagePicker({
+      uploadLabel: 'Upload Image',
+    });
+    await assertScreenshot(
+      'image-picker/image-different-upload-label',
+      getClip(imagePicker)
+    );
+  });
+
+  it('image with different remove icon', async () => {
+    const imagePicker: ImagePicker = await getImagePicker({
+      removeIcon: 'delete_small',
+    });
+    await updateAttachments(
+      imagePicker,
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
+    await assertScreenshot(
+      'image-picker/image-different-remove-icon',
+      getClip(imagePicker)
+    );
+  });
+
+  it('image with different image width', async () => {
+    const imagePicker: ImagePicker = await getImagePicker({
+      imageWidth: '200',
+    });
+    await updateAttachments(
+      imagePicker,
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
+    await assertScreenshot(
+      'image-picker/image-different-image-width',
+      getClip(imagePicker)
+    );
+  });
+
+  it('image with different image height', async () => {
+    const imagePicker: ImagePicker = await getImagePicker({
+      imageHeight: '200',
+    });
+    await updateAttachments(
+      imagePicker,
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
+    await assertScreenshot(
+      'image-picker/image-different-image-height',
+      getClip(imagePicker)
+    );
+  });
+
+  it('image with different border radius', async () => {
+    const imagePicker: ImagePicker = await getImagePicker({
+      imageRadius: '50%',
+    });
+    await updateAttachments(
+      imagePicker,
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
+    await assertScreenshot(
+      'image-picker/image-different-border-radius',
+      getClip(imagePicker)
+    );
+  });
+
+  it('image with success uploaded file', async () => {
+    const imagePicker: ImagePicker = await getImagePicker();
+    await updateAttachments(
+      imagePicker,
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
+    await assertScreenshot(
+      'image-picker/image-with-success-file',
+      getClip(imagePicker)
+    );
+  });
+
+  it('image with success uploaded files deserialize and serialize', async () => {
+    const initialValue = getInitialValue(
+      null,
+      getValidAttachments(1, getValidUrl())
+    );
     const attachmentsValue = getAttachmentsValue(initialValue);
     const attachmentsValues = getAttachmentsValues(initialValue);
 
@@ -63,31 +159,18 @@ describe('temba-image-picker', () => {
     });
     // deserialize
     expect(imagePicker.currentAttachments).to.deep.equal(
-      getValidAttachments(1)
+      getValidAttachments(1, getValidUrl())
     );
     // serialize
     expect(imagePicker.value).to.equal(attachmentsValue);
     expect(imagePicker.values).to.deep.equal(attachmentsValues);
   });
 
-  it('attachments with failure uploaded files', async () => {
+  it('image with failure uploaded file', async () => {
     const imagePicker: ImagePicker = await getImagePicker();
     await updateAttachments(imagePicker, null, getInvalidAttachments(1));
     await assertScreenshot(
-      'image-picker/attachments-with-failure-files',
-      getClip(imagePicker)
-    );
-  });
-
-  it('attachments with success and failure uploaded files', async () => {
-    const imagePicker: ImagePicker = await getImagePicker();
-    await updateAttachments(
-      imagePicker,
-      getValidAttachments(1),
-      getInvalidAttachments(1)
-    );
-    await assertScreenshot(
-      'image-picker/attachments-with-all-files',
+      'image-picker/image-with-failure-file',
       getClip(imagePicker)
     );
   });

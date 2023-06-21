@@ -1,4 +1,4 @@
-import { assert, expect } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { AttachmentsPicker } from '../src/attachments/AttachmentsPicker';
 import { Attachment } from '../src/attachments/attachments';
@@ -48,7 +48,7 @@ const getAttachmentsValues = (value: any): any[] => {
 };
 
 // valid = attachments that are uploaded and are sent to the server
-export const getValidAttachments = (numFiles = 2): Attachment[] => {
+export const getValidAttachments = (numFiles = 2, url = ''): Attachment[] => {
   const attachments = [];
   let index = 1;
   while (index <= numFiles) {
@@ -58,7 +58,7 @@ export const getValidAttachments = (numFiles = 2): Attachment[] => {
       content_type: 'image/png',
       type: 'image/png',
       filename: 'name_' + s,
-      url: 'url_' + s,
+      url: url ? url : 'url_' + s,
       size: 1024,
       error: null,
     } as Attachment;
@@ -102,9 +102,40 @@ export const getInvalidAttachments = (numFiles = 2): Attachment[] => {
 };
 
 describe('temba-attachments-picker', () => {
+  it('attachments with different upload icon', async () => {
+    const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
+      uploadIcon: 'attachment_image',
+    });
+    await assertScreenshot(
+      'attachments-picker/attachments-different-upload-icon',
+      getClip(attachmentsPicker)
+    );
+  });
+
+  it('attachments with different upload label', async () => {
+    const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
+      uploadLabel: 'Upload Attachments',
+    });
+    await assertScreenshot(
+      'attachments-picker/attachments-different-upload-label',
+      getClip(attachmentsPicker)
+    );
+  });
+
+  it('attachments with different remove icon', async () => {
+    const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
+      removeIcon: 'delete',
+    });
+    await updateAttachments(attachmentsPicker, getValidAttachments());
+    await assertScreenshot(
+      'attachments-picker/attachments-different-remove-icon',
+      getClip(attachmentsPicker)
+    );
+  });
+
   it('attachments with success uploaded files', async () => {
     const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker();
-    await updateAttachments(attachmentsPicker, null, getValidAttachments());
+    await updateAttachments(attachmentsPicker, getValidAttachments());
     await assertScreenshot(
       'attachments-picker/attachments-with-success-files',
       getClip(attachmentsPicker)

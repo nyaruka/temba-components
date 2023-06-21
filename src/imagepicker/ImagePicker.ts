@@ -177,11 +177,6 @@ export class ImagePicker extends FormElement {
     } else if (this.failedAttachments.length > 0) {
       this.currentAttachment = this.failedAttachments[0];
       this.errors = [this.currentAttachment.error];
-
-      // temp hack - spoof a successful file upload
-      // this.currentAttachment.url = '../../test-assets/img/20mb.jpg'
-      // this.currentAttachment.error = '';
-      // this.errors = [];
     }
   }
 
