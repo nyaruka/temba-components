@@ -119,9 +119,6 @@ export class TextInput extends FormElement {
   @property({ type: String })
   placeholder = '';
 
-  @property({ type: String })
-  value = '';
-
   @property({ type: Boolean })
   password: boolean;
 
@@ -183,7 +180,6 @@ export class TextInput extends FormElement {
     super.updated(changes);
 
     if (changes.has('value')) {
-      this.setValues([this.value]);
       this.fireEvent('change');
 
       if (this.textarea && this.autogrow) {
@@ -208,7 +204,7 @@ export class TextInput extends FormElement {
   private handleClear(event: any): void {
     event.stopPropagation();
     event.preventDefault();
-    this.setValue(null);
+    this.value = null;
   }
 
   private updateValue(value: string): void {
@@ -269,7 +265,6 @@ export class TextInput extends FormElement {
     }
 
     this.updateValue(update.target.value);
-    this.setValues([this.value]);
     this.fireEvent('input');
   }
 
@@ -360,9 +355,6 @@ export class TextInput extends FormElement {
             if (this.submitOnEnter) {
               const parentModax = input.getParentModax();
               const parentForm = !parentModax ? input.getParentForm() : null;
-
-              this.value = this.values[0];
-              this.fireEvent('change');
 
               // if we don't have something to submit then bail
               if (!parentModax && !parentForm) {

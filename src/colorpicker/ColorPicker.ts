@@ -139,7 +139,6 @@ export class ColorPicker extends FormElement {
     _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(_changedProperties);
-    this.setValue(this.value);
   }
 
   public updated(changed: Map<string, any>): void {
@@ -200,7 +199,7 @@ export class ColorPicker extends FormElement {
       this.hue = (x / rect.width) * 360;
       this.lightness = 100 - (y / rect.height) * 100;
       this.previewColor = `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 1)`;
-      this.setValue(this.hex);
+      this.value = this.hex;
       this.selecting = true;
       this.expanded = false;
     }
@@ -214,7 +213,7 @@ export class ColorPicker extends FormElement {
     const hex = (event.target as TextInput).value;
     if (hex.startsWith('#')) {
       this.previewColor = hex;
-      this.setValue(hex);
+      this.value = hex;
     }
   }
 

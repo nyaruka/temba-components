@@ -9,8 +9,6 @@ import {
   postJSON,
   postForm,
   getCookie,
-  setCookie,
-  COOKIE_KEYS,
 } from '../utils';
 import {
   ContactField,
@@ -29,7 +27,7 @@ import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes.js';
 
-const { getLocale, setLocale } = configureLocalization({
+const { setLocale } = configureLocalization({
   sourceLocale,
   targetLocales,
   loadLocale: locale => import(`../locales/${locale}.js`),

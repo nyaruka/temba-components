@@ -27,6 +27,8 @@ import { msg } from '@lit/localize';
 const LOOK_AHEAD = 20;
 
 export class Select extends FormElement {
+  private hiddenInputs: HTMLInputElement[] = [];
+
   static get styles() {
     return css`
       :host {
@@ -434,6 +436,9 @@ export class Select extends FormElement {
   @property({ type: String, attribute: 'info_text' })
   infoText = '';
 
+  @property({ type: Array })
+  values: any[] = [];
+
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
     option[this.nameKey || 'name'];
@@ -503,6 +508,10 @@ export class Select extends FormElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
+    if (changedProperties.has('values')) {
+      this.updateInputs();
+    }
+
     // if our cache key changes, clear it out
     if (changedProperties.has('cacheKey')) {
       this.lruCache.clear();
@@ -546,13 +555,13 @@ export class Select extends FormElement {
     }
 
     // if they set an inital value, look through our static options for it
-    if (changedProperties.has('value') && this.value) {
+    if (changedProperties.has('value') && this.value && !this.values.length) {
       const existing = this.staticOptions.find(option => {
         return this.getValue(option) === this.value;
       });
 
       if (existing) {
-        this.setValue(existing);
+        this.setValues([existing]);
       }
     }
 
@@ -562,7 +571,30 @@ export class Select extends FormElement {
       !this.placeholder &&
       this.staticOptions.length > 0
     ) {
-      this.setValue(this.staticOptions[0]);
+      this.setValues([this.staticOptions[0]]);
+    }
+  }
+
+  private updateInputs(): void {
+    for (let ele = null; (ele = this.hiddenInputs.pop()); ) {
+      ele.remove();
+    }
+
+    if (this.values.length === 0) {
+      this.value = null;
+    } else {
+      const name = this.getAttribute('name');
+
+      if (name) {
+        this.values.forEach(value => {
+          const ele = document.createElement('input');
+          ele.setAttribute('type', 'hidden');
+          ele.setAttribute('name', name);
+          ele.setAttribute('value', this.serializeValue(value));
+          this.hiddenInputs.push(ele);
+          this.inputRoot.parentElement.appendChild(ele);
+        });
+      }
     }
   }
 
@@ -570,7 +602,7 @@ export class Select extends FormElement {
     if (this.multi) {
       this.addValue(option);
     } else {
-      this.setValue(option);
+      this.setValues([option]);
     }
 
     if (!this.multi || !this.searchable) {
@@ -956,8 +988,9 @@ export class Select extends FormElement {
         this.addValue(expression);
       }
     } else {
-      this.setValue(expression);
+      this.setValues([expression]);
     }
+
     this.input = '';
     if (!this.multi) {
       this.blur();
@@ -1085,7 +1118,7 @@ export class Select extends FormElement {
             if (this.getAttribute('multi') !== null) {
               this.addValue(option);
             } else {
-              this.setValue(option);
+              this.setValues([option]);
               this.fireEvent('change');
             }
           }
@@ -1097,7 +1130,7 @@ export class Select extends FormElement {
           // see if we need to auto select the first item but need to fetch it
           fetchResults(this.endpoint).then((results: any) => {
             if (results.length > 0) {
-              this.setValue(results[0]);
+              this.setValues([results[0]]);
               this.fireEvent('change');
             }
           });
@@ -1105,7 +1138,7 @@ export class Select extends FormElement {
           if (this.getAttribute('multi') !== null) {
             this.addValue(this.staticOptions[0]);
           } else {
-            this.setValue(this.staticOptions[0]);
+            this.setValues([this.staticOptions[0]]);
           }
           this.fireEvent('change');
         }
@@ -1126,6 +1159,10 @@ export class Select extends FormElement {
   }
 
   private renderSelectedItemDefault(option: any): TemplateResult {
+    if (!option) {
+      return null;
+    }
+
     return html`
       <div class="option-name" style="display:flex">
         ${option.icon
@@ -1151,7 +1188,8 @@ export class Select extends FormElement {
     for (const option of this.staticOptions) {
       if (option.value === value) {
         if (this.values.length === 0 || this.values[0].value !== '' + value) {
-          this.setValue(option);
+          this.setValues([option]);
+
           this.fireEvent('change');
         }
         return;
@@ -1164,6 +1202,31 @@ export class Select extends FormElement {
     evt.stopPropagation();
     this.setValues([]);
     this.fireEvent('change');
+  }
+
+  public setValues(values: any[]) {
+    this.values = values;
+    this.requestUpdate('values');
+  }
+
+  public addValue(value: any) {
+    this.values.push(value);
+    this.requestUpdate('values');
+  }
+
+  public removeValue(valueToRemove: any) {
+    this.values = this.values.filter((value: any) => value !== valueToRemove);
+    this.requestUpdate('values');
+  }
+
+  public popValue() {
+    this.values.pop();
+    this.requestUpdate('values');
+  }
+
+  public clear() {
+    this.values = [];
+    this.requestUpdate('values');
   }
 
   public render(): TemplateResult {
