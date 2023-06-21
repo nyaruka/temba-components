@@ -32,39 +32,17 @@ export class Parent extends FormElement {
     const initialFailedAttachment = addFailedAttachment(0);
     this.failedAttachments = [initialFailedAttachment];
 
-    // console.log('Parent - firstUpdated - this.currentAttachments', this.currentAttachments.length);
-    // console.log('Parent - firstUpdated - this.failedAttachments', this.failedAttachments.length);
-
     const child1 = this.shadowRoot.querySelector('temba-child1') as Child1;
     const child2 = this.shadowRoot.querySelector('temba-child2') as Child2;
-
-    // console.log('Parent - firstUpdated - child1.currentAttachments before', child1.currentAttachments.length);
-    // console.log('Parent - firstUpdated - child1.failedAttachments before', child1.failedAttachments.length);
-    // console.log('Parent - firstUpdated - child2.currentAttachments before', child2.currentAttachments.length);
-    // console.log('Parent - firstUpdated - child2.failedAttachments before', child2.failedAttachments.length);
 
     child1.currentAttachments = this.currentAttachments;
     child1.failedAttachments = this.failedAttachments;
     child2.currentAttachments = this.currentAttachments;
     child2.failedAttachments = this.failedAttachments;
-
-    // console.log('Parent - firstUpdated - child1.currentAttachments after', child1.currentAttachments.length);
-    // console.log('Parent - firstUpdated - child1.failedAttachments after', child1.failedAttachments.length);
-    // console.log('Parent - firstUpdated - child2.currentAttachments after', child2.currentAttachments.length);
-    // console.log('Parent - firstUpdated - child2.failedAttachments after', child2.failedAttachments.length);
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
-
-    // const child1 = this.shadowRoot.querySelector('temba-child1') as Child1;
-    // const child2 = this.shadowRoot.querySelector('temba-child2') as Child2;
-    // console.log('Parent - updated - this.currentAttachments', this.currentAttachments.length);
-    // console.log('Parent - updated - this.failedAttachments', this.failedAttachments.length);
-    // console.log('Parent - updated - child1.currentAttachments', child1.currentAttachments.length);
-    // console.log('Parent - updated - child1.failedAttachments', child1.failedAttachments.length);
-    // console.log('Parent - updated - child2.currentAttachments', child2.currentAttachments.length);
-    // console.log('Parent - updated - child2.failedAttachments', child2.failedAttachments.length);
   }
 
   private handleChild1Added(evt: CustomEvent): void {
