@@ -371,11 +371,13 @@ export const serialize = function (form: any) {
     if (field.type === 'select-multiple') {
       for (let n = 0; n < field.options.length; n++) {
         if (!field.options[n].selected) continue;
-        serialized.push(
-          encodeURIComponent(field.name) +
-            '=' +
-            encodeURIComponent(field.options[n].value)
-        );
+        if (field.options[n].value) {
+          serialized.push(
+            encodeURIComponent(field.name) +
+              '=' +
+              encodeURIComponent(field.options[n].value)
+          );
+        }
       }
     }
 
@@ -384,9 +386,11 @@ export const serialize = function (form: any) {
       (field.type !== 'checkbox' && field.type !== 'radio') ||
       field.checked
     ) {
-      serialized.push(
-        encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value)
-      );
+      if (field.value) {
+        serialized.push(
+          encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value)
+        );
+      }
     }
   }
   return serialized.join('&');

@@ -158,11 +158,11 @@ export default class DatePicker extends FormElement {
             datetime = DateTime.fromISO(this.value).setZone(this.timezone);
           }
           this.datetime = datetime;
-          this.setValue(this.datetime.toUTC().toISO());
+          this.value = this.datetime.toUTC().toISO();
         }
       } else {
         this.datetime = DateTime.fromSQL(this.value);
-        this.setValue(this.datetime.toISODate());
+        this.value = this.datetime.toISODate();
       }
     }
   }
@@ -189,9 +189,9 @@ export default class DatePicker extends FormElement {
       this.datetime = DateTime.fromISO(event.target.value, {
         zone: this.timezone,
       });
-      this.setValue(this.datetime.toUTC().toISO());
+      this.value = this.datetime.toUTC().toISO();
     } else {
-      this.setValue(event.target.value);
+      this.value = event.target.value;
     }
     this.fireEvent('change');
   }

@@ -252,9 +252,6 @@ export class Compose extends FormElement {
     };
     // update this.value...
     this.value = JSON.stringify(composeValue);
-    // and then also update this.values...
-    // so that the hidden input is updated via FormElement.updateInputs()
-    this.values = [composeValue];
   }
 
   public firstUpdated(changes: Map<string, any>): void {
