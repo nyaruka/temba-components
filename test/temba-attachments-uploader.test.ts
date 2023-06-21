@@ -110,7 +110,7 @@ describe('temba-attachments-uploader', () => {
     );
   });
 
-  it.only('can have different upload label', async () => {
+  it('can have different upload label', async () => {
     const attachmentsUploader: AttachmentsUploader =
       await getAttachmentsUploader(
         {
