@@ -30,8 +30,8 @@ const showUpdates = (
       console.log(
         tag(ele),
         firstUpdated
-          ? colorize('<updated>', Color.YELLOW)
-          : colorize('<first-updated>', Color.BLACK)
+          ? colorize('<first-updated>', Color.BLACK)
+          : colorize('<updated>', Color.YELLOW)
       );
       for (const [key, value] of changes.entries()) {
         console.log(
