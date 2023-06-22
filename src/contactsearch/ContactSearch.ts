@@ -222,7 +222,7 @@ export class ContactSearch extends FormElement {
         this.fetching = false;
         if (response.status === 200) {
           this.summary = response.json as SummaryResponse;
-
+          this.value = this.summary.query;
           if (this.summary.error) {
             this.errors = [this.summary.error];
           } else {
