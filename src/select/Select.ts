@@ -80,6 +80,12 @@ export class Select extends FormElement {
         cursor: text;
       }
 
+      .wrapper-bg {
+        background: #f3f3f3;
+        box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%);
+        border-radius: var(--curvature-widget);
+      }
+
       .select-container {
         display: flex;
         flex-direction: row;
@@ -313,16 +319,13 @@ export class Select extends FormElement {
 
       .info-text {
         opacity: 1;
-        transition: margin var(--transition-speed) ease-in-out;
+        transition: padding-top var(--transition-speed) ease-in-out,
+          padding-bottom var(--transition-speed) ease-in-out;
         margin-bottom: 16px;
-        margin-top: -1em;
         padding: 0.5em 1em;
-        background: #f3f3f3;
-        padding-top: 1.5em;
         border-radius: var(--curvature);
         font-size: 0.9em;
         color: rgba(0, 0, 0, 0.5);
-        box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%);
         position: relative;
       }
 
@@ -334,8 +337,8 @@ export class Select extends FormElement {
         opacity: 0;
         max-height: 0;
         margin-bottom: 0px;
-        margin-top: -2em;
         pointer-events: none;
+        padding: 0px;
       }
     `;
   }
@@ -439,6 +442,9 @@ export class Select extends FormElement {
   @property({ type: Array })
   values: any[] = [];
 
+  @property({ type: Object })
+  selection: any;
+
   @property({ attribute: false })
   getName: (option: any) => string = (option: any) =>
     option[this.nameKey || 'name'];
@@ -510,6 +516,9 @@ export class Select extends FormElement {
 
     if (changedProperties.has('values')) {
       this.updateInputs();
+      if (this.multi || this.values.length === 1) {
+        this.fireEvent('change');
+      }
     }
 
     // if our cache key changes, clear it out
@@ -586,14 +595,19 @@ export class Select extends FormElement {
       const name = this.getAttribute('name');
 
       if (name) {
-        this.values.forEach(value => {
-          const ele = document.createElement('input');
-          ele.setAttribute('type', 'hidden');
-          ele.setAttribute('name', name);
-          ele.setAttribute('value', this.serializeValue(value));
-          this.hiddenInputs.push(ele);
-          this.inputRoot.parentElement.appendChild(ele);
-        });
+        if (!this.multi && this.values.length === 1) {
+          this.selection = this.values[0];
+          this.value = this.serializeValue(this.values[0]);
+        } else {
+          this.values.forEach(value => {
+            const ele = document.createElement('input');
+            ele.setAttribute('type', 'hidden');
+            ele.setAttribute('name', name);
+            ele.setAttribute('value', this.serializeValue(value));
+            this.hiddenInputs.push(ele);
+            this.inputRoot.parentElement.appendChild(ele);
+          });
+        }
       }
     }
   }
@@ -615,8 +629,6 @@ export class Select extends FormElement {
     this.next = null;
     this.complete = true;
     this.selectedIndex = -1;
-
-    this.fireEvent('change');
   }
 
   private isPastFetchThreshold() {
@@ -681,7 +693,6 @@ export class Select extends FormElement {
   public handleRemoveSelection(selectionToRemove: any): void {
     this.removeValue(selectionToRemove);
     this.visibleOptions = [];
-    this.fireEvent('change');
   }
 
   private createArbitraryOptionDefault(): any {
@@ -995,8 +1006,6 @@ export class Select extends FormElement {
     if (!this.multi) {
       this.blur();
     }
-
-    this.fireEvent('change');
   }
 
   private handleKeyDown(evt: KeyboardEvent) {
@@ -1039,7 +1048,6 @@ export class Select extends FormElement {
         this.popValue();
         this.selectedIndex = -1;
       }
-      this.fireEvent('change');
     } else {
       this.selectedIndex = -1;
     }
@@ -1119,7 +1127,6 @@ export class Select extends FormElement {
               this.addValue(option);
             } else {
               this.setValues([option]);
-              this.fireEvent('change');
             }
           }
         }
@@ -1131,7 +1138,6 @@ export class Select extends FormElement {
           fetchResults(this.endpoint).then((results: any) => {
             if (results.length > 0) {
               this.setValues([results[0]]);
-              this.fireEvent('change');
             }
           });
         } else {
@@ -1140,7 +1146,6 @@ export class Select extends FormElement {
           } else {
             this.setValues([this.staticOptions[0]]);
           }
-          this.fireEvent('change');
         }
       }
 
@@ -1189,8 +1194,6 @@ export class Select extends FormElement {
       if (option.value === value) {
         if (this.values.length === 0 || this.values[0].value !== '' + value) {
           this.setValues([option]);
-
-          this.fireEvent('change');
         }
         return;
       }
@@ -1201,7 +1204,6 @@ export class Select extends FormElement {
     evt.preventDefault();
     evt.stopPropagation();
     this.setValues([]);
-    this.fireEvent('change');
   }
 
   public setValues(values: any[]) {
@@ -1294,6 +1296,7 @@ export class Select extends FormElement {
       >
   
       
+        <div class="wrapper-bg">
         <div
           tabindex="0"
           class="select-container ${classes}"
@@ -1359,10 +1362,11 @@ export class Select extends FormElement {
           }
           </div>
           
-        </div>
+        
         <div class="info-text ${!this.infoText ? 'hide' : ''} ${
       this.focused ? 'focused' : ''
-    }">${this.infoText}</div>
+    }">${this.infoText}</div></div></div>
+
     
     <temba-options
     @temba-selection=${this.handleOptionSelection}
