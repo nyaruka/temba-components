@@ -31,7 +31,6 @@ describe('temba-attachments-drop-zone', () => {
     assert.instanceOf(attachmentsDropZone, AttachmentsDropZone);
   });
 
-  // todo - fix this test
   it('can drag and drop', async () => {
     showMouse();
     const attachmentsDropZone: AttachmentsDropZone =
@@ -60,17 +59,8 @@ describe('temba-attachments-drop-zone', () => {
       'attachments-drop-zone/2-after-drop',
       getClip(attachmentsDropZone)
     );
-
-    // should fire the custom event
-    // console.log('here1');
-    // const dragDropped = oneEvent(attachmentsDropZone, CustomEventType.DragDropped);
-    // console.log('here2');
-    // const dragDroppedEvent = await dragDropped;
-    // console.log('here3', dragDroppedEvent.detail);
-    // expect(dragDroppedEvent.detail).to.deep.equal({});
   });
 
-  // todo - fix this test
   it('can have different upload label', async () => {
     showMouse();
     const attachmentsDropZone: AttachmentsDropZone =
@@ -101,14 +91,6 @@ describe('temba-attachments-drop-zone', () => {
       'attachments-drop-zone/2-after-drop-different-upload-label',
       getClip(attachmentsDropZone)
     );
-
-    // should fire the custom event
-    // console.log('here1');
-    // const dragDropped = oneEvent(attachmentsDropZone, CustomEventType.DragDropped);
-    // console.log('here2');
-    // const dragDroppedEvent = await dragDropped;
-    // console.log('here3', dragDroppedEvent.detail);
-    // expect(dragDroppedEvent.detail).to.deep.equal({});
   });
 
   it('can have different drop width', async () => {
