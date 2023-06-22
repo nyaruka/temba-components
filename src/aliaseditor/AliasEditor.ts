@@ -120,8 +120,8 @@ export class AliasEditor extends LitElement {
       }
 
       leaflet-map {
-        height: 250px;
-        width: 450px;
+        height: 600px;
+        width: 800px;
         border: 0px solid #999;
         border-radius: var(--curvature);
       }
