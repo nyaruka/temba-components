@@ -26,7 +26,7 @@ export default class Label extends LitElement {
       }
 
       .label.clickable .mask:hover {
-        background: rgb(0, 0, 0, 0.05);
+        background: var(--color-background-hover, rgb(0, 0, 0, 0.05));
       }
 
       .label {

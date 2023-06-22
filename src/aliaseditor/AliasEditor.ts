@@ -7,6 +7,7 @@ import { FormElement } from '../FormElement';
 import { Icon } from '../vectoricon';
 
 import { property } from 'lit/decorators.js';
+import { Select } from '../select/Select';
 
 export class AliasEditor extends LitElement {
   static get styles() {
@@ -194,7 +195,7 @@ export class AliasEditor extends LitElement {
   private handleSearchSelection(evt: CustomEvent) {
     const selection = evt.detail.selected as FeatureProperties;
     this.showAliasDialog(selection);
-    const select = this.shadowRoot.querySelector('temba-select') as FormElement;
+    const select = this.shadowRoot.querySelector('temba-select') as Select;
     select.clear();
   }
 

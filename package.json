@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.52.2",
+  "version": "0.54.0",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
@@ -28,9 +28,12 @@
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
     "storybook:build": "build-storybook",
     "svg": "rimraf static/svg/work && node svg.js --resolution=150",
-    "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md"
+    "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
+    "locale:extract": "lit-localize extract --config localize.config.json",
+    "locale:build": "lit-localize build --config localize.config.json"
   },
   "dependencies": {
+    "@lit/localize": "^0.11.4",
     "color-hash": "^2.0.2",
     "geojson": "^0.5.0",
     "highlight.js": "^10.7.1",
@@ -44,6 +47,7 @@
     "tiny-lru": "^8.0.2"
   },
   "devDependencies": {
+    "@lit/localize-tools": "^0.6.9",
     "@open-wc/building-rollup": "2.2.1",
     "@open-wc/eslint-config": "9.0.0",
     "@open-wc/testing": "3.1.2",
@@ -87,7 +91,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn svg && git add ./src/vectoricon ./static/svg/index.svg && lint-staged"
+      "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/vectoricon ./static/svg/index.svg ./xliff ./src/locales && lint-staged"
     }
   },
   "lint-staged": {

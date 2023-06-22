@@ -12,6 +12,7 @@ import { FormElement } from '../FormElement';
 import { CompletionOption, Position } from '../interfaces';
 import { Store } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map.js';
+import { msg } from '@lit/localize';
 
 /**
  * Completion is a text input that handles excellent completion options in a popup
@@ -292,7 +293,7 @@ export class Completion extends FormElement {
                   </div>
                 `
               : null}
-            <div class="footer">Tab to complete, enter to select</div>
+            <div class="footer">${msg('Tab to complete, enter to select')}</div>
           </temba-options>
         </div>
       </temba-field>

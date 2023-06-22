@@ -80,9 +80,9 @@ export class Checkbox extends FormElement {
     super.updated(changes);
     if (changes.has('checked')) {
       if (this.checked || this.partial) {
-        this.setValue(1);
+        this.value = '1';
       } else {
-        this.setValue('');
+        this.value = '';
       }
 
       this.fireEvent('change');

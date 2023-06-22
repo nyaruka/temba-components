@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '56569f2b92ea8d71e77e81ce379b6949';
+export const SVG_FINGERPRINT = '6604402305b1107c60b8e2af39ba3e28';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -91,9 +91,11 @@ export enum Icon {
   fields = 'user-edit',
   filter = 'filter-funnel-01',
   flow = 'flow',
+  flow_background = 'layers-two-01',
   flow_interrupted = 'x-close',
-  flow_ivr = 'phone-call-01',
+  flow_ivr = 'phone',
   flow_message = 'message-square-02',
+  flow_surveyor = 'tablet-01',
   flow_user = 'hard-drive',
   flows = 'flow',
   global = 'at-sign',
@@ -118,6 +120,7 @@ export enum Icon {
   missing = 'maximize-02',
   missed_call = 'phone-x',
   new = 'plus',
+  next_schedule = 'alarm-clock',
   notification = 'bell-01',
   org_active = 'credit-card-02',
   org_anonymous = 'glasses-01',

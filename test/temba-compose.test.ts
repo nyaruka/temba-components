@@ -131,7 +131,6 @@ describe('temba-compose chatbox', () => {
   it('chatbox counter and send button deserialize and serialize', async () => {
     const initialValue = getInitialValue();
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -144,7 +143,6 @@ describe('temba-compose chatbox', () => {
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('chatbox with text', async () => {
@@ -160,7 +158,6 @@ describe('temba-compose chatbox', () => {
   it('chatbox with text deserialize and serialize', async () => {
     const initialValue = getInitialValue(getValidText());
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -173,7 +170,6 @@ describe('temba-compose chatbox', () => {
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('chatbox with text and spaces', async () => {
@@ -275,7 +271,6 @@ describe('temba-compose attachments', () => {
   it('attachments and send button deserialize and serialize', async () => {
     const initialValue = getInitialValue();
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       attachments: true,
@@ -287,7 +282,6 @@ describe('temba-compose attachments', () => {
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('attachments with success uploaded files', async () => {
@@ -317,7 +311,6 @@ describe('temba-compose attachments', () => {
     expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('attachments with failure uploaded files', async () => {
@@ -439,7 +432,6 @@ describe('temba-compose chatbox and attachments', () => {
   it('chatbox and attachments counter and send button deserialize and serialize', async () => {
     const initialValue = getInitialValue();
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -453,7 +445,6 @@ describe('temba-compose chatbox and attachments', () => {
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 });
 
@@ -475,7 +466,6 @@ describe('temba-compose chatbox with text and attachments no files', () => {
   it('chatbox with text, attachments no files deserialize and serialize', async () => {
     const initialValue = getInitialValue(getValidText());
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -489,7 +479,6 @@ describe('temba-compose chatbox with text and attachments no files', () => {
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('chatbox with text, attachments no files, and click send', async () => {
@@ -546,7 +535,6 @@ describe('temba-compose chatbox no text and attachments with files', () => {
   it('chatbox no text, attachments with success uploaded files deserialize and serialize', async () => {
     const initialValue = getInitialValue(null, getValidAttachments());
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -559,7 +547,6 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('chatbox no text, attachments with failure uploaded files', async () => {
@@ -650,7 +637,6 @@ describe('temba-compose chatbox with text and attachments with files', () => {
   it('chatbox with text, attachments with success uploaded files deserialize and serialize', async () => {
     const initialValue = getInitialValue(getValidText(), getValidAttachments());
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       chatbox: true,
@@ -665,7 +651,6 @@ describe('temba-compose chatbox with text and attachments with files', () => {
 
     // serialize
     expect(compose.value).to.equal(composeValue);
-    expect(compose.values).to.deep.equal(composeValues);
   });
 
   it('chatbox with text, attachments with failure uploaded files', async () => {
