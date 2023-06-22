@@ -47,9 +47,6 @@ const getInitialValue = (attachments?: Attachment[]): any => {
 const getAttachmentsValue = (value: any): string => {
   return JSON.stringify(value);
 };
-const getAttachmentsValues = (value: any): any[] => {
-  return [value];
-};
 
 describe('temba-attachments-picker', () => {
   it('can be created', async () => {
@@ -100,7 +97,6 @@ describe('temba-attachments-picker', () => {
   it('attachments with success uploaded files deserialize and serialize', async () => {
     const initialValue = getInitialValue(getValidAttachments());
     const attachmentsValue = getAttachmentsValue(initialValue);
-    const attachmentsValues = getAttachmentsValues(initialValue);
 
     const attachmentsPicker: AttachmentsPicker = await getAttachmentsPicker({
       value: attachmentsValue,
@@ -111,7 +107,6 @@ describe('temba-attachments-picker', () => {
     );
     // serialize
     expect(attachmentsPicker.value).to.equal(attachmentsValue);
-    expect(attachmentsPicker.values).to.deep.equal(attachmentsValues);
   });
 
   it('attachments with failure uploaded files', async () => {

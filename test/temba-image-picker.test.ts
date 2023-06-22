@@ -39,9 +39,6 @@ const getInitialValue = (text?: string, attachments?: Attachment[]): any => {
 const getAttachmentsValue = (value: any): string => {
   return JSON.stringify(value);
 };
-const getAttachmentsValues = (value: any): any[] => {
-  return [value];
-};
 
 const getValidUrl = () => {
   return '../../test-assets/img/meow.jpg';
@@ -154,7 +151,6 @@ describe('temba-image-picker', () => {
       getValidAttachments(1, getValidUrl())
     );
     const attachmentsValue = getAttachmentsValue(initialValue);
-    const attachmentsValues = getAttachmentsValues(initialValue);
 
     const imagePicker: ImagePicker = await getImagePicker({
       value: attachmentsValue,
@@ -165,7 +161,6 @@ describe('temba-image-picker', () => {
     );
     // serialize
     expect(imagePicker.value).to.equal(attachmentsValue);
-    expect(imagePicker.values).to.deep.equal(attachmentsValues);
   });
 
   it('image with failure uploaded file', async () => {

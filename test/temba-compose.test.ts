@@ -45,9 +45,6 @@ const getInitialValue = (text?: string, attachments?: Attachment[]): any => {
 const getComposeValue = (value: any): string => {
   return JSON.stringify(value);
 };
-const getComposeValues = (value: any): any[] => {
-  return [value];
-};
 
 export const getValidText = () => {
   return 'sà-wàd-dee!';
@@ -299,7 +296,6 @@ describe('temba-compose attachments', () => {
   it('attachments with success uploaded files deserialize and serialize', async () => {
     const initialValue = getInitialValue(null, getValidAttachments());
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
 
     const compose: Compose = await getCompose({
       attachments: true,

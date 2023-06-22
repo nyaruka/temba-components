@@ -175,7 +175,6 @@ export class Compose extends FormElement {
       text: this.currentText,
       attachments: this.currentAttachments,
     };
-    // update this.value...
     this.value = JSON.stringify(composeValue);
   }
 

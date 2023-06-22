@@ -122,11 +122,7 @@ export class ImagePicker extends FormElement {
     const attachmentsValue = {
       attachments: this.currentAttachments,
     };
-    // update this.value...
     this.value = JSON.stringify(attachmentsValue);
-    // and then also update this.values...
-    // so that the hidden input is updated via FormElement.updateInputs()
-    this.values = [attachmentsValue];
   }
 
   private handleDragDropped(evt: CustomEvent): void {
