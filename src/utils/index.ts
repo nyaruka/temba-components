@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
-import { upload_endpoint } from '../compose/Compose';
 import { Dialog } from '../dialog/Dialog';
 import { ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
+
+export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
 const colorHash = new ColorHash();
 
@@ -252,7 +253,7 @@ export const postFormData = (
         if (response.status >= 200 && response.status < 400) {
           resolve(response);
         } else {
-          if (url === upload_endpoint) {
+          if (url === DEFAULT_MEDIA_ENDPOINT) {
             reject(response);
           } else {
             reject('Server failure');
