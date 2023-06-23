@@ -61,7 +61,7 @@ export class AttachmentsDropZone extends FormElement {
   }
 
   @property({ type: Number })
-  dropWidth = 0; //accepts pixels
+  dropZoneWidth = 0; //accepts pixels
 
   @property({ type: String })
   uploadLabel = '';
@@ -118,7 +118,9 @@ export class AttachmentsDropZone extends FormElement {
         @dragover=${this.handleDragOver}
         @dragleave=${this.handleDragLeave}
         @drop=${this.handleDragDropped}
-        style="width:${this.dropWidth > 0 ? this.dropWidth + 'px' : 'auto'}"
+        style="width:${this.dropZoneWidth > 0
+          ? this.dropZoneWidth + 'px'
+          : 'auto'}"
       >
         <div class="drop-mask">
           <div>${this.uploadLabel}</div>

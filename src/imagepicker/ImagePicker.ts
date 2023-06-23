@@ -11,6 +11,7 @@ import {
 } from '../attachments/attachments';
 import { capitalize } from '../utils';
 import { Icon } from '../vectoricon';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 export class ImagePicker extends FormElement {
   static get styles() {
@@ -24,7 +25,6 @@ export class ImagePicker extends FormElement {
         width: 100px;
         height: 100px;
         display: flex;
-        margin: 10px 0px;
       }
       .missing-icon {
         color: rgb(102, 102, 102, 0.25);
@@ -67,6 +67,9 @@ export class ImagePicker extends FormElement {
 
   @property({ type: Number })
   imageWidth = 100; //accepts pixels
+
+  @property({ type: Number, attribute: false })
+  imageMargin = 12.5; //pixels
 
   @property({ type: Number })
   imageHeight = 100; //accepts pixels
@@ -188,7 +191,7 @@ export class ImagePicker extends FormElement {
   }
 
   private getDropZoneWidth(): number {
-    return this.imageWidth + 25;
+    return this.imageWidth + this.imageMargin * 2;
   }
 
   private getUploadLabel(): string {
@@ -205,7 +208,7 @@ export class ImagePicker extends FormElement {
         value=${this.value}
       >
         <temba-attachments-drop-zone
-          dropWidth="${this.getDropZoneWidth()}"
+          dropZoneWidth="${this.getDropZoneWidth()}"
           uploadLabel="${this.getUploadLabel()}"
           @temba-drag-dropped=${this.handleDragDropped}
         >
@@ -217,10 +220,27 @@ export class ImagePicker extends FormElement {
   }
 
   private getImage(): TemplateResult {
+    const missingImageStyles = {
+      margin: `${this.imageMargin}px 0px`,
+    };
+
+    const imageStyles = {
+      backgroundImage: this.currentAttachment
+        ? `url(${this.currentAttachment.url})`
+        : 'none',
+      borderRadius: `${this.imageRadius}`,
+      width: `${this.imageWidth}px`,
+      height: `${this.imageHeight}px`,
+      margin: `${this.imageMargin}px 0px`,
+    };
+
     return html`
       ${this.currentAttachment
         ? this.currentAttachment.error
-          ? html` <div class="image-item missing-image">
+          ? html` <div
+              class="image-item missing-image"
+              style="${styleMap(missingImageStyles)}"
+            >
               <temba-icon
                 class="missing-icon"
                 name="${Icon.attachment_error}"
@@ -229,9 +249,7 @@ export class ImagePicker extends FormElement {
             </div>`
           : html` <div
               class="image-item attachment-image"
-              style="background-image:url(${this.currentAttachment
-                .url});border-radius:${this.imageRadius};width:${this
-                .imageWidth}px;height:${this.imageHeight}px;"
+              style="${styleMap(imageStyles)}"
             ></div>`
         : null}
     `;

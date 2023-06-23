@@ -96,13 +96,13 @@ describe('temba-attachments-drop-zone', () => {
   it('can have different drop width', async () => {
     const attachmentsDropZone: AttachmentsDropZone =
       await getAttachmentsDropZone({
-        dropWidth: 125,
+        dropZoneWidth: 125,
       });
     await assertScreenshot(
       'attachments-drop-zone/different-drop-width-125',
       getClip(attachmentsDropZone)
     );
-    attachmentsDropZone.dropWidth = 250;
+    attachmentsDropZone.dropZoneWidth = 250;
     await assertScreenshot(
       'attachments-drop-zone/different-drop-width-250',
       getClip(attachmentsDropZone)
