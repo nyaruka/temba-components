@@ -15,7 +15,7 @@ const baseConfig = createSpaConfig({
   injectServiceWorker: false,
 
   html: {
-    input: [ './templates/components-*.html' ],
+    input: ['./templates/components-*.html'],
     flattenOutput: false,
     transformHtml: [
       // inject app version
@@ -45,13 +45,13 @@ const baseConfig = createSpaConfig({
         );
       },
     ],
-  }
+  },
 });
 
 const rollupConfig = merge(baseConfig, {
   onwarn(warning, warn) {
     if (warning.code === 'CIRCULAR_DEPENDENCY') {
-      if(warning.message.includes('luxon')) {
+      if (warning.message.includes('luxon')) {
         return;
       }
     }
@@ -65,6 +65,7 @@ const rollupConfig = merge(baseConfig, {
       targets: [
         { src: 'static/svg/index.svg', dest: 'dist/static/svg/' },
         { src: 'static/img', dest: 'dist/static/' },
+        { src: 'out-tsc/src/locales', dest: 'dist/' },
         {
           src: 'dist/*.js',
           dest: 'dist/',

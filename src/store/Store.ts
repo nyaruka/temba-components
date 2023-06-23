@@ -25,12 +25,12 @@ import Lru from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
-import { sourceLocale, targetLocales } from '../locales/locale-codes.js';
+import { sourceLocale, targetLocales } from '../locales/locale-codes';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
   targetLocales,
-  loadLocale: locale => import(`../locales/${locale}.js`),
+  loadLocale: locale => import(`./locales/${locale}.js`),
 });
 
 export class Store extends RapidElement {

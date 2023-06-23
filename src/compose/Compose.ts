@@ -3,10 +3,7 @@ import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { Completion } from '../completion/Completion';
-import {
-  AttachmentsUploader,
-  upload_endpoint,
-} from '../attachments/AttachmentsUploader';
+import { AttachmentsUploader } from '../attachments/AttachmentsUploader';
 import { AttachmentsList } from '../attachments/AttachmentsList';
 import {
   Attachment,
@@ -16,6 +13,7 @@ import {
   validateMaxAttachments,
   validateMaxFileSize,
 } from '../attachments/attachments';
+import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
 
 export class Compose extends FormElement {
   static get styles() {
@@ -86,7 +84,7 @@ export class Compose extends FormElement {
   currentText = '';
 
   @property({ type: String, attribute: false })
-  endpoint = upload_endpoint;
+  endpoint = DEFAULT_MEDIA_ENDPOINT;
 
   @property({ type: String })
   uploadIcon = 'attachment';

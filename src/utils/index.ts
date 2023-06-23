@@ -6,6 +6,8 @@ import { ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
 import { upload_endpoint } from '../attachments/AttachmentsUploader';
 
+export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
+
 const colorHash = new ColorHash();
 
 export type Asset = KeyedAsset & Ticket & ContactField;
@@ -252,7 +254,7 @@ export const postFormData = (
         if (response.status >= 200 && response.status < 400) {
           resolve(response);
         } else {
-          if (url === upload_endpoint) {
+          if (url === DEFAULT_MEDIA_ENDPOINT) {
             reject(response);
           } else {
             reject('Server failure');
