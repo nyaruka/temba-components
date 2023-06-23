@@ -1,8 +1,9 @@
-import { assert, expect, fixture } from '@open-wc/testing';
-import { Attachment, Compose, upload_endpoint } from '../src/compose/Compose';
+import { assert, expect } from '@open-wc/testing';
+import { Attachment, Compose } from '../src/compose/Compose';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Button } from '../src/button/Button';
 import { Completion } from '../src/completion/Completion';
+import { DEFAULT_MEDIA_ENDPOINT } from '../src/utils';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
@@ -113,7 +114,7 @@ describe('temba-compose chatbox', () => {
   it('can be created', async () => {
     const compose: Compose = await getCompose();
     assert.instanceOf(compose, Compose);
-    expect(compose.endpoint).equals(upload_endpoint);
+    expect(compose.endpoint).equals(DEFAULT_MEDIA_ENDPOINT);
   });
 
   it('cannot be created with a different endpoint', async () => {
@@ -121,7 +122,7 @@ describe('temba-compose chatbox', () => {
       endpoint: '/schmsgmedia/schmupload/',
     });
     assert.instanceOf(compose, Compose);
-    expect(compose.endpoint).equals(upload_endpoint);
+    expect(compose.endpoint).equals(DEFAULT_MEDIA_ENDPOINT);
   });
 
   it('chatbox no counter no send button', async () => {

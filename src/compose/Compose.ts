@@ -9,6 +9,7 @@ import {
   getClasses,
   postFormData,
   truncate,
+  DEFAULT_MEDIA_ENDPOINT,
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
@@ -21,8 +22,6 @@ export interface Attachment {
   size: number;
   error: string;
 }
-
-export const upload_endpoint = '/api/v2/media.json';
 
 export class Compose extends FormElement {
   static get styles() {
@@ -200,7 +199,7 @@ export class Compose extends FormElement {
   accept = ''; //e.g. ".xls,.xlsx"
 
   @property({ type: String, attribute: false })
-  endpoint = upload_endpoint;
+  endpoint = DEFAULT_MEDIA_ENDPOINT;
 
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
