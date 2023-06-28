@@ -12,7 +12,7 @@ export class TextInput extends FormElement {
     return css`
       .input-container {
         border-radius: var(--curvature-widget);
-        cursor: text;
+        cursor: var(--input-cursor);
         background: var(--color-widget-bg);
         border: 1px solid var(--color-widget-border);
         transition: all ease-in-out var(--transition-speed);
@@ -48,7 +48,6 @@ export class TextInput extends FormElement {
       }
 
       .input-container:hover {
-        background: var(--color-widget-bg-focused);
       }
 
       textarea {
@@ -61,11 +60,12 @@ export class TextInput extends FormElement {
         flex: 1;
         margin: 0;
         background: none;
+        background-color: transparent;
         color: var(--color-widget-text);
         font-family: var(--font-family);
         font-size: var(--temba-textinput-font-size);
         line-height: normal;
-        cursor: text;
+        cursor: var(--input-cursor);
         resize: none;
         font-weight: 300;
         width: 100%;
@@ -75,6 +75,7 @@ export class TextInput extends FormElement {
         outline: none;
         box-shadow: none;
         cursor: text;
+        color: var(--color-widget-text-focused, var(--color-widget-text));
       }
 
       .textinput::placeholder {

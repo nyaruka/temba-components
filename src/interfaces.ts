@@ -99,6 +99,7 @@ export interface ContactField {
   value_type: string;
   featured: boolean;
   priority: number;
+  agent_access: string;
   usages: { campaign_events: number; flows: number; groups: number };
 }
 
