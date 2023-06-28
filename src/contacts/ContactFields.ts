@@ -10,12 +10,6 @@ const MIN_FOR_FILTER = 10;
 export class ContactFields extends ContactStoreElement {
   static get styles() {
     return css`
-      :host {
-      }
-
-      .fields {
-      }
-
       .field {
         display: flex;
         margin: 0.3em 0.3em;
@@ -25,8 +19,9 @@ export class ContactFields extends ContactStoreElement {
         overflow: hidden;
       }
 
-      .show-all .unset {
-        display: block;
+      .show-all .unset,
+      .featured {
+        display: block !important;
       }
 
       .unset {
@@ -61,9 +56,6 @@ export class ContactFields extends ContactStoreElement {
         font-size: 0.9em;
       }
 
-      temba-contact-field {
-      }
-
       .toggle {
         display: flex;
         background: #fff;
@@ -78,9 +70,6 @@ export class ContactFields extends ContactStoreElement {
   }
 
   @property({ type: Boolean })
-  featured: boolean;
-
-  @property({ type: Boolean })
   system: boolean;
 
   @property({ type: Boolean })
@@ -92,12 +81,19 @@ export class ContactFields extends ContactStoreElement {
   @property({ type: String })
   timezone: string;
 
+  @property({ type: String })
+  role: string;
+
   @property({ type: Boolean })
   disabled = false;
 
   connectedCallback(): void {
     super.connectedCallback();
     this.handleFieldChanged = this.handleFieldChanged.bind(this);
+  }
+
+  private isAgent(): boolean {
+    return this.role === 'T';
   }
 
   protected updated(
@@ -129,25 +125,29 @@ export class ContactFields extends ContactStoreElement {
 
   public render(): TemplateResult {
     if (this.data) {
-      const fieldsToShow = Object.entries(this.data.fields)
-        .filter((entry: [string, string]) => {
-          return (
-            (this.featured && this.store.getContactField(entry[0]).featured) ||
-            (!this.featured && !this.store.getContactField(entry[0]).featured)
-          );
-        })
-        .sort((a: [string, string], b: [string, string]) => {
+      const fieldsToShow = Object.entries(this.data.fields).sort(
+        (a: [string, string], b: [string, string]) => {
           const [ak] = a;
           const [bk] = b;
-          const priority =
-            this.store.getContactField(bk).priority -
-            this.store.getContactField(ak).priority;
+          const fieldA = this.store.getContactField(ak);
+          const fieldB = this.store.getContactField(bk);
+
+          if (fieldA.featured && !fieldB.featured) {
+            return -1;
+          }
+
+          if (fieldB.featured && !fieldA.featured) {
+            return 1;
+          }
+
+          const priority = fieldB.priority - fieldA.priority;
           if (priority !== 0) {
             return priority;
           }
 
           return ak.localeCompare(bk);
-        });
+        }
+      );
 
       if (fieldsToShow.length == 0) {
         return html`<slot name="empty"></slot>`;
@@ -157,21 +157,24 @@ export class ContactFields extends ContactStoreElement {
         const [k, v] = entry;
         const field = this.store.getContactField(k);
         return html`<temba-contact-field
-          class=${v ? 'set' : 'unset'}
+          class=${getClasses({ set: !!v, unset: !v, featured: field.featured })}
           key=${field.key}
           name=${field.label}
           value=${v}
           type=${field.value_type}
           @change=${this.handleFieldChanged}
           timezone=${this.timezone}
-          ?disabled=${this.disabled}
+          ?disabled=${(this.isAgent() && field.agent_access === 'view') ||
+          this.disabled
+            ? true
+            : false}
         ></temba-contact-field>`;
       });
 
       return html`
         <div class=${getClasses({ disabled: this.disabled })}>
-          ${!this.featured &&
-          Object.keys(this.data.fields).length >= MIN_FOR_FILTER
+          <div class="fields ${this.showAll ? 'show-all' : ''}">${fields}</div>
+          ${Object.keys(this.data.fields).length >= MIN_FOR_FILTER
             ? html`<div class="toggle">
                 <div style="flex-grow: 1"></div>
                 <div>
@@ -179,16 +182,10 @@ export class ContactFields extends ContactStoreElement {
                     ?checked=${this.showAll}
                     @change=${this.handleToggle}
                     label="Show All"
-                  />
+                  ></temba-checkbox>
                 </div>
               </div>`
             : null}
-
-          <div
-            class="fields ${this.showAll || this.featured ? 'show-all' : ''}"
-          >
-            ${fields}
-          </div>
         </div>
       `;
     }
