@@ -34,17 +34,41 @@ export class ContactFieldEditor extends RapidElement {
 
   static get styles() {
     return css`
+      :host {
+        --transition-speed: 0ms;
+      }
+
       .wrapper {
         --temba-textinput-padding: 1.4em 0.8em 0.4em 0.8em;
         --disabled-opacity: 1;
         position: relative;
+        --color-widget-bg: transparent;
+        --color-widget-bg-focused: #fff;
+        --widget-box-shadow: none;
+        padding-bottom: 0.6em;
+        border-bottom: 1px solid #ececec;
+      }
+
+      .wrapper.disabled {
+        --color-widget-border: transparent;
+      }
+
+      .wrapper.mutable:hover {
+        --color-widget-border: rgb(225, 225, 225);
+      }
+
+      .wrapper.mutable {
+        --color-widget-border: transparent;
+        --color-widget-bg: transparent;
+        --input-cursor: pointer;
+        --color-widget-text-focused: #666;
+        --color-widget-text: var(--color-link-primary) !important;
       }
 
       .prefix {
         border-top-left-radius: var(--curvature-widget);
         border-bottom-left-radius: var(--curvature-widget);
-        color: #888;
-        cursor: pointer;
+        cursor: pointer !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -52,6 +76,7 @@ export class ContactFieldEditor extends RapidElement {
         padding: 0em 0.5em;
         position: absolute;
         margin-top: 0.2em;
+        pointer-events: none;
       }
 
       .wrapper {
@@ -60,7 +85,7 @@ export class ContactFieldEditor extends RapidElement {
 
       .prefix .name {
         padding: 0em 0.4em;
-        color: #999;
+        color: rgba(100, 100, 100, 0.7);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -74,13 +99,12 @@ export class ContactFieldEditor extends RapidElement {
 
       .popper {
         padding: 0.5em 0.75em;
-        background: rgba(240, 240, 240, 1);
+        background: rgba(0, 0, 0, 0.03);
         border-top-right-radius: var(--curvature-widget);
         border-bottom-right-radius: var(--curvature-widget);
         --icon-color: #888;
         opacity: 0;
         cursor: default;
-        transform: scale(0.5);
         transition: all var(--transition-speed) ease-in-out;
         display: flex;
         align-items: stretch;
@@ -100,25 +124,13 @@ export class ContactFieldEditor extends RapidElement {
         --icon-color: rgba(0, 0, 0, 0.3);
       }
 
+      temba-textinput:focus .popper,
       temba-textinput:hover .popper {
         opacity: 1;
-        transform: scale(1);
-      }
-
-      temba-textinput:focus .popper {
-        opacity: 1;
-        transform: scale(1);
       }
 
       .disabled temba-textinput .postfix {
         display: none;
-      }
-
-      .disabled {
-        --widget-box-shadow: none;
-        --color-widget-border: transparent;
-        padding-bottom: 0.4em;
-        border-bottom: 1px solid #e6e6e6;
       }
 
       .unset temba-textinput:focus .popper,
@@ -208,6 +220,7 @@ export class ContactFieldEditor extends RapidElement {
           set: !!this.value,
           unset: !this.value,
           disabled: this.disabled,
+          mutable: !this.disabled,
         })}
       >
         ${this.type === 'datetime'
