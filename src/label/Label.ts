@@ -33,7 +33,7 @@ export default class Label extends LitElement {
         font-size: 0.8em;
         font-weight: 400;
         border-radius: 12px;
-        box-shadow: 0 0.04em 0.08em rgba(0, 0, 0, 0.15);
+        box-shadow: var(--widget-shadow, 0 0.04em 0.08em rgba(0, 0, 0, 0.15));
         background: var(--color-overlay-light);
         color: var(--color-overlay-light-text);
         --icon-color: var(--color-overlay-light-text);
@@ -66,8 +66,6 @@ export default class Label extends LitElement {
 
       .dark {
         background: var(--color-overlay-dark);
-        color: var(--color-overlay-dark-text);
-        --icon-color: var(--color-overlay-dark-text);
         text-shadow: none;
       }
 
@@ -132,6 +130,7 @@ export default class Label extends LitElement {
           tertiary: this.tertiary,
           shadow: this.shadow,
           danger: this.danger,
+          dark: this.dark,
         })}"
         style=${styleMap(labelStyle)}
       >

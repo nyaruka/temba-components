@@ -253,7 +253,7 @@ export class Button extends LitElement {
         @click=${this.handleClick}
       >
         <div class="button-mask">
-          <div class="button-name">${buttonName}</div>
+          <div class="button-name"><slot name="name">${buttonName}</slot></div>
         </div>
       </div>
     `;

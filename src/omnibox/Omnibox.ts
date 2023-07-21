@@ -10,7 +10,7 @@ enum OmniType {
   Contact = 'contact',
 }
 
-interface OmniOption {
+export interface OmniOption {
   id: string;
   name: string;
   type: OmniType;
@@ -78,6 +78,9 @@ export class Omnibox extends RapidElement {
   @property({ type: String })
   label: string;
 
+  @property({ type: String, attribute: 'info_text' })
+  infoText = '';
+
   /** An option in the drop down */
   private renderOption(option: OmniOption): TemplateResult {
     return html`
@@ -98,7 +101,7 @@ export class Omnibox extends RapidElement {
 
     if (option.urn && option.type === OmniType.Contact) {
       if (option.urn !== option.name) {
-        return html` <div style=${styleMap(style)}>${option.urn}</div> `;
+        return html`<div style=${styleMap(style)}>${option.urn}</div>`;
       }
     }
 
@@ -137,11 +140,11 @@ export class Omnibox extends RapidElement {
 
   private getIcon(option: OmniOption): TemplateResult {
     if (option.type === OmniType.Group) {
-      return html` <temba-icon name="${Icon.group}" /> `;
+      return html`<temba-icon name="${Icon.group}"></temba-icon>`;
     }
 
     if (option.type === OmniType.Contact) {
-      return html` <temba-icon name="${Icon.contact}" /> `;
+      return html`<temba-icon name="${Icon.contact}"></temba-icon>`;
     }
   }
 
@@ -185,9 +188,12 @@ export class Omnibox extends RapidElement {
         .renderSelectedItem=${this.renderSelection.bind(this)}
         .inputRoot=${this}
         .isMatch=${this.isMatch}
+        .infoText=${this.infoText}
         searchable
         searchOnFocus
         multi
+        ><div slot="right">
+          <slot name="right"></slot></div
       ></temba-select>
     `;
   }
