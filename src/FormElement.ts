@@ -60,6 +60,14 @@ export class FormElement extends RapidElement {
     return this.localName;
   }
 
+  public setValue(value: any) {
+    this.value = this.serializeValue(value);
+  }
+
+  public getDeserializedValue(): any {
+    return JSON.parse(this.value);
+  }
+
   public serializeValue(value: any): string {
     return JSON.stringify(value);
   }

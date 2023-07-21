@@ -1,13 +1,16 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { property } from 'lit/decorators.js';
-import { getClasses, postJSON, WebResponse } from '../utils';
+import { getClasses, postJSON, stopEvent, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import '../alert/Alert';
 import { Contact, CustomEventType } from '../interfaces';
 import { FormElement } from '../FormElement';
 import { Checkbox } from '../checkbox/Checkbox';
+import { msg } from '@lit/localize';
+import { OmniOption, Omnibox } from '../omnibox/Omnibox';
 
-const QUEIT_MILLIS = 1000;
+const QUEIT_MILLIS = 2000;
 
 interface SummaryResponse {
   total: number;
@@ -15,6 +18,8 @@ interface SummaryResponse {
   query: string;
   fields: { [uuid: string]: { label: string; type: string } };
   error?: string;
+  warnings: string[];
+  blockers: string[];
 }
 
 export class ContactSearch extends FormElement {
@@ -142,6 +147,17 @@ export class ContactSearch extends FormElement {
 
       .summary {
         min-height: 2.2em;
+        display: flex;
+        flex-grow: 1;
+        align-items: center;
+      }
+
+      .summary .result-count {
+        flex-grow: 1;
+      }
+
+      .results.empty {
+        display: none !important;
       }
 
       .results.initialized {
@@ -150,10 +166,44 @@ export class ContactSearch extends FormElement {
         margin-top: 0.5em;
         margin-left: 0.6em;
       }
+
+      .advanced-icon {
+        cursor: pointer;
+        margin-right: 0.5em;
+      }
+
+      .query .advanced-icon {
+        margin-top: 1em;
+        margin-right: 1em;
+      }
+
+      .advanced-icon:hover {
+        --icon-color: var(--color-link-primary-hover) !important;
+      }
+
+      .query {
+        --textarea-height: 5em;
+      }
+
+      #recipients {
+        margin-bottom: 1em;
+        display: block;
+      }
+
+      temba-alert {
+        margin: 1em 0;
+      }
     `;
   }
 
-  // private cancelToken: CancelTokenSource;
+  @property({ type: Boolean })
+  in_a_flow: boolean;
+
+  @property({ type: Boolean })
+  started_previously: boolean;
+
+  @property({ type: Boolean })
+  not_seen_since_days: boolean;
 
   @property({ type: Boolean })
   fetching: boolean;
@@ -185,44 +235,90 @@ export class ContactSearch extends FormElement {
   @property({ type: Object, attribute: false })
   flow: any;
 
+  @property({ type: Array })
+  recipients: OmniOption[] = [];
+
+  @property({ type: Boolean })
+  advanced = false;
+
+  @property({ type: String })
+  refreshKey = '0';
+
+  public refresh(): void {
+    this.refreshKey = 'requested_' + new Date().getTime();
+  }
+
+  @property({ type: Object })
+  private exclusions = {};
+
   private lastQuery: number;
   private initialized = false;
-
-  private exclusions = {};
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('query') || changedProperties.has('endpoint')) {
-      this.fetching = !!this.query && !!this.endpoint;
+    if (changedProperties.has('advanced') && this.advanced) {
+      return;
+    }
 
-      if (this.fetching) {
-        this.initialized = true;
-        // clear our summary on any change
-        this.summary = null;
-        if (this.lastQuery) {
-          window.clearTimeout(this.lastQuery);
-        }
+    // if we remove the in_a_flow option, make sure it's not part of our exclusions
+    if (changedProperties.has('in_a_flow') && !this.in_a_flow) {
+      delete this.exclusions['in_a_flow'];
+      this.requestUpdate('exclusions');
+    }
 
-        if (this.query.trim().length > 0) {
-          this.lastQuery = window.setTimeout(() => {
-            this.fetchSummary(this.query);
-          }, QUEIT_MILLIS);
-        }
+    if (
+      (changedProperties.has('query') && this.advanced) ||
+      (changedProperties.has('refreshKey') && this.refreshKey !== '0')
+    ) {
+      this.summary = null;
+      // this.errors = [];
+
+      this.fireCustomEvent(CustomEventType.ContentChanged, { reset: true });
+      if (this.lastQuery) {
+        window.clearTimeout(this.lastQuery);
+        this.fetching = false;
+      }
+
+      if (this.query.trim().length > 0 || this.recipients.length > 0) {
+        this.fetching = true;
+        this.lastQuery = window.setTimeout(() => {
+          this.fetchSummary();
+        }, QUEIT_MILLIS);
       }
     }
   }
 
-  public fetchSummary(query: string): any {
+  public fetchSummary(): any {
     if (this.endpoint) {
+      const group_uuids = this.recipients
+        .filter((value: OmniOption) => value.type === 'group')
+        .map((value: OmniOption) => value.id);
+
+      const contact_uuids = this.recipients
+        .filter((value: OmniOption) => value.type === 'contact')
+        .map((value: OmniOption) => value.id);
+
       postJSON(this.endpoint, {
-        include: { query },
+        include: this.advanced
+          ? { query: this.query }
+          : { contact_uuids, group_uuids },
+
         exclude: this.exclusions,
       }).then((response: WebResponse) => {
         this.fetching = false;
         if (response.status === 200) {
           this.summary = response.json as SummaryResponse;
-          this.value = this.summary.query;
+          if (!this.advanced) {
+            this.query = this.summary.query;
+          }
+          this.setValue({
+            advanced: this.advanced,
+            query: this.query,
+            exclusions: this.exclusions,
+            recipients: this.recipients,
+          });
+
           if (this.summary.error) {
             this.errors = [this.summary.error];
           } else {
@@ -242,13 +338,40 @@ export class ContactSearch extends FormElement {
     }
   }
 
+  private handleAdvancedToggle(evt: MouseEvent) {
+    stopEvent(evt);
+    this.recipients = [];
+    this.exclusions = {};
+    if (this.advanced) {
+      this.query = '';
+      this.value = null;
+    }
+    this.advanced = !this.advanced;
+
+    this.setValue({
+      advanced: this.advanced,
+      query: this.query,
+      exclusions: this.exclusions,
+      recipients: this.recipients,
+    });
+  }
+
   private handleQueryChange(evt: KeyboardEvent) {
     const input = evt.target as TextInput;
     this.query = input.inputElement.value;
   }
 
-  private handleSlotChanged(evt: any) {
+  private handleRecipientsChanged(evt: any) {
+    if (this.refreshKey !== '0' || this.initialized) {
+      this.refresh();
+    } else {
+      this.initialized = true;
+    }
+  }
+
+  private handleExclusionChanged(evt: any) {
     if (evt.target.tagName === 'TEMBA-CHECKBOX') {
+      const ex = JSON.stringify(this.exclusions);
       const checkbox = evt.target as Checkbox;
       let value = checkbox.checked as any;
 
@@ -261,120 +384,154 @@ export class ContactSearch extends FormElement {
 
         this.exclusions[checkbox.name] = value;
       }
-    }
 
-    this.requestUpdate('query');
+      if (ex !== JSON.stringify(this.exclusions)) {
+        this.refresh();
+      }
+    }
   }
 
   public render(): TemplateResult {
     let summary: TemplateResult;
     if (this.summary) {
-      const fields = Object.keys(this.summary.fields || []).map(
-        (uuid: string) => {
-          return { uuid, ...this.summary.fields[uuid] };
-        }
-      );
-
       if (!this.summary.error) {
         const count = this.summary.total;
-        const lastSeenOn = this.summary.query.indexOf('last_seen_on') > -1;
 
         summary = html`
-          <table cellspacing="0" cellpadding="0">
-            <tr class="header">
-              <td colspan="2">
-                Found
-                <a
-                  class="linked"
-                  target="_"
-                  href="/contact/?search=${encodeURIComponent(
-                    this.summary.query
-                  )}"
-                >
-                  ${count.toLocaleString()}
-                </a>
-                contact${count !== 1 ? 's' : ''}
-              </td>
-              ${fields.map(
-                field => html` <td class="field-header">${field.label}</td> `
-              )}
-              <td></td>
-              <td class="field-header date">
-                ${lastSeenOn ? 'Last Seen' : 'Created'}
-              </td>
-            </tr>
-
-            ${this.summary.sample.map(
-              (contact: Contact) => html`
-                <tr class="contact">
-                  <td class="urn">${(contact as any).primary_urn_formatted}</td>
-                  <td class="name">${contact.name}</td>
-                  ${fields.map(
-                    field => html`
-                      <td class="field">
-                        ${((contact as any).fields[field.uuid] || { text: '' })
-                          .text}
-                      </td>
-                    `
-                  )}
-                  <td></td>
-                  <td class="date">
-                    ${lastSeenOn
-                      ? contact.last_seen_on || '--'
-                      : contact.created_on}
-                  </td>
-                </tr>
-              `
-            )}
-            ${this.summary.total > this.summary.sample.length
-              ? html`<tr class="table-footer">
-                  <td class="query-details" colspan=${fields.length + 3}></td>
-                  <td class="more">
-                    <a
-                      class="linked"
-                      target="_"
-                      href="/contact/?search=${encodeURIComponent(
-                        this.summary.query
-                      )}"
-                      >more</a
-                    >
-                  </td>
-                </tr>`
-              : null}
-          </table>
+          <div class="result-count">
+            Found
+            <a
+              class="linked"
+              target="_"
+              href="/contact/?search=${encodeURIComponent(this.summary.query)}"
+            >
+              ${count.toLocaleString()}
+            </a>
+            contact${count !== 1 ? 's' : ''}
+          </div>
+          <temba-button
+            class="edit"
+            name="edit"
+            secondary
+            small
+            @click=${this.handleAdvancedToggle}
+          >
+            <div slot="name">
+              <div style="display: flex; align-items: center;">
+                ${this.advanced
+                  ? html` <temba-icon
+                        name="reset"
+                        style="margin-right:0.5em"
+                      ></temba-icon>
+                      Start Over`
+                  : html` <temba-icon
+                        name="edit"
+                        style="margin-right:0.5em"
+                      ></temba-icon>
+                      Edit Query`}
+              </div>
+            </div>
+          </temba-button>
         `;
       }
     }
 
-    return html`
-      <div class="query">
-        <temba-textinput
-          .label=${this.label}
-          .helpText=${this.helpText}
-          .widgetOnly=${this.widgetOnly}
-          .errors=${this.errors}
-          name=${this.name}
-          .inputRoot=${this}
-          @input=${this.handleQueryChange}
-          placeholder=${this.placeholder}
-          .value=${this.query}
-          textarea
-          autogrow
-        >
-        </temba-textinput>
-      </div>
+    if (this.summary && this.summary.blockers.length > 0) {
+      return html`${this.summary.blockers.map(
+        error =>
+          html`<temba-alert level="error">${unsafeHTML(error)}</temba-alert>`
+      )}`;
+    }
 
-      <slot @change=${this.handleSlotChanged}></slot>
+    return html`
+      ${this.advanced
+        ? html`<div class="query">
+            <temba-textinput
+              .label=${this.label}
+              .helpText=${this.helpText}
+              .widgetOnly=${this.widgetOnly}
+              .errors=${this.errors}
+              name=${this.name}
+              .inputRoot=${this}
+              @input=${this.handleQueryChange}
+              placeholder=${this.placeholder}
+              .value=${this.query}
+              textarea
+              autogrow
+            >
+            </temba-textinput>
+          </div>`
+        : html`<temba-omnibox
+              placeholder="Search for contacts or groups"
+              widget_only=""
+              groups=""
+              contacts=""
+              label="Recipients"
+              help_text="The contacts to send the message to."
+              .errors=${this.errors}
+              id="recipients"
+              name="recipients"
+              .value=${this.recipients}
+              endpoint="/contact/omnibox/?"
+              @change=${this.handleRecipientsChanged}
+            >
+            </temba-omnibox>
+
+            ${this.not_seen_since_days
+              ? html`<temba-checkbox
+                  name="not_seen_since_days"
+                  label="${msg('Skip inactive contacts')}"
+                  help_text="${msg(
+                    'Only include contacts who have sent a message in the last 90 days.'
+                  )}"
+                  ?checked=${this.exclusions['not_seen_since_days'] === 90}
+                  @change=${this.handleExclusionChanged}
+                ></temba-checkbox>`
+              : null}
+            ${this.in_a_flow
+              ? html`<temba-checkbox
+                  name="in_a_flow"
+                  label="${msg('Skip contacts currently in a flow')}"
+                  help_text="${msg(
+                    'Avoid interrupting a contact who is already in a flow.'
+                  )}"
+                  ?checked=${this.exclusions['in_a_flow']}
+                  @change=${this.handleExclusionChanged}
+                ></temba-checkbox>`
+              : null}
+            ${this.started_previously
+              ? html`<temba-checkbox
+                  name="started_previously"
+                  label="${msg('Skip repeat contacts')}"
+                  help_text="${msg(
+                    'Avoid restarting a contact who has been in this flow in the last 90 days.'
+                  )}"
+                  ?checked=${this.exclusions['started_previously']}
+                  @change=${this.handleExclusionChanged}
+                ></temba-checkbox>`
+              : null}`}
 
       <div
         class="results ${getClasses({
           fetching: this.fetching,
           initialized: this.initialized || this.fetching,
+          empty:
+            ((this.summary && this.summary.error) || !this.summary) &&
+            !this.fetching,
         })}"
       >
         <temba-loading units="6" size="8"></temba-loading>
         <div class="summary ${this.expanded ? 'expanded' : ''}">${summary}</div>
       </div>
+
+      ${this.summary && this.summary.warnings
+        ? this.summary.warnings.map(
+            warning =>
+              html`<temba-alert level="warning"
+                >${unsafeHTML(warning)}</temba-alert
+              >`
+          )
+        : ``}
     `;
   }
 }

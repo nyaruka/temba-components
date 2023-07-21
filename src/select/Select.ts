@@ -599,14 +599,16 @@ export class Select extends FormElement {
           this.selection = this.values[0];
           this.value = this.serializeValue(this.values[0]);
         } else {
-          this.values.forEach(value => {
-            const ele = document.createElement('input');
-            ele.setAttribute('type', 'hidden');
-            ele.setAttribute('name', name);
-            ele.setAttribute('value', this.serializeValue(value));
-            this.hiddenInputs.push(ele);
-            this.inputRoot.parentElement.appendChild(ele);
-          });
+          if (this.inputRoot.parentElement) {
+            this.values.forEach(value => {
+              const ele = document.createElement('input');
+              ele.setAttribute('type', 'hidden');
+              ele.setAttribute('name', name);
+              ele.setAttribute('value', this.serializeValue(value));
+              this.hiddenInputs.push(ele);
+              this.inputRoot.parentElement.appendChild(ele);
+            });
+          }
         }
       }
     }
@@ -1217,7 +1219,10 @@ export class Select extends FormElement {
   }
 
   public removeValue(valueToRemove: any) {
-    this.values = this.values.filter((value: any) => value !== valueToRemove);
+    const idx = this.values.indexOf(valueToRemove);
+    if (idx > -1) {
+      this.values.splice(idx, 1);
+    }
     this.requestUpdate('values');
   }
 
@@ -1329,7 +1334,10 @@ export class Select extends FormElement {
                               this.handleRemoveSelection(selected);
                             }}
                           >
-                            <temba-icon name="${Icon.delete_small}" size="1" />
+                            <temba-icon
+                              name="${Icon.delete_small}"
+                              size="1"
+                            ></temba-icon>
                           </div>
                         `
                       : null}
@@ -1339,10 +1347,12 @@ export class Select extends FormElement {
               )}
               ${this.multi ? input : null}
             </div>
+
           </div>
 
           ${clear}
 
+          <slot name="right"></slot>
           ${
             !this.tags
               ? html`<div
@@ -1356,7 +1366,7 @@ export class Select extends FormElement {
                     class="select-open ${this.visibleOptions.length > 0
                       ? 'open'
                       : ''}"
-                  />
+                  ></temba-icon>
                 </div>`
               : null
           }
