@@ -19,6 +19,9 @@ export class VectorIcon extends LitElement {
   size = 1;
 
   @property({ type: Boolean })
+  spin: boolean;
+
+  @property({ type: Boolean })
   clickable: boolean;
 
   @property({ type: Boolean })
@@ -121,6 +124,22 @@ export class VectorIcon extends LitElement {
         margin: calc(-1 * var(--icon-circle-size));
         background: var(--icon-background);
       }
+
+      .spin-forever {
+        animation-name: spin;
+        animation-duration: 2000ms;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
     `;
   }
 
@@ -204,6 +223,7 @@ export class VectorIcon extends LitElement {
           clickable: this.clickable,
           circled: this.circled,
           animate: !!this.animateChange || !!this.animateClick,
+          'spin-forever': this.spin,
         })}"
       >
         <svg
