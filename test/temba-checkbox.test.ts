@@ -153,12 +153,16 @@ describe('temba-checkbox', () => {
     const checkbox = form.querySelector('temba-checkbox') as Checkbox;
     checkbox.value = '5';
 
+    // we set a custom value, but we still aren't checked
+    let data = new FormData(form);
+    expect(data.get('my-cb')).to.equal(null);
+
     // click our checkbox
     await click('temba-checkbox');
     expect(checkbox.checked).to.equal(true);
 
     // clicking a non-value checkbox should set it to 1
-    const data = new FormData(form);
+    data = new FormData(form);
     expect(data.get('my-cb')).to.equal('5');
   });
 });
