@@ -78,13 +78,12 @@ export class Checkbox extends FormElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
-    if (changes.has('checked')) {
+    if (changes.has('checked') || changes.has('value')) {
       if (this.checked || this.partial) {
-        this.value = '1';
+        this.internals.setFormValue(this.value || '1');
       } else {
-        this.value = '';
+        this.internals.setFormValue(undefined);
       }
-
       this.fireEvent('change');
     }
   }

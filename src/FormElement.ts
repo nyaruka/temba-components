@@ -38,7 +38,7 @@ export class FormElement extends RapidElement {
 
   static formAssociated = true;
 
-  private internals: ElementInternals;
+  protected internals: ElementInternals;
 
   constructor() {
     super();
