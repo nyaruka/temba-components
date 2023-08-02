@@ -387,9 +387,14 @@ export const serialize = function (form: any) {
       (field.type !== 'checkbox' && field.type !== 'radio') ||
       field.checked
     ) {
-      if (field.value) {
+      let value = field.value;
+      if (!value && field.checked) {
+        value = '1';
+      }
+
+      if (value) {
         serialized.push(
-          encodeURIComponent(field.name) + '=' + encodeURIComponent(field.value)
+          encodeURIComponent(field.name) + '=' + encodeURIComponent(value)
         );
       }
     }
