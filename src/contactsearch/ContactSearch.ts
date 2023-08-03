@@ -436,7 +436,11 @@ export class ContactSearch extends FormElement {
       }
     }
 
-    if (this.summary && this.summary.blockers.length > 0) {
+    if (
+      this.summary &&
+      this.summary.blockers &&
+      this.summary.blockers.length > 0
+    ) {
       return html`${this.summary.blockers.map(
         error =>
           html`<temba-alert level="error">${unsafeHTML(error)}</temba-alert>`
