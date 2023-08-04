@@ -273,7 +273,6 @@ export class ContactSearch extends FormElement {
     ) {
       this.summary = null;
       // this.errors = [];
-
       this.fireCustomEvent(CustomEventType.ContentChanged, { reset: true });
       if (this.lastQuery) {
         window.clearTimeout(this.lastQuery);
@@ -395,7 +394,7 @@ export class ContactSearch extends FormElement {
     let summary: TemplateResult;
     if (this.summary) {
       if (!this.summary.error) {
-        const count = this.summary.total;
+        const count = this.summary.total || 0;
 
         summary = html`
           <div class="result-count">
