@@ -12,6 +12,9 @@ export default class Label extends LitElement {
 
       slot {
         white-space: nowrap;
+        overflow-x: hidden;
+        text-overflow: ellipsis;
+        display: block;
       }
 
       .mask {
