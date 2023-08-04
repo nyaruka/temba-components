@@ -1,6 +1,12 @@
 import { fixture, assert, expect } from '@open-wc/testing';
 import { ContactSearch } from '../src/contactsearch/ContactSearch';
-import { assertScreenshot, getClip, getHTML, mockPOST } from './utils.test';
+import {
+  assertScreenshot,
+  delay,
+  getClip,
+  getHTML,
+  mockPOST,
+} from './utils.test';
 import { useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 import { Omnibox } from '../src/omnibox/Omnibox';
@@ -64,6 +70,7 @@ describe('temba-contact-search', () => {
     ]);
 
     await search.updateComplete;
+    await waitFor(1000);
     await assertScreenshot('contact-search/missing-group', getClip(search));
   });
 
@@ -105,6 +112,7 @@ describe('temba-contact-search', () => {
     await clock.runAll();
 
     await search.updateComplete;
+    await waitFor(1000);
     await assertScreenshot('contact-search/manual-search', getClip(search));
   });
 });
