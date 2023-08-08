@@ -35,7 +35,6 @@ export class FormElement extends RapidElement {
 
   @property({ type: Boolean })
   disabled = false;
-
   static formAssociated = true;
 
   protected internals: ElementInternals;

@@ -1,8 +1,12 @@
 #mocha {
-  display:none;
+  display: none;
 }
 
-temba-dialog, temba-modax, temba-contact-history, temba-menu, temba-select {
+temba-dialog,
+temba-modax,
+temba-contact-history,
+temba-menu,
+temba-select {
   --transition-speed: 0ms !important;
 }
 
@@ -15,14 +19,16 @@ html input {
   caret-color: transparent;
 }
 
-temba-input, temba-modax, temba-dialog {
+temba-input,
+temba-modax,
+temba-dialog {
   caret-color: transparent;
 }
 
 html {
   --transition-speed: 0ms !important;
   --input-caret: transparent !important;
-  --font-family: 'Arial';
+  --font-family: 'Roboto';
   --primary-rgb: 35, 135, 202;
   --secondary-rgb: 140, 51, 140;
   --tertiary-rgb: 135, 202, 35;
@@ -72,7 +78,7 @@ html {
   --color-text-help: rgba(0, 0, 0, 0.35);
 
   --color-tertiary: rgb(var(--tertiary-rgb));
-  
+
   /* solid overlays with text */
   --color-overlay-dark: rgba(0, 0, 0, 0.2);
   --color-overlay-dark-text: rgba(255, 255, 255, 0.9);
@@ -121,9 +127,9 @@ html {
 
   --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
   --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  
+
   font-size: var(--font-size);
-  font-weight: 300;
+  font-weight: 400;
   font-family: var(--font-family);
   --dropdown-shadow: rgb(0 0 0 / 30%) 0px 0px 60px, rgb(0 0 0 / 12%) 0px 6px 12px;
 
@@ -137,14 +143,14 @@ html {
   --help-text-margin-top: 0px;
   --help-text-margin-left: 0.3em;
   --help-text-size: 0.85em;
-  --color-text-help: rgb(120,120,120);
+  --color-text-help: rgb(120, 120, 120);
   --label-size: 14px;
-  
+
   --button-y: 6px;
   --button-x: 14px;
 
   --menu-padding: 1em;
-  --color-automated: rgb(78,205,106);
+  --color-automated: rgb(78, 205, 106);
 }
 
 temba-button {
@@ -155,11 +161,11 @@ temba-button {
 }
 
 temba-button:hover {
-  --button-bg-img: linear-gradient(to bottom, rgba(var(--primary-rgb),.1), transparent, transparent);
+  --button-bg-img: linear-gradient(to bottom, rgba(var(--primary-rgb), .1), transparent, transparent);
 }
 
 temba-button.active {
-  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.05));
+  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .05));
 }
 
 temba-button.light {
@@ -171,18 +177,18 @@ temba-button.light {
 }
 
 temba-button.light:hover {
-  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.001));
+  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .001));
 }
 
 temba-button.light.active {
-  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0,0,0,.02));
+  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .02));
 }
 
 temba-contact-history {
-  min-height:0;
-  display:flex;
-  flex-grow:1;
-  flex-direction:column;
+  min-height: 0;
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
 }
 
 temba-select:focus {
@@ -205,42 +211,56 @@ temba-datepicker {
   font-style: normal;
   font-weight: 400;
   src: local(''),
-      url('./fonts/roboto-mono-v12-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-      url('./fonts/roboto-mono-v12-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+    url('./fonts/roboto-mono-v12-latin-regular.woff2') format('woff2'),
+    /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./fonts/roboto-mono-v12-latin-regular.woff') format('woff');
+  /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
+
 /* roboto-mono-300 - latin */
 @font-face {
   font-family: 'Roboto Mono';
   font-style: normal;
   font-weight: 300;
   src: local(''),
-      url('./fonts/roboto-mono-v12-latin-300.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-      url('./fonts/roboto-mono-v12-latin-300.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+    url('./fonts/roboto-mono-v12-latin-300.woff2') format('woff2'),
+    /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./fonts/roboto-mono-v12-latin-300.woff') format('woff');
+  /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
+
 /* roboto-300 - latin */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 300;
   src: local(''),
-      url('./fonts/roboto-v20-latin-300.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-      url('./fonts/roboto-v20-latin-300.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+    url('./fonts/roboto-v20-latin-300.woff2') format('woff2'),
+    /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./fonts/roboto-v20-latin-300.woff') format('woff');
+  /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
+
 /* roboto-regular - latin */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 400;
   src: local(''),
-      url('./fonts/roboto-v20-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-      url('./fonts/roboto-v20-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+    url('./fonts/roboto-v20-latin-regular.woff2') format('woff2'),
+    /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./fonts/roboto-v20-latin-regular.woff') format('woff');
+  /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
+
 /* roboto-500 - latin */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
   font-weight: 500;
   src: local(''),
-      url('./fonts/roboto-v20-latin-500.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-      url('./fonts/roboto-v20-latin-500.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+    url('./fonts/roboto-v20-latin-500.woff2') format('woff2'),
+    /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./fonts/roboto-v20-latin-500.woff') format('woff');
+  /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
