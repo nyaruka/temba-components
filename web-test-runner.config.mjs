@@ -303,7 +303,7 @@ export default {
           return {
             body: context.body.replace(
               /<head>/,
-              `<head><link rel="stylesheet" href="/test-assets/style.css"><link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">`
+              `<head><link rel="stylesheet" href="/test-assets/style.css">`
             ),
           };
         }
