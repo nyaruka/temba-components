@@ -8,13 +8,6 @@
 
   }
 
-  @font-face {
-    font-family: 'Roboto';
-    font-style: normal;
-    font-weight: 400;
-    src: local('Roboto'), local('Roboto-Regular');
-  }
-
   html {
 
     --font-family: 'Roboto', Helvetica, Arial, sans-serif;

@@ -279,7 +279,9 @@ export class FieldManager extends StoreElement {
             : null}
           <div class="flex-grow:1"></div>
         </div>
-        <div style="flex-grow:1; font-family: monospace; font-size:0.8em;">
+        <div
+          style="flex-grow:1; font-family: Roboto Mono, monospace; font-size:0.8em;"
+        >
           @fields.${field.key}
         </div>
         <div>${TYPE_NAMES[field.value_type]}</div>

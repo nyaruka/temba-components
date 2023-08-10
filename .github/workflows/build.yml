@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   bulid:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v3
