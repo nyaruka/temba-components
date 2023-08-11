@@ -8,8 +8,8 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [
 		3010
-	]
-	// "postCreateCommand": "yarn start"
+	],
+	"postCreateCommand": "yarn install"
 	// Configure tool-specific properties.
 	// "customizations": {},
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
