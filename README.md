@@ -42,7 +42,7 @@ installed.
 
 ## Usage
 
-Simply include the built file as a module and you should be off to the races.
+Simply include the built file as a module and you should be off to the races!
 
 ```html
 <html>
