@@ -12,6 +12,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: yarn test
+          push: never
           env: |
             CI=true
 
