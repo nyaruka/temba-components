@@ -72,11 +72,3 @@ To interactively work with components whilst embedded in another project, it can
       proxy_pass http://localhost:3010/node_modules/$1;
   }
 ```
-
-## Storybook
-
-We've added the framework for storybook, but nothing to see here yet!
-
-## Legacy Browser Support
-
-Starting with v1.0 we no longer ship a version with legacy polyfill support. This can still be accomplished manually if desired by toggling the `legacyBuild` attribute in [rollup.config.js](/rollup.config.js#L11).
