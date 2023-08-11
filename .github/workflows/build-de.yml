@@ -1,10 +1,8 @@
 
-name: 'build' 
-on: # rebuild any PRs and main branch changes
-  pull_request:
-  push:
-    branches:
-      - main
+name: 'Build DC' 
+
+on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,3 +13,5 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: yarn test
+          env: |
+            CI=true
