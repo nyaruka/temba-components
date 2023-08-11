@@ -27,13 +27,14 @@ describe('temba-contact-tickets', () => {
       /\/api\/v2\/contacts.json\?uuid=24d64810-3315-4ff5-be85-48e3fe055bf9/,
       '/test-assets/contacts/contact-dave-active'
     );
-    loadStore();
   });
 
   it('renders default', async () => {
+    await loadStore();
     const contactDetails: ContactDetails = await getContactDetails({
       contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
     });
+
     assert.instanceOf(contactDetails, ContactDetails);
     await assertScreenshot('contacts/details', getClip(contactDetails));
   });

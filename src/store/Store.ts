@@ -323,6 +323,10 @@ export class Store extends RapidElement {
     const group = this.groups[uuid];
     // we treat missing groups as dynamic since the
     // api excludes initializing groups
+    if (!group) {
+      console.warn('No group for ' + uuid);
+    }
+
     if (!group || group.query) {
       return true;
     }
