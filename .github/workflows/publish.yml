@@ -10,16 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v3
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v3
+      - name: Build and run dev container task
+        uses: devcontainers/ci@v0.3
         with:
-          node-version: 16
-      - name: Build and Test
-        run: |
-          yarn install
-          yarn run build
-        env:
-          CI: true
+          runCmd: yarn run build
+          push: never
+          env: |
+            CI=true
       - name: Publish
         run: |
           npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
