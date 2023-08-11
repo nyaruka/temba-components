@@ -1,27 +1,27 @@
-name: Build
+name: 'Build DC' 
 
 on: [push]
 
 jobs:
-  bulid:
-    runs-on: ubuntu-22.04
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v3
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v3
+      - name: Build and run dev container task
+        uses: devcontainers/ci@v0.3
         with:
-          node-version: 16
-      - name: Screenshot Tests
-        run: |
-          yarn install
-          yarn test
-          yarn build
-        env:
-          CI: true
-      - uses: actions/upload-artifact@v2
+          runCmd: yarn test
+          env: |
+            CI=true
+
+      - name: Upload artifacts
         if: failure()
+        uses: actions/upload-artifact@v3
         with:
           name: screenshots
           path: screenshots/
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
