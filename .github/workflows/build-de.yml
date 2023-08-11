@@ -16,7 +16,8 @@ jobs:
           env: |
             CI=true
 
-        - uses: actions/upload-artifact@v2
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
         with:
           name: screenshots
           path: screenshots/
