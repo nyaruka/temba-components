@@ -11,6 +11,7 @@ import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
+import { CustomEventType } from '../src/interfaces';
 
 export interface CodeMock {
   endpoint: RegExp;
