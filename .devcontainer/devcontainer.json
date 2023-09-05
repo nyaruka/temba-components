@@ -5,8 +5,8 @@
 	},
 	"forwardPorts": [
 		3010
-	]
-	// "postCreateCommand": "yarn install"
+	],
+	"postCreateCommand": "yarn install"
 	// "features": {},
 	// "customizations": {},
 }

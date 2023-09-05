@@ -10,11 +10,5 @@ ENV CHROME_PATH=/usr/bin/chromium
 ENV DEBIAN_FRONTEND=noninteractive
 
 # WORKDIR /home/runner/work/temba-components/temba-components
-WORKDIR /workspaces/temba-components
-RUN yarn install
-USER node
-
-RUN echo 'Is this thing on?'
-RUN ls -l
-RUN ls -ls node_modules
-RUN pwd
+# WORKDIR /workspaces/temba-components
+# RUN yarn install
