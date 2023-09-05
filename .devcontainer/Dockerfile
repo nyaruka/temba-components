@@ -16,3 +16,4 @@ USER node
 RUN echo 'Is this thing on?'
 RUN ls -l
 RUN ls -ls node_modules
+RUN pwd

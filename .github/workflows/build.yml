@@ -2,6 +2,9 @@ name: 'build'
 
 on: [push]
 
+env: 
+  GITHUB_WORKSPACE: /workspaces/temba-components
+
 jobs:
   build:
     runs-on: ubuntu-latest

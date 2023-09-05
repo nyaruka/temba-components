@@ -89,7 +89,7 @@
     "arrowParens": "avoid"
   },
   "husky": {
-    "hooks": {
+    "hooks-ignored": {
       "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/vectoricon ./static/svg/index.svg ./xliff ./src/locales && lint-staged"
     }
   },
