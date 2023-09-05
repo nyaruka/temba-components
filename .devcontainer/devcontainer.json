@@ -3,10 +3,11 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	// "features": {},
 	"forwardPorts": [
 		3010
 	],
-	// "postCreateCommand": "yarn install"
+	"remoteUser": "node",
+	"postCreateCommand": "sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install"
+	// "features": {},
 	// "customizations": {},
 }
