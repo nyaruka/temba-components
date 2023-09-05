@@ -9,6 +9,9 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_PATH=/usr/bin/chromium
 ENV DEBIAN_FRONTEND=noninteractive
 
+
 # WORKDIR /home/runner/work/temba-components/temba-components
 # WORKDIR /workspaces/temba-components
 # RUN yarn install
+RUN mkdir -p /workspaces/temba-components
+RUN chown -R node /workspaces/temba-components
