@@ -10,4 +10,5 @@ ENV CHROME_PATH=/usr/bin/chromium
 ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /workspaces/temba-components
+RUN yarn install
 USER node
