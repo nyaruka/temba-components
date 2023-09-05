@@ -7,7 +7,7 @@
 		3010
 	],
 	"remoteUser": "node",
-	"postCreateCommand": "ls -l .. && whoami && pwd && ls -l && yarn install"
+	"postCreateCommand": "sudo chown node /workspaces/temba-components && ls -l .. && whoami && pwd && ls -l && yarn install"
 	// "features": {},
 	// "customizations": {},
 }
