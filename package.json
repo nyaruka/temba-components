@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.58.1",
+  "version": "0.58.2",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
     "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
     "storybook:build": "build-storybook",
     "svg": "rimraf static/svg/work && node svg.js --resolution=150",
-    "version": "run build && auto-changelog -p && git add CHANGELOG.md",
+    "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "locale:extract": "lit-localize extract --config localize.config.json",
     "locale:build": "lit-localize build --config localize.config.json"
   },
