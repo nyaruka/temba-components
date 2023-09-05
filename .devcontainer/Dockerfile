@@ -11,3 +11,5 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN yarn install
 USER node
+
+RUN echo 'Is this thing on?'

@@ -3,10 +3,10 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	// "features": {},
 	"forwardPorts": [
 		3010
-	],
+	]
 	// "postCreateCommand": "yarn install"
+	// "features": {},
 	// "customizations": {},
 }
