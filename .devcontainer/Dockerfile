@@ -9,7 +9,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_PATH=/usr/bin/chromium
 ENV DEBIAN_FRONTEND=noninteractive
 
-WORKDIR /workspaces/temba-components
+WORKDIR ${GITHUB_WORKSPACE}
 RUN yarn install
 USER node
 
