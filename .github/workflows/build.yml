@@ -18,6 +18,7 @@ jobs:
         with:
           runCmd: yarn test
           push: never
+          checkoutPath: /workspaces/temba-components
           env: |
             CI=true
 
