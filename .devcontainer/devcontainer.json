@@ -6,7 +6,8 @@
 	"forwardPorts": [
 		3010
 	],
-	"postCreateCommand": "pwd && ls -l && yarn install"
+	"remoteUser": "node",
+	"postCreateCommand": "ls -l .. && whoami && pwd && ls -l && yarn install"
 	// "features": {},
 	// "customizations": {},
 }
