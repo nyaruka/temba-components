@@ -6,6 +6,10 @@
 	"forwardPorts": [
 		3010
 	],
+	"runArgs": [
+		"--network=textit_default",
+		"--hostname=temba-components"
+	],
 	"remoteUser": "node",
 	"postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install"
 	// "features": {},
