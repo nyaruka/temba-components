@@ -536,6 +536,7 @@ export interface MsgEvent extends ContactEvent {
   msg_type: string;
   recipient_count?: number;
   created_by?: User;
+  optin?: ObjectReference;
 }
 
 export interface FlowEvent extends ContactEvent {
@@ -812,7 +813,17 @@ export const renderMsgEvent = (
             </div> `
           : null}
       </div>
-      ${!event.msg.text && !event.msg.attachments
+      ${event.optin
+        ? html`<div class="unsupported event">
+            <temba-icon
+              size="1"
+              class="broadcast"
+              name="${Icon.restore}"
+            ></temba-icon
+            >Requested Opt In for ${event.optin.name}
+          </div>`
+        : null}
+      ${!event.msg.text && !event.msg.attachments && !event.optin
         ? html`<div class="unsupported">Unsupported Message</div>`
         : null}
 
@@ -1175,6 +1186,12 @@ export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
     eventMessage = 'Outgoing Phone Call';
   } else if (event.channel_event_type == 'mo_call') {
     eventMessage = 'Incoming Phone call';
+  } else if (event.channel_event_type == 'optin') {
+    eventMessage = 'Opted in';
+    icon = Icon.restore;
+  } else if (event.channel_event_type == 'optout') {
+    eventMessage = 'Opted out';
+    icon = Icon.error;
   }
 
   return html`<temba-icon name="${icon}"></temba-icon>
