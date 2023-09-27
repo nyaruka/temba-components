@@ -369,6 +369,23 @@ export const getEventStyles = () => {
       border-radius: var(--curvature);
     }
 
+    .optin {
+      border: 1px solid #f2f2f2;
+      color: #999;
+      padding: 0.5em 1em;
+      border-radius: var(--curvature);
+      display: inline-flex;
+    }
+
+    .optin .text {
+      margin-left: 0.5em;
+      display: inline;
+    }
+
+    .optin span.italic {
+      font-style: italic;
+    }
+
     .time {
       padding: 0.3em 1px;
     }
@@ -814,13 +831,16 @@ export const renderMsgEvent = (
           : null}
       </div>
       ${event.optin
-        ? html`<div class="unsupported event">
+        ? html`<div class="optin">
             <temba-icon
               size="1"
-              class="broadcast"
+              class="broadcast inline"
               name="${Icon.restore}"
-            ></temba-icon
-            >Requested Opt In for ${event.optin.name}
+            ></temba-icon>
+            <div class="text">
+              Requested Opt In for
+              <span class="italic">${event.optin.name}</span>
+            </div>
           </div>`
         : null}
       ${!event.msg.text && !event.msg.attachments && !event.optin
