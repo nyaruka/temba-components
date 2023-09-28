@@ -12,9 +12,7 @@ jobs:
       - name: Build and run dev container task
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: |
-            yarn install
-            yarn test
+          runCmd: yarn test
           push: never
           env: |
             CI=true
