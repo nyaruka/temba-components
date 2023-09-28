@@ -186,6 +186,7 @@ export const getEventStyles = () => {
 
     .msg .text {
       padding: var(--event-padding);
+      min-height: 1.5em;
     }
 
     .event.msg_received .msg {
@@ -370,16 +371,14 @@ export const getEventStyles = () => {
     }
 
     .optin {
-      border: 1px solid #f2f2f2;
       color: #999;
-      padding: 0.5em 1em;
-      border-radius: var(--curvature);
+      padding: 0.3em 1px;
       display: inline-flex;
     }
 
     .optin .text {
       margin-left: 0.5em;
-      display: inline;
+      display: inline-flex;
     }
 
     .optin span.italic {
@@ -816,7 +815,7 @@ export const renderMsgEvent = (
           automated: !isInbound && !event.msg.created_by,
         })}"
       >
-        ${event.msg.text
+        ${event.msg.text || event.optin
           ? html` <div class="text">${event.msg.text}</div> `
           : null}
         ${event.msg.attachments
@@ -830,19 +829,7 @@ export const renderMsgEvent = (
             </div> `
           : null}
       </div>
-      ${event.optin
-        ? html`<div class="optin">
-            <temba-icon
-              size="1"
-              class="broadcast inline"
-              name="${Icon.restore}"
-            ></temba-icon>
-            <div class="text">
-              Requested Opt In for
-              <span class="italic">${event.optin.name}</span>
-            </div>
-          </div>`
-        : null}
+
       ${!event.msg.text && !event.msg.attachments && !event.optin
         ? html`<div class="unsupported">Unsupported Message</div>`
         : null}
@@ -851,6 +838,19 @@ export const renderMsgEvent = (
         class="msg-summary"
         style="flex-direction:row${isInbound ? '-reverse' : ''}"
       >
+        ${event.optin && !event.msg.text && !event.msg.attachments
+          ? html`<div class="optin">
+              <temba-icon
+                size="1"
+                class="broadcast inline"
+                name="${Icon.restore}"
+              ></temba-icon>
+              <div class="text">
+                Requested Opt In for
+                <span class="italic">${event.optin.name}</span>
+              </div>
+            </div>`
+          : null}
         <div style="flex-grow:1"></div>
         ${summary}
       </div>
