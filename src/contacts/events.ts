@@ -811,11 +811,11 @@ export const renderMsgEvent = (
         class="${event.msg.text ? '' : 'no-message'} attachments-${(
           event.msg.attachments || []
         ).length} ${getClasses({
-          msg: true,
+          msg: Boolean(event.msg.text || event.msg.attachments),
           automated: !isInbound && !event.msg.created_by,
         })}"
       >
-        ${event.msg.text || event.optin
+        ${event.msg.text
           ? html` <div class="text">${event.msg.text}</div> `
           : null}
         ${event.msg.attachments
