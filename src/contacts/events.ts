@@ -813,7 +813,7 @@ export const renderMsgEvent = (
           event.msg.attachments || []
         ).length} ${getClasses({
           msg: true,
-          automated: !isInbound && !event.msg.created_by,
+          automated: !isInbound && !event.created_by,
         })}"
       >
         ${event.msg.text
@@ -856,9 +856,9 @@ export const renderMsgEvent = (
       </div>
     </div>
 
-    ${!isInbound && event.msg.created_by
+    ${!isInbound && event.created_by
       ? html`<div style="margin-left:0.8em;margin-top:0.3em;font-size:0.9em">
-          ${renderUserAvatar(event.msg.created_by)}
+          ${renderUserAvatar(event.created_by)}
         </div>`
       : null}
   </div>`;
