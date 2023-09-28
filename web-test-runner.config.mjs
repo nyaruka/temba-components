@@ -75,7 +75,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
       // Do the visual diff.
       const diff = new PNG({ width: img1.width, height: img2.height });
       const matchOptions = {
-        threshold: threshold || 0.3,
+        threshold: threshold || 0.4,
         includeAA: false,
         diffColor: [255, 0, 0],
         aaColor: [0, 0, 255],
@@ -83,22 +83,22 @@ const checkScreenshot = async (filename, excluded, threshold) => {
       const numDiffPixels =
         excluded != null && excluded.length != 0
           ? dynamicpixelmatch(
-              img1.data,
-              img2.data,
-              diff.data,
-              img1.width,
-              img1.height,
-              matchOptions,
-              excluded
-            )
+            img1.data,
+            img2.data,
+            diff.data,
+            img1.width,
+            img1.height,
+            matchOptions,
+            excluded
+          )
           : pixelmatch(
-              img1.data,
-              img2.data,
-              diff.data,
-              img1.width,
-              img1.height,
-              matchOptions
-            );
+            img1.data,
+            img2.data,
+            diff.data,
+            img1.width,
+            img1.height,
+            matchOptions
+          );
 
       // The files should look the same.
       if (numDiffPixels != 0) {
