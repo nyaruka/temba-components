@@ -123,6 +123,8 @@ export enum Icon {
   new = 'plus',
   next_schedule = 'alarm-clock',
   notification = 'bell-01',
+  optin = 'play',
+  optout = 'error',
   org_active = 'credit-card-02',
   org_anonymous = 'glasses-01',
   org_bulk = 'credit-card-plus',
