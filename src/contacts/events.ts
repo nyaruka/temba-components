@@ -2,6 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { Msg, ObjectReference, User } from '../interfaces';
 import {
   getClasses,
+  NamedObject,
   oxford,
   oxfordFn,
   oxfordNamed,
@@ -211,6 +212,10 @@ export const getEventStyles = () => {
       background: var(--color-automated) !important;
     }
 
+    .optin_requested {
+      --icon-color: var(--color-primary-dark);
+    }
+
     .webhook_called {
       --icon-color: #e68628;
       word-break: break-all;
@@ -278,7 +283,7 @@ export const getEventStyles = () => {
     }
 
     .channel_event {
-      --icon-color: rgb(230, 230, 230);
+      --icon-color: rgb(200, 200, 200);
     }
 
     .airtime_transferred,
@@ -370,20 +375,8 @@ export const getEventStyles = () => {
     }
 
     .optin {
-      border: 1px solid #f2f2f2;
-      color: #999;
-      padding: 0.5em 1em;
-      border-radius: var(--curvature);
-      display: inline-flex;
-    }
-
-    .optin .text {
-      margin-left: 0.5em;
-      display: inline;
-    }
-
-    .optin span.italic {
-      font-style: italic;
+      align-items: center;
+      padding: 0 0.2em;
     }
 
     .time {
@@ -524,6 +517,7 @@ export enum Events {
   TICKET_CLOSED = 'ticket_closed',
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
+  OPTIN_REQUESTED = 'optin_requested',
   ERROR = 'error',
   FAILURE = 'failure',
 }
@@ -536,12 +530,29 @@ export interface ContactEvent {
 export interface ChannelEvent extends ContactEvent {
   channel_event_type: string;
   duration: number;
+
+  event: {
+    type: string;
+    channel: { uuid: string; name: string };
+    duration?: number;
+    optin?: {
+      uuid: string;
+      name: string;
+    };
+  };
 }
 
 export interface ContactLanguageChangedEvent extends ContactEvent {
   language: string;
   step_uuid: string;
   session_uuid: string;
+}
+
+export interface OptinRequestedEvent extends ContactEvent {
+  optin: {
+    uuid: string;
+    name: string;
+  };
 }
 
 export interface MsgEvent extends ContactEvent {
@@ -789,15 +800,29 @@ export const renderMsgEvent = (
       ></temba-icon>`
     );
   }
-  if (event.recipient_count > 1) {
+
+  if (event.type == 'broadcast_created') {
     summary.push(html`<temba-icon
-        size="1"
-        class="broadcast"
-        name="${Icon.broadcast}"
-      ></temba-icon>
-      <div class="recipients">${event.recipient_count} contacts</div>
-      <div class="separator">•</div>`);
+      size="1"
+      class="broadcast"
+      name="${Icon.broadcast}"
+    ></temba-icon>`);
+
+    if (event.recipient_count > 1) {
+      summary.push(
+        html`<div class="recipients">${event.recipient_count} contacts</div>`
+      );
+    }
+    summary.push(html`<div class="separator">•</div>`);
   }
+
+  if (event.optin) {
+    summary.push(
+      html`<div class="optin">${event.optin.name}</div>
+        <div class="separator">•</div>`
+    );
+  }
+
   summary.push(
     html`<temba-date
       class="time"
@@ -830,19 +855,7 @@ export const renderMsgEvent = (
             </div> `
           : null}
       </div>
-      ${event.optin
-        ? html`<div class="optin">
-            <temba-icon
-              size="1"
-              class="broadcast inline"
-              name="${Icon.restore}"
-            ></temba-icon>
-            <div class="text">
-              Requested Opt In for
-              <span class="italic">${event.optin.name}</span>
-            </div>
-          </div>`
-        : null}
+
       ${!event.msg.text && !event.msg.attachments && !event.optin
         ? html`<div class="unsupported">Unsupported Message</div>`
         : null}
@@ -1177,41 +1190,52 @@ export const renderContactLanguageChangedEvent = (
     </div>`;
 };
 
+export const renderOptinRequested = (
+  event: OptinRequestedEvent
+): TemplateResult => {
+  return html`<temba-icon name="${Icon.optin_requested}"></temba-icon>
+    <div class="description">
+      Requested opt-in for <span class="attn">${event.optin.name}</span>
+    </div>`;
+};
+
 export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
-  let eventMessage = '';
+  let eventMessage: string | TemplateResult = '';
   let icon = Icon.call;
 
-  if (event.channel_event_type === 'mt_miss') {
+  if (event.event.type === 'mt_miss') {
     eventMessage = 'Missed outgoing call';
     icon = Icon.call_missed;
-  } else if (event.channel_event_type === 'mo_miss') {
+  } else if (event.event.type === 'mo_miss') {
     eventMessage = 'Missed incoming call';
     icon = Icon.call_missed;
-  } else if (event.channel_event_type === 'new_conversation') {
+  } else if (event.event.type === 'new_conversation') {
     eventMessage = 'Started Conversation';
     icon = Icon.event;
   } else if (event.channel_event_type === 'welcome_message') {
     eventMessage = 'Welcome Message Sent';
     icon = Icon.event;
-  } else if (event.channel_event_type === 'referral') {
+  } else if (event.event.type === 'referral') {
     eventMessage = 'Referred';
     icon = Icon.event;
-  } else if (event.channel_event_type === 'follow') {
+  } else if (event.event.type === 'follow') {
     eventMessage = 'Followed';
     icon = Icon.event;
-  } else if (event.channel_event_type === 'stop_contact') {
+  } else if (event.event.type === 'stop_contact') {
     eventMessage = 'Stopped';
     icon = Icon.contact_stopped;
-  } else if (event.channel_event_type === 'mt_call') {
+  } else if (event.event.type === 'mt_call') {
     eventMessage = 'Outgoing Phone Call';
-  } else if (event.channel_event_type == 'mo_call') {
+  } else if (event.event.type == 'mo_call') {
     eventMessage = 'Incoming Phone call';
-  } else if (event.channel_event_type == 'optin') {
-    eventMessage = 'Opted in';
-    icon = Icon.restore;
-  } else if (event.channel_event_type == 'optout') {
-    eventMessage = 'Opted out';
-    icon = Icon.error;
+  } else if (event.event.type == 'optin') {
+    eventMessage = html`Opted in to
+      <span class="attn">${event.event.optin.name}</span>`;
+    icon = Icon.optin;
+  } else if (event.event.type == 'optout') {
+    eventMessage = html`Opted out of
+      <span class="attn">${event.event.optin.name}</span>`;
+    icon = Icon.optout;
   }
 
   return html`<temba-icon name="${icon}"></temba-icon>
