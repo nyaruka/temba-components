@@ -23,6 +23,7 @@ import {
   LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
+  OptinRequestedEvent,
   renderAirtimeTransferredEvent,
   renderCallStartedEvent,
   renderCampaignFiredEvent,
@@ -37,6 +38,7 @@ import {
   renderMsgEvent,
   renderNameChanged,
   renderNoteCreated,
+  renderOptinRequested,
   renderResultEvent,
   renderTicketAction,
   renderTicketAssigned,
@@ -689,6 +691,8 @@ export class ContactHistory extends RapidElement {
         return renderContactLanguageChangedEvent(
           event as ContactLanguageChangedEvent
         );
+      case Events.OPTIN_REQUESTED:
+        return renderOptinRequested(event as OptinRequestedEvent);
     }
 
     return html`<temba-icon
