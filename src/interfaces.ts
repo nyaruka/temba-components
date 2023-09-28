@@ -84,7 +84,6 @@ export interface Msg {
   id: number;
   direction: string;
   type: string;
-  created_by?: User;
   attachments: string[];
 }
 
