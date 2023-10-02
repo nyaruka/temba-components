@@ -11,7 +11,14 @@
 		"--hostname=temba-components"
 	],
 	"remoteUser": "node",
-	"postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install"
+	"postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"lfs.vscode-emacs-friendly"
+			]
+		}
+	}
 	// "features": {},
 	// "customizations": {},
 }
