@@ -13,6 +13,7 @@ import {
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
+import { threadId } from 'worker_threads';
 
 export interface Attachment {
   uuid: string;
@@ -79,7 +80,7 @@ export class Compose extends FormElement {
       .items {
       }
 
-      temba-completion {
+      .chatbox {
         margin-left: 0.3em;
         margin-top: 0.3em;
         --color-widget-border: none;
@@ -178,6 +179,9 @@ export class Compose extends FormElement {
   }
 
   @property({ type: Boolean })
+  completion: boolean;
+
+  @property({ type: Boolean })
   chatbox: boolean;
 
   @property({ type: Boolean })
@@ -194,6 +198,9 @@ export class Compose extends FormElement {
 
   @property({ type: String })
   currentText = '';
+
+  @property({ type: String })
+  initialText = '';
 
   @property({ type: String })
   accept = ''; //e.g. ".xls,.xlsx"
@@ -236,7 +243,7 @@ export class Compose extends FormElement {
     if (this.value) {
       const parsed_value = JSON.parse(this.value);
       if (this.chatbox) {
-        this.currentText = parsed_value.text;
+        this.initialText = parsed_value.text;
       }
       if (this.attachments) {
         this.currentAttachments = parsed_value.attachments;
@@ -275,7 +282,7 @@ export class Compose extends FormElement {
   private setFocusOnChatbox(): void {
     if (this.chatbox) {
       const completion = this.shadowRoot.querySelector(
-        'temba-completion'
+        '.chatbox'
       ) as Completion;
       if (completion) {
         window.setTimeout(() => {
@@ -286,6 +293,7 @@ export class Compose extends FormElement {
   }
 
   public reset(): void {
+    this.initialText = '';
     this.currentText = '';
     this.currentAttachments = [];
     this.failedAttachments = [];
@@ -297,8 +305,11 @@ export class Compose extends FormElement {
   }
 
   private handleChatboxChange(evt: Event) {
-    const completion = evt.target as Completion;
-    this.currentText = completion.value;
+    const chatbox = evt.target as HTMLInputElement;
+    this.currentText = chatbox.value;
+    this.toggleButton();
+    this.serializeComposeValue();
+    this.fireCustomEvent(CustomEventType.ContentChanged, this.value);
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -467,12 +478,19 @@ export class Compose extends FormElement {
   }
 
   private handleSendEnter(evt: KeyboardEvent) {
-    if (evt.key === 'Enter' && !evt.shiftKey) {
-      const chat = evt.target as Completion;
-      if (!chat.hasVisibleOptions()) {
-        this.handleSend();
+    if (this.button) {
+      if (evt.key === 'Enter' && !evt.shiftKey) {
+        if (this.completion) {
+          const chat = evt.target as Completion;
+          if (!chat.hasVisibleOptions()) {
+            this.handleSend();
+            this.preventDefaults(evt);
+          }
+        } else {
+          this.handleSend();
+          this.preventDefaults(evt);
+        }
       }
-      this.preventDefaults(evt);
     }
   }
 
@@ -502,9 +520,7 @@ export class Compose extends FormElement {
         >
           <div class="drop-mask"><div>Upload Attachment</div></div>
 
-          ${this.chatbox
-            ? html`<div class="items chatbox">${this.getChatbox()}</div>`
-            : null}
+          ${this.chatbox ? html`${this.getChatbox()}` : null}
           ${this.attachments
             ? html`<div class="items attachments">
                 ${this.getAttachments()}
@@ -517,16 +533,31 @@ export class Compose extends FormElement {
   }
 
   private getChatbox(): TemplateResult {
-    return html` <temba-completion
-      value=${this.currentText}
-      gsm
-      textarea
-      autogrow
-      @change=${this.handleChatboxChange}
-      @keydown=${this.handleSendEnter}
-      placeholder="Write something here"
-    >
-    </temba-completion>`;
+    if (this.completion) {
+      return html` <temba-completion
+        class="chatbox"
+        value=${this.initialText}
+        gsm
+        textarea
+        autogrow
+        @change=${this.handleChatboxChange}
+        @keydown=${this.handleSendEnter}
+        placeholder="Write something here"
+      >
+      </temba-completion>`;
+    } else {
+      return html` <temba-textinput
+        class="chatbox"
+        gsm
+        textarea
+        autogrow
+        value=${this.initialText}
+        @change=${this.handleChatboxChange}
+        @keydown=${this.handleSendEnter}
+        placeholder="Write something here"
+      >
+      </temba-textinput>`;
+    }
   }
 
   private getAttachments(): TemplateResult {
@@ -630,7 +661,9 @@ export class Compose extends FormElement {
   }
 
   private getCounter(): TemplateResult {
-    return html`<temba-charcount text="${this.currentText}"></temba-charcount>`;
+    return html`<temba-charcount
+      .text="${this.currentText}"
+    ></temba-charcount>`;
   }
 
   private getButton(): TemplateResult {
