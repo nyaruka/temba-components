@@ -13,7 +13,6 @@ import {
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
-import { threadId } from 'worker_threads';
 
 export interface Attachment {
   uuid: string;
@@ -293,6 +292,7 @@ export class Compose extends FormElement {
   }
 
   public reset(): void {
+    (this.shadowRoot.querySelector('.chatbox') as HTMLInputElement).value = '';
     this.initialText = '';
     this.currentText = '';
     this.currentAttachments = [];
