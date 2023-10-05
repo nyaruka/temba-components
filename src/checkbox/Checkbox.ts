@@ -16,7 +16,7 @@ export class Checkbox extends FormElement {
       }
 
       .wrapper.label {
-        padding: 10px;
+        padding: var(--checkbox-padding, 10px);
         border-radius: var(--curvature);
       }
 
