@@ -52,6 +52,8 @@ export class VectorIcon extends LitElement {
     return css`
       :host {
         display: flex-inline;
+        align-items: center;
+        align-self: center;
       }
 
       .sheet {
