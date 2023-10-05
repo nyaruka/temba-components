@@ -51,7 +51,7 @@ export class VectorIcon extends LitElement {
   static get styles() {
     return css`
       :host {
-        margin: auto;
+        display: flex-inline;
       }
 
       .sheet {
@@ -201,11 +201,15 @@ export class VectorIcon extends LitElement {
   }
 
   public render(): TemplateResult {
+    if (!this.name) {
+      return null;
+    }
+
     // let icon name mappings take precedence
     let name = this.lastName || this.name;
 
     // special case our channel icon fallback
-    if (this.name.startsWith('channel_') && !Icon[name]) {
+    if (name.startsWith('channel_') && !Icon[name]) {
       name = Icon.channel_ex;
     } else {
       name = Icon[name.replace('icon.', '')] || name;
