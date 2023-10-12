@@ -8,6 +8,11 @@ export interface Workspace {
   anon: boolean;
 }
 
+export interface Language {
+  iso: string;
+  name: string;
+}
+
 export enum DateStyle {
   DayFirst = 'day_first',
   MonthFirst = 'month_first',

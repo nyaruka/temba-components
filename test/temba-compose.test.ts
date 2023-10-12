@@ -32,8 +32,10 @@ export const updateComponent = async (
 
 const getInitialValue = (text?: string, attachments?: Attachment[]): any => {
   const composeValue = {
-    text: text ? text : '',
-    attachments: attachments ? attachments : [],
+    und: {
+      text: text ? text : '',
+      attachments: attachments ? attachments : [],
+    },
   };
   return composeValue;
 };
@@ -183,7 +185,7 @@ describe('temba-compose chatbox', () => {
     expect(compose.currentText).to.equal('');
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
-    expect(compose.value).to.equal(composeValue);
+    expect(compose.value).to.equal('{}');
   });
 
   it('chatbox with text', async () => {
@@ -320,7 +322,7 @@ describe('temba-compose attachments', () => {
     expect(compose.currentText).to.equal('');
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
-    expect(compose.value).to.equal(composeValue);
+    expect(compose.value).to.equal('{}');
   });
 
   it('attachments with success uploaded files', async () => {
@@ -483,7 +485,7 @@ describe('temba-compose chatbox and attachments', () => {
     expect(compose.currentText).to.equal('');
     expect(compose.currentAttachments).to.deep.equal([]);
     // serialize
-    expect(compose.value).to.equal(composeValue);
+    expect(compose.value).to.equal('{}');
   });
 });
 

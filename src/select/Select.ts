@@ -1193,7 +1193,7 @@ export class Select extends FormElement {
 
   public setSelection(value: string): void {
     for (const option of this.staticOptions) {
-      if (option.value === value) {
+      if (this.getValue(option.value) === value) {
         if (this.values.length === 0 || this.values[0].value !== '' + value) {
           this.setValues([option]);
         }
