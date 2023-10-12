@@ -257,6 +257,7 @@ export class TextInput extends FormElement {
     }
     if (this.inputElement) {
       this.inputElement.focus();
+      this.inputElement.setSelectionRange(this.value.length, this.value.length);
     }
   }
 
@@ -409,6 +410,7 @@ export class TextInput extends FormElement {
         <textarea
           class="textinput"
           name=${this.name}
+          maxlength="${ifDefined(this.maxlength)}"
           placeholder=${this.placeholder}
           @change=${this.handleChange}
           @input=${this.handleInput}

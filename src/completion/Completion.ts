@@ -77,6 +77,9 @@ export class Completion extends FormElement {
     `;
   }
 
+  @property({ type: Number })
+  maxLength = 10;
+
   @property({ type: Boolean })
   session: boolean;
 
@@ -272,6 +275,7 @@ export class Completion extends FormElement {
             @click=${this.handleClick}
             @input=${this.handleInput}
             @blur=${this.handleOptionCanceled}
+            maxlength=${this.maxLength}
             .value=${this.value}
             ?autogrow=${this.autogrow}
             ?textarea=${this.textarea}

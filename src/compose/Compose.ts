@@ -2,7 +2,7 @@ import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType, Language } from '../interfaces';
 import {
   formatFileSize,
   formatFileType,
@@ -13,6 +13,7 @@ import {
   WebResponse,
 } from '../utils';
 import { Completion } from '../completion/Completion';
+import { Select } from '../select/Select';
 
 export interface Attachment {
   uuid: string;
@@ -174,8 +175,19 @@ export class Compose extends FormElement {
         color: rgba(250, 0, 0, 0.75);
         font-size: var(--help-text-size);
       }
+
+      .language {
+        margin-bottom: 0.6em;
+        display: block;
+      }
     `;
   }
+
+  @property({ type: Number })
+  maxAttachments = 3;
+
+  @property({ type: Number })
+  maxLength = 640;
 
   @property({ type: Boolean })
   completion: boolean;
@@ -211,6 +223,9 @@ export class Compose extends FormElement {
   uploading: boolean;
 
   @property({ type: Array })
+  languages: Language[] = [];
+
+  @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
   @property({ type: Array, attribute: false })
@@ -231,51 +246,77 @@ export class Compose extends FormElement {
   @property({ type: Array })
   errors: string[];
 
+  @property({ type: Object })
+  langValues: {
+    [lang: string]: {
+      text: string;
+      attachments: Attachment[];
+    };
+  } = {};
+
   @property({ type: String })
-  value = '';
+  currentLanguage = 'und';
 
   public constructor() {
     super();
   }
 
-  private deserializeComposeValue(): void {
-    if (this.value) {
-      const parsed_value = JSON.parse(this.value);
-      if (this.chatbox) {
-        this.initialText = parsed_value.text;
-      }
-      if (this.attachments) {
-        this.currentAttachments = parsed_value.attachments;
-      }
-    }
-  }
-
-  private serializeComposeValue(): void {
-    const composeValue = {
-      text: this.currentText,
-      attachments: this.currentAttachments,
-    };
-    // update this.value...
-    this.value = JSON.stringify(composeValue);
-  }
-
   public firstUpdated(changes: Map<string, any>): void {
     super.firstUpdated(changes);
 
-    this.deserializeComposeValue();
+    if (changes.has('languages') && this.languages.length > 0) {
+      this.currentLanguage = this.languages[0].iso;
+    }
+
+    if (changes.has('value')) {
+      this.langValues = this.getDeserializedValue() || {};
+    }
     this.setFocusOnChatbox();
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
 
-    if (changes.has('currentText') || changes.has('currentAttachments')) {
-      this.toggleButton();
-      this.serializeComposeValue();
-      this.fireCustomEvent(CustomEventType.ContentChanged, this.value);
+    if (changes.has('currentLanguage') && this.langValues) {
+      let langValue = {
+        text: '',
+        attachments: [],
+      };
+
+      if (this.currentLanguage in this.langValues) {
+        langValue = this.langValues[this.currentLanguage];
+      }
+
+      this.currentText = langValue.text;
+      this.initialText = langValue.text;
+      this.currentAttachments = langValue.attachments;
+      this.setFocusOnChatbox();
+
+      // TODO: this feels like it shouldn't be needed
+      (this.shadowRoot.querySelector('.chatbox') as any).value =
+        this.initialText;
     }
 
-    this.setFocusOnChatbox();
+    if (
+      this.langValues &&
+      (changes.has('currentText') || changes.has('currentAttachments'))
+    ) {
+      this.toggleButton();
+
+      const trimmed = this.currentText ? this.currentText.trim() : '';
+      if (trimmed || this.currentAttachments.length > 0) {
+        this.langValues[this.currentLanguage] = {
+          text: trimmed,
+          attachments: this.currentAttachments,
+        };
+        this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
+      } else {
+        delete this.langValues[this.currentLanguage];
+      }
+
+      this.requestUpdate('langValues');
+      this.setValue(this.langValues);
+    }
   }
 
   private setFocusOnChatbox(): void {
@@ -307,9 +348,6 @@ export class Compose extends FormElement {
   private handleChatboxChange(evt: Event) {
     const chatbox = evt.target as HTMLInputElement;
     this.currentText = chatbox.value;
-    this.toggleButton();
-    this.serializeComposeValue();
-    this.fireCustomEvent(CustomEventType.ContentChanged, this.value);
   }
 
   private handleDragEnter(evt: DragEvent): void {
@@ -325,12 +363,13 @@ export class Compose extends FormElement {
   }
 
   private handleDrop(evt: DragEvent): void {
-    this.unhighlight(evt);
-
-    const dt = evt.dataTransfer;
-    if (dt) {
-      const files = dt.files;
-      this.uploadFiles(files);
+    if (this.canAcceptAttachments()) {
+      this.unhighlight(evt);
+      const dt = evt.dataTransfer;
+      if (dt) {
+        const files = dt.files;
+        this.uploadFiles(files);
+      }
     }
   }
 
@@ -340,13 +379,17 @@ export class Compose extends FormElement {
   }
 
   private highlight(evt: DragEvent): void {
-    this.pendingDrop = true;
-    this.preventDefaults(evt);
+    if (this.canAcceptAttachments()) {
+      this.pendingDrop = true;
+      this.preventDefaults(evt);
+    }
   }
 
   private unhighlight(evt: DragEvent): void {
-    this.pendingDrop = false;
-    this.preventDefaults(evt);
+    if (this.canAcceptAttachments()) {
+      this.pendingDrop = false;
+      this.preventDefaults(evt);
+    }
   }
 
   private handleUploadFileIconClicked(): void {
@@ -357,6 +400,12 @@ export class Compose extends FormElement {
     const target = evt.target as HTMLInputElement;
     const files = target.files;
     this.uploadFiles(files);
+  }
+
+  public canAcceptAttachments() {
+    return (
+      this.attachments && this.currentAttachments.length < this.maxAttachments
+    );
   }
 
   public uploadFiles(files: FileList): void {
@@ -387,9 +436,13 @@ export class Compose extends FormElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        const attachment = response.json as Attachment;
-        if (attachment) {
-          this.addCurrentAttachment(attachment);
+        if (this.currentAttachments.length >= this.maxAttachments) {
+          this.addFailedAttachment(file, 'Too many attachments');
+        } else {
+          const attachment = response.json as Attachment;
+          if (attachment) {
+            this.addCurrentAttachment(attachment);
+          }
         }
       })
       .catch((error: WebResponse) => {
@@ -502,14 +555,30 @@ export class Compose extends FormElement {
     }
   }
 
+  private handleLanguageChange(evt: Event) {
+    const select = evt.target as Select;
+    this.currentLanguage = select.values[0].iso;
+  }
+
   public render(): TemplateResult {
     return html`
       <temba-field
         name=${this.name}
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
-        value=${this.value}
+        .value=${this.value}
       >
+        ${this.languages.length > 1
+          ? html`<temba-select
+              @change=${this.handleLanguageChange}
+              class="language"
+              name="language"
+              .staticOptions=${this.languages}
+              valueKey="iso"
+            >
+            </temba-select>`
+          : null}
+
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
           @click="${this.handleContainerClick}"
@@ -534,24 +603,26 @@ export class Compose extends FormElement {
 
   private getChatbox(): TemplateResult {
     if (this.completion) {
-      return html` <temba-completion
+      return html`<temba-completion
         class="chatbox"
-        value=${this.initialText}
+        .value=${this.initialText}
         gsm
         textarea
         autogrow
+        maxlength=${this.maxLength}
         @change=${this.handleChatboxChange}
         @keydown=${this.handleSendEnter}
         placeholder="Write something here"
       >
       </temba-completion>`;
     } else {
-      return html` <temba-textinput
+      return html`<temba-textinput
         class="chatbox"
         gsm
         textarea
         autogrow
-        value=${this.initialText}
+        maxlength=${this.maxLength}
+        .value=${this.initialText}
         @change=${this.handleChatboxChange}
         @keydown=${this.handleSendEnter}
         placeholder="Write something here"
@@ -620,7 +691,7 @@ export class Compose extends FormElement {
   private getActions(): TemplateResult {
     return html`
       <div class="actions-left">
-        ${this.attachments ? this.getUploader() : null}
+        ${this.canAcceptAttachments() ? this.getUploader() : null}
       </div>
       <div class="actions-center"></div>
       <div class="actions-right">
