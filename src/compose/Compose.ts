@@ -293,8 +293,10 @@ export class Compose extends FormElement {
       this.setFocusOnChatbox();
 
       // TODO: this feels like it shouldn't be needed
-      (this.shadowRoot.querySelector('.chatbox') as any).value =
-        this.initialText;
+      const chatbox = this.shadowRoot.querySelector('.chatbox') as any;
+      if (chatbox) {
+        chatbox.value = this.initialText;
+      }
     }
 
     if (
