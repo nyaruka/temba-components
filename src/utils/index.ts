@@ -557,14 +557,14 @@ export const oxford = (items: any[], joiner = 'and'): any => {
 
   if (items.length === 2) {
     // TemplateResults get a different treatment
-    if (items[0].type === 'html') {
+    if (typeof items[0] === 'object') {
       return html`${items[0]} ${joiner} ${items[1]}`;
     }
     return items.join(' ' + joiner + ' ');
   }
 
   // TemplateResults get a different treatment
-  if (items[0].type === 'html') {
+  if (typeof items[0] === 'object') {
     return items.map((tr: TemplateResult, idx: number) => {
       if (idx < items.length - 1) {
         return html`${tr}, `;
