@@ -257,7 +257,6 @@ export class TextInput extends FormElement {
     }
     if (this.inputElement) {
       this.inputElement.focus();
-      this.inputElement.setSelectionRange(this.value.length, this.value.length);
     }
   }
 
