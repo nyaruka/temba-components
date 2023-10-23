@@ -311,11 +311,10 @@ export class Compose extends FormElement {
           text: trimmed,
           attachments: this.currentAttachments,
         };
-        this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
       } else {
         delete this.langValues[this.currentLanguage];
       }
-
+      this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
       this.requestUpdate('langValues');
       this.setValue(this.langValues);
     }
