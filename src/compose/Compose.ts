@@ -380,10 +380,10 @@ export class Compose extends FormElement {
           attachments: this.currentAttachments,
           quick_replies: this.currentQuickReplies.map(option => option.value),
         };
-        this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
       } else {
         delete this.langValues[this.currentLanguage];
       }
+      this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
       this.requestUpdate('langValues');
       this.setValue(this.langValues);
     }
