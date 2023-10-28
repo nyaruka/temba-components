@@ -288,7 +288,7 @@ export class Select extends FormElement {
       .searchbox::placeholder {
         color: var(--color-placeholder);
         font-weight: 300;
-        font-size: 1.1em;
+        font-size: 1em;
         line-height: var(--temba-select-selected-line-height);
         padding-left: 1px;
       }

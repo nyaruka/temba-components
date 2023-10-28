@@ -80,6 +80,7 @@ export class Lightbox extends RapidElement {
 
   public showElement(ele: HTMLElement) {
     // size our matte according to the ele's boundaries
+    console.log(ele);
     const bounds = ele.getBoundingClientRect();
     this.ele = ele.cloneNode() as HTMLElement;
     this.left = bounds.left;

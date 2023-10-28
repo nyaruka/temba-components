@@ -48,6 +48,7 @@ import { Compose } from './src/compose/Compose';
 import { Lightbox } from './src/lightbox/Lightbox';
 import { ColorPicker } from './src/colorpicker/ColorPicker';
 import { Resizer } from './src/resizer/Resizer';
+import { Thumbnail } from './src/thumbnail/Thumbnail';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -106,3 +107,4 @@ addCustomElement('temba-content-menu', ContentMenu);
 addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-resizer', Resizer);
+addCustomElement('temba-thumbnail', Thumbnail);

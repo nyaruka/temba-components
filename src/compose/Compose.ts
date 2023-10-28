@@ -2,27 +2,20 @@ import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
-import { CustomEventType, Language } from '../interfaces';
+import { Attachment, CustomEventType, Language } from '../interfaces';
 import {
   formatFileSize,
-  formatFileType,
   getClasses,
   postFormData,
   truncate,
   DEFAULT_MEDIA_ENDPOINT,
   WebResponse,
+  isImageAttachment,
 } from '../utils';
 import { Completion } from '../completion/Completion';
 import { Select } from '../select/Select';
-
-export interface Attachment {
-  uuid: string;
-  content_type: string;
-  url: string;
-  filename: string;
-  size: number;
-  error: string;
-}
+import { TabPane } from '../tabpane/TabPane';
+import { EventHandler } from '../RapidElement';
 
 export class Compose extends FormElement {
   static get styles() {
@@ -39,19 +32,13 @@ export class Compose extends FormElement {
         transition: all ease-in-out var(--transition-speed);
         box-shadow: var(--widget-box-shadow);
         caret-color: var(--input-caret);
-        padding: var(--temba-textinput-padding);
-      }
-      .container:focus-within {
-        border-color: var(--color-focus);
-        background: var(--color-widget-bg-focused);
-        box-shadow: var(--widget-box-shadow-focused);
       }
 
       .drop-mask {
         opacity: 0;
         pointer-events: none;
         position: absolute;
-        z-index: 1;
+        z-index: 2;
         height: 100%;
         width: 100%;
         bottom: 0;
@@ -81,45 +68,47 @@ export class Compose extends FormElement {
       }
 
       .chatbox {
-        margin-left: 0.3em;
-        margin-top: 0.3em;
         --color-widget-border: none;
-        --curvature-widget: none;
-        --widget-box-shadow: none;
-        --widget-box-shadow-focused: none;
-        --temba-textinput-padding: 0;
+        --curvature-widget: var(--curvature) var(--curvature) 0px 0px;
+        --textarea-min-height: 4em;
       }
 
       .attachments {
-        display: flex;
-        flex-direction: column;
       }
       .attachments-list {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
+        padding: 0.2em;
       }
       .attachment-item {
-        background: rgba(100, 100, 100, 0.1);
-        border-radius: 2px;
-        margin: 0.3em;
-        display: flex;
-        color: var(--color-widget-text);
+        padding: 0.4em;
       }
       .attachment-item.error {
-        background: rgba(250, 0, 0, 0.1);
+        background: #fff;
         color: rgba(250, 0, 0, 0.75);
+        padding: 0.2em;
+        margin: 0.3em 0.5em;
+        border-radius: var(--curvature);
+        display: block;
       }
+
       .remove-item {
-        cursor: pointer !important;
-        padding: 3px 6px;
-        border-right: 1px solid rgba(100, 100, 100, 0.2);
-        margin-top: 1px;
-        background: rgba(100, 100, 100, 0.05);
+        position: absolute;
+        --icon-color: #ccc;
+        background: #fff;
+        border-radius: 99%;
+        transform: scale(0);
+        transition: transform 200ms linear;
+      }
+
+      .attachment-item:hover .remove-item {
+        transform: scale(1);
       }
 
       .remove-item:hover {
-        background: rgba(100, 100, 100, 0.1);
+        --icon-color: #333;
+        cursor: pointer;
       }
 
       .remove-item.error:hover {
@@ -140,8 +129,11 @@ export class Compose extends FormElement {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-left: 0.25em;
-        padding: 0.2em;
+        padding: 0em;
+        background: #f9f9f9;
+        border-bottom-left-radius: var(--curvature);
+        border-bottom-right-radius: var(--curvature);
+        border-top: solid 1px var(--color-widget-border);
       }
 
       #upload-input {
@@ -179,9 +171,47 @@ export class Compose extends FormElement {
       .language {
         margin-bottom: 0.6em;
         display: block;
+        z-index: 2;
+      }
+
+      .top-right {
+        align-items: center;
+        display: flex;
+      }
+
+      #send-button {
+        margin: 0.3em;
+      }
+
+      temba-tabs {
+        --focused-tab-color: #f4f4f4;
+      }
+
+      .quick-replies {
+        margin: 0.8em;
+      }
+
+      .add-attachment {
+        padding: 1em;
+        background: #eee;
+        border-radius: var(--curvature);
+        color: #aaa;
+        margin: 0.5em;
+      }
+
+      .add-attachment:hover {
+        background: #e9e9e9;
+        cursor: pointer;
+      }
+
+      temba-loading {
+        margin: auto 1em;
       }
     `;
   }
+
+  @property({ type: Number })
+  index = 1;
 
   @property({ type: Number })
   maxAttachments = 3;
@@ -197,6 +227,9 @@ export class Compose extends FormElement {
 
   @property({ type: Boolean })
   attachments: boolean;
+
+  @property({ type: Boolean })
+  quickReplies: boolean;
 
   @property({ type: Boolean })
   counter: boolean;
@@ -228,6 +261,9 @@ export class Compose extends FormElement {
   @property({ type: Array })
   currentAttachments: Attachment[] = [];
 
+  @property({ type: Array })
+  currentQuickReplies: { name: string; value: string }[] = [];
+
   @property({ type: Array, attribute: false })
   failedAttachments: Attachment[] = [];
 
@@ -251,6 +287,7 @@ export class Compose extends FormElement {
     [lang: string]: {
       text: string;
       attachments: Attachment[];
+      quick_replies: string[];
     };
   } = {};
 
@@ -259,6 +296,25 @@ export class Compose extends FormElement {
 
   public constructor() {
     super();
+  }
+
+  private handleTabChanged() {
+    const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
+    const tab = tabs.getCurrentTab();
+    if (tab) {
+      // check we are going for the first attachment
+      if (tab.icon == 'attachment') {
+        if (this.currentAttachments.length == 0) {
+          this.handleUploadFileIconClicked();
+        }
+      }
+    }
+  }
+
+  public getEventHandlers(): EventHandler[] {
+    return [
+      { event: CustomEventType.ContextChanged, method: this.handleTabChanged },
+    ];
   }
 
   public firstUpdated(changes: Map<string, any>): void {
@@ -281,6 +337,7 @@ export class Compose extends FormElement {
       let langValue = {
         text: '',
         attachments: [],
+        quick_replies: [],
       };
 
       if (this.currentLanguage in this.langValues) {
@@ -290,6 +347,9 @@ export class Compose extends FormElement {
       this.currentText = langValue.text;
       this.initialText = langValue.text;
       this.currentAttachments = langValue.attachments;
+      this.currentQuickReplies = (langValue.quick_replies || []).map(value => {
+        return { name: value, value };
+      });
       this.setFocusOnChatbox();
 
       // TODO: this feels like it shouldn't be needed
@@ -297,25 +357,33 @@ export class Compose extends FormElement {
       if (chatbox) {
         chatbox.value = this.initialText;
       }
+      this.resetTabs();
+      this.requestUpdate('currentAttachments');
     }
 
     if (
       this.langValues &&
-      (changes.has('currentText') || changes.has('currentAttachments'))
+      (changes.has('currentText') ||
+        changes.has('currentAttachments') ||
+        changes.has('currentQuickReplies'))
     ) {
       this.toggleButton();
 
       const trimmed = this.currentText ? this.currentText.trim() : '';
-      if (trimmed || this.currentAttachments.length > 0) {
+      if (
+        trimmed ||
+        this.currentAttachments.length > 0 ||
+        this.currentQuickReplies.length > 0
+      ) {
         this.langValues[this.currentLanguage] = {
           text: trimmed,
           attachments: this.currentAttachments,
+          quick_replies: this.currentQuickReplies.map(option => option.value),
         };
         this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
       } else {
         delete this.langValues[this.currentLanguage];
       }
-
       this.requestUpdate('langValues');
       this.setValue(this.langValues);
     }
@@ -329,6 +397,7 @@ export class Compose extends FormElement {
       if (completion) {
         window.setTimeout(() => {
           completion.focus();
+          // this.resetTabs();
         }, 0);
       }
     }
@@ -338,13 +407,14 @@ export class Compose extends FormElement {
     (this.shadowRoot.querySelector('.chatbox') as HTMLInputElement).value = '';
     this.initialText = '';
     this.currentText = '';
+    this.currentQuickReplies = [];
     this.currentAttachments = [];
     this.failedAttachments = [];
     this.buttonError = '';
   }
 
-  private handleContainerClick(evt: Event) {
-    this.setFocusOnChatbox();
+  private handleQuickReplyChange(event: InputEvent) {
+    this.requestUpdate('currentQuickReplies');
   }
 
   private handleChatboxChange(evt: Event) {
@@ -562,6 +632,10 @@ export class Compose extends FormElement {
     this.currentLanguage = select.values[0].iso;
   }
 
+  public resetTabs() {
+    (this.shadowRoot.querySelector('temba-tabs') as TabPane).index = -1;
+  }
+
   public render(): TemplateResult {
     return html`
       <temba-field
@@ -583,7 +657,6 @@ export class Compose extends FormElement {
 
         <div
           class=${getClasses({ container: true, highlight: this.pendingDrop })}
-          @click="${this.handleContainerClick}"
           @dragenter="${this.handleDragEnter}"
           @dragover="${this.handleDragOver}"
           @dragleave="${this.handleDragLeave}"
@@ -592,11 +665,7 @@ export class Compose extends FormElement {
           <div class="drop-mask"><div>Upload Attachment</div></div>
 
           ${this.chatbox ? html`${this.getChatbox()}` : null}
-          ${this.attachments
-            ? html`<div class="items attachments">
-                ${this.getAttachments()}
-              </div>`
-            : null}
+
           <div class="items actions">${this.getActions()}</div>
         </div>
       </temba-field>
@@ -635,33 +704,27 @@ export class Compose extends FormElement {
 
   private getAttachments(): TemplateResult {
     return html`
-      ${(this.currentAttachments && this.currentAttachments.length > 0) ||
-      (this.failedAttachments && this.failedAttachments.length > 0)
+      ${this.attachments
         ? html` <div class="attachments-list">
-            ${this.currentAttachments.map(validAttachment => {
-              return html` <div class="attachment-item">
-                <div
-                  class="remove-item"
-                  @click="${this.handleRemoveFileClicked}"
-                >
+              ${this.currentAttachments.map(validAttachment => {
+                return html` <div class="attachment-item">
                   <temba-icon
+                    class="remove-item"
+                    @click="${this.handleRemoveFileClicked}"
                     id="${validAttachment.uuid}"
                     name="${Icon.delete_small}"
                   ></temba-icon>
-                </div>
-                <div class="attachment-name">
-                  <span
-                    title="${validAttachment.filename} (${formatFileSize(
-                      validAttachment.size,
-                      2
-                    )}) ${validAttachment.content_type}"
-                    >${truncate(validAttachment.filename, 25)}
-                    (${formatFileSize(validAttachment.size, 0)})
-                    ${formatFileType(validAttachment.content_type)}</span
-                  >
-                </div>
-              </div>`;
-            })}
+                  ${isImageAttachment(validAttachment)
+                    ? html`<temba-thumbnail
+                        url="${validAttachment.url}"
+                      ></temba-thumbnail>`
+                    : html`<temba-thumbnail
+                        label="${validAttachment.content_type.split('/')[1]}"
+                      ></temba-thumbnail>`}
+                </div>`;
+              })}
+              ${this.getUploader()}
+            </div>
             ${this.failedAttachments.map(invalidAttachment => {
               return html` <div class="attachment-item error">
                 <div
@@ -684,25 +747,55 @@ export class Compose extends FormElement {
                   >
                 </div>
               </div>`;
-            })}
-          </div>`
+            })}`
         : null}
     `;
   }
 
   private getActions(): TemplateResult {
     return html`
-      <div class="actions-left">
-        ${this.canAcceptAttachments() ? this.getUploader() : null}
-      </div>
-      <div class="actions-center"></div>
-      <div class="actions-right">
-        ${this.buttonError
-          ? html`<div class="send-error">${this.buttonError}</div>`
+      <temba-tabs
+        embedded
+        focusedname
+        bottom
+        refresh="${this.currentAttachments.length}|${this.index}|${this
+          .currentQuickReplies.length}"
+      >
+        ${this.attachments
+          ? html`<temba-tab
+              name="Attachments"
+              icon="attachment"
+              .count=${this.currentAttachments.length}
+            >
+              <div class="items attachments"></div>
+            </temba-tab>`
           : null}
-        ${this.counter ? this.getCounter() : null}
-        ${this.button ? this.getButton() : null}
-      </div>
+        ${this.quickReplies
+          ? html`<temba-tab
+              name="Quick Replies"
+              icon="quick_replies"
+              .count=${this.currentQuickReplies.length}
+            >
+              <temba-select
+                @change=${this.handleQuickReplyChange}
+                .values=${this.currentQuickReplies}
+                class="quick-replies"
+                tags
+                multi
+                searchable
+                expressions
+                placeholder="Add Quick Reply"
+              ></temba-select>
+            </temba-tab>`
+          : null}
+        <div slot="tab-right" class="top-right">
+          ${this.buttonError
+            ? html`<div class="send-error">${this.buttonError}</div>`
+            : null}
+          ${this.counter ? this.getCounter() : null}
+          ${this.button ? this.getButton() : null}
+        </div>
+      </temba-tabs>
     `;
   }
 
@@ -710,26 +803,27 @@ export class Compose extends FormElement {
     if (this.uploading) {
       return html`<temba-loading units="3" size="12"></temba-loading>`;
     } else {
-      return html` <input
-          type="file"
-          id="upload-input"
-          multiple
-          accept="${this.accept}"
-          @change="${this.handleUploadFileInputChanged}"
-        />
-        <label
-          id="upload-label"
-          class="actions-left upload-label"
-          for="upload-input"
-        >
-          <temba-icon
-            id="upload-icon"
-            class="upload-icon"
-            name="${Icon.attachment}"
-            @click="${this.handleUploadFileIconClicked}"
-            clickable
-          ></temba-icon>
-        </label>`;
+      return this.currentAttachments.length < this.maxAttachments
+        ? html`<input
+              type="file"
+              id="upload-input"
+              multiple
+              accept="${this.accept}"
+              @change="${this.handleUploadFileInputChanged}"
+            />
+            <label
+              id="upload-label"
+              class="actions-left upload-label"
+              for="upload-input"
+            >
+              <div
+                class="add-attachment"
+                @click="${this.handleUploadFileIconClicked}"
+              >
+                <temba-icon name="add" size="1.5"></temba-icon>
+              </div>
+            </label>`
+        : null;
     }
   }
 

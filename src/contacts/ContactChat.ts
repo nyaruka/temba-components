@@ -32,13 +32,13 @@ export class ContactChat extends ContactStoreElement {
         display: flex;
         flex-grow: 1;
         flex-direction: column;
-        overflow: hidden;
+        background: #e9e9e9;
+
         min-height: 0;
-        border-radius: var(--curvature);
       }
 
       temba-contact-history {
-        border-bottom: 3px solid #e1e1e1;
+        border-bottom: 0px solid #f4f4f4;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -46,8 +46,7 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
-        background: rgb(242, 242, 242);
-        padding: 1em;
+        padding: 0.8em;
         display: flex;
         flex-direction: column;
         z-index: 3;

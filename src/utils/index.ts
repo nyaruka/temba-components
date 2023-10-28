@@ -2,7 +2,7 @@
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
-import { ContactField, Ticket, User } from '../interfaces';
+import { Attachment, ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
@@ -642,6 +642,13 @@ export const formatFileSize = (bytes: number, decimalPoint: number): string => {
     sizes = ['B', 'KB', 'MB', 'GB'], //, 'TB', 'PB', 'EB', 'ZB', 'YB'],
     i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
+export const isImageAttachment = (attachment: Attachment) => {
+  if (attachment) {
+    return attachment.content_type.split('/')[0] === 'image';
+  }
+  return false;
 };
 
 export const stopEvent = (event: Event) => {
