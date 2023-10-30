@@ -767,7 +767,7 @@ export class Compose extends FormElement {
               icon="attachment"
               .count=${this.currentAttachments.length}
             >
-              <div class="items attachments"></div>
+              <div class="items attachments">${this.getAttachments()}</div>
             </temba-tab>`
           : null}
         ${this.quickReplies
