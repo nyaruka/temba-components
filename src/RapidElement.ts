@@ -187,4 +187,11 @@ export class RapidElement extends LitElement {
     }
     return ele;
   }
+
+  public stopEvent(event: Event) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  }
 }

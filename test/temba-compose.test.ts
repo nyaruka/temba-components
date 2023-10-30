@@ -1,9 +1,10 @@
 import { assert, expect } from '@open-wc/testing';
-import { Attachment, Compose } from '../src/compose/Compose';
+import { Compose } from '../src/compose/Compose';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 import { Button } from '../src/button/Button';
 import { Completion } from '../src/completion/Completion';
 import { DEFAULT_MEDIA_ENDPOINT } from '../src/utils';
+import { Attachment } from '../src/interfaces';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {
@@ -30,11 +31,16 @@ export const updateComponent = async (
   await compose.updateComplete;
 };
 
-const getInitialValue = (text?: string, attachments?: Attachment[]): any => {
+const getInitialValue = (
+  text?: string,
+  attachments?: Attachment[],
+  quick_replies?: []
+): any => {
   const composeValue = {
     und: {
       text: text ? text : '',
       attachments: attachments ? attachments : [],
+      quick_replies: quick_replies ? quick_replies : [],
     },
   };
   return composeValue;

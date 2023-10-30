@@ -1,8 +1,8 @@
 import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
-import { Attachment, Compose } from '../src/compose/Compose';
+import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
-import { CustomEventType } from '../src/interfaces';
+import { Attachment, CustomEventType } from '../src/interfaces';
 import { TicketList } from '../src/list/TicketList';
 import {
   assertScreenshot,

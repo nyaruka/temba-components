@@ -13,6 +13,15 @@ export interface Language {
   name: string;
 }
 
+export interface Attachment {
+  uuid: string;
+  content_type: string;
+  url: string;
+  filename: string;
+  size: number;
+  error: string;
+}
+
 export enum DateStyle {
   DayFirst = 'day_first',
   MonthFirst = 'month_first',

@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '2894cf52370eeff9b466593695609d09';
+export const SVG_FINGERPRINT = '9c84101e8549effb3e17279445ff41e3';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -144,6 +144,7 @@ export enum Icon {
   prometheus = 'prometheus',
   progress_spinner = 'refresh-cw-04',
   featured = 'star-01',
+  quick_replies = 'dotpoints-01',
   recording = 'microphone-01',
   referral = 'user-right-01',
   resend = 'refresh-cw-05',

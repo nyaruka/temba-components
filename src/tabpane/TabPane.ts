@@ -12,11 +12,12 @@ export class TabPane extends RapidElement {
         display: flex;
         flex-direction: column;
         min-height: 0;
-        z-index: 0;
+        flex-grow: 1;
       }
 
       .tabs {
         display: flex;
+        align-items: stretch;
       }
 
       .tab {
@@ -34,7 +35,15 @@ export class TabPane extends RapidElement {
         color: var(--color-text-dark);
         --icon-color: var(--color-text-dark);
         white-space: nowrap;
-        transition: all 100ms ease-in-out;
+        transition: all 100ms linear;
+      }
+
+      .focusedname .tab .name {
+        transition: all 0s linear !important;
+      }
+
+      .focusedname .tab.selected .name {
+        transition: all 200ms linear !important;
       }
 
       .tab.hidden {
@@ -71,6 +80,22 @@ export class TabPane extends RapidElement {
         }
       }
 
+      .focusedname .tab.selected {
+        transform: none;
+      }
+
+      .focusedname .tab .name {
+        max-width: 0px;
+        margin: 0;
+        transition: max-width 200ms linear, margin 200ms linear;
+      }
+
+      .focusedname .tab.selected .name {
+        margin-left: 0.4em;
+        max-width: 200px;
+        margin-right: 0.4em;
+      }
+
       .tab {
         transform: scale(0.9) translate(0em, -0.05em);
         --icon-color: #aaa;
@@ -78,18 +103,19 @@ export class TabPane extends RapidElement {
       }
 
       .tab.selected {
-        z-index: 2 !important;
       }
 
       .tab.selected,
       .tab.selected:hover {
         cursor: default;
         box-shadow: 0px -3px 3px 1px rgba(0, 0, 0, 0.02);
-        background: #fff;
+        background: var(--focused-tab-color, #fff);
         transform: scale(1) translateY(0em);
-        z-index: 0;
         --icon-color: #666;
         color: #666;
+      }
+
+      .bottom .tab.selected {
       }
 
       .tab:hover {
@@ -102,12 +128,11 @@ export class TabPane extends RapidElement {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        background: #fff;
+        background: var(--focused-tab-color, #fff);
         border-radius: var(--curvature);
         box-shadow: 2px 5px 12px 2px rgba(0, 0, 0, 0.09),
           3px 3px 2px 1px rgba(0, 0, 0, 0.05);
         min-height: 0;
-        z-index: 1;
       }
 
       .pane.first {
@@ -133,30 +158,82 @@ export class TabPane extends RapidElement {
         background: var(--color-alert);
         color: #fff;
       }
+
+      .bottom.tabs .tab {
+        border-radius: 0em;
+      }
+
+      .bottom.pane {
+        border-radius: 0em;
+      }
+
+      .bottom.pane.first {
+        border-bottom-left-radius: 0px;
+      }
+
+      .bottom .tab.first {
+        border-bottom-left-radius: var(--curvature);
+      }
+
+      .embedded.pane {
+        box-shadow: none;
+        margin: 0;
+      }
+
+      .embedded.tabs {
+        margin: 0;
+      }
+
+      .embedded .tab {
+      }
+
+      .embedded.tabs .tab.selected {
+        box-shadow: none !important;
+      }
+
+      .embedded.pane {
+        // padding: 0.3em;
+      }
     `;
   }
 
   @property({ type: Boolean })
+  embedded = false;
+
+  @property({ type: Boolean })
   collapses = false;
 
+  // are the tabs on the bottom of the pane?
+  @property({ type: Boolean })
+  bottom = false;
+
+  // Only shows the name if the tab is focused
+  @property({ type: Boolean })
+  focusedName = false;
+
   @property({ type: Number })
-  index = 0;
+  index = -1;
+
+  @property({ type: String })
+  refresh = '';
 
   private handleTabClick(event: MouseEvent): void {
     this.index = parseInt(
       (event.currentTarget as HTMLDivElement).dataset.index
     );
+    event.preventDefault();
+    event.stopPropagation();
     this.requestUpdate('index');
   }
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
     if (changedProperties.has('index')) {
-      if (this.children.length > this.index) {
-        for (let i = 0; i < this.children.length; i++) {
-          const tab = this.children[i] as Tab;
+      const tabs = this.getTabs();
+      if (tabs.length > this.index) {
+        for (let i = 0; i < tabs.length; i++) {
+          const tab = tabs[i];
           tab.selected = i == this.index;
-
           if (tab.selected) {
             tab.style.display = 'flex';
           } else {
@@ -168,30 +245,67 @@ export class TabPane extends RapidElement {
     }
 
     // if our current tab is hidden, select the first visible one
-    if (this.getTab(this.index).hidden) {
-      for (let i = 0; i < this.children.length; i++) {
-        const tab = this.getTab(i);
-        if (!tab.hidden) {
-          this.index = i;
-          return;
+    if (this.index > -1) {
+      const tabs = this.getTabs();
+      if (this.getTab(this.index).hidden) {
+        for (let i = 0; i < tabs.length; i++) {
+          const tab = this.getTab(i);
+          if (!tab.hidden) {
+            this.index = i;
+            return;
+          }
         }
       }
     }
   }
 
+  public getCurrentTab(): Tab {
+    return this.getTabs()[this.index];
+  }
+
   public getTab(index: number): Tab {
-    return this.children.item(index) as Tab;
+    return this.getTabs()[index];
+  }
+
+  public handleTabContentChanged() {
+    this.requestUpdate();
+  }
+
+  public getTabs(): Tab[] {
+    const tabs: Tab[] = [];
+    for (const t of this.children) {
+      if (t.tagName === 'TEMBA-TAB') {
+        const tab = t as Tab;
+        tabs.push(tab);
+      }
+    }
+    return tabs;
   }
 
   public render(): TemplateResult {
-    const tabs: Tab[] = [];
-    for (const tab of this.children) {
-      tabs.push(tab as Tab);
-    }
+    const tabs = this.getTabs();
 
     return html`
+      ${this.bottom
+        ? html`<div
+            class="pane ${getClasses({
+              first: this.index == 0,
+              embedded: this.embedded,
+              bottom: this.bottom,
+            })}"
+          >
+            <slot></slot>
+          </div>`
+        : null}
+
       <div
-        class="tabs ${getClasses({ tabs: true, collapses: this.collapses })}"
+        class="tabs ${getClasses({
+          tabs: true,
+          bottom: this.bottom,
+          collapses: this.collapses,
+          embedded: this.embedded,
+          focusedname: this.focusedName,
+        })}"
       >
         ${tabs.map(
           (tab, index) => html`
@@ -200,6 +314,7 @@ export class TabPane extends RapidElement {
               data-index=${index}
               class="${getClasses({
                 tab: true,
+                first: index == 0,
                 selected: index == this.index,
                 hidden: tab.hidden,
                 notify: tab.notify,
@@ -226,10 +341,23 @@ export class TabPane extends RapidElement {
             </div>
           `
         )}
+
+        <div style="flex-grow:1"></div>
+        <div style="display:flex; align-items:center">
+          <slot name="tab-right"></slot>
+        </div>
       </div>
-      <div class="pane ${this.index === 0 ? 'first' : null}">
-        <slot></slot>
-      </div>
+      ${!this.bottom
+        ? html`<div
+            class="pane ${getClasses({
+              first: this.index == 0,
+              embedded: this.embedded,
+              bottom: this.bottom,
+            })}"
+          >
+            <slot></slot>
+          </div>`
+        : null}
     `;
   }
 }

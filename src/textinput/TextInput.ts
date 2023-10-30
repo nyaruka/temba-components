@@ -52,6 +52,7 @@ export class TextInput extends FormElement {
 
       textarea {
         height: var(--textarea-height);
+        min-height: var(--textarea-min-height, var(--textarea-height));
       }
 
       .textinput {
