@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '9c84101e8549effb3e17279445ff41e3';
+export const SVG_FINGERPRINT = '8dab8ee62610a33e1b9643402301d455';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -78,7 +78,6 @@ export enum Icon {
   contact_stopped = 'slash-octagon',
   contact_updated = 'user-edit',
   contacts = 'user-01',
-  conversation = 'message-chat-square',
   copy = 'copy-04',
   dashboard = 'pie-chart-01',
   delete = 'trash-03',
@@ -146,7 +145,6 @@ export enum Icon {
   featured = 'star-01',
   quick_replies = 'dotpoints-01',
   recording = 'microphone-01',
-  referral = 'user-right-01',
   resend = 'refresh-cw-05',
   reset = 'flip-backward',
   resthooks = 'share-07',
@@ -181,6 +179,16 @@ export enum Icon {
   trigger_active = 'play',
   trigger_archived = 'archive',
   trigger_new = 'plus',
+  trigger_keyword = 'message-check-square',
+  trigger_catch_all = 'message-question-square',
+  trigger_inbound_call = 'phone-incoming-01',
+  trigger_missed_call = 'phone-hang-up',
+  trigger_schedule = 'calendar',
+  trigger_new_conversation = 'conversation',
+  trigger_referral = 'user-right-01',
+  trigger_closed_ticket = 'agent',
+  trigger_opt_in = 'message-check-circle',
+  trigger_opt_out = 'message-x-circle',
   triggers = 'signal-01',
   updated = 'edit-02',
   up = 'chevron-up',
