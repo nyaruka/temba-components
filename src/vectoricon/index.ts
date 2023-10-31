@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '8dab8ee62610a33e1b9643402301d455';
+export const SVG_FINGERPRINT = 'fb06525f01e92b0e6e6a0d726d7c1177';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -184,7 +184,7 @@ export enum Icon {
   trigger_inbound_call = 'phone-incoming-01',
   trigger_missed_call = 'phone-hang-up',
   trigger_schedule = 'calendar',
-  trigger_new_conversation = 'conversation',
+  trigger_new_conversation = 'message-chat-square',
   trigger_referral = 'user-right-01',
   trigger_closed_ticket = 'agent',
   trigger_opt_in = 'message-check-circle',
