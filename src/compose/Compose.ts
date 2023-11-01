@@ -16,7 +16,6 @@ import { Completion } from '../completion/Completion';
 import { Select } from '../select/Select';
 import { TabPane } from '../tabpane/TabPane';
 import { EventHandler } from '../RapidElement';
-import { runInThisContext } from 'vm';
 
 export class Compose extends FormElement {
   static get styles() {
