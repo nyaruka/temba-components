@@ -41,6 +41,7 @@ const getInitialValue = (
       text: text ? text : '',
       attachments: attachments ? attachments : [],
       quick_replies: quick_replies ? quick_replies : [],
+      optin: null,
     },
   };
   return composeValue;

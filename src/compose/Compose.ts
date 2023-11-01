@@ -38,7 +38,6 @@ export class Compose extends FormElement {
         opacity: 0;
         pointer-events: none;
         position: absolute;
-        z-index: 2;
         height: 100%;
         width: 100%;
         bottom: 0;
@@ -171,7 +170,6 @@ export class Compose extends FormElement {
       .language {
         margin-bottom: 0.6em;
         display: block;
-        z-index: 2;
       }
 
       .top-right {
@@ -207,6 +205,10 @@ export class Compose extends FormElement {
       temba-loading {
         margin: auto 1em;
       }
+
+      .optins {
+        padding: 1em;
+      }
     `;
   }
 
@@ -230,6 +232,9 @@ export class Compose extends FormElement {
 
   @property({ type: Boolean })
   quickReplies: boolean;
+
+  @property({ type: Boolean })
+  optIns: boolean;
 
   @property({ type: Boolean })
   counter: boolean;
@@ -264,6 +269,12 @@ export class Compose extends FormElement {
   @property({ type: Array })
   currentQuickReplies: { name: string; value: string }[] = [];
 
+  @property({ type: Array })
+  currentOptin: { name: string; uuid: string }[] = [];
+
+  @property({ type: String })
+  optinEndpoint = '/api/v2/optins.json';
+
   @property({ type: Array, attribute: false })
   failedAttachments: Attachment[] = [];
 
@@ -288,6 +299,7 @@ export class Compose extends FormElement {
       text: string;
       attachments: Attachment[];
       quick_replies: string[];
+      optin?: { name: string; uuid: string };
     };
   } = {};
 
@@ -296,6 +308,13 @@ export class Compose extends FormElement {
 
   public constructor() {
     super();
+  }
+
+  private isBaseLanguage(): boolean {
+    return (
+      this.currentLanguage == 'und' ||
+      this.currentLanguage == this.languages[0].iso
+    );
   }
 
   private handleTabChanged() {
@@ -350,6 +369,7 @@ export class Compose extends FormElement {
       this.currentQuickReplies = (langValue.quick_replies || []).map(value => {
         return { name: value, value };
       });
+      this.currentOptin = langValue['optin'] ? [langValue['optin']] : [];
       this.setFocusOnChatbox();
 
       // TODO: this feels like it shouldn't be needed
@@ -362,10 +382,11 @@ export class Compose extends FormElement {
     }
 
     if (
-      this.langValues &&
-      (changes.has('currentText') ||
-        changes.has('currentAttachments') ||
-        changes.has('currentQuickReplies'))
+      (this.langValues &&
+        (changes.has('currentText') ||
+          changes.has('currentAttachments') ||
+          changes.has('currentQuickReplies'))) ||
+      changes.has('currentOptin')
     ) {
       this.toggleButton();
 
@@ -379,6 +400,7 @@ export class Compose extends FormElement {
           text: trimmed,
           attachments: this.currentAttachments,
           quick_replies: this.currentQuickReplies.map(option => option.value),
+          optin: this.currentOptin.length > 0 ? this.currentOptin[0] : null,
         };
       } else {
         delete this.langValues[this.currentLanguage];
@@ -415,6 +437,12 @@ export class Compose extends FormElement {
 
   private handleQuickReplyChange(event: InputEvent) {
     this.requestUpdate('currentQuickReplies');
+  }
+
+  private handleOptInChange(event: InputEvent) {
+    console.log('changed', this.currentOptin, (event.target as any).values);
+    this.currentOptin = (event.target as any).values;
+    this.requestUpdate('optIn');
   }
 
   private handleChatboxChange(evt: Event) {
@@ -753,13 +781,14 @@ export class Compose extends FormElement {
   }
 
   private getActions(): TemplateResult {
+    const showOptins = this.optIns && this.isBaseLanguage();
     return html`
       <temba-tabs
         embedded
         focusedname
         bottom
         refresh="${this.currentAttachments.length}|${this.index}|${this
-          .currentQuickReplies.length}"
+          .currentQuickReplies.length}|${showOptins}|${this.currentOptin}"
       >
         ${this.attachments
           ? html`<temba-tab
@@ -788,6 +817,23 @@ export class Compose extends FormElement {
               ></temba-select>
             </temba-tab>`
           : null}
+        <temba-tab
+          name="Opt-in"
+          icon="channel_fba"
+          ?hidden=${!showOptins}
+          ?checked=${this.currentOptin.length > 0}
+        >
+          <temba-select
+            @change=${this.handleOptInChange}
+            .values=${this.currentOptin}
+            endpoint="${this.optinEndpoint}"
+            class="optins"
+            searchable
+            clearable
+            placeholder="Select an opt-in to use for Facebook (optional)"
+          ></temba-select>
+        </temba-tab>
+
         <div slot="tab-right" class="top-right">
           ${this.buttonError
             ? html`<div class="send-error">${this.buttonError}</div>`

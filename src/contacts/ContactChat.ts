@@ -49,7 +49,6 @@ export class ContactChat extends ContactStoreElement {
         padding: 0.8em;
         display: flex;
         flex-direction: column;
-        z-index: 3;
         border-bottom-left-radius: var(--curvature);
         border-bottom-right-radius: var(--curvature);
       }
@@ -120,7 +119,6 @@ export class ContactChat extends ContactStoreElement {
 
   constructor() {
     super();
-    this.showDetails = getCookieBoolean(COOKIE_KEYS.TICKET_SHOW_DETAILS);
   }
 
   refreshInterval = null;
@@ -249,12 +247,9 @@ export class ContactChat extends ContactStoreElement {
       : null;
     const chatbox = this.currentContact ? this.getTembaChatbox() : null;
 
-    const contactHistoryAndChatbox = html`<div
-      style="flex-grow: 1; margin-right: 0em; display:flex; flex-direction:row; min-height: 0;"
-      class="left-pane  ${this.showDetails ? 'open' : ''}"
-    >
+    const contactHistoryAndChatbox = html`
       <div class="chat-wrapper">${contactHistory} ${chatbox}</div>
-    </div>`;
+    `;
     return html`${contactHistoryAndChatbox}`;
   }
 
