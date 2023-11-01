@@ -49,6 +49,9 @@ export class Tab extends RapidElement {
   @property({ type: Number })
   count = 0;
 
+  @property({ type: Boolean })
+  checked = false;
+
   public hasBadge() {
     return this.count > 0;
   }

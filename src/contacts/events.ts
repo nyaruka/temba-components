@@ -1230,11 +1230,11 @@ export const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
     eventMessage = 'Incoming Phone call';
   } else if (event.event.type == 'optin') {
     eventMessage = html`Opted in to
-      <span class="attn">${event.event.optin.name}</span>`;
+      <span class="attn">${event.event.optin?.name}</span>`;
     icon = Icon.optin;
   } else if (event.event.type == 'optout') {
     eventMessage = html`Opted out of
-      <span class="attn">${event.event.optin.name}</span>`;
+      <span class="attn">${event.event.optin?.name}</span>`;
     icon = Icon.optout;
   }
 

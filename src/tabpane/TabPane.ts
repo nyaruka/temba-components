@@ -56,7 +56,6 @@ export class TabPane extends RapidElement {
       .tab .name {
         margin-left: 0.4em;
         max-width: 80px;
-        margin-right: 0.4em;
         overflow: hidden;
         transition: max-width 500ms ease-in-out, margin 500ms ease-in-out;
         white-space: nowrap;
@@ -93,7 +92,6 @@ export class TabPane extends RapidElement {
       .focusedname .tab.selected .name {
         margin-left: 0.4em;
         max-width: 200px;
-        margin-right: 0.4em;
       }
 
       .tab {
@@ -193,6 +191,10 @@ export class TabPane extends RapidElement {
 
       .embedded.pane {
         // padding: 0.3em;
+      }
+
+      .check {
+        margin-left: 0.4em;
       }
     `;
   }
@@ -337,6 +339,9 @@ export class TabPane extends RapidElement {
                         : null}
                     </div>
                   `
+                : null}
+              ${tab.checked
+                ? html`<temba-icon class="check" name="check"></temba-icon>`
                 : null}
             </div>
           `

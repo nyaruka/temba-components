@@ -516,7 +516,14 @@ export class Select extends FormElement {
 
     if (changedProperties.has('values')) {
       this.updateInputs();
-      if (this.multi || this.values.length === 1) {
+      if (
+        this.multi ||
+        this.values.length === 1 ||
+        // fire change if being cleared
+        (this.values.length == 0 &&
+          changedProperties.get('values') &&
+          changedProperties.get('values').length > 0)
+      ) {
         this.fireEvent('change');
       }
     }
