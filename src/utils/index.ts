@@ -666,6 +666,38 @@ export const getFullName = (user: User) => {
   return user.email;
 };
 
+/**
+ * Extracts 2-letter initials from text like a workspace or user name
+ * @param text the input text
+ * @returns the initials
+ */
+export const extractInitials = (text: string) => {
+  // for empty or single chars, use placeholder or that char
+  if (text.length == 0) {
+    return '?';
+  } else if (text.length == 1) {
+    return text.toUpperCase();
+  }
+
+  const words = text.match(/\w+/g);
+
+  // for single words, use first two letters
+  if (words.length == 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+
+  // use initial letters of words with preference to first word and capital letters
+  const firstLetters = words.map(w => w.substring(0, 1));
+  const firstCaptitals = firstLetters.filter(
+    (l, index) => l == l.toUpperCase() || index == 0
+  );
+  if (firstCaptitals.length >= 2) {
+    return (firstCaptitals[0] + firstCaptitals[1]).toUpperCase();
+  } else {
+    return (firstLetters[0] + firstLetters[1]).toUpperCase();
+  }
+};
+
 export const hslToHex = (h, s, l) => {
   l /= 100;
   const a = (s * Math.min(l, 1 - l)) / 100;
@@ -706,13 +738,7 @@ export const renderAvatar = (input: {
   }
 
   const color = colorHash.hex(text);
-  let second = text.indexOf(' ') + 1;
-  if (second < 1) {
-    second = text.length > 1 ? 1 : 0;
-  }
-  let initials = text.substring(0, 1) + text.substring(second, second + 1);
-  initials = initials.toUpperCase();
-
+  const initials = extractInitials(text);
   const avatar = html`
     <div
       style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"

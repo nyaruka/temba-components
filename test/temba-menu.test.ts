@@ -2,6 +2,7 @@ import { assert, expect } from '@open-wc/testing';
 
 import { TembaMenu } from '../src/list/TembaMenu';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
+import { extractInitials } from '../src/utils/index';
 
 const TAG = 'temba-menu';
 const getMenu = async (attrs: any = {}, width = 0) => {
@@ -114,5 +115,19 @@ describe('temba-menu', () => {
     // we should still have our task items
     expect(menu.root.items[IDX_TASKS].items.length).to.equal(3);
     await assertScreenshot('menu/menu-refresh-2', getClip(menu));
+  });
+});
+
+describe('avatars', () => {
+  it('can generate initials from text', async () => {
+    assert.equal(extractInitials(''), '?');
+    assert.equal(extractInitials('X'), 'X');
+    assert.equal(extractInitials('Acme'), 'AC');
+    assert.equal(extractInitials('al-Jazeera News'), 'AJ');
+    assert.equal(extractInitials('Cool Flows'), 'CF');
+    assert.equal(extractInitials('Very Cool Flows'), 'VC');
+    assert.equal(extractInitials('UNICEF - Ireland'), 'UI');
+    assert.equal(extractInitials('Dave & Busters'), 'DB');
+    assert.equal(extractInitials('Dave and Busters'), 'DB');
   });
 });
