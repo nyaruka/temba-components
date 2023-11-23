@@ -672,27 +672,30 @@ export const getFullName = (user: User) => {
  * @returns the initials
  */
 export const extractInitials = (text: string) => {
-  // for empty or single chars, use placeholder or that char
-  if (text.length == 0) {
-    return '?';
-  } else if (text.length == 1) {
-    return text.toUpperCase();
+  text = text.trim();
+
+  // split into words, first allowing hypens inside words,
+  // then splitting by hypen to try to get more than one word
+  let words =
+    text.match(/(([\p{L}\p{N}]+-[\p{L}\p{N}]+)|([\p{L}\p{N}]+))/gu) || [];
+  if (words.length == 1) {
+    words = text.match(/[\p{L}\p{N}]+/gu);
   }
 
-  const words = text.match(/\w+/g);
-
-  // for single words, use first two letters
-  if (words.length == 1) {
+  // for the case of no words use ? and for only one word take first 2 characters
+  if (words.length == 0) {
+    return '?';
+  } else if (words.length == 1) {
     return words[0].substring(0, 2).toUpperCase();
   }
 
   // use initial letters of words with preference to first word and capital letters
   const firstLetters = words.map(w => w.substring(0, 1));
-  const firstCaptitals = firstLetters.filter(
+  const firstCapitals = firstLetters.filter(
     (l, index) => l == l.toUpperCase() || index == 0
   );
-  if (firstCaptitals.length >= 2) {
-    return (firstCaptitals[0] + firstCaptitals[1]).toUpperCase();
+  if (firstCapitals.length >= 2) {
+    return (firstCapitals[0] + firstCapitals[1]).toUpperCase();
   } else {
     return (firstLetters[0] + firstLetters[1]).toUpperCase();
   }
