@@ -666,6 +666,41 @@ export const getFullName = (user: User) => {
   return user.email;
 };
 
+/**
+ * Extracts 2-letter initials from text like a workspace or user name
+ * @param text the input text
+ * @returns the initials
+ */
+export const extractInitials = (text: string) => {
+  text = text.trim();
+
+  // split into words, first allowing hypens inside words,
+  // then splitting by hypen to try to get more than one word
+  let words =
+    text.match(/(([\p{L}\p{N}]+-[\p{L}\p{N}]+)|([\p{L}\p{N}]+))/gu) || [];
+  if (words.length == 1) {
+    words = text.match(/[\p{L}\p{N}]+/gu);
+  }
+
+  // for the case of no words use ? and for only one word take first 2 characters
+  if (words.length == 0) {
+    return '?';
+  } else if (words.length == 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+
+  // use initial letters of words with preference to first word and capital letters
+  const firstLetters = words.map(w => w.substring(0, 1));
+  const firstCapitals = firstLetters.filter(
+    (l, index) => l == l.toUpperCase() || index == 0
+  );
+  if (firstCapitals.length >= 2) {
+    return (firstCapitals[0] + firstCapitals[1]).toUpperCase();
+  } else {
+    return (firstLetters[0] + firstLetters[1]).toUpperCase();
+  }
+};
+
 export const hslToHex = (h, s, l) => {
   l /= 100;
   const a = (s * Math.min(l, 1 - l)) / 100;
@@ -706,13 +741,7 @@ export const renderAvatar = (input: {
   }
 
   const color = colorHash.hex(text);
-  let second = text.indexOf(' ') + 1;
-  if (second < 1) {
-    second = text.length > 1 ? 1 : 0;
-  }
-  let initials = text.substring(0, 1) + text.substring(second, second + 1);
-  initials = initials.toUpperCase();
-
+  const initials = extractInitials(text);
   const avatar = html`
     <div
       style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"
