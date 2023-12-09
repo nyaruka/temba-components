@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, EventPart, html, TemplateResult } from 'lit';
 import { Msg, ObjectReference, User } from '../interfaces';
 import {
   getClasses,
@@ -210,6 +210,10 @@ export const getEventStyles = () => {
 
     .msg.automated {
       background: var(--color-automated) !important;
+    }
+
+    .queued {
+      opacity: 0.3;
     }
 
     .optin_requested {
@@ -823,6 +827,10 @@ export const renderMsgEvent = (
     );
   }
 
+  if (event.status === 'Q') {
+    summary.push(html`<div>Queued</div>`);
+  }
+
   summary.push(
     html`<temba-date
       class="time"
@@ -831,7 +839,10 @@ export const renderMsgEvent = (
     ></temba-date>`
   );
 
-  return html`<div style="display:flex;align-items:flex-start">
+  return html`<div
+    style="display:flex;align-items:flex-start"
+    class=${getClasses({ queued: event.status === 'Q' })}
+  >
     <div style="display:flex;flex-direction:column">
       <div
         class="${event.msg.text ? '' : 'no-message'} attachments-${(
@@ -862,7 +873,9 @@ export const renderMsgEvent = (
 
       <div
         class="msg-summary"
-        style="flex-direction:row${isInbound ? '-reverse' : ''}"
+        style="align-items:center;flex-direction:row${isInbound
+          ? '-reverse'
+          : ''}"
       >
         <div style="flex-grow:1"></div>
         ${summary}

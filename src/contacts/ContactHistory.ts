@@ -305,24 +305,26 @@ export class ContactHistory extends RapidElement {
             }
           });
 
-          let fetchedEvents = results.events.reverse();
+          const fetchedEvents = results.events.reverse();
 
           // dedupe any events we get from the server
           // TODO: perhaps make this a little less crazy
-          fetchedEvents = fetchedEvents.filter(item => {
-            const found = !!this.eventGroups.find(
-              g =>
-                !!g.events.find(
-                  exists =>
-                    exists.created_on === item.created_on &&
-                    exists.type === item.type
-                )
+          let removed = 0;
+          this.eventGroups.forEach(g => {
+            const before = g.events.length;
+            g.events = g.events.filter(
+              prev =>
+                !fetchedEvents.find(fetched => {
+                  return (
+                    prev.created_on == fetched.created_on &&
+                    prev.type === fetched.type
+                  );
+                })
             );
-
-            return !found;
+            removed += before - g.events.length;
           });
 
-          this.lastRefreshAdded = fetchedEvents.length;
+          this.lastRefreshAdded = fetchedEvents.length - removed;
 
           // reflow our most recent event group in case it merges with our new groups
           const previousGroups = [...this.eventGroups];
