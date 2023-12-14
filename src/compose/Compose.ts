@@ -28,9 +28,9 @@ export class Compose extends FormElement {
 
         border-radius: var(--curvature-widget);
         background: var(--color-widget-bg);
-        border: 1px solid var(--color-widget-border);
+        border: var(--compose-border, 1px solid var(--color-widget-border));
         transition: all ease-in-out var(--transition-speed);
-        box-shadow: var(--widget-box-shadow);
+        box-shadow: var(--compose-shadow, var(--widget-box-shadow));
         caret-color: var(--input-caret);
       }
 
@@ -44,8 +44,6 @@ export class Compose extends FormElement {
         right: 0;
         background: rgba(210, 243, 184, 0.8);
         border-radius: var(--curvature-widget);
-        margin: -0.5em;
-        padding: 0.5em;
         transition: opacity ease-in-out var(--transition-speed);
         display: flex;
         align-items: center;
@@ -68,8 +66,13 @@ export class Compose extends FormElement {
 
       .chatbox {
         --color-widget-border: none;
-        --curvature-widget: var(--curvature) var(--curvature) 0px 0px;
+        --curvature-widget: var(
+          --compose-curvature,
+          var(--curvature) var(--curvature) 0px 0px
+        );
         --textarea-min-height: 4em;
+        --widget-box-shadow: none;
+        padding: var(--compose-padding, 0px);
       }
 
       .attachments {

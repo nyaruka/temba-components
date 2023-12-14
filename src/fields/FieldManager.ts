@@ -59,6 +59,7 @@ export class FieldManager extends StoreElement {
       .other-fields {
         flex-grow: 2;
         min-height: 0px;
+        margin-bottom: 0px;
       }
 
       temba-textinput {
