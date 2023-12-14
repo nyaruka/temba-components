@@ -6,6 +6,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Set Timezone
+        uses: szenius/set-timezone@v1.2
+        with:
+          timezoneMacos: "UTC"
       - name: Checkout (GitHub)
         uses: actions/checkout@v3
       - run: docker network create --driver bridge textit_default
