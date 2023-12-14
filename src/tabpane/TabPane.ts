@@ -128,8 +128,11 @@ export class TabPane extends RapidElement {
         flex-grow: 1;
         background: var(--focused-tab-color, #fff);
         border-radius: var(--curvature);
-        box-shadow: 2px 5px 12px 2px rgba(0, 0, 0, 0.09),
-          3px 3px 2px 1px rgba(0, 0, 0, 0.05);
+        box-shadow: var(
+          --tabs-shadow,
+          rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
+          rgba(0, 0, 0, 0.03) 0px 1px 2px 0px
+        );
         min-height: 0;
       }
 

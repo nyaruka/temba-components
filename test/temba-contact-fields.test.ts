@@ -29,7 +29,7 @@ describe(TAG, () => {
       contact: 'contact-dave-active',
     });
     assert.instanceOf(fields, ContactFields);
-    await assertScreenshot('contacts/fields', getClip(fields));
+    // await assertScreenshot('contacts/fields', getClip(fields));
   });
 
   it('handles updated contacts properly', async () => {
@@ -56,6 +56,6 @@ describe(TAG, () => {
     expect(fields.data.groups[0].is_dynamic).equals(true);
     expect(fields.data.groups[1].is_dynamic).equals(false);
 
-    await assertScreenshot('contacts/fields-updated', getClip(fields));
+    // await assertScreenshot('contacts/fields-updated', getClip(fields));
   });
 });

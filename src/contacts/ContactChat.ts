@@ -1,7 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { COOKIE_KEYS, getCookieBoolean, postJSON } from '../utils';
+import { postJSON } from '../utils';
 import { ContactHistory } from './ContactHistory';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose } from '../compose/Compose';
@@ -11,34 +11,26 @@ const DEFAULT_REFRESH = 10000;
 export class ContactChat extends ContactStoreElement {
   public static get styles() {
     return css`
-      .left-pane {
-        box-shadow: -13px 10px 7px 14px rgba(0, 0, 0, 0);
-        transition: box-shadow 600ms linear;
-      }
-
-      .left-pane.open {
-        z-index: 1000;
-      }
-
       :host {
         flex-grow: 1;
         display: flex;
         flex-direction: row;
         min-height: 0;
-        border-radius: var(--curvature);
+        --compose-shadow: none;
+        --compose-border: none;
+        --compose-padding: 3px;
+        --compose-curvature: none;
       }
 
       .chat-wrapper {
         display: flex;
         flex-grow: 1;
         flex-direction: column;
-        background: #e9e9e9;
-
         min-height: 0;
       }
 
       temba-contact-history {
-        border-bottom: 0px solid #f4f4f4;
+        border-bottom: 2px solid #f6f6f6;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -46,11 +38,8 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
-        padding: 0.8em;
         display: flex;
         flex-direction: column;
-        border-bottom-left-radius: var(--curvature);
-        border-bottom-right-radius: var(--curvature);
       }
 
       .chatbox.full {
