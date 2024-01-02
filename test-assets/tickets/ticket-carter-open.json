@@ -4,10 +4,6 @@
   "results": [
     {
       "uuid": "bc907086-e9e7-4d5c-ba72-ef6a2059b0ae",
-      "ticketer": {
-        "uuid": "fa9e4496-14d4-41a8-8d04-e10938c17e6f",
-        "name": "Internal"
-      },
       "contact": {
         "uuid": "contact-carter-active",
         "name": "Carter Beauford"

@@ -65,7 +65,6 @@ export interface Ticket {
   opened_on: string;
   status: string;
   contact: ObjectReference;
-  ticketer: ObjectReference;
   topic: ObjectReference;
   assignee?: { email: string; name: string };
 }

@@ -591,10 +591,8 @@ export interface TicketEvent extends ContactEvent {
   assignee?: User;
   ticket: {
     uuid: string;
-    ticketer: ObjectReference;
     body: string;
     topic?: ObjectReference;
-    external_id?: string;
     closed_on?: string;
     opened_on?: string;
   };
@@ -1025,26 +1023,14 @@ export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
   </div>`;
 };
 
-const getTicketIcon = (event: TicketEvent) => {
-  let icon = Icon.inbox;
-  if (event.ticket.ticketer.name.indexOf('Email') > -1) {
-    icon = Icon.email;
-  } else if (event.ticket.ticketer.name.indexOf('Zendesk') > -1) {
-    icon = Icon.zendesk;
-  }
-  return icon;
-};
-
 export const renderTicketAction = (
   event: TicketEvent,
   action: string,
   grouped: boolean
 ): TemplateResult => {
-  const reopened = new Date(event.created_on);
-  const icon = getTicketIcon(event);
   if (grouped) {
     return html`<div class="" style="display: flex">
-      <temba-icon name="${icon}"></temba-icon>
+      <temba-icon name="${Icon.inbox}"></temba-icon>
       <div class="description">
         ${getDisplayName(event.created_by)} ${action} a
         <span
@@ -1103,11 +1089,9 @@ export const renderTicketOpened = (
   handleClose: (uuid: string) => void,
   grouped: boolean
 ): TemplateResult => {
-  const icon = getTicketIcon(event);
-
   if (grouped) {
     return html`<div class="" style="display: flex">
-      <temba-icon name="${icon}"></temba-icon>
+      <temba-icon name="${Icon.inbox}"></temba-icon>
       <div class="description">
         ${event.ticket.topic.name}
         <span

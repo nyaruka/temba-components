@@ -782,37 +782,6 @@ export class ContactHistory extends RapidElement {
   }
 
   public render(): TemplateResult {
-    // render our older tickets as faux-events
-    const unfetchedTickets =
-      this.eventGroups.length > 0 && this.tickets
-        ? this.tickets.map((ticket: Ticket) => {
-            if (ticket && ticket.status === 'open') {
-              const opened = new Date(ticket.opened_on).getTime() * 1000;
-              if (opened < this.nextBefore || this.isPurged(ticket)) {
-                const ticketOpenedEvent = {
-                  type: Events.TICKET_OPENED,
-                  ticket: {
-                    uuid: ticket.uuid,
-                    topic: ticket.topic,
-                    body: ticket.body,
-                    ticketer: ticket.ticketer,
-                  },
-                  created_on: ticket.opened_on,
-                };
-
-                const renderedEvent = renderTicketOpened(
-                  ticketOpenedEvent,
-                  this.handleClose,
-                  !this.ticket
-                );
-                return html`<div class="event ticket_opened">
-                  ${renderedEvent}
-                </div>`;
-              }
-            }
-          })
-        : null;
-
     return html`
       ${
         this.fetching

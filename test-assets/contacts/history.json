@@ -17,11 +17,7 @@
         "topic": null,
         "status": "O",
         "subject": "Open ticket",
-        "body": "",
-        "ticketer": {
-          "uuid": "79101e60-60da-4893-8b7b-b865ebe50e21",
-          "name": "Mailgun"
-        }
+        "body": ""
       },
       "created_on": "2021-03-31T00:30:00.585471+00:00",
       "created_by": null
@@ -38,11 +34,7 @@
         "topic": null,
         "status": "O",
         "subject": "Open ticket",
-        "body": "",
-        "ticketer": {
-          "uuid": "79101e60-60da-4893-8b7b-b865ebe50e21",
-          "name": "Mailgun"
-        }
+        "body": ""
       },
       "created_on": "2021-03-31T00:30:00.585471+00:00",
       "created_by": {
