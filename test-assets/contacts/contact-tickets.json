@@ -4,10 +4,6 @@
     "results": [
         {
             "uuid": "6c3156f8-ca00-4f26-b8f7-b5e131e6db7a",
-            "ticketer": {
-                "uuid": "0c3b0f9a-344c-47a5-9041-08281d71d46b",
-                "name": "TextIt Tickets"
-            },
             "contact": {
                 "uuid": "24d64810-3315-4ff5-be85-48e3fe055bf9",
                 "name": "Eric Newcomer"
@@ -33,10 +29,6 @@
         },
         {
             "uuid": "37ca10d8-b976-4885-b48c-21d3ec68b743",
-            "ticketer": {
-                "uuid": "0c3b0f9a-344c-47a5-9041-08281d71d46b",
-                "name": "TextIt Tickets"
-            },
             "contact": {
                 "uuid": "24d64810-3315-4ff5-be85-48e3fe055bf9",
                 "name": "Eric Newcomer"
@@ -62,10 +54,6 @@
         },
         {
             "uuid": "a57970e2-79ab-46d4-8761-c7cbc6a380ef",
-            "ticketer": {
-                "uuid": "0c3b0f9a-344c-47a5-9041-08281d71d46b",
-                "name": "TextIt Tickets"
-            },
             "contact": {
                 "uuid": "24d64810-3315-4ff5-be85-48e3fe055bf9",
                 "name": "Eric Newcomer"
@@ -91,10 +79,6 @@
         },
         {
             "uuid": "73de765d-eac6-4c91-b0d3-72fe9471f76f",
-            "ticketer": {
-                "uuid": "0c3b0f9a-344c-47a5-9041-08281d71d46b",
-                "name": "TextIt Tickets"
-            },
             "contact": {
                 "uuid": "24d64810-3315-4ff5-be85-48e3fe055bf9",
                 "name": "Eric Newcomer"
@@ -120,10 +104,6 @@
         },
         {
             "uuid": "d69f3568-c300-4470-b0a5-fbadd6bf0f9f",
-            "ticketer": {
-                "uuid": "0c3b0f9a-344c-47a5-9041-08281d71d46b",
-                "name": "TextIt Tickets"
-            },
             "contact": {
                 "uuid": "24d64810-3315-4ff5-be85-48e3fe055bf9",
                 "name": "Eric Newcomer"
