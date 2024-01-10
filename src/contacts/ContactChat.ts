@@ -30,7 +30,7 @@ export class ContactChat extends ContactStoreElement {
       }
 
       temba-contact-history {
-        border-bottom: 2px solid #f6f6f6;
+        border-bottom: 1px solid #f6f6f6;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -38,8 +38,16 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
+        box-shadow: 0px -5px 1rem 0rem rgba(0, 0, 0, 0.07);
         display: flex;
         flex-direction: column;
+        --textarea-min-height: 1em;
+        --textarea-height: 1.2em;
+        --widget-box-shadow-focused: none;
+      }
+
+      .chatbox:focus-within {
+        --textarea-height: 4em;
       }
 
       .chatbox.full {

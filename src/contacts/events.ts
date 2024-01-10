@@ -99,7 +99,6 @@ export const getEventStyles = () => {
       cursor: pointer;
       width: 100%;
       opacity: 1;
-      z-index: 1;
     }
 
     .event-count temba-icon {

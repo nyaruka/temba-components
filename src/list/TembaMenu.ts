@@ -6,6 +6,7 @@ import { RapidElement } from '../RapidElement';
 import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
 import { Icon } from '../vectoricon';
 import { Dropdown } from '../dropdown/Dropdown';
+import { NotificationList } from './NotificationList';
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -134,6 +135,10 @@ export class TembaMenu extends RapidElement {
         display: none;
       }
 
+      .popup {
+        --icon-color: rgba(255, 255, 255, 0.7);
+      }
+
       .level-0 > .item,
       .level-0 > temba-dropdown > div[slot='toggle'] > .avatar {
         padding: 0px;
@@ -162,8 +167,8 @@ export class TembaMenu extends RapidElement {
         border-bottom-right-radius: var(--curvature);
       }
 
-      .level-0 > .item > temba-tip {
-        padding: 0.5em;
+      .level-0 .item > temba-tip {
+        padding: 0.5em 0em;
       }
 
       .level-0 > .item.selected::after {
@@ -194,7 +199,6 @@ export class TembaMenu extends RapidElement {
       }
 
       temba-dropdown {
-        z-index: 1;
       }
 
       temba-dropdown > div[slot='dropdown'] .avatar > .details {
@@ -206,12 +210,15 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0 > .item > .details,
-      .level-0 > temba-dropdown > div[slot='toggle'] > .avatar > .details {
+      .level-0 > temba-dropdown > div[slot='toggle'] .details {
         display: none !important;
       }
 
       .avatar {
         align-items: center;
+      }
+
+      temba-dropdown > div[slot='dropdown'] {
       }
 
       temba-dropdown > div[slot='dropdown'] .avatar .avatar-circle,
@@ -263,11 +270,15 @@ export class TembaMenu extends RapidElement {
         width: 0;
       }
 
-      .level-0 > .item {
+      .level-0 .item {
         margin-top: 0em;
         border-radius: 0px;
         min-width: inherit;
         max-width: inherit;
+      }
+
+      .popup:hover {
+        --icon-color: #fff;
       }
 
       .level-0 > .item > temba-icon {
@@ -531,7 +542,7 @@ export class TembaMenu extends RapidElement {
       }
 
       .level-0 .icon-wrapper {
-        padding: 0.4em;
+        padding: 0.4em 0.9em;
       }
     `;
   }
@@ -571,6 +582,15 @@ export class TembaMenu extends RapidElement {
   constructor() {
     super();
     this.doRefresh = this.doRefresh.bind(this);
+
+    // scroll any lists to the top
+    this.addEventListener('blur', () => {
+      this.shadowRoot
+        .querySelectorAll('temba-list, temba-notification-list')
+        .forEach((ele: NotificationList) => {
+          ele.scrollToTop();
+        });
+    });
   }
 
   public setBubble(id: string, color: string) {
@@ -634,6 +654,13 @@ export class TembaMenu extends RapidElement {
     }
 
     this.loadItems(item);
+
+    // refresh any embedded lists
+    this.shadowRoot
+      .querySelectorAll('temba-notification-list')
+      .forEach((ele: NotificationList) => {
+        ele.refresh();
+      });
   }
 
   public refresh = debounce(this.doRefresh, 200);
@@ -901,6 +928,12 @@ export class TembaMenu extends RapidElement {
       return html`<div class="divider"></div>`;
     }
 
+    if (menuItem.type === 'temba-notification-list') {
+      return html`<temba-notification-list
+        endpoint=${menuItem.href}
+      ></temba-notification-list>`;
+    }
+
     if (menuItem.type === 'space') {
       return html`<div class="space"></div>`;
     }
@@ -951,6 +984,7 @@ export class TembaMenu extends RapidElement {
       selected: isSelected,
       item: !(menuItem.avatar && menuItem.level === 0),
       avatar: !!menuItem.avatar,
+      popup: menuItem.popup,
       inline: menuItem.inline,
       expanding: this.expanding && this.expanding === menuItem.id,
       expanded: this.isExpanded(menuItem),
@@ -1035,12 +1069,15 @@ export class TembaMenu extends RapidElement {
 
     if (menuItem.popup) {
       return html`
-        <temba-dropdown offsetx="10" arrowoffset="8" arrowSize="0" mask>
+        <temba-dropdown
+          offsetx="10"
+          arrowoffset="8"
+          arrowSize="0"
+          drop_align="left"
+          mask
+        >
           <div slot="toggle">${item}</div>
-          <div
-            slot="dropdown"
-            style="width:300px;overflow:hidden;padding-bottom:0.5em"
-          >
+          <div slot="dropdown" style="width:300px;overflow:hidden;">
             <div style="max-height:400px;overflow-y:auto">
               ${(menuItem.items || []).map((child: MenuItem) => {
                 child.level = menuItem.level + 1;

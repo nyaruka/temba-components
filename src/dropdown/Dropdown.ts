@@ -1,6 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
+import { getClasses } from '../utils';
 
 export class Dropdown extends RapidElement {
   static get styles() {
@@ -66,11 +67,16 @@ export class Dropdown extends RapidElement {
         opacity: 0;
         transition: opacity var(--transition-speed) ease-in-out;
         pointer-events: none;
+        z-index: 1;
       }
 
       .mask.open {
         opacity: 1;
         pointer-events: auto;
+      }
+
+      .right {
+        right: 0;
       }
     `;
   }
@@ -78,8 +84,17 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   open = false;
 
-  @property({ type: String, attribute: 'drop_align' })
-  dropAlign = 'left';
+  @property({ type: Boolean })
+  top = false;
+
+  @property({ type: Boolean })
+  bottom = false;
+
+  @property({ type: Boolean })
+  left = false;
+
+  @property({ type: Boolean })
+  right = false;
 
   @property({ type: Number })
   arrowSize = 6;
@@ -113,7 +128,7 @@ export class Dropdown extends RapidElement {
       '.dropdown'
     ) as HTMLDivElement;
 
-    dropdown.addEventListener('blur', (event: any) => {
+    dropdown.addEventListener('blur', () => {
       // we nest this to deal with clicking the toggle to close
       // as we don't want it to toggle an immediate open, probably
       // a better way to deal with this
@@ -127,18 +142,17 @@ export class Dropdown extends RapidElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+    const dropdown = this.shadowRoot.querySelector(
+      '.dropdown'
+    ) as HTMLDivElement;
 
     if (changedProperties.has('offsetY') || changedProperties.has('offsetX')) {
-      const dropdown = this.shadowRoot.querySelector(
-        '.dropdown'
-      ) as HTMLDivElement;
-
       dropdown.style.marginTop = this.offsetY + 'px';
       if (dropdown.offsetLeft + dropdown.clientWidth > window.outerWidth) {
         dropdown.style.marginLeft =
           '-' + (dropdown.clientWidth - this.clientWidth - this.offsetX) + 'px';
       } else {
-        if (this.dropAlign === 'right') {
+        if (this.right) {
           dropdown.style.marginRight = this.offsetX + 'px';
         } else {
           dropdown.style.marginLeft = this.offsetX + 'px';
@@ -152,7 +166,26 @@ export class Dropdown extends RapidElement {
       } else {
         this.classList.remove('open');
       }
+
+      this.ensureOnScreen();
     }
+  }
+
+  public ensureOnScreen() {
+    window.setTimeout(() => {
+      const dropdown = this.shadowRoot.querySelector(
+        '.dropdown'
+      ) as HTMLDivElement;
+
+      if (dropdown) {
+        // dropdown will go off the screen, let's push it up
+        if (dropdown.getBoundingClientRect().bottom > window.innerHeight) {
+          const toggle = this.querySelector('div[slot="toggle"]');
+          dropdown.style.bottom =
+            this.offsetY + toggle.clientHeight + 10 + 'px';
+        }
+      }
+    }, 100);
   }
 
   public handleToggleClicked(event: MouseEvent): void {
@@ -187,10 +220,15 @@ export class Dropdown extends RapidElement {
           @click=${this.handleToggleClicked}
         ></slot>
         <div
-          class="dropdown"
+          class="${getClasses({
+            dropdown: true,
+            right: this.right,
+            left: this.left,
+            top: this.top,
+            bottom: this.bottom,
+          })}"
           tabindex="0"
           @mousedown=${this.handleDropdownMouseDown}
-          style="${this.dropAlign == 'right' ? 'right:0' : ''}"
         >
           <div class="arrow"></div>
           <div class="dropdown-wrapper">

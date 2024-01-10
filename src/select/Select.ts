@@ -1399,7 +1399,7 @@ export class Select extends FormElement {
     static-width=${this.optionWidth}
     ?anchor-right=${this.anchorRight}
     ?visible=${this.visibleOptions.length > 0}
-  ></temba-options>
+    ></temba-options>
 
     <temba-options
     @temba-selection=${this.handleExpressionSelection}
@@ -1418,13 +1418,15 @@ export class Select extends FormElement {
             `
           : null
       }
-      <div class="footer">${msg('Tab to complete, enter to select')}</div>
+      ${
+        this.completionOptions.length > 0
+          ? html`<div class="footer">
+              ${msg('Tab to complete, enter to select')}
+            </div>`
+          : null
+      }
     </temba-options>
-
-
-
-        </temba-field>
-    
-    `;
+  </temba-field>
+  `;
   }
 }

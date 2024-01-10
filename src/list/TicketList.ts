@@ -1,7 +1,6 @@
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { TembaList } from './TembaList';
-import { timeSince } from '../utils';
 import { Contact } from '../interfaces';
 import { renderUserAvatar } from '../contacts/events';
 import { Icon } from '../vectoricon';
