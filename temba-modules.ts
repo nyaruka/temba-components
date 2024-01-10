@@ -49,6 +49,7 @@ import { Lightbox } from './src/lightbox/Lightbox';
 import { ColorPicker } from './src/colorpicker/ColorPicker';
 import { Resizer } from './src/resizer/Resizer';
 import { Thumbnail } from './src/thumbnail/Thumbnail';
+import { NotificationList } from './src/list/NotificationList';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -87,6 +88,7 @@ addCustomElement('temba-contact-history', ContactHistory);
 addCustomElement('temba-contact-chat', ContactChat);
 addCustomElement('temba-contact-details', ContactDetails);
 addCustomElement('temba-ticket-list', TicketList);
+addCustomElement('temba-notification-list', NotificationList);
 addCustomElement('temba-list', TembaList);
 addCustomElement('temba-sortable-list', SortableList);
 addCustomElement('temba-run-list', RunList);

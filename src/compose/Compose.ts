@@ -70,7 +70,7 @@ export class Compose extends FormElement {
           --compose-curvature,
           var(--curvature) var(--curvature) 0px 0px
         );
-        --textarea-min-height: 4em;
+        --textarea-min-height: var(--textarea-min-height, 4em);
         --widget-box-shadow: none;
         padding: var(--compose-padding, 0px);
       }

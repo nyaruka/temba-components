@@ -44,6 +44,9 @@ export class TembaList extends RapidElement {
   @property({ type: Boolean })
   paused = false;
 
+  @property({ type: Boolean })
+  internalFocusDisabled = false;
+
   @property({ attribute: false })
   getNextRefresh: (firstOption: any) => any;
 
@@ -147,6 +150,10 @@ export class TembaList extends RapidElement {
         this.selected = this.items[this.cursorIndex];
         this.handleSelected(this.selected);
       }
+    }
+
+    if (changedProperties.has('items')) {
+      //
     }
   }
 
@@ -440,7 +447,7 @@ export class TembaList extends RapidElement {
     return '';
   }
 
-  private handleSelection(event: CustomEvent) {
+  protected handleSelection(event: CustomEvent) {
     const { selected, index } = event.detail;
 
     this.selected = selected;
@@ -460,6 +467,7 @@ export class TembaList extends RapidElement {
         ?hideShadow=${this.hideShadow}
         ?collapsed=${this.collapsed}
         ?loading=${this.loading}
+        ?internalFocusDisabled=${this.internalFocusDisabled}
         .renderOption=${this.renderOption}
         .renderOptionDetail=${this.renderOptionDetail}
         @temba-scroll-threshold=${this.handleScrollThreshold}

@@ -346,7 +346,7 @@ export class ContactTickets extends StoreElement {
               : html`
                   <div>
                     <temba-dropdown
-                      drop_align="right"
+                      right
                       arrowsize="8"
                       arrowoffset="-44"
                       offsety="8"

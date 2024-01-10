@@ -25,7 +25,6 @@ export class Options extends RapidElement {
         transition: transform var(--transition-speed)
             cubic-bezier(0.71, 0.18, 0.61, 1.33),
           opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
-        pointer-events: none;
         opacity: 0;
         border: 1px transparent;
       }
@@ -100,7 +99,6 @@ export class Options extends RapidElement {
       .show {
         transform: scaleY(1) translateY(0);
         border: 1px solid var(--color-widget-border);
-        pointer-events: auto;
         opacity: 1;
         z-index: 1;
       }
@@ -126,11 +124,6 @@ export class Options extends RapidElement {
         -moz-hyphens: auto;
         -webkit-hyphens: auto;
         hyphens: auto;
-      }
-
-      .option.focused {
-        background: var(--color-selection);
-        color: var(--color-text-dark);
       }
 
       .option .detail {
@@ -172,6 +165,16 @@ export class Options extends RapidElement {
       .loading .loader-bar {
         max-height: 1.1em;
       }
+
+      .option:hover {
+        background: var(--option-hover-bg);
+        color: var(--option-hover-text);
+      }
+
+      .option.focused {
+        background: var(--color-selection);
+        color: var(--color-text-dark);
+      }
     `;
   }
 
@@ -210,6 +213,9 @@ export class Options extends RapidElement {
 
   @property({ type: Number })
   cursorIndex = -1;
+
+  @property({ type: Boolean })
+  internalFocusDisabled = false;
 
   @property({ type: Array })
   options: any[];
@@ -299,7 +305,7 @@ export class Options extends RapidElement {
     super.updated(changedProperties);
 
     // if our cursor changed, lets make sure our scrollbox is showing it
-    if (changedProperties.has('cursorIndex')) {
+    if (!this.internalFocusDisabled && changedProperties.has('cursorIndex')) {
       const focusedOption = this.shadowRoot.querySelector(
         `div[data-option-index="${this.cursorIndex}"]`
       ) as HTMLDivElement;
@@ -354,16 +360,18 @@ export class Options extends RapidElement {
           newCount > 0 &&
           !changedProperties.has('cursorIndex'))
       ) {
-        if (!this.block) {
-          this.cursorIndex = 0;
-        } else {
-          if (this.cursorIndex >= newCount) {
-            this.cursorIndex = newCount - 1;
+        if (!this.internalFocusDisabled) {
+          if (!this.block) {
+            this.cursorIndex = 0;
+          } else {
+            if (this.cursorIndex >= newCount) {
+              this.cursorIndex = newCount - 1;
+            }
           }
-        }
 
-        if (this.block) {
-          this.handleSelection(false);
+          if (this.block) {
+            this.handleSelection(false);
+          }
         }
       }
 
@@ -419,8 +427,10 @@ export class Options extends RapidElement {
   }
 
   private handleSelection(tabbed = false, index = -1) {
-    if (index === -1) {
-      index = this.cursorIndex;
+    if (!this.internalFocusDisabled) {
+      if (index === -1) {
+        index = this.cursorIndex;
+      }
     }
 
     const selected = this.options[index];
@@ -432,24 +442,33 @@ export class Options extends RapidElement {
   }
 
   private moveCursor(direction: number): void {
-    const newIndex = Math.max(
-      Math.min(this.cursorIndex + direction, this.options.length - 1),
-      0
-    );
-    this.setCursor(newIndex);
+    if (!this.internalFocusDisabled) {
+      const newIndex = Math.max(
+        Math.min(this.cursorIndex + direction, this.options.length - 1),
+        0
+      );
+      this.setCursor(newIndex);
+    }
   }
 
   private setCursor: (index: number) => void = throttle(function (
     index: number
   ) {
-    if (index !== this.cursorIndex) {
-      this.cursorIndex = index;
+    if (!this.internalFocusDisabled) {
+      if (index !== this.cursorIndex) {
+        this.cursorIndex = index;
+      }
     }
   },
   50);
 
+  public scrollToTop() {
+    const scrollBox = this.shadowRoot.querySelector('.options-scroll');
+    scrollBox.scrollTop = 0;
+  }
+
   private handleKeyDown(evt: KeyboardEvent) {
-    if (this.block && !this.isFocused()) {
+    if (this.internalFocusDisabled || (this.block && !this.isFocused())) {
       return;
     }
 
@@ -650,7 +669,10 @@ export class Options extends RapidElement {
                 @mousemove=${this.handleMouseMove}
                 @click=${this.handleOptionClick}
                 @mousedown=${this.handleMouseDown}
-                class="option ${index === this.cursorIndex ? 'focused' : ''}"
+                class="option ${index === this.cursorIndex &&
+                !this.internalFocusDisabled
+                  ? 'focused'
+                  : ''}"
               >
                 ${this.resolvedRenderOption(option, index === this.cursorIndex)}
               </div>`;
