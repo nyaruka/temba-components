@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '66c82f285562aa77cfca6afe6800468e';
+export const SVG_FINGERPRINT = '963a11882da2ee8b18c878e911d8eaf1';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -75,8 +75,8 @@ export enum Icon {
   contact = 'user-01',
   contact_archived = 'archive',
   contact_blocked = 'message-x-square',
-  contact_export = 'users-down',
-  contact_import = 'users-up',
+  contact_export = 'download-cloud-01',
+  contact_import = 'upload-cloud-01',
   contact_stopped = 'slash-octagon',
   contact_updated = 'user-edit',
   contacts = 'user-01',
@@ -126,6 +126,7 @@ export enum Icon {
   menu = 'menu-01',
   menu_collapse = 'chevron-left-double',
   message = 'message-square-02',
+  message_export = 'download-cloud-01',
   messages = 'message-square-02',
   missing = 'maximize-02',
   missed_call = 'phone-x',
