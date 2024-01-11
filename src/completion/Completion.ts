@@ -256,6 +256,8 @@ export class Completion extends FormElement {
         }
       : {};
 
+    const visible = this.options && this.options.length > 0;
+
     return html`
       <temba-field
         name=${this.name}
@@ -288,7 +290,7 @@ export class Completion extends FormElement {
             .renderOption=${renderCompletionOption}
             .anchorTo=${this.anchorElement}
             .options=${this.options}
-            ?visible=${this.options && this.options.length > 0}
+            ?visible=${visible}
           >
             ${this.currentFunction
               ? html`
@@ -297,7 +299,9 @@ export class Completion extends FormElement {
                   </div>
                 `
               : null}
-            <div class="footer">${msg('Tab to complete, enter to select')}</div>
+            <div class="footer" style="${!visible ? 'display:none' : null}">
+              ${msg('Tab to complete, enter to select')}
+            </div>
           </temba-options>
         </div>
       </temba-field>
