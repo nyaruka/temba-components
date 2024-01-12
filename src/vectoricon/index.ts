@@ -153,6 +153,7 @@ export enum Icon {
   reset = 'flip-backward',
   resthooks = 'share-07',
   restore = 'play',
+  results_export = 'download-cloud-01',
   retry = 'refresh-cw-05',
   revisions = 'clock-rewind',
   rocketchat = 'rocketchat',

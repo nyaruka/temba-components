@@ -23,66 +23,6 @@ interface Notification {
   };
 }
 
-const getNotification = (notification: Notification) => {
-  let icon = null;
-  let body = null;
-  let color = '#333';
-
-  if (notification.type === 'incident:started') {
-    color = 'tomato';
-    if (notification.incident.type === 'org:flagged') {
-      icon = Icon.incidents;
-      body =
-        'Your workspace was flagged, please contact support for assistance.';
-    } else if (notification.incident.type === 'org:suspended') {
-      icon = Icon.incidents;
-      body =
-        'Your workspace was suspended, please contact support for assistance.';
-    } else if (notification.incident.type === 'channel:disconnected') {
-      icon = Icon.channel;
-      body = 'Your android channel is not connected';
-    } else if (notification.incident.type === 'webhooks:unhealthy') {
-      icon = Icon.webhook;
-      body = 'Your webhook calls are not working properly.';
-    }
-  } else if (notification.type === 'import:finished') {
-    if (notification.import.type === 'contact') {
-      icon = Icon.contact_import;
-      body = `Imported ${notification.import.num_records.toLocaleString()} contacts`;
-    }
-  } else if (notification.type === 'export:finished') {
-    if (notification.export.type === 'contact') {
-      icon = Icon.contact_export;
-      body = 'Contacts exported';
-    }
-  } else if (notification.type === 'tickets:activity') {
-    icon = Icon.tickets;
-    body = 'New ticket activity';
-  } else if (notification.type === 'tickets:opened') {
-    icon = Icon.tickets;
-    body = 'New unassigned ticket';
-  }
-  return html`<div
-    style="color:${color};display:flex;align-items:flex-start;flex-direction:row;font-weight:${notification.is_seen
-      ? 300
-      : 400}"
-  >
-    ${icon
-      ? html`<div style="margin-right:0.6em">
-          <temba-icon name="${icon}"></temba-icon>
-        </div>`
-      : null}
-    <div style="display:flex;flex-direction:column">
-      <div style="line-height:1.1em">${body}</div>
-      <temba-date
-        style="font-size:80%"
-        value=${notification.created_on}
-        display="duration"
-      ></temba-date>
-    </div>
-  </div>`;
-};
-
 export class NotificationList extends TembaList {
   reverseRefresh = false;
   internalFocusDisabled = true;
@@ -152,6 +92,9 @@ export class NotificationList extends TembaList {
         } else if (notification.export.type === 'message') {
           icon = Icon.message_export;
           body = 'Exported messages';
+        } else if (notification.export.type === 'results') {
+          icon = Icon.results_export;
+          body = 'Exported flow results';
         }
       } else if (notification.type === 'tickets:activity') {
         icon = Icon.tickets;
