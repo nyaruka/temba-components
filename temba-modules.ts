@@ -110,3 +110,4 @@ addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-resizer', Resizer);
 addCustomElement('temba-thumbnail', Thumbnail);
+// addCustomElement('temba-webchat', WebChat);
