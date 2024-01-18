@@ -18,6 +18,18 @@ export class WebChat extends LitElement {
         align-self: center;
       }
 
+      .chat {
+        max-width: 20rem;
+      }
+
+      .messages {
+        max-height: 10rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: #fff;
+        padding: 1em;
+      }
+
       .inactive {
         pointer-events: none;
         opacity: 0.3;
@@ -68,8 +80,10 @@ export class WebChat extends LitElement {
       if (msg.type === 'chat_started') {
         webChat.urn = msg.identifier;
         webChat.active = true;
-      }
-      if (msg.type === 'msg_out') {
+      } else if (msg.type === 'chat_resumed') {
+        webChat.urn = msg.identifier;
+        webChat.active = true;
+      } else if (msg.type === 'msg_out') {
         msg['timestamp'] = new Date().getTime();
         webChat.messages.push(msg);
         webChat.requestUpdate('messages');
@@ -141,14 +155,14 @@ export class WebChat extends LitElement {
     return html`
       ${!this.open
         ? html` <div @click=${this.openChat}>Open Me</div> `
-        : html` <div>
-            <div>
+        : html` <div class="chat">
+            <div class="messages">
               ${this.messages
                 ? this.messages.map(message => html`<div>${message.text}</div>`)
                 : null}
             </div>
             <input
-              class="${this.active ? 'active' : 'inactive'}"
+              class="input ${this.active ? 'active' : 'inactive'}"
               type="text"
               @keydown=${this.handleKeyDown}
             />

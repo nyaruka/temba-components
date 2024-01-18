@@ -50,6 +50,7 @@ import { ColorPicker } from './src/colorpicker/ColorPicker';
 import { Resizer } from './src/resizer/Resizer';
 import { Thumbnail } from './src/thumbnail/Thumbnail';
 import { NotificationList } from './src/list/NotificationList';
+import { WebChat } from './src/webchat/WebChat';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -110,4 +111,4 @@ addCustomElement('temba-compose', Compose);
 addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-resizer', Resizer);
 addCustomElement('temba-thumbnail', Thumbnail);
-// addCustomElement('temba-webchat', WebChat);
+addCustomElement('temba-webchat', WebChat);
