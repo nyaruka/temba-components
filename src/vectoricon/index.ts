@@ -176,6 +176,7 @@ export enum Icon {
   tickets_closed = 'check',
   tickets_mine = 'coffee',
   tickets_open = 'inbox-01',
+  tickets_export = 'download-cloud-01',
   tickets_unassigned = 'inbox-01',
   topic = 'message-text-circle-02',
   two_factor_enabled = 'shield-02',

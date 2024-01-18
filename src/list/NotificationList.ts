@@ -95,6 +95,9 @@ export class NotificationList extends TembaList {
         } else if (notification.export.type === 'results') {
           icon = Icon.results_export;
           body = 'Exported flow results';
+        } else if (notification.export.type === 'ticket') {
+          icon = Icon.tickets_export;
+          body = 'Exported tickets';
         }
       } else if (notification.type === 'tickets:activity') {
         icon = Icon.tickets;
