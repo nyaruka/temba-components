@@ -55,6 +55,7 @@ export interface User {
   email?: string;
   role?: string;
   created_on?: string;
+  avatar?: string;
 }
 
 export interface Ticket {
@@ -66,7 +67,7 @@ export interface Ticket {
   status: string;
   contact: ObjectReference;
   topic: ObjectReference;
-  assignee?: { email: string; name: string };
+  assignee?: { email: string; name: string; avatar?: string };
 }
 
 export interface FlowResult {

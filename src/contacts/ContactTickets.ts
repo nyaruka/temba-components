@@ -155,7 +155,6 @@ export class ContactTickets extends StoreElement {
 
       .user {
         display: flex;
-        padding: 0.4em 0.7em;
         align-items: center;
         border-radius: var(--curvature);
         cursor: pointer;
@@ -166,8 +165,6 @@ export class ContactTickets extends StoreElement {
       }
 
       .user .avatar {
-        font-size: 0.5em;
-        margin-right: 1em;
       }
 
       .user .name {
@@ -251,7 +248,7 @@ export class ContactTickets extends StoreElement {
       return null;
     }
     return html`<div class="user">
-      <div class="avatar">${renderAvatar({ user: user })}</div>
+      <div class="avatar">${renderAvatar({ user: user, scale: 0.6 })}</div>
       <div class="name">${getFullName(user)}</div>
     </div>`;
   }
@@ -355,10 +352,11 @@ export class ContactTickets extends StoreElement {
                       <div slot="toggle" class="toggle">
                         ${ticket.assignee
                           ? html`
-                              <div style="font-size:0.5em">
+                              <div>
                                 ${renderAvatar({
                                   name: ticket.assignee.name,
-                                  position: 'left',
+                                  user: ticket.assignee,
+                                  scale: 0.7,
                                 })}
                               </div>
                             `

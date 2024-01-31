@@ -13,15 +13,13 @@ const SVGFixer = require('oslllo-svg-fixer');
 const { digestSync } = require('fprint');
 
 const cwd = process.cwd();
-const OUTPUT_FILE_NAME = cwd + "/static/svg/index.svg";
-const PACK_DIR = cwd + "/static/svg/packs";
 
+const PACK_DIR = cwd + "/static/svg/packs";
 const USED_DIR = cwd + "/static/svg/work/used";
 const TRACED_DIR = cwd + "/static/svg/work/traced";
+const USAGE_REGEX = /'(.*)'/;
 
-const USAGE_FILE = './src/vectoricon/index.ts';
 
-const USAGE_REGEX= /'(.*)'/;
 
 const sprites = svgstore()
 
@@ -96,7 +94,13 @@ function modifyFileContent(filePath, regexPattern, groupNumber, replacement) {
 }
 
 async function main() {
-  
+
+  // const OUTPUT_FILE_NAME = cwd + "/static/svg/index.svg";
+  //const USAGE_FILE = './src/vectoricon/index.ts';
+
+  const OUTPUT_FILE_NAME = argv.output || cwd + "/static/svg/index.svg";
+  const USAGE_FILE = argv.usage || './src/vectoricon/index.ts';
+
   let packs = sh.ls(PACK_DIR);
   packs.sort();
 
@@ -109,7 +113,7 @@ async function main() {
 
   const matches = processFileWithRegex(USAGE_FILE, USAGE_REGEX);
   const ids = matchesToObject(matches);
-  
+
   // copy any icons from our packs that are used
   packs.forEach(pack => {
     copyFilesInDict(`${PACK_DIR}/${pack}`, USED_DIR, ids)
@@ -121,7 +125,7 @@ async function main() {
     throwIfDestinationDoesNotExist: false,
     traceResolution: argv.resolution || 600,
   };
-  
+
   await SVGFixer(USED_DIR, TRACED_DIR, options).fix();
 
   const files = sh.find(TRACED_DIR)
@@ -131,7 +135,7 @@ async function main() {
     const id = path.basename(file, '.svg')
     const contents = fs.readFileSync(file, 'utf8')
     sprites.add(id, contents);
-  });    
+  });
 
   let output = htmlclean(sprites.toString({ cleanDefs: true, cleanSymbols: true, renameDefs: true }))
   output = output.replaceAll(/fill="black"/g, `fill="currentColor"`);

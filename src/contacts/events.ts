@@ -697,12 +697,6 @@ export const getEventGroupType = (event: ContactEvent, ticket: string) => {
   return 'verbose';
 };
 
-export const renderUserAvatar = (user: User) => {
-  return html`<div style="width:3.5em;font-size:0.8em">
-    ${renderAvatar({ user, position: 'left' })}
-  </div>`;
-};
-
 export const renderAttachment = (attachment: string): TemplateResult => {
   const idx = attachment.indexOf(':');
   const attType = attachment.substr(0, idx);
@@ -881,7 +875,7 @@ export const renderMsgEvent = (
 
     ${!isInbound && event.created_by
       ? html`<div style="margin-left:0.8em;margin-top:0.3em;font-size:0.9em">
-          ${renderUserAvatar(event.created_by)}
+          ${renderAvatar({ user: event.created_by })}
         </div>`
       : null}
   </div>`;
@@ -1016,8 +1010,8 @@ export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
         ></temba-date>
       </div>
     </div>
-    <div style="margin-left:0.8em;margin-top:0.3em;font-size:0.8em">
-      ${renderUserAvatar(event.created_by)}
+    <div style="margin-left:0.8em;margin-top:0.3em;">
+      ${renderAvatar({ user: event.created_by })}
     </div>
   </div>`;
 };
