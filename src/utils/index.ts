@@ -4,6 +4,7 @@ import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
 import { Attachment, ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
+import { userInfo } from 'os';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -718,21 +719,16 @@ export const renderAvatar = (input: {
   name?: string;
   user?: User;
   icon?: string;
-  image?: string;
   position?: string;
   tip?: boolean;
+  scale?: number;
 }) => {
   if (!input.position) {
     input.position = 'right';
   }
 
-  // just a url
-  if (input.image) {
-    return html`<img src="${input.image}" />`;
-  }
-
   let text = input.name;
-  if (input.user) {
+  if (input.user && input.user.first_name && input.user.last_name) {
     text = `${input.user.first_name} ${input.user.last_name}`;
   }
 
@@ -740,31 +736,43 @@ export const renderAvatar = (input: {
     return null;
   }
 
-  const color = colorHash.hex(text);
-  const initials = extractInitials(text);
+  let initials = '';
+  let color = colorHash.hex(text);
+  // just a url
+  if (input.user && input.user.avatar) {
+    color = `url('${input.user.avatar}') center / contain no-repeat`;
+  } else if (text) {
+    initials = extractInitials(text);
+  }
+
   const avatar = html`
     <div
-      style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;"
+      style="display:flex; flex-direction: column; align-items:center;transform:scale(${input.scale ||
+      1});"
     >
       <div
         class="avatar-circle"
         style="
             display: flex;
-            height: 2em;
-            width: 2em;
+            height: 30px;
+            width: 30px;
             flex-direction: row;
             align-items: center;
             color: #fff;
             border-radius: 100%;
             font-weight: 400;
-            border: 0.3em solid rgba(0,0,0,.05);
+            overflow: hidden;
+            font-size: 12px;
+            box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
             background:${color}"
       >
-        <div
-          style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
-        >
-          <div style="border:0px solid blue;">${initials}</div>
-        </div>
+        ${initials
+          ? html` <div
+              style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
+            >
+              <div style="border:0px solid blue;">${initials}</div>
+            </div>`
+          : null}
       </div>
     </div>
   `;

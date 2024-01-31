@@ -51,6 +51,8 @@ import { Resizer } from './src/resizer/Resizer';
 import { Thumbnail } from './src/thumbnail/Thumbnail';
 import { NotificationList } from './src/list/NotificationList';
 import { WebChat } from './src/webchat/WebChat';
+import { ImagePicker } from './src/imagepicker/ImagePicker';
+import { Mask } from './src/mask/Mask';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -112,3 +114,5 @@ addCustomElement('temba-color-picker', ColorPicker);
 addCustomElement('temba-resizer', Resizer);
 addCustomElement('temba-thumbnail', Thumbnail);
 addCustomElement('temba-webchat', WebChat);
+addCustomElement('temba-image-picker', ImagePicker);
+addCustomElement('temba-mask', Mask);

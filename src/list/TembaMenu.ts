@@ -993,7 +993,7 @@ export class TembaMenu extends RapidElement {
     });
 
     if (menuItem.avatar) {
-      icon = renderAvatar({ name: menuItem.avatar, tip: false });
+      icon = renderAvatar({ name: menuItem.avatar, tip: false, scale: 1.2 });
       if (menuItem.bubble) {
         icon = html`${icon}${menuItem.bubble
           ? html`<div

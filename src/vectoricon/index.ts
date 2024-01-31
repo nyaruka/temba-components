@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '963a11882da2ee8b18c878e911d8eaf1';
+export const SVG_FINGERPRINT = '819ccb7b7ad3480361d5afba355b4e6f';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -162,6 +162,7 @@ export enum Icon {
   search = 'search-refraction',
   select_open = 'chevron-down',
   select_clear = 'x',
+  send = 'send-03',
   service = 'magic-wand-01',
   service_end = 'log-out-04',
   settings = 'settings-02',
@@ -171,6 +172,7 @@ export enum Icon {
   sort_down = 'sort-arrow-down',
   sort_up = 'sort-arrow-up',
   staff = 'hard-drive',
+  submit = 'check',
   tickets = 'agent',
   tickets_all = 'archive',
   tickets_closed = 'check',
@@ -199,6 +201,7 @@ export enum Icon {
   updated = 'edit-02',
   up = 'chevron-up',
   upload = 'upload-cloud-01',
+  upload_image = 'camera-01',
   usages = 'link-04',
   user = 'users-01',
   users = 'users-01',
