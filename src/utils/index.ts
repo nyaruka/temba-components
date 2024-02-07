@@ -4,11 +4,10 @@ import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
 import { Attachment, ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
-import { userInfo } from 'os';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
-const colorHash = new ColorHash();
+export const colorHash = new ColorHash();
 
 export type Asset = KeyedAsset & Ticket & ContactField;
 

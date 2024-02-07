@@ -2,14 +2,11 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType, Ticket, TicketStatus, User } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
-import {
-  getClasses,
-  getFullName,
-  postJSON,
-  renderAvatar,
-  stopEvent,
-} from '../utils';
+import { getClasses, postJSON, stopEvent } from '../utils';
 import { Icon } from '../vectoricon';
+
+const dropdownUserScale = 0.7;
+const inlineUserScale = 0.8;
 
 export class ContactTickets extends StoreElement {
   @property({ type: String })
@@ -129,6 +126,10 @@ export class ContactTickets extends StoreElement {
         border-bottom: 1px solid #f3f3f3;
       }
 
+      .option-group temba-user {
+        flex-grow: 1;
+      }
+
       .assigned .user {
         flex-grow: 1;
       }
@@ -162,9 +163,6 @@ export class ContactTickets extends StoreElement {
 
       .user:hover {
         background: var(--color-selection);
-      }
-
-      .user .avatar {
       }
 
       .user .name {
@@ -243,16 +241,6 @@ export class ContactTickets extends StoreElement {
     }
   }
 
-  private renderUser(user: User) {
-    if (!user) {
-      return null;
-    }
-    return html`<div class="user">
-      <div class="avatar">${renderAvatar({ user: user, scale: 0.6 })}</div>
-      <div class="name">${getFullName(user)}</div>
-    </div>`;
-  }
-
   private handleClose(uuid: string) {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
@@ -285,6 +273,7 @@ export class ContactTickets extends StoreElement {
     if (ticket.assignee && ticket.assignee.email === email) {
       return;
     }
+    this.blur();
 
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
@@ -352,13 +341,10 @@ export class ContactTickets extends StoreElement {
                       <div slot="toggle" class="toggle">
                         ${ticket.assignee
                           ? html`
-                              <div>
-                                ${renderAvatar({
-                                  name: ticket.assignee.name,
-                                  user: ticket.assignee,
-                                  scale: 0.7,
-                                })}
-                              </div>
+                              <temba-user
+                                email=${ticket.assignee.email}
+                                scale="${inlineUserScale}"
+                              ></temba-user>
                             `
                           : html`
                               <temba-button
@@ -384,11 +370,11 @@ export class ContactTickets extends StoreElement {
                                   ? 'current-user'
                                   : ''}"
                               >
-                                ${this.renderUser(
-                                  users.find(
-                                    user => user.email === ticket.assignee.email
-                                  )
-                                )}
+                                <temba-user
+                                  email=${ticket.assignee.email}
+                                  name
+                                  scale="${dropdownUserScale}"
+                                ></temba-user>
                                 <temba-button
                                   name="Unassign"
                                   primary
@@ -418,7 +404,11 @@ export class ContactTickets extends StoreElement {
                                   );
                                 }}
                               >
-                                ${this.renderUser(agent)}
+                                <temba-user
+                                  email=${agent.email}
+                                  name
+                                  scale="${dropdownUserScale}"
+                                ></temba-user>
                               </div>
                             `
                           : null}
@@ -444,7 +434,11 @@ export class ContactTickets extends StoreElement {
                                 );
                               }}
                             >
-                              ${this.renderUser(user)}
+                              <temba-user
+                                email=${user.email}
+                                scale="${dropdownUserScale}"
+                                name
+                              ></temba-user>
                             </div>`;
                           })}
                         </div>

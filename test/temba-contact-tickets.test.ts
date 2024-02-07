@@ -48,9 +48,7 @@ describe('temba-contact-tickets', () => {
     });
 
     // click on the avatar element
-    (
-      tickets.shadowRoot.querySelector('.avatar-circle') as HTMLDivElement
-    ).click();
+    (tickets.shadowRoot.querySelector('temba-user') as HTMLDivElement).click();
     assert.instanceOf(tickets, ContactTickets);
     await assertScreenshot('contacts/tickets-assignment', getClip(tickets));
   });

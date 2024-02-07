@@ -206,9 +206,6 @@ export class ImagePicker extends FormElement {
 
         picker.value = fd;
         picker.closeCroppie();
-
-        console.log('image changed', picker.name, picker.value, picker.url);
-        // picker.dispatchEvent(new CustomEvent('image-changed', { detail: resp }));
       });
   }
 
