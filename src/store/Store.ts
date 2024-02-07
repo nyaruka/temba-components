@@ -216,6 +216,10 @@ export class Store extends RapidElement {
     );
   }
 
+  public getUser(email: string) {
+    return this.users.find((user: User) => user.email === email);
+  }
+
   public firstUpdated() {
     this.reset();
   }

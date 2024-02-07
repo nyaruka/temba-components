@@ -1,7 +1,7 @@
 import { css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html, TemplateResult } from 'lit-html';
-import { Contact, CustomEventType, Ticket } from '../interfaces';
+import { Contact, CustomEventType, Msg, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { Asset, getAssets, getClasses, postJSON, throttle } from '../utils';
 
@@ -58,6 +58,7 @@ import {
   SCROLL_THRESHOLD,
 } from './helpers';
 import { Lightbox } from '../lightbox/Lightbox';
+import { Store } from '../store/Store';
 
 // when images load, make sure we are on the bottom of the scroll window if necessary
 export const loadHandler = function (event) {
@@ -77,6 +78,7 @@ export const loadHandler = function (event) {
 
 export class ContactHistory extends RapidElement {
   public httpComplete: Promise<void | ContactHistoryPage>;
+  private store: Store;
 
   public constructor() {
     super();
@@ -85,6 +87,7 @@ export class ContactHistory extends RapidElement {
   connectedCallback() {
     super.connectedCallback();
     this.shadowRoot.addEventListener('load', loadHandler, true);
+    this.store = document.querySelector('temba-store') as Store;
   }
 
   disconnectedCallback() {
@@ -632,7 +635,13 @@ export class ContactHistory extends RapidElement {
       case Events.MESSAGE_CREATED:
       case Events.MESSAGE_RECEIVED:
       case Events.BROADCAST_CREATED:
-        return renderMsgEvent(event as MsgEvent, this.agent);
+        if ((event as MsgEvent).created_by) {
+          (event as MsgEvent).created_by = this.store.getUser(
+            (event as MsgEvent).created_by.email
+          );
+        }
+
+        return renderMsgEvent(event as MsgEvent);
 
       case Events.FLOW_ENTERED:
       case Events.FLOW_EXITED:
@@ -840,18 +849,23 @@ export class ContactHistory extends RapidElement {
         })}
       </div>
 
-      <div class="new-messages-container">
-        <div
-          @click=${() => {
-            this.scrollToBottom(true);
-          }}
-          class="new-messages ${getClasses({
-            expanded: this.showMessageAlert,
-          })}"
-        >
-          New Messages
-        </div>
-      </div>
+      ${
+        this.contact && this.contact.status === 'active'
+          ? html`<div class="new-messages-container">
+              <div
+                @click=${() => {
+                  this.scrollToBottom(true);
+                }}
+                class="new-messages ${getClasses({
+                  expanded: this.showMessageAlert,
+                })}"
+              >
+                New Messages
+              </div>
+            </div>`
+          : null
+      }
+      
       </div>
     `;
   }

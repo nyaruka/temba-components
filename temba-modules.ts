@@ -53,6 +53,7 @@ import { NotificationList } from './src/list/NotificationList';
 import { WebChat } from './src/webchat/WebChat';
 import { ImagePicker } from './src/imagepicker/ImagePicker';
 import { Mask } from './src/mask/Mask';
+import { TembaUser } from './src/user/TembaUser';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -116,3 +117,4 @@ addCustomElement('temba-thumbnail', Thumbnail);
 addCustomElement('temba-webchat', WebChat);
 addCustomElement('temba-image-picker', ImagePicker);
 addCustomElement('temba-mask', Mask);
+addCustomElement('temba-user', TembaUser);

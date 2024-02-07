@@ -1,13 +1,6 @@
-import { css, EventPart, html, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { Msg, ObjectReference, User } from '../interfaces';
-import {
-  getClasses,
-  NamedObject,
-  oxford,
-  oxfordFn,
-  oxfordNamed,
-  renderAvatar,
-} from '../utils';
+import { getClasses, oxford, oxfordFn, oxfordNamed } from '../utils';
 import { Icon } from '../vectoricon';
 import { getDisplayName } from './helpers';
 
@@ -758,10 +751,7 @@ export const renderAttachment = (attachment: string): TemplateResult => {
   return html`<div style="">${inner}</div>`;
 };
 
-export const renderMsgEvent = (
-  event: MsgEvent,
-  agent: string
-): TemplateResult => {
+export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
   const isInbound = event.type === Events.MESSAGE_RECEIVED;
   const isError = event.status === 'E';
   const isFailure = event.status === 'F';
@@ -874,9 +864,10 @@ export const renderMsgEvent = (
     </div>
 
     ${!isInbound && event.created_by
-      ? html`<div style="margin-left:0.8em;margin-top:0.3em;font-size:0.9em">
-          ${renderAvatar({ user: event.created_by })}
-        </div>`
+      ? html`<temba-user
+          style="margin-left:0.5em"
+          email=${event.created_by.email}
+        ></temba-user>`
       : null}
   </div>`;
 };
@@ -1010,9 +1001,7 @@ export const renderNoteCreated = (event: TicketEvent): TemplateResult => {
         ></temba-date>
       </div>
     </div>
-    <div style="margin-left:0.8em;margin-top:0.3em;">
-      ${renderAvatar({ user: event.created_by })}
-    </div>
+    <temba-user email=${event.created_by.email}></temba-user>
   </div>`;
 };
 

@@ -3,7 +3,6 @@ import { property } from 'lit/decorators.js';
 import { TembaList } from './TembaList';
 import { Contact } from '../interfaces';
 import { Icon } from '../vectoricon';
-import { renderAvatar } from '../utils';
 
 export class TicketList extends TembaList {
   @property({ type: String })
@@ -76,10 +75,10 @@ export class TicketList extends TembaList {
             >
               <div>
                 ${!contact.ticket.closed_on && contact.ticket.assignee
-                  ? html`${renderAvatar({
-                      user: contact.ticket.assignee,
-                      scale: 0.8,
-                    })}`
+                  ? html`<temba-user
+                      email=${contact.ticket.assignee.email}
+                      scale="0.8"
+                    ></temba-user>`
                   : null}
               </div>
             </div>

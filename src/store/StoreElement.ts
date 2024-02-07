@@ -1,14 +1,15 @@
-import { html, PropertyValueMap, TemplateResult } from 'lit';
+import { PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
+
 import { Store } from './Store';
+import { StoreMonitorElement } from './StoreMonitorElement';
 
 /**
  * StoreElement is a listener for a given endpoint that re-renders
  * when the underlying store element changes
  */
-export class StoreElement extends RapidElement {
+export class StoreElement extends StoreMonitorElement {
   @property({ type: String })
   url: string;
 
@@ -31,17 +32,15 @@ export class StoreElement extends RapidElement {
     });
   }
 
-  private handleStoreUpdated(event: CustomEvent) {
-    this.store.initialHttpComplete.then(() => {
-      if (event.detail.url === this.url) {
-        const previous = this.data;
-        this.data = event.detail.data;
-        this.fireCustomEvent(CustomEventType.Refreshed, {
-          data: event.detail.data,
-          previous,
-        });
-      }
-    });
+  protected storeUpdated(event: CustomEvent) {
+    if (event.detail.url === this.url) {
+      const previous = this.data;
+      this.data = event.detail.data;
+      this.fireCustomEvent(CustomEventType.Refreshed, {
+        data: event.detail.data,
+        previous,
+      });
+    }
   }
 
   protected updated(
@@ -59,30 +58,6 @@ export class StoreElement extends RapidElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.store = document.querySelector('temba-store') as Store;
-    this.handleStoreUpdated = this.handleStoreUpdated.bind(this);
     this.prepareData = this.prepareData.bind(this);
-    if (this.store) {
-      this.store.addEventListener(
-        CustomEventType.StoreUpdated,
-        this.handleStoreUpdated
-      );
-    }
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-    if (this.store) {
-      this.store.removeEventListener(
-        CustomEventType.StoreUpdated,
-        this.handleStoreUpdated
-      );
-    }
-  }
-
-  public render(): TemplateResult {
-    if (!this.store.ready && this.showLoading) {
-      return html`<temba-loading></temba-loading>`;
-    }
   }
 }
