@@ -37,6 +37,9 @@ const baseConfig = createSpaConfig({
             '<link rel="preload"',
             '<link rel="modulepreload"'
           );
+
+          // inject croppie
+          html = '<script src="{{STATIC_URL}}croppie/croppie.js"></script>' + html;
         }
 
         return html.replace(

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, css, PropertyValueMap } from 'lit';
-import 'croppie/croppie.js';
 import { CroppieCSS } from './CroppieCSS';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../vectoricon';
@@ -166,11 +165,11 @@ export class ImagePicker extends FormElement {
       wrapper.removeChild(wrapper.firstChild);
     }
     this.showCroppie = true;
-    const croppie = document.createElement('div');
-    wrapper.appendChild(croppie);
+    const ele = document.createElement('div');
+    wrapper.appendChild(ele);
 
     const Croppie = (window as any).Croppie;
-    this.croppie = new Croppie(croppie, {
+    this.croppie = new Croppie(ele, {
       enableExif: true,
       viewport: {
         width: 300,
