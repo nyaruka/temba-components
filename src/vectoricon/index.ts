@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '819ccb7b7ad3480361d5afba355b4e6f';
+export const SVG_FINGERPRINT = '824f6d3d3067a8db158453890cee52cb';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -21,6 +21,11 @@ export enum Icon {
   attachment_image = 'image-01',
   attachment_location = 'marker-pin-01',
   attachment_video = 'video-recorder',
+  branding = 'brush-02',
+  branding_email = 'mail-02',
+  branding_hostname = 'server-05',
+  branding_styling = 'palette',
+  branding_raw = 'pencil-01',
   broadcast = 'announcement-01',
   call = 'phone-call-01',
   call_missed = 'phone-call-02',
@@ -71,7 +76,6 @@ export enum Icon {
   classifier_bothub = 'classifier-bothub',
   close = 'x',
   compose = 'send-01',
-  colors = 'palette',
   contact = 'user-01',
   contact_archived = 'archive',
   contact_blocked = 'message-x-square',
