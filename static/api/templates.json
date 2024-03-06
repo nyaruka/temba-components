@@ -1,0 +1,250 @@
+{
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "uuid": "4b6d0ce7-ada8-4a88-82f3-7fa775d9671a",
+            "name": "Approved",
+            "translations": [
+                {
+                    "channel": {
+                        "uuid": "4da11872-9299-4649-8672-78257d7b72d0",
+                        "name": "WhatsApp"
+                    },
+                    "namespace": "",
+                    "locale": "eng-US",
+                    "status": "approved",
+                    "components": {
+                        "body": {
+                            "content": "Hi bob {{1}} from {{2}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "buttons.0": {
+                            "content": "Yes",
+                            "params": []
+                        },
+                        "buttons.1": {
+                            "content": "No {{1}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "channel": {
+                        "uuid": "4da11872-9299-4649-8672-78257d7b72d0",
+                        "name": "WhatsApp"
+                    },
+                    "namespace": "",
+                    "locale": "fra-FR",
+                    "status": "approved",
+                    "components": [
+                        {
+                            "body": {
+                                "content": "bon jour bob {{1}} from {{2}}",
+                                "params": [
+                                    {
+                                        "type": "text"
+                                    },
+                                    {
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "buttons.0": {
+                                "content": "Yes",
+                                "params": []
+                            },
+                            "buttons.1": {
+                                "content": "No {{1}}",
+                                "params": [
+                                    {
+                                        "type": "text"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "created_on": "2023-09-08T22:38:22.703997Z",
+            "modified_on": "2023-09-08T22:38:22.707271Z"
+        },
+        {
+            "uuid": "7b6d0ce7-ada8-4a88-82f3-7fa775d9671a",
+            "name": "Testing",
+            "translations": [
+                {
+                    "channel": {
+                        "uuid": "4da11872-9299-4649-8672-78257d7b72d0",
+                        "name": "WhatsApp"
+                    },
+                    "namespace": "",
+                    "locale": "eng-US",
+                    "status": "approved",
+                    "components": {
+                        "body": {
+                            "content": "Hi bob {{1}} from {{2}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "buttons.0": {
+                            "content": "Yes",
+                            "params": []
+                        },
+                        "buttons.1": {
+                            "content": "No {{1}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "channel": {
+                        "uuid": "4da11872-9299-4649-8672-78257d7b72d0",
+                        "name": "WhatsApp"
+                    },
+                    "namespace": "",
+                    "locale": "fra-FR",
+                    "status": "pending",
+                    "components": [
+                        {
+                            "body": {
+                                "content": "bon jour bob {{1}} from {{2}}",
+                                "params": [
+                                    {
+                                        "type": "text"
+                                    },
+                                    {
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            "buttons.0": {
+                                "content": "Yes",
+                                "params": []
+                            },
+                            "buttons.1": {
+                                "content": "No {{1}}",
+                                "params": [
+                                    {
+                                        "type": "text"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "created_on": "2023-09-08T22:38:22.703997Z",
+            "modified_on": "2023-09-08T22:38:22.707271Z"
+        },
+        {
+            "uuid": "580b124f-32cb-4003-b9e5-9eb783e29101",
+            "name": "Car Warranty",
+            "translations": [
+                {
+                    "channel": {
+                        "uuid": "4da11872-9299-4649-8672-78257d7b72d0",
+                        "name": "WhatsApp"
+                    },
+                    "namespace": "",
+                    "locale": "eng-US",
+                    "status": "approved",
+                    "components": {
+                        "body": {
+                            "content": "Hi there, we are trying to reach {{1}} about their car warranty. It turns out you only have until {{2}} to decide whether to extend it further. Please contact us at {{3}} at your earliest convenience to discuss your options. Are you still interested?",
+                            "params": [
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "buttons.0": {
+                            "content": "Yes",
+                            "params": []
+                        },
+                        "buttons.1": {
+                            "content": "No"
+                        },
+                        "buttons.2": {
+                            "content": "Wait until {{1}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "channel": {
+                        "uuid": "4da11872-9299-4649-8672-78257d7b72d0",
+                        "name": "WhatsApp"
+                    },
+                    "namespace": "",
+                    "locale": "fra-FR",
+                    "status": "pending",
+                    "components": {
+                        "body": {
+                            "content": "Bonjour, nous essayons d'atteindre {{1}} à propos de leur garantie automobile. Il s'avère que tu n'as que jusqu'à {{2}} pour décider s'il convient de le prolonger davantage. Veuillez nous contacter au {{3}} dès que possible pour discuter de vos options. Êtes vous toujours intéressé?",
+                            "params": [
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "buttons.0": {
+                            "content": "Oui",
+                            "params": []
+                        },
+                        "buttons.1": {
+                            "content": "No"
+                        },
+                        "buttons.2": {
+                            "content": "Attendre jusqu'à {{1}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "created_on": "2023-09-08T22:38:22.710140Z",
+            "modified_on": "2023-09-08T22:38:22.710141Z"
+        }
+    ]
+}
