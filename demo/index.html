@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <link href="/sitestatic/css/temba-components.css" rel="stylesheet" type="text/css" />
+  <link href="/static/css/temba-components.css" rel="stylesheet" type="text/css" />
 
   <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500" rel="stylesheet" />
 
@@ -122,6 +122,7 @@
         console.log(response);
       })
     }
+
   </script>
 </head>
 
@@ -144,8 +145,11 @@
   <div class="header">temba-components</div>
 
 
-  <temba-image-picker name="avatar" label="Profile Picture" shape="circle"></temba-image-picker>
+  <!--temba-image-picker name="avatar" label="Profile Picture" shape="circle"></temba-image-picker-->
   <!--temba-webchat channel="9e6b37a8-c649-48b3-92d1-dfa7c00b85dc"></temba-webchat-->
+  <!-- temba-template-editor url="/static/api/templates.json" lang="eng" template="580b124f-32cb-4003-b9e5-9eb783e29101"
+    params="{&quot;body&quot;:[&quot;this&quot;, &quot;&quot;, &quot;that&quot;]}">
+  </temba-template-editor-->
 
   <temba-tabs collapses index="0">
     <temba-tab name="Overview" icon="default">
@@ -159,7 +163,6 @@
 
         <temba-datepicker time value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos"
           onChange="handleDateChange(event)"></temba-datepicker>
-
 
       </div>
 

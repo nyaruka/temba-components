@@ -183,7 +183,9 @@ export class TextInput extends FormElement {
     super.updated(changes);
 
     if (changes.has('value')) {
-      this.fireEvent('change');
+      if (changes.get('value') !== undefined) {
+        this.fireEvent('change');
+      }
 
       if (this.textarea && this.autogrow) {
         const autogrow = this.shadowRoot.querySelector(

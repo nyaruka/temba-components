@@ -1,24 +1,6 @@
 import { LitElement, PropertyValueMap } from 'lit';
 import { CustomEventType } from './interfaces';
-
-enum Color {
-  YELLOW = 33,
-  PURPLE = 35,
-  WHITE = 37,
-  BLUE = 34,
-  RED = 31,
-  CYAN = 36,
-  GREEN = 32,
-  BLACK = 30,
-}
-
-const colorize = (text: string, color: Color) => {
-  return `\x1b[${color}m${text}\x1b[0m`;
-};
-
-const tag = (ele: HTMLElement) => {
-  return colorize(ele.tagName.padEnd(30), Color.PURPLE);
-};
+import { Color, log } from './utils';
 
 const showUpdates = (
   ele: HTMLElement,
@@ -27,34 +9,26 @@ const showUpdates = (
 ) => {
   if (ele['DEBUG_UPDATES'] || ele['DEBUG']) {
     if (changes.size > 0) {
-      console.log(
-        tag(ele),
-        firstUpdated
-          ? colorize('<first-updated>', Color.BLACK)
-          : colorize('<updated>', Color.YELLOW)
-      );
-      for (const [key, value] of changes.entries()) {
-        console.log(
-          '  ' + String(key).padEnd(30),
-          value,
-          colorize('=>', Color.WHITE),
-          ele[key]
-        );
+      const fromto = {};
+      for (const key of changes.keys()) {
+        fromto[key] = [changes[key], ele[key]];
       }
+
+      log(ele.tagName, Color.PURPLE, [
+        firstUpdated ? '<first-updated>' : '<updated>',
+        fromto,
+      ]);
     }
   }
 };
 
 const showEvent = (ele: HTMLElement, type: string, details = undefined) => {
   if (ele['DEBUG_EVENTS'] || ele['DEBUG']) {
-    console.log(
-      tag(ele),
-      details !== undefined
-        ? colorize('<custom-event>', Color.RED)
-        : colorize('<event>       ', Color.CYAN),
-      colorize(type, Color.BLUE),
-      details !== undefined ? details : ''
-    );
+    if (details !== undefined) {
+      log(ele.tagName, Color.GREEN, [type, details]);
+    } else {
+      log(ele.tagName, Color.GREEN, [type]);
+    }
   }
 };
 
@@ -120,6 +94,11 @@ export class RapidElement extends LitElement {
         composed: true,
       })
     );
+  }
+
+  swallowEvent(event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
   }
 
   public fireCustomEvent(type: CustomEventType, detail: any = {}): any {

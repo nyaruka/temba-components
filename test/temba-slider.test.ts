@@ -6,7 +6,7 @@ import { assertScreenshot, getClip, showMouse } from './utils.test';
 const createSlider = async (def: TemplateResult) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', 'width: 200px;');
-  return (await fixture(def, { parentNode })) as TembaSlider;
+  return await fixture<TembaSlider>(def, { parentNode });
 };
 
 describe('temba-slider', () => {

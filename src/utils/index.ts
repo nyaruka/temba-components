@@ -27,6 +27,27 @@ export interface ResultsPage {
   results: any[];
   next: string;
 }
+
+export enum Color {
+  BLUE = 'color:#5078b5;',
+  GREEN = 'color:#62bd6a;',
+  RED = 'color:#e36049;',
+  PURPLE = 'color:#a626a4;',
+}
+
+export const log = (message: string | object, styling = '', details = []) => {
+  if (styling === '') {
+    console.log(message);
+    return;
+  }
+
+  if (typeof message === 'object') {
+    console.log('%c' + JSON.stringify(message, null, 2), styling);
+    return;
+  }
+  console.log('%c' + message, styling, ...details);
+};
+
 /** Get the value for a named cookie */
 export const getHTTPCookie = (name: string): string => {
   for (const cookie of document.cookie.split(';')) {

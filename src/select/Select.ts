@@ -572,12 +572,14 @@ export class Select extends FormElement {
 
     // if they set an inital value, look through our static options for it
     if (changedProperties.has('value') && this.value && !this.values.length) {
-      const existing = this.staticOptions.find(option => {
-        return this.getValue(option) === this.value;
-      });
+      if (this.staticOptions.length > 0) {
+        const existing = this.staticOptions.find(option => {
+          return this.getValue(option) === this.value;
+        });
 
-      if (existing) {
-        this.setValues([existing]);
+        if (existing) {
+          this.setValues([existing]);
+        }
       }
     }
 
@@ -1119,6 +1121,7 @@ export class Select extends FormElement {
     this.anchorExpressions = this.shadowRoot.querySelector('#anchor');
 
     // wait until children are created before adding our static options
+    const value = this.value;
     window.setTimeout(() => {
       for (const child of this.children) {
         if (child.tagName === 'TEMBA-OPTION') {
@@ -1141,11 +1144,22 @@ export class Select extends FormElement {
         }
       }
 
-      if (this.values.length === 0 && !this.placeholder) {
+      if (this.values.length === 0 && (!this.placeholder || value)) {
         if (this.staticOptions.length == 0 && this.endpoint) {
           // see if we need to auto select the first item but need to fetch it
           fetchResults(this.endpoint).then((results: any) => {
-            if (results.length > 0) {
+            if (results && results.length > 0) {
+              if (value) {
+                // if we started with a value, see if we can find it in the results
+                const existing = results.find(option => {
+                  return this.getValue(option) === value;
+                });
+
+                if (existing) {
+                  this.setValues([existing]);
+                  return;
+                }
+              }
               this.setValues([results[0]]);
             }
           });
