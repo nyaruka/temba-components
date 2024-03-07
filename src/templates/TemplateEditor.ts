@@ -6,7 +6,7 @@ import { CustomEventType } from '../interfaces';
 const KEY_HEADER = 'header';
 const KEY_BODY = 'body';
 const KEY_FOOTER = 'footer';
-const KEY_BUTTONS = 'buttons';
+const KEY_BUTTONS = 'button';
 
 interface Component {
   content: string;
@@ -36,7 +36,7 @@ export class TemplateEditor extends FormElement {
         border: 1px solid var(--color-widget-border);
         border-radius: var(--curvature);
         padding: 1em;
-        margin-bottom: 0.5em;
+        margin-top: 1em;
       }
       .picker {
         margin-bottom: 0.5em;
@@ -85,7 +85,6 @@ export class TemplateEditor extends FormElement {
       .buttons {
         display: flex;
         align-items: center;
-
         flex-wrap: wrap;
       }
 
