@@ -95,7 +95,6 @@ export enum Icon {
   error = 'alert-circle',
   event = 'zap',
   expressions = 'at-sign',
-  failure = 'x',
   fields = 'user-edit',
   filter = 'filter-funnel-01',
   flow = 'flow',
