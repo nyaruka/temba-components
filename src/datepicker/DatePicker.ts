@@ -27,6 +27,7 @@ export default class DatePicker extends FormElement {
 
       .input-wrapper {
         padding: var(--temba-textinput-padding);
+        flex-grow: 1;
       }
 
       .tz {
@@ -231,8 +232,6 @@ export default class DatePicker extends FormElement {
               @change=${this.handleChange}
             />
           </div>
-          <div style="flex-grow:1"></div>
-
           ${this.time
             ? html`
                 <div class="tz-wrapper">
