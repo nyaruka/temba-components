@@ -3,9 +3,16 @@ import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { TextInput } from '../textinput/TextInput';
+import { InputType, TextInput } from '../textinput/TextInput';
 import { Icon } from '../vectoricon';
-import { getClasses } from '../utils';
+import { getClasses, WebResponse } from '../utils';
+
+enum Status {
+  Success = 'success',
+  Failure = 'failure',
+  Saving = 'saving',
+  Ready = 'ready',
+}
 
 export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
@@ -29,8 +36,14 @@ export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
   iconClass = '';
 
+  @property({ type: String })
+  status: Status = Status.Ready;
+
   @property({ type: Boolean })
   disabled = false;
+
+  @property({ type: Boolean })
+  dirty = false;
 
   static get styles() {
     return css`
@@ -54,15 +67,28 @@ export class ContactFieldEditor extends RapidElement {
       }
 
       .wrapper.mutable:hover {
-        --color-widget-border: rgb(225, 225, 225);
       }
 
       .wrapper.mutable {
-        --color-widget-border: transparent;
+        --color-widget-border: rgb(235, 235, 235);
         --color-widget-bg: transparent;
         --input-cursor: pointer;
-        --color-widget-text-focused: #666;
-        --color-widget-text: var(--color-link-primary) !important;
+
+        border-bottom: none;
+        margin-bottom: 0.5em;
+        padding-bottom: 0em;
+      }
+
+      .mutable.success {
+        --color-widget-border: rgba(var(--success-rgb), 0.6);
+      }
+
+      .mutable .failure {
+        --color-widget-border: rgba(var(--error-rgb), 0.3);
+      }
+
+      .mutable .dirty {
+        --color-widget-border: rgb(235, 235, 235);
       }
 
       .prefix {
@@ -95,20 +121,20 @@ export class ContactFieldEditor extends RapidElement {
       .postfix {
         display: flex;
         align-items: stretch;
+        margin-left: 1em;
       }
 
       .popper {
-        padding: 0.5em 0.75em;
         background: rgba(0, 0, 0, 0.03);
         border-top-right-radius: var(--curvature-widget);
         border-bottom-right-radius: var(--curvature-widget);
         --icon-color: #888;
-        opacity: 0;
+        display: flex;
         cursor: default;
         transition: all var(--transition-speed) ease-in-out;
-        display: flex;
         align-items: stretch;
         z-index: 1000;
+        margin: -1px;
       }
 
       temba-icon[name='calendar'] {
@@ -126,16 +152,39 @@ export class ContactFieldEditor extends RapidElement {
 
       temba-textinput:focus .popper,
       temba-textinput:hover .popper {
-        opacity: 1;
+        display: flex;
       }
 
       .disabled temba-textinput .postfix {
         display: none;
+        padding: none;
       }
 
-      .unset temba-textinput:focus .popper,
-      .unset temba-textinput:hover .popper {
-        opacity: 0;
+      .unset temba-textinput .popper .copy,
+      .unset temba-textinput .popper .search {
+        display: none;
+      }
+
+      .unset temba-textinput:focus .popper .copy,
+      .unset temba-textinput:hover .popper .copy,
+      .unset temba-textinput:focus .popper .save,
+      .unset temba-textinput:hover .popper .save {
+        display: none;
+      }
+
+      .popper temba-icon {
+        padding: 0.5em 0em;
+        padding-right: 1em;
+      }
+
+      .popper:first-child {
+        padding: 0.5em 0em;
+        padding-right: 0.5em;
+        padding-left: 1em;
+      }
+
+      .popper:last-child {
+        padding-right: 0em;
       }
 
       .copy.clicked temba-icon {
@@ -146,12 +195,89 @@ export class ContactFieldEditor extends RapidElement {
         transition: all 200ms ease-in-out;
       }
 
-      temba-icon.search {
-        margin-right: 1em;
-      }
-
       temba-datepicker {
         position: relative;
+      }
+
+      .save-state {
+        display: flex;
+        align-items: center;
+      }
+
+      .save-button {
+        padding-right: 1em;
+      }
+
+      .dirty .copy,
+      .dirty .search {
+        display: none;
+      }
+
+      .saving .copy,
+      .saving .search {
+        display: none;
+      }
+
+      .success .copy,
+      .success .search {
+        display: none;
+      }
+
+      .failure .copy,
+      .failure .search {
+        display: none;
+      }
+
+      .popper.success {
+        background: rgb(var(--success-rgb));
+      }
+
+      .popper.failure {
+        background: rgb(var(--error-rgb));
+      }
+
+      .popper.success temba-icon,
+      .popper.failure temba-icon {
+        --icon-color: #fff !important;
+      }
+
+      .popper.dirty {
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      temba-datepicker .popper {
+        border-radius: 0px;
+      }
+
+      temba-datepicker .popper:first-child {
+        padding: 0;
+      }
+
+      .dirty temba-datepicker .popper:first-child {
+        padding-left: 1em;
+      }
+
+      .success temba-datepicker .popper:first-child {
+        padding-left: 1em;
+      }
+
+      .failure temba-datepicker .popper:first-child {
+        padding-left: 1em;
+      }
+
+      .saving temba-datepicker .popper:first-child {
+        padding-left: 1em;
+      }
+
+      temba-datepicker .postfix {
+        margin-left: 0;
+      }
+
+      .saving temba-datepicker,
+      .saving temba-textinput {
+        pointer-events: none !important;
+        cursor: default !important;
+        opacity: 0.7;
       }
     `;
   }
@@ -189,15 +315,27 @@ export class ContactFieldEditor extends RapidElement {
     evt.stopPropagation();
   }
 
+  public handleResponse(response: WebResponse) {
+    if (response.status === 200) {
+      this.value = response.json.fields[this.key];
+      this.status = Status.Success;
+      this.dirty = false;
+    } else {
+      this.status = Status.Failure;
+    }
+  }
+
   public handleSubmit() {
     const input = this.shadowRoot.querySelector(
       'temba-textinput, temba-datepicker'
     ) as FormElement;
+
     if (input.value !== this.value) {
+      this.dirty = true;
+      this.status = Status.Saving;
       this.value = input.value;
       this.fireEvent('change');
     }
-    this.icon = navigator.clipboard ? 'copy' : '';
   }
 
   public handleChange(evt: Event) {
@@ -205,22 +343,65 @@ export class ContactFieldEditor extends RapidElement {
     evt.stopPropagation();
   }
 
+  public handleDateChange(evt: Event) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    this.dirty = true;
+  }
+
   public handleInput(evt: KeyboardEvent) {
+    const input = evt.currentTarget as TextInput;
     if (evt.key === 'Enter') {
-      const input = evt.currentTarget as TextInput;
       input.blur();
+      this.handleSubmit();
+    } else {
+      if (input.value !== this.value) {
+        this.dirty = true;
+      }
     }
   }
 
+  private getInputType(type: string): string {
+    if (type === 'numeric') {
+      return InputType.Number;
+    }
+    return InputType.Text;
+  }
+
   public render(): TemplateResult {
+    const state = html`<div class="save-state">
+      ${this.dirty
+        ? html`<temba-button
+            class="save-button"
+            name="Save"
+            small
+            @click=${this.handleSubmit}
+          ></temba-button>`
+        : html` ${this.status === Status.Saving
+            ? html`<temba-icon
+                spin
+                name="${Icon.progress_spinner}"
+              ></temba-icon>`
+            : null}
+          ${this.status === Status.Success && !this.dirty
+            ? html`<temba-icon name="${Icon.success}"></temba-icon>`
+            : null}
+          ${this.status === Status.Failure
+            ? html`<temba-icon name="${Icon.failure}"></temba-icon>`
+            : null}`}
+    </div>`;
+
     return html`
       <div
-        class=${getClasses({
+        class=${this.status +
+        ' ' +
+        getClasses({
           wrapper: true,
           set: !!this.value,
           unset: !this.value,
           disabled: this.disabled,
           mutable: !this.disabled,
+          dirty: this.dirty,
         })}
       >
         ${this.type === 'datetime'
@@ -228,21 +409,29 @@ export class ContactFieldEditor extends RapidElement {
               <temba-datepicker
                 timezone=${this.timezone}
                 value="${this.value ? this.value : ''}"
-                @change=${this.handleSubmit}
+                @change=${this.handleDateChange}
                 ?disabled=${this.disabled}
                 time
               >
                 <div class="prefix" slot="prefix">
                   <div class="name">${this.name}</div>
                 </div>
+                <div class="postfix" slot="postfix">
+                  <div
+                    class="popper ${this.status}  ${this.dirty ? 'dirty' : ''}"
+                  >
+                    ${state}
+                  </div>
+                </div>
               </temba-datepicker>
             `
           : html`
               <temba-textinput
+                class="${this.status} ${this.dirty ? 'dirty' : ''}"
                 value="${this.value ? this.value : ''}"
-                @blur=${this.handleSubmit}
-                @keydown=${this.handleInput}
+                @keyup=${this.handleInput}
                 @change=${this.handleChange}
+                type=${this.getInputType(this.type)}
                 ?disabled=${this.disabled}
               >
                 <div class="prefix" slot="prefix">
@@ -251,21 +440,21 @@ export class ContactFieldEditor extends RapidElement {
 
                 <div class="postfix">
                   <div
-                    class="popper ${this.iconClass}"
+                    class="popper ${this.iconClass} ${this.status}  ${this.dirty
+                      ? 'dirty'
+                      : ''}"
                     @click=${this.handleIconClick}
                   >
-                    ${this.value
-                      ? html`
-                  <temba-icon
-                    class="search"
-                    icon-action="search"
-                    name="${Icon.search}"
-                    animateclick="pulse"
-                  ></temba-icon>
-                  </div>
-                `
-                      : null}
+                    ${state}
+
                     <temba-icon
+                      class="search"
+                      icon-action="search"
+                      name="${Icon.search}"
+                      animateclick="pulse"
+                    ></temba-icon>
+                    <temba-icon
+                      class="copy"
                       icon-action="copy"
                       name="${this.icon}"
                       animatechange="spin"

@@ -55,10 +55,6 @@ export class FormElement extends RapidElement {
     return this.internals.form;
   }
 
-  get type() {
-    return this.localName;
-  }
-
   public setValue(value: any) {
     this.value = this.serializeValue(value);
   }

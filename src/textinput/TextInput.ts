@@ -7,6 +7,12 @@ import { Modax } from '../dialog/Modax';
 import { sanitize } from './helpers';
 import { CharCount } from '../charcount/CharCount';
 
+export enum InputType {
+  Text = 'text',
+  Password = 'password',
+  Number = 'number',
+}
+
 export class TextInput extends FormElement {
   static get styles() {
     return css`
@@ -113,6 +119,18 @@ export class TextInput extends FormElement {
       .grow-wrap textarea {
         margin-left: -100%;
       }
+
+      input[type='number'] {
+        appearance: none;
+      }
+
+      input[type='number']::-webkit-inner-spin-button {
+        display: none;
+      }
+
+      .type-icon {
+        color: #e3e3e3;
+      }
     `;
   }
 
@@ -152,6 +170,9 @@ export class TextInput extends FormElement {
 
   @property({ type: Boolean })
   autogrow = false;
+
+  @property({ type: String })
+  type = InputType.Text;
 
   counterElement: CharCount = null;
   cursorStart = -1;
@@ -347,7 +368,9 @@ export class TextInput extends FormElement {
       <input
         class="textinput"
         name=${this.name}
-        type="${this.password ? 'password' : 'text'}"
+        type="${this.password || this.type === InputType.Password
+          ? 'password'
+          : this.type}"
         maxlength="${ifDefined(this.maxlength)}"
         @change=${this.handleChange}
         @input=${this.handleInput}
@@ -447,7 +470,13 @@ export class TextInput extends FormElement {
           @click=${this.handleContainerClick}
         >
           <slot name="prefix"></slot>
+
           ${input} ${clear}
+          <slot name="type" class="type-icon"
+            >${this.type === InputType.Number
+              ? html`<temba-icon name="number"></temba-icon>`
+              : null}</slot
+          >
           <slot></slot>
         </div>
       </temba-field>

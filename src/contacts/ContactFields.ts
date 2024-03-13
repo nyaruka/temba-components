@@ -113,6 +113,8 @@ export class ContactFields extends ContactStoreElement {
     postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
       fields: { [field.key]: value },
     }).then((response: any) => {
+      field.handleResponse(response);
+
       // returns a single contact with latest updates
       this.setContact(response.json);
     });
@@ -131,6 +133,48 @@ export class ContactFields extends ContactStoreElement {
           const [bk] = b;
           const fieldA = this.store.getContactField(ak);
           const fieldB = this.store.getContactField(bk);
+
+          if (fieldA.type === 'ward') {
+            return 1;
+          }
+
+          if (fieldB.type === 'ward') {
+            return -1;
+          }
+
+          if (
+            fieldA.type === 'district' &&
+            fieldB.type !== 'ward' &&
+            fieldB.type !== 'district'
+          ) {
+            return 1;
+          }
+
+          if (
+            fieldB.type === 'district' &&
+            fieldA.type !== 'ward' &&
+            fieldA.type !== 'district'
+          ) {
+            return -1;
+          }
+
+          if (
+            fieldA.type === 'state' &&
+            fieldB.type !== 'ward' &&
+            fieldB.type !== 'district' &&
+            fieldB.type !== 'state'
+          ) {
+            return 1;
+          }
+
+          if (
+            fieldB.type === 'state' &&
+            fieldA.type !== 'ward' &&
+            fieldA.type !== 'district' &&
+            fieldA.type !== 'state'
+          ) {
+            return -1;
+          }
 
           if (fieldA.featured && !fieldB.featured) {
             return -1;
@@ -165,7 +209,10 @@ export class ContactFields extends ContactStoreElement {
           @change=${this.handleFieldChanged}
           timezone=${this.timezone}
           ?disabled=${(this.isAgent() && field.agent_access === 'view') ||
-          this.disabled
+          this.disabled ||
+          field.value_type === 'ward' ||
+          field.value_type === 'district' ||
+          field.value_type === 'state'
             ? true
             : false}
         ></temba-contact-field>`;
