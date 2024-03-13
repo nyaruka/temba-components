@@ -230,12 +230,10 @@ export class ContactFieldEditor extends RapidElement {
 
       .popper.success {
         background: rgb(var(--success-rgb));
-        pointer-events: none;
       }
 
       .popper.failure {
         background: rgb(var(--error-rgb));
-        pointer-events: none;
       }
 
       .popper.success temba-icon,
@@ -391,7 +389,9 @@ export class ContactFieldEditor extends RapidElement {
             ? html`<temba-icon name="${Icon.success}"></temba-icon>`
             : null}
           ${this.status === Status.Failure
-            ? html`<temba-icon name="${Icon.failure}"></temba-icon>`
+            ? html`<temba-tip text="Failed to save changes, try again later."
+                ><temba-icon name="${Icon.alert_warning}"></temba-icon
+              ></temba-tip>`
             : null}`}
     </div>`;
 
