@@ -83,8 +83,8 @@ export class ContactFieldEditor extends RapidElement {
         --color-widget-border: rgba(var(--success-rgb), 0.6);
       }
 
-      .mutable .failure {
-        --color-widget-border: rgba(var(--error-rgb), 0.3);
+      .mutable.failure {
+        --color-widget-border: rgba(var(--error-rgb), 0.3) !important;
       }
 
       .mutable .dirty {
@@ -230,10 +230,12 @@ export class ContactFieldEditor extends RapidElement {
 
       .popper.success {
         background: rgb(var(--success-rgb));
+        pointer-events: none;
       }
 
       .popper.failure {
         background: rgb(var(--error-rgb));
+        pointer-events: none;
       }
 
       .popper.success temba-icon,
@@ -318,7 +320,9 @@ export class ContactFieldEditor extends RapidElement {
   public handleResponse(response: WebResponse) {
     if (response.status === 200) {
       this.value = response.json.fields[this.key];
-      this.status = Status.Success;
+      // this.status = Status.Success;
+      // on success lets go back to ready state for now
+      this.status = Status.Ready;
       this.dirty = false;
     } else {
       this.status = Status.Failure;
