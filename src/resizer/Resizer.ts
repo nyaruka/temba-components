@@ -1,10 +1,10 @@
 import { PropertyValueMap, css, html } from 'lit';
-import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
+import { ResizeElement } from '../ResizeElement';
 
-export class Resizer extends RapidElement {
+export class Resizer extends ResizeElement {
   static styles = css`
     :host {
       display: block;

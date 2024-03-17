@@ -1,12 +1,19 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
+import {
+  debounce,
+  fetchResults,
+  getClasses,
+  renderAvatar,
+  throttle,
+} from '../utils';
 import { Icon } from '../vectoricon';
 import { Dropdown } from '../dropdown/Dropdown';
 import { NotificationList } from './NotificationList';
+import { ResizeElement } from '../ResizeElement';
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -53,7 +60,7 @@ const findItem = (
   return { item: null, index: -1 };
 };
 
-export class TembaMenu extends RapidElement {
+export class TembaMenu extends ResizeElement {
   static get styles() {
     return css`
       :host {
@@ -338,6 +345,78 @@ export class TembaMenu extends RapidElement {
       .level-1 {
         transition: opacity 100ms linear, margin 200ms linear;
         overflow-y: scroll;
+      }
+
+      .mobile.root {
+        height: 100vh;
+      }
+
+      .mobile.root.fully-collapsed {
+        height: initial;
+      }
+
+      .root.fully-collapsed.mobile .level.level-0 {
+        flex-direction: row;
+      }
+
+      .root.fully-collapsed.mobile .level.level-0 > .item {
+        display: none;
+      }
+
+      .root.fully-collapsed.mobile .level.level-0 .expand-icon {
+        max-height: 100%;
+        padding: 1em;
+      }
+
+      .mobile.fully-collapsed.root {
+        flex-direction: column;
+      }
+
+      .mobile.fully-collapsed.root .level-0 {
+        padding-top: 0px !important;
+      }
+
+      .mobile.fully-collapsed .level-1 {
+        display: none;
+      }
+
+      .mobile .level-1 {
+        flex-grow: 1;
+      }
+
+      .mobile .level-1 .item {
+        max-width: inherit;
+        min-width: inherit;
+      }
+
+      .mobile .level-1 .section {
+        max-width: inherit;
+        min-width: inherit;
+      }
+
+      .mobile.fully-collapsed .item {
+      }
+
+      .mobile .expand-icon {
+        transition: none;
+        transform: rotate(-90deg);
+        align-self: center;
+      }
+
+      .mobile.fully-collapsed .level-0 .empty {
+        flex-grow: 1;
+      }
+
+      .mobile.fully-collapsed .top-spacer {
+        flex-grow: 0;
+      }
+
+      .mobile.fully-collapsed #dd-workspace {
+        display: none;
+      }
+
+      .mobile.fully-collapsed .expand-icon {
+        transform: none;
       }
 
       .level-2 {
@@ -733,6 +812,7 @@ export class TembaMenu extends RapidElement {
           parent,
         });
       }
+
       return;
     }
 
@@ -760,8 +840,12 @@ export class TembaMenu extends RapidElement {
       this.handleItemClicked(null, parent);
     }
 
-    if (this.collapsed) {
+    if (this.collapsed && !this.isMobile()) {
       this.collapsed = false;
+    }
+
+    if (this.isMobile()) {
+      this.collapsed = true;
     }
 
     if (menuItem.trigger) {
@@ -1031,10 +1115,7 @@ export class TembaMenu extends RapidElement {
         ${menuItem.level === 0
           ? menuItem.avatar
             ? icon
-            : html`<temba-tip
-                style="display:flex;"
-                text="${menuItem.name}"
-                position="right"
+            : html`<temba-tip style="display:flex;" text="${menuItem.name}"
                 >${icon}</temba-tip
               >`
           : html`${icon}${collapsedIcon}`}
@@ -1079,6 +1160,7 @@ export class TembaMenu extends RapidElement {
           arrowSize="0"
           drop_align="left"
           mask
+          id="dd-${menuItem.id}"
         >
           <div slot="toggle">${item}</div>
           <div slot="dropdown" style="width:300px;overflow:hidden;">
@@ -1103,18 +1185,20 @@ export class TembaMenu extends RapidElement {
     let items = this.root.items || [];
     const levels = [];
 
+    const expandIcon = this.isMobile() ? Icon.menu : Icon.menu_collapse;
+
     levels.push(
       html`<div class="level level-0 ${this.submenu ? 'hidden' : ''}">
         <div class="top">
           <div class="expand-icon" @click=${this.handleExpand}>
             <temba-icon
-              name="${Icon.menu_collapse}"
-              class="collapse"
-              class="expand"
+              name="${expandIcon}"
+              class="collapse expand"
               size="1.4"
             ></temba-icon>
           </div>
         </div>
+        <div class="top-spacer"></div>
 
         ${items
           .filter(item => !item.bottom)
@@ -1153,6 +1237,8 @@ export class TembaMenu extends RapidElement {
         items = null;
       }
 
+      const collapseIcon = this.isMobile() ? Icon.close : Icon.menu_collapse;
+
       if (items && items.length > 0 && !selected.inline) {
         levels.push(
           html`<div
@@ -1175,8 +1261,8 @@ export class TembaMenu extends RapidElement {
 
                     ${index == 0 && !this.collapsed
                       ? html`<temba-icon
-                          name=${Icon.menu_collapse}
-                          size="1.1"
+                          name=${collapseIcon}
+                          size="1.5"
                           @click=${this.handleCollapse}
                         ></temba-icon>`
                       : null}
@@ -1203,6 +1289,7 @@ export class TembaMenu extends RapidElement {
       class="${getClasses({
         root: true,
         'fully-collapsed': this.collapsed,
+        mobile: this.isMobile(),
       })}"
     >
       ${levels}

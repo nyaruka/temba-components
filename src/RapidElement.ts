@@ -36,6 +36,7 @@ export interface EventHandler {
   event: string;
   method: EventListener;
   isDocument?: boolean;
+  isWindow?: boolean;
 }
 
 export class RapidElement extends LitElement {
@@ -54,6 +55,8 @@ export class RapidElement extends LitElement {
     for (const handler of this.getEventHandlers()) {
       if (handler.isDocument) {
         document.addEventListener(handler.event, handler.method.bind(this));
+      } else if (handler.isWindow) {
+        window.addEventListener(handler.event, handler.method.bind(this));
       } else {
         this.addEventListener(handler.event, handler.method.bind(this));
       }
@@ -64,6 +67,8 @@ export class RapidElement extends LitElement {
     for (const handler of this.getEventHandlers()) {
       if (handler.isDocument) {
         document.removeEventListener(handler.event, handler.method);
+      } else if (handler.isWindow) {
+        window.removeEventListener(handler.event, handler.method);
       } else {
         this.removeEventListener(handler.event, handler.method);
       }
@@ -172,5 +177,13 @@ export class RapidElement extends LitElement {
       event.stopPropagation();
       event.preventDefault();
     }
+  }
+
+  public isMobile() {
+    const win = window as any;
+    if (win.isMobile) {
+      return win.isMobile();
+    }
+    return false;
   }
 }

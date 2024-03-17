@@ -5,6 +5,7 @@ import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { getClasses } from '../utils';
+import { ResizeElement } from '../ResizeElement';
 
 export enum ButtonType {
   PRIMARY = 'primary',
@@ -19,7 +20,7 @@ export class DialogButton {
   closes?: boolean;
 }
 
-export class Dialog extends RapidElement {
+export class Dialog extends ResizeElement {
   static get widths(): { [size: string]: string } {
     return {
       small: '400px',
@@ -86,12 +87,14 @@ export class Dialog extends RapidElement {
         transform: scale(0.9) translatey(2em);
         background: white;
         margin: auto;
+        display: flex;
+        flex-direction: column;
       }
 
       .dialog-body {
         background: #fff;
-        max-height: 75vh;
         overflow-y: auto;
+        flex-grow: 1;
       }
 
       .dialog-mask.dialog-open {
@@ -397,6 +400,12 @@ export class Dialog extends RapidElement {
       dialogStyle['width'] = Dialog.widths[this.size];
     }
 
+    if (this.isMobile()) {
+      dialogStyle['width'] = '100%';
+      dialogStyle['height'] = '100%';
+      delete dialogStyle['maxWidth'];
+    }
+
     const header = this.header
       ? html`
           <div class="dialog-header">
@@ -428,14 +437,18 @@ export class Dialog extends RapidElement {
         </div>
 
         <div class="flex">
-          <div class="grow-top"></div>
+          <div class="grow-top" style="${
+            this.isMobile() ? 'flex-grow:0' : ''
+          }"></div>
           <div
             @keyup=${this.handleKeyUp}
             style=${styleMap(dialogStyle)}
             class="dialog-container"
           >
             ${header}
-            <div class="dialog-body" @keypress=${this.handleKeyUp}>
+            <div class="dialog-body" @keypress=${this.handleKeyUp} ${
+      this.isMobile() ? 'flex-grow:1;max-height:""' : ''
+    } >
               ${this.body ? this.body : html`<slot></slot>`}
               <temba-loading units="6" size="8"></temba-loading>
             </div>
@@ -460,7 +473,9 @@ export class Dialog extends RapidElement {
               )}
               </div>
             </div>
-            <div class="grow-bottom"></div>
+            <div class="grow-bottom" style="${
+              this.isMobile() ? 'flex-grow:0' : ''
+            }"></div>
           </div>
         </div>
       </div>

@@ -435,7 +435,10 @@ export class Modax extends RapidElement {
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
-        <div class="modax-body${this.submitting ? ' submitting' : ''}">
+        <div
+          class="modax-body ${this.submitting ? 'submitting' : ''}"
+          style="${this.isMobile() ? 'flex-grow:1' : ''}"
+        >
           ${this.body}
         </div>
         <div class="scripts"></div>
