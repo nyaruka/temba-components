@@ -133,7 +133,6 @@ export class ContactFieldEditor extends RapidElement {
         cursor: default;
         transition: all var(--transition-speed) ease-in-out;
         align-items: stretch;
-        z-index: 1000;
         margin: -1px;
       }
 
