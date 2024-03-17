@@ -160,11 +160,11 @@ export class ContentMenu extends RapidElement {
           </temba-button>`;
         })}
         ${this.items && this.items.length > 0
-          ? html` <temba-dropdown
+          ? html`<temba-dropdown
               arrowsize="8"
               arrowoffset="-12"
-              offsetx="-200"
               offsety="6"
+              bottom
             >
               <div slot="toggle" class="toggle">
                 <temba-icon name="menu" size="1.5"></temba-icon>

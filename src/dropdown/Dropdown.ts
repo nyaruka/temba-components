@@ -161,12 +161,6 @@ export class Dropdown extends RapidElement {
     }
 
     if (changedProperties.has('open')) {
-      if (this.open) {
-        this.classList.add('open');
-      } else {
-        this.classList.remove('open');
-      }
-
       this.ensureOnScreen();
     }
   }
@@ -179,10 +173,29 @@ export class Dropdown extends RapidElement {
 
       if (dropdown) {
         // dropdown will go off the screen, let's push it up
+        const toggle = this.querySelector('div[slot="toggle"]');
         if (dropdown.getBoundingClientRect().bottom > window.innerHeight) {
-          const toggle = this.querySelector('div[slot="toggle"]');
-          dropdown.style.bottom =
-            this.offsetY + toggle.clientHeight + 10 + 'px';
+          if (this.bottom) {
+            dropdown.style.top = toggle.clientHeight + 'px';
+          } else {
+            dropdown.style.top = '';
+            dropdown.style.bottom = toggle.clientHeight + 'px';
+          }
+        } else if (dropdown.getBoundingClientRect().top < 0) {
+          if (this.bottom) {
+            dropdown.style.top = toggle.clientHeight + 'px';
+          } else {
+            dropdown.style.top = toggle.clientHeight + 'px';
+            dropdown.style.bottom = '';
+          }
+        }
+
+        if (dropdown.getBoundingClientRect().right > window.innerWidth) {
+          dropdown.style.left = '';
+          dropdown.style.right = 0 + 'px';
+        } else if (dropdown.getBoundingClientRect().left < 0) {
+          dropdown.style.left = 0 + 'px';
+          dropdown.style.right = '';
         }
       }
     }, 100);
