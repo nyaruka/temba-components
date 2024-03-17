@@ -113,6 +113,7 @@ export interface ContactField {
   featured: boolean;
   priority: number;
   agent_access: string;
+  type: string;
   usages: { campaign_events: number; flows: number; groups: number };
 }
 

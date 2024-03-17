@@ -11,6 +11,10 @@ export default class DatePicker extends FormElement {
         display: block;
       }
 
+      input {
+        width: inherit;
+      }
+
       .container {
         border-radius: var(--curvature);
         border: 1px solid var(--color-widget-border);
@@ -23,7 +27,7 @@ export default class DatePicker extends FormElement {
 
       .input-wrapper {
         padding: var(--temba-textinput-padding);
-        flex-grow: 20;
+        flex-grow: 1;
       }
 
       .tz {
@@ -58,7 +62,6 @@ export default class DatePicker extends FormElement {
         display: flex;
         flex-direction: row;
         align-items: center;
-        flex-grow: 1;
         padding: 0.4em 0em;
       }
 
@@ -182,9 +185,6 @@ export default class DatePicker extends FormElement {
   public handleChange(event) {
     event.preventDefault();
     event.stopPropagation();
-  }
-
-  public handleBlur(event) {
     if (this.time) {
       this.datetime = DateTime.fromISO(event.target.value, {
         zone: this.timezone,
@@ -230,7 +230,6 @@ export default class DatePicker extends FormElement {
               value=${dateWidgetValue}
               type="${this.time ? 'datetime-local' : 'date'}"
               @change=${this.handleChange}
-              @blur=${this.handleBlur}
             />
           </div>
           ${this.time
@@ -243,6 +242,7 @@ export default class DatePicker extends FormElement {
                 </div>
               `
             : null}
+          <slot name="postfix"></slot>
         </div>
       </temba-field>
     `;
