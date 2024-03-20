@@ -21,8 +21,8 @@ export class Lightbox extends RapidElement {
         opacity: 0;
         background: rgba(0, 0, 0, 0.5);
         position: absolute;
-        height: 100vh;
-        width: 100vw;
+        height: 100svh;
+        width: 100svw;
         pointer-events: none;
       }
 
@@ -80,7 +80,6 @@ export class Lightbox extends RapidElement {
 
   public showElement(ele: HTMLElement) {
     // size our matte according to the ele's boundaries
-    console.log(ele);
     const bounds = ele.getBoundingClientRect();
     this.ele = ele.cloneNode() as HTMLElement;
     this.left = bounds.left;

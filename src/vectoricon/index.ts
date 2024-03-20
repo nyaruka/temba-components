@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = 'e1e2e60148b356e01cbc9f97dc0253dd';
+export const SVG_FINGERPRINT = '96c407ade55885693432afd343de1cc0';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -16,7 +16,7 @@ export enum Icon {
   arrow_left = 'chevron-left',
   arrow_right = 'chevron-right',
   attachment = 'paperclip',
-  attachment_audio = 'volume~--min',
+  attachment_audio = 'volume-min',
   attachment_document = 'file-06',
   attachment_image = 'image-01',
   attachment_location = 'marker-pin-01',

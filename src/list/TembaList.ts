@@ -403,7 +403,7 @@ export class TembaList extends RapidElement {
       this.setSelection(this.nextSelection);
       this.nextSelection = false;
     } else {
-      if (this.cursorIndex === -1) {
+      if (this.cursorIndex === -1 && !this.isMobile()) {
         this.cursorIndex = 0;
       }
     }
@@ -414,6 +414,12 @@ export class TembaList extends RapidElement {
     if (this.value) {
       this.setSelection(this.value);
       this.value = null;
+    } else if (this.isMobile() && !this.selected) {
+      this.cursorIndex = -1;
+      this.value = null;
+      this.selected = null;
+      const evt = new Event('change', { bubbles: true });
+      this.dispatchEvent(evt);
     }
 
     return Promise.resolve();

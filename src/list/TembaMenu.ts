@@ -348,11 +348,15 @@ export class TembaMenu extends ResizeElement {
       }
 
       .mobile.root {
-        height: 100vh;
+        height: 100svh;
       }
 
       .mobile.root.fully-collapsed {
         height: initial;
+      }
+
+      .root.fully-collapsed.mobile .level.level-0 {
+        padding-right: 0.5em;
       }
 
       .root.fully-collapsed.mobile .level.level-0 {
@@ -1159,7 +1163,6 @@ export class TembaMenu extends ResizeElement {
           arrowoffset="8"
           arrowSize="0"
           drop_align="left"
-          mask
           id="dd-${menuItem.id}"
         >
           <div slot="toggle">${item}</div>
