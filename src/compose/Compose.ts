@@ -443,7 +443,6 @@ export class Compose extends FormElement {
   }
 
   private handleOptInChange(event: InputEvent) {
-    console.log('changed', this.currentOptin, (event.target as any).values);
     this.currentOptin = (event.target as any).values;
     this.requestUpdate('optIn');
   }

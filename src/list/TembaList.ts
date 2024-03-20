@@ -399,11 +399,6 @@ export class TembaList extends RapidElement {
     this.loading = false;
     this.pending = [];
 
-    console.log(
-      'loaded.. checking cursor',
-      this.nextSelection,
-      this.cursorIndex
-    );
     if (this.nextSelection) {
       this.setSelection(this.nextSelection);
       this.nextSelection = false;
