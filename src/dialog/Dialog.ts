@@ -53,6 +53,19 @@ export class Dialog extends ResizeElement {
         height: 100vh;
       }
 
+      .mobile .flex {
+        height: 100%;
+        position: fixed;
+      }
+
+      .mobile .grow-top {
+        flex-grow: 0;
+      }
+
+      .mobile .grow-bottom {
+        flex-grow: 0;
+      }
+
       .grow-top {
         flex-grow: 1;
       }
@@ -75,6 +88,10 @@ export class Dialog extends ResizeElement {
         left: 0px;
         transition: opacity linear calc(var(--transition-speed) / 2ms);
         pointer-events: none;
+      }
+
+      .mobile.dialog-mask .dialog-container {
+        border-radius: 0px;
       }
 
       .dialog-mask .dialog-container {
@@ -425,6 +442,7 @@ export class Dialog extends ResizeElement {
           'dialog-loading': this.loading,
           'dialog-animation-end': this.animationEnd,
           'dialog-ready': this.ready,
+          mobile: this.isMobile(),
         })}"
       >
         <div style="position: absolute; width: 100%;">
@@ -446,9 +464,7 @@ export class Dialog extends ResizeElement {
             class="dialog-container"
           >
             ${header}
-            <div class="dialog-body" @keypress=${this.handleKeyUp} ${
-      this.isMobile() ? 'flex-grow:1;max-height:""' : ''
-    } >
+            <div class="dialog-body" @keypress=${this.handleKeyUp}>
               ${this.body ? this.body : html`<slot></slot>`}
               <temba-loading units="6" size="8"></temba-loading>
             </div>
@@ -473,9 +489,7 @@ export class Dialog extends ResizeElement {
               )}
               </div>
             </div>
-            <div class="grow-bottom" style="${
-              this.isMobile() ? 'flex-grow:0' : ''
-            }"></div>
+            <div class="grow-bottom"></div>
           </div>
         </div>
       </div>

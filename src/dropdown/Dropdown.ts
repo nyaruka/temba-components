@@ -2,6 +2,7 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
+import { ContactStoreElement } from '../contacts/ContactStoreElement';
 
 export class Dropdown extends RapidElement {
   static get styles() {
@@ -111,6 +112,11 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   mask = false;
 
+  constructor() {
+    super();
+    this.ensureOnScreen = this.ensureOnScreen.bind(this);
+  }
+
   public firstUpdated(props: any) {
     super.firstUpdated(props);
 
@@ -161,44 +167,49 @@ export class Dropdown extends RapidElement {
     }
 
     if (changedProperties.has('open')) {
-      this.ensureOnScreen();
+      // check right away if we are on the screen, and then again moments after render
+      window.setTimeout(this.ensureOnScreen, 0);
+      window.setTimeout(this.ensureOnScreen, 100);
     }
   }
 
   public ensureOnScreen() {
-    window.setTimeout(() => {
-      const dropdown = this.shadowRoot.querySelector(
-        '.dropdown'
-      ) as HTMLDivElement;
+    const dropdown = this.shadowRoot.querySelector(
+      '.dropdown'
+    ) as HTMLDivElement;
 
-      if (dropdown) {
-        // dropdown will go off the screen, let's push it up
-        const toggle = this.querySelector('div[slot="toggle"]');
-        if (dropdown.getBoundingClientRect().bottom > window.innerHeight) {
-          if (this.bottom) {
-            dropdown.style.top = toggle.clientHeight + 'px';
-          } else {
-            dropdown.style.top = '';
-            dropdown.style.bottom = toggle.clientHeight + 'px';
-          }
-        } else if (dropdown.getBoundingClientRect().top < 0) {
-          if (this.bottom) {
-            dropdown.style.top = toggle.clientHeight + 'px';
-          } else {
-            dropdown.style.top = toggle.clientHeight + 'px';
-            dropdown.style.bottom = '';
-          }
+    if (dropdown) {
+      // dropdown will go off the screen, let's push it up
+      const toggle = this.querySelector('div[slot="toggle"]');
+
+      if (!toggle) {
+        return;
+      }
+
+      if (dropdown.getBoundingClientRect().bottom > window.innerHeight - 100) {
+        if (this.bottom) {
+          dropdown.style.top = toggle.clientHeight + 'px';
+        } else {
+          dropdown.style.top = '';
+          dropdown.style.bottom = toggle.clientHeight + 'px';
         }
-
-        if (dropdown.getBoundingClientRect().right > window.innerWidth) {
-          dropdown.style.left = '';
-          dropdown.style.right = 0 + 'px';
-        } else if (dropdown.getBoundingClientRect().left < 0) {
-          dropdown.style.left = 0 + 'px';
-          dropdown.style.right = '';
+      } else if (dropdown.getBoundingClientRect().top < 0) {
+        if (this.bottom) {
+          dropdown.style.top = toggle.clientHeight + 'px';
+        } else {
+          dropdown.style.top = toggle.clientHeight + 'px';
+          dropdown.style.bottom = '';
         }
       }
-    }, 100);
+
+      if (dropdown.getBoundingClientRect().right > window.innerWidth) {
+        dropdown.style.left = '';
+        dropdown.style.right = '0px';
+      } else if (dropdown.getBoundingClientRect().left < 0) {
+        dropdown.style.left = 0 + 'px';
+        dropdown.style.right = '';
+      }
+    }
   }
 
   public handleToggleClicked(event: MouseEvent): void {

@@ -21,8 +21,8 @@ export class Lightbox extends RapidElement {
         opacity: 0;
         background: rgba(0, 0, 0, 0.5);
         position: absolute;
-        height: 100vh;
-        width: 100vw;
+        height: 100svh;
+        width: 100svw;
         pointer-events: none;
       }
 
