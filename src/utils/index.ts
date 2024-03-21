@@ -238,6 +238,11 @@ export const postUrl = (
   return new Promise<WebResponse>((resolve, reject) => {
     fetch(url, options)
       .then(async response => {
+        if (response.status >= 500) {
+          reject(response);
+          return;
+        }
+
         response.text().then((body: string) => {
           let json = {};
           try {

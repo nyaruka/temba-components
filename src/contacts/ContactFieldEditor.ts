@@ -323,6 +323,7 @@ export class ContactFieldEditor extends RapidElement {
       this.dirty = false;
     } else {
       this.status = Status.Failure;
+      this.dirty = false;
     }
   }
 

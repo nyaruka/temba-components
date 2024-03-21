@@ -2,14 +2,7 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
-import {
-  debounce,
-  fetchResults,
-  getClasses,
-  renderAvatar,
-  throttle,
-} from '../utils';
+import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
 import { Icon } from '../vectoricon';
 import { Dropdown } from '../dropdown/Dropdown';
 import { NotificationList } from './NotificationList';
@@ -36,6 +29,8 @@ export interface MenuItem {
   popup?: boolean;
   avatar?: string;
   trigger?: boolean;
+  event?: string;
+  mobile?: boolean;
 }
 
 interface MenuItemState {
@@ -365,6 +360,25 @@ export class TembaMenu extends ResizeElement {
 
       .root.fully-collapsed.mobile .level.level-0 > .item {
         display: none;
+      }
+
+      .root.fully-collapsed.mobile .level.level-0 > .empty {
+        display: block;
+        width: 100%;
+        min-width: inherit;
+        max-width: inherit;
+      }
+
+      .root .level.level-0 > .show-mobile {
+        display: none;
+      }
+
+      .root.mobile .level.level-0 > .show-mobile {
+        display: flex;
+      }
+
+      .root.fully-collapsed.mobile .level.level-0 > .show-mobile {
+        display: contents !important;
       }
 
       .root.fully-collapsed.mobile .level.level-0 .expand-icon {
@@ -852,7 +866,7 @@ export class TembaMenu extends ResizeElement {
       this.collapsed = true;
     }
 
-    if (menuItem.trigger) {
+    if (menuItem.trigger || menuItem.event) {
       this.fireCustomEvent(CustomEventType.ButtonClicked, {
         item: menuItem,
         selection: this.getSelection(),
@@ -1078,6 +1092,7 @@ export class TembaMenu extends ResizeElement {
       expanded: this.isExpanded(menuItem),
       iconless: !icon && !collapsedIcon && !menuItem.avatar,
       pressed: this.pressedItem && this.pressedItem.id == menuItem.id,
+      'show-mobile': menuItem.mobile,
     });
 
     if (menuItem.avatar) {
