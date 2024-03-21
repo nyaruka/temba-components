@@ -112,12 +112,16 @@ export class ContactFields extends ContactStoreElement {
     const value = field.value;
     postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
       fields: { [field.key]: value },
-    }).then((response: any) => {
-      field.handleResponse(response);
+    })
+      .then((response: any) => {
+        field.handleResponse(response);
 
-      // returns a single contact with latest updates
-      this.setContact(response.json);
-    });
+        // returns a single contact with latest updates
+        this.setContact(response.json);
+      })
+      .catch(error => {
+        field.handleResponse(error);
+      });
   }
 
   public handleToggle(evt: Event) {

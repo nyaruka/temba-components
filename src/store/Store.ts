@@ -455,6 +455,11 @@ export class Store extends RapidElement {
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
       fetchResults(url).then(data => {
+        if (!data) {
+          delete this.fetching[url];
+          return;
+        }
+
         data = options.prepareData ? options.prepareData(data) : data;
         this.cache.set(url, data);
         this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
