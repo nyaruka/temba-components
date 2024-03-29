@@ -3,12 +3,9 @@ import { FormElement } from '../FormElement';
 import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { CustomEventType } from '../interfaces';
 
-const KEY_HEADER = 'header';
-const KEY_BODY = 'body';
-const KEY_FOOTER = 'footer';
-const KEY_BUTTONS = 'button';
-
 interface Component {
+  name: string;
+  type: string;
   content: string;
   params: { type: string }[];
 }
@@ -17,7 +14,7 @@ interface Translation {
   locale: string;
   status: string;
   channel: { uuid: string; name: string };
-  components: { [key: string]: Component };
+  components: Component[];
 }
 
 interface Template {
@@ -95,9 +92,18 @@ export class TemplateEditor extends FormElement {
         border-radius: var(--curvature);
         min-height: 23px;
         display: flex;
+        flex-direction: row;
         align-items: center;
         margin-right: 0.5em;
         margin-top: 0.5em;
+        align-items: center;
+      }
+
+      .button .display {
+        margin-right: 0.5em;
+        background: #f9f9f9;
+        padding: 0.25em 1em;
+        border-radius: var(--curvature);
       }
 
       temba-textinput,
@@ -140,10 +146,6 @@ export class TemplateEditor extends FormElement {
   @property({ type: Boolean })
   translating: boolean;
 
-  buttonKeys = [];
-  contentKeys = [];
-  otherKeys = [];
-
   public firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -166,30 +168,13 @@ export class TemplateEditor extends FormElement {
           (!loc && translation.locale.split('-')[0] === lang)
         ) {
           this.translation = translation;
-          this.buttonKeys = [];
-          this.contentKeys = [];
-          this.otherKeys = [];
-          const keys = Object.keys(translation.components);
-          for (const key of keys) {
-            if (key.startsWith(KEY_BUTTONS)) {
-              this.buttonKeys.push(key);
-            } else if (
-              key === KEY_HEADER ||
-              key === KEY_BODY ||
-              key === KEY_FOOTER
-            ) {
-              this.contentKeys.push(key);
-            } else {
-              this.otherKeys.push(key);
-            }
-
-            const compParams = translation.components[key].params || [];
+          for (const comp of translation.components) {
+            const compParams = comp.params || [];
             if (compParams.length > 0) {
               // create an array for the length of params
-              newParams[key] = new Array(compParams.length).fill('');
+              newParams[comp.name] = new Array(compParams.length).fill('');
             }
           }
-          this.buttonKeys.sort();
 
           // if we are looking at the same template copy our params on top
           if (this.template === this.selectedTemplate.uuid) {
@@ -217,9 +202,8 @@ export class TemplateEditor extends FormElement {
 
   private handleVariableChanged(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    const key = target.getAttribute('key');
     const index = parseInt(target.getAttribute('index'));
-    this.params[key][index - 1] = target.value;
+    this.params[target.name][index - 1] = target.value;
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
@@ -227,21 +211,21 @@ export class TemplateEditor extends FormElement {
     });
   }
 
-  private renderVariables(key: string, component: Component) {
+  private renderVariables(component: Component) {
     const parts = component.content.split(/{{(\d+)}}/g);
     if (parts.length > 0) {
       const variables = parts.map((part, index) => {
-        const keyIndex = Math.round(index / 2);
+        const paramIndex = Math.round(index / 2);
         if (index % 2 === 0) {
           return html`<span class="text">${part}</span>`;
         }
         return html`<temba-completion
           class="variable"
           type="text"
-          value=${this.params[key][keyIndex - 1]}
+          value=${this.params[component.name][paramIndex - 1]}
           @change=${this.handleVariableChanged}
-          key="${key}"
-          index="${keyIndex}}"
+          name="${component.name}"
+          index="${paramIndex}"
           placeholder="variable.."
         ></temba-completion>`;
       });
@@ -249,72 +233,54 @@ export class TemplateEditor extends FormElement {
     }
   }
 
-  private renderComponent(key: string, component: Component) {
-    return html` <div class="component">
-      <div>${key}</div>
-      ${this.renderVariables(key, component)}
-    </div>`;
-  }
-
-  public renderContent(components: {
-    [key: string]: Component;
-  }): TemplateResult {
-    let header = null;
-    let body = null;
-    let footer = null;
-
-    if (components[KEY_HEADER]) {
-      header = html`<div class="header">
-        ${this.renderVariables(KEY_HEADER, components[KEY_HEADER])}
+  public renderComponents(components: Component[]): TemplateResult {
+    const nonButtons = components
+      .filter(comp => !comp.type.startsWith('button/'))
+      .map(
+        component =>
+          html`<div class="${component['name']}">
+            ${this.renderVariables(component)}
+          </div>`
+      );
+    const buttonComponents = components.filter(comp =>
+      comp.type.startsWith('button/')
+    );
+    const buttons =
+      buttonComponents.length > 0 ? this.renderButtons(buttonComponents) : null;
+    return html`<div class="main">${nonButtons}</div>
+      <div class="buttons">
+        ${buttons}
+        <div></div>
       </div>`;
-    }
-
-    if (components[KEY_BODY]) {
-      body = html`<div class="body">
-        ${this.renderVariables(KEY_BODY, components[KEY_BODY])}
-      </div>`;
-    }
-
-    if (components[KEY_FOOTER]) {
-      footer = html`<div class="footer">
-        ${this.renderVariables(KEY_FOOTER, components[KEY_FOOTER])}
-      </div>`;
-    }
-
-    if (header || body || footer) {
-      return html`<div class="content">${header}${body}${footer}</div>`;
-    }
-    return null;
   }
 
   public renderButtons(components): TemplateResult {
-    if (this.buttonKeys.length > 0) {
-      const buttons = this.buttonKeys.map(key => {
-        const component = components[key];
-        return html`<div class="button">
-          ${this.renderVariables(key, component)}
-        </div>`;
-      });
-      return html`<div class="button-wrapper">
-        <div class="button-header">Template Buttons</div>
-        <div class="buttons">${buttons}</div>
-      </div>`;
-    }
-    return null;
+    const buttons = components.map(component => {
+      if (component.display) {
+        return html`
+          <div class="button">
+            <div class="display">${component.display}</div>
+            ${this.renderVariables(component)}
+          </div>
+        `;
+      } else {
+        return html`
+          <div class="button">${this.renderVariables(component)}</div>
+        `;
+      }
+    });
+    return html`<div class="button-wrapper">
+      <div class="button-header">Template Buttons</div>
+      <div class="buttons">${buttons}</div>
+    </div>`;
   }
+
   public render(): TemplateResult {
     let content = null;
-    let buttons = null;
-    let otherComponents = null;
     if (this.translation) {
-      content = this.renderContent(this.translation.components);
-      buttons = this.renderButtons(this.translation.components);
-      otherComponents = this.otherKeys.map(key => {
-        const component = this.translation.components[key];
-        return this.renderComponent(key, component);
-      });
+      content = this.renderComponents(this.translation.components);
     } else {
-      otherComponents = html`<div class="error-message">
+      content = html`<div class="error-message">
         No approved translation was found for current language.
       </div>`;
     }
@@ -328,7 +294,7 @@ export class TemplateEditor extends FormElement {
           valuekey="uuid"
           class="picker"
           value="${this.template}"
-          endpoint=${this.url}
+          endpoint="${this.url}?comps_as_list=true"
           shouldExclude=${template => template.status !== 'approved'}
           placeholder="Select a template"
           @temba-content-changed=${this.swallowEvent}
@@ -336,11 +302,7 @@ export class TemplateEditor extends FormElement {
         >
         </temba-select>
 
-        ${this.template
-          ? html` <div class="template">
-              ${content} ${buttons} ${otherComponents}
-            </div>`
-          : null}
+        ${this.template ? html` <div class="template">${content}</div>` : null}
       </div>
     `;
   }

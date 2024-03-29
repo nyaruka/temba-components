@@ -14,8 +14,10 @@
                     "namespace": "",
                     "locale": "eng-US",
                     "status": "approved",
-                    "components": {
-                        "body": {
+                    "components": [
+                        {
+                            "name": "body",
+                            "type": "body",
                             "content": "Hi bob {{1}} from {{2}}",
                             "params": [
                                 {
@@ -26,11 +28,15 @@
                                 }
                             ]
                         },
-                        "buttons.0": {
+                        {
+                            "name": "buttons.0",
+                            "type": "button/quick_reply",
                             "content": "Yes",
                             "params": []
                         },
-                        "buttons.1": {
+                        {
+                            "name": "buttons.1",
+                            "type": "button/quick_reply",
                             "content": "No {{1}}",
                             "params": [
                                 {
@@ -38,7 +44,7 @@
                                 }
                             ]
                         }
-                    }
+                    ]
                 },
                 {
                     "channel": {
@@ -50,29 +56,33 @@
                     "status": "approved",
                     "components": [
                         {
-                            "body": {
-                                "content": "bon jour bob {{1}} from {{2}}",
-                                "params": [
-                                    {
-                                        "type": "text"
-                                    },
-                                    {
-                                        "type": "text"
-                                    }
-                                ]
-                            },
-                            "buttons.0": {
-                                "content": "Yes",
-                                "params": []
-                            },
-                            "buttons.1": {
-                                "content": "No {{1}}",
-                                "params": [
-                                    {
-                                        "type": "text"
-                                    }
-                                ]
-                            }
+                            "name": "body",
+                            "type": "body",
+                            "content": "bon jour bob {{1}} from {{2}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "buttons.0",
+                            "type": "button/quick_reply",
+                            "content": "Yes",
+                            "params": []
+                        },
+                        {
+                            "name": "buttons.1",
+                            "type": "button/quick_reply",
+                            "content": "No {{1}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                }
+                            ]
                         }
                     ]
                 }
@@ -92,8 +102,10 @@
                     "namespace": "",
                     "locale": "eng-US",
                     "status": "approved",
-                    "components": {
-                        "body": {
+                    "components": [
+                        {
+                            "name": "body",
+                            "type": "body",
                             "content": "Hi bob {{1}} from {{2}}",
                             "params": [
                                 {
@@ -104,11 +116,15 @@
                                 }
                             ]
                         },
-                        "buttons.0": {
+                        {
+                            "name": "buttons.0",
+                            "type": "button/quick_reply",
                             "content": "Yes",
                             "params": []
                         },
-                        "buttons.1": {
+                        {
+                            "name": "buttons.1",
+                            "type": "button/quick_reply",
                             "content": "No {{1}}",
                             "params": [
                                 {
@@ -116,7 +132,7 @@
                                 }
                             ]
                         }
-                    }
+                    ]
                 },
                 {
                     "channel": {
@@ -128,29 +144,33 @@
                     "status": "pending",
                     "components": [
                         {
-                            "body": {
-                                "content": "bon jour bob {{1}} from {{2}}",
-                                "params": [
-                                    {
-                                        "type": "text"
-                                    },
-                                    {
-                                        "type": "text"
-                                    }
-                                ]
-                            },
-                            "buttons.0": {
-                                "content": "Yes",
-                                "params": []
-                            },
-                            "buttons.1": {
-                                "content": "No {{1}}",
-                                "params": [
-                                    {
-                                        "type": "text"
-                                    }
-                                ]
-                            }
+                            "name": "body",
+                            "type": "body",
+                            "content": "bon jour bob {{1}} from {{2}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                },
+                                {
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "buttons.0",
+                            "type": "button/quick_reply",
+                            "content": "Yes",
+                            "params": []
+                        },
+                        {
+                            "name": "buttons.1",
+                            "type": "button/quick_reply",
+                            "content": "No {{1}}",
+                            "params": [
+                                {
+                                    "type": "text"
+                                }
+                            ]
                         }
                     ]
                 }
@@ -170,8 +190,10 @@
                     "namespace": "",
                     "locale": "eng-US",
                     "status": "approved",
-                    "components": {
-                        "body": {
+                    "components": [
+                        {
+                            "name": "body",
+                            "type": "body",
                             "content": "Hi there, we are trying to reach {{1}} about their car warranty. It turns out you only have until {{2}} to decide whether to extend it further. Please contact us at {{3}} at your earliest convenience to discuss your options. Are you still interested?",
                             "params": [
                                 {
@@ -185,14 +207,20 @@
                                 }
                             ]
                         },
-                        "buttons.0": {
+                        {
+                            "name": "buttons.0",
+                            "type": "button/quick_reply",
                             "content": "Yes",
                             "params": []
                         },
-                        "buttons.1": {
+                        {
+                            "name": "buttons.1",
+                            "type": "button/quick_reply",
                             "content": "No"
                         },
-                        "buttons.2": {
+                        {
+                            "name": "buttons.2",
+                            "type": "button/quick_reply",
                             "content": "Wait until {{1}}",
                             "params": [
                                 {
@@ -200,7 +228,7 @@
                                 }
                             ]
                         }
-                    }
+                    ]
                 },
                 {
                     "channel": {
@@ -210,8 +238,10 @@
                     "namespace": "",
                     "locale": "fra-FR",
                     "status": "pending",
-                    "components": {
-                        "body": {
+                    "components": [
+                        {
+                            "name": "body",
+                            "type": "body",
                             "content": "Bonjour, nous essayons d'atteindre {{1}} à propos de leur garantie automobile. Il s'avère que tu n'as que jusqu'à {{2}} pour décider s'il convient de le prolonger davantage. Veuillez nous contacter au {{3}} dès que possible pour discuter de vos options. Êtes vous toujours intéressé?",
                             "params": [
                                 {
@@ -225,14 +255,20 @@
                                 }
                             ]
                         },
-                        "buttons.0": {
+                        {
+                            "name": "buttons.0",
+                            "type": "button/quick_reply",
                             "content": "Oui",
                             "params": []
                         },
-                        "buttons.1": {
+                        {
+                            "name": "buttons.1",
+                            "type": "button/quick_reply",
                             "content": "No"
                         },
-                        "buttons.2": {
+                        {
+                            "name": "buttons.2",
+                            "type": "button/quick_reply",
                             "content": "Attendre jusqu'à {{1}}",
                             "params": [
                                 {
@@ -240,7 +276,7 @@
                                 }
                             ]
                         }
-                    }
+                    ]
                 }
             ],
             "created_on": "2023-09-08T22:38:22.710140Z",
