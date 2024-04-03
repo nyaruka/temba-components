@@ -18,10 +18,7 @@ export class TembaDate extends RapidElement {
   static get styles() {
     return css`
       .date {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: inline;
       }
     `;
   }
