@@ -10,6 +10,12 @@ interface Message {
   timestamp: number;
 }
 
+enum ChatStatus {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  CONNECTED = 'connected',
+}
+
 // how long of a window to show time between batches
 const BATCH_TIME_WINDOW = 30 * 60 * 1000;
 
@@ -38,6 +44,7 @@ export class WebChat extends LitElement {
         align-self: center;
         --curvature: 0.6em;
         --color-primary: hsla(208, 70%, 55%, 1);
+        font-family: "Roboto", 'Helvetica Neue', sans-serif;
       }
 
       .block {
@@ -231,8 +238,8 @@ export class WebChat extends LitElement {
       }
 
       .input.inactive {
-        //pointer-events: none;
-        //opacity: 0.3;
+        // pointer-events: none;
+        // opacity: 0.3;
       }
 
       .active {
@@ -250,6 +257,38 @@ export class WebChat extends LitElement {
         pointer-events: initial;
         transform: rotate(0deg);
       }
+
+      .notice {
+        padding: 1em;
+        background: #f8f8f8;
+        color: #666;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      .connecting .notice {
+        display: flex;
+        justify-content: center;
+      }
+
+      .connecting .notice temba-icon {
+        margin-left: 0.5em;
+      }
+
+      .reconnect {
+        color: var(--color-primary);
+        text-decoration: underline;
+        font-size: 0.9em;
+      }
+
+          console.log('opening socket..');
+    if (true) {
+      return;
+    }
+
+    .input:disabled {
+      background: transparent !important;
+    }
     `;
   }
 
@@ -263,8 +302,8 @@ export class WebChat extends LitElement {
   messages: Message[][] = [];
 
   // is our socket connection established
-  @property({ type: Boolean })
-  active: boolean;
+  @property({ type: String })
+  status: ChatStatus = ChatStatus.DISCONNECTED;
 
   // is the chat widget open
   @property({ type: Boolean })
@@ -279,37 +318,47 @@ export class WebChat extends LitElement {
   @property({ type: Boolean, attribute: false })
   hideBottomScroll = true;
 
+  @property({ type: String })
+  host: string;
+
   private sock: WebSocket;
 
   public constructor() {
     super();
   }
 
+  private handleReconnect() {
+    this.openSocket();
+  }
+
   private openSocket(): void {
-    console.log('opening socket..');
+    if (this.status !== ChatStatus.DISCONNECTED) {
+      return;
+    }
+
+    this.status = ChatStatus.CONNECTING;
     const webChat = this;
-    let url = `ws://localhost:8070/start?channel=${this.channel}`;
+    let url = `ws://localhost:8070/start/${this.channel}/`;
     if (this.urn) {
-      url = `${url}&identifier=${this.urn}`;
+      url = `${url}?chat_id=${this.urn}`;
     }
     this.sock = new WebSocket(url);
     this.sock.onclose = function (event) {
-      console.log('socket closed');
-      webChat.active = false;
+      console.log('socket closed', event);
+      webChat.status = ChatStatus.DISCONNECTED;
     };
     this.sock.onmessage = function (event) {
-      console.log(event.data);
+      webChat.status = ChatStatus.CONNECTED;
+      console.log(event);
       const msg = JSON.parse(event.data) as Message;
       if (msg.type === 'chat_started') {
         if (webChat.urn !== msg.identifier) {
           webChat.messages = [];
         }
         webChat.urn = msg.identifier;
-        webChat.active = true;
         webChat.requestUpdate('messages');
       } else if (msg.type === 'chat_resumed') {
         webChat.urn = msg.identifier;
-        webChat.active = true;
       } else if (msg.type === 'msg_out') {
         msg['timestamp'] = new Date().getTime();
         webChat.addMessage(msg);
@@ -345,7 +394,9 @@ export class WebChat extends LitElement {
 
   private focusInput() {
     const input = this.shadowRoot.querySelector('.input') as any;
-    input.focus();
+    if (input) {
+      input.focus();
+    }
   }
 
   public updated(
@@ -359,10 +410,15 @@ export class WebChat extends LitElement {
       this.hideBottomScroll = true;
       this.hideTopScroll = !hasScroll;
       this.scrollToBottom();
-      this.focusInput();
 
-      if (!this.active) {
+      if (this.status === ChatStatus.DISCONNECTED) {
         this.openSocket();
+      }
+    }
+
+    if (changed.has('status')) {
+      if (this.status === ChatStatus.CONNECTED) {
+        this.focusInput();
       }
     }
 
@@ -404,7 +460,7 @@ export class WebChat extends LitElement {
   }
 
   private sendPendingMessage() {
-    if (this.active) {
+    if (this.status === ChatStatus.CONNECTED) {
       const input = this.shadowRoot.querySelector('.input') as any;
       const text = input.value;
       input.value = '';
@@ -512,10 +568,11 @@ export class WebChat extends LitElement {
   public render(): TemplateResult {
     return html`
       <div
-        class="chat ${this.hideTopScroll ? 'scroll-at-top' : ''} ${this
-          .hideBottomScroll
-          ? 'scroll-at-bottom'
-          : ''} ${this.open ? 'open' : ''}"
+        class="chat ${this.status} ${this.hideTopScroll
+          ? 'scroll-at-top'
+          : ''} ${this.hideBottomScroll ? 'scroll-at-bottom' : ''} ${this.open
+          ? 'open'
+          : ''}"
       >
         <div class="messages">
           <div class="scroll" @scroll=${this.handleScroll}>
@@ -527,25 +584,46 @@ export class WebChat extends LitElement {
               : null}
           </div>
         </div>
-        <div
-          class="row input-panel ${this.hasPendingText ? 'pending' : ''}"
-          @click=${this.handleClickInputPanel}
-        >
-          <input
-            class="input ${this.active ? 'active' : 'inactive'}"
-            type="text"
-            placeholder="Message.."
-            @keydown=${this.handleKeyUp}
-          />
-          <temba-icon
-            tabindex="1"
-            class="send-icon"
-            name="send"
-            size="1"
-            clickable
-            @click=${this.sendPendingMessage}
-          ></temba-icon>
-        </div>
+
+        ${this.status === ChatStatus.DISCONNECTED
+          ? html`<div class="notice">
+              <div>This chat is not currently connected.</div>
+              <div class="reconnect" @click=${this.handleReconnect}>
+                Click here to reconnect
+                <div></div>
+              </div>
+            </div>`
+          : null}
+        ${this.status === ChatStatus.CONNECTING
+          ? html`<div class="notice">
+              <div>Connecting</div>
+              <temba-icon name="progress_spinner" spin></temba-icon>
+            </div>`
+          : null}
+        ${this.status === ChatStatus.CONNECTED
+          ? html` <div
+              class="row input-panel ${this.hasPendingText ? 'pending' : ''}"
+              @click=${this.handleClickInputPanel}
+            >
+              <input
+                class="input ${this.status === ChatStatus.CONNECTED
+                  ? 'active'
+                  : 'inactive'}"
+                type="text"
+                placeholder="Message.."
+                ?disabled=${this.status !== ChatStatus.CONNECTED}
+                @keydown=${this.handleKeyUp}
+              />
+              <temba-icon
+                tabindex="1"
+                class="send-icon"
+                name="send"
+                size="1"
+                clickable
+                @click=${this.sendPendingMessage}
+              ></temba-icon>
+            </div>`
+          : null}
       </div>
 
       <div @click=${this.toggleChat}>
