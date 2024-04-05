@@ -18,10 +18,7 @@ export class TembaDate extends RapidElement {
   static get styles() {
     return css`
       .date {
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: inline;
       }
     `;
   }
@@ -78,12 +75,11 @@ export class TembaDate extends RapidElement {
           this.datetime.diffNow().milliseconds / 1000 / 60
         );
         if (minutes < 1) {
-          return html`<div
+          return html`<span
             class="date"
             title="${this.datetime.toLocaleString(Display.datetime)}"
-          >
-            just now
-          </div>`;
+            >just now</span
+          >`;
         }
 
         formatted = this.store.getShortDuration(this.datetime);
@@ -92,12 +88,11 @@ export class TembaDate extends RapidElement {
           this.datetime.diffNow().milliseconds / 1000 / 60
         );
         if (minutes < 1) {
-          return html`<div
+          return html`<span
             class="date"
             title="${this.datetime.toLocaleString(Display.datetime)}"
-          >
-            just now
-          </div>`;
+            >just now</span
+          >`;
         }
         formatted = this.store.getShortDuration(this.datetime);
       } else if (this.display === Display.day) {
@@ -105,12 +100,12 @@ export class TembaDate extends RapidElement {
       } else {
         formatted = this.datetime.toLocaleString(Display[this.display]);
       }
-      return html`<div
+
+      return html`<span
         class="date"
         title="${this.datetime.toLocaleString(Display.datetime)}"
-      >
-        ${formatted}
-      </div>`;
+        >${formatted}</span
+      >`;
     }
   }
 }
