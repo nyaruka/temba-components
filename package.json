@@ -105,7 +105,9 @@
   },
   "resolutions": {
     "trim": "^0.0.3",
-    "prismjs": "^1.23.0"
+    "prismjs": "^1.23.0",
+    "wrap-ansi": "7.0.0",
+    "string-width": "4.1.0"
   },
   "packageManager": "yarn@1.22.1"
 }
