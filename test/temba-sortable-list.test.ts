@@ -25,8 +25,8 @@ describe('temba-sortable-list', () => {
 
   it('drags', async () => {
     const list: SortableList = await createSorter(BORING_LIST);
-    const orderChanged = oneEvent(list, CustomEventType.OrderChanged);
-    const updated = oneEvent(list, 'change');
+    const orderChanged = oneEvent(list, CustomEventType.OrderChanged, false);
+    const updated = oneEvent(list, 'change', false);
 
     const bounds = list.getBoundingClientRect();
 

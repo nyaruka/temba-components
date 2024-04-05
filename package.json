@@ -51,9 +51,9 @@
   },
   "devDependencies": {
     "@lit/localize-tools": "^0.6.9",
-    "@open-wc/building-rollup": "2.2.1",
-    "@open-wc/eslint-config": "9.0.0",
-    "@open-wc/testing": "3.1.2",
+    "@open-wc/building-rollup": "3.0.2",
+    "@open-wc/eslint-config": "12.0.3",
+    "@open-wc/testing": "4.0.0",
     "@rollup/plugin-commonjs": "^23.0.5",
     "@types/leaflet": "1.4.4",
     "@types/node": "13.11.1",
