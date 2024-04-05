@@ -1,3 +1,4 @@
+import { html, fixture, expect } from '@open-wc/testing';
 import { TembaDate } from '../src/date/TembaDate';
 import {
   assertScreenshot,
@@ -6,7 +7,6 @@ import {
   loadStore,
   mockNow,
 } from './utils.test';
-import { expect } from '@open-wc/testing';
 
 const TAG = 'temba-date';
 
@@ -25,7 +25,7 @@ describe('temba-date', () => {
   it('renders default', async () => {
     const date = await getDate({ value: '1978-11-18T02:22:00.000000-07:00' });
     const dateString = (
-      date.shadowRoot.querySelector('.date') as HTMLDivElement
+      date.shadowRoot.querySelector('.date') as HTMLSpanElement
     ).innerText;
 
     await assertScreenshot('date/date', getClip(date));
@@ -38,7 +38,7 @@ describe('temba-date', () => {
       display: 'duration',
     });
     const dateString = (
-      date.shadowRoot.querySelector('.date') as HTMLDivElement
+      date.shadowRoot.querySelector('.date') as HTMLSpanElement
     ).innerText;
 
     await assertScreenshot('date/duration', getClip(date));
@@ -51,10 +51,22 @@ describe('temba-date', () => {
       display: 'datetime',
     });
     const dateString = (
-      date.shadowRoot.querySelector('.date') as HTMLDivElement
+      date.shadowRoot.querySelector('.date') as HTMLSpanElement
     ).innerText;
 
     await assertScreenshot('date/datetime', getClip(date));
     expect(dateString).to.equal('11/18/1978, 9:22 AM');
+  });
+
+  it('renders inline', async () => {
+    const el: HTMLElement = await fixture(html`
+      <span
+        >Your birthday is
+        <temba-date value="1978-11-18T02:22:00.000000-07:00"></temba-date
+        >!</span
+      >
+    `);
+
+    await assertScreenshot('date/date-inline', getClip(el));
   });
 });
