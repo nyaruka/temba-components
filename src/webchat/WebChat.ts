@@ -44,7 +44,7 @@ export class WebChat extends LitElement {
         align-self: center;
         --curvature: 0.6em;
         --color-primary: hsla(208, 70%, 55%, 1);
-        font-family: "Roboto", 'Helvetica Neue', sans-serif;
+        font-family: 'Roboto', 'Helvetica Neue', sans-serif;
       }
 
       .block {
@@ -281,14 +281,9 @@ export class WebChat extends LitElement {
         font-size: 0.9em;
       }
 
-          console.log('opening socket..');
-    if (true) {
-      return;
-    }
-
-    .input:disabled {
-      background: transparent !important;
-    }
+      .input:disabled {
+        background: transparent !important;
+      }
     `;
   }
 
@@ -344,12 +339,10 @@ export class WebChat extends LitElement {
     }
     this.sock = new WebSocket(url);
     this.sock.onclose = function (event) {
-      console.log('socket closed', event);
       webChat.status = ChatStatus.DISCONNECTED;
     };
     this.sock.onmessage = function (event) {
       webChat.status = ChatStatus.CONNECTED;
-      console.log(event);
       const msg = JSON.parse(event.data) as Message;
       if (msg.type === 'chat_started') {
         if (webChat.urn !== msg.identifier) {
@@ -368,7 +361,6 @@ export class WebChat extends LitElement {
   }
 
   private restoreFromLocal(): void {
-    console.log('Restoring from localStorage..');
     const data = JSON.parse(localStorage.getItem('temba-chat') || '{}');
     const urn = 'urn' in data ? data['urn'] : null;
     if (urn && !this.urn) {
