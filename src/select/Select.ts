@@ -12,7 +12,7 @@ import '../options/Options';
 import { EventHandler } from '../RapidElement';
 import { FormElement } from '../FormElement';
 
-import Lru from 'tiny-lru';
+import { lru } from 'tiny-lru';
 import { CompletionOption, CustomEventType, Position } from '../interfaces';
 import {
   renderCompletionOption,
@@ -509,7 +509,7 @@ export class Select extends FormElement {
 
   private removingSelection: boolean;
 
-  private lruCache = Lru(20, 60000);
+  private lruCache = lru(20, 60000);
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
@@ -657,7 +657,7 @@ export class Select extends FormElement {
       postJSON(this.endpoint, selected).then(response => {
         if (response.status >= 200 && response.status < 300) {
           this.setSelectedOption(response.json);
-          this.lruCache = Lru(20, 60000);
+          this.lruCache = lru(20, 60000);
         } else {
           // TODO: find a way to share inline errors
           this.blur();

@@ -37,15 +37,15 @@
     "color-hash": "^2.0.2",
     "croppie": "^2.6.5",
     "geojson": "^0.5.0",
-    "image-size": "^0.9.7",
+    "image-size": "^1.1.1",
     "leaflet": "1.5.1",
     "lit": "3.1.2",
     "lit-element": "^4.0.4",
     "lit-html": "^3.1.2",
     "luxon": "^2.4.0",
     "remarkable": "^2.0.1",
-    "serialize-javascript": "^3.0.0",
-    "tiny-lru": "^8.0.2"
+    "serialize-javascript": "^6.0.2",
+    "tiny-lru": "^11.2.5"
   },
   "devDependencies": {
     "@lit/localize-tools": "^0.7.2",

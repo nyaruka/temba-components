@@ -21,7 +21,7 @@ import {
   User,
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
-import Lru from 'tiny-lru';
+import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
@@ -112,7 +112,7 @@ export class Store extends RapidElement {
   }
 
   public clearCache() {
-    this.cache = Lru(this.max, this.ttl);
+    this.cache = lru(this.max, this.ttl);
   }
 
   public reset() {
