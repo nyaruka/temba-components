@@ -1,5 +1,5 @@
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '96c407ade55885693432afd343de1cc0';
+export const SVG_FINGERPRINT = '643ae0ff4d9a7cf48886c5c9e31a5b9a';
 
 // only icons below are included in the sprite sheet
 export enum Icon {

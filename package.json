@@ -41,6 +41,8 @@
     "image-size": "^0.9.7",
     "leaflet": "1.5.1",
     "lit": "2.2.0",
+    "lit-element": "^3",
+    "lit-html": "^2",
     "luxon": "^2.4.0",
     "marked": "4.0.10",
     "remarkable": "^2.0.1",
