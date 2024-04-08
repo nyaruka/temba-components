@@ -24,7 +24,7 @@ export default {
         resolve(),
 
         // convert commonjs modules to es6
-        commonjs(),
+        commonjs({ include: 'node_modules/**' }),
 
         // compile our typescript
         typescript({ sourceMap: true, inlineSources: true }),

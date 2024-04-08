@@ -8,7 +8,7 @@ export class VectorIcon extends LitElement {
   name: string;
 
   @property({ type: String })
-  prefix: string = 'https://localhost.textit.com/static/';
+  prefix: string;
 
   // same as name but without implicit coloring
   @property({ type: String })
@@ -146,7 +146,6 @@ export class VectorIcon extends LitElement {
 
   constructor() {
     super();
-    console.log('VectorIcon constructor');
   }
 
   private lastName: string;
@@ -221,8 +220,6 @@ export class VectorIcon extends LitElement {
     if (!name) {
       name = this.id;
     }
-
-    console.log('src', this.src);
 
     return html`
       <div
