@@ -1,6 +1,6 @@
 import merge from 'deepmerge';
 import { createSpaConfig } from '@open-wc/building-rollup';
-import packageJson from './package.json';
+import packageJson from './package.json' assert { type: "json" };
 import commonjs from '@rollup/plugin-commonjs';
 import copy from 'rollup-plugin-copy';
 
