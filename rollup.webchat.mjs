@@ -3,17 +3,16 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import { terser } from 'rollup-plugin-terser';
 import svg from 'rollup-plugin-svg-import';
-import copy from 'rollup-plugin-copy';
 
 export default {
-    input: 'temba-components.ts',
+    input: 'temba-webchat.ts',
     output: {
-        file: 'dist/temba-components.js',
+        file: 'dist/temba-webchat.js',
 
         // Immediately Invoked Function Expression
         format: 'iife',
 
-        name: 'TembaComponents',
+        name: 'WebChat',
         sourcemap: true
     },
     plugins: [
@@ -28,20 +27,6 @@ export default {
 
         // compile our typescript
         typescript({ sourceMap: true, inlineSources: true }),
-
-        copy({
-            targets: [
-                { src: 'static/svg/index.svg', dest: 'dist/static/svg/' },
-                { src: 'static/img', dest: 'dist/static/' },
-                { src: 'out-tsc/src/locales', dest: 'dist/' },
-                {
-                    src: 'dist/*.js',
-                    dest: 'dist/',
-                    rename: () => 'index.js',
-                },
-            ],
-            hook: 'writeBundle',
-        }),
 
         // minify
         terser()
