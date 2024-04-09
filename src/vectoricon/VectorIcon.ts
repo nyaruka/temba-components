@@ -1,7 +1,6 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Icon, SVG_FINGERPRINT } from '.';
-
 import { getClasses } from '../utils';
 
 export class VectorIcon extends LitElement {
