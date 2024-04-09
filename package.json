@@ -12,7 +12,7 @@
     "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --open --watch --port 3010 --esbuild-target auto\"",
     "start:bg": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
-    "build": "rimraf dist && yarn svg && tsc && rollup -c rollup.module.mjs ",
+    "build": "rimraf dist && yarn svg && tsc && rollup -c rollup.components.mjs ",
     "build-wc": "rollup -c rollup.webchat.mjs",
     "dev": "yarn build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
     "postversion": "git push --tags && git push origin main",

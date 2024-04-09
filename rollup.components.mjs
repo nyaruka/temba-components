@@ -34,11 +34,6 @@ export default {
                 { src: 'static/svg/index.svg', dest: 'dist/static/svg/' },
                 { src: 'static/img', dest: 'dist/static/' },
                 { src: 'out-tsc/src/locales', dest: 'dist/' },
-                {
-                    src: 'dist/*.js',
-                    dest: 'dist/',
-                    rename: () => 'index.js',
-                },
             ],
             hook: 'writeBundle',
         }),
