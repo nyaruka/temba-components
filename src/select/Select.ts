@@ -1175,7 +1175,7 @@ export class Select extends FormElement {
       if (this.searchable && this.staticOptions.length === 0) {
         this.quietMillis = 200;
       }
-    }, 0);
+    }, 100);
   }
 
   private handleArrowClick(event: MouseEvent): void {
