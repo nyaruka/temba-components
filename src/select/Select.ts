@@ -258,7 +258,6 @@ export class Select extends FormElement {
       }
 
       .searchable input {
-        font-weight: 300;
         visibility: visible;
         cursor: pointer;
         background: none;
@@ -287,7 +286,6 @@ export class Select extends FormElement {
 
       .searchbox::placeholder {
         color: var(--color-placeholder);
-        font-weight: 300;
         font-size: 1em;
         line-height: var(--temba-select-selected-line-height);
         padding-left: 1px;
@@ -297,7 +295,6 @@ export class Select extends FormElement {
         font-size: var(--temba-select-selected-font-size);
         color: var(--color-placeholder);
         display: none;
-        font-weight: 300;
         line-height: var(--temba-select-selected-line-height);
       }
 

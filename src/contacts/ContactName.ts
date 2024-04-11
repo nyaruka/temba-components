@@ -24,15 +24,13 @@ export class ContactName extends RapidElement {
       }
 
       .name {
-        font-size: 1.5rem;
+        font-size: var(--contact-name-font-size, 1.5rem);
         overflow: hidden;
         max-height: 2rem;
         line-height: 2rem;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 1;
         text-overflow: ellipsis;
-        display: -webkit-box;
-        margin: auto;
       }
     `;
   }

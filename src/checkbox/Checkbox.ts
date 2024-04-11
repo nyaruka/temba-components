@@ -40,7 +40,6 @@ export class Checkbox extends FormElement {
         font-family: var(--font-family);
         padding: 0px;
         margin-left: 8px;
-        font-weight: 300;
         font-size: 14px;
         line-height: 19px;
         flex-grow: 1;

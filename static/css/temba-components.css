@@ -1,7 +1,3 @@
-  html input {
-    font-weight: 300;
-  }
-
   html.dragging * {
     user-select: none;
     pointer-events: none;
@@ -137,7 +133,6 @@
     --menu-padding: 1em;
 
     font-size: var(--font-size);
-    font-weight: 300;
     font-family: var(--font-family);
 
     --button-y: 6px;

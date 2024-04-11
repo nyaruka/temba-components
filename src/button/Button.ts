@@ -121,7 +121,6 @@ export class Button extends LitElement {
       .secondary-button {
         background: transparent;
         color: var(--color-text);
-        font-weight: 300;
       }
 
       .destructive-button {

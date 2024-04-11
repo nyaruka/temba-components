@@ -75,7 +75,6 @@ export class TextInput extends FormElement {
         line-height: normal;
         cursor: var(--input-cursor);
         resize: none;
-        font-weight: 300;
         width: 100%;
       }
 
@@ -88,7 +87,6 @@ export class TextInput extends FormElement {
 
       .textinput::placeholder {
         color: var(--color-placeholder);
-        font-weight: 300;
       }
 
       .grow-wrap {
@@ -110,7 +108,6 @@ export class TextInput extends FormElement {
         line-height: normal;
         cursor: text;
         resize: none;
-        font-weight: 300;
         width: 100%;
         visibility: hidden;
         word-break: break-word;
@@ -367,6 +364,7 @@ export class TextInput extends FormElement {
     let input = html`
       <input
         class="textinput"
+        autocomplete="off"
         name=${this.name}
         type="${this.password || this.type === InputType.Password
           ? 'password'
