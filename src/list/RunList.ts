@@ -30,6 +30,7 @@ export class RunList extends TembaList {
     return css`
       :host {
         overflow-y: auto !important;
+        --contact-name-font-size: 1em;
       }
 
       @media only screen and (max-height: 768px) {
@@ -146,7 +147,7 @@ export class RunList extends TembaList {
       return html`
         <div class="row" style="${statusStyle}display:flex;align-items:center">
           <div
-            style="width: 12em;white-space:nowrap;overflow: hidden; text-overflow: ellipsis;"
+            style="width:16em;white-space:nowrap;overflow: hidden; text-overflow: ellipsis;"
           >
             <temba-contact-name
               name=${run.contact.name || run.contact.anon_display}

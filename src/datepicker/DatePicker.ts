@@ -75,7 +75,6 @@ export default class DatePicker extends FormElement {
         color: var(--color-widget-text);
         border: 0px;
         font-family: var(--font-family);
-        font-weight: 300;
         outline: none;
         width: 100%;
         font-size: 13px;

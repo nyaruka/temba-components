@@ -1,6 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
 import { TembaList } from './TembaList';
-import { StyleInfo } from 'lit-html/directives/style-map.js';
 import { Options } from '../options/Options';
 import { Icon } from '../vectoricon';
 
@@ -111,8 +110,8 @@ export class NotificationList extends TembaList {
       }
       return html`<div
         style="color:${color};display:flex;align-items:flex-start;flex-direction:row;font-weight:${notification.is_seen
-          ? 300
-          : 400}"
+          ? 400
+          : 500}"
       >
         ${icon
           ? html`<div style="margin-right:0.6em">

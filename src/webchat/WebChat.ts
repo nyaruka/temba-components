@@ -5,7 +5,7 @@ import { property } from 'lit/decorators.js';
 interface Message {
   text: string;
   type: string;
-  identifier?: string;
+  chat_id?: string;
   origin?: string;
   timestamp: number;
 }
@@ -45,6 +45,36 @@ export class WebChat extends LitElement {
         --curvature: 0.6em;
         --color-primary: hsla(208, 70%, 55%, 1);
         font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+        font-weight: 400;
+        font-size: 1.1em;
+        --toggle-speed: 80ms;
+      }
+
+      .header {
+        background: var(--color-primary);
+        height: 3em;
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+
+      .header slot {
+        flex-grow: 1;
+        padding: 1em;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.2em;
+        display: block;
+      }
+
+      .header .close-button {
+        margin: 0.5em;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+      }
+
+      .header .close-button:hover {
+        cursor: pointer;
+        color: rgba(255, 255, 255, 1);
       }
 
       .block {
@@ -102,9 +132,9 @@ export class WebChat extends LitElement {
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
           inset 0 0 0 0.25em rgba(0, 0, 0, 0.1);
         cursor: pointer;
-        transition: box-shadow 0.2s ease-out;
+        transition: box-shadow var(--toggle-speed) ease-out;
         position: absolute;
-        bottom: 1em;
+        bottom: 0.5em;
         right: 1em;
       }
 
@@ -124,12 +154,14 @@ export class WebChat extends LitElement {
         padding-bottom: 0.5em;
         background: #fafafa;
         border-radius: var(--curvature);
+        max-width: 70%;
       }
 
       .bubble .name {
-        font-size: 0.9em;
+        font-size: 0.95em;
         font-weight: 400;
-        margin-bottom: 0.5em;
+        color: #888;
+        margin-bottom: 0.25em;
       }
 
       .outgoing .bubble {
@@ -140,10 +172,12 @@ export class WebChat extends LitElement {
         background: var(--color-primary);
         color: white;
         border-top-right-radius: 0;
+        text-align: right;
       }
 
       .message {
         margin-bottom: 0.5em;
+        line-height: 1.2em;
       }
 
       .chat {
@@ -154,16 +188,16 @@ export class WebChat extends LitElement {
         box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, rgba(0, 0, 0, 0.1) 5em 5em 5em 5em;
         position: absolute;
-        bottom: 2em;
+        bottom: 3em;
         right: 1em;
-        transition: all 0.2s ease-out;
+        transition: all var(--toggle-speed) ease-out;
         transform: scale(0.9);
         pointer-events: none;
         opacity: 0;
       }
 
       .chat.open {
-        bottom: 6em;
+        bottom: 5em;
         opacity: 1;
         transform: scale(1);
         pointer-events: initial;
@@ -195,7 +229,7 @@ export class WebChat extends LitElement {
         position: absolute;
         max-width: 50vw;
         width: 28rem;
-        transition: opacity 0.1s ease-out;
+        transition: opacity var(--toggle-speed) ease-out;
       }
 
       .messages:after {
@@ -213,7 +247,7 @@ export class WebChat extends LitElement {
         max-width: 50vw;
         width: 28rem;
         margin-right: 5em;
-        transition: opacity 0.1s ease-out;
+        transition: opacity var(--toggle-speed) ease-out;
       }
 
       .scroll-at-top .messages:before {
@@ -227,6 +261,8 @@ export class WebChat extends LitElement {
       .input {
         border: none;
         flex-grow: 1;
+        color: #333;
+        font-size: 1em;
       }
 
       .input:focus {
@@ -338,20 +374,22 @@ export class WebChat extends LitElement {
       url = `${url}?chat_id=${this.urn}`;
     }
     this.sock = new WebSocket(url);
-    this.sock.onclose = function (event) {
+    this.sock.onclose = function (event: CloseEvent) {
+      console.log('Socket closed', event);
       webChat.status = ChatStatus.DISCONNECTED;
     };
-    this.sock.onmessage = function (event) {
+    this.sock.onmessage = function (event: MessageEvent) {
+      console.log(event);
       webChat.status = ChatStatus.CONNECTED;
       const msg = JSON.parse(event.data) as Message;
       if (msg.type === 'chat_started') {
-        if (webChat.urn !== msg.identifier) {
+        if (webChat.urn !== msg.chat_id) {
           webChat.messages = [];
         }
-        webChat.urn = msg.identifier;
+        webChat.urn = msg.chat_id;
         webChat.requestUpdate('messages');
       } else if (msg.type === 'chat_resumed') {
-        webChat.urn = msg.identifier;
+        webChat.urn = msg.chat_id;
       } else if (msg.type === 'msg_out') {
         msg['timestamp'] = new Date().getTime();
         webChat.addMessage(msg);
@@ -371,7 +409,7 @@ export class WebChat extends LitElement {
   }
 
   private writeToLocal(): void {
-    console.log('Writing to localStorage..');
+    // console.log('Writing to localStorage..');
     if (this.urn) {
       const data = { urn: this.urn, messages: this.messages, version: 1 };
       localStorage.setItem('temba-chat', JSON.stringify(data));
@@ -419,9 +457,9 @@ export class WebChat extends LitElement {
     }
 
     if (changed.has('messages')) {
-      console.log('messages changed', this.messages);
+      // console.log('messages changed', this.messages);
       this.writeToLocal();
-      console.log(this.messages);
+      // console.log(this.messages);
       this.scrollToBottom();
     }
   }
@@ -548,7 +586,9 @@ export class WebChat extends LitElement {
     this.hideTopScroll = event.target.scrollTop === 0;
   }
 
-  private handleClickInputPanel(event: any) {
+  private handleClickInputPanel(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
     const input = this.shadowRoot.querySelector('.input') as any;
     input.focus();
   }
@@ -566,6 +606,15 @@ export class WebChat extends LitElement {
           ? 'open'
           : ''}"
       >
+        <div class="header">
+          <slot name="header"></slot>
+          <temba-icon
+            name="close"
+            size="1.3"
+            class="close-button"
+            @click=${this.toggleChat}
+          ></temba-icon>
+        </div>
         <div class="messages">
           <div class="scroll" @scroll=${this.handleScroll}>
             ${this.messages

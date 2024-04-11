@@ -1,7 +1,6 @@
 import { property } from 'lit/decorators.js';
 import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { Button } from '../button/Button';
-import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { getClasses } from '../utils';
@@ -141,7 +140,6 @@ export class Dialog extends ResizeElement {
         align-items: center;
         font-size: 20px;
         padding: 12px 20px;
-        font-weight: 300;
         color: var(--header-text);
         background: var(--header-bg);
       }

@@ -70,7 +70,6 @@ export class Modax extends RapidElement {
         padding: 10px;
         margin-bottom: 10px;
         border-radius: 6px;
-        font-weight: 300;
       }
 
       .step-ball {
