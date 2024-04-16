@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -199,6 +199,10 @@ export class TabPane extends RapidElement {
       .check {
         margin-left: 0.4em;
       }
+
+      .pane {
+        display: flex;
+      }
     `;
   }
 
@@ -222,6 +226,9 @@ export class TabPane extends RapidElement {
   @property({ type: String })
   refresh = '';
 
+  @property({ type: Array, attribute: false })
+  tabs: Tab[] = [];
+
   private handleTabClick(event: MouseEvent): void {
     this.index = parseInt(
       (event.currentTarget as HTMLDivElement).dataset.index
@@ -231,31 +238,43 @@ export class TabPane extends RapidElement {
     this.requestUpdate('index');
   }
 
+  public handleSlotChange() {
+    const tabs: Tab[] = [];
+    for (const t of this.children) {
+      if (t.tagName === 'TEMBA-TAB') {
+        const tab = t as Tab;
+        tabs.push(tab);
+      }
+    }
+    this.tabs = tabs;
+  }
+
+  public firstUpdated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changes);
+    this.shadowRoot.addEventListener(
+      'slotchange',
+      this.handleSlotChange.bind(this)
+    );
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
-    if (changedProperties.has('index')) {
-      const tabs = this.getTabs();
-      if (tabs.length > this.index) {
-        for (let i = 0; i < tabs.length; i++) {
-          const tab = tabs[i];
-          tab.selected = i == this.index;
-          if (tab.selected) {
-            tab.style.display = 'flex';
-          } else {
-            tab.style.display = 'none';
-          }
-        }
-      }
+    if (changedProperties.has('index') || changedProperties.has('tabs')) {
+      this.tabs.forEach((tab, index) => {
+        tab.selected = index == this.index;
+      });
       this.fireEvent(CustomEventType.ContextChanged);
     }
 
     // if our current tab is hidden, select the first visible one
-    if (this.index > -1) {
-      const tabs = this.getTabs();
-      if (this.getTab(this.index).hidden) {
-        for (let i = 0; i < tabs.length; i++) {
-          const tab = this.getTab(i);
-          if (!tab.hidden) {
+    if (this.index > this.tabs.length) {
+      const tab = this.tabs[this.index];
+      if (tab && tab.hidden) {
+        for (let i = 0; i < this.tabs.length; i++) {
+          const other = this.tabs[i];
+          if (other && !other.hidden) {
             this.index = i;
             return;
           }
@@ -264,32 +283,36 @@ export class TabPane extends RapidElement {
     }
   }
 
+  public setTabDetails(
+    index: number,
+    details: { count: number; hidden: boolean }
+  ) {
+    if (index < this.tabs.length) {
+      const tab = this.tabs[index];
+      tab.count = details.count;
+      tab.hidden = details.hidden;
+      this.requestUpdate();
+    } else {
+      // not ready yet, set the tab details later
+      setTimeout(() => {
+        this.setTabDetails(index, details);
+      }, 100);
+    }
+  }
+
   public getCurrentTab(): Tab {
-    return this.getTabs()[this.index];
+    return this.tabs[this.index];
   }
 
   public getTab(index: number): Tab {
-    return this.getTabs()[index];
+    return this.tabs[index];
   }
 
   public handleTabContentChanged() {
     this.requestUpdate();
   }
 
-  public getTabs(): Tab[] {
-    const tabs: Tab[] = [];
-    for (const t of this.children) {
-      if (t.tagName === 'TEMBA-TAB') {
-        const tab = t as Tab;
-        tabs.push(tab);
-      }
-    }
-    return tabs;
-  }
-
   public render(): TemplateResult {
-    const tabs = this.getTabs();
-
     return html`
       ${this.bottom
         ? html`<div
@@ -312,7 +335,7 @@ export class TabPane extends RapidElement {
           focusedname: this.focusedName,
         })}"
       >
-        ${tabs.map(
+        ${this.tabs.map(
           (tab, index) => html`
             <div
               @click=${this.handleTabClick}

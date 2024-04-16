@@ -508,6 +508,75 @@ export class Select extends FormElement {
 
   private lruCache = lru(20, 60000);
 
+  public handleSlotChange() {
+    if (this.staticOptions.length === 0) {
+      for (const child of this.children) {
+        if (child.tagName === 'TEMBA-OPTION') {
+          const option: any = {};
+          for (const attribute of child.attributes) {
+            option[attribute.name] = attribute.value;
+          }
+          this.staticOptions.push(option);
+
+          if (
+            child.getAttribute('selected') !== null ||
+            this.getValue(option) == this.value
+          ) {
+            if (this.getAttribute('multi') !== null) {
+              this.addValue(option);
+            } else {
+              this.setValues([option]);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  public firstUpdated(changedProperties: any) {
+    super.firstUpdated(changedProperties);
+    this.anchorElement = this.shadowRoot.querySelector('.select-container');
+    this.anchorExpressions = this.shadowRoot.querySelector('#anchor');
+    this.shadowRoot.addEventListener(
+      'slotchange',
+      this.handleSlotChange.bind(this)
+    );
+
+    this.handleSlotChange();
+    if (this.values.length === 0 && (!this.placeholder || this.value)) {
+      if (this.staticOptions.length == 0 && this.endpoint) {
+        const value = this.value;
+        // see if we need fetch to select an option
+        fetchResults(this.endpoint).then((results: any) => {
+          if (results && results.length > 0) {
+            if (value) {
+              // if we started with a value, see if we can find it in the results
+              const existing = results.find(option => {
+                return this.getValue(option) === value;
+              });
+
+              if (existing) {
+                this.setValues([existing]);
+                return;
+              }
+            }
+            this.setValues([results[0]]);
+          }
+        });
+      } else {
+        if (this.getAttribute('multi') !== null) {
+          this.addValue(this.staticOptions[0]);
+        } else {
+          this.setValues([this.staticOptions[0]]);
+        }
+      }
+    }
+
+    if (this.searchable && this.staticOptions.length === 0) {
+      this.quietMillis = 200;
+    }
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
@@ -1111,70 +1180,6 @@ export class Select extends FormElement {
     ];
   }
 
-  public firstUpdated(changedProperties: any) {
-    super.firstUpdated(changedProperties);
-
-    this.anchorElement = this.shadowRoot.querySelector('.select-container');
-    this.anchorExpressions = this.shadowRoot.querySelector('#anchor');
-
-    // wait until children are created before adding our static options
-    const value = this.value;
-    window.setTimeout(() => {
-      for (const child of this.children) {
-        if (child.tagName === 'TEMBA-OPTION') {
-          const option: any = {};
-          for (const attribute of child.attributes) {
-            option[attribute.name] = attribute.value;
-          }
-          this.staticOptions.push(option);
-
-          if (
-            child.getAttribute('selected') !== null ||
-            this.getValue(option) == this.value
-          ) {
-            if (this.getAttribute('multi') !== null) {
-              this.addValue(option);
-            } else {
-              this.setValues([option]);
-            }
-          }
-        }
-      }
-
-      if (this.values.length === 0 && (!this.placeholder || value)) {
-        if (this.staticOptions.length == 0 && this.endpoint) {
-          // see if we need to auto select the first item but need to fetch it
-          fetchResults(this.endpoint).then((results: any) => {
-            if (results && results.length > 0) {
-              if (value) {
-                // if we started with a value, see if we can find it in the results
-                const existing = results.find(option => {
-                  return this.getValue(option) === value;
-                });
-
-                if (existing) {
-                  this.setValues([existing]);
-                  return;
-                }
-              }
-              this.setValues([results[0]]);
-            }
-          });
-        } else {
-          if (this.getAttribute('multi') !== null) {
-            this.addValue(this.staticOptions[0]);
-          } else {
-            this.setValues([this.staticOptions[0]]);
-          }
-        }
-      }
-
-      if (this.searchable && this.staticOptions.length === 0) {
-        this.quietMillis = 200;
-      }
-    }, 100);
-  }
-
   private handleArrowClick(event: MouseEvent): void {
     if (this.visibleOptions.length > 0) {
       this.visibleOptions = [];
@@ -1317,8 +1322,7 @@ export class Select extends FormElement {
         .hideErrors=${this.hideErrors}
         ?disabled=${this.disabled}
       >
-  
-      
+        <slot></slot>
         <div class="wrapper-bg">
         <div
           tabindex="0"
