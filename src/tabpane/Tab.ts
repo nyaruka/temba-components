@@ -7,20 +7,14 @@ export class Tab extends RapidElement {
   static get styles() {
     return css`
       :host {
-        display: flex;
+        display: none;
         flex-direction: column;
-        flex-grow: 1;  
         min-height: 0;
-      }      
-      
-      slot {
-        // display: none;
-      
+      }
 
-      slot.selected {
-        // display: flex;
-        // flex-direction: column;
-        // flex-grow: 1;
+      :host(.selected) {
+        display: flex;
+        flex-grow: 1;
       }
     `;
   }
@@ -51,6 +45,15 @@ export class Tab extends RapidElement {
 
   @property({ type: Boolean })
   checked = false;
+
+  public updated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.updated(changes);
+    if (changes.has('selected')) {
+      this.classList.toggle('selected', this.selected);
+    }
+  }
 
   public hasBadge() {
     return this.count > 0;
