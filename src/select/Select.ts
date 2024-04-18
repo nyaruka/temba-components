@@ -541,40 +541,41 @@ export class Select extends FormElement {
       'slotchange',
       this.handleSlotChange.bind(this)
     );
+    window.setTimeout(() => {
+      this.handleSlotChange();
+      if (this.values.length === 0 && (!this.placeholder || this.value)) {
+        if (this.staticOptions.length == 0 && this.endpoint) {
+          const value = this.value;
+          // see if we need fetch to select an option
+          fetchResults(this.endpoint).then((results: any) => {
+            if (results && results.length > 0) {
+              if (value) {
+                // if we started with a value, see if we can find it in the results
+                const existing = results.find(option => {
+                  return this.getValue(option) === value;
+                });
 
-    this.handleSlotChange();
-    if (this.values.length === 0 && (!this.placeholder || this.value)) {
-      if (this.staticOptions.length == 0 && this.endpoint) {
-        const value = this.value;
-        // see if we need fetch to select an option
-        fetchResults(this.endpoint).then((results: any) => {
-          if (results && results.length > 0) {
-            if (value) {
-              // if we started with a value, see if we can find it in the results
-              const existing = results.find(option => {
-                return this.getValue(option) === value;
-              });
-
-              if (existing) {
-                this.setValues([existing]);
-                return;
+                if (existing) {
+                  this.setValues([existing]);
+                  return;
+                }
               }
+              this.setValues([results[0]]);
             }
-            this.setValues([results[0]]);
-          }
-        });
-      } else {
-        if (this.getAttribute('multi') !== null) {
-          this.addValue(this.staticOptions[0]);
+          });
         } else {
-          this.setValues([this.staticOptions[0]]);
+          if (this.getAttribute('multi') !== null) {
+            this.addValue(this.staticOptions[0]);
+          } else {
+            this.setValues([this.staticOptions[0]]);
+          }
         }
       }
-    }
 
-    if (this.searchable && this.staticOptions.length === 0) {
-      this.quietMillis = 200;
-    }
+      if (this.searchable && this.staticOptions.length === 0) {
+        this.quietMillis = 200;
+      }
+    }, 100);
   }
 
   public updated(changedProperties: Map<string, any>) {
@@ -660,7 +661,7 @@ export class Select extends FormElement {
   }
 
   private updateInputs(): void {
-    for (let ele = null; (ele = this.hiddenInputs.pop()); ) {
+    for (let ele = null; (ele = this.hiddenInputs.pop());) {
       ele.remove();
     }
 
@@ -1069,7 +1070,7 @@ export class Select extends FormElement {
             option.value &&
             expression.value &&
             option.value.toLowerCase().trim() ==
-              expression.value.toLowerCase().trim()
+            expression.value.toLowerCase().trim()
           );
         })
       ) {
@@ -1196,11 +1197,11 @@ export class Select extends FormElement {
     return html`
       <div class="option-name" style="display:flex">
         ${option.icon
-          ? html`<temba-icon
+        ? html`<temba-icon
               name="${option.icon}"
               style="margin-right:0.5em;"
             ></temba-icon>`
-          : null}<span>${this.getName(option)}</span>
+        : null}<span>${this.getName(option)}</span>
       </div>
     `;
   }
@@ -1290,9 +1291,9 @@ export class Select extends FormElement {
 
     const anchorStyles = this.anchorPosition
       ? {
-          top: '0px',
-          left: `${this.anchorPosition.left - 10}px`,
-        }
+        top: '0px',
+        left: `${this.anchorPosition.left - 10}px`,
+      }
       : {};
 
     const input = this.searchable
@@ -1333,28 +1334,28 @@ export class Select extends FormElement {
             <div class="selected">
               ${!this.multi ? input : null}
               ${this.values.map(
-                (selected: any, index: number) => html`
+      (selected: any, index: number) => html`
                   <div
                     class="selected-item ${index === this.selectedIndex
-                      ? 'focused'
-                      : ''}"
+          ? 'focused'
+          : ''}"
                   >
                     ${this.multi
-                      ? html`
+          ? html`
                           <div
                             class="remove-item"
                             style="margin-top:1px"
                             @mousedown=${() => {
-                              this.removingSelection = true;
-                            }}
+              this.removingSelection = true;
+            }}
                             @mouseup=${() => {
-                              this.removingSelection = false;
-                            }}
+              this.removingSelection = false;
+            }}
                             @click=${(evt: MouseEvent) => {
-                              evt.preventDefault();
-                              evt.stopPropagation();
-                              this.handleRemoveSelection(selected);
-                            }}
+              evt.preventDefault();
+              evt.stopPropagation();
+              this.handleRemoveSelection(selected);
+            }}
                           >
                             <temba-icon
                               name="${Icon.delete_small}"
@@ -1362,11 +1363,11 @@ export class Select extends FormElement {
                             ></temba-icon>
                           </div>
                         `
-                      : null}
+          : null}
                     ${this.renderSelectedItem(selected)}
                   </div>
                 `
-              )}
+    )}
               ${this.multi ? input : null}
             </div>
 
@@ -1375,9 +1376,8 @@ export class Select extends FormElement {
           ${clear}
 
           <slot name="right"></slot>
-          ${
-            !this.tags
-              ? html`<div
+          ${!this.tags
+        ? html`<div
                   class="right-side"
                   style="display:block;margin-right:5px"
                   @click=${this.handleArrowClick}
@@ -1386,18 +1386,17 @@ export class Select extends FormElement {
                     size="1.5"
                     name="${Icon.select_open}"
                     class="select-open ${this.visibleOptions.length > 0
-                      ? 'open'
-                      : ''}"
+            ? 'open'
+            : ''}"
                   ></temba-icon>
                 </div>`
-              : null
-          }
+        : null
+      }
           </div>
           
         
-        <div class="info-text ${!this.infoText ? 'hide' : ''} ${
-      this.focused ? 'focused' : ''
-    }">${this.infoText}</div></div></div>
+        <div class="info-text ${!this.infoText ? 'hide' : ''} ${this.focused ? 'focused' : ''
+      }">${this.infoText}</div></div></div>
 
     
     <temba-options
@@ -1418,27 +1417,25 @@ export class Select extends FormElement {
 
     <temba-options
     @temba-selection=${this.handleExpressionSelection}
-    @temba-canceled=${() => {}}
+    @temba-canceled=${() => { }}
     .anchorTo=${this.anchorExpressions}
     .options=${this.completionOptions}
     .renderOption=${renderCompletionOption}
     ?visible=${this.completionOptions.length > 0}
     >
-      ${
-        this.currentFunction
-          ? html`
+      ${this.currentFunction
+        ? html`
               <div class="current-fn">
                 ${renderCompletionOption(this.currentFunction, true)}
               </div>
             `
-          : null
+        : null
       }
-      ${
-        this.completionOptions.length > 0
-          ? html`<div class="footer">
+      ${this.completionOptions.length > 0
+        ? html`<div class="footer">
               ${msg('Tab to complete, enter to select')}
             </div>`
-          : null
+        : null
       }
     </temba-options>
   </temba-field>
