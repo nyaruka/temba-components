@@ -76,7 +76,6 @@ export const getHeaders = (headers: any = {}) => {
   Object.keys(headers).forEach(key => {
     fetchHeaders[key] = headers[key];
   });
-
   return fetchHeaders;
 };
 
@@ -235,6 +234,7 @@ export const postUrl = (
     body: payload,
   };
 
+  console.log(options);
   return new Promise<WebResponse>((resolve, reject) => {
     fetch(url, options)
       .then(async response => {
@@ -271,10 +271,11 @@ export const postJSON = (url: string, payload: any): Promise<WebResponse> => {
 
 export const postFormData = (
   url: string,
-  formData: FormData
+  formData: FormData,
+  headers: any = {}
 ): Promise<WebResponse> => {
   return new Promise<WebResponse>((resolve, reject) => {
-    postUrl(url, formData, true)
+    postUrl(url, formData, headers)
       .then(response => {
         if (response.status >= 200 && response.status < 400) {
           resolve(response);
@@ -295,13 +296,14 @@ export const postFormData = (
 
 export const postForm = (
   url: string,
-  payload: any | FormData
+  payload: any | FormData,
+  headers: any = {}
 ): Promise<WebResponse> => {
   const formData = new FormData();
   Object.keys(payload).forEach((key: string) => {
     formData.append(key, payload[key]);
   });
-  return postFormData(url, formData);
+  return postFormData(url, formData, headers);
 };
 
 /**

@@ -106,7 +106,6 @@ export class Store extends RapidElement {
   public initialHttpComplete: Promise<void | WebResponse[]>;
 
   private cache: any;
-
   public getLocale() {
     return this.locale[0];
   }
@@ -351,8 +350,8 @@ export class Store extends RapidElement {
     return postJSON(url, payload);
   }
 
-  public postForm(url: string, payload: any | FormData) {
-    return postForm(url, payload);
+  public postForm(url: string, payload: any | FormData, headers: any = {}) {
+    return postForm(url, payload, headers);
   }
 
   public postUrl(
