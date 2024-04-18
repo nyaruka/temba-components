@@ -516,33 +516,32 @@ export class Select extends FormElement {
           for (const attribute of child.attributes) {
             option[attribute.name] = attribute.value;
           }
-          this.staticOptions.push(option);
 
-          if (
-            child.getAttribute('selected') !== null ||
-            this.getValue(option) == this.value
-          ) {
-            if (this.getAttribute('multi') !== null) {
-              this.addValue(option);
-            } else {
-              this.setValues([option]);
+          if (option) {
+            this.staticOptions.push(option);
+            if (
+              child.getAttribute('selected') !== null ||
+              this.getValue(option) == this.value
+            ) {
+              if (this.getAttribute('multi') !== null) {
+                this.addValue(option);
+              } else {
+                this.setValues([option]);
+              }
             }
           }
         }
       }
     }
+
+    this.checkSelectedOption();
+
+    if (this.searchable && this.staticOptions.length === 0) {
+      this.quietMillis = 200;
+    }
   }
 
-  public firstUpdated(changedProperties: any) {
-    super.firstUpdated(changedProperties);
-    this.anchorElement = this.shadowRoot.querySelector('.select-container');
-    this.anchorExpressions = this.shadowRoot.querySelector('#anchor');
-    this.shadowRoot.addEventListener(
-      'slotchange',
-      this.handleSlotChange.bind(this)
-    );
-
-    this.handleSlotChange();
+  private checkSelectedOption() {
     if (this.values.length === 0 && (!this.placeholder || this.value)) {
       if (this.staticOptions.length == 0 && this.endpoint) {
         const value = this.value;
@@ -563,7 +562,7 @@ export class Select extends FormElement {
             this.setValues([results[0]]);
           }
         });
-      } else {
+      } else if (this.staticOptions.length > 0) {
         if (this.getAttribute('multi') !== null) {
           this.addValue(this.staticOptions[0]);
         } else {
@@ -571,10 +570,18 @@ export class Select extends FormElement {
         }
       }
     }
+  }
 
-    if (this.searchable && this.staticOptions.length === 0) {
-      this.quietMillis = 200;
-    }
+  public firstUpdated(changedProperties: any) {
+    super.firstUpdated(changedProperties);
+    this.anchorElement = this.shadowRoot.querySelector('.select-container');
+    this.anchorExpressions = this.shadowRoot.querySelector('#anchor');
+    this.shadowRoot.addEventListener(
+      'slotchange',
+      this.handleSlotChange.bind(this)
+    );
+
+    this.checkSelectedOption();
   }
 
   public updated(changedProperties: Map<string, any>) {
