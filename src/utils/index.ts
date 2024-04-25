@@ -234,7 +234,6 @@ export const postUrl = (
     body: payload,
   };
 
-  console.log(options);
   return new Promise<WebResponse>((resolve, reject) => {
     fetch(url, options)
       .then(async response => {
