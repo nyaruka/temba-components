@@ -32,7 +32,7 @@ export const getEventStyles = () => {
       max-height: 0;
       display: flex;
       flex-direction: column;
-      user-select: none;
+      user-select: auto;
     }
 
     .grouping.flows .items {
