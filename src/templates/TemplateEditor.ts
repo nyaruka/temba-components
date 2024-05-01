@@ -7,7 +7,6 @@ interface Component {
   name: string;
   type: string;
   content: string;
-  params: { type: string }[];
   variables: { [key: string]: number };
 }
 
@@ -174,7 +173,9 @@ export class TemplateEditor extends FormElement {
         ) {
           this.translation = translation;
           // initialize our variables array
-          const newVariables = new Array(translation.variables.length).fill('');
+          const newVariables = new Array(
+            (translation.variables || []).length
+          ).fill('');
 
           if (!prev) {
             // copy our previous variables into newVariables

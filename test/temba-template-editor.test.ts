@@ -17,13 +17,13 @@ describe('TemplateEditor', () => {
     const templateEditor = await createTemplateEditor(html`
       <temba-template-editor
         url="/static/api/templates.json"
-        template="580b124f-32cb-4003-b9e5-9eb783e29101"
+        template="2b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
         lang="eng"
       >
       </temba-template-editor>
     `);
     const clip = getClip(templateEditor);
-    clip.height = 330;
+    clip.height = 500;
     clip.bottom = clip.top + clip.height;
     await assertScreenshot('templates/default', clip);
   });
@@ -32,7 +32,7 @@ describe('TemplateEditor', () => {
     const templateEditor = await createTemplateEditor(html`
       <temba-template-editor
         url="/static/api/templates.json"
-        template="580b124f-32cb-4003-b9e5-9eb783e29101"
+        template="2b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
         lang="eng"
       >
       </temba-template-editor>
@@ -41,7 +41,7 @@ describe('TemplateEditor', () => {
     templateEditor.lang = 'fra';
 
     const clip = getClip(templateEditor);
-    clip.height = 370;
+    clip.height = 500;
     clip.bottom = clip.top + clip.height;
 
     await assertScreenshot('templates/french', clip);
@@ -51,7 +51,7 @@ describe('TemplateEditor', () => {
     const templateEditor = await createTemplateEditor(html`
       <temba-template-editor
         url="/static/api/templates.json"
-        template="580b124f-32cb-4003-b9e5-9eb783e29101"
+        template="2b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
         lang="spa"
       >
       </temba-template-editor>
