@@ -1,13 +1,13 @@
 import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
-import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { TemplateResult, html, css, PropertyValueMap, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
 
 interface Component {
   name: string;
   type: string;
   content: string;
-  params: { type: string }[];
+  variables: { [key: string]: number };
 }
 
 interface Translation {
@@ -15,6 +15,7 @@ interface Translation {
   status: string;
   channel: { uuid: string; name: string };
   components: Component[];
+  variables: { type: string }[];
 }
 
 interface Template {
@@ -26,6 +27,11 @@ interface Template {
 }
 
 export class TemplateEditor extends FormElement {
+  static shadowRootOptions = {
+    ...LitElement.shadowRootOptions,
+    delegatesFocus: true,
+  };
+
   static get styles() {
     return css`
       .component {
@@ -136,9 +142,8 @@ export class TemplateEditor extends FormElement {
   @property({ type: String })
   lang = 'eng-US';
 
-  // component key to array of strings for variables
-  @property({ type: Object })
-  params: { [key: string]: string[] };
+  @property({ type: Array })
+  variables: string[];
 
   @property({ type: Object, attribute: false })
   translation: Translation;
@@ -157,10 +162,9 @@ export class TemplateEditor extends FormElement {
   }
 
   private handleTemplateChanged(event: CustomEvent) {
+    const prev = this.selectedTemplate;
     this.selectedTemplate = (event.target as any).values[0] as Template;
     const [lang, loc] = this.lang.split('-');
-
-    const newParams = {};
     if (this.selectedTemplate) {
       this.selectedTemplate.translations.forEach(translation => {
         if (
@@ -168,65 +172,67 @@ export class TemplateEditor extends FormElement {
           (!loc && translation.locale.split('-')[0] === lang)
         ) {
           this.translation = translation;
-          for (const comp of translation.components) {
-            const compParams = comp.params || [];
-            if (compParams.length > 0) {
-              // create an array for the length of params
-              newParams[comp.name] = new Array(compParams.length).fill('');
-            }
-          }
+          // initialize our variables array
+          const newVariables = new Array(
+            (translation.variables || []).length
+          ).fill('');
 
-          // if we are looking at the same template copy our params on top
-          if (this.template === this.selectedTemplate.uuid) {
-            for (const key of Object.keys(this.params || {})) {
-              if (newParams[key]) {
-                for (let i = 0; i < this.params[key].length; i++) {
-                  newParams[key][i] = this.params[key][i];
-                }
-              }
+          if (!prev) {
+            // copy our previous variables into newVariables
+            if (this.variables) {
+              this.variables.forEach((variable, index) => {
+                newVariables[index] = variable;
+              });
             }
           }
+          this.variables = newVariables;
         }
       });
     } else {
       this.translation = null;
     }
 
-    this.params = newParams;
     this.fireCustomEvent(CustomEventType.ContextChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
-      params: this.params,
+      variables: this.variables,
     });
   }
 
   private handleVariableChanged(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
-    const index = parseInt(target.getAttribute('index'));
-    this.params[target.name][index - 1] = target.value;
+    const variableIndex = parseInt(target.getAttribute('index'));
+    this.variables[variableIndex] = target.value;
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
-      params: this.params,
+      variables: this.variables,
     });
   }
 
   private renderVariables(component: Component) {
-    const parts = component.content.split(/{{(\d+)}}/g);
+    // create a regex match based on the variable names
+    const variableRegex = new RegExp(
+      `{{(${Object.keys(component.variables || []).join('|')})}}`,
+      'g'
+    );
+    const parts = component.content.split(variableRegex);
     if (parts.length > 0) {
       const variables = parts.map((part, index) => {
-        const paramIndex = Math.round(index / 2);
         if (index % 2 === 0) {
           return html`<span class="text">${part}</span>`;
         }
+        const variableIndex = component.variables[part];
         return html`<temba-completion
           class="variable"
           type="text"
-          value=${this.params[component.name][paramIndex - 1]}
-          @change=${this.handleVariableChanged}
+          value=${variableIndex < this.variables.length
+            ? this.variables[variableIndex]
+            : null}
+          @keyup=${this.handleVariableChanged}
           name="${component.name}"
-          index="${paramIndex}"
-          placeholder="variable.."
+          index="${variableIndex}"
+          placeholder="{{${part}}}"
         ></temba-completion>`;
       });
       return html`<div class="content">${variables}</div>`;
