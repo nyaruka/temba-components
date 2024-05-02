@@ -109,13 +109,25 @@ export class ContactFieldEditor extends RapidElement {
         margin-bottom: 0.5em;
       }
 
-      .prefix .name {
+      .prefix .name,
+      .label .name {
         padding: 0em 0.4em;
         color: rgba(100, 100, 100, 0.7);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 0.8em;
+      }
+
+      .disabled .name {
+        margin-top: 1em;
+        margin-left: 0.75em;
+      }
+
+      .disabled .value {
+        margin-left: 0.9em;
+        margin-top: 0.1em;
+        min-height: 1.75em;
       }
 
       .postfix {
@@ -371,6 +383,33 @@ export class ContactFieldEditor extends RapidElement {
   }
 
   public render(): TemplateResult {
+    if (this.disabled) {
+      return html`<div
+        class=${this.status +
+        ' ' +
+        getClasses({
+          wrapper: true,
+          set: !!this.value,
+          unset: !this.value,
+          disabled: this.disabled,
+          mutable: !this.disabled,
+          dirty: this.dirty,
+        })}
+      >
+        <div class="label"><div class="name">${this.name}</div></div>
+        <div class="value">
+          ${this.type === 'datetime'
+            ? this.value
+              ? html`<temba-date
+                  value=${this.value}
+                  display="datetime"
+                ></temba-date>`
+              : null
+            : this.value}
+        </div>
+      </div>`;
+    }
+
     const state = html`<div class="save-state">
       ${this.dirty
         ? html`<temba-button
