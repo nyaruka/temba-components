@@ -39,7 +39,7 @@ export class WebChat extends LitElement {
   static get styles() {
     return css`
       :host {
-        display: flex-;
+        display: flex;
         align-items: center;
         align-self: center;
         --curvature: 0.6em;
