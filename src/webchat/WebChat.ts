@@ -7,7 +7,7 @@ interface Message {
   type: string;
   chat_id?: string;
   origin?: string;
-  timestamp: number;
+  timestamp?: number;
 }
 
 enum ChatStatus {
@@ -39,7 +39,7 @@ export class WebChat extends LitElement {
   static get styles() {
     return css`
       :host {
-        display: flex-inline;
+        display: flex-;
         align-items: center;
         align-self: center;
         --curvature: 0.6em;
@@ -48,6 +48,10 @@ export class WebChat extends LitElement {
         font-weight: 400;
         font-size: 1.1em;
         --toggle-speed: 80ms;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        z-index: 1;
       }
 
       .header {
@@ -369,14 +373,21 @@ export class WebChat extends LitElement {
 
     this.status = ChatStatus.CONNECTING;
     const webChat = this;
-    let url = `ws://localhost:8070/start/${this.channel}/`;
+    let url = `ws://localhost:8070/connect/${this.channel}/`;
     if (this.urn) {
       url = `${url}?chat_id=${this.urn}`;
     }
-    this.sock = new WebSocket(url);
+    const sock = new WebSocket(url);
+    this.sock = sock;
     this.sock.onclose = function (event: CloseEvent) {
       console.log('Socket closed', event);
       webChat.status = ChatStatus.DISCONNECTED;
+    };
+
+    this.sock.onopen = function (event: Event) {
+      console.log('Socket opened', event);
+      webChat.status = ChatStatus.CONNECTED;
+      sock.send(JSON.stringify({ type: 'start_chat' }));
     };
     this.sock.onmessage = function (event: MessageEvent) {
       console.log(event);
@@ -390,7 +401,7 @@ export class WebChat extends LitElement {
         webChat.requestUpdate('messages');
       } else if (msg.type === 'chat_resumed') {
         webChat.urn = msg.chat_id;
-      } else if (msg.type === 'msg_out') {
+      } else if (msg.type === 'msg_created') {
         msg['timestamp'] = new Date().getTime();
         webChat.addMessage(msg);
         webChat.requestUpdate('messages');
@@ -496,9 +507,8 @@ export class WebChat extends LitElement {
       input.value = '';
 
       const msg = {
-        type: 'msg_in',
+        type: 'send_msg',
         text: text,
-        timestamp: new Date().getTime(),
       };
 
       this.addMessage(msg);
