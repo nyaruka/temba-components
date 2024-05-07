@@ -10,6 +10,7 @@ interface Notification {
   is_seen: boolean;
   export?: {
     type: string;
+    num_records: number;
   };
   import?: {
     type: string;
@@ -90,16 +91,16 @@ export class NotificationList extends TembaList {
       } else if (notification.type === 'export:finished') {
         if (notification.export.type === 'contact') {
           icon = Icon.contact_export;
-          body = 'Exported contacts';
+          body = `Exported ${notification.export.num_records.toLocaleString()} contacts`;
         } else if (notification.export.type === 'message') {
           icon = Icon.message_export;
-          body = 'Exported messages';
+          body = `Exported ${notification.export.num_records.toLocaleString()} messages`;
         } else if (notification.export.type === 'results') {
           icon = Icon.results_export;
           body = 'Exported flow results';
         } else if (notification.export.type === 'ticket') {
           icon = Icon.tickets_export;
-          body = 'Exported tickets';
+          body = `Exported ${notification.export.num_records.toLocaleString()} tickets`;
         } else if (notification.export.type === 'definition') {
           icon = Icon.definitions_export;
           body = 'Exported definitions';
