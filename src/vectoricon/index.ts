@@ -54,6 +54,7 @@ export enum Icon {
   contacts = 'user-01',
   copy = 'copy-04',
   dashboard = 'pie-chart-01',
+  definitions_export = 'download-cloud-01',
   delete = 'trash-03',
   delete_small = 'x',
   down = 'chevron-down',
