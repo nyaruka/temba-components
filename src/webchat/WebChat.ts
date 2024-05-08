@@ -31,7 +31,7 @@ enum ChatStatus {
 // how long of a window to show time between batches
 const BATCH_TIME_WINDOW = 30 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 0.05;
-const MIN_FETCH_TIME = 500;
+const MIN_FETCH_TIME = 250;
 
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
 const DAY_FORMAT = {
