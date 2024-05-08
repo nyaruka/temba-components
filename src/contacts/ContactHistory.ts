@@ -1,7 +1,7 @@
 import { css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html, TemplateResult } from 'lit-html';
-import { Contact, CustomEventType, Msg, Ticket } from '../interfaces';
+import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { Asset, getAssets, getClasses, postJSON, throttle } from '../utils';
 
@@ -42,7 +42,6 @@ import {
   renderResultEvent,
   renderTicketAction,
   renderTicketAssigned,
-  renderTicketOpened,
   renderUpdateEvent,
   renderWebhookEvent,
   TicketEvent,
@@ -339,7 +338,9 @@ export class ContactHistory extends RapidElement {
             )[0];
 
             forceOpen = sliced.open;
-            fetchedEvents.splice(0, 0, ...sliced.events);
+            if (sliced.events.length > 0) {
+              fetchedEvents.splice(0, 0, ...sliced.events);
+            }
           }
 
           const grouped = this.getEventGroups(fetchedEvents);
@@ -347,7 +348,9 @@ export class ContactHistory extends RapidElement {
             if (forceOpen) {
               grouped[grouped.length - 1].open = forceOpen;
             }
-            this.eventGroups = [...previousGroups, ...grouped];
+            this.eventGroups = [...previousGroups, ...grouped].filter(
+              group => group.events.length > 0
+            );
           }
           this.refreshing = false;
           this.scheduleRefresh();
