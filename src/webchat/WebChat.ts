@@ -767,10 +767,6 @@ export class WebChat extends LitElement {
   }
 
   private handleScroll(event: any) {
-    if (this.blockHistoryFetching) {
-      return;
-    }
-
     const ele = event.target;
     const top = ele.scrollHeight - ele.clientHeight;
     const scroll = Math.round(top + ele.scrollTop);
@@ -778,6 +774,11 @@ export class WebChat extends LitElement {
 
     this.hideTopScroll = scrollPct <= 0.01;
     this.hideBottomScroll = scrollPct >= 0.99;
+
+    if (this.blockHistoryFetching) {
+      return;
+    }
+
     if (scrollPct < SCROLL_FETCH_BUFFER) {
       this.fetchPreviousMessages();
     }
