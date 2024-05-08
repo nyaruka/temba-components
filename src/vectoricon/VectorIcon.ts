@@ -228,7 +228,7 @@ export class VectorIcon extends LitElement {
           clickable: this.clickable,
           circled: this.circled,
           animate: !!this.animateChange || !!this.animateClick,
-          'spin-forever': this.spin,
+          'spin-forever': this.spin
         })}"
       >
         <svg
@@ -243,7 +243,7 @@ export class VectorIcon extends LitElement {
               this.animationStep > 0,
             [this.animateClick]: !!this.animateClick,
             [this.animateClick + '-' + this.animationStep]:
-              this.animationStep > 0,
+              this.animationStep > 0
           })}"
         >
           <use

@@ -1,4 +1,4 @@
-import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { TemplateResult, html, css } from 'lit';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { property } from 'lit/decorators.js';
 import { getClasses, postJSON, stopEvent, WebResponse } from '../utils';
@@ -8,7 +8,7 @@ import { Contact, CustomEventType } from '../interfaces';
 import { FormElement } from '../FormElement';
 import { Checkbox } from '../checkbox/Checkbox';
 import { msg } from '@lit/localize';
-import { OmniOption, Omnibox } from '../omnibox/Omnibox';
+import { OmniOption } from '../omnibox/Omnibox';
 
 const QUEIT_MILLIS = 2000;
 
@@ -303,7 +303,7 @@ export class ContactSearch extends FormElement {
           ? { query: this.query }
           : { contact_uuids, group_uuids },
 
-        exclude: this.exclusions,
+        exclude: this.exclusions
       }).then((response: WebResponse) => {
         this.fetching = false;
         if (response.status === 200) {
@@ -315,7 +315,7 @@ export class ContactSearch extends FormElement {
             advanced: this.advanced,
             query: this.query,
             exclusions: this.exclusions,
-            recipients: this.recipients,
+            recipients: this.recipients
           });
 
           if (this.summary.error) {
@@ -351,7 +351,7 @@ export class ContactSearch extends FormElement {
       advanced: this.advanced,
       query: this.query,
       exclusions: this.exclusions,
-      recipients: this.recipients,
+      recipients: this.recipients
     });
   }
 
@@ -360,7 +360,7 @@ export class ContactSearch extends FormElement {
     this.query = input.inputElement.value;
   }
 
-  private handleRecipientsChanged(evt: any) {
+  private handleRecipientsChanged() {
     if (this.refreshKey !== '0' || this.initialized) {
       this.refresh();
     } else {
@@ -441,7 +441,7 @@ export class ContactSearch extends FormElement {
       this.summary.blockers.length > 0
     ) {
       return html`${this.summary.blockers.map(
-        error =>
+        (error) =>
           html`<temba-alert level="error">${unsafeHTML(error)}</temba-alert>`
       )}`;
     }
@@ -520,7 +520,7 @@ export class ContactSearch extends FormElement {
           initialized: this.initialized || this.fetching,
           empty:
             ((this.summary && this.summary.error) || !this.summary) &&
-            !this.fetching,
+            !this.fetching
         })}"
       >
         <temba-loading units="6" size="8"></temba-loading>
@@ -529,7 +529,7 @@ export class ContactSearch extends FormElement {
 
       ${this.summary && this.summary.warnings
         ? this.summary.warnings.map(
-            warning =>
+            (warning) =>
               html`<temba-alert level="warning"
                 >${unsafeHTML(warning)}</temba-alert
               >`

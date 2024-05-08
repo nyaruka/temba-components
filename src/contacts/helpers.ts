@@ -36,13 +36,13 @@ export const fetchContactHistory = (
   after: number = undefined
 ): Promise<ContactHistoryPage> => {
   if (reset) {
-    pendingRequests.forEach(controller => {
+    pendingRequests.forEach((controller) => {
       controller.abort();
     });
     pendingRequests = [];
   }
 
-  return new Promise<ContactHistoryPage>(resolve => {
+  return new Promise<ContactHistoryPage>((resolve) => {
     const controller = new AbortController();
     pendingRequests.push(controller);
 

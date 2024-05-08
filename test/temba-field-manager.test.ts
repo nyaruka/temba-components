@@ -1,15 +1,12 @@
 import { expect, fixture } from '@open-wc/testing';
-import { html } from 'lit';
 import { FieldManager } from '../src/fields/FieldManager';
 import { TextInput } from '../src/textinput/TextInput';
 import {
   assertScreenshot,
   getAttributes,
   getClip,
-  loadStore,
+  loadStore
 } from './utils.test';
-
-const BORING_LIST = html`<temba-field-manager />`;
 
 export const getEle = async (attrs: any = {}) => {
   const fm = `<temba-field-manager

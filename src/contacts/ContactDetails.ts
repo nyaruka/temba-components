@@ -7,14 +7,14 @@ const STATUS = {
   active: 'Active',
   blocked: 'Blocked',
   stopped: 'Stopped',
-  archived: 'Archived',
+  archived: 'Archived'
 };
 
 const SCHEMES = {
   tel: 'Phone',
   whatsapp: 'WhatsApp',
   fcm: 'Firebase Cloud Messaging',
-  twitter: 'Twitter',
+  twitter: 'Twitter'
 };
 
 export class ContactDetails extends ContactStoreElement {
@@ -69,7 +69,7 @@ export class ContactDetails extends ContactStoreElement {
         ${this.data.groups.length > 0
           ? html` <div class="groups">
               <div class="label">Groups</div>
-              ${this.data.groups.map(group => {
+              ${this.data.groups.map((group) => {
                 return html`<temba-label
                   class="group"
                   onclick="goto(event)"
@@ -82,7 +82,7 @@ export class ContactDetails extends ContactStoreElement {
               })}
             </div>`
           : null}
-        ${this.data.urns.map(urn => {
+        ${this.data.urns.map((urn) => {
           const parts = urn.split(':');
           let scheme = SCHEMES[parts[0]];
           if (!scheme) {

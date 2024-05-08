@@ -24,7 +24,7 @@ const getButtons = (modax: Modax, type: string = null) => {
 };
 
 const open = async (modax: Modax) => {
-  return new Promise((resolve: any, reject: any) => {
+  return new Promise((resolve: any) => {
     modax.addEventListener(
       CustomEventType.Loaded,
       async (event: CustomEvent) => {
@@ -159,10 +159,10 @@ describe('temba-modax', () => {
 
     // click the submit button
     mockPOST(/\/test-assets\/modax\/form\.html/, 'arst', {
-      'Temba-Success': 'hide',
+      'Temba-Success': 'hide'
     });
 
-    const hideTest = new Promise<void>(resolve => {
+    const hideTest = new Promise<void>((resolve) => {
       modax.addEventListener(CustomEventType.Submitted, () => {
         expect(modax.open).equals(false, 'Modal still visible');
         resolve();

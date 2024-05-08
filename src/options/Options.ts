@@ -7,7 +7,7 @@ import {
   getClasses,
   getScrollParent,
   isElementVisible,
-  throttle,
+  throttle
 } from '../utils';
 
 export class Options extends RapidElement {
@@ -330,7 +330,7 @@ export class Options extends RapidElement {
       }
 
       this.fireCustomEvent(CustomEventType.CursorChanged, {
-        index: this.cursorIndex,
+        index: this.cursorIndex
       });
     }
 
@@ -437,7 +437,7 @@ export class Options extends RapidElement {
     this.fireCustomEvent(CustomEventType.Selection, {
       selected,
       tabbed,
-      index,
+      index
     });
   }
 
@@ -566,13 +566,13 @@ export class Options extends RapidElement {
       {
         event: 'keydown',
         method: this.handleKeyDown,
-        isDocument: true,
+        isDocument: true
       },
       {
         event: 'scroll',
         method: this.calculatePosition,
-        isDocument: true,
-      },
+        isDocument: true
+      }
     ];
   }
 
@@ -616,7 +616,7 @@ export class Options extends RapidElement {
 
     const containerStyle = {
       'margin-left': `${this.marginHorizontal}px`,
-      'margin-top': `${vertical}px`,
+      'margin-top': `${vertical}px`
     };
 
     if (this.top) {
@@ -639,11 +639,11 @@ export class Options extends RapidElement {
       anchored: !this.block,
       loading: this.loading,
       shadow: !this.hideShadow,
-      bordered: this.hideShadow,
+      bordered: this.hideShadow
     });
 
     const classesInner = getClasses({
-      options: true,
+      options: true
     });
 
     let options = this.options || [];

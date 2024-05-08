@@ -29,7 +29,7 @@ interface Template {
 export class TemplateEditor extends FormElement {
   static shadowRootOptions = {
     ...LitElement.shadowRootOptions,
-    delegatesFocus: true,
+    delegatesFocus: true
   };
 
   static get styles() {
@@ -166,7 +166,7 @@ export class TemplateEditor extends FormElement {
     this.selectedTemplate = (event.target as any).values[0] as Template;
     const [lang, loc] = this.lang.split('-');
     if (this.selectedTemplate) {
-      this.selectedTemplate.translations.forEach(translation => {
+      this.selectedTemplate.translations.forEach((translation) => {
         if (
           translation.locale === this.lang ||
           (!loc && translation.locale.split('-')[0] === lang)
@@ -195,7 +195,7 @@ export class TemplateEditor extends FormElement {
     this.fireCustomEvent(CustomEventType.ContextChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
-      variables: this.variables,
+      variables: this.variables
     });
   }
 
@@ -206,7 +206,7 @@ export class TemplateEditor extends FormElement {
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
-      variables: this.variables,
+      variables: this.variables
     });
   }
 
@@ -241,14 +241,14 @@ export class TemplateEditor extends FormElement {
 
   public renderComponents(components: Component[]): TemplateResult {
     const nonButtons = components
-      .filter(comp => !comp.type.startsWith('button/'))
+      .filter((comp) => !comp.type.startsWith('button/'))
       .map(
-        component =>
+        (component) =>
           html`<div class="${component['name']}">
             ${this.renderVariables(component)}
           </div>`
       );
-    const buttonComponents = components.filter(comp =>
+    const buttonComponents = components.filter((comp) =>
       comp.type.startsWith('button/')
     );
     const buttons =
@@ -261,7 +261,7 @@ export class TemplateEditor extends FormElement {
   }
 
   public renderButtons(components): TemplateResult {
-    const buttons = components.map(component => {
+    const buttons = components.map((component) => {
       if (component.display) {
         return html`
           <div class="button">
@@ -301,7 +301,7 @@ export class TemplateEditor extends FormElement {
           class="picker"
           value="${this.template}"
           endpoint="${this.url}?comps_as_list=true"
-          shouldExclude=${template => template.status !== 'approved'}
+          shouldExclude=${(template) => template.status !== 'approved'}
           placeholder="Select a template"
           @temba-content-changed=${this.swallowEvent}
           @change=${this.handleTemplateChanged}

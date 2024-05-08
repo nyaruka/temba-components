@@ -176,7 +176,7 @@ describe('temba-textinput', () => {
         name: 'message',
         value: 'hello world',
         label: 'Your Message',
-        help_text: 'Enter your message here',
+        help_text: 'Enter your message here'
       })
     );
     await assertScreenshot('textinput/input-form', getClip(input));
@@ -185,7 +185,7 @@ describe('temba-textinput', () => {
   it('updates input value', async () => {
     const input: TextInput = await createInput(
       getInputHTML({
-        value: 'hello world',
+        value: 'hello world'
       })
     );
 

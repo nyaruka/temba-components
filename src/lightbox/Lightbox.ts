@@ -127,7 +127,7 @@ export class Lightbox extends RapidElement {
 
   public render() {
     const styles = {
-      transition: `transform ${this.animationTime}ms ease, box-shadow ${this.animationTime}ms ease`,
+      transition: `transform ${this.animationTime}ms ease, box-shadow ${this.animationTime}ms ease`
     };
 
     if (this.show) {
@@ -148,7 +148,7 @@ export class Lightbox extends RapidElement {
         class=${getClasses({
           container: true,
           show: this.show,
-          zoom: this.zoom,
+          zoom: this.zoom
         })}
         @click=${this.handleClick}
       >

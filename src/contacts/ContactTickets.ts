@@ -1,6 +1,6 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType, Ticket, TicketStatus, User } from '../interfaces';
+import { CustomEventType, Ticket, TicketStatus } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 import { getClasses, postJSON, stopEvent } from '../utils';
 import { Icon } from '../vectoricon';
@@ -244,7 +244,7 @@ export class ContactTickets extends StoreElement {
   private handleClose(uuid: string) {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
-      action: 'close',
+      action: 'close'
     })
       .then(() => {
         this.refresh();
@@ -257,7 +257,7 @@ export class ContactTickets extends StoreElement {
   private handleReopen(uuid: string) {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
-      action: 'reopen',
+      action: 'reopen'
     })
       .then(() => {
         this.refresh();
@@ -269,7 +269,7 @@ export class ContactTickets extends StoreElement {
 
   public handleTicketAssignment(uuid: string, email: string) {
     // if its already assigned to use, it's a noop
-    const ticket = this.data.find(ticket => ticket.uuid === uuid);
+    const ticket = this.data.find((ticket) => ticket.uuid === uuid);
     if (ticket.assignee && ticket.assignee.email === email) {
       return;
     }
@@ -278,7 +278,7 @@ export class ContactTickets extends StoreElement {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
       action: 'assign',
-      assignee: email,
+      assignee: email
     })
       .then(() => {
         this.refresh();
@@ -292,7 +292,7 @@ export class ContactTickets extends StoreElement {
   public renderTicket(ticket: Ticket) {
     const date = ticket.opened_on;
     const users = this.store.getAssignableUsers();
-    const agent = users.find(user => user.email === this.agent);
+    const agent = users.find((user) => user.email === this.agent);
     return html`
       <div
         @click=${() => {
@@ -305,7 +305,7 @@ export class ContactTickets extends StoreElement {
         class="ticket ${ticket.status} ${getClasses({
           clickable: this.clickable,
           expandable: this.expandable,
-          expanded: this.expanded,
+          expanded: this.expanded
         })}"
       >
         <div class="header">
@@ -414,7 +414,7 @@ export class ContactTickets extends StoreElement {
                           : null}
 
                         <div class="options option-group">
-                          ${this.store.getAssignableUsers().map(user => {
+                          ${this.store.getAssignableUsers().map((user) => {
                             if (
                               ticket.assignee &&
                               user.email === ticket.assignee.email
@@ -472,7 +472,7 @@ export class ContactTickets extends StoreElement {
 
   public render(): TemplateResult {
     if (this.data && this.data.length > 0) {
-      const tickets = this.data.map(ticket => {
+      const tickets = this.data.map((ticket) => {
         return this.renderTicket(ticket);
       });
       return html`${tickets}`;

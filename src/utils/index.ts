@@ -32,7 +32,7 @@ export enum Color {
   BLUE = 'color:#5078b5;',
   GREEN = 'color:#62bd6a;',
   RED = 'color:#e36049;',
-  PURPLE = 'color:#a626a4;',
+  PURPLE = 'color:#a626a4;'
 }
 
 export const log = (message: string | object, styling = '', details = []) => {
@@ -73,7 +73,7 @@ export const getHeaders = (headers: any = {}) => {
   // mark us as ajax
   fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 
-  Object.keys(headers).forEach(key => {
+  Object.keys(headers).forEach((key) => {
     fetchHeaders[key] = headers[key];
   });
   return fetchHeaders;
@@ -87,7 +87,7 @@ export const getUrl = (
   return new Promise<WebResponse>((resolve, reject) => {
     const options = {
       method: 'GET',
-      headers: getHeaders(headers),
+      headers: getHeaders(headers)
     };
 
     if (controller) {
@@ -95,7 +95,7 @@ export const getUrl = (
     }
 
     fetch(url, options)
-      .then(response => {
+      .then((response) => {
         response.text().then((body: string) => {
           let json = {};
           try {
@@ -108,11 +108,11 @@ export const getUrl = (
             json,
             url: response.url,
             headers: response.headers,
-            status: response.status,
+            status: response.status
           });
         });
       })
-      .catch(error => {
+      .catch((error) => {
         reject(error);
       });
   });
@@ -146,16 +146,16 @@ export const fetchResultsPage = (
       .then((response: WebResponse) => {
         resolve({
           results: response.json.results,
-          next: response.json.next,
+          next: response.json.next
         });
       })
-      .catch(error => reject(error));
+      .catch((error) => reject(error));
   });
 };
 
 export const fetchResults = async (url: string): Promise<any[]> => {
   if (!url) {
-    return new Promise<any[]>(resolve => resolve([]));
+    return new Promise<any[]>((resolve) => resolve([]));
   }
 
   let results: any[] = [];
@@ -177,19 +177,19 @@ export const getAssetPage = (url: string): Promise<AssetPage> => {
         if (response.status >= 200 && response.status < 300) {
           resolve({
             assets: response.json.results,
-            next: response.json.next,
+            next: response.json.next
           });
         } else {
           reject(response);
         }
       })
-      .catch(error => reject(error));
+      .catch((error) => reject(error));
   });
 };
 
 export const getAssets = async (url: string): Promise<Asset[]> => {
   if (!url) {
-    return new Promise<Asset[]>(resolve => resolve([]));
+    return new Promise<Asset[]>((resolve) => resolve([]));
   }
 
   let assets: Asset[] = [];
@@ -231,12 +231,12 @@ export const postUrl = (
   const options = {
     method: 'POST',
     headers: fetchHeaders,
-    body: payload,
+    body: payload
   };
 
   return new Promise<WebResponse>((resolve, reject) => {
     fetch(url, options)
-      .then(async response => {
+      .then(async (response) => {
         if (response.status >= 500) {
           reject(response);
           return;
@@ -254,11 +254,11 @@ export const postUrl = (
             headers: response.headers,
             status: response.status,
             redirected: response.redirected,
-            url: response.url,
+            url: response.url
           });
         });
       })
-      .catch(error => {
+      .catch((error) => {
         reject(error);
       });
   });
@@ -275,7 +275,7 @@ export const postFormData = (
 ): Promise<WebResponse> => {
   return new Promise<WebResponse>((resolve, reject) => {
     postUrl(url, formData, headers)
-      .then(response => {
+      .then((response) => {
         if (response.status >= 200 && response.status < 400) {
           resolve(response);
         } else {
@@ -286,7 +286,7 @@ export const postFormData = (
           }
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
         reject(err);
       });
@@ -319,7 +319,7 @@ export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
     ? {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
+        b: parseInt(result[3], 16)
       }
     : null;
 };
@@ -343,7 +343,7 @@ export const getElementOffset = (
     bottom: rect.top + rect.height,
     right: rect.left + rect.width,
     width: rect.width,
-    height: rect.height,
+    height: rect.height
   };
 };
 
@@ -474,7 +474,7 @@ export const stubbable = new Stubbable();
 export const timeSince = (
   date: Date,
   options: { compareDate?: Date; hideRecentText?: boolean; suffix?: string } = {
-    suffix: '',
+    suffix: ''
   }
 ) => {
   const { compareDate, hideRecentText, suffix } = options;
@@ -653,7 +653,7 @@ export const getCookieBoolean = (name: string) => {
 export enum COOKIE_KEYS {
   SETTINGS = 'settings',
   MENU_COLLAPSED = 'menu-collapsed',
-  TICKET_SHOW_DETAILS = 'tickets.show-details',
+  TICKET_SHOW_DETAILS = 'tickets.show-details'
 }
 
 export const capitalize = ([first, ...rest], locale = navigator.language) =>
@@ -717,7 +717,7 @@ export const extractInitials = (text: string) => {
   }
 
   // use initial letters of words with preference to first word and capital letters
-  const firstLetters = words.map(w => w.substring(0, 1));
+  const firstLetters = words.map((w) => w.substring(0, 1));
   const firstCapitals = firstLetters.filter(
     (l, index) => l == l.toUpperCase() || index == 0
   );
@@ -731,7 +731,7 @@ export const extractInitials = (text: string) => {
 export const hslToHex = (h, s, l) => {
   l /= 100;
   const a = (s * Math.min(l, 1 - l)) / 100;
-  const f = n => {
+  const f = (n) => {
     const k = (n + h / 30) % 12;
     const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
     return Math.round(255 * color)

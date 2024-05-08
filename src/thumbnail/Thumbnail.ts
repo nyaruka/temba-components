@@ -45,7 +45,7 @@ export class Thumbnail extends RapidElement {
   @property({ type: Boolean })
   zooming = false;
 
-  public handleClick(evt: MouseEvent) {
+  public handleClick() {
     window.setTimeout(() => {
       const lightbox = document.querySelector('temba-lightbox') as Lightbox;
       lightbox.showElement(this);
@@ -60,7 +60,7 @@ export class Thumbnail extends RapidElement {
           style=${styleMap({
             background: 'red',
             borderRadius: '0',
-            boxShadow: 'var(--widget-box-shadow)',
+            boxShadow: 'var(--widget-box-shadow)'
           })}
         >
           <div
@@ -79,7 +79,7 @@ export class Thumbnail extends RapidElement {
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: '400',
-              color: '#bbb',
+              color: '#bbb'
             })}
           >
             ${this.label}
@@ -92,7 +92,7 @@ export class Thumbnail extends RapidElement {
         padding: 'var(--thumb-padding, 0.4em)',
         background: '#fff',
         borderRadius: 'var(--curvature)',
-        boxShadow: 'var(--widget-box-shadow)',
+        boxShadow: 'var(--widget-box-shadow)'
       })}">
 
           <div class="thumb" style=${styleMap({
@@ -108,7 +108,7 @@ export class Thumbnail extends RapidElement {
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: '400',
-            color: '#bbb',
+            color: '#bbb'
           })}>
             ${this.label}
             </div>

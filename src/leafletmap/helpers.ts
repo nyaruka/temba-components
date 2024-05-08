@@ -3,14 +3,14 @@ export const normalFeature = {
   opacity: 1,
   color: 'white',
   fillOpacity: 0.7,
-  fillColor: '#2387ca',
+  fillColor: '#2387ca'
 };
 
 export const highlightedFeature = {
   weight: 3,
   color: 'white',
   fillOpacity: 1,
-  fillColor: '#2387ca',
+  fillColor: '#2387ca'
 };
 
 export const visibleStyle = () => {

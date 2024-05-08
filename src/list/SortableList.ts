@@ -86,14 +86,14 @@ export class SortableList extends RapidElement {
     return this.shadowRoot
       .querySelector('slot')
       .assignedElements()
-      .map(ele => ele.id);
+      .map((ele) => ele.id);
   }
 
   private getRowIndex(id: string): number {
     return this.shadowRoot
       .querySelector('slot')
       .assignedElements()
-      .findIndex(ele => ele.id === id);
+      .findIndex((ele) => ele.id === id);
   }
 
   private getOverlappingElement(mouseY: number): HTMLDivElement {
@@ -102,7 +102,7 @@ export class SortableList extends RapidElement {
     const ele = this.shadowRoot
       .querySelector('slot')
       .assignedElements()
-      .find(otherEle => {
+      .find((otherEle) => {
         const rect = otherEle.getBoundingClientRect();
 
         // don't return ourselves
@@ -150,7 +150,7 @@ export class SortableList extends RapidElement {
       Math.abs(event.clientY - this.yDown) > DRAG_THRESHOLD
     ) {
       this.fireCustomEvent(CustomEventType.DragStart, {
-        id: this.downEle.id,
+        id: this.downEle.id
       });
 
       this.ghostElement = this.downEle.cloneNode(true) as HTMLDivElement;
@@ -185,7 +185,7 @@ export class SortableList extends RapidElement {
           from: dragId,
           to: otherId,
           fromIdx: this.draggingIdx,
-          toIdx: otherIdx,
+          toIdx: otherIdx
         });
 
         // TODO: Dont do swapping, just send the full order?
@@ -198,7 +198,7 @@ export class SortableList extends RapidElement {
   private handleMouseUp() {
     if (this.draggingId) {
       this.fireCustomEvent(CustomEventType.DragStop, {
-        id: this.draggingId,
+        id: this.draggingId
       });
 
       this.draggingId = null;

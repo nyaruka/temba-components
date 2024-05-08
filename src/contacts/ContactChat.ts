@@ -171,7 +171,7 @@ export class ContactChat extends ContactStoreElement {
     const buttonName = evt.detail.name;
     if (buttonName === 'Send') {
       const payload = {
-        contact: this.currentContact.uuid,
+        contact: this.currentContact.uuid
       };
       const compose = evt.currentTarget as Compose;
       if (compose) {
@@ -182,7 +182,7 @@ export class ContactChat extends ContactStoreElement {
         const attachments = compose.currentAttachments;
         if (attachments && attachments.length > 0) {
           const attachment_uuids = attachments.map(
-            attachment => attachment.uuid
+            (attachment) => attachment.uuid
           );
           payload['attachments'] = attachment_uuids;
         }
@@ -194,7 +194,7 @@ export class ContactChat extends ContactStoreElement {
       const genericError = buttonName + ' failed, please try again.';
 
       postJSON(`/api/v2/messages.json`, payload)
-        .then(response => {
+        .then((response) => {
           if (response.status < 400) {
             compose.reset();
             this.refresh(true);
@@ -231,7 +231,7 @@ export class ContactChat extends ContactStoreElement {
             compose.buttonError = genericError;
           }
         })
-        .catch(error => {
+        .catch((error) => {
           console.error(error);
           compose.buttonError = genericError;
         });

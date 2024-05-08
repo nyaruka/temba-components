@@ -8,7 +8,7 @@ import {
   postUrl,
   postJSON,
   postForm,
-  getCookie,
+  getCookie
 } from '../utils';
 import {
   ContactField,
@@ -18,7 +18,7 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
-  User,
+  User
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { lru } from 'tiny-lru';
@@ -30,7 +30,7 @@ import { sourceLocale, targetLocales } from '../locales/locale-codes';
 const { setLocale } = configureLocalization({
   sourceLocale,
   targetLocales,
-  loadLocale: locale => import(`./locales/${locale}.js`),
+  loadLocale: (locale) => import(`./locales/${locale}.js`)
 });
 
 export class Store extends RapidElement {
@@ -137,7 +137,7 @@ export class Store extends RapidElement {
     const fetches = [];
     if (this.completionEndpoint) {
       fetches.push(
-        getUrl(this.completionEndpoint).then(response => {
+        getUrl(this.completionEndpoint).then((response) => {
           this.schema = response.json['context'] as CompletionSchema;
           this.fnOptions = response.json['functions'] as CompletionOption[];
         })
@@ -257,7 +257,7 @@ export class Store extends RapidElement {
 
       this.fireCustomEvent(CustomEventType.StoreUpdated, {
         url: this.fieldsEndpoint,
-        data: this.keyedAssets['fields'],
+        data: this.keyedAssets['fields']
       });
     });
   }
@@ -285,7 +285,7 @@ export class Store extends RapidElement {
     if (changedProperties.has('ready') && this.ready) {
       const locale = this.getLanguageCode();
       const target = targetLocales.find(
-        targetLocale => targetLocale === locale
+        (targetLocale) => targetLocale === locale
       );
 
       if (target) {
@@ -373,7 +373,7 @@ export class Store extends RapidElement {
   ): Promise<WebResponse> {
     options = options || {};
     if (!options.force && this.cache.has(url)) {
-      return new Promise<WebResponse>(resolve => {
+      return new Promise<WebResponse>((resolve) => {
         resolve(this.cache.get(url));
       });
     }
@@ -407,12 +407,12 @@ export class Store extends RapidElement {
     const results = this.cache.get(key);
 
     if (!options.force && results) {
-      return new Promise<any[]>(resolve => {
+      return new Promise<any[]>((resolve) => {
         resolve(results);
       });
     }
 
-    return new Promise<any[]>(resolve => {
+    return new Promise<any[]>((resolve) => {
       const pending = this.pendingResolves[url] || [];
       pending.push(resolve);
       this.pendingResolves[url] = pending;
@@ -453,7 +453,7 @@ export class Store extends RapidElement {
     if (cached && !options.force) {
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
-      fetchResults(url).then(data => {
+      fetchResults(url).then((data) => {
         if (!data) {
           delete this.fetching[url];
           return;

@@ -11,8 +11,8 @@ export class ResizeElement extends RapidElement {
       {
         event: 'resize',
         method: throttle(this.handleResize, 50),
-        isWindow: true,
-      },
+        isWindow: true
+      }
     ];
   }
 }

@@ -18,10 +18,10 @@
     "postversion": "git push --tags && git push origin main",
     "lint:eslint": "eslint --ext .ts . --ignore-path .gitignore",
     "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore",
-    "lint:prettier": "prettier \"**/*.js\" \"**/*.ts\" --check --ignore-path .gitignore",
-    "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --write --ignore-path .gitignore",
-    "lint": "lint:eslint && yarn lint:prettier",
-    "format": "format:eslint && yarn format:prettier",
+    "lint:prettier": "prettier \"**/*.js\" \"**/*.ts\" --config .prettierrc --check --ignore-path .gitignore",
+    "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --config .prettierrc --write --ignore-path .gitignore",
+    "lint": "yarn lint:eslint && yarn lint:prettier",
+    "format": "yarn format:eslint && yarn format:prettier",
     "test-file": "rimraf out-tsc && tsc && web-test-runner --node-resolve --coverage",
     "test": "wtr --node-resolve --coverage",
     "test:watch": "wtr --node-resolve --watch",
@@ -88,15 +88,6 @@
     "tslib": "2.6.2",
     "typescript": "5.4.4"
   },
-  "eslintConfig": {
-    "extends": [
-      "eslint-config-prettier"
-    ]
-  },
-  "prettier": {
-    "singleQuote": true,
-    "arrowParens": "avoid"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/vectoricon ./static/svg/index.svg ./xliff ./src/locales && lint-staged"
@@ -104,7 +95,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "prettier --write",
+      "prettier --config .prettierrc --write",
       "eslint"
     ]
   },

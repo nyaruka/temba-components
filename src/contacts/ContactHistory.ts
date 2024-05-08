@@ -48,13 +48,13 @@ import {
   UpdateFieldEvent,
   UpdateResultEvent,
   URNsChangedEvent,
-  WebhookEvent,
+  WebhookEvent
 } from './events';
 import {
   fetchContactHistory,
   MAX_CHAT_REFRESH,
   MIN_CHAT_REFRESH,
-  SCROLL_THRESHOLD,
+  SCROLL_THRESHOLD
 } from './helpers';
 import { Lightbox } from '../lightbox/Lightbox';
 import { Store } from '../store/Store';
@@ -99,7 +99,7 @@ export class ContactHistory extends RapidElement {
   }
 
   private getTicket(uuid: string) {
-    return (this.tickets || []).find(ticket => ticket.uuid === uuid);
+    return (this.tickets || []).find((ticket) => ticket.uuid === uuid);
   }
 
   static get styles() {
@@ -312,11 +312,11 @@ export class ContactHistory extends RapidElement {
           // dedupe any events we get from the server
           // TODO: perhaps make this a little less crazy
           let removed = 0;
-          this.eventGroups.forEach(g => {
+          this.eventGroups.forEach((g) => {
             const before = g.events.length;
             g.events = g.events.filter(
-              prev =>
-                !fetchedEvents.find(fetched => {
+              (prev) =>
+                !fetchedEvents.find((fetched) => {
                   return (
                     prev.created_on == fetched.created_on &&
                     prev.type === fetched.type
@@ -349,7 +349,7 @@ export class ContactHistory extends RapidElement {
               grouped[grouped.length - 1].open = forceOpen;
             }
             this.eventGroups = [...previousGroups, ...grouped].filter(
-              group => group.events.length > 0
+              (group) => group.events.length > 0
             );
           }
           this.refreshing = false;
@@ -494,14 +494,14 @@ export class ContactHistory extends RapidElement {
     const events = this.getEventsPane();
     events.scrollTo({
       top: events.scrollHeight,
-      behavior: smooth ? 'smooth' : 'auto',
+      behavior: smooth ? 'smooth' : 'auto'
     });
     this.showMessageAlert = false;
 
     window.setTimeout(() => {
       events.scrollTo({
         top: events.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto',
+        behavior: smooth ? 'smooth' : 'auto'
       });
     }, 0);
   }
@@ -524,7 +524,7 @@ export class ContactHistory extends RapidElement {
         eventGroup = {
           open: false,
           events: [event],
-          type: currentEventGroupType,
+          type: currentEventGroupType
         };
       } else {
         // our event matches the current group, stuff it in there
@@ -719,13 +719,13 @@ export class ContactHistory extends RapidElement {
   private handleClose(uuid: string) {
     this.httpComplete = postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
-      action: 'close',
+      action: 'close'
     })
       .then(() => {
         this.refreshTickets();
         this.refresh();
         this.fireCustomEvent(CustomEventType.ContentChanged, {
-          ticket: { uuid, status: 'closed' },
+          ticket: { uuid, status: 'closed' }
         });
       })
       .catch((response: any) => {
@@ -741,14 +741,14 @@ export class ContactHistory extends RapidElement {
         const ticket = assets[0] as Ticket;
         if (ticket.assignee && ticket.assignee.email === agent) {
           this.fireCustomEvent(CustomEventType.ContentChanged, {
-            ticket: { uuid: this.ticket, assigned: 'self' },
+            ticket: { uuid: this.ticket, assigned: 'self' }
           });
         } else {
           this.fireCustomEvent(CustomEventType.ContentChanged, {
             ticket: {
               uuid: this.ticket,
-              assigned: ticket.assignee ? ticket.assignee : null,
-            },
+              assigned: ticket.assignee ? ticket.assignee : null
+            }
           });
         }
       }
@@ -759,8 +759,8 @@ export class ContactHistory extends RapidElement {
     return [
       {
         event: 'scroll',
-        method: throttle(this.handleScroll, 50),
-      },
+        method: throttle(this.handleScroll, 50)
+      }
     ];
   }
 
@@ -808,7 +808,7 @@ export class ContactHistory extends RapidElement {
           const classes = getClasses({
             grouping: true,
             [grouping]: true,
-            expanded: eventGroup.open,
+            expanded: eventGroup.open
           });
           return html`<div class="${classes}">
             ${grouping === 'verbose'
@@ -860,7 +860,7 @@ export class ContactHistory extends RapidElement {
                   this.scrollToBottom(true);
                 }}
                 class="new-messages ${getClasses({
-                  expanded: this.showMessageAlert,
+                  expanded: this.showMessageAlert
                 })}"
               >
                 New Messages

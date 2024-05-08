@@ -7,7 +7,7 @@ export const createAlert = async (level: string, body: string) => {
   const parentNode = document.createElement('div');
   parentNode.setAttribute('style', 'width: 250px;');
   return (await fixture(`<temba-alert level="${level}">${body}</temba-alert>`, {
-    parentNode,
+    parentNode
   })) as Alert;
 };
 

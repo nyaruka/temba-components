@@ -2,8 +2,7 @@ import { useFakeTimers } from 'sinon';
 import { Button } from '../src/button/Button';
 import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
-import { Attachment, CustomEventType } from '../src/interfaces';
-import { TicketList } from '../src/list/TicketList';
+import { Attachment } from '../src/interfaces';
 import {
   assertScreenshot,
   clearMockPosts,
@@ -12,13 +11,13 @@ import {
   loadStore,
   mockGET,
   mockNow,
-  mockPOST,
+  mockPOST
 } from '../test/utils.test';
 import {
   getInvalidText,
   getValidAttachments,
   getValidText,
-  updateComponent,
+  updateComponent
 } from './temba-compose.test';
 
 let clock: any;
@@ -42,27 +41,8 @@ const getContactChat = async (attrs: any = {}) => {
   return chat;
 };
 
-const list_TAG = 'temba-list';
-const getTicketList = async (attrs: any = {}) => {
-  const list = (await getComponent(list_TAG, attrs)) as TicketList;
-
-  if (!list.endpoint) {
-    return list;
-  }
-
-  return new Promise<TicketList>(resolve => {
-    list.addEventListener(
-      CustomEventType.FetchComplete,
-      async () => {
-        resolve(list);
-      },
-      { once: true }
-    );
-  });
-};
-
 const getResponseSuccessFiles = (attachments: Attachment[]) => {
-  const response_attachments = attachments.map(attachment => {
+  const response_attachments = attachments.map((attachment) => {
     return { content_type: attachment.content_type, url: attachment.url };
   });
   return response_attachments;
@@ -89,7 +69,7 @@ describe('temba-contact-chat - contact tests', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
 
     await assertScreenshot('contacts/contact-active-default', getClip(chat));
@@ -99,7 +79,7 @@ describe('temba-contact-chat - contact tests', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
 
     await assertScreenshot(
@@ -112,7 +92,7 @@ describe('temba-contact-chat - contact tests', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-barack-archived',
+      contact: 'contact-barack-archived'
     });
 
     await assertScreenshot(
@@ -125,7 +105,7 @@ describe('temba-contact-chat - contact tests', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-michelle-blocked',
+      contact: 'contact-michelle-blocked'
     });
 
     await assertScreenshot(
@@ -138,7 +118,7 @@ describe('temba-contact-chat - contact tests', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-tim-stopped',
+      contact: 'contact-tim-stopped'
     });
 
     await assertScreenshot(
@@ -166,7 +146,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     const text = getValidText();
@@ -175,7 +155,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     const response_body = {
       contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
       text: text,
-      attachments: [],
+      attachments: []
     };
     mockPOST(/api\/v2\/messages\.json/, response_body);
 
@@ -194,14 +174,14 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
     await updateComponent(compose, getInvalidText());
 
     const response_body = {
-      text: [responseTextError],
+      text: [responseTextError]
     };
     const response_headers = {};
     const response_status = '400';
@@ -242,7 +222,7 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     const attachments = getValidAttachments();
@@ -251,7 +231,7 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     const response_body = {
       contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
       text: '',
-      attachments: response_attachments,
+      attachments: response_attachments
     };
     const response_headers = {};
     const response_status = '200';
@@ -276,14 +256,14 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the attachments to a list that is 10+ items
     await updateComponent(compose, null, getValidAttachments(11));
 
     const response_body = {
-      attachments: [responseAttachmentError],
+      attachments: [responseAttachmentError]
     };
     const response_headers = {};
     const response_status = '400';
@@ -324,7 +304,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     const text = getValidText();
@@ -334,7 +314,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     const response_body = {
       contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
       text: text,
-      attachments: response_attachments,
+      attachments: response_attachments
     };
     mockPOST(/api\/v2\/messages\.json/, response_body);
 
@@ -353,14 +333,14 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
     await updateComponent(compose, getInvalidText(), getValidAttachments());
 
     const response_body = {
-      text: [responseTextError],
+      text: [responseTextError]
     };
     const response_headers = {};
     const response_status = '400';
@@ -386,14 +366,14 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the attachments to a list that is 10+ items
     await updateComponent(compose, getValidText(), getValidAttachments(11));
 
     const response_body = {
-      attachments: [responseAttachmentError],
+      attachments: [responseAttachmentError]
     };
     const response_headers = {};
     const response_status = '400';
@@ -419,7 +399,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     // set the chatbox to a string that is 640+ chars
@@ -428,7 +408,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
 
     const response_body = {
       text: [responseTextError],
-      attachments: [responseAttachmentError],
+      attachments: [responseAttachmentError]
     };
     const response_headers = {};
     const response_status = '400';
@@ -454,7 +434,7 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
     await updateComponent(compose, getValidText(), getValidAttachments());

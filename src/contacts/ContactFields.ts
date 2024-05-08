@@ -111,7 +111,7 @@ export class ContactFields extends ContactStoreElement {
     const field = evt.currentTarget as ContactFieldEditor;
     const value = field.value;
     postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
-      fields: { [field.key]: value },
+      fields: { [field.key]: value }
     })
       .then((response: any) => {
         field.handleResponse(response);
@@ -119,7 +119,7 @@ export class ContactFields extends ContactStoreElement {
         // returns a single contact with latest updates
         this.setContact(response.json);
       })
-      .catch(error => {
+      .catch((error) => {
         field.handleResponse(error);
       });
   }

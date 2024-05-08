@@ -19,7 +19,7 @@ describe('temba-lightbox', () => {
       x: 28,
       y: 28,
       width: 1024,
-      height: 768,
+      height: 768
     });
 
     assert.instanceOf(lightbox, Lightbox);
@@ -29,7 +29,7 @@ describe('temba-lightbox', () => {
       x: 28,
       y: 28,
       width: 1024,
-      height: 768,
+      height: 768
     });
   });
 });

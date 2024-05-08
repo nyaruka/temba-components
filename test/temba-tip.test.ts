@@ -1,6 +1,6 @@
 import { assert } from '@open-wc/testing';
 import { Tip } from '../src/tip/Tip';
-import { assertScreenshot, delay, getClip, getComponent } from './utils.test';
+import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-tip';
 
@@ -68,7 +68,7 @@ describe(TAG, () => {
     const tip = await getTip({
       text: 'Hello!',
       visible: true,
-      position: 'left',
+      position: 'left'
     });
     await assertScreenshot('tip/left', getLeftClip(tip));
   });
@@ -77,7 +77,7 @@ describe(TAG, () => {
     const tip = await getTip({
       text: 'Hello!',
       visible: true,
-      position: 'right',
+      position: 'right'
     });
     await assertScreenshot('tip/right', getRightClip(tip));
   });
@@ -86,7 +86,7 @@ describe(TAG, () => {
     const tip = await getTip({
       text: 'Hello!',
       visible: true,
-      position: 'top',
+      position: 'top'
     });
     await assertScreenshot('tip/top', getTopClip(tip));
   });
@@ -95,7 +95,7 @@ describe(TAG, () => {
     const tip = await getTip({
       text: 'Hello!',
       visible: true,
-      position: 'bottom',
+      position: 'bottom'
     });
     await assertScreenshot('tip/bottom', getBottomClip(tip));
   });

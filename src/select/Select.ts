@@ -6,7 +6,7 @@ import {
   getClasses,
   fetchResults,
   WebResponse,
-  postJSON,
+  postJSON
 } from '../utils';
 import '../options/Options';
 import { EventHandler } from '../RapidElement';
@@ -17,7 +17,7 @@ import { CompletionOption, CustomEventType, Position } from '../interfaces';
 import {
   renderCompletionOption,
   updateInputElementWithCompletion,
-  executeCompletionQuery,
+  executeCompletionQuery
 } from '../completion/helpers';
 import { Store } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map.js';
@@ -550,7 +550,7 @@ export class Select extends FormElement {
           if (results && results.length > 0) {
             if (value) {
               // if we started with a value, see if we can find it in the results
-              const existing = results.find(option => {
+              const existing = results.find((option) => {
                 return this.getValue(option) === value;
               });
 
@@ -660,7 +660,7 @@ export class Select extends FormElement {
 
   public setSelectedValue(value: string) {
     if (this.staticOptions.length > 0) {
-      const existing = this.staticOptions.find(option => {
+      const existing = this.staticOptions.find((option) => {
         return this.getValue(option) === value;
       });
 
@@ -686,7 +686,7 @@ export class Select extends FormElement {
           this.value = this.serializeValue(this.values[0]);
         } else {
           if (this.inputRoot.parentElement) {
-            this.values.forEach(value => {
+            this.values.forEach((value) => {
               const ele = document.createElement('input');
               ele.setAttribute('type', 'hidden');
               ele.setAttribute('name', name);
@@ -731,7 +731,7 @@ export class Select extends FormElement {
     const selected = event.detail.selected;
     // check if we should post it
     if (selected.post && this.endpoint) {
-      postJSON(this.endpoint, selected).then(response => {
+      postJSON(this.endpoint, selected).then((response) => {
         if (response.status >= 200 && response.status < 300) {
           this.setSelectedOption(response.json);
           this.lruCache = lru(20, 60000);
@@ -801,7 +801,7 @@ export class Select extends FormElement {
 
   private setVisibleOptions(options: any[]) {
     // if we have an exclusion filter apply it
-    options = options.filter(option => {
+    options = options.filter((option) => {
       // exclude unnamed
       if (!this.getNameInternal(option)) {
         return false;
@@ -854,16 +854,16 @@ export class Select extends FormElement {
     if (this.values.length > 0) {
       if (this.multi) {
         options = options.filter(
-          option =>
+          (option) =>
             !this.values.find(
-              selected => this.getValue(selected) === this.getValue(option)
+              (selected) => this.getValue(selected) === this.getValue(option)
             )
         );
       } else {
         // if no search, single select should set our cursor to the selected item
         if (!this.input) {
           this.cursorIndex = options.findIndex(
-            option => this.getValue(option) === this.getValue(this.values[0])
+            (option) => this.getValue(option) === this.getValue(this.values[0])
           );
         } else {
           this.cursorIndex = 0;
@@ -880,7 +880,7 @@ export class Select extends FormElement {
     this.visibleOptions = options;
 
     this.fireCustomEvent(CustomEventType.ContentChanged, {
-      options: this.visibleOptions,
+      options: this.visibleOptions
     });
   }
 
@@ -978,7 +978,7 @@ export class Select extends FormElement {
               this.lruCache.set(url, {
                 options: results,
                 complete: true,
-                next: null,
+                next: null
               });
 
               this.complete = true;
@@ -1017,7 +1017,7 @@ export class Select extends FormElement {
                 this.lruCache.set(url, {
                   options: results,
                   complete: this.complete,
-                  next: this.next,
+                  next: this.next
                 });
               }
 
@@ -1069,12 +1069,12 @@ export class Select extends FormElement {
     const expression = {
       name: ele.value,
       value: ele.value,
-      expression: true,
+      expression: true
     };
 
     if (this.multi) {
       if (
-        !this.values.find(option => {
+        !this.values.find((option) => {
           return (
             option.expression &&
             option.value &&
@@ -1184,10 +1184,10 @@ export class Select extends FormElement {
       { event: CustomEventType.Canceled, method: this.handleCancel },
       {
         event: CustomEventType.CursorChanged,
-        method: this.handleCursorChanged,
+        method: this.handleCursorChanged
       },
       { event: 'blur', method: this.handleBlur },
-      { event: 'focus', method: this.handleFocus },
+      { event: 'focus', method: this.handleFocus }
     ];
   }
 
@@ -1296,13 +1296,13 @@ export class Select extends FormElement {
       'search-input': this.input.length > 0,
       'no-search-input': this.input.length === 0,
       [this.flavor]: this.flavor !== null,
-      disabled: this.disabled,
+      disabled: this.disabled
     });
 
     const anchorStyles = this.anchorPosition
       ? {
           top: '0px',
-          left: `${this.anchorPosition.left - 10}px`,
+          left: `${this.anchorPosition.left - 10}px`
         }
       : {};
 

@@ -11,7 +11,7 @@ enum Status {
   Success = 'success',
   Failure = 'failure',
   Saving = 'saving',
-  Ready = 'ready',
+  Ready = 'ready'
 }
 
 export class ContactFieldEditor extends RapidElement {
@@ -318,7 +318,7 @@ export class ContactFieldEditor extends RapidElement {
     if (icon === 'search') {
       this.fireCustomEvent(CustomEventType.ButtonClicked, {
         key: this.key,
-        value: this.value,
+        value: this.value
       });
     }
 
@@ -393,7 +393,7 @@ export class ContactFieldEditor extends RapidElement {
           unset: !this.value,
           disabled: this.disabled,
           mutable: !this.disabled,
-          dirty: this.dirty,
+          dirty: this.dirty
         })}
       >
         <div class="label"><div class="name">${this.name}</div></div>
@@ -444,7 +444,7 @@ export class ContactFieldEditor extends RapidElement {
           unset: !this.value,
           disabled: this.disabled,
           mutable: !this.disabled,
-          dirty: this.dirty,
+          dirty: this.dirty
         })}
       >
         ${this.type === 'datetime'

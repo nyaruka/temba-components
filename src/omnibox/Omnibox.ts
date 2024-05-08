@@ -7,7 +7,7 @@ import { Icon } from '../vectoricon';
 
 enum OmniType {
   Group = 'group',
-  Contact = 'contact',
+  Contact = 'contact'
 }
 
 export interface OmniOption {
@@ -23,7 +23,7 @@ export interface OmniOption {
 const postNameStyle = {
   color: 'var(--color-text-dark)',
   padding: '0px 6px',
-  fontSize: '12px',
+  fontSize: '12px'
 };
 
 export class Omnibox extends RapidElement {

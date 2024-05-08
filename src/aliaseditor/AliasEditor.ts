@@ -3,7 +3,6 @@ import { FeatureProperties } from '../interfaces';
 import { getUrl, postJSON, WebResponse } from '../utils';
 import { TextInput } from '../textinput/TextInput';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { FormElement } from '../FormElement';
 import { Icon } from '../vectoricon';
 
 import { property } from 'lit/decorators.js';
@@ -349,7 +348,7 @@ export class AliasEditor extends LitElement {
   private renderOptionDetail(option: FeatureProperties): TemplateResult {
     const labelStyles = {
       marginTop: '3px',
-      marginRight: '3px',
+      marginRight: '3px'
     };
 
     const aliasList = option.aliases.split('\n');

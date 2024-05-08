@@ -178,7 +178,7 @@ export class TembaList extends RapidElement {
   }
 
   public setSelection(value: string) {
-    const index = this.items.findIndex(item => {
+    const index = this.items.findIndex((item) => {
       return this.getValue(item) === value;
     });
     this.cursorIndex = index;
@@ -188,7 +188,7 @@ export class TembaList extends RapidElement {
   }
 
   public getItemIndex(value: string) {
-    return this.items.findIndex(option => this.getValue(option) === value);
+    return this.items.findIndex((option) => this.getValue(option) === value);
   }
 
   public removeItem(value: string) {
@@ -259,7 +259,7 @@ export class TembaList extends RapidElement {
           }
           const newValue = this.getValue(newOption);
           const removeIndex = items.findIndex(
-            option => this.getValue(option) === newValue
+            (option) => this.getValue(option) === newValue
           );
 
           if (removeIndex > -1) {
@@ -287,7 +287,7 @@ export class TembaList extends RapidElement {
           const prevValue = this.getValue(prevItem);
           if (prevValue !== this.getValue(newItem)) {
             const newIndex = newItems.findIndex(
-              option => this.getValue(option) === prevValue
+              (option) => this.getValue(option) === prevValue
             );
             this.cursorIndex = newIndex;
 
@@ -373,7 +373,7 @@ export class TembaList extends RapidElement {
       newItem &&
       this.getValue(newItem) !== this.getValue(this.selected)
     ) {
-      const index = fetchedItems.findIndex(item => {
+      const index = fetchedItems.findIndex((item) => {
         return this.getValue(item) === this.getValue(this.selected);
       });
 

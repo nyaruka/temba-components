@@ -16,7 +16,7 @@ const showUpdates = (
 
       log(ele.tagName, Color.PURPLE, [
         firstUpdated ? '<first-updated>' : '<updated>',
-        fromto,
+        fromto
       ]);
     }
   }
@@ -96,7 +96,7 @@ export class RapidElement extends LitElement {
     return this.dispatchEvent(
       new Event(type, {
         bubbles: true,
-        composed: true,
+        composed: true
       })
     );
   }
@@ -114,7 +114,7 @@ export class RapidElement extends LitElement {
     const event = new CustomEvent(type, {
       detail,
       bubbles: true,
-      composed: true,
+      composed: true
     });
 
     return this.dispatchEvent(event);

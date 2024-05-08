@@ -13,11 +13,11 @@ export const gsmSplit = function (message, options) {
         {
           content: options.summary ? undefined : '',
           length: 0,
-          bytes: 0,
-        },
+          bytes: 0
+        }
       ],
       totalLength: 0,
-      totalBytes: 0,
+      totalBytes: 0
     };
   }
 
@@ -32,7 +32,7 @@ export const gsmSplit = function (message, options) {
     const msg = {
       content: options.summary ? undefined : messagePart,
       length: length,
-      bytes: bytes,
+      bytes: bytes
     };
     messages.push(msg);
 
@@ -74,17 +74,17 @@ export const gsmSplit = function (message, options) {
             ? undefined
             : messages[0].content + messages[1].content,
           length: totalLength,
-          bytes: totalBytes,
-        },
+          bytes: totalBytes
+        }
       ],
       totalLength: totalLength,
-      totalBytes: totalBytes,
+      totalBytes: totalBytes
     };
   }
 
   return {
     parts: messages,
     totalLength: totalLength,
-    totalBytes: totalBytes,
+    totalBytes: totalBytes
   };
 };

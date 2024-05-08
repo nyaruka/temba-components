@@ -15,7 +15,7 @@ const getList = async (attrs: any = {}) => {
     return list;
   }
 
-  return new Promise<TembaList>(resolve => {
+  return new Promise<TembaList>((resolve) => {
     list.addEventListener(
       CustomEventType.FetchComplete,
       async () => {
@@ -48,7 +48,7 @@ describe('temba-list', () => {
 
   it('renders with endpoint', async () => {
     const list: TembaList = await getList({
-      endpoint: '/test-assets/list/temba-list.json',
+      endpoint: '/test-assets/list/temba-list.json'
     });
     expect(list.items.length).to.equal(4);
     await assertScreenshot('list/items', getClip(list));
@@ -56,10 +56,10 @@ describe('temba-list', () => {
 
   it('fires change event on cursor change', async () => {
     const list: TembaList = await getList({
-      endpoint: '/test-assets/list/temba-list.json',
+      endpoint: '/test-assets/list/temba-list.json'
     });
 
-    const changeTest = new Promise<void>(resolve => {
+    const changeTest = new Promise<void>((resolve) => {
       list.addEventListener('change', () => {
         resolve();
       });
@@ -73,14 +73,14 @@ describe('temba-list', () => {
 
   it('fires change when first element changes after fetch', async () => {
     const list: TembaList = await getList({
-      endpoint: '/test-assets/list/temba-list.json',
+      endpoint: '/test-assets/list/temba-list.json'
     });
 
     // spy on change event
     const changeEvent = sinon.spy();
     list.addEventListener('change', changeEvent);
 
-    const refreshTest = new Promise<void>(resolve => {
+    const refreshTest = new Promise<void>((resolve) => {
       list.addEventListener(CustomEventType.FetchComplete, () => {
         resolve();
       });

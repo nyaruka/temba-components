@@ -41,16 +41,13 @@ const getInitialValue = (
       text: text ? text : '',
       attachments: attachments ? attachments : [],
       quick_replies: quick_replies ? quick_replies : [],
-      optin: null,
-    },
+      optin: null
+    }
   };
   return composeValue;
 };
 const getComposeValue = (value: any): string => {
   return JSON.stringify(value);
-};
-const getComposeValues = (value: any): any[] => {
-  return [value];
 };
 
 export const getValidText = () => {
@@ -74,7 +71,7 @@ export const getValidAttachments = (numFiles = 2): Attachment[] => {
       filename: 'name_' + s,
       url: 'url_' + s,
       size: 1024,
-      error: null,
+      error: null
     } as Attachment;
     attachments.push(attachment);
     index++;
@@ -91,7 +88,7 @@ export const getInvalidAttachments = (): Attachment[] => {
     filename: 'name_' + f1,
     url: 'url_' + f1,
     size: 26624,
-    error: 'Limit for file uploads is 25.0 MB',
+    error: 'Limit for file uploads is 25.0 MB'
   } as Attachment;
   const f2 = 'f2';
   const fail2 = {
@@ -101,7 +98,7 @@ export const getInvalidAttachments = (): Attachment[] => {
     filename: 'name_' + f2,
     url: 'url_' + f2,
     size: 1024,
-    error: 'Unsupported file type',
+    error: 'Unsupported file type'
   } as Attachment;
 
   return [fail1, fail2];
@@ -128,7 +125,7 @@ describe('temba-compose chatbox', () => {
 
   it('cannot be created with a different endpoint', async () => {
     const compose: Compose = await getCompose({
-      endpoint: '/schmsgmedia/schmupload/',
+      endpoint: '/schmsgmedia/schmupload/'
     });
     assert.instanceOf(compose, Compose);
     expect(compose.endpoint).equals(DEFAULT_MEDIA_ENDPOINT);
@@ -136,7 +133,7 @@ describe('temba-compose chatbox', () => {
 
   it('chatbox no counter no send button', async () => {
     const compose: Compose = await getCompose({
-      chatbox: true,
+      chatbox: true
     });
     await assertScreenshot(
       'compose/chatbox-no-counter-no-send-button',
@@ -147,7 +144,7 @@ describe('temba-compose chatbox', () => {
   it('chatbox no counter and send button', async () => {
     const compose: Compose = await getCompose({
       chatbox: true,
-      button: true,
+      button: true
     });
     await assertScreenshot(
       'compose/chatbox-no-counter-and-send-button',
@@ -158,7 +155,7 @@ describe('temba-compose chatbox', () => {
   it('chatbox counter no send button', async () => {
     const compose: Compose = await getCompose({
       chatbox: true,
-      counter: true,
+      counter: true
     });
     await assertScreenshot(
       'compose/chatbox-counter-no-send-button',
@@ -170,7 +167,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await assertScreenshot(
       'compose/chatbox-counter-and-send-button',
@@ -186,7 +183,7 @@ describe('temba-compose chatbox', () => {
       chatbox: true,
       counter: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal('');
@@ -199,7 +196,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText());
     await assertScreenshot('compose/chatbox-with-text', getClip(compose));
@@ -213,7 +210,7 @@ describe('temba-compose chatbox', () => {
       chatbox: true,
       counter: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal(getValidText());
@@ -226,7 +223,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText_Long_WithSpaces());
     await assertScreenshot(
@@ -239,7 +236,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText_Long_WithNoSpaces());
     await assertScreenshot(
@@ -252,7 +249,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText_Long_WithUrl());
     await assertScreenshot(
@@ -265,7 +262,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText());
     const send = compose.shadowRoot.querySelector(
@@ -282,7 +279,7 @@ describe('temba-compose chatbox', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText());
     const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
@@ -297,7 +294,7 @@ describe('temba-compose chatbox', () => {
 describe('temba-compose attachments', () => {
   it('attachments no send button', async () => {
     const compose: Compose = await getCompose({
-      attachments: true,
+      attachments: true
     });
     await assertScreenshot(
       'compose/attachments-no-send-button',
@@ -308,7 +305,7 @@ describe('temba-compose attachments', () => {
   it('attachments and send button', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true,
+      button: true
     });
     await assertScreenshot(
       'compose/attachments-and-send-button',
@@ -323,7 +320,7 @@ describe('temba-compose attachments', () => {
     const compose: Compose = await getCompose({
       attachments: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal('');
@@ -335,7 +332,7 @@ describe('temba-compose attachments', () => {
   it('attachments with success uploaded files', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, null, getValidAttachments());
     await assertScreenshot(
@@ -347,12 +344,10 @@ describe('temba-compose attachments', () => {
   it('attachments with success uploaded files deserialize and serialize', async () => {
     const initialValue = getInitialValue(null, getValidAttachments());
     const composeValue = getComposeValue(initialValue);
-    const composeValues = getComposeValues(initialValue);
-
     const compose: Compose = await getCompose({
       attachments: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal('');
@@ -364,7 +359,7 @@ describe('temba-compose attachments', () => {
   it('attachments with failure uploaded files', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, null, null, getInvalidAttachments());
     await assertScreenshot(
@@ -376,7 +371,7 @@ describe('temba-compose attachments', () => {
   it('attachments with success and failure uploaded files', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -393,7 +388,7 @@ describe('temba-compose attachments', () => {
   it('attachments with success uploaded files and click send', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, null, getValidAttachments());
     const send = compose.shadowRoot.querySelector(
@@ -409,7 +404,7 @@ describe('temba-compose attachments', () => {
   it('attachments with success and failure uploaded files and click send', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -432,7 +427,7 @@ describe('temba-compose chatbox and attachments', () => {
   it('chatbox and attachments no counter no send button', async () => {
     const compose: Compose = await getCompose({
       chatbox: true,
-      attachments: true,
+      attachments: true
     });
     await assertScreenshot(
       'compose/chatbox-attachments-no-counter-no-send-button',
@@ -444,7 +439,7 @@ describe('temba-compose chatbox and attachments', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await assertScreenshot(
       'compose/chatbox-attachments-no-counter-and-send-button',
@@ -456,7 +451,7 @@ describe('temba-compose chatbox and attachments', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      counter: true,
+      counter: true
     });
     await assertScreenshot(
       'compose/chatbox-attachments-counter-no-send-button',
@@ -469,7 +464,7 @@ describe('temba-compose chatbox and attachments', () => {
       chatbox: true,
       attachments: true,
       counter: true,
-      button: true,
+      button: true
     });
     await assertScreenshot(
       'compose/chatbox-attachments-counter-and-send-button',
@@ -486,7 +481,7 @@ describe('temba-compose chatbox and attachments', () => {
       attachments: true,
       counter: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal('');
@@ -502,7 +497,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       chatbox: true,
       attachments: true,
       counter: true,
-      button: true,
+      button: true
     });
     updateComponent(compose, getValidText());
     await assertScreenshot(
@@ -520,7 +515,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       attachments: true,
       counter: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal(getValidText());
@@ -534,7 +529,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       chatbox: true,
       attachments: true,
       counter: true,
-      button: true,
+      button: true
     });
     updateComponent(compose, getValidText());
     const send = compose.shadowRoot.querySelector(
@@ -552,7 +547,7 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       chatbox: true,
       attachments: true,
       counter: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText());
     const chatbox = compose.shadowRoot.querySelector('.chatbox') as HTMLElement;
@@ -569,7 +564,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, null, getValidAttachments());
     await assertScreenshot(
@@ -586,7 +581,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       chatbox: true,
       attachments: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal('');
@@ -599,7 +594,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, null, null, getInvalidAttachments());
     await assertScreenshot(
@@ -612,7 +607,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -630,7 +625,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, null, getValidAttachments());
     const send = compose.shadowRoot.querySelector(
@@ -647,7 +642,7 @@ describe('temba-compose chatbox no text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -671,7 +666,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText(), getValidAttachments());
     await assertScreenshot(
@@ -688,7 +683,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       chatbox: true,
       attachments: true,
       button: true,
-      value: composeValue,
+      value: composeValue
     });
     // deserialize
     expect(compose.currentText).to.equal(getValidText());
@@ -701,7 +696,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -719,7 +714,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -737,7 +732,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText(), getValidAttachments());
     const send = compose.shadowRoot.querySelector(
@@ -754,7 +749,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,
@@ -776,7 +771,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(compose, getValidText(), getValidAttachments());
     const chatbox = compose.shadowRoot.querySelector('.chatbox') as HTMLElement;
@@ -791,7 +786,7 @@ describe('temba-compose chatbox with text and attachments with files', () => {
     const compose: Compose = await getCompose({
       chatbox: true,
       attachments: true,
-      button: true,
+      button: true
     });
     await updateComponent(
       compose,

@@ -1,13 +1,6 @@
 import { assert, expect } from '@open-wc/testing';
 import { ContactFields } from '../src/contacts/ContactFields';
-import {
-  assertScreenshot,
-  delay,
-  getClip,
-  getComponent,
-  loadStore,
-  mockPOST,
-} from './utils.test';
+import { delay, getComponent, loadStore, mockPOST } from './utils.test';
 
 const TAG = 'temba-contact-fields';
 const getFields = async (attrs: any = {}) => {
@@ -26,7 +19,7 @@ describe(TAG, () => {
     await loadStore();
 
     const fields: ContactFields = await getFields({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     assert.instanceOf(fields, ContactFields);
     // await assertScreenshot('contacts/fields', getClip(fields));
@@ -35,11 +28,11 @@ describe(TAG, () => {
   it('handles updated contacts properly', async () => {
     await loadStore();
     const fields: ContactFields = await getFields({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
 
     const data = fields.data;
-    data.groups.forEach(group => {
+    data.groups.forEach((group) => {
       delete group['is_dynamic'];
     });
     mockPOST(/api\/v2\/contacts\.json\?uuid=contact-dave-active/, data);

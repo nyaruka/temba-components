@@ -3,7 +3,7 @@ import { property } from 'lit/decorators.js';
 import {
   CustomEventType,
   ScheduledEvent,
-  ScheduledEventType,
+  ScheduledEventType
 } from '../interfaces';
 import { StoreElement } from '../store/StoreElement';
 import { Icon } from '../vectoricon';
@@ -11,7 +11,7 @@ import { Icon } from '../vectoricon';
 const ICONS = {
   [ScheduledEventType.CampaignEvent]: Icon.campaign,
   [ScheduledEventType.ScheduledBroadcast]: Icon.message,
-  [ScheduledEventType.ScheduledTrigger]: Icon.trigger,
+  [ScheduledEventType.ScheduledTrigger]: Icon.trigger
 };
 
 export class ContactPending extends StoreElement {
@@ -33,7 +33,7 @@ export class ContactPending extends StoreElement {
   REPEAT_PERIOD = {
     O: this.lang_once,
     D: this.lang_daily,
-    W: this.lang_weekly,
+    W: this.lang_weekly
   };
 
   static get styles() {
@@ -226,7 +226,7 @@ export class ContactPending extends StoreElement {
     if (this.data) {
       if (this.data.length > 0) {
         return html`
-          ${this.data.map(event => {
+          ${this.data.map((event) => {
             return this.renderEvent(event);
           })}
         `;

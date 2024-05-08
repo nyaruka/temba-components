@@ -162,13 +162,13 @@ export class ColorPicker extends FormElement {
     }
   }
 
-  private handleBlur(event: FocusEvent) {
+  private handleBlur() {
     if (this.expanded) {
       this.expanded = false;
     }
   }
 
-  private handleMouseOut(event: MouseEvent) {
+  private handleMouseOut() {
     this.previewColor = this.value;
     this.hex = this.value;
   }
@@ -185,7 +185,7 @@ export class ColorPicker extends FormElement {
     }
   }
 
-  private handlePreviewClick(event: MouseEvent) {
+  private handlePreviewClick() {
     this.expanded = !this.expanded;
     this.selecting = true;
     (this.shadowRoot.querySelector('.color-picker') as HTMLDivElement).focus();
@@ -237,7 +237,7 @@ export class ColorPicker extends FormElement {
               <div
                 class=${getClasses({
                   preview: true,
-                  selecting: this.selecting,
+                  selecting: this.selecting
                 })}
                 style="color:${this.labelColor};background:${this.previewColor}"
                 @click=${this.handlePreviewClick}

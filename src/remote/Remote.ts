@@ -20,7 +20,7 @@ export default class Remote extends RapidElement {
     super.updated(changes);
 
     if (changes.has('endpoint')) {
-      getUrl(this.endpoint).then(response => {
+      getUrl(this.endpoint).then((response) => {
         this.body = unsafeHTML(response.body);
       });
     }

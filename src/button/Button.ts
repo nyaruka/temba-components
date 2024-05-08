@@ -242,7 +242,7 @@ export class Button extends LitElement {
           'attention-button': this.attention,
           'destructive-button': this.destructive,
           'light-button': this.light,
-          small: this.small,
+          small: this.small
         })}"
         tabindex="0"
         @mousedown=${this.handleMouseDown}

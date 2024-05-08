@@ -21,7 +21,6 @@ const getMenu = async (attrs: any = {}, width = 0) => {
   return menu;
 };
 
-const IDX_CHOOSER = 0;
 const IDX_TASKS = 1;
 const IDX_SCHEDULE = 2;
 
@@ -34,7 +33,7 @@ describe('temba-menu', () => {
 
   it('renders with endpoint', async () => {
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/menu/menu-root.json',
+      endpoint: '/test-assets/menu/menu-root.json'
     });
 
     expect(menu.root.items.length).to.equal(3);
@@ -43,7 +42,7 @@ describe('temba-menu', () => {
 
   it('supports submenu', async () => {
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/menu/menu-root.json',
+      endpoint: '/test-assets/menu/menu-root.json'
     });
 
     // click our tasks
@@ -61,7 +60,7 @@ describe('temba-menu', () => {
     // not trigger events such as loading or dispatching
 
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/menu/menu-root.json',
+      endpoint: '/test-assets/menu/menu-root.json'
     });
 
     // click our tasks
@@ -91,7 +90,7 @@ describe('temba-menu', () => {
   it('refreshes', async () => {
     // the menu should refresh along the selection path without destroying state
     const menu: TembaMenu = await getMenu({
-      endpoint: '/test-assets/menu/menu-root.json',
+      endpoint: '/test-assets/menu/menu-root.json'
     });
 
     // click our tasks

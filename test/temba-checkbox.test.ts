@@ -27,7 +27,7 @@ describe('temba-checkbox', () => {
 
   it('fires change event on click', async () => {
     // eslint-disable-next-line no-async-promise-executor
-    return new Promise<void>(async resolve => {
+    return new Promise<void>(async (resolve) => {
       const checkbox: Checkbox = await fixture(html`
         <temba-checkbox label="My Checkbox"></temba-checkbox>
       `);
