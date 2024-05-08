@@ -5,7 +5,7 @@ import {
   Directive,
   Part,
   PartInfo,
-  PartType,
+  PartType
 } from 'lit/directive.js';
 import ExcellentParser, { Expression } from './ExcellentParser';
 import {
@@ -14,7 +14,7 @@ import {
   CompletionResult,
   CompletionSchema,
   CompletionType,
-  KeyedAssets,
+  KeyedAssets
 } from '../interfaces';
 import { Store } from '../store/Store';
 import { Remarkable } from 'remarkable';
@@ -25,7 +25,7 @@ const messageParser = new ExcellentParser('@', [
   'contact',
   'fields',
   'globals',
-  'urns',
+  'urns'
 ]);
 
 const sessionParser = new ExcellentParser('@', [
@@ -42,7 +42,7 @@ const sessionParser = new ExcellentParser('@', [
   'webhook',
   'ticket',
   'trigger',
-  'resume',
+  'resume'
 ]);
 
 // Class-based directive API
@@ -169,7 +169,7 @@ export const getCompletions = (
             currentProps = keyedAssets[nextType.name].map((key: string) => ({
               key: template.key.replace('{key}', key),
               help: template.help.replace('{key}', key),
-              type: template.type,
+              type: template.type
             }));
           } else {
             currentProps = [];
@@ -254,7 +254,7 @@ const getCursorXY = (input, selectionPoint) => {
   document.body.removeChild(div);
   return {
     left: inputX + spanX,
-    top: inputY + spanY,
+    top: inputY + spanY
   };
 };
 
@@ -307,7 +307,7 @@ export const executeCompletionQuery = (
     currentFunction: null,
     options: [],
     anchorPosition: null,
-    query: null,
+    query: null
   };
 
   if (!ele) {
@@ -367,7 +367,7 @@ export const executeCompletionQuery = (
 
         result.anchorPosition = {
           left: caret.left - 2 - ele.scrollLeft,
-          top: caret.top - ele.scrollTop,
+          top: caret.top - ele.scrollTop
         };
 
         result.query = currentExpression.text.substr(
@@ -384,7 +384,7 @@ export const executeCompletionQuery = (
           ),
           ...(includeFunctions
             ? getFunctions(store.getFunctions(), result.query)
-            : []),
+            : [])
         ];
 
         return result;

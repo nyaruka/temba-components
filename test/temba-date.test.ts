@@ -5,7 +5,7 @@ import {
   getClip,
   getComponent,
   loadStore,
-  mockNow,
+  mockNow
 } from './utils.test';
 
 const TAG = 'temba-date';
@@ -35,7 +35,7 @@ describe('temba-date', () => {
   it('renders duration', async () => {
     const date = await getDate({
       value: '1978-11-18T02:22:00.000000-07:00',
-      display: 'duration',
+      display: 'duration'
     });
     const dateString = (
       date.shadowRoot.querySelector('.date') as HTMLSpanElement
@@ -48,7 +48,7 @@ describe('temba-date', () => {
   it('renders datetime', async () => {
     const date = await getDate({
       value: '1978-11-18T02:22:00.000000-07:00',
-      display: 'datetime',
+      display: 'datetime'
     });
     const dateString = (
       date.shadowRoot.querySelector('.date') as HTMLSpanElement

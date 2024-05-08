@@ -49,7 +49,7 @@ describe('temba-datepicker', () => {
       getPickerHTML({
         value: '2020-01-20T14:00Z',
         timezone: 'America/New_York',
-        time: true,
+        time: true
       })
     );
 

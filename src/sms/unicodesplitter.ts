@@ -11,11 +11,11 @@ export const unicodeSplit = function (message, options) {
         {
           content: options.summary ? undefined : '',
           length: 0,
-          bytes: 0,
-        },
+          bytes: 0
+        }
       ],
       totalLength: 0,
-      totalBytes: 0,
+      totalBytes: 0
     };
   }
 
@@ -34,7 +34,7 @@ export const unicodeSplit = function (message, options) {
         ? message.substring(partStart, partEnd + 1)
         : message.substring(partStart),
       length: length,
-      bytes: bytes,
+      bytes: bytes
     };
     messages.push(msg);
 
@@ -70,17 +70,17 @@ export const unicodeSplit = function (message, options) {
         {
           content: options.summary ? undefined : message,
           length: totalLength,
-          bytes: totalBytes,
-        },
+          bytes: totalBytes
+        }
       ],
       totalLength: totalLength,
-      totalBytes: totalBytes,
+      totalBytes: totalBytes
     };
   }
 
   return {
     parts: messages,
     totalLength: totalLength,
-    totalBytes: totalBytes,
+    totalBytes: totalBytes
   };
 };

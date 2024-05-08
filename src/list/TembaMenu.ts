@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
@@ -716,7 +716,7 @@ export class TembaMenu extends ResizeElement {
     if (changes.has('endpoint')) {
       this.root = {
         level: -1,
-        endpoint: this.endpoint,
+        endpoint: this.endpoint
       };
 
       if (!this.wait) {
@@ -747,7 +747,7 @@ export class TembaMenu extends ResizeElement {
       // we need to wait until the load is complete before doing the replace
       await this.httpComplete;
       const id = path.shift();
-      item = (item.items || []).find(_item => _item.id == id);
+      item = (item.items || []).find((_item) => _item.id == id);
     }
 
     this.loadItems(item);
@@ -768,10 +768,10 @@ export class TembaMenu extends ResizeElement {
       item.loading = true;
       this.httpComplete = fetchResults(item.endpoint).then(
         (items: MenuItem[]) => {
-          items.forEach(newItem => {
+          items.forEach((newItem) => {
             if (!newItem.items) {
               const prevItem = (item.items || []).find(
-                prev => prev.id == newItem.id
+                (prev) => prev.id == newItem.id
               );
               if (prevItem && prevItem.items) {
                 newItem.items = prevItem.items;
@@ -780,11 +780,11 @@ export class TembaMenu extends ResizeElement {
           });
 
           // update our item level
-          items.forEach(subItem => {
+          items.forEach((subItem) => {
             subItem.level = item.level + 1;
             // if we came with preset items, set the level for them accordingly
             if (subItem.items) {
-              subItem.items.forEach(inlineItem => {
+              subItem.items.forEach((inlineItem) => {
                 inlineItem.level = item.level + 2;
               });
             }
@@ -827,7 +827,7 @@ export class TembaMenu extends ResizeElement {
         this.fireCustomEvent(CustomEventType.ButtonClicked, {
           item: menuItem,
           selection: this.getSelection(),
-          parent,
+          parent
         });
       }
 
@@ -839,7 +839,7 @@ export class TembaMenu extends ResizeElement {
         this.fireCustomEvent(CustomEventType.ButtonClicked, {
           item: menuItem,
           selection: this.getSelection(),
-          parent,
+          parent
         });
       }
       return;
@@ -870,7 +870,7 @@ export class TembaMenu extends ResizeElement {
       this.fireCustomEvent(CustomEventType.ButtonClicked, {
         item: menuItem,
         selection: this.getSelection(),
-        parent,
+        parent
       });
       return;
     }
@@ -904,7 +904,7 @@ export class TembaMenu extends ResizeElement {
     this.fireCustomEvent(CustomEventType.ButtonClicked, {
       item: menuItem,
       selection: this.getSelection(),
-      parent,
+      parent
     });
   }
 
@@ -912,7 +912,7 @@ export class TembaMenu extends ResizeElement {
     // makes sure we are scrolled into view
     window.setTimeout(() => {
       const eles = this.shadowRoot.querySelectorAll('.selected');
-      eles.forEach(ele => {
+      eles.forEach((ele) => {
         ele.scrollIntoView({ block: 'end', behavior: 'smooth' });
       });
     }, 0);
@@ -969,7 +969,7 @@ export class TembaMenu extends ResizeElement {
   }
 
   public async setFocusedItem(path: string) {
-    const focusedPath = path.split('/').filter(step => !!step);
+    const focusedPath = path.split('/').filter((step) => !!step);
     if (!this.root) {
       return;
     }
@@ -1017,7 +1017,7 @@ export class TembaMenu extends ResizeElement {
 
   private isExpanded(menuItem: MenuItem) {
     const expanded = !!this.selection.find(
-      id => id === menuItem.vanity_id || menuItem.id
+      (id) => id === menuItem.vanity_id || menuItem.id
     );
     return expanded;
   }
@@ -1047,7 +1047,7 @@ export class TembaMenu extends ResizeElement {
     if (menuItem.type === 'modax-button') {
       return html`<temba-button
         name=${menuItem.name}
-        @click=${event => {
+        @click=${(event) => {
           this.handleItemClicked(event, menuItem);
         }}
       />`;
@@ -1092,14 +1092,14 @@ export class TembaMenu extends ResizeElement {
       expanded: this.isExpanded(menuItem),
       iconless: !icon && !collapsedIcon && !menuItem.avatar,
       pressed: this.pressedItem && this.pressedItem.id == menuItem.id,
-      'show-mobile': menuItem.mobile,
+      'show-mobile': menuItem.mobile
     });
 
     if (menuItem.avatar) {
       icon = renderAvatar({
         name: menuItem.avatar,
         tip: false,
-        scale: parent ? 0.9 : 1.2,
+        scale: parent ? 0.9 : 1.2
       });
       if (menuItem.bubble) {
         icon = html`${icon}${menuItem.bubble
@@ -1117,7 +1117,7 @@ export class TembaMenu extends ResizeElement {
         href=${ifDefined(menuItem.href ? menuItem.href : undefined)}
         id="menu-${menuItem.id}"
         class="${itemClasses}"
-        @click=${event => {
+        @click=${(event) => {
           event.preventDefault();
           this.pressedItem = null;
           this.handleItemClicked(event, menuItem, parent);
@@ -1219,14 +1219,14 @@ export class TembaMenu extends ResizeElement {
         <div class="top-spacer"></div>
 
         ${items
-          .filter(item => !item.bottom)
+          .filter((item) => !item.bottom)
           .map((item: MenuItem) => {
             return this.renderMenuItem(item);
           })}
 
         <div class="empty"></div>
         ${items
-          .filter(item => !!item.bottom)
+          .filter((item) => !!item.bottom)
           .map((item: MenuItem) => {
             return this.renderMenuItem(item);
           })}
@@ -1263,14 +1263,14 @@ export class TembaMenu extends ResizeElement {
             class="${getClasses({
               level: true,
               ['level-' + (index + 1)]: true,
-              collapsed,
+              collapsed
             })}"
           >
             ${!this.submenu
               ? html`
                   <slot
                     class="${getClasses({
-                      'show-header': selected.show_header,
+                      'show-header': selected.show_header
                     })}"
                     name="header"
                   ></slot>
@@ -1307,7 +1307,7 @@ export class TembaMenu extends ResizeElement {
       class="${getClasses({
         root: true,
         'fully-collapsed': this.collapsed,
-        mobile: this.isMobile(),
+        mobile: this.isMobile()
       })}"
     >
       ${levels}

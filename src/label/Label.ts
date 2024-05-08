@@ -133,7 +133,7 @@ export default class Label extends LitElement {
           tertiary: this.tertiary,
           shadow: this.shadow,
           danger: this.danger,
-          dark: this.dark,
+          dark: this.dark
         })}"
         style=${styleMap(labelStyle)}
       >

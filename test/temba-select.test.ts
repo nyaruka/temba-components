@@ -6,7 +6,7 @@ import {
   assertScreenshot,
   checkTimers,
   getClip,
-  loadStore,
+  loadStore
 } from './utils.test';
 import { CustomEventType } from '../src/interfaces';
 
@@ -15,7 +15,7 @@ let clock: any;
 const colors = [
   { name: 'Red', value: '0' },
   { name: 'Green', value: '1' },
-  { name: 'Blue', value: '2' },
+  { name: 'Blue', value: '2' }
 ];
 
 export const createSelect = async (def: string) => {
@@ -36,7 +36,7 @@ export const open = async (select: Select) => {
     return select;
   }
 
-  const promise = new Promise<Select>(resolve => {
+  const promise = new Promise<Select>((resolve) => {
     select.addEventListener(
       CustomEventType.FetchComplete,
       async () => {
@@ -89,7 +89,7 @@ export const getSelectHTML = (
     .join(' ')}>
     ${options
       .map(
-        option =>
+        (option) =>
           `<temba-option name="${option.name}" value="${option.value}"></temba-option>`
       )
       .join('')}
@@ -111,7 +111,7 @@ const getClipWithOptions = (select: Select) => {
       y,
       x,
       width: Math.max(selectClip.right, optionsClip.right) - x,
-      height: Math.max(selectClip.bottom, optionsClip.bottom) - y,
+      height: Math.max(selectClip.bottom, optionsClip.bottom) - y
     };
     return combinedClip;
   }
@@ -284,7 +284,7 @@ describe('temba-select', () => {
       const select = await createSelect(
         getSelectHTML([], {
           placeholder: 'Select a color',
-          endpoint: '/test-assets/select/colors.json',
+          endpoint: '/test-assets/select/colors.json'
         })
       );
 
@@ -301,7 +301,7 @@ describe('temba-select', () => {
         getSelectHTML([], {
           placeholder: 'Select a color',
           endpoint: '/test-assets/select/colors.json',
-          searchable: true,
+          searchable: true
         })
       );
 
@@ -317,7 +317,7 @@ describe('temba-select', () => {
         getSelectHTML([], {
           placeholder: 'Select a group',
           endpoint: '/test-assets/select/groups.json',
-          valueKey: 'uuid',
+          valueKey: 'uuid'
         })
       );
 
@@ -333,7 +333,7 @@ describe('temba-select', () => {
           placeholder: 'Select a group',
           endpoint: '/test-assets/select/groups.json',
           valueKey: 'uuid',
-          searchable: true,
+          searchable: true
         })
       );
 
@@ -360,7 +360,7 @@ describe('temba-select', () => {
         getSelectHTML([], {
           endpoint: '/colors.json',
           searchable: true,
-          expressions: 'session',
+          expressions: 'session'
         })
       );
 
@@ -390,7 +390,7 @@ describe('temba-select', () => {
       const select = await createSelect(
         getSelectHTML(colors, {
           placeholder: 'Select a color',
-          searchable: true,
+          searchable: true
         })
       );
       await assertScreenshot(
@@ -433,7 +433,7 @@ describe('temba-select', () => {
         getSelectHTML(colors, {
           placeholder: 'Select a color',
           searchable: true,
-          multi: true,
+          multi: true
         })
       );
 
@@ -460,7 +460,7 @@ describe('temba-select', () => {
         getSelectHTML(colors, {
           placeholder: 'Select a color',
           searchable: true,
-          expressions: 'session',
+          expressions: 'session'
         })
       );
 
@@ -474,13 +474,13 @@ describe('temba-select', () => {
       const options = [
         {
           name: 'this_is_a_long_selection_to_make_sure_it_truncates',
-          value: '0',
-        },
+          value: '0'
+        }
       ];
 
       const select = await createSelect(
         getSelectHTML(options, {
-          value: '0',
+          value: '0'
         })
       );
 
@@ -498,7 +498,7 @@ describe('temba-select', () => {
           multi: true,
           placeholder: 'Select a color',
           searchable: true,
-          expressions: 'session',
+          expressions: 'session'
         })
       );
 

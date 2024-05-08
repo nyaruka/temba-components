@@ -186,7 +186,7 @@ export default class DatePicker extends FormElement {
     event.stopPropagation();
     if (this.time) {
       this.datetime = DateTime.fromISO(event.target.value, {
-        zone: this.timezone,
+        zone: this.timezone
       });
       this.value = this.datetime.toUTC().toISO();
     } else {

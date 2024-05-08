@@ -7,7 +7,7 @@ module.exports = {
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:import/errors',
-    'plugin:import/warnings',
+    'plugin:import/warnings'
   ],
   rules: {
     // disable the rule for all files
@@ -17,6 +17,6 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     'import/named': 'off',
-    'import/no-unresolved': 'off',
-  },
+    'import/no-unresolved': 'off'
+  }
 };

@@ -10,7 +10,7 @@ import {
   truncate,
   DEFAULT_MEDIA_ENDPOINT,
   WebResponse,
-  isImageAttachment,
+  isImageAttachment
 } from '../utils';
 import { Completion } from '../completion/Completion';
 import { Select } from '../select/Select';
@@ -335,7 +335,7 @@ export class Compose extends FormElement {
 
   public getEventHandlers(): EventHandler[] {
     return [
-      { event: CustomEventType.ContextChanged, method: this.handleTabChanged },
+      { event: CustomEventType.ContextChanged, method: this.handleTabChanged }
     ];
   }
 
@@ -359,7 +359,7 @@ export class Compose extends FormElement {
       let langValue = {
         text: '',
         attachments: [],
-        quick_replies: [],
+        quick_replies: []
       };
 
       if (this.currentLanguage in this.langValues) {
@@ -369,9 +369,11 @@ export class Compose extends FormElement {
       this.currentText = langValue.text;
       this.initialText = langValue.text;
       this.currentAttachments = langValue.attachments;
-      this.currentQuickReplies = (langValue.quick_replies || []).map(value => {
-        return { name: value, value };
-      });
+      this.currentQuickReplies = (langValue.quick_replies || []).map(
+        (value) => {
+          return { name: value, value };
+        }
+      );
       this.currentOptin = langValue['optin'] ? [langValue['optin']] : [];
       this.setFocusOnChatbox();
 
@@ -402,8 +404,8 @@ export class Compose extends FormElement {
         this.langValues[this.currentLanguage] = {
           text: trimmed,
           attachments: this.currentAttachments,
-          quick_replies: this.currentQuickReplies.map(option => option.value),
-          optin: this.currentOptin.length > 0 ? this.currentOptin[0] : null,
+          quick_replies: this.currentQuickReplies.map((option) => option.value),
+          optin: this.currentOptin.length > 0 ? this.currentOptin[0] : null
         };
       } else {
         delete this.langValues[this.currentLanguage];
@@ -438,7 +440,7 @@ export class Compose extends FormElement {
     this.buttonError = '';
   }
 
-  private handleQuickReplyChange(event: InputEvent) {
+  private handleQuickReplyChange() {
     this.requestUpdate('currentQuickReplies');
   }
 
@@ -514,9 +516,9 @@ export class Compose extends FormElement {
     let filesToUpload = [];
     if (this.currentAttachments && this.currentAttachments.length > 0) {
       //remove duplicate files that have already been uploaded
-      filesToUpload = [...files].filter(file => {
+      filesToUpload = [...files].filter((file) => {
         const index = this.currentAttachments.findIndex(
-          value => value.filename === file.name && value.size === file.size
+          (value) => value.filename === file.name && value.size === file.size
         );
         if (index === -1) {
           return file;
@@ -525,7 +527,7 @@ export class Compose extends FormElement {
     } else {
       filesToUpload = [...files];
     }
-    filesToUpload.map(fileToUpload => {
+    filesToUpload.map((fileToUpload) => {
       this.uploadFile(fileToUpload);
     });
   }
@@ -568,7 +570,7 @@ export class Compose extends FormElement {
   }
   private removeCurrentAttachment(attachmentToRemove: any) {
     this.currentAttachments = this.currentAttachments.filter(
-      currentAttachment => currentAttachment !== attachmentToRemove
+      (currentAttachment) => currentAttachment !== attachmentToRemove
     );
     this.requestUpdate('currentAttachments');
   }
@@ -580,7 +582,7 @@ export class Compose extends FormElement {
       filename: file.name,
       url: file.name,
       size: file.size,
-      error: error,
+      error: error
     } as Attachment;
     this.failedAttachments.push(failedAttachment);
     this.requestUpdate('failedAttachments');
@@ -736,7 +738,7 @@ export class Compose extends FormElement {
     return html`
       ${this.attachments
         ? html` <div class="attachments-list">
-              ${this.currentAttachments.map(validAttachment => {
+              ${this.currentAttachments.map((validAttachment) => {
                 return html` <div class="attachment-item">
                   <temba-icon
                     class="remove-item"
@@ -755,7 +757,7 @@ export class Compose extends FormElement {
               })}
               ${this.getUploader()}
             </div>
-            ${this.failedAttachments.map(invalidAttachment => {
+            ${this.failedAttachments.map((invalidAttachment) => {
               return html` <div class="attachment-item error">
                 <div
                   class="remove-item error"

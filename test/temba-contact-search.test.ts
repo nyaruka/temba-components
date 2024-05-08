@@ -1,12 +1,6 @@
 import { fixture, assert, expect } from '@open-wc/testing';
 import { ContactSearch } from '../src/contactsearch/ContactSearch';
-import {
-  assertScreenshot,
-  delay,
-  getClip,
-  getHTML,
-  mockPOST,
-} from './utils.test';
+import { assertScreenshot, getClip, getHTML, mockPOST } from './utils.test';
 import { useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 import { Omnibox } from '../src/omnibox/Omnibox';
@@ -14,7 +8,7 @@ import { Omnibox } from '../src/omnibox/Omnibox';
 let clock: any;
 
 function waitForSearch(search: ContactSearch) {
-  return new Promise<ContactSearch>(resolve => {
+  return new Promise<ContactSearch>((resolve) => {
     search.addEventListener(
       CustomEventType.ContentChanged,
       async () => {
@@ -47,7 +41,7 @@ describe('temba-contact-search', () => {
     const search: ContactSearch = await fixture(
       getHTML('temba-contact-search', {
         advanced: true,
-        endpoint,
+        endpoint
       })
     );
 
@@ -66,7 +60,7 @@ describe('temba-contact-search', () => {
     await waitForSearch(search);
 
     expect(search.errors).to.deep.equal([
-      "'Missing' is not a valid group name",
+      "'Missing' is not a valid group name"
     ]);
 
     await search.updateComplete;
@@ -77,7 +71,7 @@ describe('temba-contact-search', () => {
     const endpoint = '/contact-search-manual';
     const search: ContactSearch = await fixture(
       getHTML('temba-contact-search', {
-        endpoint,
+        endpoint
       })
     );
 
@@ -95,9 +89,9 @@ describe('temba-contact-search', () => {
         total: 1937,
         warnings: [
           'This flow does not specify a Facebook topic. You may still start this flow but Facebook contacts who have not sent an incoming message in the last 24 hours may not receive it.',
-          'This flow does not use message templates. You may still start this flow but WhatsApp contacts who have not sent an incoming message in the last 24 hours may not receive it.',
+          'This flow does not use message templates. You may still start this flow but WhatsApp contacts who have not sent an incoming message in the last 24 hours may not receive it.'
         ],
-        blockers: [],
+        blockers: []
       },
       { 'Temba-Success': 'hide' }
     );

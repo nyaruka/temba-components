@@ -515,7 +515,7 @@ export enum Events {
   TICKET_REOPENED = 'ticket_reopened',
   OPTIN_REQUESTED = 'optin_requested',
   ERROR = 'error',
-  FAILURE = 'failure',
+  FAILURE = 'failure'
 }
 
 export interface ContactEvent {
@@ -830,7 +830,7 @@ export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
           event.msg.attachments || []
         ).length} ${getClasses({
           msg: true,
-          automated: !isInbound && !event.created_by,
+          automated: !isInbound && !event.created_by
         })}"
       >
         ${event.msg.text
@@ -839,7 +839,7 @@ export const renderMsgEvent = (event: MsgEvent): TemplateResult => {
         ${event.msg.attachments
           ? html`<div class="attachments">
               ${event.msg.attachments.map(
-                attachment =>
+                (attachment) =>
                   html` <div class="attachment">
                     ${renderAttachment(attachment)}
                   </div>`

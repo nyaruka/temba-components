@@ -5,7 +5,7 @@ import { assertScreenshot, getClip, getHTML } from './utils.test';
 const colors = [
   { name: 'Red', value: '0' },
   { name: 'Green', value: '1' },
-  { name: 'Blue', value: '2' },
+  { name: 'Blue', value: '2' }
 ];
 
 export const getOptionsHTML = (attrs: any = {}): string => {

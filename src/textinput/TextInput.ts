@@ -10,7 +10,7 @@ import { CharCount } from '../charcount/CharCount';
 export enum InputType {
   Text = 'text',
   Password = 'password',
-  Number = 'number',
+  Number = 'number'
 }
 
 export class TextInput extends FormElement {
@@ -349,7 +349,7 @@ export class TextInput extends FormElement {
   // TODO make this a formelement and have contactsearch set the root
   public render(): TemplateResult {
     const containerStyle = {
-      height: `${this.textarea ? '100%' : 'auto'}`,
+      height: `${this.textarea ? '100%' : 'auto'}`
     };
 
     const clear =

@@ -22,7 +22,7 @@ describe('temba-label', () => {
   it('renders shadow', async () => {
     const label: Label = await getLabel('Shadow', {
       icon: 'check',
-      shadow: true,
+      shadow: true
     });
     await assertScreenshot('label/shadow', getClip(label));
   });
@@ -30,7 +30,7 @@ describe('temba-label', () => {
   it('renders primary', async () => {
     const label: Label = await getLabel('Primary', {
       icon: 'check',
-      primary: true,
+      primary: true
     });
     await assertScreenshot('label/primary', getClip(label));
   });
@@ -38,7 +38,7 @@ describe('temba-label', () => {
   it('renders secondary', async () => {
     const label: Label = await getLabel('Secondary', {
       icon: 'check',
-      secondary: true,
+      secondary: true
     });
     await assertScreenshot('label/secondary', getClip(label));
   });
@@ -46,7 +46,7 @@ describe('temba-label', () => {
   it('renders tertiary', async () => {
     const label: Label = await getLabel('Tertiary', {
       icon: 'check',
-      tertiary: true,
+      tertiary: true
     });
     await assertScreenshot('label/tertiary', getClip(label));
   });
@@ -59,7 +59,7 @@ describe('temba-label', () => {
   it('renders danger', async () => {
     const label: Label = await getLabel('Danger', {
       icon: 'check',
-      danger: true,
+      danger: true
     });
     await assertScreenshot('label/danger', getClip(label));
   });
@@ -68,7 +68,7 @@ describe('temba-label', () => {
     const label: Label = await getLabel('Custom Orange', {
       icon: 'check',
       backgroundColor: 'rgb(240, 176, 29)',
-      textColor: '#ffff',
+      textColor: '#ffff'
     });
     await assertScreenshot('label/custom', getClip(label));
   });

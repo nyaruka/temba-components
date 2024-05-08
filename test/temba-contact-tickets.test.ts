@@ -6,7 +6,7 @@ import {
   getComponent,
   loadStore,
   mockGET,
-  mockNow,
+  mockNow
 } from './utils.test';
 
 const TAG = 'temba-contact-tickets';
@@ -35,7 +35,7 @@ describe('temba-contact-tickets', () => {
   it('renders default', async () => {
     const tickets: ContactTickets = await getContactTickets({
       contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
-      agent: 'admin1@nyaruka.com',
+      agent: 'admin1@nyaruka.com'
     });
     assert.instanceOf(tickets, ContactTickets);
     await assertScreenshot('contacts/tickets', getClip(tickets));
@@ -44,7 +44,7 @@ describe('temba-contact-tickets', () => {
   it('shows assignment picker', async () => {
     const tickets: ContactTickets = await getContactTickets({
       contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
-      agent: 'admin1@nyaruka.com',
+      agent: 'admin1@nyaruka.com'
     });
 
     // click on the avatar element

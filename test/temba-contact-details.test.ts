@@ -1,12 +1,6 @@
 import { assert, waitUntil } from '@open-wc/testing';
 import { ContactDetails } from '../src/contacts/ContactDetails';
-import {
-  assertScreenshot,
-  getClip,
-  getComponent,
-  loadStore,
-  mockGET,
-} from './utils.test';
+import { getComponent, loadStore, mockGET } from './utils.test';
 
 const TAG = 'temba-contact-details';
 const getContactDetails = async (attrs: any = {}) => {
@@ -32,7 +26,7 @@ describe('temba-contact-tickets', () => {
   it('renders default', async () => {
     await loadStore();
     const contactDetails: ContactDetails = await getContactDetails({
-      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9',
+      contact: '24d64810-3315-4ff5-be85-48e3fe055bf9'
     });
 
     assert.instanceOf(contactDetails, ContactDetails);

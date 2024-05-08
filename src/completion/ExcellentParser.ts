@@ -266,7 +266,7 @@ export default class ExcellentParser {
             start: pos,
             end: null,
             text: ch,
-            closed: false,
+            closed: false
           };
         } else if (
           ch === this.expressionPrefix &&

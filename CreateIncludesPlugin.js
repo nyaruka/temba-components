@@ -56,7 +56,7 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
           filename.startsWith('temba-components') &&
           filename.endsWith('.js')
         ) {
-          mkdirp(templates).then(err => {
+          mkdirp(templates).then((err) => {
             fs.writeFileSync(
               path.resolve(templates, 'components-head.html'),
               '<link rel="preload" href="{{STATIC_URL}}@nyaruka/temba-components/build/' +
@@ -78,7 +78,7 @@ CreateIncludesPlugin.prototype.apply = function (compiler) {
 
       // our main body template has a couple universal polyfills and our dynamic loader for any remaining
       // ones the current browser might need
-      mkdirp(templates).then(err => {
+      mkdirp(templates).then((err) => {
         fs.writeFileSync(
           path.resolve(templates, 'components-body.html'),
           getScript(bodyScripts[0], true) +

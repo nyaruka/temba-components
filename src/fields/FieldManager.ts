@@ -4,7 +4,6 @@ import { ContactField, CustomEventType } from '../interfaces';
 
 import { SortableList } from '../list/SortableList';
 import { StoreElement } from '../store/StoreElement';
-import { TextInput } from '../textinput/TextInput';
 import { postJSON } from '../utils';
 
 const TYPE_NAMES = {
@@ -14,7 +13,7 @@ const TYPE_NAMES = {
   datetime: 'Date & Time',
   state: 'State',
   ward: 'Ward',
-  district: 'District',
+  district: 'District'
 };
 
 const matches = (field: ContactField, query: string): boolean => {
@@ -153,7 +152,7 @@ export class FieldManager extends StoreElement {
   }
 
   private filterFields() {
-    const filteredKeys = this.store.getFieldKeys().filter(key => {
+    const filteredKeys = this.store.getFieldKeys().filter((key) => {
       const field = this.store.getContactField(key);
       if (field.featured) {
         return false;
@@ -169,7 +168,7 @@ export class FieldManager extends StoreElement {
     });
 
     const featured: ContactField[] = [];
-    this.store.getFeaturedFields().forEach(field => {
+    this.store.getFeaturedFields().forEach((field) => {
       if (matches(field, this.query)) {
         featured.push(field);
       }
@@ -321,7 +320,7 @@ export class FieldManager extends StoreElement {
               ${this.query
                 ? html`
                     <div class="scroll-box">
-                      ${this.featuredFields.map(field =>
+                      ${this.featuredFields.map((field) =>
                         this.renderField(field)
                       )}
                     </div>
@@ -333,7 +332,7 @@ export class FieldManager extends StoreElement {
                       @temba-drag-start=${this.handleDragStart}
                       @temba-drag-stop=${this.handleDragStop}
                     >
-                      ${this.featuredFields.map(field =>
+                      ${this.featuredFields.map((field) =>
                         this.renderField(field)
                       )}
                     </temba-sortable-list>
@@ -348,7 +347,7 @@ export class FieldManager extends StoreElement {
           <div class="label">Everything Else</div>
         </div>
         <div class="scroll-box">
-          ${this.otherFieldKeys.map(field =>
+          ${this.otherFieldKeys.map((field) =>
             this.renderField(this.store.getContactField(field))
           )}
         </div>

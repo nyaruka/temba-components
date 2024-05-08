@@ -12,7 +12,7 @@ describe('temba-color-picker', () => {
   it('renders default', async () => {
     const picker: ColorPicker = await getPicker({
       name: 'primary',
-      label: 'Primary Color',
+      label: 'Primary Color'
     });
     assert.instanceOf(picker, ColorPicker);
     await assertScreenshot('colorpicker/default', getClip(picker));
@@ -22,7 +22,7 @@ describe('temba-color-picker', () => {
     const picker: ColorPicker = await getPicker({
       name: 'primary',
       label: 'Primary Color',
-      value: '#2387ca',
+      value: '#2387ca'
     });
     await assertScreenshot('colorpicker/initialized', getClip(picker));
   });
@@ -31,7 +31,7 @@ describe('temba-color-picker', () => {
     const picker: ColorPicker = await getPicker({
       name: 'primary',
       label: 'Primary Color',
-      value: '#2387ca',
+      value: '#2387ca'
     });
     (picker.shadowRoot.querySelector('.preview') as HTMLElement).click();
 
@@ -42,7 +42,7 @@ describe('temba-color-picker', () => {
     const picker: ColorPicker = await getPicker({
       name: 'primary',
       label: 'Primary Color',
-      value: '#2387ca',
+      value: '#2387ca'
     });
     (picker.shadowRoot.querySelector('.preview') as HTMLElement).click();
 

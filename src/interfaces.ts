@@ -25,18 +25,18 @@ export interface Attachment {
 export enum DateStyle {
   DayFirst = 'day_first',
   MonthFirst = 'month_first',
-  YearFirst = 'year_first',
+  YearFirst = 'year_first'
 }
 
 export enum ScheduledEventType {
   CampaignEvent = 'campaign_event',
   ScheduledBroadcast = 'scheduled_broadcast',
-  ScheduledTrigger = 'scheduled_trigger',
+  ScheduledTrigger = 'scheduled_trigger'
 }
 
 export enum TicketStatus {
   Open = 'open',
-  Closed = 'closed',
+  Closed = 'closed'
 }
 
 export interface ScheduledEvent {
@@ -259,5 +259,5 @@ export enum CustomEventType {
   OrderChanged = 'temba-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
-  Resized = 'temba-resized',
+  Resized = 'temba-resized'
 }

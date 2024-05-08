@@ -5,7 +5,7 @@ import {
   delay,
   getClip,
   getComponent,
-  loadStore,
+  loadStore
 } from './utils.test';
 
 const TAG = 'temba-contact-badges';
@@ -25,7 +25,7 @@ describe('temba-contact-badges', () => {
     await loadStore();
 
     const badges: ContactBadges = await getBadges({
-      contact: 'contact-dave-active',
+      contact: 'contact-dave-active'
     });
     assert.instanceOf(badges, ContactBadges);
     await assertScreenshot('contacts/badges', getClip(badges));

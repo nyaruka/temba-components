@@ -20,7 +20,7 @@ export const splitSMS = function (message: string, options: any = {}) {
   const characterset = options && options.characterset;
 
   options = {
-    summary: options && options.summary,
+    summary: options && options.summary
   };
 
   const isGsm =
@@ -52,6 +52,6 @@ export const splitSMS = function (message: string, options: any = {}) {
     parts: splitResult.parts,
     bytes: splitResult.totalBytes,
     length: splitResult.totalLength,
-    remainingInPart: remainingInPart,
+    remainingInPart: remainingInPart
   };
 };

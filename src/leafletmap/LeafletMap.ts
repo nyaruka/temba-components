@@ -6,7 +6,7 @@ import {
   LeafletMouseEvent,
   Map as RenderedMap,
   map as createMap,
-  Path,
+  Path
 } from 'leaflet';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -124,7 +124,7 @@ export class LeafletMap extends LitElement {
         mouseout: (event: LeafletEvent) => {
           event.target.setStyle(normalFeature);
           this.hovered = null;
-        },
+        }
       });
     };
 
@@ -140,14 +140,14 @@ export class LeafletMap extends LitElement {
             {
               name: data.name,
               osm_id: this.osmId,
-              level: 0,
-            },
+              level: 0
+            }
           ];
         }
 
         this.states = geoJSON(data.geometry, {
           style: visibleStyle,
-          onEachFeature,
+          onEachFeature
         });
         this.renderedMap.fitBounds(this.states.getBounds(), {});
         this.states.addTo(this.renderedMap);
@@ -203,7 +203,7 @@ export class LeafletMap extends LitElement {
     this.renderedMap = createMap(mapElement, {
       attributionControl: false,
       scrollWheelZoom: false,
-      zoomControl: false,
+      zoomControl: false
     }).setView([0, 1], 4);
     this.renderedMap.dragging.disable();
     this.renderedMap.doubleClickZoom.disable();

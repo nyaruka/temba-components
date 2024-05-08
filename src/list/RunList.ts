@@ -94,7 +94,7 @@ export class RunList extends TembaList {
   }
 
   public removeRun(id: number) {
-    this.items = this.items.filter(run => run.id !== id);
+    this.items = this.items.filter((run) => run.id !== id);
     this.cursorIndex = Math.min(this.cursorIndex, this.items.length);
     this.requestUpdate('cursorIndex');
   }

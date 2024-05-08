@@ -7,7 +7,7 @@ import {
   getHTML,
   loadStore,
   mockGET,
-  mockNow,
+  mockNow
 } from '../test/utils.test';
 import './utils.test';
 
@@ -69,7 +69,7 @@ describe('temba-contact-history', () => {
   it('renders history', async () => {
     const history = await createHistory(
       getHistoryHTML({
-        uuid: 'contact-dave-active',
+        uuid: 'contact-dave-active'
       })
     );
 
@@ -89,7 +89,7 @@ describe('temba-contact-history', () => {
   it('expands event groups', async () => {
     const history = await createHistory(
       getHistoryHTML({
-        uuid: 'contact-dave-active',
+        uuid: 'contact-dave-active'
       })
     );
 

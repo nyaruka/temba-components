@@ -319,7 +319,7 @@ export class TabPane extends RapidElement {
             class="pane ${getClasses({
               first: this.index == 0,
               embedded: this.embedded,
-              bottom: this.bottom,
+              bottom: this.bottom
             })}"
           >
             <slot></slot>
@@ -332,7 +332,7 @@ export class TabPane extends RapidElement {
           bottom: this.bottom,
           collapses: this.collapses,
           embedded: this.embedded,
-          focusedname: this.focusedName,
+          focusedname: this.focusedName
         })}"
       >
         ${this.tabs.map(
@@ -345,7 +345,7 @@ export class TabPane extends RapidElement {
                 first: index == 0,
                 selected: index == this.index,
                 hidden: tab.hidden,
-                notify: tab.notify,
+                notify: tab.notify
               })}"
               style="${tab.selectionColor && index == this.index
                 ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
@@ -383,7 +383,7 @@ export class TabPane extends RapidElement {
             class="pane ${getClasses({
               first: this.index == 0,
               embedded: this.embedded,
-              bottom: this.bottom,
+              bottom: this.bottom
             })}"
           >
             <slot></slot>

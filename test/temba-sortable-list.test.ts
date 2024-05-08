@@ -40,7 +40,7 @@ describe('temba-sortable-list', () => {
       from: 'fish',
       to: 'chicken',
       fromIdx: 1,
-      toIdx: 0,
+      toIdx: 0
     });
 
     // should be hovered

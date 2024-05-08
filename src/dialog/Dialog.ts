@@ -9,7 +9,7 @@ import { ResizeElement } from '../ResizeElement';
 export enum ButtonType {
   PRIMARY = 'primary',
   SECONDARY = 'secondary',
-  DESTRUCTIVE = 'destructive',
+  DESTRUCTIVE = 'destructive'
 }
 export class DialogButton {
   name?: string;
@@ -24,7 +24,7 @@ export class Dialog extends ResizeElement {
     return {
       small: '400px',
       medium: '600px',
-      large: '655px',
+      large: '655px'
     };
   }
 
@@ -265,14 +265,14 @@ export class Dialog extends ResizeElement {
       this.buttons.push({
         name: this.cancelButtonName,
         type: ButtonType.SECONDARY,
-        closes: true,
+        closes: true
       });
     }
 
     if (changes.has('primaryButtonName') && this.primaryButtonName) {
       this.buttons.push({
         name: this.primaryButtonName,
-        type: ButtonType.PRIMARY,
+        type: ButtonType.PRIMARY
       });
     }
   }
@@ -409,7 +409,7 @@ export class Dialog extends ResizeElement {
     const dialogStyle = {
       width: this.width,
       minWidth: '250px',
-      maxWidth: '600px',
+      maxWidth: '600px'
     };
     if (!this.width) {
       dialogStyle['width'] = Dialog.widths[this.size];
@@ -440,7 +440,7 @@ export class Dialog extends ResizeElement {
           'dialog-loading': this.loading,
           'dialog-animation-end': this.animationEnd,
           'dialog-ready': this.ready,
-          mobile: this.isMobile(),
+          mobile: this.isMobile()
         })}"
       >
         <div style="position: absolute; width: 100%;">

@@ -169,12 +169,12 @@ export class Tip extends RapidElement {
   public render(): TemplateResult {
     const tipStyle: any = {
       top: this.top ? `${this.top}px` : '0px',
-      left: this.left ? `${this.left}px` : '0px',
+      left: this.left ? `${this.left}px` : '0px'
     };
 
     const arrowStyle: any = {
       top: this.arrowTop ? `${this.arrowTop}px` : '0px',
-      left: this.arrowLeft ? `${this.arrowLeft}px` : '0px',
+      left: this.arrowLeft ? `${this.arrowLeft}px` : '0px'
     };
 
     if (this.width) {
@@ -185,7 +185,7 @@ export class Tip extends RapidElement {
       tip: true,
       show: this.visible,
       top: this.poppedTop,
-      'hide-on-change': this.hideOnChange,
+      'hide-on-change': this.hideOnChange
     });
 
     return html`

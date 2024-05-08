@@ -174,12 +174,12 @@ export class ImagePicker extends FormElement {
       viewport: {
         width: 300,
         height: 300,
-        type: this.shape,
+        type: this.shape
       },
       boundary: {
         width: 400,
-        height: 400,
-      },
+        height: 400
+      }
     });
 
     this.croppie.bind({ url });
@@ -193,7 +193,7 @@ export class ImagePicker extends FormElement {
         size: 'viewport',
         format: 'webp',
         quality: 1,
-        circle: false,
+        circle: false
       })
       .then(function (resp: any) {
         const blob = resp;

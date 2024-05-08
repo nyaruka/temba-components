@@ -143,7 +143,7 @@ export const GSM: { [key: string]: number } = {
   Φ: 934,
   Ψ: 936,
   Ω: 937,
-  '€': 8364,
+  '€': 8364
 };
 
 export const isGSM = (char: string): boolean => {

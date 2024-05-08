@@ -7,7 +7,7 @@ import { getUrl, WebResponse } from '../utils';
 
 const HEADERS = {
   'Temba-Content-Menu': '1',
-  'Temba-Spa': '1',
+  'Temba-Spa': '1'
 };
 export interface ContentMenuItem {
   type: string;
@@ -28,7 +28,7 @@ export enum ContentMenuItemType {
   JS = 'js',
   URL_POST = 'url_post',
   MODAX = 'modax',
-  DIVIDER = 'divider',
+  DIVIDER = 'divider'
 }
 
 export class ContentMenu extends RapidElement {
@@ -112,8 +112,8 @@ export class ContentMenu extends RapidElement {
 
           //populate (or initialize) the buttons and items
           if (contentMenu) {
-            this.buttons = contentMenu.filter(item => item.as_button);
-            this.items = contentMenu.filter(item => !item.as_button);
+            this.buttons = contentMenu.filter((item) => item.as_button);
+            this.items = contentMenu.filter((item) => !item.as_button);
           } else {
             this.buttons = [];
             this.items = [];
@@ -122,7 +122,7 @@ export class ContentMenu extends RapidElement {
           //fire custom loaded event type when we're finished
           this.fireCustomEvent(CustomEventType.Loaded, {
             buttons: this.buttons,
-            items: this.items,
+            items: this.items
           });
         })
         .catch((error: any) => {
@@ -150,11 +150,11 @@ export class ContentMenu extends RapidElement {
   public render(): TemplateResult {
     return html`
       <div class="container">
-        ${this.buttons.map(button => {
+        ${this.buttons.map((button) => {
           return html`<temba-button
             class="${button.primary ? 'primary_button_item' : 'button_item'}"
             name=${button.label}
-            @click=${event => this.handleItemClicked(button, event)}
+            @click=${(event) => this.handleItemClicked(button, event)}
           >
             ${button.label}
           </temba-button>`;
@@ -170,14 +170,14 @@ export class ContentMenu extends RapidElement {
                 <temba-icon name="menu" size="1.5"></temba-icon>
               </div>
               <div slot="dropdown" class="dropdown">
-                ${this.items.map(item => {
+                ${this.items.map((item) => {
                   if (item.type === ContentMenuItemType.DIVIDER) {
                     return html` <div class="divider"></div>`;
                   } else {
                     return html` <div
                       class="item"
                       name=${item.label}
-                      @click=${event => this.handleItemClicked(item, event)}
+                      @click=${(event) => this.handleItemClicked(item, event)}
                     >
                       ${item.label}
                     </div>`;

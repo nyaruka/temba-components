@@ -11,7 +11,6 @@ import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
-import { CustomEventType } from '../src/interfaces';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -59,25 +58,25 @@ export const getComponent = async (
   return await fixture(spec, { parentNode });
 };
 
-const createResponse = mocked => {
+const createResponse = (mocked) => {
   const mockResponse = new window.Response(mocked.body, {
     status: mocked.status,
     headers: {
       'Content-type': 'text/html',
-      ...mocked.headers,
-    },
+      ...mocked.headers
+    }
   });
 
   return Promise.resolve(mockResponse);
 };
 
-const createJSONResponse = mocked => {
+const createJSONResponse = (mocked) => {
   const mockResponse = new window.Response(JSON.stringify(mocked.body), {
     status: mocked.status,
     headers: {
       'Content-type': 'application/json',
-      ...mocked.headers,
-    },
+      ...mocked.headers
+    }
   });
 
   return Promise.resolve(mockResponse);
@@ -86,7 +85,7 @@ const createJSONResponse = mocked => {
 const getResponse = (endpoint: string, options) => {
   // check if our path has been mocked in code
   const mocks = options.method === 'GET' ? gets : posts;
-  const codeMock = mocks.find(mock => mock.endpoint.test(endpoint));
+  const codeMock = mocks.find((mock) => mock.endpoint.test(endpoint));
 
   if (codeMock) {
     if (typeof codeMock.body === 'string') {
@@ -207,7 +206,7 @@ export const getClip = (ele: HTMLElement) => {
     bottom: y + height,
     right: x + width,
     top: y,
-    left: x,
+    left: x
   };
 
   return newClip;

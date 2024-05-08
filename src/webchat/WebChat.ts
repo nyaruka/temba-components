@@ -25,7 +25,7 @@ interface Message {
 enum ChatStatus {
   DISCONNECTED = 'disconnected',
   CONNECTING = 'connecting',
-  CONNECTED = 'connected',
+  CONNECTED = 'connected'
 }
 
 // how long of a window to show time between batches
@@ -38,7 +38,7 @@ const DAY_FORMAT = {
   weekday: undefined,
   year: 'numeric',
   month: 'short',
-  day: 'numeric',
+  day: 'numeric'
 } as any;
 const VERBOSE_FORMAT = {
   weekday: undefined,
@@ -46,7 +46,7 @@ const VERBOSE_FORMAT = {
   month: 'short',
   day: 'numeric',
   hour: 'numeric',
-  minute: '2-digit',
+  minute: '2-digit'
 } as any;
 
 export class WebChat extends LitElement {
@@ -602,11 +602,6 @@ export class WebChat extends LitElement {
         this.focusInput();
       }
     }
-
-    if (changed.has('messageGroups')) {
-      // console.log(this.messageGroups);
-      // this.scrollToBottom();
-    }
   }
 
   private addMessage(msg: Message): boolean {
@@ -624,29 +619,6 @@ export class WebChat extends LitElement {
     const isNew = !this.msgMap.has(msg.msg_id);
     this.msgMap.set(msg.msg_id, msg);
     return isNew;
-
-    /* 
-    let lastGroup =
-      this.messageGroups.length > 0 ? this.messageGroups[this.messageGroups.length - 1] : [];
-  
-    const lastMsgId = lastGroup.length > 0 ? lastGroup[lastGroup.length - 1] : null;
-    const lastMsg = lastMsgId ? this.msgMap.get(lastMsgId) : null;
-  
-    let isSame = !lastMsg || (lastMsg.origin === msg.origin && lastMsg.user?.name === msg.user?.name);
-    if (isSame && lastMsg && msg.timeAsDate.getTime() - lastMsg.timeAsDate.getTime() > BATCH_TIME_WINDOW) {
-      isSame = false;
-    }
-  
-    if (!isSame) {
-      lastGroup = [];
-    }
-    if (lastGroup.length === 0) {
-      this.messageGroups.push(lastGroup);
-    }
-  
-    this.msgMap.set(msg.msg_id, msg);
-    lastGroup.push(msg.msg_id);
-    */
   }
 
   public openChat(): void {
@@ -671,7 +643,7 @@ export class WebChat extends LitElement {
         msg_id: `pending-${this.newMessageCount++}`,
         type: 'send_msg',
         text: text,
-        time: new Date().toISOString(),
+        time: new Date().toISOString()
       };
 
       this.addMessage(msg);
@@ -757,7 +729,7 @@ export class WebChat extends LitElement {
         <div class="bubble">
           ${!incoming ? html`<div class="name">${name}</div>` : null}
           ${msgIds.map(
-            msgId =>
+            (msgId) =>
               html`<div class="message">${this.msgMap.get(msgId).text}</div>`
           )}
         </div>

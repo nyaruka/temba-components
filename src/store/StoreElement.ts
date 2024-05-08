@@ -28,7 +28,7 @@ export class StoreElement extends StoreMonitorElement {
   public refresh() {
     this.store.makeRequest(this.url, {
       prepareData: this.prepareData,
-      force: true,
+      force: true
     });
   }
 
@@ -38,7 +38,7 @@ export class StoreElement extends StoreMonitorElement {
       this.data = event.detail.data;
       this.fireCustomEvent(CustomEventType.Refreshed, {
         data: event.detail.data,
-        previous,
+        previous
       });
     }
   }

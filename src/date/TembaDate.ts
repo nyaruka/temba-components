@@ -11,7 +11,7 @@ export const Display = {
   timedate: 'timedate',
   duration: 'duration',
   relative: 'relative',
-  day: 'LLL d',
+  day: 'LLL d'
 };
 
 export class TembaDate extends RapidElement {

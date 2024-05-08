@@ -206,11 +206,11 @@ export class Modax extends RapidElement {
         if (submitButton) {
           this.buttons = [
             { type: ButtonType.SECONDARY, name: 'Cancel', closes: true },
-            { type: ButtonType.PRIMARY, name: submitButton.value },
+            { type: ButtonType.PRIMARY, name: submitButton.value }
           ];
         } else {
           this.buttons = [
-            { type: ButtonType.SECONDARY, name: 'Ok', closes: true },
+            { type: ButtonType.SECONDARY, name: 'Ok', closes: true }
           ];
         }
         this.submitting = false;
@@ -289,7 +289,7 @@ export class Modax extends RapidElement {
           this.updateComplete.then(() => {
             this.updatePrimaryButton();
             this.fireCustomEvent(CustomEventType.Loaded, {
-              body: this.getBody(),
+              body: this.getBody()
             });
           });
         }
@@ -303,7 +303,7 @@ export class Modax extends RapidElement {
 
     let postData = form ? serialize(form) : '';
     if (extra) {
-      Object.keys(extra).forEach(key => {
+      Object.keys(extra).forEach((key) => {
         postData +=
           (postData.length > 1 ? '&' : '') +
           encodeURIComponent(key) +
@@ -337,7 +337,7 @@ export class Modax extends RapidElement {
               });
             } else {
               this.fireCustomEvent(CustomEventType.Redirected, {
-                url: redirect,
+                url: redirect
               });
               this.open = false;
             }
@@ -351,7 +351,7 @@ export class Modax extends RapidElement {
           }
         }, 1000);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error(error);
       });
   }
@@ -404,7 +404,7 @@ export class Modax extends RapidElement {
     if (wizard) {
       const completed = (wizard.getAttribute('data-completed') || '')
         .split(',')
-        .filter(step => step.length > 0);
+        .filter((step) => step.length > 0);
 
       for (let i = 0; i < this.wizardStepCount; i++) {
         wizardStepBalls.push(
@@ -414,7 +414,7 @@ export class Modax extends RapidElement {
             class="${getClasses({
               'step-ball': true,
               active: this.wizardStep - 1 === i,
-              complete: i < completed.length,
+              complete: i < completed.length
             })}"
           ></div>`
         );

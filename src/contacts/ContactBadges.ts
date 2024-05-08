@@ -8,7 +8,7 @@ import { ContactStoreElement } from './ContactStoreElement';
 const STATUS = {
   stopped: { name: 'Stopped' },
   blocked: { name: 'Blocked' },
-  archived: { name: 'Archived' },
+  archived: { name: 'Archived' }
 };
 
 export class ContactBadges extends ContactStoreElement {
@@ -120,7 +120,7 @@ export class ContactBadges extends ContactStoreElement {
           class=${getClasses({
             wrapper: true,
             'has-more': this.hasMore,
-            expanded: this.expanded,
+            expanded: this.expanded
           })}
         >
           <div class="badges">

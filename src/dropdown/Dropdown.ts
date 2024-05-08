@@ -2,7 +2,6 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
-import { ContactStoreElement } from '../contacts/ContactStoreElement';
 
 export class Dropdown extends RapidElement {
   static get styles() {
@@ -249,7 +248,7 @@ export class Dropdown extends RapidElement {
             right: this.right,
             left: this.left,
             top: this.top,
-            bottom: this.bottom,
+            bottom: this.bottom
           })}"
           tabindex="0"
           @mousedown=${this.handleDropdownMouseDown}

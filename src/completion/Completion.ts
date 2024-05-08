@@ -5,7 +5,7 @@ import { TextInput } from '../textinput/TextInput';
 import {
   renderCompletionOption,
   updateInputElementWithCompletion,
-  executeCompletionQuery,
+  executeCompletionQuery
 } from './helpers';
 
 import { FormElement } from '../FormElement';
@@ -252,7 +252,7 @@ export class Completion extends FormElement {
     const anchorStyles = this.anchorPosition
       ? {
           top: `${this.anchorPosition.top}px`,
-          left: `${this.anchorPosition.left}px`,
+          left: `${this.anchorPosition.left}px`
         }
       : {};
 
