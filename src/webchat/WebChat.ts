@@ -2,6 +2,7 @@
 import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { getCookie, setCookie } from '../utils';
+import { DEFAULT_AVATAR } from './assets';
 
 interface User {
   avatar?: string;
@@ -386,6 +387,9 @@ export class WebChat extends LitElement {
   @property({ type: String })
   host: string;
 
+  @property({ type: String })
+  activeUserAvatar: string;
+
   private msgMap = new Map<string, Message>();
   private sock: WebSocket;
   private newMessageCount = 0;
@@ -452,7 +456,7 @@ export class WebChat extends LitElement {
         webChat.fetchPreviousMessages();
       } else if (msg.type === 'msg_out') {
         webChat.addMessage(msg);
-        webChat.requestUpdate('messageGroups');
+        webChat.insertGroups(webChat.groupMessages([msg.msg_id]), true);
       } else if (msg.type === 'history') {
         webChat.handleHistoryResponse(msg);
       }
@@ -472,10 +476,12 @@ export class WebChat extends LitElement {
   }
 
   private insertGroups(newGroups: string[][], append = false) {
-    for (const newGroup of newGroups.reverse()) {
+    newGroups.reverse();
+    for (const newGroup of newGroups) {
       // see if our new group belongs to the most recent group
       const group =
-        this.messageGroups[append ? this.messageGroups.length - 1 : 0];
+        this.messageGroups[append ? 0 : this.messageGroups.length - 1];
+
       if (group) {
         const lastMsgId = group[group.length - 1];
         const lastMsg = this.msgMap.get(lastMsgId);
@@ -485,10 +491,18 @@ export class WebChat extends LitElement {
           group.push(...newGroup);
         } else {
           // otherwise, just add our entire group as a new one
-          this.messageGroups.push(newGroup);
+          if (append) {
+            this.messageGroups.splice(0, 0, newGroup);
+          } else {
+            this.messageGroups.push(newGroup);
+          }
         }
       } else {
-        this.messageGroups.push(newGroup);
+        if (append) {
+          this.messageGroups.splice(0, 0, newGroup);
+        } else {
+          this.messageGroups.push(newGroup);
+        }
       }
     }
 
@@ -507,7 +521,6 @@ export class WebChat extends LitElement {
         groups.push(lastGroup);
       }
       lastGroup.push(msgId);
-      // lastGroup.splice(0, 0, msgId);
       lastMsg = msg;
     }
     return groups;
@@ -545,12 +558,10 @@ export class WebChat extends LitElement {
         }
 
         if (newMessages.length === 0) {
-          // console.log('no more messages');
           return;
         }
 
-        const groups = this.groupMessages(newMessages);
-        this.insertGroups(groups);
+        this.insertGroups(this.groupMessages(newMessages));
 
         const ele = this.shadowRoot.querySelector('.scroll');
         const prevTop = ele.scrollTop;
@@ -618,6 +629,10 @@ export class WebChat extends LitElement {
 
     const isNew = !this.msgMap.has(msg.msg_id);
     this.msgMap.set(msg.msg_id, msg);
+
+    if (msg.user?.avatar) {
+      this.activeUserAvatar = msg.user.avatar;
+    }
     return isNew;
   }
 
@@ -647,9 +662,8 @@ export class WebChat extends LitElement {
       };
 
       this.addMessage(msg);
-      this.insertGroups(this.groupMessages([msg.msg_id]).reverse(), true);
+      this.insertGroups(this.groupMessages([msg.msg_id]), true);
       this.sendSockMessage(msg);
-
       this.hasPendingText = input.value.length > 0;
     }
   }
@@ -721,7 +735,8 @@ export class WebChat extends LitElement {
           ? html`
               <div
                 class="avatar"
-                style="background: center / contain no-repeat url(${avatar})"
+                style="background: center / contain no-repeat url(${avatar ||
+                DEFAULT_AVATAR})"
               ></div>
             `
           : null}
@@ -730,7 +745,12 @@ export class WebChat extends LitElement {
           ${!incoming ? html`<div class="name">${name}</div>` : null}
           ${msgIds.map(
             (msgId) =>
-              html`<div class="message">${this.msgMap.get(msgId).text}</div>`
+              html`<div class="message">${this.msgMap.get(msgId).text}</div>
+                <!--div style="font-size:10px">
+                  ${this.msgMap
+                  .get(msgId)
+                  .timeAsDate.toLocaleDateString(undefined, VERBOSE_FORMAT)}
+                </div-->`
           )}
         </div>
       </div>
@@ -844,7 +864,8 @@ export class WebChat extends LitElement {
       <div @click=${this.toggleChat}>
         <div
           class="toggle"
-          style="background: center / contain no-repeat url(https://dl-textit.s3.amazonaws.com/orgs/6418/media/5e81/5e814c83-bf33-43ea-b6c1-ee46f8acaf34/avatar.jpg)"
+          style="background: center / contain no-repeat url(${this
+            .activeUserAvatar || DEFAULT_AVATAR})"
         ></div>
       </div>
     `;
