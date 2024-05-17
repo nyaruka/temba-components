@@ -308,7 +308,7 @@ export class TembaList extends RapidElement {
         this.items = newItems;
       }
     } catch (error) {
-      console.error(error);
+      // console.error(error);
     }
   }
 
