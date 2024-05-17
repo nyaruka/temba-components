@@ -297,7 +297,9 @@ export class TembaList extends RapidElement {
               if (options) {
                 const option =
                   options.shadowRoot.querySelector('.option.focused');
-                option.scrollIntoView({ block: 'end', inline: 'nearest' });
+                if (option) {
+                  option.scrollIntoView({ block: 'end', inline: 'nearest' });
+                }
               }
             }, 0);
           }
