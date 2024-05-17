@@ -4,6 +4,7 @@ import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
 import { Attachment, ContactField, Ticket, User } from '../interfaces';
 import ColorHash from 'color-hash';
+import { Toast } from '../toast/Toast';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -240,6 +241,14 @@ export const postUrl = (
         if (response.status >= 500) {
           reject(response);
           return;
+        }
+
+        const toasts = response.headers.get('x-temba-toasts');
+        if (toasts) {
+          const toastEle = document.querySelector('temba-toast') as Toast;
+          if (toastEle) {
+            toastEle.addMessages(JSON.parse(toasts));
+          }
         }
 
         response.text().then((body: string) => {

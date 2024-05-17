@@ -55,6 +55,7 @@ import { ImagePicker } from './src/imagepicker/ImagePicker';
 import { Mask } from './src/mask/Mask';
 import { TembaUser } from './src/user/TembaUser';
 import { TemplateEditor } from './src/templates/TemplateEditor';
+import { Toast } from './src/toast/Toast';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -120,3 +121,4 @@ addCustomElement('temba-image-picker', ImagePicker);
 addCustomElement('temba-mask', Mask);
 addCustomElement('temba-user', TembaUser);
 addCustomElement('temba-template-editor', TemplateEditor);
+addCustomElement('temba-toast', Toast);
