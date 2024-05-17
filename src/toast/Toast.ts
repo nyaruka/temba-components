@@ -3,9 +3,6 @@ import { RapidElement } from '../RapidElement';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-const ANIMATION_DURATION = 300;
-const STALE_DURATION = 5000;
-
 interface ToastMessage {
   id: number;
   text: string;
@@ -18,6 +15,21 @@ interface ToastMessage {
 export class Toast extends RapidElement {
   @property({ type: Array })
   messages: ToastMessage[] = [];
+
+  @property({ type: Number, attribute: 'duration' })
+  staleDuration = 5000;
+
+  @property({ type: Number, attribute: 'animation' })
+  animationDuration = 200;
+
+  @property({ type: Boolean, attribute: 'error-sticky' })
+  errorSticky = false;
+
+  @property({ type: Boolean, attribute: 'warning-sticky' })
+  warningSticky = false;
+
+  @property({ type: Boolean, attribute: 'info-sticky' })
+  infoSticky = false;
 
   static styles = css`
     :host {
@@ -32,10 +44,11 @@ export class Toast extends RapidElement {
       background-color: rgba(255, 255, 255, 0.97);
       color: rgba(0, 0, 0, 0.85);
       padding: 0.5em 1em;
-      margin: 0.5em;
+      margin: 0.75em;
       border-radius: 0.5em;
       display: flex;
-      transition: all ${ANIMATION_DURATION}ms ease-in-out;
+      transition-property: transform, opacity;
+      transition-timing-function: ease-in-out;
       transform: translateY(-100%);
       opacity: 0;
       box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 3em 2px;
@@ -87,25 +100,27 @@ export class Toast extends RapidElement {
     }
   `;
 
-  constructor() {
-    super();
-    /*this.info(
-      'This is just an informational message, do with it what you will. But I do think it would be good to have at least one message that wraps.'
-    );
-    this.warning(
-      'This one is a little more serious. Get ready, things might get worse.'
-    );
-    this.error('Uh oh! Something went wrong. You should probably fix it.');*/
-  }
-
   public checkForStaleMessages() {
     const now = new Date();
-    this.messages.forEach((message) => {
+
+    // ignore sticky messages
+    const staleMessages = this.messages.filter((message) => {
+      if (message.level === 'error' && this.errorSticky) {
+        return false;
+      }
+      if (message.level === 'warning' && this.warningSticky) {
+        return false;
+      }
+      if (message.level === 'info' && this.infoSticky) {
+        return false;
+      }
+      return true;
+    });
+
+    staleMessages.forEach((message) => {
       // error messages do not remove themselves
-      if (message.level !== 'error') {
-        if (now.getTime() - message.time.getTime() > STALE_DURATION) {
-          this.removeMessage(message);
-        }
+      if (now.getTime() - message.time.getTime() > this.staleDuration) {
+        this.removeMessage(message);
       }
     });
 
@@ -168,7 +183,7 @@ export class Toast extends RapidElement {
     window.setTimeout(() => {
       this.messages = this.messages.filter((m) => m !== message);
       this.requestUpdate('messages');
-    }, ANIMATION_DURATION);
+    }, this.animationDuration);
 
     this.requestUpdate('messages');
   }
@@ -189,6 +204,7 @@ export class Toast extends RapidElement {
         (message) => message.id,
         (message) => html`
           <div
+            style="transition-duration: ${this.animationDuration}ms"
             class="message ${message.level} ${message.visible
               ? 'visible'
               : ''} ${message.removeTime ? 'removing' : ''}"
