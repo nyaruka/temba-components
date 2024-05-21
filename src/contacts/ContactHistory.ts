@@ -19,7 +19,6 @@ import {
   Events,
   FlowEvent,
   getEventGroupType,
-  getEventStyles,
   LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
@@ -103,7 +102,9 @@ export class ContactHistory extends RapidElement {
   }
 
   static get styles() {
-    return css`
+    return css``;
+
+    /*css`
       ${getEventStyles()}
 
       .wrapper {
@@ -181,7 +182,8 @@ export class ContactHistory extends RapidElement {
       .attachment img {
         cursor: pointer;
       }
-    `;
+    `
+    */
   }
 
   @property({ type: Object })

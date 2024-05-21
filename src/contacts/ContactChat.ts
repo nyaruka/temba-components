@@ -1,10 +1,14 @@
-import { css, html, TemplateResult } from 'lit';
+/* eslint-disable @typescript-eslint/no-this-alias */
+import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
 import { postJSON } from '../utils';
 import { ContactHistory } from './ContactHistory';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose } from '../compose/Compose';
+import { fetchContactHistory } from './helpers';
+import { ContactHistoryPage, MsgEvent } from './events';
+import { Chat } from '../chat/Chat';
 
 const DEFAULT_REFRESH = 10000;
 
@@ -111,8 +115,12 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   agent = '';
 
+  @property({ type: Boolean })
+  blockFetching = false;
+
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
+  private chat: Chat;
 
   constructor() {
     super();
@@ -120,8 +128,17 @@ export class ContactChat extends ContactStoreElement {
 
   refreshInterval = null;
 
+  public firstUpdated(
+    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changed);
+  }
+
   public connectedCallback() {
     super.connectedCallback();
+
+    this.chat = this.shadowRoot.querySelector('temba-chat');
+
     if (this.monitor) {
       this.refreshInterval = setInterval(() => {
         if (this.currentTicket && this.currentTicket.closed_on) {
@@ -164,6 +181,11 @@ export class ContactChat extends ContactStoreElement {
       changedProperties.has('currentContact')
     ) {
       this.currentContact = this.data;
+    }
+
+    if (changedProperties.has('currentContact')) {
+      this.chat = this.shadowRoot.querySelector('temba-chat');
+      this.fetchPreviousMessages();
     }
   }
 
@@ -250,7 +272,74 @@ export class ContactChat extends ContactStoreElement {
     return html`${contactHistoryAndChatbox}`;
   }
 
+  ticket = null;
+  lastEventTime = null;
+
+  private fetchPreviousMessages() {
+    const chat = this.chat;
+    const contactChat = this;
+
+    if (!chat || chat.fetching || contactChat.blockFetching) {
+      return;
+    }
+
+    chat.fetching = true;
+    if (this.currentContact) {
+      const endpoint = `/contact/history/${this.currentContact.uuid}/?_format=json`;
+      fetchContactHistory(
+        false,
+        endpoint,
+        this.ticket,
+        this.lastEventTime
+      ).then((page: ContactHistoryPage) => {
+        this.lastEventTime = page.next_before;
+        let messages = page.events.map((event) => {
+          if (event.type === 'msg_created' || event.type === 'msg_received') {
+            const msgEvent = event as MsgEvent;
+            let user = null;
+
+            if (msgEvent.created_by) {
+              const storeUser = this.store.getUser(msgEvent.created_by.email);
+              user = {
+                email: msgEvent.created_by.email,
+                name: [storeUser.first_name, storeUser.last_name].join(' '),
+                avatar: storeUser.avatar
+              };
+            }
+
+            return {
+              type: msgEvent.type === 'msg_created' ? 'msg_out' : 'msg_in',
+              msg_id: msgEvent.msg.id + '',
+              user: user,
+              time: msgEvent.created_on,
+              text: msgEvent.msg.text
+            };
+          }
+        });
+
+        // remove any messages we don't recognize
+        messages = messages.filter((msg) => !!msg);
+        messages.reverse();
+
+        if (messages.length === 0) {
+          contactChat.blockFetching = true;
+        }
+        chat.addMessages(messages);
+      });
+    }
+  }
+
+  private fetchComplete() {
+    console.log('fetch complete');
+    this.chat.fetching = false;
+  }
+
   private getTembaContactHistory(): TemplateResult {
+    return html` <temba-chat
+      @temba-scroll-threshold=${this.fetchPreviousMessages}
+      @temba-fetch-complete=${this.fetchComplete}
+    ></temba-chat>`;
+    /*
     return html` <temba-contact-history
       .uuid=${this.currentContact.uuid}
       .contact=${this.currentContact}
@@ -259,6 +348,7 @@ export class ContactChat extends ContactStoreElement {
       .agent=${this.agent}
     >
     </temba-contact-history>`;
+    */
   }
 
   private getTembaChatbox(): TemplateResult {

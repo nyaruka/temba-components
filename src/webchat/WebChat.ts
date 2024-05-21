@@ -3,6 +3,8 @@ import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { getCookie, setCookie } from '../utils';
 import { DEFAULT_AVATAR } from './assets';
+import { Chat } from '../chat/Chat';
+import { ContactEvent } from '../contacts/events';
 
 interface User {
   avatar?: string;
@@ -21,6 +23,7 @@ interface Message {
   history?: Message[];
   timeAsDate?: Date;
   user?: User;
+  event?: ContactEvent;
 }
 
 enum ChatStatus {
@@ -28,27 +31,6 @@ enum ChatStatus {
   CONNECTING = 'connecting',
   CONNECTED = 'connected'
 }
-
-// how long of a window to show time between batches
-const BATCH_TIME_WINDOW = 30 * 60 * 1000;
-const SCROLL_FETCH_BUFFER = 0.05;
-const MIN_FETCH_TIME = 250;
-
-const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
-const DAY_FORMAT = {
-  weekday: undefined,
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric'
-} as any;
-const VERBOSE_FORMAT = {
-  weekday: undefined,
-  year: undefined,
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit'
-} as any;
 
 export class WebChat extends LitElement {
   static get styles() {
@@ -370,19 +352,7 @@ export class WebChat extends LitElement {
   open = false;
 
   @property({ type: Boolean })
-  fetching = false;
-
-  @property({ type: Boolean })
   hasPendingText = false;
-
-  @property({ type: Boolean, attribute: false })
-  hideTopScroll = true;
-
-  @property({ type: Boolean, attribute: false })
-  hideBottomScroll = true;
-
-  @property({ type: Boolean, attribute: false })
-  blockHistoryFetching = false;
 
   @property({ type: String })
   host: string;
@@ -390,14 +360,24 @@ export class WebChat extends LitElement {
   @property({ type: String })
   activeUserAvatar: string;
 
-  private msgMap = new Map<string, Message>();
+  @property({ type: Boolean, attribute: false })
+  blockHistoryFetching = false;
+
+  private chat: Chat;
   private sock: WebSocket;
   private newMessageCount = 0;
-  private oldestMessageDate: Date;
   private fetchRequested: Date;
+  private oldestMessageDate: Date;
 
   public constructor() {
     super();
+  }
+
+  public firstUpdated(
+    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changed);
+    this.chat = this.shadowRoot.querySelector('temba-chat');
   }
 
   private handleReconnect() {
@@ -455,81 +435,18 @@ export class WebChat extends LitElement {
         webChat.urn = msg.chat_id;
         webChat.fetchPreviousMessages();
       } else if (msg.type === 'msg_out') {
-        webChat.addMessage(msg);
-        webChat.insertGroups(webChat.groupMessages([msg.msg_id]), true);
+        webChat.chat.addMessages([msg], null, true);
       } else if (msg.type === 'history') {
         webChat.handleHistoryResponse(msg);
       }
     };
   }
 
-  private isSameGroup(msg1: Message, msg2: Message): boolean {
-    if (msg1 && msg2) {
-      return (
-        msg1.origin === msg2.origin &&
-        msg1.user?.name === msg2.user?.name &&
-        Math.abs(msg1.timeAsDate.getTime() - msg2.timeAsDate.getTime()) <
-          BATCH_TIME_WINDOW
-      );
-    }
-    return false;
-  }
-
-  private insertGroups(newGroups: string[][], append = false) {
-    newGroups.reverse();
-    for (const newGroup of newGroups) {
-      // see if our new group belongs to the most recent group
-      const group =
-        this.messageGroups[append ? 0 : this.messageGroups.length - 1];
-
-      if (group) {
-        const lastMsgId = group[group.length - 1];
-        const lastMsg = this.msgMap.get(lastMsgId);
-        const newMsg = this.msgMap.get(newGroup[0]);
-        // if our message belongs to the previous group, in we go
-        if (this.isSameGroup(lastMsg, newMsg)) {
-          group.push(...newGroup);
-        } else {
-          // otherwise, just add our entire group as a new one
-          if (append) {
-            this.messageGroups.splice(0, 0, newGroup);
-          } else {
-            this.messageGroups.push(newGroup);
-          }
-        }
-      } else {
-        if (append) {
-          this.messageGroups.splice(0, 0, newGroup);
-        } else {
-          this.messageGroups.push(newGroup);
-        }
-      }
-    }
-
-    this.requestUpdate('messageGroups');
-  }
-
-  private groupMessages(msgIds: string[]): string[][] {
-    // group our messages by origin and user
-    const groups = [];
-    let lastGroup = [];
-    let lastMsg = null;
-    for (const msgId of msgIds) {
-      const msg = this.msgMap.get(msgId);
-      if (!this.isSameGroup(msg, lastMsg)) {
-        lastGroup = [];
-        groups.push(lastGroup);
-      }
-      lastGroup.push(msgId);
-      lastMsg = msg;
-    }
-    return groups;
-  }
-
-  private fetchPreviousMessages() {
+  public fetchPreviousMessages() {
     if (!this.blockHistoryFetching) {
+      this.fetchRequested = new Date();
       this.blockHistoryFetching = true;
-      this.fetching = true;
+      this.chat.fetching = true;
 
       const getHistoryMsg = { type: 'get_history' };
       if (this.oldestMessageDate) {
@@ -542,46 +459,21 @@ export class WebChat extends LitElement {
   }
 
   private handleHistoryResponse(msg: Message) {
-    const elapsed = new Date().getTime() - this.fetchRequested.getTime();
-    window.setTimeout(
-      () => {
-        this.fetching = false;
-        // block of historical messages
-        const msgs = msg.history.reverse();
-
-        // first add messages to the map
-        const newMessages = [];
-        for (const m of msgs) {
-          if (this.addMessage(m)) {
-            newMessages.push(m.msg_id);
-          }
-        }
-
-        if (newMessages.length === 0) {
-          return;
-        }
-
-        this.insertGroups(this.groupMessages(newMessages));
-
-        const ele = this.shadowRoot.querySelector('.scroll');
-        const prevTop = ele.scrollTop;
-
-        window.setTimeout(() => {
-          ele.scrollTop = prevTop;
-          this.blockHistoryFetching = false;
-        }, 100);
-      },
-      // if it's the first load don't wait, otherwise wait a minimum amount of time
-      this.messageGroups.length === 0
-        ? 0
-        : Math.max(0, MIN_FETCH_TIME - elapsed)
-    );
+    const messages = msg.history.reverse();
+    if (messages.length > 0) {
+      const oldestMessage = messages[0];
+      oldestMessage.timeAsDate = new Date(oldestMessage.time);
+      if (
+        this.oldestMessageDate.getTime() > oldestMessage.timeAsDate.getTime()
+      ) {
+        this.oldestMessageDate = oldestMessage.timeAsDate;
+      }
+    }
+    this.chat.addMessages(messages, this.fetchRequested);
   }
 
-  public firstUpdated(
-    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(changed);
+  public fetchComplete() {
+    this.blockHistoryFetching = false;
   }
 
   private focusInput() {
@@ -597,12 +489,6 @@ export class WebChat extends LitElement {
     super.updated(changed);
 
     if (this.open && changed.has('open') && changed.get('open') !== undefined) {
-      const scroll = this.shadowRoot.querySelector('.scroll');
-      const hasScroll = scroll.scrollHeight > scroll.clientHeight;
-      this.hideBottomScroll = true;
-      this.hideTopScroll = !hasScroll;
-      this.scrollToBottom();
-
       if (this.status === ChatStatus.DISCONNECTED) {
         this.openSocket();
       }
@@ -613,27 +499,6 @@ export class WebChat extends LitElement {
         this.focusInput();
       }
     }
-  }
-
-  private addMessage(msg: Message): boolean {
-    if (msg.time && !msg.timeAsDate) {
-      msg.timeAsDate = new Date(msg.time);
-    }
-
-    if (
-      !this.oldestMessageDate ||
-      msg.timeAsDate.getTime() < this.oldestMessageDate.getTime()
-    ) {
-      this.oldestMessageDate = msg.timeAsDate;
-    }
-
-    const isNew = !this.msgMap.has(msg.msg_id);
-    this.msgMap.set(msg.msg_id, msg);
-
-    if (msg.user?.avatar) {
-      this.activeUserAvatar = msg.user.avatar;
-    }
-    return isNew;
   }
 
   public openChat(): void {
@@ -661,118 +526,9 @@ export class WebChat extends LitElement {
         time: new Date().toISOString()
       };
 
-      this.addMessage(msg);
-      this.insertGroups(this.groupMessages([msg.msg_id]), true);
+      this.chat.addMessages([msg], new Date(), true);
       this.sendSockMessage(msg);
       this.hasPendingText = input.value.length > 0;
-    }
-  }
-
-  private scrollToBottom() {
-    const scroll = this.shadowRoot.querySelector('.scroll');
-    if (scroll) {
-      scroll.scrollTop = scroll.scrollHeight;
-      this.hideBottomScroll = true;
-    }
-  }
-
-  private renderMessageGroup(
-    msgIds: string[],
-    idx: number,
-    groups: string[][]
-  ): TemplateResult {
-    const today = new Date();
-    let prevMsg;
-    if (idx > 0) {
-      const lastGroup = groups[idx - 1];
-      if (lastGroup && lastGroup.length > 0) {
-        prevMsg = this.msgMap.get(lastGroup[0]);
-      }
-    }
-
-    const currentMsg = this.msgMap.get(msgIds[msgIds.length - 1]);
-    let timeDisplay = null;
-    if (
-      prevMsg &&
-      !this.isSameGroup(prevMsg, currentMsg) &&
-      prevMsg.timeAsDate.getTime() - currentMsg.timeAsDate.getTime() >
-        BATCH_TIME_WINDOW
-    ) {
-      const showDay =
-        !prevMsg ||
-        prevMsg.timeAsDate.getDate() !== currentMsg.timeAsDate.getDate();
-      if (showDay) {
-        timeDisplay = html`<div class="time">
-          ${prevMsg.timeAsDate.toLocaleDateString(undefined, DAY_FORMAT)}
-        </div>`;
-      } else {
-        if (prevMsg.timeAsDate.getDate() !== today.getDate()) {
-          timeDisplay = html`<div class="time">
-            ${prevMsg.timeAsDate.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
-          </div>`;
-        } else {
-          timeDisplay = html`<div class="time">
-            ${prevMsg.timeAsDate.toLocaleTimeString(undefined, TIME_FORMAT)}
-          </div>`;
-        }
-      }
-    }
-
-    const blockTime = new Date(this.msgMap.get(msgIds[msgIds.length - 1]).time);
-    const message = this.msgMap.get(msgIds[0]);
-    const incoming = !message.origin;
-    const avatar = message.user?.avatar;
-    const name = message.user?.name;
-
-    return html` <div
-      class="block  ${incoming ? 'incoming' : 'outgoing'} ${idx === 0
-        ? 'first'
-        : ''}"
-      title="${blockTime.toLocaleTimeString(undefined, VERBOSE_FORMAT)}"
-    >
-      <div class="row">
-        ${!incoming
-          ? html`
-              <div
-                class="avatar"
-                style="background: center / contain no-repeat url(${avatar ||
-                DEFAULT_AVATAR})"
-              ></div>
-            `
-          : null}
-
-        <div class="bubble">
-          ${!incoming ? html`<div class="name">${name}</div>` : null}
-          ${msgIds.map(
-            (msgId) =>
-              html`<div class="message">${this.msgMap.get(msgId).text}</div>
-                <!--div style="font-size:10px">
-                  ${this.msgMap
-                  .get(msgId)
-                  .timeAsDate.toLocaleDateString(undefined, VERBOSE_FORMAT)}
-                </div-->`
-          )}
-        </div>
-      </div>
-      ${timeDisplay}
-    </div>`;
-  }
-
-  private handleScroll(event: any) {
-    const ele = event.target;
-    const top = ele.scrollHeight - ele.clientHeight;
-    const scroll = Math.round(top + ele.scrollTop);
-    const scrollPct = scroll / top;
-
-    this.hideTopScroll = scrollPct <= 0.01;
-    this.hideBottomScroll = scrollPct >= 0.99;
-
-    if (this.blockHistoryFetching) {
-      return;
-    }
-
-    if (scrollPct < SCROLL_FETCH_BUFFER) {
-      this.fetchPreviousMessages();
     }
   }
 
@@ -790,11 +546,9 @@ export class WebChat extends LitElement {
   public render(): TemplateResult {
     return html`
       <div
-        class="chat ${this.status} ${this.hideTopScroll
+        class="chat ${this.status}
           ? 'scroll-at-top'
-          : ''} ${this.hideBottomScroll ? 'scroll-at-bottom' : ''} ${this.open
-          ? 'open'
-          : ''}"
+          : ''} ${this.open ? 'open' : ''}"
       >
         <div class="header">
           <slot name="header">${this.urn ? this.urn : 'Chat'}</slot>
@@ -805,20 +559,11 @@ export class WebChat extends LitElement {
             @click=${this.toggleChat}
           ></temba-icon>
         </div>
-        <div class="messages">
-          <div class="scroll" @scroll=${this.handleScroll}>
-            ${this.messageGroups
-              ? this.messageGroups.map(
-                  (msgGroup, idx, groups) =>
-                    html`${this.renderMessageGroup(msgGroup, idx, groups)}`
-                )
-              : null}
 
-            <temba-loading
-              class="${!this.fetching ? 'hidden' : ''}"
-            ></temba-loading>
-          </div>
-        </div>
+        <temba-chat
+          @temba-scroll-threshold=${this.fetchPreviousMessages}
+          @temba-fetch-complete=${this.fetchComplete}
+        ></temba-chat>
 
         ${this.status === ChatStatus.DISCONNECTED
           ? html`<div class="notice">
