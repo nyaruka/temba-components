@@ -77,6 +77,7 @@ export const getHeaders = (headers: any = {}) => {
       csrf = tokenEle.value;
     }
   }
+
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
   // mark us as ajax

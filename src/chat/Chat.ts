@@ -48,6 +48,9 @@ export class Chat extends RapidElement {
   static get styles() {
     return css`
       :host {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
       }
 
       .block {
@@ -59,10 +62,10 @@ export class Chat extends RapidElement {
         font-size: 0.8em;
         color: #999;
         margin-top: 2em;
-        border-top: 1px solid #f8f8f8;
+        border-top: 1px solid #e9e9e9;
         padding: 1em;
-        margin-left: 4em;
-        margin-right: 4em;
+        margin-left: 1em;
+        margin-right: 1em;
       }
 
       .first .time {
@@ -97,7 +100,7 @@ export class Chat extends RapidElement {
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
           inset 0 0 0 0.25em rgba(0, 0, 0, 0.1);
         cursor: pointer;
-        transition: box-shadow var(--toggle-speed) ease-out;
+        transition: box-shadow var(--toggle-speed, 200ms) ease-out;
         position: absolute;
         bottom: 1em;
         right: 1em;
@@ -154,7 +157,7 @@ export class Chat extends RapidElement {
         position: absolute;
         bottom: 3em;
         right: 1em;
-        transition: all var(--toggle-speed) ease-out;
+        transition: all var(--toggle-speed, 200ms) ease-out;
         transform: scale(0.9);
         pointer-events: none;
         opacity: 0;
@@ -169,11 +172,17 @@ export class Chat extends RapidElement {
 
       .messages {
         background: #fff;
+        position: relative;
+        flex-grow: 1;
+        overflow: hidden;
       }
 
       .scroll {
-        height: 40rem;
-        max-height: 60vh;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
         overflow: auto;
         -webkit-overflow-scrolling: touch;
         overflow-scrolling: touch;
@@ -184,7 +193,7 @@ export class Chat extends RapidElement {
 
       .messages:before {
         content: '';
-        background:     /* Shadow TOP */ radial-gradient(
+        background: radial-gradient(
             farthest-side at 50% 0,
             rgba(0, 0, 0, 0.2),
             rgba(0, 0, 0, 0)
@@ -193,13 +202,14 @@ export class Chat extends RapidElement {
         height: 10px;
         display: block;
         position: absolute;
-        width: 28rem;
-        transition: opacity var(--toggle-speed) ease-out;
+        width: 100%;
+        transition: opacity var(--toggle-speed, 200ms) ease-out;
+        z-index: 1;
       }
 
       .messages:after {
         content: '';
-        background:       /* Shadow BOTTOM */ radial-gradient(
+        background: radial-gradient(
             farthest-side at 50% 100%,
             rgba(0, 0, 0, 0.2),
             rgba(0, 0, 0, 0)
@@ -208,10 +218,12 @@ export class Chat extends RapidElement {
         height: 10px;
         display: block;
         position: absolute;
+        bottom: 0;
         margin-top: -10px;
-        width: 28rem;
+        width: 100%;
         margin-right: 5em;
-        transition: opacity var(--toggle-speed) ease-out;
+        transition: opacity var(--toggle-speed, 200ms) ease-out;
+        z-index: 1;
       }
 
       .scroll-at-top.messages:before {

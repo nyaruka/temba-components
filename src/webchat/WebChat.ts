@@ -111,6 +111,11 @@ export class WebChat extends LitElement {
         background: #fff;
       }
 
+      .border {
+        border-top: 1px solid #e9e9e9;
+        margin: 0 1em;
+      }
+
       .avatar {
         margin-top: 0.6em;
         margin-right: 0.6em;
@@ -183,6 +188,7 @@ export class WebChat extends LitElement {
       }
 
       .chat {
+        height: 40rem;
         width: 28rem;
         border-radius: var(--curvature);
         overflow: hidden;
@@ -195,6 +201,9 @@ export class WebChat extends LitElement {
         transform: scale(0.9);
         pointer-events: none;
         opacity: 0;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
       }
 
       .chat.open {
@@ -202,61 +211,6 @@ export class WebChat extends LitElement {
         opacity: 1;
         transform: scale(1);
         pointer-events: initial;
-      }
-
-      .messages {
-        background: #fff;
-      }
-
-      .scroll {
-        height: 40rem;
-        max-height: 60vh;
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
-        overflow-scrolling: touch;
-        padding: 1em 1em 0 1em;
-        display: flex;
-        flex-direction: column-reverse;
-      }
-
-      .messages:before {
-        content: '';
-        background:     /* Shadow TOP */ radial-gradient(
-            farthest-side at 50% 0,
-            rgba(0, 0, 0, 0.2),
-            rgba(0, 0, 0, 0)
-          )
-          center top;
-        height: 10px;
-        display: block;
-        position: absolute;
-        width: 28rem;
-        transition: opacity var(--toggle-speed) ease-out;
-      }
-
-      .messages:after {
-        content: '';
-        background:       /* Shadow BOTTOM */ radial-gradient(
-            farthest-side at 50% 100%,
-            rgba(0, 0, 0, 0.2),
-            rgba(0, 0, 0, 0)
-          )
-          center bottom;
-        height: 10px;
-        display: block;
-        position: absolute;
-        margin-top: -10px;
-        width: 28rem;
-        margin-right: 5em;
-        transition: opacity var(--toggle-speed) ease-out;
-      }
-
-      .scroll-at-top .messages:before {
-        opacity: 0;
-      }
-
-      .scroll-at-bottom .messages:after {
-        opacity: 0;
       }
 
       .input {
@@ -526,8 +480,8 @@ export class WebChat extends LitElement {
         time: new Date().toISOString()
       };
 
-      this.chat.addMessages([msg], new Date(), true);
       this.sendSockMessage(msg);
+      this.chat.addMessages([{ ...msg, type: 'msg_in' }], new Date(), true);
       this.hasPendingText = input.value.length > 0;
     }
   }
@@ -545,11 +499,7 @@ export class WebChat extends LitElement {
 
   public render(): TemplateResult {
     return html`
-      <div
-        class="chat ${this.status}
-          ? 'scroll-at-top'
-          : ''} ${this.open ? 'open' : ''}"
-      >
+      <div class="chat ${this.status} ${this.open ? 'open' : ''}">
         <div class="header">
           <slot name="header">${this.urn ? this.urn : 'Chat'}</slot>
           <temba-icon
@@ -581,28 +531,29 @@ export class WebChat extends LitElement {
             </div>`
           : null}
         ${this.status === ChatStatus.CONNECTED
-          ? html` <div
-              class="row input-panel ${this.hasPendingText ? 'pending' : ''}"
-              @click=${this.handleClickInputPanel}
-            >
-              <input
-                class="input ${this.status === ChatStatus.CONNECTED
-                  ? 'active'
-                  : 'inactive'}"
-                type="text"
-                placeholder="Message.."
-                ?disabled=${this.status !== ChatStatus.CONNECTED}
-                @keydown=${this.handleKeyUp}
-              />
-              <temba-icon
-                tabindex="1"
-                class="send-icon"
-                name="send"
-                size="1"
-                clickable
-                @click=${this.sendPendingMessage}
-              ></temba-icon>
-            </div>`
+          ? html` <div class="border"></div>
+              <div
+                class="row input-panel ${this.hasPendingText ? 'pending' : ''}"
+                @click=${this.handleClickInputPanel}
+              >
+                <input
+                  class="input ${this.status === ChatStatus.CONNECTED
+                    ? 'active'
+                    : 'inactive'}"
+                  type="text"
+                  placeholder="Message.."
+                  ?disabled=${this.status !== ChatStatus.CONNECTED}
+                  @keydown=${this.handleKeyUp}
+                />
+                <temba-icon
+                  tabindex="1"
+                  class="send-icon"
+                  name="send"
+                  size="1"
+                  clickable
+                  @click=${this.sendPendingMessage}
+                ></temba-icon>
+              </div>`
           : null}
       </div>
 

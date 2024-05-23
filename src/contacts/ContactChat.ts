@@ -42,16 +42,13 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
+        background: #fff;
         box-shadow: 0px -5px 1rem 0rem rgba(0, 0, 0, 0.07);
         display: flex;
         flex-direction: column;
         --textarea-min-height: 1em;
         --textarea-height: 1.2em;
         --widget-box-shadow-focused: none;
-      }
-
-      .chatbox:focus-within {
-        --textarea-height: 4em;
       }
 
       .chatbox.full {
@@ -87,6 +84,11 @@ export class ContactChat extends ContactStoreElement {
         --widget-box-shadow-focused: none;
         --color-focus: transparent;
         --color-widget-bg-focused: transparent;
+      }
+
+      .border {
+        border-top: 1px solid #f1f1f1;
+        margin: 0 1em;
       }
     `;
   }
@@ -376,15 +378,16 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getChatbox(): TemplateResult {
-    return html`<div class="chatbox">
-      <temba-compose
-        chatbox
-        attachments
-        counter
-        button
-        @temba-button-clicked=${this.handleSend.bind(this)}
-      >
-      </temba-compose>
-    </div>`;
+    return html`<div class="border"></div>
+      <div class="chatbox">
+        <temba-compose
+          chatbox
+          attachments
+          counter
+          button
+          @temba-button-clicked=${this.handleSend.bind(this)}
+        >
+        </temba-compose>
+      </div>`;
   }
 }

@@ -14,6 +14,10 @@
 	"postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install",
 	"customizations": {
 		"vscode": {
+			"settings": {
+			"terminal.integrated.defaultProfile.linux": "zsh",
+			"terminal.integrated.profiles.linux": { "zsh": { "path": "/bin/zsh" } }
+			},
 			"extensions": [
 				"lfs.vscode-emacs-friendly"
 			]
