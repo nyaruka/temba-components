@@ -68,7 +68,10 @@ export const getHTTPCookie = (name: string): string => {
 };
 
 export const getHeaders = (headers: any = {}) => {
-  const csrf = getHTTPCookie('csrftoken');
+  const csrf =
+    getHTTPCookie('csrftoken') ||
+    (document.querySelector('[name=csrfmiddlewaretoken]') as HTMLInputElement)
+      .value;
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
   // mark us as ajax
