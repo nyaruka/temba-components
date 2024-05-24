@@ -3,6 +3,7 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
+	"features": {},
 	"forwardPorts": [
 		3010
 	],
@@ -17,8 +18,14 @@
 		"vscode": {
 			"extensions": [
 				"lfs.vscode-emacs-friendly"
-			]
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"editor.formatOnSave": true,
+				"editor.rulers": [
+					120
+				]
+			}
 		}
 	}
-	// "features": {},
 }
