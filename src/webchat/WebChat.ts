@@ -350,7 +350,7 @@ export class WebChat extends LitElement {
 
     this.status = ChatStatus.CONNECTING;
     const webChat = this;
-    let url = `wss://localhost.textit.com/connect/${this.channel}/`;
+    let url = `wss://localhost.textit.com/wc/connect/${this.channel}/`;
     if (this.urn) {
       url = `${url}?chat_id=${this.urn}`;
     }

@@ -43,7 +43,6 @@ export class ContactChat extends ContactStoreElement {
 
       .chatbox {
         background: #fff;
-        box-shadow: 0px -5px 1rem 0rem rgba(0, 0, 0, 0.07);
         display: flex;
         flex-direction: column;
         --textarea-min-height: 1em;
@@ -302,11 +301,13 @@ export class ContactChat extends ContactStoreElement {
 
             if (msgEvent.created_by) {
               const storeUser = this.store.getUser(msgEvent.created_by.email);
-              user = {
-                email: msgEvent.created_by.email,
-                name: [storeUser.first_name, storeUser.last_name].join(' '),
-                avatar: storeUser.avatar
-              };
+              if (storeUser) {
+                user = {
+                  email: msgEvent.created_by.email,
+                  name: [storeUser.first_name, storeUser.last_name].join(' '),
+                  avatar: storeUser.avatar
+                };
+              }
             }
 
             return {
@@ -332,7 +333,6 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private fetchComplete() {
-    console.log('fetch complete');
     this.chat.fetching = false;
   }
 
@@ -385,6 +385,7 @@ export class ContactChat extends ContactStoreElement {
           attachments
           counter
           button
+          autogrow
           @temba-button-clicked=${this.handleSend.bind(this)}
         >
         </temba-compose>
