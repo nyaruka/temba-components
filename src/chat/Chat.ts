@@ -4,10 +4,18 @@ import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { renderAvatar } from '../utils';
+import { renderMarkdown } from '../markdown';
 
-const BATCH_TIME_WINDOW = 30 * 60 * 1000;
+const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 0.05;
 const MIN_FETCH_TIME = 250;
+
+export enum MessageType {
+  Inline = 'inline',
+  Error = 'error',
+  Collapse = 'collapse',
+  Note = 'note'
+}
 
 interface User {
   avatar?: string;
@@ -29,12 +37,6 @@ export interface Message {
 }
 
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
-const DAY_FORMAT = {
-  weekday: undefined,
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric'
-} as any;
 const VERBOSE_FORMAT = {
   weekday: undefined,
   year: undefined,
@@ -57,6 +59,21 @@ export class Chat extends RapidElement {
         margin-bottom: 1em;
       }
 
+      .block.collapse {
+        margin: 0;
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0.5em;
+      }
+
+      .block.collapse .messsage {
+        transform: scaleY(0);
+        margin: 0;
+        padding: 0;
+        line-height: 0;
+      }
+
       .time {
         text-align: center;
         font-size: 0.8em;
@@ -64,8 +81,15 @@ export class Chat extends RapidElement {
         margin-top: 2em;
         border-top: 1px solid #e9e9e9;
         padding: 1em;
-        margin-left: 1em;
-        margin-right: 1em;
+        margin-left: 10%;
+        margin-right: 10%;
+      }
+
+      .time.first {
+        border-top: none;
+        margin-top: 0;
+        border-bottom: 1px solid #e9e9e9;
+        margin-bottom: 2em;
       }
 
       .first .time {
@@ -78,6 +102,7 @@ export class Chat extends RapidElement {
         display: flex;
         flex-direction: row;
         align-items: flex-start;
+        margin-bottom: 0.25em;
       }
 
       .input-panel {
@@ -86,8 +111,10 @@ export class Chat extends RapidElement {
       }
 
       .avatar {
-        margin-top: 0.6em;
         margin-right: 0.6em;
+        margin-left: 0.6em;
+        width: 2em;
+        align-self: flex-end;
       }
 
       .toggle {
@@ -118,9 +145,9 @@ export class Chat extends RapidElement {
       }
 
       .bubble {
-        padding: 1em;
-        padding-bottom: 0.5em;
-        background: #fafafa;
+        padding: 0.75em;
+        padding-bottom: 0.25em;
+        background: #f1f1f1;
         border-radius: var(--curvature);
         max-width: 70%;
       }
@@ -128,19 +155,30 @@ export class Chat extends RapidElement {
       .bubble .name {
         font-size: 0.95em;
         font-weight: 400;
-        color: #888;
+        color: rgba(0, 0, 0, 0.4);
         margin-bottom: 0.25em;
       }
 
-      .outgoing .bubble {
-        border-top-left-radius: 0;
+      .outgoing .latest .bubble {
+        border-bottom-left-radius: 0;
       }
 
       .incoming .bubble {
         background: var(--color-primary-dark);
         color: white;
-        border-top-right-radius: 0;
-        text-align: right;
+      }
+
+      .incoming .latest .bubble {
+        border-bottom-right-radius: 0;
+      }
+
+      .incoming .bubble .name {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .note .bubble {
+        background: #fff47b;
+        color: rgba(0, 0, 0, 0.6);
       }
 
       .message {
@@ -306,6 +344,33 @@ export class Chat extends RapidElement {
       temba-loading.hidden {
         display: none;
       }
+
+      .error {
+        color: var(--color-error);
+      }
+
+      .inline {
+      }
+
+      .event {
+        flex-grow: 1;
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .event p {
+        margin: 0;
+        padding: 0;
+      }
+
+      .collapse {
+      }
+
+      a {
+        color: var(--color-primary-dark);
+      }
     `;
   }
 
@@ -320,6 +385,9 @@ export class Chat extends RapidElement {
 
   @property({ type: Boolean, attribute: false })
   hideBottomScroll = true;
+
+  @property({ type: Boolean })
+  agent = false;
 
   private msgMap = new Map<string, Message>();
 
@@ -361,7 +429,8 @@ export class Chat extends RapidElement {
         const ele = this.shadowRoot.querySelector('.scroll');
         const prevTop = ele.scrollTop;
 
-        this.insertGroups(this.groupMessages(newMessages), append);
+        const grouped = this.groupMessages(newMessages);
+        this.insertGroups(grouped, append);
 
         window.setTimeout(() => {
           ele.scrollTop = prevTop;
@@ -381,14 +450,6 @@ export class Chat extends RapidElement {
       msg.timeAsDate = new Date(msg.time);
     }
 
-    /* 
-    if (
-      !this.oldestMessageDate ||
-      msg.timeAsDate.getTime() < this.oldestMessageDate.getTime()
-    ) {
-      this.oldestMessageDate = msg.timeAsDate;
-    }*/
-
     const isNew = !this.msgMap.has(msg.msg_id);
     this.msgMap.set(msg.msg_id, msg);
     return isNew;
@@ -398,17 +459,20 @@ export class Chat extends RapidElement {
     if (msg1 && msg2) {
       return (
         msg1.type === msg2.type &&
-        msg1.origin === msg2.origin &&
         msg1.user?.name === msg2.user?.name &&
         Math.abs(msg1.timeAsDate.getTime() - msg2.timeAsDate.getTime()) <
           BATCH_TIME_WINDOW
       );
     }
+
     return false;
   }
 
   private insertGroups(newGroups: string[][], append = false) {
-    newGroups.reverse();
+    if (!append) {
+      newGroups.reverse();
+    }
+
     for (const newGroup of newGroups) {
       // see if our new group belongs to the most recent group
       const group =
@@ -486,6 +550,8 @@ export class Chat extends RapidElement {
     groups: string[][]
   ): TemplateResult {
     const today = new Date();
+    const firstGroup = idx === groups.length - 1;
+
     let prevMsg;
     if (idx > 0) {
       const lastGroup = groups[idx - 1];
@@ -494,76 +560,89 @@ export class Chat extends RapidElement {
       }
     }
 
-    const currentMsg = this.msgMap.get(msgIds[msgIds.length - 1]);
+    const mostRecentId = msgIds[msgIds.length - 1];
+    const currentMsg = this.msgMap.get(mostRecentId);
     let timeDisplay = null;
     if (
       prevMsg &&
       !this.isSameGroup(prevMsg, currentMsg) &&
-      prevMsg.timeAsDate.getTime() - currentMsg.timeAsDate.getTime() >
-        BATCH_TIME_WINDOW
+      (Math.abs(
+        currentMsg.timeAsDate.getTime() - prevMsg.timeAsDate.getTime()
+      ) > BATCH_TIME_WINDOW ||
+        idx === groups.length - 1)
     ) {
-      const showDay =
-        !prevMsg ||
-        prevMsg.timeAsDate.getDate() !== currentMsg.timeAsDate.getDate();
-      if (showDay) {
-        timeDisplay = html`<div class="time">
-          ${prevMsg.timeAsDate.toLocaleDateString(undefined, DAY_FORMAT)}
+      if (
+        today.getDate() !== prevMsg.timeAsDate.getDate() ||
+        prevMsg.timeAsDate.getDate() !== currentMsg.timeAsDate.getDate()
+      ) {
+        timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
+          ${prevMsg.timeAsDate.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
         </div>`;
       } else {
-        if (prevMsg.timeAsDate.getDate() !== today.getDate()) {
-          timeDisplay = html`<div class="time">
-            ${prevMsg.timeAsDate.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
-          </div>`;
-        } else {
-          timeDisplay = html`<div class="time">
-            ${prevMsg.timeAsDate.toLocaleTimeString(undefined, TIME_FORMAT)}
-          </div>`;
-        }
+        timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
+          ${prevMsg.timeAsDate.toLocaleTimeString(undefined, TIME_FORMAT)}
+        </div>`;
       }
     }
 
-    const blockTime = new Date(this.msgMap.get(msgIds[msgIds.length - 1]).time);
-    const message = this.msgMap.get(msgIds[0]);
-    const incoming = message.type === 'msg_in';
-    const name = message.user?.name;
-    let avatar = message.user?.avatar;
+    const incoming = this.agent
+      ? currentMsg.type !== 'msg_in'
+      : currentMsg.type === 'msg_in';
+    const name = currentMsg.user?.name;
+    let avatar = currentMsg.user?.avatar;
 
-    if (!message.user) {
+    if (!currentMsg.user) {
       avatar = DEFAULT_AVATAR;
     }
 
-    return html` <div
-      class="block  ${incoming ? 'incoming' : 'outgoing'} ${idx === 0
-        ? 'first'
-        : ''}"
-      title="${blockTime.toLocaleTimeString(undefined, VERBOSE_FORMAT)}"
-    >
-      <div class="row">
-        ${!incoming
-          ? html` <div class="avatar">
-              ${renderAvatar({
-                name: name,
-                user: {
-                  avatar: avatar
-                }
-              })}
-            </div>`
-          : null}
+    const showAvatar =
+      ((currentMsg.type === 'note' ||
+        currentMsg.type === 'msg_in' ||
+        currentMsg.type === 'msg_out') &&
+        this.agent) ||
+      !incoming;
 
-        <div class="bubble">
-          ${!incoming ? html`<div class="name">${name}</div>` : null}
-          ${msgIds.map(
-            (msgId) =>
-              html`<div class="message">${this.msgMap.get(msgId).text}</div>
-                <!--div style="font-size:10px">
-                  ${this.msgMap
-                  .get(msgId)
-                  .timeAsDate.toLocaleDateString(undefined, VERBOSE_FORMAT)}
-                </div-->`
-          )}
+    return html`
+      ${!firstGroup ? timeDisplay : null}
+      <div
+        class="block  ${incoming ? 'incoming' : 'outgoing'} ${currentMsg.type}"
+      >
+        ${msgIds.slice(0, msgIds.length - 1).map((msgId, index) => {
+          const msg = this.msgMap.get(msgId);
+          return html`<div class="row message">
+            ${showAvatar ? html`<div class="avatar"></div>` : null}
+            ${this.renderMessage(msg, index == 0 ? name : null)}
+          </div>`;
+        })}
+        <div class="row latest message">
+          ${showAvatar
+            ? html`<div class="avatar">
+                ${renderAvatar({ name: name, user: { avatar: avatar } })}
+              </div>`
+            : null}
+          ${this.renderMessage(currentMsg)}
         </div>
       </div>
-      ${timeDisplay}
+      ${firstGroup ? timeDisplay : null}
+    `;
+  }
+
+  private renderMessage(message: Message, name = null): TemplateResult {
+    if (
+      message.type === MessageType.Error ||
+      message.type === MessageType.Collapse ||
+      message.type === MessageType.Inline
+    ) {
+      return html`<div class="event">${renderMarkdown(message.text)}</div>`;
+    }
+
+    return html` <div class="bubble">
+      ${name ? html`<div class="name">${name}</div>` : null}
+      <div class="message">${message.text}</div>
+      <!--div>${message.timeAsDate.toLocaleDateString(
+        undefined,
+        VERBOSE_FORMAT
+      )}</div-->
     </div>`;
   }
 

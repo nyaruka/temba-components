@@ -394,6 +394,11 @@ export class WebChat extends LitElement {
         webChat.handleHistoryResponse(msg);
       }
     };
+
+    this.sock.onerror = function (event: Event) {
+      console.log('Socket error', event);
+      webChat.status = ChatStatus.DISCONNECTED;
+    };
   }
 
   public fetchPreviousMessages() {
