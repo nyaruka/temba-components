@@ -685,8 +685,10 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true,
       value: composeValue
     });
+
     // deserialize
     expect(compose.currentText).to.equal(getValidText());
+
     expect(compose.currentAttachments).to.deep.equal(getValidAttachments());
     // serialize
     expect(compose.value).to.equal(composeValue);

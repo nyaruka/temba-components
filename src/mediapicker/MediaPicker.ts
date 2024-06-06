@@ -152,17 +152,10 @@ export class MediaPicker extends RapidElement {
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
     if (changes.has('attachments')) {
-      // make sure all of our attachments have uuids
-      this.attachments.forEach((attachment) => {
-        if (!attachment.uuid) {
-          attachment.uuid = attachment.url;
-          this.requestUpdate();
-        }
-      });
-
-      if (changes.get('attachments') !== undefined) {
+      // wait one cycle to fire change for tests
+      setTimeout(() => {
         this.dispatchEvent(new Event('change'));
-      }
+      }, 0);
     }
   }
 
@@ -245,14 +238,14 @@ export class MediaPicker extends RapidElement {
   private handleRemoveFileClicked(evt: Event): void {
     const target = evt.target as HTMLDivElement;
     const currentAttachmentToRemove = this.attachments.find(
-      ({ uuid }) => uuid === target.id
+      ({ url }) => url === target.id
     );
     if (currentAttachmentToRemove) {
       this.removeCurrentAttachment(currentAttachmentToRemove);
     }
 
     const failedAttachmentToRemove = this.failedAttachments.find(
-      ({ uuid }) => uuid === target.id
+      ({ url }) => url === target.id
     );
     if (failedAttachmentToRemove) {
       this.removeFailedAttachment(failedAttachmentToRemove);
@@ -362,7 +355,7 @@ export class MediaPicker extends RapidElement {
               <temba-icon
                 class="remove-item"
                 @click="${this.handleRemoveFileClicked}"
-                id="${validAttachment.uuid}"
+                id="${validAttachment.url}"
                 name="${Icon.delete_small}"
               ></temba-icon>
               ${isImageAttachment(validAttachment)

@@ -303,8 +303,6 @@ export class Compose extends FormElement {
 
   private handleAttachmentsChanged(event: CustomEvent) {
     const media = event.target as MediaPicker;
-    console.log('media attachments changed..', media.attachments);
-
     this.currentAttachments = media.attachments;
     this.requestUpdate();
   }
