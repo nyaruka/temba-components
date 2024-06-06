@@ -213,11 +213,7 @@ export class Compose extends FormElement {
     if (tab) {
       // check we are going for the first attachment
       if (tab.icon == 'attachment') {
-        if (this.currentAttachments.length == 0) {
-          (
-            this.shadowRoot.querySelector('temba-media-picker') as MediaPicker
-          ).click();
-        }
+        // show the media picker?
       }
     }
   }
@@ -307,6 +303,8 @@ export class Compose extends FormElement {
 
   private handleAttachmentsChanged(event: CustomEvent) {
     const media = event.target as MediaPicker;
+    console.log('media attachments changed..', media.attachments);
+
     this.currentAttachments = media.attachments;
     this.requestUpdate();
   }

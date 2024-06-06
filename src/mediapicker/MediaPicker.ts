@@ -159,7 +159,10 @@ export class MediaPicker extends RapidElement {
           this.requestUpdate();
         }
       });
-      this.dispatchEvent(new Event('change'));
+
+      if (changes.get('attachments') !== undefined) {
+        this.dispatchEvent(new Event('change'));
+      }
     }
   }
 

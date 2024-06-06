@@ -133,6 +133,7 @@ export class TemplateEditor extends FormElement {
         line-height: 2.2em;
         max-height: 50vh;
         overflow-y: auto;
+        overflow-x: hidden;
       }
     `;
   }
