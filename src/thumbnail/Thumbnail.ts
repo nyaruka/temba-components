@@ -9,7 +9,7 @@ export class Thumbnail extends RapidElement {
   static get styles() {
     return css`
       :host {
-        display: inline-block;
+        display: inline;
       }
 
       .zooming.wrapper {

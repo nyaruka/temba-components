@@ -2,12 +2,15 @@ import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { TemplateResult, html, css, PropertyValueMap, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
+import { Icon } from '../vectoricon';
+import { MediaPicker } from '../mediapicker/MediaPicker';
 
 interface Component {
   name: string;
   type: string;
   content: string;
   variables: { [key: string]: number };
+  params: [{ type: string }];
 }
 
 interface Translation {
@@ -199,10 +202,24 @@ export class TemplateEditor extends FormElement {
     });
   }
 
+  private handleAttachmentsChanged(event: CustomEvent) {
+    const media = event.target as MediaPicker;
+    if (media.attachments.length === 0) {
+      this.variables[0] = '';
+    } else {
+      this.variables[0] = media.attachments[0].url;
+    }
+    this.fireContentChange();
+  }
+
   private handleVariableChanged(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     const variableIndex = parseInt(target.getAttribute('index'));
     this.variables[variableIndex] = target.value;
+    this.fireContentChange();
+  }
+
+  private fireContentChange() {
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
@@ -216,9 +233,11 @@ export class TemplateEditor extends FormElement {
       `{{(${Object.keys(component.variables || []).join('|')})}}`,
       'g'
     );
-    const parts = component.content.split(variableRegex);
+
+    let variables = null;
+    const parts = component.content?.split(variableRegex) || [];
     if (parts.length > 0) {
-      const variables = parts.map((part, index) => {
+      variables = parts.map((part, index) => {
         if (index % 2 === 0) {
           return html`<span class="text">${part}</span>`;
         }
@@ -235,8 +254,45 @@ export class TemplateEditor extends FormElement {
           placeholder="{{${part}}}"
         ></temba-completion>`;
       });
-      return html`<div class="content">${variables}</div>`;
+    } else {
+      // no content, let's do params intead
+      variables = component.params.map((param) => {
+        // we only support images in this scenario
+        let attachments = [];
+        if (this.variables[0]) {
+          attachments = [{ url: this.variables[0], content_type: 'image' }];
+        }
+
+        return param.type === 'image'
+          ? html`<div
+              style="
+                margin-bottom: 1em; 
+                display: flex; 
+                align-items: center; 
+                border-radius: var(--curvature);
+                ${attachments.length === 0
+                ? `background-color:rgba(255,0,0,.07);`
+                : ``}
+                "
+            >
+              <temba-media-picker
+                accept="image/*"
+                max="1"
+                icon="${Icon.image}"
+                attachments=${JSON.stringify(attachments)}
+                @change=${this.handleAttachmentsChanged.bind(this)}
+              ></temba-media-picker>
+              <div>
+                ${attachments.length == 0
+                  ? html`This template requires an image to send.`
+                  : ''}
+              </div>
+            </div>`
+          : null;
+      });
     }
+
+    return html` <div class="content">${variables}</div> `;
   }
 
   public renderComponents(components: Component[]): TemplateResult {
