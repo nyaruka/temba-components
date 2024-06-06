@@ -61,12 +61,16 @@ export class MediaPicker extends RapidElement {
       }
 
       .remove-item {
-        position: absolute;
         --icon-color: #ccc;
         background: #fff;
         border-radius: 99%;
-        transform: scale(0);
         transition: transform 200ms linear;
+        transform: scale(0);
+        display: block;
+        margin-bottom: -24px;
+        margin-left: 10px;
+        width: 1em;
+        height: 1em;
       }
 
       .attachment-item:hover .remove-item {
@@ -252,8 +256,6 @@ export class MediaPicker extends RapidElement {
     }
   }
 
-  private handleUploadFileIconClicked(): void {}
-
   private handleUploadFileInputChanged(evt: Event): void {
     const target = evt.target as HTMLInputElement;
     const files = target.files;
@@ -334,10 +336,7 @@ export class MediaPicker extends RapidElement {
               class="actions-left upload-label"
               for="upload-input"
             >
-              <div
-                class="add-attachment"
-                @click="${this.handleUploadFileIconClicked}"
-              >
+              <div class="add-attachment">
                 <temba-icon name="${this.icon}" size="1.5"></temba-icon>
               </div>
             </label>`
@@ -356,7 +355,7 @@ export class MediaPicker extends RapidElement {
       <div class="drop-mask">
         <div class="attachments-list">
           ${this.attachments.map((validAttachment) => {
-            return html` <div class="attachment-item">
+            return html`<div class="attachment-item">
               <temba-icon
                 class="remove-item"
                 @click="${this.handleRemoveFileClicked}"

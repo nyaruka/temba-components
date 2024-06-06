@@ -66,6 +66,7 @@ export class Thumbnail extends RapidElement {
           <div
             class="thumb"
             style=${styleMap({
+              backgroundColor: '#fafafa',
               backgroundImage: `url(${this.url})`,
               backgroundSize: 'contain',
               backgroundPosition: 'center',
@@ -96,6 +97,7 @@ export class Thumbnail extends RapidElement {
       })}">
 
           <div class="thumb" style=${styleMap({
+            backgroundColor: '#fafafa',
             backgroundImage: `url(${this.url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',

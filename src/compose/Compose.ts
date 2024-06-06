@@ -98,6 +98,10 @@ export class Compose extends FormElement {
       .optins {
         padding: 1em;
       }
+
+      .attachments {
+        padding-top: 0.5em;
+      }
     `;
   }
 
