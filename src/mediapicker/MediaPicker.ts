@@ -6,16 +6,19 @@ import { Icon } from '../vectoricon';
 import {
   DEFAULT_MEDIA_ENDPOINT,
   WebResponse,
-  formatFileSize,
   getClasses,
   isImageAttachment,
-  postFormData,
-  truncate
+  postFormData
 } from '../utils';
 
 const verifyAccept = (type: string, accept: string): boolean => {
-  const allowed = accept.split(',').map((x) => x.trim());
-  return allowed.includes(type) || allowed.includes(type.split('/')[0] + '/*');
+  if (accept) {
+    const allowed = accept.split(',').map((x) => x.trim());
+    return (
+      allowed.includes(type) || allowed.includes(type.split('/')[0] + '/*')
+    );
+  }
+  return true;
 };
 
 export class MediaPicker extends RapidElement {
@@ -49,6 +52,7 @@ export class MediaPicker extends RapidElement {
 
       .attachment-item {
         padding: 0.4em;
+        padding-top: 1em;
       }
 
       .attachment-item.error {
@@ -80,15 +84,6 @@ export class MediaPicker extends RapidElement {
       .remove-item:hover {
         --icon-color: #333;
         cursor: pointer;
-      }
-
-      .remove-item.error:hover {
-        background: rgba(250, 0, 0, 0.1);
-      }
-
-      .remove-item.error {
-        background: rgba(250, 0, 0, 0.05);
-        color: rgba(250, 0, 0, 0.75);
       }
 
       .attachment-name {
@@ -143,9 +138,6 @@ export class MediaPicker extends RapidElement {
   @property({ type: Array })
   attachments: Attachment[] = [];
 
-  @property({ type: Array, attribute: false })
-  failedAttachments: Attachment[] = [];
-
   @property({ type: Boolean, attribute: false })
   uploading: boolean;
 
@@ -187,6 +179,7 @@ export class MediaPicker extends RapidElement {
   }
 
   public canAcceptAttachments() {
+    console.log('can accept attachments', this.attachments.length < this.max);
     return this.attachments.length < this.max;
   }
 
@@ -216,25 +209,6 @@ export class MediaPicker extends RapidElement {
     this.requestUpdate('attachments');
   }
 
-  private addFailedAttachment(file: File, error: string) {
-    const failedAttachment = {
-      uuid: Math.random().toString(36).slice(2, 6),
-      content_type: file.type,
-      filename: file.name,
-      url: file.name,
-      size: file.size,
-      error: error
-    } as Attachment;
-    this.failedAttachments.push(failedAttachment);
-    this.requestUpdate('failedAttachments');
-  }
-
-  private removeFailedAttachment(attachmentToRemove: any) {
-    this.failedAttachments = this.failedAttachments.filter(
-      (failedAttachment: any) => failedAttachment !== attachmentToRemove
-    );
-    this.requestUpdate('failedAttachments');
-  }
   private handleRemoveFileClicked(evt: Event): void {
     const target = evt.target as HTMLDivElement;
     const currentAttachmentToRemove = this.attachments.find(
@@ -242,13 +216,6 @@ export class MediaPicker extends RapidElement {
     );
     if (currentAttachmentToRemove) {
       this.removeCurrentAttachment(currentAttachmentToRemove);
-    }
-
-    const failedAttachmentToRemove = this.failedAttachments.find(
-      ({ url }) => url === target.id
-    );
-    if (failedAttachmentToRemove) {
-      this.removeFailedAttachment(failedAttachmentToRemove);
     }
   }
 
@@ -291,9 +258,7 @@ export class MediaPicker extends RapidElement {
     payload.append('file', file);
     postFormData(url, payload)
       .then((response: WebResponse) => {
-        if (this.attachments.length >= this.max) {
-          this.addFailedAttachment(file, 'Too many attachments');
-        } else {
+        if (this.attachments.length < this.max) {
           const attachment = response.json as Attachment;
           if (attachment) {
             this.addCurrentAttachment(attachment);
@@ -308,7 +273,6 @@ export class MediaPicker extends RapidElement {
           uploadError = 'Server failure';
         }
         console.error(uploadError);
-        this.addFailedAttachment(file, uploadError);
       })
       .finally(() => {
         this.uploading = false;
@@ -369,29 +333,6 @@ export class MediaPicker extends RapidElement {
           })}
           ${this.renderUploader()}
         </div>
-        ${this.failedAttachments.map((invalidAttachment) => {
-          return html` <div class="attachment-item error">
-          <div
-            class="remove-item error"
-            @click="${this.handleRemoveFileClicked}"
-          >
-            <temba-icon
-              id="${invalidAttachment.uuid}"
-              name="${Icon.delete_small}"
-            ></temba-icon>
-          </div>
-          <div class="attachment-name">
-            <span
-              title="${invalidAttachment.filename} (${formatFileSize(
-            0,
-            0
-          )}) - Attachment failed - ${invalidAttachment.error}"
-              >${truncate(invalidAttachment.filename, 25)}
-              (${formatFileSize(0, 0)}) - Attachment failed</span
-            >
-          </div>
-        </div></div>`;
-        })}
       </div>
     </div>`;
   }

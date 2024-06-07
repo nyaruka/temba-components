@@ -100,7 +100,6 @@ export class Compose extends FormElement {
       }
 
       .attachments {
-        padding-top: 0.5em;
       }
     `;
   }
@@ -164,9 +163,6 @@ export class Compose extends FormElement {
 
   @property({ type: String })
   optinEndpoint = '/api/v2/optins.json';
-
-  @property({ type: Array, attribute: false })
-  failedAttachments: Attachment[] = [];
 
   @property({ type: String })
   buttonName = 'Send';
@@ -327,7 +323,6 @@ export class Compose extends FormElement {
     this.currentText = '';
     this.currentQuickReplies = [];
     this.currentAttachments = [];
-    this.failedAttachments = [];
     this.buttonError = '';
   }
 
