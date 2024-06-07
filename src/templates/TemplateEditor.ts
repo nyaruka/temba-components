@@ -9,7 +9,6 @@ interface Component {
   type: string;
   content: string;
   variables: { [key: string]: number };
-  params: [{ type: string }];
 }
 
 interface Translation {
@@ -268,18 +267,17 @@ export class TemplateEditor extends FormElement {
         ></temba-completion>`;
       });
     } else {
-      // no content, let's do params intead
-      variables = component.params.map((param) => {
+      variables = Object.values(component.variables).map((variableIndex) => {
+        const variableSpec = this.translation.variables[variableIndex];
         if (
-          param.type === 'image' ||
-          param.type === 'document' ||
-          param.type === 'audio' ||
-          param.type === 'video'
+          variableSpec.type === 'image' ||
+          variableSpec.type === 'document' ||
+          variableSpec.type === 'audio' ||
+          variableSpec.type === 'video'
         ) {
-          const index = Object.values(component.variables)[0];
           let attachments = [];
-          if (this.variables[index]) {
-            const parts = this.variables[index].split(':');
+          if (this.variables[variableIndex]) {
+            const parts = this.variables[variableIndex].split(':');
             attachments = [{ url: parts[1], content_type: parts[0] }];
           }
 
@@ -294,18 +292,18 @@ export class TemplateEditor extends FormElement {
             "
           >
             <temba-media-picker
-              accept="${param.type === 'document'
+              accept="${variableSpec.type === 'document'
                 ? 'application/pdf'
-                : param.type + '/*'}"
+                : variableSpec.type + '/*'}"
               max="1"
-              index=${index}
-              icon="attachment_${param.type}"
+              index=${variableIndex}
+              icon="attachment_${variableSpec.type}"
               attachments=${JSON.stringify(attachments)}
               @change=${this.handleAttachmentsChanged.bind(this)}
             ></temba-media-picker>
             <div>
               ${attachments.length == 0
-                ? html`Attach ${param.type} to continue`
+                ? html`Attach ${variableSpec.type} to continue`
                 : ''}
             </div>
           </div>`;
