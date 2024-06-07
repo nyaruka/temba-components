@@ -56,6 +56,7 @@ import { Mask } from './src/mask/Mask';
 import { TembaUser } from './src/user/TembaUser';
 import { TemplateEditor } from './src/templates/TemplateEditor';
 import { Toast } from './src/toast/Toast';
+import { MediaPicker } from './src/mediapicker/MediaPicker';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -122,3 +123,4 @@ addCustomElement('temba-mask', Mask);
 addCustomElement('temba-user', TembaUser);
 addCustomElement('temba-template-editor', TemplateEditor);
 addCustomElement('temba-toast', Toast);
+addCustomElement('temba-media-picker', MediaPicker);

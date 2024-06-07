@@ -2,12 +2,14 @@ import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { TemplateResult, html, css, PropertyValueMap, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
+import { MediaPicker } from '../mediapicker/MediaPicker';
 
 interface Component {
   name: string;
   type: string;
   content: string;
   variables: { [key: string]: number };
+  params: [{ type: string }];
 }
 
 interface Translation {
@@ -41,6 +43,11 @@ export class TemplateEditor extends FormElement {
         padding: 1em;
         margin-top: 1em;
       }
+
+      .content {
+        margin-bottom: 1em;
+      }
+
       .picker {
         margin-bottom: 0.5em;
         display: block;
@@ -69,7 +76,6 @@ export class TemplateEditor extends FormElement {
       }
 
       .button-wrapper {
-        margin-top: 1em;
         background: #f9f9f9;
         border-radius: var(--curvature);
         padding: 0.5em;
@@ -125,6 +131,9 @@ export class TemplateEditor extends FormElement {
         border: 1px solid var(--color-widget-border);
         padding: 1em;
         line-height: 2.2em;
+        max-height: 50vh;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
     `;
   }
@@ -199,10 +208,31 @@ export class TemplateEditor extends FormElement {
     });
   }
 
+  private handleAttachmentsChanged(event: CustomEvent) {
+    const media = event.target as MediaPicker;
+    const index = parseInt(media.getAttribute('index'));
+
+    if (media.attachments.length === 0) {
+      this.variables[index] = '';
+    } else {
+      const attachment = media.attachments[0];
+      if (attachment.url && attachment.content_type) {
+        this.variables[index] = `${attachment.content_type}:${attachment.url}`;
+      } else {
+        this.variables[index] = ``;
+      }
+    }
+    this.fireContentChange();
+  }
+
   private handleVariableChanged(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     const variableIndex = parseInt(target.getAttribute('index'));
     this.variables[variableIndex] = target.value;
+    this.fireContentChange();
+  }
+
+  private fireContentChange() {
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
@@ -216,9 +246,11 @@ export class TemplateEditor extends FormElement {
       `{{(${Object.keys(component.variables || []).join('|')})}}`,
       'g'
     );
-    const parts = component.content.split(variableRegex);
+
+    let variables = null;
+    const parts = component.content?.split(variableRegex) || [];
     if (parts.length > 0) {
-      const variables = parts.map((part, index) => {
+      variables = parts.map((part, index) => {
         if (index % 2 === 0) {
           return html`<span class="text">${part}</span>`;
         }
@@ -235,8 +267,53 @@ export class TemplateEditor extends FormElement {
           placeholder="{{${part}}}"
         ></temba-completion>`;
       });
-      return html`<div class="content">${variables}</div>`;
+    } else {
+      // no content, let's do params intead
+      variables = component.params.map((param) => {
+        if (
+          param.type === 'image' ||
+          param.type === 'document' ||
+          param.type === 'audio' ||
+          param.type === 'video'
+        ) {
+          const index = Object.values(component.variables)[0];
+          let attachments = [];
+          if (this.variables[index]) {
+            const parts = this.variables[index].split(':');
+            attachments = [{ url: parts[1], content_type: parts[0] }];
+          }
+
+          return html`<div
+            style="
+              display: flex; 
+              align-items: center; 
+              border-radius: var(--curvature);
+              ${attachments.length === 0
+              ? `background-color:rgba(255,0,0,.07);`
+              : ``}
+            "
+          >
+            <temba-media-picker
+              accept="${param.type === 'document'
+                ? 'application/pdf'
+                : param.type + '/*'}"
+              max="1"
+              index=${index}
+              icon="attachment_${param.type}"
+              attachments=${JSON.stringify(attachments)}
+              @change=${this.handleAttachmentsChanged.bind(this)}
+            ></temba-media-picker>
+            <div>
+              ${attachments.length == 0
+                ? html`Attach ${param.type} to continue`
+                : ''}
+            </div>
+          </div>`;
+        }
+      });
     }
+
+    return html`<div class="content">${variables}</div> `;
   }
 
   public renderComponents(components: Component[]): TemplateResult {

@@ -50,7 +50,6 @@ export class VectorIcon extends LitElement {
   static get styles() {
     return css`
       :host {
-        display: flex-inline;
         align-items: center;
         align-self: center;
       }

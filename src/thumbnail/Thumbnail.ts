@@ -9,7 +9,7 @@ export class Thumbnail extends RapidElement {
   static get styles() {
     return css`
       :host {
-        display: inline-block;
+        display: inline;
       }
 
       .zooming.wrapper {
@@ -54,6 +54,26 @@ export class Thumbnail extends RapidElement {
 
   public render() {
     if (this.zooming) {
+      const styles = {
+        backgroundColor: '#fafafa',
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        maxHeight: 'var(--thumb-size, 4em)',
+        height: 'var(--thumb-size, 4em)',
+        width: 'var(--thumb-size, 4em)',
+        borderRadius: '0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: '400',
+        color: '#bbb'
+      };
+
+      if (this.url) {
+        styles['backgroundImage'] = `url(${this.url})`;
+      }
+
       return html`
         <div
           class="${getClasses({ wrapper: true })}"
@@ -63,30 +83,29 @@ export class Thumbnail extends RapidElement {
             boxShadow: 'var(--widget-box-shadow)'
           })}
         >
-          <div
-            class="thumb"
-            style=${styleMap({
-              backgroundImage: `url(${this.url})`,
-              backgroundSize: 'contain',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              maxHeight: 'var(--thumb-size, 4em)',
-              height: 'var(--thumb-size, 4em)',
-              width: 'var(--thumb-size, 4em)',
-              borderRadius: '0',
-
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: '400',
-              color: '#bbb'
-            })}
-          >
-            ${this.label}
-          </div>
+          <div class="thumb" style=${styleMap(styles)}>${this.label}</div>
         </div>
       `;
     } else {
+      const styles = {
+        backgroundColor: '#fafafa',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        maxHeight: 'var(--thumb-size, 4em)',
+        height: 'var(--thumb-size, 4em)',
+        width: 'var(--thumb-size, 4em)',
+        borderRadius: 'var(--curvature)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: '400',
+        color: '#bbb'
+      };
+
+      if (this.url) {
+        styles['backgroundImage'] = `url(${this.url})`;
+      }
+
       return html`
       <div class="${getClasses({ wrapper: true })}" style=${styleMap({
         padding: 'var(--thumb-padding, 0.4em)',
@@ -94,24 +113,9 @@ export class Thumbnail extends RapidElement {
         borderRadius: 'var(--curvature)',
         boxShadow: 'var(--widget-box-shadow)'
       })}">
-
-          <div class="thumb" style=${styleMap({
-            backgroundImage: `url(${this.url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            maxHeight: 'var(--thumb-size, 4em)',
-            height: 'var(--thumb-size, 4em)',
-            width: 'var(--thumb-size, 4em)',
-            borderRadius: 'var(--curvature)',
-
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: '400',
-            color: '#bbb'
-          })}>
+          <div class="thumb" style=${styleMap(styles)}>
             ${this.label}
-            </div>
+          </div>
       </div>
     `;
     }
