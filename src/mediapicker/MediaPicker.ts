@@ -179,7 +179,6 @@ export class MediaPicker extends RapidElement {
   }
 
   public canAcceptAttachments() {
-    console.log('can accept attachments', this.attachments.length < this.max);
     return this.attachments.length < this.max;
   }
 
