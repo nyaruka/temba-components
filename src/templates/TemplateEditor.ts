@@ -110,6 +110,10 @@ export class TemplateEditor extends FormElement {
         align-items: center;
       }
 
+      .button .content {
+        margin-bottom: 0;
+      }
+
       .button .display {
         margin-right: 0.5em;
         background: #f9f9f9;
@@ -133,6 +137,7 @@ export class TemplateEditor extends FormElement {
         max-height: 50vh;
         overflow-y: auto;
         overflow-x: hidden;
+        padding-bottom: 0;
       }
     `;
   }
@@ -247,7 +252,12 @@ export class TemplateEditor extends FormElement {
     );
 
     let variables = null;
-    const parts = component.content?.split(variableRegex) || [];
+
+    let parts = [];
+    if (component.content && component.content.trim().length > 0) {
+      parts = component.content?.split(variableRegex) || [];
+    }
+
     if (parts.length > 0) {
       variables = parts.map((part, index) => {
         if (index % 2 === 0) {
