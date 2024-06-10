@@ -94,6 +94,7 @@ export class TemplateEditor extends FormElement {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
+        margin-bottom: 1em;
       }
 
       .button {
