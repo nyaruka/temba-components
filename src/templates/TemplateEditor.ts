@@ -288,7 +288,7 @@ export class TemplateEditor extends FormElement {
         ) {
           let attachments = [];
           if (this.variables[variableIndex]) {
-            const parts = this.variables[variableIndex].split(':');
+            const parts = this.variables[variableIndex].split(':', 2);
             attachments = [{ url: parts[1], content_type: parts[0] }];
           }
 
