@@ -1,7 +1,7 @@
 import { TemplateResult, css, html } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { property } from 'lit/decorators.js';
-import { Attachment } from '../interfaces';
+import { Attachment, CustomEventType } from '../interfaces';
 import { Icon } from '../vectoricon';
 import {
   DEFAULT_MEDIA_ENDPOINT,
@@ -148,6 +148,14 @@ export class MediaPicker extends RapidElement {
       setTimeout(() => {
         this.dispatchEvent(new Event('change'));
       }, 0);
+    }
+
+    if (changes.has('uploading')) {
+      this.dispatchEvent(
+        new CustomEvent(CustomEventType.Loading, {
+          detail: { loading: this.uploading }
+        })
+      );
     }
   }
 
