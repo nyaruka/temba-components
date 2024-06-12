@@ -3,6 +3,7 @@ import { FormElement } from '../FormElement';
 import { TemplateResult, html, css, PropertyValueMap, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
 import { MediaPicker } from '../mediapicker/MediaPicker';
+import { getClasses } from '../utils';
 
 interface Component {
   name: string;
@@ -165,6 +166,8 @@ export class TemplateEditor extends FormElement {
   @property({ type: Boolean })
   translating: boolean;
 
+  pickersLoading: { [key: number]: boolean } = {};
+
   public firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -211,6 +214,13 @@ export class TemplateEditor extends FormElement {
       translation: this.translation,
       variables: this.variables
     });
+  }
+
+  private handleAttachmentLoading(event: CustomEvent) {
+    const media = event.target as MediaPicker;
+    const index = parseInt(media.getAttribute('index'));
+    this.pickersLoading[index] = event.detail.loading;
+    this.requestUpdate();
   }
 
   private handleAttachmentsChanged(event: CustomEvent) {
@@ -288,16 +298,21 @@ export class TemplateEditor extends FormElement {
         ) {
           let attachments = [];
           if (this.variables[variableIndex]) {
-            const parts = this.variables[variableIndex].split(':', 2);
-            attachments = [{ url: parts[1], content_type: parts[0] }];
+            const parts = this.variables[variableIndex].split(':');
+            const content_type = parts[0];
+            const url = parts.slice(1).join(':');
+            attachments = [{ url, content_type }];
           }
 
+          const loading = this.pickersLoading[variableIndex];
+
           return html`<div
+            class=${getClasses({ loading })}
             style="
               display: flex; 
               align-items: center; 
               border-radius: var(--curvature);
-              ${attachments.length === 0
+              ${attachments.length === 0 && !loading
               ? `background-color:rgba(255,0,0,.07);`
               : ``}
             "
@@ -310,10 +325,11 @@ export class TemplateEditor extends FormElement {
               index=${variableIndex}
               icon="attachment_${variableSpec.type}"
               attachments=${JSON.stringify(attachments)}
+              @temba-loading=${this.handleAttachmentLoading.bind(this)}
               @change=${this.handleAttachmentsChanged.bind(this)}
             ></temba-media-picker>
             <div>
-              ${attachments.length == 0
+              ${attachments.length == 0 && !loading
                 ? html`Attach ${variableSpec.type} to continue`
                 : ''}
             </div>
@@ -386,7 +402,7 @@ export class TemplateEditor extends FormElement {
           valuekey="uuid"
           class="picker"
           value="${this.template}"
-          endpoint="${this.url}?comps_as_list=true"
+          endpoint="${this.url}"
           shouldExclude=${(template) => template.status !== 'approved'}
           placeholder="Select a template"
           @temba-content-changed=${this.swallowEvent}
