@@ -22,7 +22,7 @@ export class Lightbox extends RapidElement {
       .mask {
         display: flex;
         opacity: 0;
-        background: transparent;
+        background: rgba(0, 0, 0, 0.5);
         position: absolute;
         height: 100svh;
         width: 100svw;
