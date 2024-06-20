@@ -16,8 +16,8 @@ describe('temba-lightbox', () => {
     );
 
     await assertScreenshot('lightbox/img', {
-      x: 28,
-      y: 28,
+      x: 0,
+      y: 0,
       width: 1024,
       height: 768
     });
@@ -26,8 +26,8 @@ describe('temba-lightbox', () => {
     lightbox.showElement(img as HTMLElement);
 
     await assertScreenshot('lightbox/img-zoomed', {
-      x: 28,
-      y: 28,
+      x: 0,
+      y: 0,
       width: 1024,
       height: 768
     });

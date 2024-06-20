@@ -109,12 +109,12 @@ export class TextInput extends FormElement {
         cursor: text;
         resize: none;
         width: 100%;
-        visibility: hidden;
         word-break: break-word;
       }
 
       .grow-wrap textarea {
         margin-left: -100%;
+        height: 100%;
       }
 
       input[type='number'] {

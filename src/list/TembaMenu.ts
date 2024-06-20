@@ -1098,7 +1098,6 @@ export class TembaMenu extends ResizeElement {
     if (menuItem.avatar) {
       icon = renderAvatar({
         name: menuItem.avatar,
-        tip: false,
         scale: parent ? 0.9 : 1.2
       });
       if (menuItem.bubble) {

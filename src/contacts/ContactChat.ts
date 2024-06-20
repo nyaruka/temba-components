@@ -1,12 +1,243 @@
-import { css, html, TemplateResult } from 'lit';
+/* eslint-disable @typescript-eslint/no-this-alias */
+import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { postJSON } from '../utils';
-import { ContactHistory } from './ContactHistory';
+import { oxford, oxfordFn, postJSON } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose } from '../compose/Compose';
+import { fetchContactHistory, getDisplayName } from './helpers';
+import {
+  AirtimeTransferredEvent,
+  CampaignFiredEvent,
+  ChannelEvent,
+  ContactEvent,
+  ContactGroupsEvent,
+  ContactHistoryPage,
+  ContactLanguageChangedEvent,
+  EmailSentEvent,
+  ErrorMessageEvent,
+  FlowEvent,
+  LabelsAddedEvent,
+  MsgEvent,
+  NameChangedEvent,
+  OptinRequestedEvent,
+  TicketEvent,
+  UpdateFieldEvent,
+  UpdateResultEvent,
+  URNsChangedEvent,
+  WebhookEvent
+} from './events';
+import { Chat, ChatEvent, MessageType } from '../chat/Chat';
+import { getUserDisplay } from '../webchat';
+import { DEFAULT_AVATAR } from '../webchat/assets';
 
-const DEFAULT_REFRESH = 10000;
+export enum Events {
+  MESSAGE_CREATED = 'msg_created',
+  MESSAGE_RECEIVED = 'msg_received',
+  BROADCAST_CREATED = 'broadcast_created',
+  IVR_CREATED = 'ivr_created',
+  FLOW_ENTERED = 'flow_entered',
+
+  FLOW_EXITED = 'flow_exited',
+  RUN_RESULT_CHANGED = 'run_result_changed',
+  CONTACT_FIELD_CHANGED = 'contact_field_changed',
+  CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
+  CONTACT_NAME_CHANGED = 'contact_name_changed',
+  CONTACT_URNS_CHANGED = 'contact_urns_changed',
+  CAMPAIGN_FIRED = 'campaign_fired',
+  CHANNEL_EVENT = 'channel_event',
+  CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
+  WEBHOOK_CALLED = 'webhook_called',
+  AIRTIME_TRANSFERRED = 'airtime_transferred',
+  CALL_STARTED = 'call_started',
+  EMAIL_SENT = 'email_sent',
+  INPUT_LABELS_ADDED = 'input_labels_added',
+  NOTE_CREATED = 'note_created',
+  TICKET_ASSIGNED = 'ticket_assigned',
+  TICKET_NOTE_ADDED = 'ticket_note_added',
+  TICKET_CLOSED = 'ticket_closed',
+  TICKET_OPENED = 'ticket_opened',
+  TICKET_REOPENED = 'ticket_reopened',
+  OPTIN_REQUESTED = 'optin_requested',
+  ERROR = 'error',
+  FAILURE = 'failure'
+}
+
+const renderInfoList = (singular: string, plural: string, items: any[]) => {
+  if (items.length === 1) {
+    return `${singular} **${items[0].name}**`;
+  } else {
+    const list = items.map((item) => `**${item.name}**`);
+    if (list.length === 2) {
+      return `${plural} ${list.join(' and ')}`;
+    } else {
+      const last = list.pop();
+      return `${plural} ${list.join(', ')}, and ${last}`;
+    }
+  }
+};
+
+const toTitleCase = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+const renderChannelEvent = (event: ChannelEvent): string => {
+  if (event.event.type === 'mt_miss') {
+    return 'Missed outgoing call';
+  } else if (event.event.type === 'mo_miss') {
+    return 'Missed incoming call';
+  } else if (event.event.type === 'new_conversation') {
+    return 'Started conversation';
+  } else if (event.channel_event_type === 'welcome_message') {
+    return 'Welcome Message Sent';
+  } else if (event.event.type === 'referral') {
+    return 'Referred';
+  } else if (event.event.type === 'follow') {
+    return 'Followed';
+  } else if (event.event.type === 'stop_contact') {
+    return 'Stopped';
+  } else if (event.event.type === 'mt_call') {
+    return 'Outgoing Phone Call';
+  } else if (event.event.type == 'mo_call') {
+    return 'Incoming Phone call';
+  } else if (event.event.type == 'optin') {
+    return `Opted in to **${event.event.optin?.name}**`;
+  } else if (event.event.type == 'optout') {
+    return `Opted out of **${event.event.optin?.name}**`;
+  }
+};
+
+const renderFlowEvent = (event: FlowEvent): string => {
+  let verb = 'Interrupted';
+  if (event.status !== 'I') {
+    if (event.type === Events.FLOW_ENTERED) {
+      verb = 'Started';
+    } else {
+      verb = 'Completed';
+    }
+  }
+  return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
+};
+
+const renderResultEvent = (event: UpdateResultEvent): string => {
+  if (!event.name.startsWith('_') && event.value) {
+    return `Updated flow result **${event.name}** to **${event.value}**`;
+  }
+};
+
+const renderUpdateEvent = (event: UpdateFieldEvent): string => {
+  return event.value
+    ? `Updated **${event.field.name}** to **${event.value.text}**`
+    : `Cleared **${event.field.name}**`;
+};
+
+const renderNameChanged = (event: NameChangedEvent): string => {
+  return `Updated **Contact Name** to **${event.name}**`;
+};
+
+const renderContactURNsChanged = (event: URNsChangedEvent): string => {
+  return `Updated **URNs** to ${oxfordFn(
+    event.urns,
+    (urn: string) => `**${urn.split(':')[1].split('?')[0]}**`
+  )}`;
+};
+
+const renderEmailSent = (event: EmailSentEvent): string => {
+  return `Email sent to **${oxford(event.to, 'and')}** with subject **${
+    event.subject
+  }**`;
+};
+
+const renderLabelsAdded = (event: LabelsAddedEvent): string => {
+  return `Applied ${renderInfoList('label', 'labels', event.labels)}`;
+};
+
+export const renderTicketAction = (
+  event: TicketEvent,
+  action: string
+): string => {
+  if (event.created_by) {
+    return `**${getUserDisplay(
+      event.created_by
+    )}** ${action} a **[ticket](/ticket/all/closed/${event.ticket.uuid}/)**`;
+  }
+  return `A **[ticket](/ticket/all/closed/${event.ticket.uuid}/)** was **${action}**`;
+};
+
+export const renderTicketAssigned = (event: TicketEvent): string => {
+  return event.assignee
+    ? event.assignee.id === event.created_by.id
+      ? `**${getDisplayName(event.created_by)}** took this ticket`
+      : `${getDisplayName(
+          event.created_by
+        )} assigned this ticket to **${getDisplayName(event.assignee)}**`
+    : `**${getDisplayName(event.created_by)}** unassigned this ticket`;
+};
+
+export const renderContactGroupsEvent = (event: ContactGroupsEvent): string => {
+  const groupsEvent = event as ContactGroupsEvent;
+  if (groupsEvent.groups_added) {
+    return renderInfoList(
+      'Added to group',
+      'Added to groups',
+      groupsEvent.groups_added
+    );
+  } else if (groupsEvent.groups_removed) {
+    return renderInfoList(
+      'Removed from group',
+      'Removed from groups',
+      groupsEvent.groups_removed
+    );
+  }
+};
+
+export const renderCampaignFiredEvent = (event: CampaignFiredEvent): string => {
+  return `Campaign ${event.campaign.name}
+      ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
+      ${event.campaign_event.offset_display}
+      ${event.campaign_event.relative_to.name}`;
+};
+
+export const renderTicketOpened = (event: TicketEvent): string => {
+  return `${event.ticket.topic.name} ticket was opened`;
+};
+
+export const renderErrorMessage = (event: ErrorMessageEvent): string => {
+  return `${event.text} ${
+    event.type === Events.FAILURE
+      ? `Run ended prematurely, check the flow design`
+      : null
+  }`;
+};
+
+export const renderWebhookEvent = (event: WebhookEvent): string => {
+  return event.status === 'success'
+    ? `Successfully called ${event.url}`
+    : `Failed to call ${event.url}`;
+};
+
+export const renderAirtimeTransferredEvent = (
+  event: AirtimeTransferredEvent
+): string => {
+  if (parseFloat(event.actual_amount) === 0) {
+    return `Airtime transfer failed`;
+  }
+  return `Transferred **${event.actual_amount}** ${event.currency} of airtime`;
+};
+
+export const renderCallStartedEvent = (): string => {
+  return `Call Started`;
+};
+
+export const renderContactLanguageChangedEvent = (
+  event: ContactLanguageChangedEvent
+): string => {
+  return `Language updated to **${event.language}**`;
+};
+
+export const renderOptinRequested = (event: OptinRequestedEvent): string => {
+  return `Requested opt-in for ${event.optin.name}`;
+};
 
 export class ContactChat extends ContactStoreElement {
   public static get styles() {
@@ -38,16 +269,12 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .chatbox {
-        box-shadow: 0px -5px 1rem 0rem rgba(0, 0, 0, 0.07);
+        background: #fff;
         display: flex;
         flex-direction: column;
         --textarea-min-height: 1em;
         --textarea-height: 1.2em;
         --widget-box-shadow-focused: none;
-      }
-
-      .chatbox:focus-within {
-        --textarea-height: 4em;
       }
 
       .chatbox.full {
@@ -84,6 +311,11 @@ export class ContactChat extends ContactStoreElement {
         --color-focus: transparent;
         --color-widget-bg-focused: transparent;
       }
+
+      .border {
+        border-top: 1px solid #f1f1f1;
+        margin: 0 1em;
+      }
     `;
   }
 
@@ -99,9 +331,6 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: Boolean })
   showDetails = true;
 
-  @property({ type: Boolean })
-  monitor = false;
-
   @property({ type: Object })
   currentTicket: Ticket = null;
 
@@ -111,47 +340,40 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   agent = '';
 
+  @property({ type: Boolean })
+  blockFetching = false;
+
+  @property({ type: String })
+  avatar = DEFAULT_AVATAR;
+
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
+  private chat: Chat;
+
+  ticket = null;
+  lastEventTime = null;
+  newestEventTime = null;
+  refreshId = null;
+  polling = false;
 
   constructor() {
     super();
   }
 
-  refreshInterval = null;
+  public firstUpdated(
+    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changed);
+  }
 
   public connectedCallback() {
     super.connectedCallback();
-    if (this.monitor) {
-      this.refreshInterval = setInterval(() => {
-        if (this.currentTicket && this.currentTicket.closed_on) {
-          return;
-        }
-        this.refresh();
-      }, DEFAULT_REFRESH);
-    }
+    this.chat = this.shadowRoot.querySelector('temba-chat');
   }
 
   public disconnectedCallback() {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-    }
-  }
-
-  public getContactHistory(): ContactHistory {
-    return this.shadowRoot.querySelector(
-      'temba-contact-history'
-    ) as ContactHistory;
-  }
-
-  public refresh(scrollToBottom = false): void {
-    const contactHistory = this.getContactHistory();
-    if (contactHistory) {
-      if (scrollToBottom) {
-        contactHistory.scrollToBottom();
-      }
-      contactHistory.refresh();
-      // super.refresh();
+    if (this.refreshId) {
+      clearInterval(this.refreshId);
     }
   }
 
@@ -165,6 +387,25 @@ export class ContactChat extends ContactStoreElement {
     ) {
       this.currentContact = this.data;
     }
+
+    if (changedProperties.has('currentContact')) {
+      this.chat = this.shadowRoot.querySelector('temba-chat');
+      this.reset();
+      this.fetchPreviousMessages();
+    }
+  }
+
+  private reset() {
+    this.blockFetching = false;
+    this.ticket = null;
+    this.lastEventTime = null;
+    this.newestEventTime = null;
+    this.refreshId = null;
+    this.polling = false;
+  }
+
+  public refresh() {
+    this.checkForNewMessages();
   }
 
   private handleSend(evt: CustomEvent) {
@@ -196,8 +437,8 @@ export class ContactChat extends ContactStoreElement {
       postJSON(`/api/v2/messages.json`, payload)
         .then((response) => {
           if (response.status < 400) {
+            this.checkForNewMessages();
             compose.reset();
-            this.refresh(true);
             this.fireCustomEvent(CustomEventType.MessageSent, { msg: payload });
           } else if (response.status < 500) {
             if (
@@ -250,15 +491,322 @@ export class ContactChat extends ContactStoreElement {
     return html`${contactHistoryAndChatbox}`;
   }
 
+  private getEndpoint() {
+    return `/contact/history/${this.currentContact.uuid}/?_format=json`;
+  }
+
+  private scheduleRefresh() {
+    // knock five seconds off the newest event time so we are
+    // a little more aggressive about refreshing short term
+    let window = new Date().getTime() - this.newestEventTime / 1000 - 5000;
+
+    if (this.refreshId) {
+      clearTimeout(this.refreshId);
+      this.refreshId = null;
+    }
+
+    // wait no longer than 15 seconds
+    window = Math.min(window, 15000);
+
+    // wait at least 2 seconds
+    window = Math.max(window, 2000);
+
+    this.refreshId = setTimeout(() => {
+      this.checkForNewMessages();
+    }, window);
+  }
+
+  public getEventMessage(event: ContactEvent): ChatEvent {
+    let message = null;
+    switch (event.type) {
+      case Events.ERROR:
+      case Events.FAILURE:
+        message = {
+          type: MessageType.Inline,
+          text: `Error during flow: ${toTitleCase(
+            (event as ErrorMessageEvent).text
+          )}`
+        };
+        break;
+      case Events.TICKET_OPENED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAction(event as TicketEvent, 'opened')
+        };
+        break;
+      case Events.TICKET_ASSIGNED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAssigned(event as TicketEvent)
+        };
+        break;
+      case Events.TICKET_REOPENED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAction(event as TicketEvent, 'reopened')
+        };
+        break;
+      case Events.TICKET_CLOSED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAction(event as TicketEvent, 'closed')
+        };
+        break;
+      case Events.FLOW_ENTERED:
+      case Events.FLOW_EXITED:
+        message = {
+          type: MessageType.Inline,
+          text: renderFlowEvent(event as FlowEvent)
+        };
+        break;
+      case Events.RUN_RESULT_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderResultEvent(event as UpdateResultEvent)
+        };
+        break;
+      case Events.CONTACT_FIELD_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderUpdateEvent(event as UpdateFieldEvent)
+        };
+        break;
+      case Events.CONTACT_NAME_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderNameChanged(event as NameChangedEvent)
+        };
+        break;
+      case Events.CONTACT_URNS_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderContactURNsChanged(event as URNsChangedEvent)
+        };
+        break;
+      case Events.EMAIL_SENT:
+        message = {
+          type: MessageType.Inline,
+          text: renderEmailSent(event as EmailSentEvent)
+        };
+        break;
+      case Events.INPUT_LABELS_ADDED:
+        message = {
+          type: MessageType.Inline,
+          text: renderLabelsAdded(event as LabelsAddedEvent)
+        };
+        break;
+      case Events.CONTACT_GROUPS_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderContactGroupsEvent(event as ContactGroupsEvent)
+        };
+        break;
+      case Events.WEBHOOK_CALLED:
+        message = {
+          type: MessageType.Inline,
+          text: renderWebhookEvent(event as WebhookEvent)
+        };
+        break;
+      case Events.AIRTIME_TRANSFERRED:
+        message = {
+          type: MessageType.Inline,
+          text: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent)
+        };
+        break;
+      case Events.CALL_STARTED:
+        message = {
+          type: MessageType.Inline,
+          text: renderCallStartedEvent()
+        };
+        break;
+      case Events.CAMPAIGN_FIRED:
+        message = {
+          type: MessageType.Inline,
+          text: renderCampaignFiredEvent(event as CampaignFiredEvent)
+        };
+        break;
+      case Events.CHANNEL_EVENT:
+        message = {
+          type: MessageType.Inline,
+          text: renderChannelEvent(event as ChannelEvent)
+        };
+        break;
+      case Events.CONTACT_LANGUAGE_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderContactLanguageChangedEvent(
+            event as ContactLanguageChangedEvent
+          )
+        };
+        break;
+      case Events.OPTIN_REQUESTED:
+        message = {
+          type: MessageType.Inline,
+          text: renderOptinRequested(event as OptinRequestedEvent)
+        };
+        break;
+    }
+
+    message.date = new Date(event.created_on);
+    return message;
+  }
+
+  private getUserForEvent(event: MsgEvent | TicketEvent) {
+    let user = null;
+    if (event.created_by) {
+      const storeUser = this.store.getUser(event.created_by.email);
+      if (storeUser) {
+        user = {
+          email: event.created_by.email,
+          name: [storeUser.first_name, storeUser.last_name].join(' '),
+          avatar: storeUser.avatar
+        };
+      }
+    } else if (event.type === 'msg_received') {
+      user = {
+        name: this.currentContact.name
+      };
+    }
+    return user;
+  }
+
+  private createMessages(page: ContactHistoryPage): ChatEvent[] {
+    let messages = page.events.map((event) => {
+      const ts = new Date(event.created_on).getTime() * 1000;
+      if (ts > this.newestEventTime) {
+        this.newestEventTime = ts;
+      }
+
+      if (event.type === 'ticket_note_added') {
+        const ticketEvent = event as TicketEvent;
+        return {
+          type: MessageType.Note,
+          id: event.created_on + event.type,
+          user: this.getUserForEvent(ticketEvent),
+          date: new Date(ticketEvent.created_on),
+          text: ticketEvent.note
+        };
+      }
+
+      if (event.type === 'msg_created' || event.type === 'msg_received') {
+        const msgEvent = event as MsgEvent;
+        return {
+          type: msgEvent.type === 'msg_created' ? 'msg_out' : 'msg_in',
+          id: msgEvent.msg.id + '',
+          user: this.getUserForEvent(msgEvent),
+          date: new Date(msgEvent.created_on),
+          attachments: msgEvent.msg.attachments,
+          text: msgEvent.msg.text,
+          sendError: msgEvent.status === 'E' || msgEvent.status === 'F',
+          popup: html`<div
+            style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
+          >
+            <div style="justify-content:left;text-align:left">
+              <temba-date
+                value=${msgEvent.created_on}
+                display="duration"
+              ></temba-date>
+
+              ${msgEvent.failed_reason_display
+                ? html`
+                    <div
+                      style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
+                    >
+                      ${msgEvent.failed_reason_display}
+                    </div>
+                  `
+                : null}
+            </div>
+            ${msgEvent.logs_url
+              ? html`<a style="margin-left:0.5em" href="${msgEvent.logs_url}"
+                  ><temba-icon name="log"></temba-icon
+                ></a>`
+              : null}
+          </div> `
+        };
+      } else {
+        return this.getEventMessage(event);
+      }
+    });
+
+    // remove any messages we don't recognize
+    messages = messages.filter((msg) => !!msg);
+    return messages as ChatEvent[];
+  }
+
+  private checkForNewMessages() {
+    // we are already working on it
+    if (this.polling) {
+      return;
+    }
+
+    const chat = this.chat;
+    const contactChat = this;
+    if (this.currentContact && this.newestEventTime) {
+      this.polling = true;
+      const endpoint = this.getEndpoint();
+
+      fetchContactHistory(
+        false,
+        endpoint,
+        this.currentTicket?.uuid,
+        null,
+        this.newestEventTime
+      ).then((page: ContactHistoryPage) => {
+        this.lastEventTime = page.next_before;
+        const messages = this.createMessages(page);
+        if (messages.length === 0) {
+          contactChat.blockFetching = true;
+        }
+        messages.reverse();
+        chat.addMessages(messages, null, true);
+        this.polling = false;
+        this.scheduleRefresh();
+      });
+    }
+  }
+
+  private fetchPreviousMessages() {
+    const chat = this.chat;
+    const contactChat = this;
+
+    if (!chat || chat.fetching || contactChat.blockFetching) {
+      return;
+    }
+
+    chat.fetching = true;
+    if (this.currentContact) {
+      const endpoint = this.getEndpoint();
+      fetchContactHistory(
+        false,
+        endpoint,
+        this.currentTicket?.uuid,
+        this.lastEventTime
+      ).then((page: ContactHistoryPage) => {
+        this.lastEventTime = page.next_before;
+        const messages = this.createMessages(page);
+        messages.reverse();
+
+        if (messages.length === 0) {
+          contactChat.blockFetching = true;
+        }
+        chat.addMessages(messages);
+        this.scheduleRefresh();
+      });
+    }
+  }
+
+  private fetchComplete() {
+    this.chat.fetching = false;
+  }
+
   private getTembaContactHistory(): TemplateResult {
-    return html` <temba-contact-history
-      .uuid=${this.currentContact.uuid}
-      .contact=${this.currentContact}
-      .ticket=${this.currentTicket ? this.currentTicket.uuid : null}
-      .endDate=${this.currentTicket ? this.currentTicket.closed_on : null}
-      .agent=${this.agent}
-    >
-    </temba-contact-history>`;
+    return html`<temba-chat
+      @temba-scroll-threshold=${this.fetchPreviousMessages}
+      @temba-fetch-complete=${this.fetchComplete}
+      avatar=${this.avatar}
+      agent
+    ></temba-chat>`;
   }
 
   private getTembaChatbox(): TemplateResult {
@@ -286,15 +834,17 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getChatbox(): TemplateResult {
-    return html`<div class="chatbox">
-      <temba-compose
-        chatbox
-        attachments
-        counter
-        button
-        @temba-button-clicked=${this.handleSend.bind(this)}
-      >
-      </temba-compose>
-    </div>`;
+    return html`<div class="border"></div>
+      <div class="chatbox">
+        <temba-compose
+          chatbox
+          attachments
+          counter
+          button
+          autogrow
+          @temba-button-clicked=${this.handleSend.bind(this)}
+        >
+        </temba-compose>
+      </div>`;
   }
 }

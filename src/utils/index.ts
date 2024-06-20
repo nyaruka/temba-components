@@ -77,6 +77,7 @@ export const getHeaders = (headers: any = {}) => {
       csrf = tokenEle.value;
     }
   }
+
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
   // mark us as ajax
@@ -763,7 +764,6 @@ export const renderAvatar = (input: {
   user?: User;
   icon?: string;
   position?: string;
-  tip?: boolean;
   scale?: number;
 }) => {
   if (!input.position) {
@@ -775,16 +775,14 @@ export const renderAvatar = (input: {
     text = `${input.user.first_name} ${input.user.last_name}`;
   }
 
-  if (!text) {
-    return null;
-  }
-
   let initials = '';
-  let color = colorHash.hex(text);
+  let color = '';
+
   // just a url
   if (input.user && input.user.avatar) {
     color = `url('${input.user.avatar}') center / contain no-repeat`;
   } else if (text) {
+    color = colorHash.hex(text);
     initials = extractInitials(text);
   }
 
@@ -819,11 +817,12 @@ export const renderAvatar = (input: {
       </div>
     </div>
   `;
-  return input.tip
-    ? html`
-        <temba-tip text=${text} position=${input.position}>
-          ${avatar}
-        </temba-tip>
-      `
-    : avatar;
+  return avatar;
+};
+
+export const hashCode = (s) => {
+  return s.split('').reduce((a, b) => {
+    a = (a << 5) - a + b.charCodeAt(0);
+    return a & a;
+  }, 0);
 };

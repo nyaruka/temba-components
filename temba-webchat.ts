@@ -1,3 +1,4 @@
+import { Chat } from './src/chat/Chat';
 import { VectorIcon } from './src/vectoricon/VectorIcon';
 import { WebChat } from './src/webchat/WebChat';
 
@@ -8,4 +9,5 @@ export function addCustomElement(name: string, comp: any) {
 }
 
 addCustomElement('temba-icon', VectorIcon);
+addCustomElement('temba-chat', Chat);
 addCustomElement('temba-webchat', WebChat);

@@ -134,6 +134,9 @@ export class Compose extends FormElement {
   @property({ type: Boolean })
   button: boolean;
 
+  @property({ type: Boolean })
+  autogrow: boolean;
+
   @property({ type: String })
   currentText = '';
 
@@ -324,6 +327,7 @@ export class Compose extends FormElement {
     this.currentQuickReplies = [];
     this.currentAttachments = [];
     this.buttonError = '';
+    this.resetTabs();
   }
 
   private handleQuickReplyChange() {
@@ -427,7 +431,7 @@ export class Compose extends FormElement {
         .value=${this.initialText}
         gsm
         textarea
-        autogrow
+        ?autogrow=${this.autogrow}
         maxlength=${this.maxLength}
         @change=${this.handleChatboxChange}
         @keydown=${this.handleSendEnter}
@@ -439,7 +443,7 @@ export class Compose extends FormElement {
         class="chatbox"
         gsm
         textarea
-        autogrow
+        ?autogrow=${this.autogrow}
         maxlength=${this.maxLength}
         .value=${this.initialText}
         @change=${this.handleChatboxChange}

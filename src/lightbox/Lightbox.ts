@@ -13,7 +13,10 @@ export class Lightbox extends RapidElement {
   static get styles() {
     return css`
       :host {
+        z-index: 10000;
         position: absolute;
+        top: 0;
+        left: 0;
       }
 
       .mask {
@@ -82,6 +85,8 @@ export class Lightbox extends RapidElement {
     // size our matte according to the ele's boundaries
     const bounds = ele.getBoundingClientRect();
     this.ele = ele.cloneNode() as HTMLElement;
+    (this.ele as any).zoom = true;
+
     this.left = bounds.left;
     this.top = bounds.top;
     this.width = bounds.width;
