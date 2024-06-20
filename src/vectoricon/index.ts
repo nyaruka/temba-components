@@ -186,6 +186,7 @@ export enum Icon {
   user = 'users-01',
   users = 'users-01',
   user_beta = 'shield-zap',
+  video = 'video-recorder',
   webhook = 'link-external-01',
   wit = 'wit',
   workspace = 'folder',

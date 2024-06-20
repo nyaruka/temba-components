@@ -2,6 +2,8 @@ import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
 import { TemplateResult, html, css, PropertyValueMap, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
+import { MediaPicker } from '../mediapicker/MediaPicker';
+import { getClasses } from '../utils';
 
 interface Component {
   name: string;
@@ -41,6 +43,11 @@ export class TemplateEditor extends FormElement {
         padding: 1em;
         margin-top: 1em;
       }
+
+      .content {
+        margin-bottom: 1em;
+      }
+
       .picker {
         margin-bottom: 0.5em;
         display: block;
@@ -69,7 +76,6 @@ export class TemplateEditor extends FormElement {
       }
 
       .button-wrapper {
-        margin-top: 1em;
         background: #f9f9f9;
         border-radius: var(--curvature);
         padding: 0.5em;
@@ -89,6 +95,7 @@ export class TemplateEditor extends FormElement {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
+        margin-bottom: 1em;
       }
 
       .button {
@@ -103,6 +110,10 @@ export class TemplateEditor extends FormElement {
         margin-right: 0.5em;
         margin-top: 0.5em;
         align-items: center;
+      }
+
+      .button .content {
+        margin-bottom: 0;
       }
 
       .button .display {
@@ -125,6 +136,10 @@ export class TemplateEditor extends FormElement {
         border: 1px solid var(--color-widget-border);
         padding: 1em;
         line-height: 2.2em;
+        max-height: 50vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 0;
       }
     `;
   }
@@ -150,6 +165,8 @@ export class TemplateEditor extends FormElement {
 
   @property({ type: Boolean })
   translating: boolean;
+
+  pickersLoading: { [key: number]: boolean } = {};
 
   public firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -199,10 +216,38 @@ export class TemplateEditor extends FormElement {
     });
   }
 
+  private handleAttachmentLoading(event: CustomEvent) {
+    const media = event.target as MediaPicker;
+    const index = parseInt(media.getAttribute('index'));
+    this.pickersLoading[index] = event.detail.loading;
+    this.requestUpdate();
+  }
+
+  private handleAttachmentsChanged(event: CustomEvent) {
+    const media = event.target as MediaPicker;
+    const index = parseInt(media.getAttribute('index'));
+
+    if (media.attachments.length === 0) {
+      this.variables[index] = '';
+    } else {
+      const attachment = media.attachments[0];
+      if (attachment.url && attachment.content_type) {
+        this.variables[index] = `${attachment.content_type}:${attachment.url}`;
+      } else {
+        this.variables[index] = ``;
+      }
+    }
+    this.fireContentChange();
+  }
+
   private handleVariableChanged(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     const variableIndex = parseInt(target.getAttribute('index'));
     this.variables[variableIndex] = target.value;
+    this.fireContentChange();
+  }
+
+  private fireContentChange() {
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
@@ -216,9 +261,16 @@ export class TemplateEditor extends FormElement {
       `{{(${Object.keys(component.variables || []).join('|')})}}`,
       'g'
     );
-    const parts = component.content.split(variableRegex);
+
+    let variables = null;
+
+    let parts = [];
+    if (component.content && component.content.trim().length > 0) {
+      parts = component.content?.split(variableRegex) || [];
+    }
+
     if (parts.length > 0) {
-      const variables = parts.map((part, index) => {
+      variables = parts.map((part, index) => {
         if (index % 2 === 0) {
           return html`<span class="text">${part}</span>`;
         }
@@ -235,8 +287,58 @@ export class TemplateEditor extends FormElement {
           placeholder="{{${part}}}"
         ></temba-completion>`;
       });
-      return html`<div class="content">${variables}</div>`;
+    } else {
+      variables = Object.values(component.variables).map((variableIndex) => {
+        const variableSpec = this.translation.variables[variableIndex];
+        if (
+          variableSpec.type === 'image' ||
+          variableSpec.type === 'document' ||
+          variableSpec.type === 'audio' ||
+          variableSpec.type === 'video'
+        ) {
+          let attachments = [];
+          if (this.variables[variableIndex]) {
+            const parts = this.variables[variableIndex].split(':');
+            const content_type = parts[0];
+            const url = parts.slice(1).join(':');
+            attachments = [{ url, content_type }];
+          }
+
+          const loading = this.pickersLoading[variableIndex];
+
+          return html`<div
+            class=${getClasses({ loading })}
+            style="
+              display: flex; 
+              align-items: center; 
+              border-radius: var(--curvature);
+              ${attachments.length === 0 && !loading
+              ? `background-color:rgba(255,0,0,.07);`
+              : ``}
+            "
+          >
+            <temba-media-picker
+              accept="${variableSpec.type === 'document'
+                ? 'application/pdf'
+                : variableSpec.type + '/*'}"
+              max="1"
+              index=${variableIndex}
+              icon="attachment_${variableSpec.type}"
+              attachments=${JSON.stringify(attachments)}
+              @temba-loading=${this.handleAttachmentLoading.bind(this)}
+              @change=${this.handleAttachmentsChanged.bind(this)}
+            ></temba-media-picker>
+            <div>
+              ${attachments.length == 0 && !loading
+                ? html`Attach ${variableSpec.type} to continue`
+                : ''}
+            </div>
+          </div>`;
+        }
+      });
     }
+
+    return html`<div class="content">${variables}</div> `;
   }
 
   public renderComponents(components: Component[]): TemplateResult {
@@ -300,7 +402,7 @@ export class TemplateEditor extends FormElement {
           valuekey="uuid"
           class="picker"
           value="${this.template}"
-          endpoint="${this.url}?comps_as_list=true"
+          endpoint="${this.url}"
           shouldExclude=${(template) => template.status !== 'approved'}
           placeholder="Select a template"
           @temba-content-changed=${this.swallowEvent}

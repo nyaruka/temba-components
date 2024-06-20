@@ -56,6 +56,7 @@ import { TembaUser } from './src/user/TembaUser';
 import { TemplateEditor } from './src/templates/TemplateEditor';
 import { Toast } from './src/toast/Toast';
 import { Chat } from './src/chat/Chat';
+import { MediaPicker } from './src/mediapicker/MediaPicker';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -122,3 +123,4 @@ addCustomElement('temba-user', TembaUser);
 addCustomElement('temba-template-editor', TemplateEditor);
 addCustomElement('temba-toast', Toast);
 addCustomElement('temba-chat', Chat);
+addCustomElement('temba-media-picker', MediaPicker);

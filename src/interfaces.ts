@@ -240,6 +240,7 @@ export type KeyedAssets = { [assetType: string]: string[] };
 
 export enum CustomEventType {
   Loaded = 'temba-loaded',
+  Loading = 'temba-loading',
   Canceled = 'temba-canceled',
   CursorChanged = 'temba-cursor-changed',
   Refreshed = 'temba-refreshed',
