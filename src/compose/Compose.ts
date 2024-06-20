@@ -9,8 +9,7 @@ import {
   postFormData,
   truncate,
   DEFAULT_MEDIA_ENDPOINT,
-  WebResponse,
-  isImageAttachment
+  WebResponse
 } from '../utils';
 import { Completion } from '../completion/Completion';
 import { Select } from '../select/Select';
@@ -441,6 +440,7 @@ export class Compose extends FormElement {
     this.currentAttachments = [];
     this.failedAttachments = [];
     this.buttonError = '';
+    this.resetTabs();
   }
 
   private handleQuickReplyChange() {
@@ -749,13 +749,9 @@ export class Compose extends FormElement {
                     id="${validAttachment.uuid}"
                     name="${Icon.delete_small}"
                   ></temba-icon>
-                  ${isImageAttachment(validAttachment)
-                    ? html`<temba-thumbnail
-                        url="${validAttachment.url}"
-                      ></temba-thumbnail>`
-                    : html`<temba-thumbnail
-                        label="${validAttachment.content_type.split('/')[1]}"
-                      ></temba-thumbnail>`}
+                  <temba-thumbnail
+                    attachment="${validAttachment.content_type}:${validAttachment.url}"
+                  ></temba-thumbnail>
                 </div>`;
               })}
               ${this.getUploader()}

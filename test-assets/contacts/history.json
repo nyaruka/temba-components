@@ -72,22 +72,6 @@
       "status": "C"
     },
     {
-      "type": "run_result_changed",
-      "created_on": "2021-03-30T15:20:35.573533-07:00",
-      "step_uuid": "6b384ebe-5831-4bef-9db9-fef4941c84c5",
-      "name": "Result",
-      "value": "0",
-      "category": "Failure",
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
-    },
-    {
-      "type": "error",
-      "created_on": "2021-03-30T15:20:35.573515-07:00",
-      "step_uuid": "6b384ebe-5831-4bef-9db9-fef4941c84c5",
-      "text": "DTOne API request failed: Account not found. Please enter a correct login and password (995)",
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
-    },
-    {
       "type": "airtime_transferred",
       "created_on": "2021-03-30T22:20:35.573511+00:00",
       "sender": "tel:123456",
@@ -112,16 +96,6 @@
       },
       "status": "W",
       "logs_url": "/channels/channellog/read/1478/"
-    },
-    {
-      "type": "run_result_changed",
-      "created_on": "2021-03-30T15:20:33.924827-07:00",
-      "step_uuid": "9f1a43c1-cbc8-4513-a223-18180f28a95a",
-      "name": "Name",
-      "value": "no",
-      "category": "Other",
-      "input": "no",
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
     },
     {
       "type": "msg_received",
@@ -156,16 +130,6 @@
       "logs_url": "/channels/channellog/read/1476/"
     },
     {
-      "type": "run_result_changed",
-      "created_on": "2021-03-30T15:20:31.933494-07:00",
-      "step_uuid": "5959d883-93f4-4996-beb9-c153f5605f90",
-      "name": "Beer",
-      "value": "primus",
-      "category": "Primus",
-      "input": "primus",
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
-    },
-    {
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:31.656303+00:00",
       "msg": {
@@ -198,16 +162,6 @@
       "logs_url": "/channels/channellog/read/1474/"
     },
     {
-      "type": "run_result_changed",
-      "created_on": "2021-03-30T15:20:29.397464-07:00",
-      "step_uuid": "5b46790e-fedc-4594-9c02-aa0812ff3488",
-      "name": "Color",
-      "value": "blue",
-      "category": "Blue",
-      "input": "blue",
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
-    },
-    {
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:29.277186+00:00",
       "msg": {
@@ -222,15 +176,6 @@
       },
       "msg_type": "F",
       "logs_url": "/channels/channellog/read/1473/"
-    },
-    {
-      "type": "run_result_changed",
-      "created_on": "2021-03-30T15:20:26.704509-07:00",
-      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
-      "name": "A new result",
-      "value": "Some Value",
-      "category": "",
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
     },
     {
       "type": "contact_groups_changed",

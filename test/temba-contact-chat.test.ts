@@ -38,6 +38,7 @@ const getContactChat = async (attrs: any = {}) => {
 
   // TODO: this should be waiting for an event instead
   await waitFor(100);
+  await clock.tick(0);
   return chat;
 };
 

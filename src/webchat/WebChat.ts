@@ -3,27 +3,78 @@ import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { getCookie, setCookie } from '../utils';
 import { DEFAULT_AVATAR } from './assets';
-import { Chat } from '../chat/Chat';
-import { ContactEvent } from '../contacts/events';
+import { Chat, ChatEvent, Message, MessageType } from '../chat/Chat';
 
 interface User {
   avatar?: string;
   email: string;
   name: string;
+  id: string;
 }
 
-interface Message {
-  type: string;
-  msg_id?: string;
-  text?: string;
-  chat_id?: string;
-  origin?: string;
-  time?: string;
+interface MsgIn {
+  id: string;
+  text: string;
+  time: string;
+}
+
+interface MsgOut extends MsgIn {
+  user: User;
+  origin: string;
+}
+
+interface SockMsg {
+  type:
+    | 'start_chat'
+    | 'get_history'
+    | 'send_msg'
+    | 'ack_chat'
+
+    // responses
+    | 'chat_started'
+    | 'chat_resumed'
+    | 'msg_in'
+    | 'msg_out'
+    | 'history'
+
+    // receiving
+    | 'chat_out';
+}
+
+interface GetHistoryCmd extends SockMsg {
   before?: string;
-  history?: Message[];
-  timeAsDate?: Date;
-  user?: User;
-  event?: ContactEvent;
+}
+
+interface StartChatCmd extends SockMsg {
+  chat_id?: string;
+}
+
+interface SendMsgCmd extends SockMsg {
+  text: string;
+}
+
+interface Ack extends SockMsg {
+  msg_id: string;
+}
+
+interface MsgOutResponse extends SockMsg {
+  msg_out: MsgOut;
+}
+
+interface MsgInResponse extends SockMsg {
+  msg_in: MsgIn;
+}
+
+interface HistoryResponse extends SockMsg {
+  history: (MsgInResponse | MsgOutResponse)[];
+}
+
+interface StartChatResponse extends SockMsg {
+  chat_id: string;
+}
+
+interface ResumeChatResponse extends StartChatResponse {
+  email?: string;
 }
 
 enum ChatStatus {
@@ -31,6 +82,20 @@ enum ChatStatus {
   CONNECTING = 'connecting',
   CONNECTED = 'connected'
 }
+
+const sockToChat = function (msg: any): ChatEvent | Message {
+  const type = msg.msg_in ? MessageType.MsgIn : MessageType.MsgOut;
+  const msgContent = msg.msg_in || msg.msg_out;
+
+  return {
+    id: msgContent.id,
+    type,
+    text: msgContent.text,
+    date: new Date(msgContent.time),
+    user: msgContent.user,
+    attachments: msgContent.attachments
+  };
+};
 
 export class WebChat extends LitElement {
   static get styles() {
@@ -321,7 +386,7 @@ export class WebChat extends LitElement {
   private sock: WebSocket;
   private newMessageCount = 0;
   private fetchRequested: Date;
-  private oldestMessageDate: Date;
+  private beforeTime: string;
 
   public constructor() {
     super();
@@ -332,15 +397,20 @@ export class WebChat extends LitElement {
   ): void {
     super.firstUpdated(changed);
     this.chat = this.shadowRoot.querySelector('temba-chat');
+
+    const lightbox = document.createElement('temba-lightbox');
+    document.querySelector('body').appendChild(lightbox);
   }
 
   private handleReconnect() {
     this.openSocket();
   }
 
-  private sendSockMessage(message: Message) {
-    console.log('MO', message);
-    this.sock.send(JSON.stringify(message));
+  private sendSockMessage(
+    cmd: GetHistoryCmd | StartChatCmd | SendMsgCmd | Ack
+  ) {
+    console.log('out', cmd);
+    this.sock.send(JSON.stringify(cmd));
   }
 
   private openSocket(): void {
@@ -356,47 +426,50 @@ export class WebChat extends LitElement {
     }
     const sock = new WebSocket(url);
     this.sock = sock;
-    this.sock.onclose = function (event: CloseEvent) {
-      console.log('Socket closed', event);
+    this.sock.onclose = function () {
       webChat.status = ChatStatus.DISCONNECTED;
     };
 
-    this.sock.onopen = function (event: Event) {
-      console.log('Socket opened', event);
+    this.sock.onopen = function () {
+      webChat.beforeTime = new Date().toISOString();
       webChat.status = ChatStatus.CONNECTED;
       webChat.urn = getCookie('temba-chat-urn');
-      const startChat = { type: 'start_chat' };
+      const cmd: StartChatCmd = { type: 'start_chat' };
       if (webChat.urn) {
-        startChat['chat_id'] = webChat.urn;
+        cmd.chat_id = webChat.urn;
       }
-      webChat.sendSockMessage(startChat);
+      webChat.sendSockMessage(cmd);
     };
 
     this.sock.onmessage = function (event: MessageEvent) {
       webChat.status = ChatStatus.CONNECTED;
-      const msg = JSON.parse(event.data) as Message;
-      console.log('MT', msg);
-
+      const msg = JSON.parse(event.data) as SockMsg;
+      console.log('in', msg);
       if (msg.type === 'chat_started') {
-        if (webChat.urn !== msg.chat_id) {
+        const response = msg as StartChatResponse;
+        if (webChat.urn !== response.chat_id) {
           webChat.messageGroups = [];
         }
-        webChat.urn = msg.chat_id;
-        setCookie('temba-chat-urn', msg.chat_id);
+        webChat.urn = response.chat_id;
+        setCookie('temba-chat-urn', response.chat_id);
         webChat.requestUpdate('messageGroups');
       } else if (msg.type === 'chat_resumed') {
-        webChat.oldestMessageDate = new Date(msg.time);
-        webChat.urn = msg.chat_id;
+        const response = msg as ResumeChatResponse;
+        webChat.urn = response.chat_id;
         webChat.fetchPreviousMessages();
-      } else if (msg.type === 'msg_out') {
-        webChat.chat.addMessages([msg], null, true);
+      } else if (msg.type === 'chat_out') {
+        const response = msg as MsgOutResponse;
+        webChat.chat.addMessages([sockToChat(response)], null, true);
+
+        // ack receipt
+        const ack: Ack = { type: 'ack_chat', msg_id: response.msg_out.id };
+        webChat.sendSockMessage(ack);
       } else if (msg.type === 'history') {
-        webChat.handleHistoryResponse(msg);
+        webChat.handleHistoryResponse(msg as HistoryResponse);
       }
     };
 
-    this.sock.onerror = function (event: Event) {
-      console.log('Socket error', event);
+    this.sock.onerror = function () {
       webChat.status = ChatStatus.DISCONNECTED;
     };
   }
@@ -407,28 +480,30 @@ export class WebChat extends LitElement {
       this.blockHistoryFetching = true;
       this.chat.fetching = true;
 
-      const getHistoryMsg = { type: 'get_history' };
-      if (this.oldestMessageDate) {
-        getHistoryMsg['before'] = this.oldestMessageDate.toISOString();
-      }
-
+      const cmd: GetHistoryCmd = {
+        type: 'get_history',
+        before: this.beforeTime
+      };
       this.fetchRequested = new Date();
-      this.sendSockMessage(getHistoryMsg);
+      this.sendSockMessage(cmd);
     }
   }
 
-  private handleHistoryResponse(msg: Message) {
-    const messages = msg.history.reverse();
+  private handleHistoryResponse(response: HistoryResponse) {
+    const messages = response.history.reverse();
     if (messages.length > 0) {
       const oldestMessage = messages[0];
-      oldestMessage.timeAsDate = new Date(oldestMessage.time);
-      if (
-        this.oldestMessageDate.getTime() > oldestMessage.timeAsDate.getTime()
-      ) {
-        this.oldestMessageDate = oldestMessage.timeAsDate;
+      if (oldestMessage['msg_in']) {
+        const msgIn = (oldestMessage as MsgInResponse).msg_in;
+        this.beforeTime = msgIn.time;
+      } else if (oldestMessage['msg_out']) {
+        const msgOut = (oldestMessage as MsgOutResponse).msg_out;
+        this.beforeTime = msgOut.time;
       }
     }
-    this.chat.addMessages(messages, this.fetchRequested);
+
+    // convert messages to chat messages
+    this.chat.addMessages(messages.map(sockToChat), this.fetchRequested);
   }
 
   public fetchComplete() {
@@ -478,15 +553,22 @@ export class WebChat extends LitElement {
       const text = input.value;
       input.value = '';
 
-      const msg = {
-        msg_id: `pending-${this.newMessageCount++}`,
+      const msg: SendMsgCmd = {
+        // msg_id: `pending-${this.newMessageCount++}`,
         type: 'send_msg',
-        text: text,
-        time: new Date().toISOString()
+        text: text
+        // time: new Date().toISOString()
       };
 
       this.sendSockMessage(msg);
-      this.chat.addMessages([{ ...msg, type: 'msg_in' }], new Date(), true);
+
+      const date = new Date();
+
+      this.chat.addMessages(
+        [{ type: MessageType.MsgIn, text, date }],
+        date,
+        true
+      );
       this.hasPendingText = input.value.length > 0;
     }
   }

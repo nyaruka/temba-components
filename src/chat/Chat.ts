@@ -3,7 +3,7 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { renderAvatar } from '../utils';
+import { hashCode, renderAvatar } from '../utils';
 import { renderMarkdown } from '../markdown';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
@@ -14,7 +14,9 @@ export enum MessageType {
   Inline = 'inline',
   Error = 'error',
   Collapse = 'collapse',
-  Note = 'note'
+  Note = 'note',
+  MsgIn = 'msg_in',
+  MsgOut = 'msg_out'
 }
 
 interface User {
@@ -23,17 +25,18 @@ interface User {
   name: string;
 }
 
-export interface Message {
-  type: string;
-  msg_id?: string;
-  text?: string;
-  chat_id?: string;
-  origin?: string;
-  time?: string;
-  before?: string;
-  history?: Message[];
-  timeAsDate?: Date;
+export interface ChatEvent {
+  id?: string;
+  type: MessageType;
+  text: string;
+  date: Date;
   user?: User;
+  popup?: TemplateResult;
+}
+
+export interface Message extends ChatEvent {
+  sendError?: boolean;
+  attachments?: string[];
 }
 
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
@@ -147,9 +150,8 @@ export class Chat extends RapidElement {
       .bubble {
         padding: 0.75em;
         padding-bottom: 0.25em;
-        background: #f1f1f1;
+        background: var(--color-chat-in, #f1f1f1);
         border-radius: var(--curvature);
-        max-width: 70%;
       }
 
       .bubble .name {
@@ -164,7 +166,7 @@ export class Chat extends RapidElement {
       }
 
       .incoming .bubble {
-        background: var(--color-primary-dark);
+        background: var(--color-chat-out, #3c92dd);
         color: white;
       }
 
@@ -264,6 +266,16 @@ export class Chat extends RapidElement {
         z-index: 1;
       }
 
+      .bubble-wrap {
+        position: relative;
+        max-width: 70%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: -0.5em -2em;
+        padding: 0.5em 2em;
+      }
+
       .scroll-at-top.messages:before {
         opacity: 0;
       }
@@ -345,10 +357,6 @@ export class Chat extends RapidElement {
         display: none;
       }
 
-      .error {
-        color: var(--color-error);
-      }
-
       .inline {
       }
 
@@ -371,6 +379,74 @@ export class Chat extends RapidElement {
       a {
         color: var(--color-primary-dark);
       }
+
+      .attachments {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        align-self: flex-start;
+      }
+
+      .incoming .attachments {
+        align-self: flex-end;
+      }
+
+      temba-thumbnail {
+        margin: 0.4em;
+        border-radius: var(--curvature);
+      }
+
+      .error .bubble {
+        border: 1px solid var(--color-error);
+        background: white;
+        color: #333;
+      }
+
+      .error .bubble .name {
+        color: #999;
+      }
+
+      .error temba-thumbnail {
+        --thumb-background: var(--color-error);
+        --thumb-icon: white;
+      }
+
+      .popup {
+        align-self: center;
+        display: flex;
+        position: absolute;
+        background: #fff;
+        padding: 0.5em 1em;
+        justify-content: center;
+        text-align: center;
+        border-radius: var(--curvature);
+        box-shadow: rgba(0, 0, 0, 0.05) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
+        border: 1px solid #f3f3f3;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        z-index: 2;
+      }
+
+      .popup .arrow {
+        z-index: 1;
+        text-shadow: 0px 3px 3px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        justify-content: center;
+        text-align: center;
+        font-size: 1.3em;
+        transform: translateY(0.7em) scale(1);
+        color: #fff;
+        bottom: 0;
+      }
+
+      .bubble-wrap:hover .popup {
+        transform: translateY(-100%);
+        margin-top: -0.5em;
+        opacity: 1;
+      }
     `;
   }
 
@@ -386,10 +462,13 @@ export class Chat extends RapidElement {
   @property({ type: Boolean, attribute: false })
   hideBottomScroll = true;
 
+  @property({ type: String, attribute: 'avatar' })
+  defaultAvatar = DEFAULT_AVATAR;
+
   @property({ type: Boolean })
   agent = false;
 
-  private msgMap = new Map<string, Message>();
+  private msgMap = new Map<string, ChatEvent>();
 
   public firstUpdated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -402,10 +481,17 @@ export class Chat extends RapidElement {
   }
 
   public addMessages(
-    messages: Message[],
+    messages: ChatEvent[],
     startTime: Date = null,
     append = false
   ) {
+    // make sure our messages have ids
+    messages.forEach((m) => {
+      if (!m.id) {
+        m.id = hashCode(m.text) + '_' + m.date.toISOString();
+      }
+    });
+
     if (!startTime) {
       startTime = new Date();
     }
@@ -418,7 +504,7 @@ export class Chat extends RapidElement {
         const newMessages = [];
         for (const m of messages) {
           if (this.addMessage(m)) {
-            newMessages.push(m.msg_id);
+            newMessages.push(m.id);
           }
         }
 
@@ -445,23 +531,22 @@ export class Chat extends RapidElement {
     );
   }
 
-  private addMessage(msg: Message): boolean {
-    if (msg.time && !msg.timeAsDate) {
-      msg.timeAsDate = new Date(msg.time);
-    }
-
-    const isNew = !this.msgMap.has(msg.msg_id);
-    this.msgMap.set(msg.msg_id, msg);
+  private addMessage(msg: ChatEvent): boolean {
+    const isNew = !this.messageExists(msg);
+    this.msgMap.set(msg.id, msg);
     return isNew;
   }
 
-  private isSameGroup(msg1: Message, msg2: Message): boolean {
+  public messageExists(msg: ChatEvent): boolean {
+    return this.msgMap.has(msg.id);
+  }
+
+  private isSameGroup(msg1: ChatEvent, msg2: ChatEvent): boolean {
     if (msg1 && msg2) {
       return (
         msg1.type === msg2.type &&
         msg1.user?.name === msg2.user?.name &&
-        Math.abs(msg1.timeAsDate.getTime() - msg2.timeAsDate.getTime()) <
-          BATCH_TIME_WINDOW
+        Math.abs(msg1.date.getTime() - msg2.date.getTime()) < BATCH_TIME_WINDOW
       );
     }
 
@@ -552,7 +637,7 @@ export class Chat extends RapidElement {
     const today = new Date();
     const firstGroup = idx === groups.length - 1;
 
-    let prevMsg;
+    let prevMsg: ChatEvent;
     if (idx > 0) {
       const lastGroup = groups[idx - 1];
       if (lastGroup && lastGroup.length > 0) {
@@ -566,21 +651,20 @@ export class Chat extends RapidElement {
     if (
       prevMsg &&
       !this.isSameGroup(prevMsg, currentMsg) &&
-      (Math.abs(
-        currentMsg.timeAsDate.getTime() - prevMsg.timeAsDate.getTime()
-      ) > BATCH_TIME_WINDOW ||
+      (Math.abs(currentMsg.date.getTime() - prevMsg.date.getTime()) >
+        BATCH_TIME_WINDOW ||
         idx === groups.length - 1)
     ) {
       if (
-        today.getDate() !== prevMsg.timeAsDate.getDate() ||
-        prevMsg.timeAsDate.getDate() !== currentMsg.timeAsDate.getDate()
+        today.getDate() !== prevMsg.date.getDate() ||
+        prevMsg.date.getDate() !== currentMsg.date.getDate()
       ) {
         timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
-          ${prevMsg.timeAsDate.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
+          ${prevMsg.date.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
         </div>`;
       } else {
         timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
-          ${prevMsg.timeAsDate.toLocaleTimeString(undefined, TIME_FORMAT)}
+          ${prevMsg.date.toLocaleTimeString(undefined, TIME_FORMAT)}
         </div>`;
       }
     }
@@ -592,15 +676,18 @@ export class Chat extends RapidElement {
     let avatar = currentMsg.user?.avatar;
 
     if (!currentMsg.user) {
-      avatar = DEFAULT_AVATAR;
+      avatar = this.defaultAvatar;
     }
 
-    const showAvatar =
+    let showAvatar =
       ((currentMsg.type === 'note' ||
         currentMsg.type === 'msg_in' ||
         currentMsg.type === 'msg_out') &&
         this.agent) ||
       !incoming;
+
+    // if we don't have a name or avatar, skip it
+    showAvatar = showAvatar && (!!avatar || !!name);
 
     return html`
       ${!firstGroup ? timeDisplay : null}
@@ -620,30 +707,64 @@ export class Chat extends RapidElement {
                 ${renderAvatar({ name: name, user: { avatar: avatar } })}
               </div>`
             : null}
-          ${this.renderMessage(currentMsg)}
+          ${this.renderMessage(
+            currentMsg,
+            showAvatar && msgIds.length === 1 ? name : null
+          )}
         </div>
       </div>
       ${firstGroup ? timeDisplay : null}
     `;
   }
 
-  private renderMessage(message: Message, name = null): TemplateResult {
+  private renderMessage(event: ChatEvent, name = null): TemplateResult {
     if (
-      message.type === MessageType.Error ||
-      message.type === MessageType.Collapse ||
-      message.type === MessageType.Inline
+      event.type === MessageType.Error ||
+      event.type === MessageType.Collapse ||
+      event.type === MessageType.Inline
     ) {
-      return html`<div class="event">${renderMarkdown(message.text)}</div>`;
+      return html`<div class="event">${renderMarkdown(event.text)}</div>`;
     }
 
-    return html` <div class="bubble">
-      ${name ? html`<div class="name">${name}</div>` : null}
-      <div class="message">${message.text}</div>
-      <!--div>${message.timeAsDate.toLocaleDateString(
-        undefined,
-        VERBOSE_FORMAT
-      )}</div-->
-    </div>`;
+    const message = event as Message;
+    return html`
+        <div class="bubble-wrap ${message.sendError ? 'error' : ''}">
+        ${
+          message.popup
+            ? html`<div class="popup">
+                ${message.popup}
+                <div class="arrow">▼</div>
+              </div>`
+            : null
+        }
+          
+          ${
+            message.text
+              ? html`
+                  <div class="bubble">
+                    ${name ? html`<div class="name">${name}</div>` : null}
+                    <div class="message">${message.text}</div>
+
+                    <!--div>${message.date.toLocaleDateString(
+                      undefined,
+                      VERBOSE_FORMAT
+                    )}</div-->
+                  </div>
+                `
+              : null
+          }
+
+          <div class="attachments">
+            ${(message.attachments || []).map(
+              (attachment) =>
+                html`<temba-thumbnail
+                  attachment="${attachment}"
+                ></temba-thumbnail>`
+            )}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   public render(): TemplateResult {
