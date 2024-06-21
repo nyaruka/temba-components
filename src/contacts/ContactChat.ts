@@ -647,7 +647,12 @@ export class ContactChat extends ContactStoreElement {
         break;
     }
 
-    message.date = new Date(event.created_on);
+    if (message && event.created_on) {
+      message.date = new Date(event.created_on);
+    } else {
+      console.error('Unknown event type', event);
+    }
+
     return message;
   }
 
@@ -688,10 +693,14 @@ export class ContactChat extends ContactStoreElement {
         };
       }
 
-      if (event.type === 'msg_created' || event.type === 'msg_received') {
+      if (
+        event.type === 'msg_created' ||
+        event.type === 'msg_received' ||
+        event.type === 'broadcast_created'
+      ) {
         const msgEvent = event as MsgEvent;
         return {
-          type: msgEvent.type === 'msg_created' ? 'msg_out' : 'msg_in',
+          type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
           id: msgEvent.msg.id + '',
           user: this.getUserForEvent(msgEvent),
           date: new Date(msgEvent.created_on),
@@ -707,6 +716,11 @@ export class ContactChat extends ContactStoreElement {
                 display="duration"
               ></temba-date>
 
+              ${msgEvent.optin
+                ? html`<div style="font-size:0.9em;color:#aaa">
+                    ${msgEvent.optin.name}
+                  </div>`
+                : null}
               ${msgEvent.failed_reason_display
                 ? html`
                     <div
