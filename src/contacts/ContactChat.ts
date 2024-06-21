@@ -396,6 +396,9 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private reset() {
+    if (this.chat) {
+      this.chat.reset();
+    }
     this.blockFetching = false;
     this.ticket = null;
     this.lastEventTime = null;
@@ -676,76 +679,79 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private createMessages(page: ContactHistoryPage): ChatEvent[] {
-    let messages = page.events.map((event) => {
-      const ts = new Date(event.created_on).getTime() * 1000;
-      if (ts > this.newestEventTime) {
-        this.newestEventTime = ts;
-      }
+    if (page.events) {
+      let messages = page.events.map((event) => {
+        const ts = new Date(event.created_on).getTime() * 1000;
+        if (ts > this.newestEventTime) {
+          this.newestEventTime = ts;
+        }
 
-      if (event.type === 'ticket_note_added') {
-        const ticketEvent = event as TicketEvent;
-        return {
-          type: MessageType.Note,
-          id: event.created_on + event.type,
-          user: this.getUserForEvent(ticketEvent),
-          date: new Date(ticketEvent.created_on),
-          text: ticketEvent.note
-        };
-      }
+        if (event.type === 'ticket_note_added') {
+          const ticketEvent = event as TicketEvent;
+          return {
+            type: MessageType.Note,
+            id: event.created_on + event.type,
+            user: this.getUserForEvent(ticketEvent),
+            date: new Date(ticketEvent.created_on),
+            text: ticketEvent.note
+          };
+        }
 
-      if (
-        event.type === 'msg_created' ||
-        event.type === 'msg_received' ||
-        event.type === 'broadcast_created'
-      ) {
-        const msgEvent = event as MsgEvent;
-        return {
-          type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
-          id: msgEvent.msg.id + '',
-          user: this.getUserForEvent(msgEvent),
-          date: new Date(msgEvent.created_on),
-          attachments: msgEvent.msg.attachments,
-          text: msgEvent.msg.text,
-          sendError: msgEvent.status === 'E' || msgEvent.status === 'F',
-          popup: html`<div
-            style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
-          >
-            <div style="justify-content:left;text-align:left">
-              <temba-date
-                value=${msgEvent.created_on}
-                display="duration"
-              ></temba-date>
+        if (
+          event.type === 'msg_created' ||
+          event.type === 'msg_received' ||
+          event.type === 'broadcast_created'
+        ) {
+          const msgEvent = event as MsgEvent;
+          return {
+            type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
+            id: msgEvent.msg.id + '',
+            user: this.getUserForEvent(msgEvent),
+            date: new Date(msgEvent.created_on),
+            attachments: msgEvent.msg.attachments,
+            text: msgEvent.msg.text,
+            sendError: msgEvent.status === 'E' || msgEvent.status === 'F',
+            popup: html`<div
+              style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
+            >
+              <div style="justify-content:left;text-align:left">
+                <temba-date
+                  value=${msgEvent.created_on}
+                  display="duration"
+                ></temba-date>
 
-              ${msgEvent.optin
-                ? html`<div style="font-size:0.9em;color:#aaa">
-                    ${msgEvent.optin.name}
-                  </div>`
+                ${msgEvent.optin
+                  ? html`<div style="font-size:0.9em;color:#aaa">
+                      ${msgEvent.optin.name}
+                    </div>`
+                  : null}
+                ${msgEvent.failed_reason_display
+                  ? html`
+                      <div
+                        style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
+                      >
+                        ${msgEvent.failed_reason_display}
+                      </div>
+                    `
+                  : null}
+              </div>
+              ${msgEvent.logs_url
+                ? html`<a style="margin-left:0.5em" href="${msgEvent.logs_url}"
+                    ><temba-icon name="log"></temba-icon
+                  ></a>`
                 : null}
-              ${msgEvent.failed_reason_display
-                ? html`
-                    <div
-                      style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
-                    >
-                      ${msgEvent.failed_reason_display}
-                    </div>
-                  `
-                : null}
-            </div>
-            ${msgEvent.logs_url
-              ? html`<a style="margin-left:0.5em" href="${msgEvent.logs_url}"
-                  ><temba-icon name="log"></temba-icon
-                ></a>`
-              : null}
-          </div> `
-        };
-      } else {
-        return this.getEventMessage(event);
-      }
-    });
+            </div> `
+          };
+        } else {
+          return this.getEventMessage(event);
+        }
+      });
 
-    // remove any messages we don't recognize
-    messages = messages.filter((msg) => !!msg);
-    return messages as ChatEvent[];
+      // remove any messages we don't recognize
+      messages = messages.filter((msg) => !!msg);
+      return messages as ChatEvent[];
+    }
+    return [];
   }
 
   private checkForNewMessages() {
@@ -760,6 +766,8 @@ export class ContactChat extends ContactStoreElement {
       this.polling = true;
       const endpoint = this.getEndpoint();
 
+      const fetchContact = this.currentContact.uuid;
+
       fetchContactHistory(
         false,
         endpoint,
@@ -767,13 +775,15 @@ export class ContactChat extends ContactStoreElement {
         null,
         this.newestEventTime
       ).then((page: ContactHistoryPage) => {
-        this.lastEventTime = page.next_before;
-        const messages = this.createMessages(page);
-        if (messages.length === 0) {
-          contactChat.blockFetching = true;
+        if (fetchContact === this.currentContact.uuid) {
+          this.lastEventTime = page.next_before;
+          const messages = this.createMessages(page);
+          if (messages.length === 0) {
+            contactChat.blockFetching = true;
+          }
+          messages.reverse();
+          chat.addMessages(messages, null, true);
         }
-        messages.reverse();
-        chat.addMessages(messages, null, true);
         this.polling = false;
         this.scheduleRefresh();
       });

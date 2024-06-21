@@ -165,6 +165,10 @@ export class Chat extends RapidElement {
         border-bottom-left-radius: 0;
       }
 
+      .incoming .bubble-wrap {
+        align-items: flex-end;
+      }
+
       .incoming .bubble {
         background: var(--color-chat-out, #3c92dd);
         color: white;
@@ -179,8 +183,12 @@ export class Chat extends RapidElement {
       }
 
       .note .bubble {
-        background: #fff47b;
-        color: rgba(0, 0, 0, 0.6);
+        background: #fffac3;
+        color: rgba(0, 0, 0, 0.7);
+      }
+
+      .note .bubble .name {
+        color: rgba(0, 0, 0, 0.5);
       }
 
       .message {
@@ -223,7 +231,8 @@ export class Chat extends RapidElement {
         bottom: 0;
         right: 0;
         left: 0;
-        overflow: auto;
+        overflow-y: auto;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         overflow-scrolling: touch;
         padding: 1em 1em 1em 1em;
@@ -271,9 +280,9 @@ export class Chat extends RapidElement {
         max-width: 70%;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        margin: -0.5em -2em;
-        padding: 0.5em 2em;
+        align-items: flex-start;
+        margin-top: -1em;
+        padding-top: 1em;
       }
 
       .scroll-at-top.messages:before {
@@ -412,20 +421,26 @@ export class Chat extends RapidElement {
         --thumb-icon: white;
       }
 
+      .outgoing .popup {
+        justify-content: left;
+      }
+
+      .incoming .popup {
+        justify-content: right;
+      }
+
       .popup {
-        align-self: center;
         display: flex;
         position: absolute;
         background: #fff;
+        margin: 0;
         padding: 0.5em 1em;
-        justify-content: center;
-        text-align: center;
         border-radius: var(--curvature);
         box-shadow: rgba(0, 0, 0, 0.05) 0px 3px 7px 0px,
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
         border: 1px solid #f3f3f3;
         opacity: 0;
-        transform: scale(0.8);
+        transform: scale(0.7);
         transition: opacity 0.2s ease-out, transform 0.2s ease-out;
         z-index: 2;
       }
@@ -443,8 +458,7 @@ export class Chat extends RapidElement {
       }
 
       .bubble-wrap:hover .popup {
-        transform: translateY(-100%);
-        margin-top: -0.5em;
+        transform: translateY(-120%);
         opacity: 1;
       }
     `;
@@ -765,6 +779,13 @@ export class Chat extends RapidElement {
         </div>
       </div>
     `;
+  }
+
+  public reset() {
+    this.msgMap.clear();
+    this.messageGroups = [];
+    this.hideBottomScroll = true;
+    this.hideTopScroll = true;
   }
 
   public render(): TemplateResult {
