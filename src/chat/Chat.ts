@@ -56,6 +56,8 @@ export class Chat extends RapidElement {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
+        position: relative;
+        z-index: 1;
       }
 
       .block {
@@ -442,6 +444,7 @@ export class Chat extends RapidElement {
         opacity: 0;
         transform: scale(0.7);
         transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        z-index: 2;
       }
 
       .popup .arrow {
