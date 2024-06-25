@@ -12,6 +12,10 @@ import { MediaPicker } from '../mediapicker/MediaPicker';
 export class Compose extends FormElement {
   static get styles() {
     return css`
+      :host {
+        --textarea-min-height: var(--textarea-min-height, 4em);
+      }
+
       .container {
         display: flex;
         flex-direction: column;
@@ -32,7 +36,7 @@ export class Compose extends FormElement {
           --compose-curvature,
           var(--curvature) var(--curvature) 0px 0px
         );
-        --textarea-min-height: var(--textarea-min-height, 4em);
+
         --widget-box-shadow: none;
         padding: var(--compose-padding, 0px);
       }
@@ -461,6 +465,7 @@ export class Compose extends FormElement {
         embedded
         focusedname
         bottom
+        unselect
         refresh="${this.currentAttachments.length}|${this.index}|${this
           .currentQuickReplies.length}|${showOptins}|${this.currentOptin}"
       >

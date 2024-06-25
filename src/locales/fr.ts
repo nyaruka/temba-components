@@ -6,10 +6,7 @@
 
 export const templates = {
   scf1453991c986b25: `Tab to complete, enter to select`,
-  sf8653793d61d060c: `Skip inactive contacts`,
-  sd4af861b95e8ba4a: `Only include contacts who have sent a message in the last 90 days.`,
-  sd149dff460c8dc41: `Skip contacts currently in a flow`,
-  sc85010c81b71421e: `Avoid interrupting a contact who is already in a flow.`,
-  s3e3fa53e834f4fda: `Skip repeat contacts`,
-  s95e715d82602bced: `Avoid restarting a contact who has been in this flow in the last 90 days.`
+  s638236250662c6b3: `Have sent a message in the last`,
+  s8f02e3a18ffc083a: `Are not currently in a flow`,
+  s4788ee206c4570c7: `Have not started this flow in the last 90 days`
 };
