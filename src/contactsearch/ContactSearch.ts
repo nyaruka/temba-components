@@ -199,6 +199,32 @@ export class ContactSearch extends FormElement {
         margin-bottom: 1em;
         display: block;
       }
+
+      .activity-select {
+        display: flex;
+        align-items: center;
+        padding: var(--checkbox-padding, 10px);
+        border-radius: var(--curvature);
+        cursor: pointer;
+      }
+
+      .activity-select:hover {
+        background: #f9f9f9;
+      }
+
+      .small-select {
+        --temba-select-selected-padding: 0px 0.5em;
+        --temba-select-selected-line-height: 1em;
+        --temba-select-selected-font-size: 1em;
+        --search-input-height: 0px !important;
+        min-width: 100px;
+      }
+
+      .filters {
+        padding: 1em;
+        border: 1px solid var(--color-borders);
+        border-radius: var(--curvature);
+      }
     `;
   }
 
@@ -376,19 +402,42 @@ export class ContactSearch extends FormElement {
 
   private handleActivityLevelChanged(evt: any) {
     const select = evt.target as Select;
-    if (select.value && select.value !== 'all') {
-      this.exclusions['not_seen_since_days'] = parseInt(select.value);
-    } else {
-      delete this.exclusions['not_seen_since_days'];
+    const option = select.values[0];
+    if (option) {
+      if (this.exclusions['not_seen_since_days']) {
+        this.exclusions['not_seen_since_days'] = parseInt(option.value);
+        this.refresh();
+      }
     }
-    this.refresh();
+  }
+
+  private handleActivityLabelClicked(evt: any) {
+    if (
+      evt.target &&
+      evt.target.tagName !== 'TEMBA-CHECKBOX' &&
+      evt.target.tagName !== 'TEMBA-SELECT' &&
+      !evt.target.disabled
+    ) {
+      const checkbox = evt.currentTarget.querySelector('temba-checkbox');
+      checkbox.checked = !checkbox.checked;
+    }
   }
 
   private handleExclusionChanged(evt: any) {
     if (evt.target.tagName === 'TEMBA-CHECKBOX') {
       const ex = JSON.stringify(this.exclusions);
       const checkbox = evt.target as Checkbox;
-      const value = checkbox.checked as any;
+      let value = checkbox.checked as any;
+
+      // if we check the activity box, look inside the select for the value
+      if (checkbox.name === 'not_seen_since_days' && value) {
+        const select = checkbox.parentElement.querySelector(
+          'temba-select'
+        ) as Select;
+        if (select.values[0]) {
+          value = parseInt(select.values[0].value);
+        }
+      }
 
       if (!value) {
         delete this.exclusions[checkbox.name];
@@ -459,95 +508,106 @@ export class ContactSearch extends FormElement {
     }
 
     return html`
-      ${this.advanced
-        ? html`<div class="query">
-            <temba-textinput
-              .label=${this.label}
-              .helpText=${this.helpText}
-              .widgetOnly=${this.widgetOnly}
-              .errors=${this.errors}
-              name=${this.name}
-              .inputRoot=${this}
-              @input=${this.handleQueryChange}
-              placeholder=${this.placeholder}
-              .value=${this.query}
-              textarea
-              autogrow
-            >
-            </temba-textinput>
-          </div>`
-        : html`<temba-omnibox
-              placeholder="Search for contacts or groups"
-              widget_only=""
-              groups=""
-              contacts=""
-              label="Recipients"
-              help_text="The contacts to send the message to."
-              .errors=${this.errors}
-              id="recipients"
-              name="recipients"
-              .value=${this.recipients}
-              endpoint="/contact/omnibox/?"
-              @change=${this.handleRecipientsChanged}
-            >
-            </temba-omnibox>
+      ${
+        this.advanced
+          ? html`<div class="query">
+              <temba-textinput
+                .label=${this.label}
+                .helpText=${this.helpText}
+                .widgetOnly=${this.widgetOnly}
+                .errors=${this.errors}
+                name=${this.name}
+                .inputRoot=${this}
+                @input=${this.handleQueryChange}
+                placeholder=${this.placeholder}
+                .value=${this.query}
+                textarea
+                autogrow
+              >
+              </temba-textinput>
+            </div>`
+          : html`<temba-omnibox
+                placeholder="Search for contacts or groups"
+                widget_only=""
+                groups=""
+                contacts=""
+                label="Recipients"
+                help_text="The contacts to send the message to."
+                .errors=${this.errors}
+                id="recipients"
+                name="recipients"
+                .value=${this.recipients}
+                endpoint="/contact/omnibox/?"
+                @change=${this.handleRecipientsChanged}
+              >
+              </temba-omnibox>
 
-            ${this.not_seen_since_days
-              ? html`<temba-select
-                  name="not_seen_since_days"
-                  class="activity-select"
-                  help_text="${msg(
-                    'Only include contacts who have sent a message in the last 90 days.'
-                  )}"
-                  widget_only
-                  @change=${this.handleActivityLevelChanged}
-                >
-                  <temba-option
-                    name="Active in the last 30 days"
-                    value="30"
-                    icon="filter"
-                    ?checked=${this.exclusions['not_seen_since_days'] === 30}
-                  ></temba-option>
-                  <temba-option
-                    name="Active in the last 90 days"
-                    value="90"
-                    icon="filter"
-                    ?checked=${this.exclusions['not_seen_since_days'] === 90}
-                  ></temba-option>
-                  <temba-option
-                    name="Active in the last year"
-                    value="365"
-                    icon="filter"
-                    ?checked=${this.exclusions['not_seen_since_days'] === 365}
-                  ></temba-option>
-                  <temba-option
-                    name="Don't filter by activity"
-                    value="all"
-                  ></temba-option>
-                </temba-select>`
-              : null}
-            ${this.in_a_flow
-              ? html`<temba-checkbox
-                  name="in_a_flow"
-                  label="${msg('Skip contacts currently in a flow')}"
-                  help_text="${msg(
-                    'Avoid interrupting a contact who is already in a flow.'
-                  )}"
-                  ?checked=${this.exclusions['in_a_flow']}
-                  @change=${this.handleExclusionChanged}
-                ></temba-checkbox>`
-              : null}
-            ${this.started_previously
-              ? html`<temba-checkbox
-                  name="started_previously"
-                  label="${msg('Skip repeat contacts')}"
-                  help_text="${msg(
-                    'Avoid restarting a contact who has been in this flow in the last 90 days.'
-                  )}"
-                  ?checked=${this.exclusions['started_previously']}
-                  @change=${this.handleExclusionChanged}
-                ></temba-checkbox>`
-              : null}`}
+              <div class="filters">
+                <div style="display:flex;font-size:1em;margin-bottom:0.5em">
+                  <temba-icon size="1" name="filter"></temba-icon>
+                  <div style="margin-left:0.5em">
+                    Only include contacts who...
+                  </div>
+                </div>
+
+                ${this.not_seen_since_days
+                  ? html`
+                      <div
+                        class="activity-select"
+                        @click=${this.handleActivityLabelClicked}
+                      >
+                        <temba-checkbox
+                          style="display:inline;"
+                          name="not_seen_since_days"
+                          @change=${this.handleExclusionChanged}
+                        >
+                        </temba-checkbox>
+
+                        <div style="margin-left:0.5em">
+                          ${msg('Have sent a message in the last')}
+                        </div>
+
+                        <temba-select
+                          style="margin-left:0.5em"
+                          class="small-select"
+                          @change=${this.handleActivityLevelChanged}
+                          ?disabled=${!this.exclusions['not_seen_since_days']}
+                        >
+                          <temba-option
+                            name="90 days"
+                            value="90"
+                          ></temba-option>
+                          <temba-option
+                            name="180 days"
+                            value="180"
+                          ></temba-option>
+                          <temba-option name="Year" value="365"></temba-option>
+                        </temba-select>
+                        <div></div>
+                      </div>
+                    `
+                  : null}
+                ${this.in_a_flow
+                  ? html`<temba-checkbox
+                      name="in_a_flow"
+                      label="${msg('Are not currently in a flow')}"
+                      ?checked=${this.exclusions['in_a_flow']}
+                      @change=${this.handleExclusionChanged}
+                    ></temba-checkbox>`
+                  : null}
+                ${this.started_previously
+                  ? html`<temba-checkbox
+                      name="started_previously"
+                      label="${msg(
+                        'Have not started this flow in the last 90 days'
+                      )}"
+                      ?checked=${this.exclusions['started_previously']}
+                      @change=${this.handleExclusionChanged}
+                    ></temba-checkbox>`
+                  : null}
+              </div>`
+      }
+              </div>
 
       <div
         class="results ${getClasses({
@@ -562,14 +622,16 @@ export class ContactSearch extends FormElement {
         <div class="summary ${this.expanded ? 'expanded' : ''}">${summary}</div>
       </div>
 
-      ${this.summary && this.summary.warnings
-        ? this.summary.warnings.map(
-            (warning) =>
-              html`<temba-alert level="warning"
-                >${unsafeHTML(warning)}</temba-alert
-              >`
-          )
-        : ``}
+      ${
+        this.summary && this.summary.warnings
+          ? this.summary.warnings.map(
+              (warning) =>
+                html`<temba-alert level="warning"
+                  >${unsafeHTML(warning)}</temba-alert
+                >`
+            )
+          : ``
+      }
     `;
   }
 }
