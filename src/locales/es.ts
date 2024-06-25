@@ -6,7 +6,6 @@
 
 export const templates = {
   scf1453991c986b25: `Tab para completar, enter para seleccionar`,
-  sf8653793d61d060c: `Skip inactive contacts`,
   sd4af861b95e8ba4a: `Only include contacts who have sent a message in the last 90 days.`,
   sd149dff460c8dc41: `Skip contacts currently in a flow`,
   sc85010c81b71421e: `Avoid interrupting a contact who is already in a flow.`,

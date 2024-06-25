@@ -116,6 +116,14 @@ export class TabPane extends RapidElement {
       .bottom .tab.selected {
       }
 
+      .unselect .tab.selected {
+        cursor: pointer;
+      }
+
+      .unselect .tab.selected:hover {
+        background: var(--unselect-tab-color, #eee);
+      }
+
       .tab:hover {
         --icon-color: #666;
         color: #666;
@@ -216,6 +224,10 @@ export class TabPane extends RapidElement {
   @property({ type: Boolean })
   bottom = false;
 
+  // do we allow unselecting the current tab
+  @property({ type: Boolean })
+  unselect = false;
+
   // Only shows the name if the tab is focused
   @property({ type: Boolean })
   focusedName = false;
@@ -230,9 +242,16 @@ export class TabPane extends RapidElement {
   tabs: Tab[] = [];
 
   private handleTabClick(event: MouseEvent): void {
-    this.index = parseInt(
+    const newIndex = parseInt(
       (event.currentTarget as HTMLDivElement).dataset.index
     );
+
+    if (this.unselect && this.index === newIndex) {
+      this.index = -1;
+    } else {
+      this.index = newIndex;
+    }
+
     event.preventDefault();
     event.stopPropagation();
     this.requestUpdate('index');
@@ -332,7 +351,8 @@ export class TabPane extends RapidElement {
           bottom: this.bottom,
           collapses: this.collapses,
           embedded: this.embedded,
-          focusedname: this.focusedName
+          focusedname: this.focusedName,
+          unselect: this.unselect
         })}"
       >
         ${this.tabs.map(

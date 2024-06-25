@@ -5,9 +5,6 @@
 <trans-unit id="scf1453991c986b25">
   <source>Tab to complete, enter to select</source>
 </trans-unit>
-<trans-unit id="sf8653793d61d060c">
-  <source>Skip inactive contacts</source>
-</trans-unit>
 <trans-unit id="sd4af861b95e8ba4a">
   <source>Only include contacts who have sent a message in the last 90 days.</source>
 </trans-unit>

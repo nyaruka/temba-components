@@ -9,6 +9,7 @@ import { FormElement } from '../FormElement';
 import { Checkbox } from '../checkbox/Checkbox';
 import { msg } from '@lit/localize';
 import { OmniOption } from '../omnibox/Omnibox';
+import { Select } from '../select/Select';
 
 const QUEIT_MILLIS = 2000;
 
@@ -193,6 +194,11 @@ export class ContactSearch extends FormElement {
       temba-alert {
         margin: 1em 0;
       }
+
+      temba-select[name='not_seen_since_days'] {
+        margin-bottom: 1em;
+        display: block;
+      }
     `;
   }
 
@@ -368,19 +374,25 @@ export class ContactSearch extends FormElement {
     }
   }
 
+  private handleActivityLevelChanged(evt: any) {
+    const select = evt.target as Select;
+    if (select.value && select.value !== 'all') {
+      this.exclusions['not_seen_since_days'] = parseInt(select.value);
+    } else {
+      delete this.exclusions['not_seen_since_days'];
+    }
+    this.refresh();
+  }
+
   private handleExclusionChanged(evt: any) {
     if (evt.target.tagName === 'TEMBA-CHECKBOX') {
       const ex = JSON.stringify(this.exclusions);
       const checkbox = evt.target as Checkbox;
-      let value = checkbox.checked as any;
+      const value = checkbox.checked as any;
 
       if (!value) {
         delete this.exclusions[checkbox.name];
       } else {
-        if (checkbox.name === 'not_seen_since_days') {
-          value = 90;
-        }
-
         this.exclusions[checkbox.name] = value;
       }
 
@@ -481,15 +493,38 @@ export class ContactSearch extends FormElement {
             </temba-omnibox>
 
             ${this.not_seen_since_days
-              ? html`<temba-checkbox
+              ? html`<temba-select
                   name="not_seen_since_days"
-                  label="${msg('Skip inactive contacts')}"
+                  class="activity-select"
                   help_text="${msg(
                     'Only include contacts who have sent a message in the last 90 days.'
                   )}"
-                  ?checked=${this.exclusions['not_seen_since_days'] === 90}
-                  @change=${this.handleExclusionChanged}
-                ></temba-checkbox>`
+                  widget_only
+                  @change=${this.handleActivityLevelChanged}
+                >
+                  <temba-option
+                    name="Active in the last 30 days"
+                    value="30"
+                    icon="filter"
+                    ?checked=${this.exclusions['not_seen_since_days'] === 30}
+                  ></temba-option>
+                  <temba-option
+                    name="Active in the last 90 days"
+                    value="90"
+                    icon="filter"
+                    ?checked=${this.exclusions['not_seen_since_days'] === 90}
+                  ></temba-option>
+                  <temba-option
+                    name="Active in the last year"
+                    value="365"
+                    icon="filter"
+                    ?checked=${this.exclusions['not_seen_since_days'] === 365}
+                  ></temba-option>
+                  <temba-option
+                    name="Don't filter by activity"
+                    value="all"
+                  ></temba-option>
+                </temba-select>`
               : null}
             ${this.in_a_flow
               ? html`<temba-checkbox
