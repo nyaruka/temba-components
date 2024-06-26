@@ -542,70 +542,83 @@ export class ContactSearch extends FormElement {
               >
               </temba-omnibox>
 
-              <div class="filters">
-                <div style="display:flex;font-size:1em;margin-bottom:0.5em">
-                  <temba-icon size="1" name="filter"></temba-icon>
-                  <div style="margin-left:0.5em">
-                    Only include contacts who...
-                  </div>
-                </div>
-
-                ${this.not_seen_since_days
-                  ? html`
+              ${this.not_seen_since_days ||
+              this.in_a_flow ||
+              this.started_previously
+                ? html`
+                    <div class="filters">
                       <div
-                        class="activity-select"
-                        @click=${this.handleActivityLabelClicked}
+                        style="display:flex;font-size:1em;margin-bottom:0.5em"
                       >
-                        <temba-checkbox
-                          style="display:inline;"
-                          name="not_seen_since_days"
-                          @change=${this.handleExclusionChanged}
-                        >
-                        </temba-checkbox>
-
+                        <temba-icon size="1" name="filter"></temba-icon>
                         <div style="margin-left:0.5em">
-                          ${msg('Have sent a message in the last')}
+                          Only include contacts who...
                         </div>
-
-                        <temba-select
-                          style="margin-left:0.5em"
-                          class="small-select"
-                          @change=${this.handleActivityLevelChanged}
-                          ?disabled=${!this.exclusions['not_seen_since_days']}
-                        >
-                          <temba-option
-                            name="90 days"
-                            value="90"
-                          ></temba-option>
-                          <temba-option
-                            name="180 days"
-                            value="180"
-                          ></temba-option>
-                          <temba-option name="Year" value="365"></temba-option>
-                        </temba-select>
-                        <div></div>
                       </div>
-                    `
-                  : null}
-                ${this.in_a_flow
-                  ? html`<temba-checkbox
-                      name="in_a_flow"
-                      label="${msg('Are not currently in a flow')}"
-                      ?checked=${this.exclusions['in_a_flow']}
-                      @change=${this.handleExclusionChanged}
-                    ></temba-checkbox>`
-                  : null}
-                ${this.started_previously
-                  ? html`<temba-checkbox
-                      name="started_previously"
-                      label="${msg(
-                        'Have not started this flow in the last 90 days'
-                      )}"
-                      ?checked=${this.exclusions['started_previously']}
-                      @change=${this.handleExclusionChanged}
-                    ></temba-checkbox>`
-                  : null}
-              </div>`
+
+                      ${this.not_seen_since_days
+                        ? html`
+                            <div
+                              class="activity-select"
+                              @click=${this.handleActivityLabelClicked}
+                            >
+                              <temba-checkbox
+                                style="display:inline;"
+                                name="not_seen_since_days"
+                                @change=${this.handleExclusionChanged}
+                              >
+                              </temba-checkbox>
+
+                              <div style="margin-left:0.5em">
+                                ${msg('Have sent a message in the last')}
+                              </div>
+
+                              <temba-select
+                                style="margin-left:0.5em"
+                                class="small-select"
+                                @change=${this.handleActivityLevelChanged}
+                                ?disabled=${!this.exclusions[
+                                  'not_seen_since_days'
+                                ]}
+                              >
+                                <temba-option
+                                  name="90 days"
+                                  value="90"
+                                ></temba-option>
+                                <temba-option
+                                  name="180 days"
+                                  value="180"
+                                ></temba-option>
+                                <temba-option
+                                  name="Year"
+                                  value="365"
+                                ></temba-option>
+                              </temba-select>
+                              <div></div>
+                            </div>
+                          `
+                        : null}
+                      ${this.in_a_flow
+                        ? html`<temba-checkbox
+                            name="in_a_flow"
+                            label="${msg('Are not currently in a flow')}"
+                            ?checked=${this.exclusions['in_a_flow']}
+                            @change=${this.handleExclusionChanged}
+                          ></temba-checkbox>`
+                        : null}
+                      ${this.started_previously
+                        ? html`<temba-checkbox
+                            name="started_previously"
+                            label="${msg(
+                              'Have not started this flow in the last 90 days'
+                            )}"
+                            ?checked=${this.exclusions['started_previously']}
+                            @change=${this.handleExclusionChanged}
+                          ></temba-checkbox>`
+                        : null}
+                    </div>
+                  `
+                : null} `
       }
               </div>
 
