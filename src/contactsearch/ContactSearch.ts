@@ -330,6 +330,14 @@ export class ContactSearch extends FormElement {
         .filter((value: OmniOption) => value.type === 'contact')
         .map((value: OmniOption) => value.id);
 
+      if (group_uuids.length === 0 && contact_uuids.length === 0) {
+        if (this.summary) {
+          this.summary.total = 0;
+        }
+        this.fetching = false;
+        return;
+      }
+
       postJSON(this.endpoint, {
         include: this.advanced
           ? { query: this.query }
@@ -338,6 +346,7 @@ export class ContactSearch extends FormElement {
         exclude: this.exclusions
       }).then((response: WebResponse) => {
         this.fetching = false;
+        this.initialized = true;
         if (response.status === 200) {
           this.summary = response.json as SummaryResponse;
           if (!this.advanced) {
@@ -436,6 +445,8 @@ export class ContactSearch extends FormElement {
         ) as Select;
         if (select.values[0]) {
           value = parseInt(select.values[0].value);
+        } else {
+          value = this.exclusions[checkbox.name];
         }
       }
 
@@ -496,6 +507,7 @@ export class ContactSearch extends FormElement {
       }
     }
 
+    const notSeenSinceDays = this.exclusions['not_seen_since_days'];
     if (
       this.summary &&
       this.summary.blockers &&
@@ -565,6 +577,7 @@ export class ContactSearch extends FormElement {
                               <temba-checkbox
                                 style="display:inline;"
                                 name="not_seen_since_days"
+                                ?checked=${notSeenSinceDays}
                                 @change=${this.handleExclusionChanged}
                               >
                               </temba-checkbox>
@@ -577,21 +590,22 @@ export class ContactSearch extends FormElement {
                                 style="margin-left:0.5em"
                                 class="small-select"
                                 @change=${this.handleActivityLevelChanged}
-                                ?disabled=${!this.exclusions[
-                                  'not_seen_since_days'
-                                ]}
+                                ?disabled=${!notSeenSinceDays}
                               >
                                 <temba-option
                                   name="90 days"
                                   value="90"
+                                  ?selected=${notSeenSinceDays === 90}
                                 ></temba-option>
                                 <temba-option
                                   name="180 days"
                                   value="180"
+                                  ?selected=${notSeenSinceDays === 180}
                                 ></temba-option>
                                 <temba-option
                                   name="Year"
                                   value="365"
+                                  ?selected=${notSeenSinceDays === 365}
                                 ></temba-option>
                               </temba-select>
                               <div></div>
@@ -621,7 +635,6 @@ export class ContactSearch extends FormElement {
                 : null} `
       }
               </div>
-
       <div
         class="results ${getClasses({
           fetching: this.fetching,
@@ -634,7 +647,6 @@ export class ContactSearch extends FormElement {
         <temba-loading units="6" size="8"></temba-loading>
         <div class="summary ${this.expanded ? 'expanded' : ''}">${summary}</div>
       </div>
-
       ${
         this.summary && this.summary.warnings
           ? this.summary.warnings.map(
