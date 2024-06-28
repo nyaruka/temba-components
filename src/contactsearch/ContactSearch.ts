@@ -335,9 +335,8 @@ export class ContactSearch extends FormElement {
         .map((value: OmniOption) => value.id);
 
       if (
-        group_uuids.length === 0 &&
-        contact_uuids.length === 0 &&
-        !this.query
+        (group_uuids.length === 0 && contact_uuids.length === 0) ||
+        (!this.query && this.advanced)
       ) {
         if (this.summary) {
           this.summary.total = 0;
