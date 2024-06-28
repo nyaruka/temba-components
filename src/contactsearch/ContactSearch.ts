@@ -289,6 +289,10 @@ export class ContactSearch extends FormElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
+    if (changedProperties.has('recipients')) {
+      this.handleRecipientsChanged();
+    }
+
     if (changedProperties.has('advanced') && this.advanced) {
       return;
     }
@@ -330,7 +334,11 @@ export class ContactSearch extends FormElement {
         .filter((value: OmniOption) => value.type === 'contact')
         .map((value: OmniOption) => value.id);
 
-      if (group_uuids.length === 0 && contact_uuids.length === 0) {
+      if (
+        group_uuids.length === 0 &&
+        contact_uuids.length === 0 &&
+        !this.query
+      ) {
         if (this.summary) {
           this.summary.total = 0;
         }
@@ -402,7 +410,11 @@ export class ContactSearch extends FormElement {
   }
 
   private handleRecipientsChanged() {
-    if (this.refreshKey !== '0' || this.initialized) {
+    if (!this.endpoint) {
+      return;
+    }
+
+    if (this.recipients && (this.refreshKey !== '0' || this.initialized)) {
       this.refresh();
     } else {
       this.initialized = true;
