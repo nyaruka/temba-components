@@ -168,6 +168,11 @@ export class TabPane extends RapidElement {
         color: #fff;
       }
 
+      .alert {
+        color: var(--color-alert);
+        --icon-color: var(--color-alert);
+      }
+
       .bottom.tabs .tab {
         border-radius: 0em;
       }
@@ -365,7 +370,8 @@ export class TabPane extends RapidElement {
                 first: index == 0,
                 selected: index == this.index,
                 hidden: tab.hidden,
-                notify: tab.notify
+                notify: tab.notify,
+                alert: tab.alert
               })}"
               style="${tab.selectionColor && index == this.index
                 ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
@@ -386,7 +392,7 @@ export class TabPane extends RapidElement {
                     </div>
                   `
                 : null}
-              ${tab.checked
+              ${tab.checked && !tab.alert
                 ? html`<temba-icon class="check" name="check"></temba-icon>`
                 : null}
             </div>

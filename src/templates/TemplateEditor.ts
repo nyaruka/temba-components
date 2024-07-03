@@ -45,7 +45,6 @@ export class TemplateEditor extends FormElement {
       }
 
       .content {
-        margin-bottom: 1em;
       }
 
       .picker {
@@ -67,6 +66,7 @@ export class TemplateEditor extends FormElement {
 
       .error-message {
         padding-left: 0.5em;
+        padding-bottom: 1em;
       }
 
       .variable {
@@ -157,8 +157,12 @@ export class TemplateEditor extends FormElement {
   @property({ type: String })
   lang = 'eng-US';
 
+  // initial variables, not reflected back
   @property({ type: Array })
   variables: string[];
+
+  @property({ type: Array })
+  currentVariables: string[];
 
   @property({ type: Object, attribute: false })
   translation: Translation;
@@ -172,47 +176,54 @@ export class TemplateEditor extends FormElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
+    if (changes.has('variables') && this.variables) {
+      this.currentVariables = this.variables.slice();
+    }
   }
 
-  public updated(changedProperties: Map<string, any>): void {
-    super.updated(changedProperties);
+  public updated(changes: Map<string, any>): void {
+    super.updated(changes);
+
+    if (changes.has('template')) {
+      this.currentVariables = this.variables;
+    }
   }
 
   private handleTemplateChanged(event: CustomEvent) {
     const prev = this.selectedTemplate;
     this.selectedTemplate = (event.target as any).values[0] as Template;
+
+    if (prev) {
+      this.currentVariables = [];
+    }
+
     const [lang, loc] = this.lang.split('-');
     if (this.selectedTemplate) {
-      this.selectedTemplate.translations.forEach((translation) => {
-        if (
-          translation.locale === this.lang ||
-          (!loc && translation.locale.split('-')[0] === lang)
-        ) {
-          this.translation = translation;
-          // initialize our variables array
-          const newVariables = new Array(
-            (translation.variables || []).length
-          ).fill('');
-
-          if (!prev) {
-            // copy our previous variables into newVariables
-            if (this.variables) {
-              this.variables.forEach((variable, index) => {
-                newVariables[index] = variable;
-              });
-            }
-          }
-          this.variables = newVariables;
+      this.translation = this.selectedTemplate.translations.find(
+        (translation) => {
+          return (
+            translation.locale === this.lang ||
+            (!loc && translation.locale.split('-')[0] === lang)
+          );
         }
-      });
+      );
+
+      if (this.translation) {
+        this.variables = new Array(
+          (this.translation.variables || []).length
+        ).fill('');
+      } else {
+        this.variables = [];
+      }
     } else {
       this.translation = null;
+      this.variables = [];
     }
 
     this.fireCustomEvent(CustomEventType.ContextChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
-      variables: this.variables
+      variables: this.currentVariables
     });
   }
 
@@ -228,22 +239,25 @@ export class TemplateEditor extends FormElement {
     const index = parseInt(media.getAttribute('index'));
 
     if (media.attachments.length === 0) {
-      this.variables[index] = '';
+      this.currentVariables[index] = '';
     } else {
       const attachment = media.attachments[0];
       if (attachment.url && attachment.content_type) {
-        this.variables[index] = `${attachment.content_type}:${attachment.url}`;
+        this.currentVariables[
+          index
+        ] = `${attachment.content_type}:${attachment.url}`;
       } else {
-        this.variables[index] = ``;
+        this.currentVariables[index] = ``;
       }
     }
     this.fireContentChange();
+    this.requestUpdate('currentVariables');
   }
 
   private handleVariableChanged(event: CustomEvent) {
     const target = event.target as HTMLInputElement;
     const variableIndex = parseInt(target.getAttribute('index'));
-    this.variables[variableIndex] = target.value;
+    this.currentVariables[variableIndex] = target.value;
     this.fireContentChange();
   }
 
@@ -251,7 +265,7 @@ export class TemplateEditor extends FormElement {
     this.fireCustomEvent(CustomEventType.ContentChanged, {
       template: this.selectedTemplate,
       translation: this.translation,
-      variables: this.variables
+      variables: this.currentVariables
     });
   }
 
@@ -275,11 +289,12 @@ export class TemplateEditor extends FormElement {
           return html`<span class="text">${part}</span>`;
         }
         const variableIndex = component.variables[part];
+        const currVariables = this.currentVariables || [];
         return html`<temba-completion
           class="variable"
           type="text"
-          value=${variableIndex < this.variables.length
-            ? this.variables[variableIndex]
+          value=${variableIndex < currVariables.length
+            ? currVariables[variableIndex]
             : null}
           @keyup=${this.handleVariableChanged}
           name="${component.name}"
@@ -297,8 +312,8 @@ export class TemplateEditor extends FormElement {
           variableSpec.type === 'video'
         ) {
           let attachments = [];
-          if (this.variables[variableIndex]) {
-            const parts = this.variables[variableIndex].split(':');
+          if (this.currentVariables[variableIndex]) {
+            const parts = this.currentVariables[variableIndex].split(':');
             const content_type = parts[0];
             const url = parts.slice(1).join(':');
             attachments = [{ url, content_type }];
@@ -312,8 +327,9 @@ export class TemplateEditor extends FormElement {
               display: flex; 
               align-items: center; 
               border-radius: var(--curvature);
+              margin-bottom: 0.5em;
               ${attachments.length === 0 && !loading
-              ? `background-color:rgba(255,0,0,.07);`
+              ? `background-color:rgba(0,0,0,.04);`
               : ``}
             "
           >
@@ -387,7 +403,7 @@ export class TemplateEditor extends FormElement {
     let content = null;
     if (this.translation) {
       content = this.renderComponents(this.translation.components);
-    } else {
+    } else if (this.selectedTemplate) {
       content = html`<div class="error-message">
         No approved translation was found for current language.
       </div>`;
@@ -409,8 +425,7 @@ export class TemplateEditor extends FormElement {
           @change=${this.handleTemplateChanged}
         >
         </temba-select>
-
-        ${this.template ? html` <div class="template">${content}</div>` : null}
+        ${content ? html` <div class="template">${content}</div>` : null}
       </div>
     `;
   }

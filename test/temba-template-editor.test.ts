@@ -18,7 +18,6 @@ describe('TemplateEditor', () => {
       <temba-template-editor
         url="/static/api/templates.json"
         template="2b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
-        lang="eng"
       >
       </temba-template-editor>
     `);
@@ -56,6 +55,12 @@ describe('TemplateEditor', () => {
       >
       </temba-template-editor>
     `);
+
+    const clip = getClip(templateEditor);
+    clip.height = 200;
+    clip.bottom = clip.top + clip.height;
+
+    await assertScreenshot('templates/unapproved', clip);
 
     const errorMessage = (
       templateEditor.shadowRoot.querySelector(

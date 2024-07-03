@@ -2,18 +2,29 @@ import { TemplateResult, html, css } from 'lit';
 import { FormElement } from '../FormElement';
 import { property } from 'lit/decorators.js';
 import { Attachment, CustomEventType, Language } from '../interfaces';
-import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
+import { DEFAULT_MEDIA_ENDPOINT, getClasses } from '../utils';
 import { Completion } from '../completion/Completion';
 import { Select } from '../select/Select';
 import { TabPane } from '../tabpane/TabPane';
-import { EventHandler } from '../RapidElement';
 import { MediaPicker } from '../mediapicker/MediaPicker';
+import { Tab } from '../tabpane/Tab';
 
 export class Compose extends FormElement {
   static get styles() {
     return css`
       :host {
         --textarea-min-height: var(--textarea-min-height, 4em);
+        overflow: hidden;
+        border-top-right-radius: var(--curvature);
+        border-top-left-radius: var(--curvature);
+      }
+
+      .active-template .chatbox {
+        display: none;
+      }
+
+      .active-template .actions {
+        border: none;
       }
 
       .container {
@@ -105,6 +116,10 @@ export class Compose extends FormElement {
 
       .attachments {
       }
+
+      temba-template-editor {
+        padding: 1em;
+      }
     `;
   }
 
@@ -131,6 +146,9 @@ export class Compose extends FormElement {
 
   @property({ type: Boolean })
   optIns: boolean;
+
+  @property({ type: Boolean })
+  templates: boolean;
 
   @property({ type: Boolean })
   counter: boolean;
@@ -168,8 +186,24 @@ export class Compose extends FormElement {
   @property({ type: Array })
   currentOptin: { name: string; uuid: string }[] = [];
 
+  @property({ type: Array })
+  variables: string[] = [];
+
+  @property({ type: String })
+  template: string;
+
+  @property({ type: Object })
+  currentTemplate: { name: string; uuid: string };
+
+  // locale for the template
+  @property({ type: String })
+  locale: string;
+
   @property({ type: String })
   optinEndpoint = '/api/v2/optins.json';
+
+  @property({ type: String })
+  templateEndpoint = '/api/internal/templates.json';
 
   @property({ type: String })
   buttonName = 'Send';
@@ -193,11 +227,17 @@ export class Compose extends FormElement {
       attachments: Attachment[];
       quick_replies: string[];
       optin?: { name: string; uuid: string };
+      template?: string;
+      variables?: string[];
+      locale?: string;
     };
   } = {};
 
   @property({ type: String })
   currentLanguage = 'und';
+
+  @property({ type: Object })
+  currentTab: Tab;
 
   public constructor() {
     super();
@@ -212,19 +252,7 @@ export class Compose extends FormElement {
 
   private handleTabChanged() {
     const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
-    const tab = tabs.getCurrentTab();
-    if (tab) {
-      // check we are going for the first attachment
-      if (tab.icon == 'attachment') {
-        // show the media picker?
-      }
-    }
-  }
-
-  public getEventHandlers(): EventHandler[] {
-    return [
-      { event: CustomEventType.ContextChanged, method: this.handleTabChanged }
-    ];
+    this.currentTab = tabs.getCurrentTab();
   }
 
   public firstUpdated(changes: Map<string, any>): void {
@@ -236,6 +264,8 @@ export class Compose extends FormElement {
 
     if (changes.has('value')) {
       this.langValues = this.getDeserializedValue() || {};
+      this.variables = this.langValues[this.currentLanguage]?.variables || [];
+      this.template = this.langValues[this.currentLanguage]?.template || null;
     }
     this.setFocusOnChatbox();
   }
@@ -279,21 +309,27 @@ export class Compose extends FormElement {
         (changes.has('currentText') ||
           changes.has('currentAttachments') ||
           changes.has('currentQuickReplies'))) ||
-      changes.has('currentOptin')
+      changes.has('currentOptin') ||
+      changes.has('currentTemplate') ||
+      changes.has('variables')
     ) {
       this.toggleButton();
 
       const trimmed = this.currentText ? this.currentText.trim() : '';
       if (
         trimmed ||
-        this.currentAttachments.length > 0 ||
-        this.currentQuickReplies.length > 0
+        (this.currentAttachments || []).length > 0 ||
+        this.currentQuickReplies.length > 0 ||
+        this.variables.length > 0
       ) {
         this.langValues[this.currentLanguage] = {
           text: trimmed,
           attachments: this.currentAttachments,
           quick_replies: this.currentQuickReplies.map((option) => option.value),
-          optin: this.currentOptin.length > 0 ? this.currentOptin[0] : null
+          optin: this.currentOptin.length > 0 ? this.currentOptin[0] : null,
+          template: this.currentTemplate ? this.currentTemplate.uuid : null,
+          variables: this.variables,
+          locale: this.locale
         };
       } else {
         delete this.langValues[this.currentLanguage];
@@ -409,6 +445,12 @@ export class Compose extends FormElement {
         .errors=${this.errors}
         .widgetOnly=${this.widgetOnly}
         .value=${this.value}
+        class=${getClasses({
+          'active-template':
+            !!this.currentTemplate &&
+            this.currentTab &&
+            this.currentTab.name === 'Template'
+        })}
       >
         ${this.languages.length > 1
           ? html`<temba-select
@@ -458,28 +500,41 @@ export class Compose extends FormElement {
     }
   }
 
+  private handleTemplateChanged(evt: CustomEvent) {
+    this.currentTemplate = evt.detail.template;
+    this.locale = evt.detail.translation?.locale;
+    this.requestUpdate();
+  }
+
+  private handleTemplateVariablesChanged(evt: CustomEvent) {
+    this.variables = [...evt.detail.variables];
+  }
+
   private getActions(): TemplateResult {
     const showOptins = this.optIns && this.isBaseLanguage();
+    const showTemplates = this.templates && this.isBaseLanguage();
     return html`
       <temba-tabs
         embedded
         focusedname
         bottom
         unselect
-        refresh="${this.currentAttachments.length}|${this.index}|${this
-          .currentQuickReplies.length}|${showOptins}|${this.currentOptin}"
+        @temba-context-changed=${this.handleTabChanged}
+        refresh="${(this.currentAttachments || []).length}|${this.index}|${this
+          .currentQuickReplies.length}|${showOptins}|${this
+          .currentOptin}|${showTemplates}|${this.currentTemplate}"
       >
         ${this.attachments
           ? html`<temba-tab
               name="Attachments"
               icon="attachment"
-              .count=${this.currentAttachments.length}
+              .count=${(this.currentAttachments || []).length}
             >
               <div class="items attachments">
                 <temba-media-picker
                   accept=${this.accept}
                   max=${this.maxAttachments}
-                  attachments=${JSON.stringify(this.currentAttachments)}
+                  attachments=${JSON.stringify(this.currentAttachments || [])}
                   @change=${this.handleAttachmentsChanged.bind(this)}
                 ></temba-media-picker>
               </div>
@@ -518,6 +573,25 @@ export class Compose extends FormElement {
             clearable
             placeholder="Select an opt-in to use for Facebook (optional)"
           ></temba-select>
+        </temba-tab>
+
+        <temba-tab
+          name="Template"
+          icon="channel_wa"
+          ?alert=${this.errors &&
+          this.errors.find((error) => error.includes('template'))}
+          ?hidden=${!showTemplates}
+          ?checked=${this.currentTemplate}
+        >
+          <temba-template-editor
+            @temba-context-changed=${this.handleTemplateChanged}
+            @temba-content-changed=${this.handleTemplateVariablesChanged}
+            template=${this.template}
+            variables=${JSON.stringify(this.variables)}
+            url=${this.templateEndpoint}
+            lang=${this.currentLanguage}
+          >
+          </temba-template-editor>
         </temba-tab>
 
         <div slot="tab-right" class="top-right">
