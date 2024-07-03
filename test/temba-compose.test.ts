@@ -39,7 +39,9 @@ const getInitialValue = (
       text: text ? text : '',
       attachments: attachments ? attachments : [],
       quick_replies: quick_replies ? quick_replies : [],
-      optin: null
+      optin: null,
+      template: null,
+      variables: []
     }
   };
   return composeValue;

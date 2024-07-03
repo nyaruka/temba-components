@@ -38,6 +38,9 @@ export class Tab extends RapidElement {
   notify = false;
 
   @property({ type: Boolean })
+  alert = false;
+
+  @property({ type: Boolean })
   hidden = false;
 
   @property({ type: Number })
