@@ -1328,6 +1328,7 @@ export class Select extends FormElement {
       : placeholderDiv;
 
     return html`
+            
       <temba-field
         name=${this.name}
         .label=${this.label}
@@ -1339,12 +1340,15 @@ export class Select extends FormElement {
       >
         <slot></slot>
         <div class="wrapper-bg">
+        
         <div
           tabindex="0"
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
-        >          
+        > 
+          
           <div class="left-side">
+          <slot name="prefix"></slot>
             <div class="selected">
               ${!this.multi ? input : null}
               ${this.values.map(

@@ -27,6 +27,7 @@ export class Options extends RapidElement {
           opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
         opacity: 0;
         border: 1px transparent;
+        z-index: 1000;
       }
 
       .shadow {

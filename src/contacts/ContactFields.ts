@@ -213,10 +213,7 @@ export class ContactFields extends ContactStoreElement {
           @change=${this.handleFieldChanged}
           timezone=${this.timezone}
           ?disabled=${(this.isAgent() && field.agent_access === 'view') ||
-          this.disabled ||
-          field.value_type === 'ward' ||
-          field.value_type === 'district' ||
-          field.value_type === 'state'
+          this.disabled
             ? true
             : false}
         ></temba-contact-field>`;

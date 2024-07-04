@@ -6,6 +6,7 @@ import { RapidElement } from '../RapidElement';
 import { InputType, TextInput } from '../textinput/TextInput';
 import { Icon } from '../vectoricon';
 import { getClasses, WebResponse } from '../utils';
+import { Select } from '../select/Select';
 
 enum Status {
   Success = 'success',
@@ -290,6 +291,13 @@ export class ContactFieldEditor extends RapidElement {
         cursor: default !important;
         opacity: 0.7;
       }
+
+      temba-select {
+        --color-widget-bg: white;
+      }
+
+      temba-option {
+      }
     `;
   }
 
@@ -339,6 +347,27 @@ export class ContactFieldEditor extends RapidElement {
     }
   }
 
+  public handleSelectChange(evt: CustomEvent) {
+    const select = evt.currentTarget as Select;
+    let value = '';
+
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    console.log(select.values);
+    if (select.values.length > 0) {
+      value = select.values[0].path;
+    }
+    console.log('handleSelectChange', value);
+
+    if (value !== this.value) {
+      this.dirty = true;
+      this.status = Status.Saving;
+      this.value = value;
+      this.fireEvent('change');
+    }
+  }
+
   public handleSubmit() {
     const input = this.shadowRoot.querySelector(
       'temba-textinput, temba-datepicker'
@@ -380,6 +409,109 @@ export class ContactFieldEditor extends RapidElement {
       return InputType.Number;
     }
     return InputType.Text;
+  }
+
+  private renderDateField(state: TemplateResult) {
+    return html` <temba-datepicker
+      timezone=${this.timezone}
+      value="${this.value ? this.value : ''}"
+      @change=${this.handleDateChange}
+      ?disabled=${this.disabled}
+      time
+    >
+      <div class="prefix" slot="prefix">
+        <div class="name">${this.name}</div>
+      </div>
+      <div class="postfix" slot="postfix">
+        <div class="popper ${this.status}  ${this.dirty ? 'dirty' : ''}">
+          ${state}
+        </div>
+      </div>
+    </temba-datepicker>`;
+  }
+
+  private renderTextField(state: TemplateResult) {
+    return html`
+      <temba-textinput
+        class="${this.status} ${this.dirty ? 'dirty' : ''}"
+        value="${this.value ? this.value : ''}"
+        @keyup=${this.handleInput}
+        @change=${this.handleChange}
+        type=${this.getInputType(this.type)}
+        ?disabled=${this.disabled}
+      >
+        <div class="prefix" slot="prefix">
+          <div class="name">${this.name}</div>
+        </div>
+
+        <div class="postfix">
+          <div
+            class="popper ${this.iconClass} ${this.status}  ${this.dirty
+              ? 'dirty'
+              : ''}"
+            @click=${this.handleIconClick}
+          >
+            ${state}
+            <temba-icon
+              class="search"
+              icon-action="search"
+              name="${Icon.search}"
+              animateclick="pulse"
+            ></temba-icon>
+            <temba-icon
+              class="copy"
+              icon-action="copy"
+              name="${this.icon}"
+              animatechange="spin"
+              animateclick="pulse"
+            ></temba-icon>
+          </div>
+        </div>
+      </temba-textinput>
+    `;
+  }
+
+  private getOptions(response: WebResponse) {
+    return response.json[0].children;
+  }
+
+  private renderSelectedLocation(option: any) {
+    if (!option) {
+      return null;
+    }
+
+    return html`
+      <div class="selected-location" style="display:flex;margin-top:0.7em">
+        ${option.icon
+          ? html`<temba-icon
+              name="${option.icon}"
+              style="margin-right:0.5em;"
+            ></temba-icon>`
+          : null}<span>${option['path']}</span>
+      </div>
+    `;
+  }
+
+  public renderLocationField() {
+    return html`
+      <temba-select
+        endpoint="/adminboundary/boundaries/192787/"
+        nameKey="path"
+        valueKey="path"
+        @change=${this.handleSelectChange}
+        .getOptions=${this.getOptions}
+        .renderSelectedItem=${this.renderSelectedLocation}
+        placeholder="&nbsp"
+        clearable
+        values=${this.value
+          ? JSON.stringify([{ path: this.value, osm_id: this.value }])
+          : '[]'}
+      >
+        <div class="prefix" slot="prefix">
+          <div class="name">${this.name}</div>
+        </div>
+      </temba-select>
+    `;
   }
 
   public render(): TemplateResult {
@@ -448,65 +580,12 @@ export class ContactFieldEditor extends RapidElement {
         })}
       >
         ${this.type === 'datetime'
-          ? html`
-              <temba-datepicker
-                timezone=${this.timezone}
-                value="${this.value ? this.value : ''}"
-                @change=${this.handleDateChange}
-                ?disabled=${this.disabled}
-                time
-              >
-                <div class="prefix" slot="prefix">
-                  <div class="name">${this.name}</div>
-                </div>
-                <div class="postfix" slot="postfix">
-                  <div
-                    class="popper ${this.status}  ${this.dirty ? 'dirty' : ''}"
-                  >
-                    ${state}
-                  </div>
-                </div>
-              </temba-datepicker>
-            `
-          : html`
-              <temba-textinput
-                class="${this.status} ${this.dirty ? 'dirty' : ''}"
-                value="${this.value ? this.value : ''}"
-                @keyup=${this.handleInput}
-                @change=${this.handleChange}
-                type=${this.getInputType(this.type)}
-                ?disabled=${this.disabled}
-              >
-                <div class="prefix" slot="prefix">
-                  <div class="name">${this.name}</div>
-                </div>
-
-                <div class="postfix">
-                  <div
-                    class="popper ${this.iconClass} ${this.status}  ${this.dirty
-                      ? 'dirty'
-                      : ''}"
-                    @click=${this.handleIconClick}
-                  >
-                    ${state}
-
-                    <temba-icon
-                      class="search"
-                      icon-action="search"
-                      name="${Icon.search}"
-                      animateclick="pulse"
-                    ></temba-icon>
-                    <temba-icon
-                      class="copy"
-                      icon-action="copy"
-                      name="${this.icon}"
-                      animatechange="spin"
-                      animateclick="pulse"
-                    ></temba-icon>
-                  </div>
-                </div>
-              </temba-textinput>
-            `}
+          ? this.renderDateField(state)
+          : this.type === 'state' ||
+            this.type === 'district' ||
+            this.type === 'ward'
+          ? this.renderLocationField()
+          : this.renderTextField(state)}
       </div>
     `;
   }
