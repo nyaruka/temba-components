@@ -20,7 +20,7 @@ import {
   executeCompletionQuery
 } from '../completion/helpers';
 import { Store } from '../store/Store';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../vectoricon';
 import { msg } from '@lit/localize';
 
@@ -99,6 +99,7 @@ export class Select extends FormElement {
         padding-top: 1px;
         box-shadow: var(--widget-box-shadow);
         position: relative;
+        min-height: 2.5em;
       }
 
       temba-icon.select-open:hover,
@@ -204,57 +205,41 @@ export class Select extends FormElement {
         box-shadow: none !important;
         font-family: var(--font-family);
         caret-color: var(--input-caret);
+        border: 0px solid purple !important;
+      }
+
+      .input-wrapper {
+        min-width: 1px;
+      }
+
+      .input-wrapper:focus-within {
+        min-width: 1px;
+      }
+
+      .input-wrapper {
+        margin-left: 6px;
+      }
+
+      .multi .input-wrapper {
+        margin-left: 2px !important;
+      }
+
+      .input-wrapper:focus-within .placeholder {
+        display: none;
       }
 
       input:focus {
         box-shadow: none !important;
-      }
-
-      .searchable.no-search-input .input-wrapper {
-        flex-grow: inherit;
-        min-width: 1px;
-      }
-
-      .searchable.no-search-input.empty .input-wrapper {
         flex-grow: 1;
-        min-width: 1px;
       }
 
-      .searchable.no-search-input .input-wrapper .searchbox {
-        flex-grow: inherit;
-        min-width: 1px;
-      }
-
-      .searchable .input-wrapper .searchbox {
+      .searchable.search-input .input-wrapper {
         flex-grow: 1;
-        min-width: 80%;
-        height: 100%;
+        min-width: 1px !important;
       }
 
       .searchable.single.search-input .selected .selected-item {
         display: none;
-      }
-
-      .searchable.single.no-search-input
-        .selected
-        .input-wrapper
-        input.searchbox {
-        padding: 6px 2px !important;
-      }
-
-      .searchable.single.no-search-input.empty
-        .selected
-        .input-wrapper
-        input.searchbox {
-        padding: 6px 6px !important;
-      }
-
-      .empty input {
-        width: 100%;
-      }
-
-      .searchable input {
-        padding: 6px 4px !important;
       }
 
       .searchable input {
@@ -264,7 +249,6 @@ export class Select extends FormElement {
         color: var(--color-text);
         resize: none;
         box-shadow: none !important;
-        flex-grow: 1;
         border: none;
         caret-color: var(--input-caret);
       }
@@ -274,7 +258,8 @@ export class Select extends FormElement {
       }
 
       .input-wrapper {
-        flex-grow: 1;
+        display: flex;
+        margin-right: 0em;
       }
 
       .input-wrapper .searchbox {
@@ -282,13 +267,6 @@ export class Select extends FormElement {
 
       .searchbox {
         border: 0px;
-      }
-
-      .searchbox::placeholder {
-        color: var(--color-placeholder);
-        font-size: 1em;
-        line-height: var(--temba-select-selected-line-height);
-        padding-left: 1px;
       }
 
       .placeholder {
@@ -339,6 +317,9 @@ export class Select extends FormElement {
       }
     `;
   }
+
+  @property({ type: Object })
+  inputStyle: StyleInfo = {};
 
   @property({ type: Boolean })
   multi = false;
@@ -643,7 +624,11 @@ export class Select extends FormElement {
       !this.fetching
     ) {
       if (this.isPastFetchThreshold()) {
-        this.fetchOptions(this.query, this.page + 1);
+        if (this.next) {
+          this.fetchOptions(null, null, this.next);
+        } else {
+          this.fetchOptions(this.query, this.page + 1);
+        }
       }
     }
 
@@ -909,9 +894,9 @@ export class Select extends FormElement {
     }
   }
 
-  public fetchOptions(query: string, page = 0) {
+  // TODO: do we still need to support page numbers?
+  public fetchOptions(query: string, page = 0, next = null) {
     this.completionOptions = [];
-
     if (!this.fetching) {
       this.fetching = true;
 
@@ -936,28 +921,27 @@ export class Select extends FormElement {
 
       if (this.endpoint) {
         let url = this.endpoint;
+        if (next) {
+          url = next;
+        } else {
+          if (query && this.queryParam) {
+            if (url.indexOf('?') > -1) {
+              url += '&';
+            } else {
+              url += '?';
+            }
 
-        if (query && this.queryParam) {
-          if (url.indexOf('?') > -1) {
-            url += '&';
-          } else {
-            url += '?';
+            url += this.queryParam + '=' + encodeURIComponent(query);
           }
 
-          url += this.queryParam + '=' + encodeURIComponent(query);
-        }
-
-        if (page) {
-          if (url.indexOf('?') > -1) {
-            url += '&';
-          } else {
-            url += '?';
+          if (page) {
+            if (url.indexOf('?') > -1) {
+              url += '&';
+            } else {
+              url += '?';
+            }
+            url += 'page=' + page;
           }
-          url += 'page=' + page;
-        }
-
-        if (this.next) {
-          url = this.next;
         }
 
         const cache = this.lruCache.get(url);
@@ -1000,6 +984,7 @@ export class Select extends FormElement {
                 }
               );
 
+              this.next = null;
               const json = response.json;
               if (json['next']) {
                 this.next = json['next'];
@@ -1025,9 +1010,7 @@ export class Select extends FormElement {
                 });
               }
 
-              // if (!this.next) {
               this.fetching = false;
-              //}
               this.page = page;
             })
             .catch((reason: any) => {
@@ -1163,8 +1146,9 @@ export class Select extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
+    event.stopPropagation();
+    event.preventDefault();
     this.focused = true;
-
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
       if (input) {
@@ -1175,8 +1159,6 @@ export class Select extends FormElement {
 
       if (this.visibleOptions.length > 0) {
         this.visibleOptions = [];
-        event.preventDefault();
-        event.stopPropagation();
       } else {
         this.requestUpdate('input');
       }
@@ -1196,10 +1178,12 @@ export class Select extends FormElement {
   }
 
   private handleArrowClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
     if (this.visibleOptions.length > 0) {
       this.visibleOptions = [];
-      event.preventDefault();
-      event.stopPropagation();
+    } else {
+      this.handleContainerClick(event);
     }
   }
 
@@ -1244,6 +1228,10 @@ export class Select extends FormElement {
     evt.preventDefault();
     evt.stopPropagation();
     this.setValues([]);
+    if (this.visibleOptions.length > 0) {
+      this.visibleOptions = [];
+      this.requestUpdate();
+    }
   }
 
   public setValues(values: any[]) {
@@ -1315,19 +1303,21 @@ export class Select extends FormElement {
           <div class="input-wrapper">
             <input
               class="searchbox"
+              style=${this.inputStyle ? styleMap(this.inputStyle) : ''}
               @input=${this.handleInput}
               @keydown=${this.handleKeyDown}
               @click=${this.handleClick}
               type="text"
-              placeholder=${placeholder}
               .value=${this.input}
             />
             <div id="anchor" style=${styleMap(anchorStyles)}></div>
+            ${placeholderDiv}
           </div>
         `
       : placeholderDiv;
 
     return html`
+            
       <temba-field
         name=${this.name}
         .label=${this.label}
@@ -1339,12 +1329,15 @@ export class Select extends FormElement {
       >
         <slot></slot>
         <div class="wrapper-bg">
+        
         <div
           tabindex="0"
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
-        >          
+        > 
+          
           <div class="left-side">
+          <slot name="prefix"></slot>
             <div class="selected">
               ${!this.multi ? input : null}
               ${this.values.map(

@@ -12,7 +12,7 @@ export class ContactFields extends ContactStoreElement {
     return css`
       .field {
         display: flex;
-        margin: 0.3em 0.3em;
+        margin: 1em 0.3em;
         box-shadow: 0 0 0.2em rgba(0, 0, 0, 0.15);
         border-radius: 0px;
         align-items: center;
@@ -213,10 +213,7 @@ export class ContactFields extends ContactStoreElement {
           @change=${this.handleFieldChanged}
           timezone=${this.timezone}
           ?disabled=${(this.isAgent() && field.agent_access === 'view') ||
-          this.disabled ||
-          field.value_type === 'ward' ||
-          field.value_type === 'district' ||
-          field.value_type === 'state'
+          this.disabled
             ? true
             : false}
         ></temba-contact-field>`;
