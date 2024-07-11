@@ -12,7 +12,7 @@ export class ContactFields extends ContactStoreElement {
     return css`
       .field {
         display: flex;
-        margin: 0.3em 0.3em;
+        margin: 1em 0.3em;
         box-shadow: 0 0 0.2em rgba(0, 0, 0, 0.15);
         border-radius: 0px;
         align-items: center;

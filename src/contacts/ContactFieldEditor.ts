@@ -50,10 +50,11 @@ export class ContactFieldEditor extends RapidElement {
     return css`
       :host {
         --transition-speed: 0ms;
+        margin-bottom: 1em;
+        display: block;
       }
 
       .wrapper {
-        --temba-textinput-padding: 1.4em 0.8em 0.4em 0.8em;
         --disabled-opacity: 1;
         position: relative;
         --color-widget-bg: transparent;
@@ -100,10 +101,16 @@ export class ContactFieldEditor extends RapidElement {
         overflow: hidden;
         text-overflow: ellipsis;
         display: flex;
-        padding: 0em 0.5em;
         position: absolute;
-        margin-top: 0.2em;
+        margin-top: -0.6em;
+        margin-left: 0.5em;
         pointer-events: none;
+        background: #fff;
+        border-radius: var(--curvature);
+      }
+
+      temba-select .prefix {
+        margin-top: -1em;
       }
 
       .wrapper {
@@ -285,6 +292,10 @@ export class ContactFieldEditor extends RapidElement {
         margin-left: 0;
       }
 
+      temba-datepicker {
+        --temba-textinput-padding: 0.8em 0.8em 0.4em 0.8em;
+      }
+
       .saving temba-datepicker,
       .saving temba-textinput {
         pointer-events: none !important;
@@ -354,11 +365,9 @@ export class ContactFieldEditor extends RapidElement {
     evt.preventDefault();
     evt.stopPropagation();
 
-    console.log(select.values);
     if (select.values.length > 0) {
       value = select.values[0].path;
     }
-    console.log('handleSelectChange', value);
 
     if (value !== this.value) {
       this.dirty = true;
@@ -481,28 +490,28 @@ export class ContactFieldEditor extends RapidElement {
     }
 
     return html`
-      <div class="selected-location" style="display:flex;margin-top:0.7em">
-        ${option.icon
-          ? html`<temba-icon
-              name="${option.icon}"
-              style="margin-right:0.5em;"
-            ></temba-icon>`
-          : null}<span>${option['path']}</span>
+      <div
+        class="selected-location"
+        style="display:flex;margin-top:1em;margin-left:0.1em"
+      >
+        <span>${option['path']}</span>
       </div>
     `;
   }
 
-  public renderLocationField() {
+  public renderLocationField(level: string = 'state') {
     return html`
       <temba-select
-        endpoint="/adminboundary/boundaries/192787/"
+        endpoint="/api/internal/locations.json?level=${level}"
         nameKey="path"
         valueKey="path"
         @change=${this.handleSelectChange}
-        .getOptions=${this.getOptions}
-        .renderSelectedItem=${this.renderSelectedLocation}
-        placeholder="&nbsp"
+        .resnderSelectedItem=${this.renderSelectedLocation}
+        placeholder="Select a ${level}"
+        queryParam="query"
+        searchable
         clearable
+        inpsutStyle=${JSON.stringify({ 'margin-top': '1.1em !important;' })}
         values=${this.value
           ? JSON.stringify([{ path: this.value, osm_id: this.value }])
           : '[]'}
@@ -584,7 +593,7 @@ export class ContactFieldEditor extends RapidElement {
           : this.type === 'state' ||
             this.type === 'district' ||
             this.type === 'ward'
-          ? this.renderLocationField()
+          ? this.renderLocationField(this.type)
           : this.renderTextField(state)}
       </div>
     `;
