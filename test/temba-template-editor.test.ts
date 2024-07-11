@@ -27,31 +27,11 @@ describe('TemplateEditor', () => {
     await assertScreenshot('templates/default', clip);
   });
 
-  it('updates template content when language changes', async () => {
-    const templateEditor = await createTemplateEditor(html`
-      <temba-template-editor
-        url="/static/api/templates.json"
-        template="2b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
-        lang="eng"
-      >
-      </temba-template-editor>
-    `);
-
-    templateEditor.lang = 'fra';
-
-    const clip = getClip(templateEditor);
-    clip.height = 500;
-    clip.bottom = clip.top + clip.height;
-
-    await assertScreenshot('templates/french', clip);
-  });
-
   it('renders an error message no language is found', async () => {
     const templateEditor = await createTemplateEditor(html`
       <temba-template-editor
         url="/static/api/templates.json"
-        template="2b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
-        lang="spa"
+        template="3b1cdee4-71b4-4c9a-805c-9bce6a2e7277"
       >
       </temba-template-editor>
     `);
@@ -68,7 +48,7 @@ describe('TemplateEditor', () => {
       ) as HTMLDivElement
     ).innerText;
     expect(errorMessage).to.equal(
-      'No approved translation was found for current language.'
+      'This template currently has no approved translations.'
     );
   });
 });

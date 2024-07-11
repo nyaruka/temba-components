@@ -24,8 +24,8 @@ interface Template {
   created_on: string;
   modified_on: string;
   name: string;
-  translations: Translation[];
   uuid: string;
+  base_translation: Translation;
 }
 
 export class TemplateEditor extends FormElement {
@@ -154,9 +154,6 @@ export class TemplateEditor extends FormElement {
   @property({ type: Object })
   selectedTemplate: Template;
 
-  @property({ type: String })
-  lang = 'eng-US';
-
   // initial variables, not reflected back
   @property({ type: Array })
   variables: string[];
@@ -192,22 +189,12 @@ export class TemplateEditor extends FormElement {
   private handleTemplateChanged(event: CustomEvent) {
     const prev = this.selectedTemplate;
     this.selectedTemplate = (event.target as any).values[0] as Template;
-
     if (prev) {
       this.currentVariables = [];
     }
 
-    const [lang, loc] = this.lang.split('-');
     if (this.selectedTemplate) {
-      this.translation = this.selectedTemplate.translations.find(
-        (translation) => {
-          return (
-            translation.locale === this.lang ||
-            (!loc && translation.locale.split('-')[0] === lang)
-          );
-        }
-      );
-
+      this.translation = this.selectedTemplate.base_translation;
       if (this.translation) {
         this.variables = new Array(
           (this.translation.variables || []).length
@@ -405,7 +392,7 @@ export class TemplateEditor extends FormElement {
       content = this.renderComponents(this.translation.components);
     } else if (this.selectedTemplate) {
       content = html`<div class="error-message">
-        No approved translation was found for current language.
+        This template currently has no approved translations.
       </div>`;
     }
 
