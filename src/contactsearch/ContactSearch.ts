@@ -293,10 +293,6 @@ export class ContactSearch extends FormElement {
       this.handleRecipientsChanged();
     }
 
-    if (changedProperties.has('advanced') && this.advanced) {
-      return;
-    }
-
     // if we remove the in_a_flow option, make sure it's not part of our exclusions
     if (changedProperties.has('in_a_flow') && !this.in_a_flow) {
       delete this.exclusions['in_a_flow'];
