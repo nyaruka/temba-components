@@ -334,17 +334,6 @@ export class ContactSearch extends FormElement {
         .filter((value: OmniOption) => value.type === 'contact')
         .map((value: OmniOption) => value.id);
 
-      if (
-        (group_uuids.length === 0 && contact_uuids.length === 0) ||
-        (!this.query && this.advanced)
-      ) {
-        if (this.summary) {
-          this.summary.total = 0;
-        }
-        this.fetching = false;
-        return;
-      }
-
       postJSON(this.endpoint, {
         include: this.advanced
           ? { query: this.query }
