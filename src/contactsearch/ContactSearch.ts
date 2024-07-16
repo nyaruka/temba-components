@@ -293,10 +293,6 @@ export class ContactSearch extends FormElement {
       this.handleRecipientsChanged();
     }
 
-    if (changedProperties.has('advanced') && this.advanced) {
-      return;
-    }
-
     // if we remove the in_a_flow option, make sure it's not part of our exclusions
     if (changedProperties.has('in_a_flow') && !this.in_a_flow) {
       delete this.exclusions['in_a_flow'];
@@ -333,17 +329,6 @@ export class ContactSearch extends FormElement {
       const contact_uuids = this.recipients
         .filter((value: OmniOption) => value.type === 'contact')
         .map((value: OmniOption) => value.id);
-
-      if (
-        (group_uuids.length === 0 && contact_uuids.length === 0) ||
-        (!this.query && this.advanced)
-      ) {
-        if (this.summary) {
-          this.summary.total = 0;
-        }
-        this.fetching = false;
-        return;
-      }
 
       postJSON(this.endpoint, {
         include: this.advanced
