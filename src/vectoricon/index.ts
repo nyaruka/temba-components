@@ -152,7 +152,6 @@ export enum Icon {
   template_approved = 'check-circle',
   template_pending = 'hourglass-01',
   template_rejected = 'alert-circle',
-  template_unsupported = 'alert-circle',
   tickets = 'agent',
   tickets_all = 'archive',
   tickets_closed = 'check',
