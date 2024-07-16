@@ -7,7 +7,6 @@ import {
   DEFAULT_MEDIA_ENDPOINT,
   WebResponse,
   getClasses,
-  isImageAttachment,
   postFormData
 } from '../utils';
 
@@ -329,13 +328,9 @@ export class MediaPicker extends RapidElement {
                 id="${validAttachment.url}"
                 name="${Icon.delete_small}"
               ></temba-icon>
-              ${isImageAttachment(validAttachment)
-                ? html`<temba-thumbnail
-                    url="${validAttachment.url}"
-                  ></temba-thumbnail>`
-                : html`<temba-thumbnail
-                    label="${validAttachment.content_type.split('/')[1]}"
-                  ></temba-thumbnail>`}
+              <temba-thumbnail
+                attachment="${validAttachment.content_type}:${validAttachment.url}"
+              ></temba-thumbnail>
             </div>`;
           })}
           ${this.renderUploader()}
