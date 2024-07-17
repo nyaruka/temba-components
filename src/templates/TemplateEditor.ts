@@ -1,6 +1,6 @@
 import { property } from 'lit/decorators.js';
 import { FormElement } from '../FormElement';
-import { TemplateResult, html, css, PropertyValueMap, LitElement } from 'lit';
+import { TemplateResult, html, css, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
 import { MediaPicker } from '../mediapicker/MediaPicker';
 import { getClasses } from '../utils';
@@ -176,16 +176,15 @@ export class TemplateEditor extends FormElement {
 
   textInputAttachments: { [index: number]: boolean } = {};
 
-  public firstUpdated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(changes);
-    if (changes.has('variables') && this.variables) {
+  public updated(changes: Map<string, any>): void {
+    super.updated(changes);
+    if (changes.has('template')) {
       this.textInputAttachments = {};
-      this.currentVariables = this.variables.slice();
+      this.currentVariables = this.variables;
+
       // check if our variables should be a textinput
-      if (this.variables.length > 0) {
-        this.variables.forEach((variable, index) => {
+      if (this.currentVariables.length > 0) {
+        this.currentVariables.forEach((variable, index) => {
           const split = variable.split(':');
           if (split.length > 1) {
             // we have a generary content type
@@ -195,13 +194,6 @@ export class TemplateEditor extends FormElement {
           }
         });
       }
-    }
-  }
-
-  public updated(changes: Map<string, any>): void {
-    super.updated(changes);
-    if (changes.has('template')) {
-      this.currentVariables = this.variables;
     }
   }
 
