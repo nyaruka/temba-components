@@ -123,8 +123,7 @@ export class TemplateEditor extends FormElement {
         border-radius: var(--curvature);
       }
 
-      temba-textinput,
-      temba-completion {
+      .variable {
         --temba-textinput-padding: 5px 5px;
         --temba-textinput-font-size: 0.9em;
         line-height: initial;
@@ -140,6 +139,12 @@ export class TemplateEditor extends FormElement {
         overflow-y: auto;
         overflow-x: hidden;
         padding-bottom: 0;
+      }
+
+      .label {
+        font-size: 0.9em;
+        color: #777;
+        margin-left: 0.25em;
       }
     `;
   }
@@ -169,18 +174,32 @@ export class TemplateEditor extends FormElement {
 
   pickersLoading: { [key: number]: boolean } = {};
 
+  textInputAttachments: { [index: number]: boolean } = {};
+
   public firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
     if (changes.has('variables') && this.variables) {
+      this.textInputAttachments = {};
       this.currentVariables = this.variables.slice();
+      // check if our variables should be a textinput
+      if (this.variables.length > 0) {
+        this.variables.forEach((variable, index) => {
+          const split = variable.split(':');
+          if (split.length > 1) {
+            // we have a generary content type
+            if (split[0].indexOf('/') === -1) {
+              this.textInputAttachments[index] = true;
+            }
+          }
+        });
+      }
     }
   }
 
   public updated(changes: Map<string, any>): void {
     super.updated(changes);
-
     if (changes.has('template')) {
       this.currentVariables = this.variables;
     }
@@ -191,6 +210,7 @@ export class TemplateEditor extends FormElement {
     this.selectedTemplate = (event.target as any).values[0] as Template;
     if (prev) {
       this.currentVariables = [];
+      this.textInputAttachments = {};
     }
 
     if (this.selectedTemplate) {
@@ -241,10 +261,18 @@ export class TemplateEditor extends FormElement {
     this.requestUpdate('currentVariables');
   }
 
-  private handleVariableChanged(event: CustomEvent) {
+  private handleVariableChanged(event: InputEvent) {
     const target = event.target as HTMLInputElement;
     const variableIndex = parseInt(target.getAttribute('index'));
-    this.currentVariables[variableIndex] = target.value;
+    const prefix = target.getAttribute('prefix') || '';
+
+    // add our prefix if we have a value
+    let value = target.value;
+    if (value) {
+      value = prefix + value;
+    }
+
+    this.currentVariables[variableIndex] = value;
     this.fireContentChange();
   }
 
@@ -269,14 +297,14 @@ export class TemplateEditor extends FormElement {
     if (component.content && component.content.trim().length > 0) {
       parts = component.content?.split(variableRegex) || [];
     }
-
+    const currVariables = this.currentVariables || [];
     if (parts.length > 0) {
       variables = parts.map((part, index) => {
         if (index % 2 === 0) {
           return html`<span class="text">${part}</span>`;
         }
         const variableIndex = component.variables[part];
-        const currVariables = this.currentVariables || [];
+
         return html`<temba-completion
           class="variable"
           type="text"
@@ -308,35 +336,86 @@ export class TemplateEditor extends FormElement {
 
           const loading = this.pickersLoading[variableIndex];
 
-          return html`<div
-            class=${getClasses({ loading })}
-            style="
+          const prefix = variableSpec.type + ':';
+          let value =
+            variableIndex < currVariables.length
+              ? currVariables[variableIndex]
+              : null;
+
+          if (value && value.startsWith(prefix)) {
+            value = value.slice(prefix.length);
+          }
+
+          return html`
+            ${this.textInputAttachments[variableIndex]
+              ? html` <div class="label">
+                    ${variableSpec.type.charAt(0).toUpperCase() +
+                    variableSpec.type.slice(1)}
+                    URL
+                  </div>
+                  <div
+                    style="display:flex;align-items:center;margin-bottom:1em;"
+                  >
+                    <temba-completion
+                      style="flex-grow:1; margin-right:1em;"
+                      prefix="${prefix}"
+                      index=${variableIndex}
+                      value=${value}
+                      @keyup=${this.handleVariableChanged}
+                    ></temba-completion>
+                    <temba-icon
+                      name="close"
+                      clickable
+                      @click=${() => {
+                        this.textInputAttachments[variableIndex] = false;
+                        this.currentVariables[variableIndex] = '';
+                        this.requestUpdate();
+                      }}
+                    >
+                    </temba-icon>
+                    <div></div>
+                  </div>`
+              : html`
+                  <div
+                    class=${getClasses({ loading })}
+                    style="
               display: flex; 
               align-items: center; 
               border-radius: var(--curvature);
               margin-bottom: 0.5em;
               ${attachments.length === 0 && !loading
-              ? `background-color:rgba(0,0,0,.04);`
-              : ``}
-            "
-          >
-            <temba-media-picker
-              accept="${variableSpec.type === 'document'
-                ? 'application/pdf'
-                : variableSpec.type + '/*'}"
-              max="1"
-              index=${variableIndex}
-              icon="attachment_${variableSpec.type}"
-              attachments=${JSON.stringify(attachments)}
-              @temba-loading=${this.handleAttachmentLoading.bind(this)}
-              @change=${this.handleAttachmentsChanged.bind(this)}
-            ></temba-media-picker>
-            <div>
-              ${attachments.length == 0 && !loading
-                ? html`Attach ${variableSpec.type} to continue`
-                : ''}
-            </div>
-          </div>`;
+                      ? `background-color:rgba(0,0,0,.04);`
+                      : ``}"
+                  >
+                    <temba-media-picker
+                      accept="${variableSpec.type === 'document'
+                        ? 'application/pdf'
+                        : variableSpec.type + '/*'}"
+                      max="1"
+                      index=${variableIndex}
+                      icon="attachment_${variableSpec.type}"
+                      attachments=${JSON.stringify(attachments)}
+                      @temba-loading=${this.handleAttachmentLoading.bind(this)}
+                      @change=${this.handleAttachmentsChanged.bind(this)}
+                    ></temba-media-picker>
+                    <div style="flex-grow:1">
+                      ${attachments.length == 0 && !loading
+                        ? html`Attach ${variableSpec.type} to continue`
+                        : ''}
+                    </div>
+                    <temba-icon
+                      clickable
+                      name="edit"
+                      @click=${() => {
+                        this.currentVariables[variableIndex] = '';
+                        this.textInputAttachments[variableIndex] = true;
+                        this.requestUpdate();
+                      }}
+                      style="margin-right:1em"
+                    ></temba-icon>
+                  </div>
+                `}
+          `;
         }
       });
     }

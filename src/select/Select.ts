@@ -99,7 +99,7 @@ export class Select extends FormElement {
         padding-top: 1px;
         box-shadow: var(--widget-box-shadow);
         position: relative;
-        min-height: 2.5em;
+        min-height: var(--temba-select-min-height, 2.5em);
       }
 
       temba-icon.select-open:hover,
