@@ -57,6 +57,8 @@ import { TemplateEditor } from './src/templates/TemplateEditor';
 import { Toast } from './src/toast/Toast';
 import { Chat } from './src/chat/Chat';
 import { MediaPicker } from './src/mediapicker/MediaPicker';
+import { FlowEditor } from './src/flow/FlowEditor';
+import { FlowNode } from './src/flow/FlowNode';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -124,3 +126,5 @@ addCustomElement('temba-template-editor', TemplateEditor);
 addCustomElement('temba-toast', Toast);
 addCustomElement('temba-chat', Chat);
 addCustomElement('temba-media-picker', MediaPicker);
+addCustomElement('temba-flow-editor', FlowEditor);
+addCustomElement('temba-flow-node', FlowNode);

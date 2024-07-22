@@ -8,7 +8,8 @@ import {
   postUrl,
   postJSON,
   postForm,
-  getCookie
+  getCookie,
+  fetchResultsPage
 } from '../utils';
 import {
   ContactField,
@@ -26,6 +27,7 @@ import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
+import { FlowSpec } from '../flow/interfaces';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -101,6 +103,9 @@ export class Store extends RapidElement {
   private users: User[];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
+
+  // currently active flow
+  private flow: FlowSpec;
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
@@ -206,6 +211,43 @@ export class Store extends RapidElement {
 
     this.initialHttpComplete.then(() => {
       this.ready = true;
+    });
+  }
+
+  public getFlowSpec(): FlowSpec {
+    return this.flow;
+  }
+
+  public getNodeUI = (uuid: string) => {
+    return this.flow.definition._ui.nodes[uuid];
+  };
+
+  public getFlowNode = (uuid: string) => {
+    return this.flow.definition.nodes.find((node) => node.uuid === uuid);
+  };
+
+  public async fetchRevisions(flow: string, version: string) {
+    const revisionsEndpoint = `/flow/revisions/${flow}/?version=${version}`;
+    return fetchResultsPage(revisionsEndpoint).then((data) => {
+      return data;
+    });
+  }
+
+  public async fetchFlow(flow: string, version: string, revision?: string) {
+    if (!revision) {
+      revision = await this.fetchRevisions(flow, version).then((data) => {
+        return data.results[0].id;
+      });
+    }
+
+    console.log(
+      `Fetching flow ${flow} version ${version} revision ${revision}`
+    );
+    // https://localhost.textit.com/flow/revisions/9331e5b3-33fe-41d9-8f01-34b6bcdd72c5/194/?version=13.5
+    const flowEndpoint = `/flow/revisions/${flow}/${revision}/?version=${version}`;
+    return getUrl(flowEndpoint).then((data) => {
+      this.flow = data.json;
+      return data.json;
     });
   }
 
