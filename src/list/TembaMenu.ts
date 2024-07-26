@@ -582,6 +582,7 @@ export class TembaMenu extends ResizeElement {
 
       temba-button[lined] {
         margin: 0.2em 0;
+        display: block;
       }
 
       .expand-icon {
