@@ -86,6 +86,7 @@ export enum Icon {
   hide = 'eye-off',
   home = 'settings-02',
   image = 'image-01',
+  import = 'upload-cloud-01',
   inbox = 'inbox-01',
   incidents = 'alert-square',
   incoming_call = 'phone-incoming-01',
