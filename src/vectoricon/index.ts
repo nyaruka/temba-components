@@ -64,6 +64,7 @@ export enum Icon {
   email = 'mail-01',
   error = 'alert-circle',
   event = 'zap',
+  export = 'download-cloud-01',
   expressions = 'at-sign',
   fields = 'user-edit',
   filter = 'filter-funnel-01',

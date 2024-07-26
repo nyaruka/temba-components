@@ -180,7 +180,7 @@ export class TemplateEditor extends FormElement {
     super.updated(changes);
     if (changes.has('template')) {
       this.textInputAttachments = {};
-      this.currentVariables = this.variables;
+      this.currentVariables = this.variables || [];
 
       // check if our variables should be a textinput
       if (this.currentVariables.length > 0) {
