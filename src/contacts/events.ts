@@ -78,6 +78,7 @@ export interface TicketEvent extends ContactEvent {
     closed_on?: string;
     opened_on?: string;
   };
+  topic?: ObjectReference;
   created_by?: User;
 }
 

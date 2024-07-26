@@ -580,6 +580,10 @@ export class TembaMenu extends ResizeElement {
         margin-right: 0.75em;
       }
 
+      temba-button[lined] {
+        margin: 0.2em 0;
+      }
+
       .expand-icon {
         transform: rotate(180deg);
         --icon-color: rgba(255, 255, 255, 0.5);
@@ -830,7 +834,6 @@ export class TembaMenu extends ResizeElement {
           parent
         });
       }
-
       return;
     }
 
@@ -845,13 +848,20 @@ export class TembaMenu extends ResizeElement {
       return;
     }
 
-    if (event) {
+    if (menuItem.type === 'modax-button') {
+      this.fireCustomEvent(CustomEventType.ButtonClicked, {
+        item: menuItem,
+        selection: this.getSelection(),
+        parent
+      });
+      return;
+    }
+
+    if (event && event.metaKey && menuItem.href) {
       event.preventDefault();
       event.stopPropagation();
-      if (event.metaKey && menuItem.href) {
-        window.open(menuItem.href, '_blank');
-        return;
-      }
+      window.open(menuItem.href, '_blank');
+      return;
     }
 
     if (parent && parent.inline) {
@@ -899,6 +909,7 @@ export class TembaMenu extends ResizeElement {
 
     if (menuItem.href) {
       this.dispatchEvent(new Event('change'));
+      return;
     }
 
     this.fireCustomEvent(CustomEventType.ButtonClicked, {
@@ -1047,6 +1058,8 @@ export class TembaMenu extends ResizeElement {
     if (menuItem.type === 'modax-button') {
       return html`<temba-button
         name=${menuItem.name}
+        lined
+        icon=${menuItem.icon}
         @click=${(event) => {
           this.handleItemClicked(event, menuItem);
         }}

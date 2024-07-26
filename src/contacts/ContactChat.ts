@@ -58,6 +58,7 @@ export enum Events {
   TICKET_CLOSED = 'ticket_closed',
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
+  TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
   OPTIN_REQUESTED = 'optin_requested',
   ERROR = 'error',
   FAILURE = 'failure'
@@ -553,6 +554,12 @@ export class ContactChat extends ContactStoreElement {
         message = {
           type: MessageType.Inline,
           text: renderTicketAction(event as TicketEvent, 'closed')
+        };
+        break;
+      case Events.TICKET_TOPIC_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: `Topic changed to **${(event as TicketEvent).topic.name}**`
         };
         break;
       case Events.FLOW_ENTERED:

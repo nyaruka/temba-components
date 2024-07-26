@@ -69,6 +69,7 @@ export class Button extends LitElement {
         border: 1px solid transparent;
         transition: var(--transition-speed);
         background: var(--button-mask);
+        display: flex;
       }
 
       .button-container.disabled-button {
@@ -111,6 +112,25 @@ export class Button extends LitElement {
       .light-button {
         background: var(--color-button-light);
         color: var(--color-button-light-text);
+      }
+
+      .lined-button {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: rgba(0, 0, 0, 0.7);
+        background: transparent;
+      }
+
+      .lined-button .button-mask:hover {
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      .icon-button {
+        --button-y: 0.2em;
+        --button-x: 0em;
+      }
+
+      .icon-button temba-icon {
+        padding: 0 0.5em;
       }
 
       .attention-button {
@@ -180,11 +200,17 @@ export class Button extends LitElement {
   @property({ type: Boolean })
   small: boolean;
 
+  @property({ type: Boolean })
+  lined: boolean;
+
   @property({ type: String })
   href: string;
 
   @property({ type: Number })
   index?: number;
+
+  @property({ type: String })
+  icon?: string;
 
   private handleClick(evt: MouseEvent) {
     if (this.disabled) {
@@ -242,6 +268,8 @@ export class Button extends LitElement {
           'attention-button': this.attention,
           'destructive-button': this.destructive,
           'light-button': this.light,
+          'lined-button': this.lined,
+          'icon-button': !!this.icon,
           small: this.small
         })}"
         tabindex="0"
@@ -252,6 +280,9 @@ export class Button extends LitElement {
         @click=${this.handleClick}
       >
         <div class="button-mask">
+          ${this.icon
+            ? html`<temba-icon name="${this.icon}"></temba-icon>`
+            : null}
           <div class="button-name"><slot name="name">${buttonName}</slot></div>
         </div>
       </div>

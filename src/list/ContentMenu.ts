@@ -95,6 +95,9 @@ export class ContentMenu extends RapidElement {
   @property({ type: Array, attribute: false })
   items: ContentMenuItem[] = [];
 
+  @property({ type: Boolean })
+  arrowTopLeft: boolean;
+
   private fetchContentMenu() {
     const url = this.endpoint;
     if (url) {
@@ -162,7 +165,7 @@ export class ContentMenu extends RapidElement {
         ${this.items && this.items.length > 0
           ? html`<temba-dropdown
               arrowsize="8"
-              arrowoffset="-12"
+              arrowoffset="${this.arrowTopLeft ? '12' : '-12'}"
               offsety="6"
               bottom
             >
