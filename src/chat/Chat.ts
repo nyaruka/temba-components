@@ -196,6 +196,7 @@ export class Chat extends RapidElement {
       .message {
         margin-bottom: 0.5em;
         line-height: 1.2em;
+        word-break: break-word;
       }
 
       .chat {
