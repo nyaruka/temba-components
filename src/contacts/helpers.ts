@@ -1,4 +1,4 @@
-import { Contact, User } from '../interfaces';
+import { Contact, NamedUser, User } from '../interfaces';
 import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
 import { ContactHistoryPage } from './events';
 
@@ -78,6 +78,10 @@ export const fetchContactHistory = (
 export const getDisplayName = (user: User) => {
   if (!user) {
     return 'Somebody';
+  }
+
+  if ((user as NamedUser).name) {
+    return (user as NamedUser).name;
   }
 
   if (user.first_name && user.last_name) {

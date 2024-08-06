@@ -496,7 +496,7 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getEndpoint() {
-    return `/contact/history/${this.currentContact.uuid}/?_format=json`;
+    return `/contact/history/${this.contact}/?_format=json`;
   }
 
   private scheduleRefresh() {
@@ -800,7 +800,6 @@ export class ContactChat extends ContactStoreElement {
   private fetchPreviousMessages() {
     const chat = this.chat;
     const contactChat = this;
-
     if (!chat || chat.fetching || contactChat.blockFetching) {
       return;
     }

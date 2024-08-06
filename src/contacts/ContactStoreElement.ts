@@ -1,9 +1,9 @@
 import { PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, Group } from '../interfaces';
-import { StoreElement } from '../store/StoreElement';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 
-export class ContactStoreElement extends StoreElement {
+export class ContactStoreElement extends EndpointMonitorElement {
   @property({ type: String })
   contact: string;
 
@@ -37,6 +37,16 @@ export class ContactStoreElement extends StoreElement {
       return data;
     }
     return null;
+  }
+
+  public postChanges(payload: any) {
+    // clear our cache so we don't have any races
+    this.store.removeFromCache(`${this.endpoint}${this.contact}`);
+    return this.store
+      .postJSON(`${this.endpoint}${this.contact}`, payload)
+      .then((response) => {
+        this.setContact(response.json);
+      });
   }
 
   public setContact(contact: any) {

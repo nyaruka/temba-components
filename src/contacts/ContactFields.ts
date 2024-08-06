@@ -4,6 +4,7 @@ import { getClasses, postJSON } from '../utils';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Checkbox } from '../checkbox/Checkbox';
+import { CustomEventType } from '../interfaces';
 
 const MIN_FOR_FILTER = 10;
 
@@ -104,12 +105,18 @@ export class ContactFields extends ContactStoreElement {
       if (Object.keys(this.data.fields).length <= MIN_FOR_FILTER) {
         this.showAll = true;
       }
+
+      this.fireCustomEvent(CustomEventType.DetailsChanged, {
+        count: Object.values(this.data.fields).filter((value) => !!value).length
+      });
     }
   }
 
   public handleFieldChanged(evt: InputEvent) {
     const field = evt.currentTarget as ContactFieldEditor;
     const value = field.value;
+
+    // TODO: Use contact.postChanges instead of postJSON
     postJSON('/api/v2/contacts.json?uuid=' + this.data.uuid, {
       fields: { [field.key]: value }
     })

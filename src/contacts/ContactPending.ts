@@ -5,7 +5,7 @@ import {
   ScheduledEvent,
   ScheduledEventType
 } from '../interfaces';
-import { StoreElement } from '../store/StoreElement';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 import { Icon } from '../vectoricon';
 
 const ICONS = {
@@ -14,7 +14,7 @@ const ICONS = {
   [ScheduledEventType.ScheduledTrigger]: Icon.trigger
 };
 
-export class ContactPending extends StoreElement {
+export class ContactPending extends EndpointMonitorElement {
   @property({ type: String })
   contact: string;
 
@@ -159,6 +159,12 @@ export class ContactPending extends StoreElement {
       } else {
         this.url = null;
       }
+    }
+
+    if (changes.has('data')) {
+      this.fireCustomEvent(CustomEventType.DetailsChanged, {
+        count: this.data.length
+      });
     }
   }
 

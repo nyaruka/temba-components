@@ -2,14 +2,13 @@ import { PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 
-import { Store } from './Store';
 import { StoreMonitorElement } from './StoreMonitorElement';
 
 /**
  * StoreElement is a listener for a given endpoint that re-renders
  * when the underlying store element changes
  */
-export class StoreElement extends StoreMonitorElement {
+export class EndpointMonitorElement extends StoreMonitorElement {
   @property({ type: String })
   url: string;
 
@@ -18,8 +17,6 @@ export class StoreElement extends StoreMonitorElement {
 
   @property({ type: Object, attribute: false })
   data: any;
-
-  store: Store;
 
   prepareData(data: any): any {
     return data;

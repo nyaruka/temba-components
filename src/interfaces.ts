@@ -48,6 +48,10 @@ export interface ScheduledEvent {
   message?: string;
 }
 
+export interface NamedUser extends User {
+  name: string;
+}
+
 export interface User {
   id?: number;
   first_name?: string;
@@ -136,6 +140,12 @@ export interface Group {
   is_dynamic?: boolean;
 }
 
+export interface ContactNote {
+  text: string;
+  created_on: string;
+  created_by: NamedUser;
+}
+
 export interface ContactTicket {
   name: string;
   uuid: string;
@@ -158,6 +168,7 @@ export interface Contact {
   language?: string;
   fields: { [key: string]: string };
   groups: Group[];
+  notes: ContactNote[];
   modified_on: string;
   created_on: string;
   last_seen_on: string;
@@ -260,5 +271,6 @@ export enum CustomEventType {
   OrderChanged = 'temba-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
-  Resized = 'temba-resized'
+  Resized = 'temba-resized',
+  DetailsChanged = 'temba-details-changed'
 }

@@ -26,12 +26,14 @@ export class TabPane extends RapidElement {
         margin: 0em 0em;
         cursor: pointer;
         display: flex;
-        font-size: 1.01em;
+        font-size: 1.1em;
         align-items: center;
+        border: 1px inset transparent;
+        border-bottom: 0px;
         border-radius: var(--curvature);
         border-bottom-right-radius: 0px;
         border-bottom-left-radius: 0px;
-        border: 0px solid rgba(0, 0, 0, 0.45);
+
         color: var(--color-text-dark);
         --icon-color: var(--color-text-dark);
         white-space: nowrap;
@@ -95,9 +97,9 @@ export class TabPane extends RapidElement {
       }
 
       .tab {
-        transform: scale(0.9) translate(0em, -0.05em);
-        --icon-color: #aaa;
-        color: #aaa;
+        transform: scale(0.9) translateY(0em);
+        --icon-color: rgba(0, 0, 0, 0.5);
+        color: rgba(0, 0, 0, 0.5);
       }
 
       .tab.selected {
@@ -107,10 +109,22 @@ export class TabPane extends RapidElement {
       .tab.selected:hover {
         cursor: default;
         box-shadow: 0px -3px 3px 1px rgba(0, 0, 0, 0.02);
+
         background: var(--focused-tab-color, #fff);
-        transform: scale(1) translateY(0em);
+        transform: scale(1) translateY(1px);
         --icon-color: #666;
         color: #666;
+        border: 1px inset rgba(0, 0, 0, 0.15);
+        border-bottom: 0px;
+      }
+
+      .embedded .tab.selected {
+        border: none;
+        transform: none;
+      }
+
+      .tab.selected .dot {
+        display: none;
       }
 
       .bottom .tab.selected {
@@ -128,6 +142,10 @@ export class TabPane extends RapidElement {
         --icon-color: #666;
         color: #666;
         background: rgba(0, 0, 0, 0.02);
+      }
+
+      .tab.dirty {
+        font-weight: 500;
       }
 
       .pane {
@@ -154,13 +172,20 @@ export class TabPane extends RapidElement {
 
       .count {
         border-radius: 99px;
-        background: rgba(0, 0, 0, 0.05);
+        background: rgba(0, 0, 0, 0.1);
         color: rgba(0, 0, 0, 0.5);
-        font-size: 0.6em;
-        font-weight: 400;
-        padding: 0.1em 0.4em;
-        min-width: 1em;
+        font-size: 0.7em;
+        font-weight: 500;
+        min-width: 1.5em;
         text-align: center;
+      }
+
+      .dot {
+        height: 0.5em;
+        width: 0.5em;
+        margin-left: 0.2em;
+        background: var(--color-primary-dark);
+        border-radius: 99px;
       }
 
       .notify .count {
@@ -336,7 +361,12 @@ export class TabPane extends RapidElement {
     this.requestUpdate();
   }
 
+  public handleTabDetailsChanged() {
+    this.requestUpdate();
+  }
+
   public render(): TemplateResult {
+    const activeTab = this.tabs[this.index];
     return html`
       ${this.bottom
         ? html`<div
@@ -371,7 +401,8 @@ export class TabPane extends RapidElement {
                 selected: index == this.index,
                 hidden: tab.hidden,
                 notify: tab.notify,
-                alert: tab.alert
+                alert: tab.alert,
+                dirty: tab.dirty
               })}"
               style="${tab.selectionColor && index == this.index
                 ? `color:${tab.selectionColor};--icon-color:${tab.selectionColor};`
@@ -380,14 +411,20 @@ export class TabPane extends RapidElement {
                 : ''}"
             >
               ${tab.icon ? html`<temba-icon name=${tab.icon} />` : null}
-              <div class="name">${tab.name}</div>
+              <div class="name">${tab.name} ${tab.dirty ? ` *` : ``}</div>
               ${tab.hasBadge()
                 ? html`
                     <div class="badge">
-                      ${tab.count > 0
+                      ${tab.count > 0 && !tab.activity
                         ? html`<div class="count">
-                            ${tab.count.toLocaleString()}
+                            ${tab.activity ? '' : tab.count.toLocaleString()}
                           </div>`
+                        : null}
+                      ${tab.activity && tab.count > 0 && !tab.dirty
+                        ? html`<div
+                            class="dot"
+                            style="background:${tab.activityColor}"
+                          ></div>`
                         : null}
                     </div>
                   `
@@ -406,6 +443,8 @@ export class TabPane extends RapidElement {
       </div>
       ${!this.bottom
         ? html`<div
+            @temba-details-changed=${this.handleTabDetailsChanged}
+            style="border: 1px solid ${activeTab?.borderColor};background:${activeTab?.selectionBackground}"
             class="pane ${getClasses({
               first: this.index == 0,
               embedded: this.embedded,

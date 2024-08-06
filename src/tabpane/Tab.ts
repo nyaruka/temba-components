@@ -31,6 +31,12 @@ export class Tab extends RapidElement {
   @property({ type: String })
   selectionBackground: string;
 
+  @property({ type: String })
+  borderColor: string = 'var(--color-widget-border)';
+
+  @property({ type: String })
+  activityColor: string = `var(--color-link-primary)`;
+
   @property({ type: Boolean })
   selected = false;
 
@@ -43,11 +49,21 @@ export class Tab extends RapidElement {
   @property({ type: Boolean })
   hidden = false;
 
+  @property({ type: Boolean })
+  hideEmpty = false;
+
+  // show just that there is activity instead of count
+  @property({ type: Boolean })
+  activity = false;
+
   @property({ type: Number })
   count = 0;
 
   @property({ type: Boolean })
   checked = false;
+
+  @property({ type: Boolean })
+  dirty = false;
 
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -62,8 +78,21 @@ export class Tab extends RapidElement {
     return this.count > 0;
   }
 
+  public handleDetailsChanged(event: CustomEvent) {
+    if ('dirty' in event.detail) {
+      this.dirty = event.detail.dirty;
+    }
+    if ('count' in event.detail) {
+      this.count = event.detail.count;
+      if (this.hideEmpty) {
+        this.hidden = this.count === 0;
+      }
+    }
+  }
+
   public render(): TemplateResult {
     return html`<slot
+      @temba-details-changed=${this.handleDetailsChanged}
       class="${getClasses({ selected: this.selected })}"
     ></slot> `;
   }

@@ -3,7 +3,7 @@ import { property } from 'lit/decorators.js';
 import { ContactField, CustomEventType } from '../interfaces';
 
 import { SortableList } from '../list/SortableList';
-import { StoreElement } from '../store/StoreElement';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 import { postJSON } from '../utils';
 
 const TYPE_NAMES = {
@@ -31,7 +31,7 @@ const matches = (field: ContactField, query: string): boolean => {
   return false;
 };
 
-export class FieldManager extends StoreElement {
+export class FieldManager extends EndpointMonitorElement {
   static get styles() {
     return css`
       :host {
