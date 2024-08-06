@@ -108,6 +108,7 @@ export enum Icon {
   missed_call = 'phone-x',
   new = 'plus',
   next_schedule = 'alarm-clock',
+  notes = 'edit-03',
   notification = 'bell-01',
   number = 'hash-01',
   optin_requested = 'message-notification-circle',

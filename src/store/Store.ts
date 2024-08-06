@@ -26,6 +26,7 @@ import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
+import { StoreMonitorElement } from './StoreMonitorElement';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -104,6 +105,32 @@ export class Store extends RapidElement {
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
+
+  private dirtyElements: StoreMonitorElement[] = [];
+
+  public markDirty(ele: StoreMonitorElement) {
+    if (!this.dirtyElements.includes(ele)) {
+      this.dirtyElements.push(ele);
+    }
+  }
+
+  public cleanAll() {
+    this.dirtyElements.forEach((ele) => ele.markClean());
+    this.dirtyElements = [];
+  }
+
+  public markClean(ele: StoreMonitorElement) {
+    this.dirtyElements = this.dirtyElements.filter((el) => el !== ele);
+  }
+
+  public getDirtyMessage() {
+    if (this.dirtyElements.length > 0) {
+      return (
+        this.dirtyElements[0].dirtyMessage ||
+        'You have unsaved changes, are you sure you want to continue?'
+      );
+    }
+  }
 
   private cache: any;
   public getLocale() {
@@ -434,6 +461,10 @@ export class Store extends RapidElement {
   public updateCache(url: string, data: any) {
     this.cache.set(url, data);
     this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
+  }
+
+  public removeFromCache(url: string) {
+    this.cache.delete(url);
   }
 
   public makeRequest(

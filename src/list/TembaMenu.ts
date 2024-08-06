@@ -7,6 +7,7 @@ import { Icon } from '../vectoricon';
 import { Dropdown } from '../dropdown/Dropdown';
 import { NotificationList } from './NotificationList';
 import { ResizeElement } from '../ResizeElement';
+import { Store } from '../store/Store';
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -820,6 +821,17 @@ export class TembaMenu extends ResizeElement {
     menuItem: MenuItem,
     parent: MenuItem = null
   ) {
+    const store = document.querySelector('temba-store') as Store;
+    if (store) {
+      const unsavedMessage = store.getDirtyMessage();
+      if (unsavedMessage) {
+        if (!confirm(unsavedMessage)) {
+          return;
+        }
+      }
+      store.cleanAll();
+    }
+
     if (parent && parent.popup) {
       const dropdown = this.shadowRoot.querySelector(
         'temba-dropdown'
