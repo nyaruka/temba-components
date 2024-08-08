@@ -687,7 +687,8 @@ export class ContactChat extends ContactStoreElement {
 
   private createMessages(page: ContactHistoryPage): ChatEvent[] {
     if (page.events) {
-      let messages = page.events.map((event) => {
+      let messages = [];
+      page.events.forEach((event) => {
         const ts = new Date(event.created_on).getTime() * 1000;
         if (ts > this.newestEventTime) {
           this.newestEventTime = ts;
@@ -695,22 +696,33 @@ export class ContactChat extends ContactStoreElement {
 
         if (event.type === 'ticket_note_added') {
           const ticketEvent = event as TicketEvent;
-          return {
+          messages.push({
             type: MessageType.Note,
             id: event.created_on + event.type,
             user: this.getUserForEvent(ticketEvent),
             date: new Date(ticketEvent.created_on),
             text: ticketEvent.note
-          };
-        }
+          });
+        } else if (event.type === 'ticket_opened') {
+          // ticket open events can have a note attached
+          const ticketEvent = event as TicketEvent;
+          messages.push({
+            type: MessageType.Note,
+            id: event.created_on + event.type + '_note',
+            user: this.getUserForEvent(ticketEvent),
+            date: new Date(ticketEvent.created_on),
+            text: ticketEvent.note
+          });
 
-        if (
+          // but the opening of the ticket is a normal event
+          messages.push(this.getEventMessage(event));
+        } else if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
           event.type === 'broadcast_created'
         ) {
           const msgEvent = event as MsgEvent;
-          return {
+          messages.push({
             type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
             id: msgEvent.msg.id + '',
             user: this.getUserForEvent(msgEvent),
@@ -748,9 +760,9 @@ export class ContactChat extends ContactStoreElement {
                   ></a>`
                 : null}
             </div> `
-          };
+          });
         } else {
-          return this.getEventMessage(event);
+          messages.push(this.getEventMessage(event));
         }
       });
 
