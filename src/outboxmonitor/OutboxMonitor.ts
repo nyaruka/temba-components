@@ -70,8 +70,6 @@ export class OutboxMonitor extends ResizeElement {
       }
       this.fetches++;
 
-      console.log(this.folders);
-
       this.scheduleRefresh(Math.min(this.fetches * 5000, 60000));
 
       const outbox = this.folders['outbox'];
@@ -97,7 +95,6 @@ export class OutboxMonitor extends ResizeElement {
       this.msgsPerSecond = sentInWindow / time;
 
       const remaining = this.folders['outbox'].current;
-      console.log(remaining, this.msgsPerSecond);
       const secondsRemaining = remaining / this.msgsPerSecond;
 
       this.estimatedCompletionDate = new Date(
@@ -135,7 +132,7 @@ export class OutboxMonitor extends ResizeElement {
             or broadcasts. Your channels are currently sending at
             ${roundedRate.toLocaleString()}
             message${roundedRate == 1 ? '' : 's'} per second. At that rate, your
-            outbox should be clear
+            outbox will clear
             <temba-date
               value="${this.estimatedCompletionDate.toISOString()}"
               display="duration"
