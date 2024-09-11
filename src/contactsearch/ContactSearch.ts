@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { property } from 'lit/decorators.js';
 import { getClasses, postJSON, stopEvent, WebResponse } from '../utils';
@@ -217,6 +217,7 @@ export class ContactSearch extends FormElement {
         --temba-select-selected-line-height: 1em;
         --temba-select-selected-font-size: 1em;
         --search-input-height: 0px !important;
+        --temba-select-min-height: 1.8em;
         min-width: 100px;
       }
 
@@ -277,14 +278,27 @@ export class ContactSearch extends FormElement {
   refreshKey = '0';
 
   public refresh(): void {
-    this.refreshKey = 'requested_' + new Date().getTime();
+    if (this.advanced || this.recipients.length > 0) {
+      this.refreshKey = 'requested_' + new Date().getTime();
+    } else {
+      this.summary = null;
+      this.fetching = false;
+      this.requestUpdate();
+      this.fireCustomEvent(CustomEventType.ContentChanged, { reset: true });
+    }
   }
 
   @property({ type: Object })
-  private exclusions = {};
+  public exclusions = {};
 
   private lastQuery: number;
   private initialized = false;
+
+  public firstUpdated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changes);
+  }
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
@@ -339,6 +353,9 @@ export class ContactSearch extends FormElement {
       }).then((response: WebResponse) => {
         this.fetching = false;
         this.initialized = true;
+        if (this.recipients.length == 0 && !this.advanced) {
+          return;
+        }
         if (response.status === 200) {
           this.summary = response.json as SummaryResponse;
           if (!this.advanced) {
@@ -452,7 +469,7 @@ export class ContactSearch extends FormElement {
         this.exclusions[checkbox.name] = value;
       }
 
-      if (ex !== JSON.stringify(this.exclusions)) {
+      if (ex !== JSON.stringify(this.exclusions) && this.endpoint) {
         this.refresh();
       }
     }
@@ -504,12 +521,14 @@ export class ContactSearch extends FormElement {
     }
 
     const notSeenSinceDays = this.exclusions['not_seen_since_days'];
+    let blockers = null;
+
     if (
       this.summary &&
       this.summary.blockers &&
       this.summary.blockers.length > 0
     ) {
-      return html`${this.summary.blockers.map(
+      blockers = html`${this.summary.blockers.map(
         (error) =>
           html`<temba-alert level="error">${unsafeHTML(error)}</temba-alert>`
       )}`;
@@ -563,7 +582,14 @@ export class ContactSearch extends FormElement {
                           Only include contacts who...
                         </div>
                       </div>
-
+                      ${this.in_a_flow
+                        ? html`<temba-checkbox
+                            name="in_a_flow"
+                            label="${msg('Are not currently in a flow')}"
+                            ?checked=${this.exclusions['in_a_flow']}
+                            @change=${this.handleExclusionChanged}
+                          ></temba-checkbox>`
+                        : null}
                       ${this.not_seen_since_days
                         ? html`
                             <div
@@ -608,14 +634,6 @@ export class ContactSearch extends FormElement {
                             </div>
                           `
                         : null}
-                      ${this.in_a_flow
-                        ? html`<temba-checkbox
-                            name="in_a_flow"
-                            label="${msg('Are not currently in a flow')}"
-                            ?checked=${this.exclusions['in_a_flow']}
-                            @change=${this.handleExclusionChanged}
-                          ></temba-checkbox>`
-                        : null}
                       ${this.started_previously
                         ? html`<temba-checkbox
                             name="started_previously"
@@ -643,8 +661,9 @@ export class ContactSearch extends FormElement {
         <temba-loading units="6" size="8"></temba-loading>
         <div class="summary ${this.expanded ? 'expanded' : ''}">${summary}</div>
       </div>
+      ${blockers}
       ${
-        this.summary && this.summary.warnings
+        !blockers && this.summary && this.summary.warnings
           ? this.summary.warnings.map(
               (warning) =>
                 html`<temba-alert level="warning"
@@ -653,6 +672,8 @@ export class ContactSearch extends FormElement {
             )
           : ``
       }
+
+
     `;
   }
 }
