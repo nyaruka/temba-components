@@ -289,6 +289,34 @@ export class Store extends RapidElement {
     });
   }
 
+  public shiftAndRound(duration, unit: string, singular: string) {
+    const value = Math.round(duration.shiftTo(unit).get(unit));
+    if (value == 1) {
+      return `1 ${singular}`;
+    } else {
+      return `${value} ${unit}`;
+    }
+  }
+
+  public getCountdown(futureDate: DateTime) {
+    const duration = futureDate.diff(DateTime.now());
+    const comps = duration.rescale();
+
+    if (comps.months > 0) {
+      return '> 1 month';
+    }
+
+    if (comps.days > 1) {
+      return `~ ${this.shiftAndRound(comps, 'days', 'day')}`;
+    }
+
+    if (comps.hours > 0) {
+      return `~ ${this.shiftAndRound(comps, 'hours', 'hour')}`;
+    }
+
+    return `~ ${this.shiftAndRound(comps, 'minutes', 'minute')}`;
+  }
+
   public getShortDuration(scheduled: DateTime, compareDate: DateTime = null) {
     const now = compareDate || DateTime.now();
     return scheduled
