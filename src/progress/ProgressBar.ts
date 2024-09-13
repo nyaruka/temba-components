@@ -117,7 +117,10 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   done = false;
 
-  @property({ type: Object })
+  @property({ type: String })
+  eta: string;
+
+  @property({ type: String, attribute: false })
   estimatedCompletionDate: Date;
 
   @property({ type: Boolean })
@@ -126,7 +129,8 @@ export class ProgressBar extends RapidElement {
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
-    if (changes.has('estimatedCompletionDate')) {
+    if (changes.has('eta') && this.eta) {
+      this.estimatedCompletionDate = new Date(this.eta);
       this.showEstimatedCompletion = this.estimatedCompletionDate > new Date();
     }
 

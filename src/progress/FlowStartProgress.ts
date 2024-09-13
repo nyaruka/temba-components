@@ -16,6 +16,9 @@ export class FlowStartProgress extends RapidElement {
   @property({ type: Number })
   refreshes: number = 0;
 
+  @property({ type: String })
+  eta: string;
+
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -33,6 +36,16 @@ export class FlowStartProgress extends RapidElement {
           const start = data[0];
           this.started = start.progress.started;
           this.total = start.progress.total;
+
+          const elapsed =
+            new Date().getTime() - new Date(start.created_on).getTime();
+          const rate = this.started / (elapsed / 1000);
+
+          // calculate the estimated time of arrival
+          this.eta = new Date(
+            new Date().getTime() + ((this.total - this.started) / rate) * 1000
+          ).toISOString();
+
           if (this.started < this.total) {
             // refresh with a backoff up to 1 minute
             setTimeout(() => {
@@ -48,6 +61,7 @@ export class FlowStartProgress extends RapidElement {
     return html`<temba-progress
       total=${this.total}
       current=${this.started}
+      eta=${this.eta}
     ></temba-progress>`;
   }
 }
