@@ -11,6 +11,7 @@ export const Display = {
   timedate: 'timedate',
   duration: 'duration',
   relative: 'relative',
+  countdown: 'countdown',
   day: 'LLL d'
 };
 
@@ -95,6 +96,8 @@ export class TembaDate extends RapidElement {
           >`;
         }
         formatted = this.store.getShortDuration(this.datetime);
+      } else if (this.display === Display.countdown) {
+        formatted = this.store.getCountdown(this.datetime);
       } else if (this.display === Display.day) {
         formatted = this.datetime.toLocaleString(Display.day);
       } else {
