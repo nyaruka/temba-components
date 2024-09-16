@@ -21,6 +21,7 @@ export class ProgressBar extends RapidElement {
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
       padding: 4px;
+      min-height: 6px;
     }
     .meter > span {
       display: block;
@@ -35,7 +36,9 @@ export class ProgressBar extends RapidElement {
 
       position: relative;
       overflow: hidden;
+      min-width: 3px;
     }
+
     .meter > span:after,
     .animate > span > span {
       content: '';
@@ -128,6 +131,9 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   showEstimatedCompletion = false;
 
+  @property({ type: Boolean })
+  showPercentage = false;
+
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -137,7 +143,14 @@ export class ProgressBar extends RapidElement {
     }
 
     if (changes.has('current')) {
-      this.pct = Math.floor(Math.min((this.current / this.total) * 100, 100));
+      const pct = Math.floor(Math.min((this.current / this.total) * 100, 100));
+      if (Number.isNaN(pct)) {
+        this.showPercentage = false;
+      } else {
+        this.pct = pct;
+        this.showPercentage = true;
+      }
+
       this.done = this.pct >= 100;
     }
   }
@@ -149,16 +162,18 @@ export class ProgressBar extends RapidElement {
         <div class="incomplete"></div>
       </div>
 
-      <div class="etc">
-        ${this.estimatedCompletionDate &&
-        this.showEstimatedCompletion &&
-        !this.done
-          ? html`<temba-date
-              value="${this.estimatedCompletionDate.toISOString()}"
-              display="countdown"
-            ></temba-date>`
-          : html`${this.pct}%`}
-      </div>
+      ${this.showPercentage || this.showEstimatedCompletion
+        ? html`<div class="etc">
+            ${this.estimatedCompletionDate &&
+            this.showEstimatedCompletion &&
+            !this.done
+              ? html`<temba-date
+                  value="${this.estimatedCompletionDate.toISOString()}"
+                  display="countdown"
+                ></temba-date>`
+              : html`${this.pct}%`}
+          </div>`
+        : null}
     </div>`;
   }
 }
