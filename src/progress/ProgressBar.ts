@@ -4,23 +4,29 @@ import { property } from 'lit/decorators.js';
 
 export class ProgressBar extends RapidElement {
   static styles = css`
-    .meter {
+    .wrapper {
       display: flex;
       box-sizing: content-box;
-      height: 8px;
-      position: relative;
       background: #f1f1f1;
       border-radius: var(--curvature);
-      padding: 4px;
       box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.05);
+    }
+
+    .meter {
+      flex-grow: 1;
+      display: flex;
+      box-sizing: content-box;
+      position: relative;
+      border-radius: var(--curvature);
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      padding: 4px;
+      min-height: 6px;
     }
     .meter > span {
       display: block;
       height: 100%;
-      border-top-right-radius: var(--curvature);
-      border-bottom-right-radius: var(--curvature);
-      border-top-left-radius: var(--curvature);
-      border-bottom-left-radius: var(--curvature);
+      border-radius: var(--curvature);
       background-color: var(--color-primary-dark);
       background-image: linear-gradient(
         center bottom,
@@ -30,7 +36,9 @@ export class ProgressBar extends RapidElement {
 
       position: relative;
       overflow: hidden;
+      min-width: 3px;
     }
+
     .meter > span:after,
     .animate > span > span {
       content: '';
@@ -82,17 +90,14 @@ export class ProgressBar extends RapidElement {
 
     .etc {
       font-size: 0.7em;
-      padding: 4px;
-      padding-top: 1px;
-      padding-left: 8px;
-      padding-right: 8px;
-      margin-top: -4px;
-      margin-bottom: -4px;
-      margin-right: -4px;
-      margin-left: 0.5em;
       background: rgba(0, 0, 0, 0.07);
       font-weight: bold;
       white-space: nowrap;
+      border-top-right-radius: var(--curvature);
+      border-bottom-right-radius: var(--curvature);
+      color: rgba(0, 0, 0, 0.5);
+      align-self: center;
+      padding: 2px 6px;
     }
 
     .meter.done > span:after,
@@ -126,6 +131,9 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   showEstimatedCompletion = false;
 
+  @property({ type: Boolean })
+  showPercentage = false;
+
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -135,18 +143,30 @@ export class ProgressBar extends RapidElement {
     }
 
     if (changes.has('current')) {
-      this.pct = Math.floor(Math.min((this.current / this.total) * 100, 100));
+      const pct = Math.floor(Math.min((this.current / this.total) * 100, 100));
+      if (Number.isNaN(pct)) {
+        this.showPercentage = false;
+      } else {
+        this.pct = pct;
+        this.showPercentage = true;
+      }
+
       this.done = this.pct >= 100;
     }
   }
 
   public render(): TemplateResult {
-    return html`<div class="meter ${this.done ? 'done' : ''}">
-      <span class="complete" style="width: ${this.pct}%"></span>
-      <div class="incomplete"></div>
-      ${this.pct >= 0 || this.estimatedCompletionDate
-        ? html` <div class="etc">
-            ${this.estimatedCompletionDate
+    return html`<div class="wrapper">
+      <div class="meter ${this.done ? 'done' : ''}">
+        <span class="complete" style="flex-basis: ${this.pct}%"></span>
+        <div class="incomplete"></div>
+      </div>
+
+      ${this.showPercentage || this.showEstimatedCompletion
+        ? html`<div class="etc">
+            ${this.estimatedCompletionDate &&
+            this.showEstimatedCompletion &&
+            !this.done
               ? html`<temba-date
                   value="${this.estimatedCompletionDate.toISOString()}"
                   display="countdown"

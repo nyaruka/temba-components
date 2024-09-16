@@ -39,12 +39,21 @@ export class FlowStartProgress extends RapidElement {
 
           const elapsed =
             new Date().getTime() - new Date(start.created_on).getTime();
-          const rate = this.started / (elapsed / 1000);
+          const rate = this.started / elapsed;
 
           // calculate the estimated time of arrival
-          this.eta = new Date(
-            new Date().getTime() + ((this.total - this.started) / rate) * 1000
-          ).toISOString();
+          const eta = new Date(
+            new Date().getTime() + (this.total - this.started) / rate
+          );
+
+          // Don't bother with estimates months out
+          const nextMonth = new Date();
+          nextMonth.setMonth(nextMonth.getMonth() + 2);
+          if (eta > nextMonth) {
+            this.eta = null;
+          } else {
+            this.eta = eta.toISOString();
+          }
 
           if (this.started < this.total) {
             // refresh with a backoff up to 1 minute
