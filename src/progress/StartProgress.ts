@@ -32,6 +32,9 @@ export class StartProgress extends RapidElement {
   @property({ type: Boolean })
   complete = false;
 
+  @property({ type: Boolean })
+  running = false;
+
   @property({ type: String })
   message: string;
 
@@ -84,10 +87,13 @@ export class StartProgress extends RapidElement {
         this.complete =
           start.status == 'Completed' ||
           start.status == 'Failed' ||
-          start.status == 'Interrupted' ||
-          start.progress.current >= start.progress.total;
+          start.status == 'Interrupted';
 
-        if (start.status === 'Queued') {
+        this.running = start.status === 'Started';
+
+        if (start.status === 'Pending') {
+          this.message = 'Preparing to start..';
+        } else if (start.status === 'Queued') {
           this.message = 'Waiting..';
         } else {
           this.message = null;
@@ -119,8 +125,6 @@ export class StartProgress extends RapidElement {
           setTimeout(() => {
             this.refresh();
           }, Math.min(1000 * this.refreshes, 60000));
-        } else {
-          this.complete = true;
         }
 
         if (this.complete) {
@@ -143,7 +147,7 @@ export class StartProgress extends RapidElement {
       eta=${this.eta}
       message=${this.message}
     >
-      ${!this.complete
+      ${this.running
         ? html`<temba-icon
             name="close"
             @click=${this.interruptStart}
