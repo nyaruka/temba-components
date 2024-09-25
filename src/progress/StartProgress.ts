@@ -87,7 +87,7 @@ export class StartProgress extends RapidElement {
           start.status == 'Interrupted' ||
           start.progress.current >= start.progress.total;
 
-        if (start.status === 'queued') {
+        if (start.status === 'Queued') {
           this.message = 'Waiting..';
         } else {
           this.message = null;
