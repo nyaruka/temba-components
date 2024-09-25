@@ -826,3 +826,7 @@ export const hashCode = (s) => {
     return a & a;
   }, 0);
 };
+
+export const showModax = (title: string, endpoint: string) => {
+  (window as any).showModax(title, endpoint);
+};

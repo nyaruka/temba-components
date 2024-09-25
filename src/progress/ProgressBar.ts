@@ -8,8 +8,15 @@ export class ProgressBar extends RapidElement {
       display: flex;
       box-sizing: content-box;
       background: #f1f1f1;
-      border-radius: var(--curvature);
+      border-radius: calc(var(--curvature) * 1.3);
       box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      min-height: 1.5rem;
+    }
+
+    .message {
+      padding: 0 0.25rem;
+      color: rgba(0, 0, 0, 0.4);
     }
 
     .meter {
@@ -17,7 +24,6 @@ export class ProgressBar extends RapidElement {
       display: flex;
       box-sizing: content-box;
       position: relative;
-      border-radius: var(--curvature);
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
       padding: 4px;
@@ -36,7 +42,6 @@ export class ProgressBar extends RapidElement {
 
       position: relative;
       overflow: hidden;
-      min-width: 3px;
     }
 
     .meter > span:after,
@@ -59,7 +64,7 @@ export class ProgressBar extends RapidElement {
       );
       z-index: 1;
       background-size: 50px 50px;
-      animation: move 16s linear infinite;
+      animation: move 8s linear infinite;
       border-top-right-radius: var(--curvature);
       border-bottom-right-radius: var(--curvature);
       border-top-left-radius: var(--curvature);
@@ -80,24 +85,35 @@ export class ProgressBar extends RapidElement {
       }
     }
 
-    .complete {
-      transition: width 2s;
+    .meter .complete {
+      transition: flex-basis 2s;
     }
 
-    .incomplete {
+    .meter .incomplete {
       flex-grow: 1;
     }
 
     .etc {
-      font-size: 0.7em;
+      display: flex;
+      flex-direction: row;
       background: rgba(0, 0, 0, 0.07);
       font-weight: bold;
       white-space: nowrap;
-      border-top-right-radius: var(--curvature);
-      border-bottom-right-radius: var(--curvature);
       color: rgba(0, 0, 0, 0.5);
       align-self: center;
-      padding: 2px 6px;
+      padding: 0px 6px;
+      align-self: stretch;
+      align-items: center;
+    }
+
+    .etc > div {
+      font-size: 0.7em;
+    }
+
+    .wrapper *::last-child {
+      border-top-right-radius: var(--curvature);
+      border-bottom-right-radius: var(--curvature);
+      overflow: hidden;
     }
 
     .meter.done > span:after,
@@ -134,6 +150,9 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   showPercentage = false;
 
+  @property({ type: String })
+  message: string;
+
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -156,24 +175,31 @@ export class ProgressBar extends RapidElement {
   }
 
   public render(): TemplateResult {
-    return html`<div class="wrapper">
+    return html`<div class="wrapper ${this.done ? 'complete' : ''}">
       <div class="meter ${this.done ? 'done' : ''}">
+        ${this.message
+          ? html`<div class="message">${this.message}</div>`
+          : null}
         <span class="complete" style="flex-basis: ${this.pct}%"></span>
         <div class="incomplete"></div>
       </div>
 
       ${this.showPercentage || this.showEstimatedCompletion
         ? html`<div class="etc">
-            ${this.estimatedCompletionDate &&
-            this.showEstimatedCompletion &&
-            !this.done
-              ? html`<temba-date
-                  value="${this.estimatedCompletionDate.toISOString()}"
-                  display="countdown"
-                ></temba-date>`
-              : html`${this.pct}%`}
+            <div>
+              ${this.estimatedCompletionDate &&
+              this.showEstimatedCompletion &&
+              !this.done
+                ? html`<temba-date
+                    value="${this.estimatedCompletionDate.toISOString()}"
+                    display="countdown"
+                  ></temba-date>`
+                : html`${this.pct}%`}
+            </div>
           </div>`
         : null}
+
+      <slot></slot>
     </div>`;
   }
 }
