@@ -8,7 +8,7 @@ export class ProgressBar extends RapidElement {
       display: flex;
       box-sizing: content-box;
       background: #f1f1f1;
-      border-radius: calc(var(--curvature) * 1.3);
+      border-radius: var(--curvature);
       box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.05);
       overflow: hidden;
       min-height: 1.5rem;
@@ -32,7 +32,7 @@ export class ProgressBar extends RapidElement {
     .meter > span {
       display: block;
       height: 100%;
-      border-radius: var(--curvature);
+      border-radius: calc(var(--curvature) * 0.8);
       background-color: var(--color-primary-dark);
       background-image: linear-gradient(
         center bottom,
