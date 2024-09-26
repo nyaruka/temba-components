@@ -149,10 +149,11 @@ export const getClasses = (map: ClassMap): string => {
 
 export const fetchResultsPage = (
   url: string,
-  controller: AbortController = null
+  controller: AbortController = null,
+  headers: { [key: string]: string } = {}
 ): Promise<ResultsPage> => {
   return new Promise<ResultsPage>((resolve, reject) => {
-    getUrl(url, controller)
+    getUrl(url, controller, headers)
       .then((response: WebResponse) => {
         resolve({
           results: response.json.results,
@@ -163,7 +164,10 @@ export const fetchResultsPage = (
   });
 };
 
-export const fetchResults = async (url: string): Promise<any[]> => {
+export const fetchResults = async (
+  url: string,
+  headers: { [key: string]: string } = {}
+): Promise<any[]> => {
   if (!url) {
     return new Promise<any[]>((resolve) => resolve([]));
   }
@@ -171,7 +175,7 @@ export const fetchResults = async (url: string): Promise<any[]> => {
   let results: any[] = [];
   let pageUrl = url;
   while (pageUrl) {
-    const resultsPage = await fetchResultsPage(pageUrl);
+    const resultsPage = await fetchResultsPage(pageUrl, null, headers);
     if (resultsPage.results) {
       results = results.concat(resultsPage.results);
     }

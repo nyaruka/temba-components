@@ -76,7 +76,7 @@ export class StartProgress extends RapidElement {
   }
 
   public refresh(): void {
-    fetchResults(this.statusEndpoint).then((data: any) => {
+    fetchResults(this.statusEndpoint, this.getHeaders()).then((data: any) => {
       if (data.length > 0) {
         this.refreshes++;
         const start = data[0];

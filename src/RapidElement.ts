@@ -1,6 +1,7 @@
 import { LitElement, PropertyValueMap } from 'lit';
 import { CustomEventType } from './interfaces';
 import { Color, log } from './utils';
+import { property } from 'lit/decorators.js';
 
 const showUpdates = (
   ele: HTMLElement,
@@ -43,6 +44,9 @@ export class RapidElement extends LitElement {
   DEBUG = false;
   DEBUG_UPDATES = false;
   DEBUG_EVENTS = false;
+
+  @property({ type: String })
+  service: string;
 
   private eles: { [selector: string]: HTMLDivElement } = {};
   public getEventHandlers(): EventHandler[] {
@@ -88,6 +92,16 @@ export class RapidElement extends LitElement {
   ): void {
     super.updated(changes);
     showUpdates(this, changes, false);
+  }
+
+  public getHeaders() {
+    if (!this.service) {
+      return {};
+    }
+
+    return {
+      'X-Temba-Service-Org': this.service
+    };
   }
 
   public fireEvent(type: string): any {
