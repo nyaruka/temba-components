@@ -147,7 +147,7 @@ export class StartProgress extends RapidElement {
       eta=${this.eta}
       message=${this.message}
     >
-      ${this.running
+      ${this.running && this.interruptTitle && this.interruptEndpoint
         ? html`<temba-icon
             name="close"
             @click=${this.interruptStart}
