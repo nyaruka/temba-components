@@ -15,8 +15,9 @@ export class ProgressBar extends RapidElement {
     }
 
     .message {
-      padding: 0 0.25rem;
+      padding: 0 0.5rem;
       color: rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
     }
 
     .meter {
