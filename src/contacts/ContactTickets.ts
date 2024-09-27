@@ -1,14 +1,14 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType, Ticket, TicketStatus } from '../interfaces';
-import { StoreElement } from '../store/StoreElement';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 import { getClasses, postJSON, stopEvent } from '../utils';
 import { Icon } from '../vectoricon';
 
 const dropdownUserScale = 0.7;
 const inlineUserScale = 0.8;
 
-export class ContactTickets extends StoreElement {
+export class ContactTickets extends EndpointMonitorElement {
   @property({ type: String })
   agent: string;
 
@@ -230,6 +230,13 @@ export class ContactTickets extends StoreElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (changes.has('data')) {
+      this.fireCustomEvent(CustomEventType.DetailsChanged, {
+        count: this.data.length
+      });
+    }
+
     if (changes.has('contact') || changes.has('ticket')) {
       if (this.contact) {
         this.url = `/api/v2/tickets.json?contact=${this.contact}${

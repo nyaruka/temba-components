@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.102.1",
+  "version": "0.108.3",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
@@ -43,7 +43,7 @@
     "lit": "3.1.2",
     "lit-element": "^4.0.4",
     "lit-html": "^3.1.2",
-    "luxon": "^2.4.0",
+    "luxon": "3.5",
     "remarkable": "^2.0.1",
     "serialize-javascript": "^6.0.2",
     "tiny-lru": "^11.2.5"

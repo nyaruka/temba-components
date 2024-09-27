@@ -28,6 +28,7 @@ import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { FlowSpec } from '../flow/interfaces';
+import { StoreMonitorElement } from './StoreMonitorElement';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -109,6 +110,32 @@ export class Store extends RapidElement {
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
+
+  private dirtyElements: StoreMonitorElement[] = [];
+
+  public markDirty(ele: StoreMonitorElement) {
+    if (!this.dirtyElements.includes(ele)) {
+      this.dirtyElements.push(ele);
+    }
+  }
+
+  public cleanAll() {
+    this.dirtyElements.forEach((ele) => ele.markClean());
+    this.dirtyElements = [];
+  }
+
+  public markClean(ele: StoreMonitorElement) {
+    this.dirtyElements = this.dirtyElements.filter((el) => el !== ele);
+  }
+
+  public getDirtyMessage() {
+    if (this.dirtyElements.length > 0) {
+      return (
+        this.dirtyElements[0].dirtyMessage ||
+        'You have unsaved changes, are you sure you want to continue?'
+      );
+    }
+  }
 
   private cache: any;
   public getLocale() {
@@ -304,6 +331,34 @@ export class Store extends RapidElement {
     });
   }
 
+  public shiftAndRound(duration, unit: string, singular: string) {
+    const value = Math.round(duration.shiftTo(unit).get(unit));
+    if (value == 1) {
+      return `1 ${singular}`;
+    } else {
+      return `${value} ${unit}`;
+    }
+  }
+
+  public getCountdown(futureDate: DateTime) {
+    const duration = futureDate.diff(DateTime.now());
+    const comps = duration.rescale();
+
+    if (comps.months > 0) {
+      return '> 1 month';
+    }
+
+    if (comps.days > 1) {
+      return `~ ${this.shiftAndRound(comps, 'days', 'day')}`;
+    }
+
+    if (comps.hours > 0) {
+      return `~ ${this.shiftAndRound(comps, 'hours', 'hour')}`;
+    }
+
+    return `~ ${this.shiftAndRound(comps, 'minutes', 'minute')}`;
+  }
+
   public getShortDuration(scheduled: DateTime, compareDate: DateTime = null) {
     const now = compareDate || DateTime.now();
     return scheduled
@@ -476,6 +531,10 @@ export class Store extends RapidElement {
   public updateCache(url: string, data: any) {
     this.cache.set(url, data);
     this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
+  }
+
+  public removeFromCache(url: string) {
+    this.cache.delete(url);
   }
 
   public makeRequest(

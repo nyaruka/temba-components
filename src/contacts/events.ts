@@ -73,7 +73,6 @@ export interface TicketEvent extends ContactEvent {
   assignee?: User;
   ticket: {
     uuid: string;
-    body: string;
     topic?: ObjectReference;
     closed_on?: string;
     opened_on?: string;

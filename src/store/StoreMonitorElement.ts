@@ -14,7 +14,29 @@ export class StoreMonitorElement extends RapidElement {
   @property({ type: Boolean })
   showLoading = false;
 
+  @property({ type: Boolean })
+  dirty = false;
+
+  @property({ type: String })
+  dirtyMessage: string;
+
   store: Store;
+
+  markDirty() {
+    this.dirty = true;
+    this.store.markDirty(this);
+    this.fireCustomEvent(CustomEventType.DetailsChanged, {
+      dirty: true
+    });
+  }
+
+  markClean() {
+    this.dirty = false;
+    this.store.markClean(this);
+    this.fireCustomEvent(CustomEventType.DetailsChanged, {
+      dirty: false
+    });
+  }
 
   private handleStoreUpdated(event: CustomEvent) {
     this.store.initialHttpComplete.then(() => {
@@ -50,6 +72,8 @@ export class StoreMonitorElement extends RapidElement {
         CustomEventType.StoreUpdated,
         this.handleStoreUpdated
       );
+
+      this.store.markClean(this);
     }
   }
 

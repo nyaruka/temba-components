@@ -59,6 +59,10 @@ import { Chat } from './src/chat/Chat';
 import { MediaPicker } from './src/mediapicker/MediaPicker';
 import { FlowEditor } from './src/flow/FlowEditor';
 import { FlowNode } from './src/flow/FlowNode';
+import { ContactNotepad } from './src/contacts/ContactNotepad';
+import { OutboxMonitor } from './src/outboxmonitor/OutboxMonitor';
+import { ProgressBar } from './src/progress/ProgressBar';
+import { StartProgress } from './src/progress/StartProgress';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -128,3 +132,7 @@ addCustomElement('temba-chat', Chat);
 addCustomElement('temba-media-picker', MediaPicker);
 addCustomElement('temba-flow-editor', FlowEditor);
 addCustomElement('temba-flow-node', FlowNode);
+addCustomElement('temba-contact-notepad', ContactNotepad);
+addCustomElement('temba-outbox-monitor', OutboxMonitor);
+addCustomElement('temba-progress', ProgressBar);
+addCustomElement('temba-start-progress', StartProgress);

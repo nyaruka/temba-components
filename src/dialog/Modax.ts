@@ -381,7 +381,11 @@ export class Modax extends RapidElement {
   }
 
   private isDestructive(): boolean {
-    return this.endpoint && this.endpoint.indexOf('delete') > -1;
+    return (
+      this.endpoint &&
+      (this.endpoint.indexOf('delete') > -1 ||
+        this.endpoint.indexOf('interrupt') > -1)
+    );
   }
 
   private handleGotoStep(evt: MouseEvent) {
