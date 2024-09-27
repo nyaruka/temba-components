@@ -1,10 +1,9 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 
-import { StoreElement } from '../store/StoreElement';
-
-export class FlowEditor extends StoreElement {
+export class FlowEditor extends EndpointMonitorElement {
   @property({ type: String })
   flow: string;
 

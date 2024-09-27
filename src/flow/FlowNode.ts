@@ -2,9 +2,9 @@ import { css, html } from 'lit';
 import { ActionSpec, NodeSpec, NodeUISpec } from './interfaces';
 import { UI_CONFIG } from './config';
 import { property } from 'lit/decorators.js';
-import { StoreElement } from '../store/StoreElement';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 
-export class FlowNode extends StoreElement {
+export class FlowNode extends EndpointMonitorElement {
   @property({ type: String, attribute: 'node' })
   public uuid: string;
 
