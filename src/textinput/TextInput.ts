@@ -97,6 +97,7 @@ export class TextInput extends FormElement {
 
       .grow-wrap > div {
         border: 0px solid green;
+        white-space: pre-wrap;
         width: 100%;
         padding: var(--temba-textinput-padding);
         flex: 1;
@@ -110,6 +111,8 @@ export class TextInput extends FormElement {
         resize: none;
         width: 100%;
         word-break: break-word;
+        opacity: 0;
+        z-index: -1;
       }
 
       .grow-wrap textarea {
@@ -210,6 +213,8 @@ export class TextInput extends FormElement {
           '.grow-wrap > div'
         ) as HTMLDivElement;
         autogrow.innerText = this.value + String.fromCharCode(10);
+
+        console.log('autogrow', autogrow.innerText);
       }
 
       if (this.cursorStart > -1 && this.cursorEnd > -1) {
@@ -235,6 +240,7 @@ export class TextInput extends FormElement {
     const cursorEnd = this.inputElement.selectionEnd;
 
     const sanitized = this.sanitizeGSM(value);
+    // console.log('sanitizing', "'" + value + "'", "'" + sanitized + "'");
 
     if (sanitized !== value) {
       this.cursorStart = cursorStart;
