@@ -213,8 +213,6 @@ export class TextInput extends FormElement {
           '.grow-wrap > div'
         ) as HTMLDivElement;
         autogrow.innerText = this.value + String.fromCharCode(10);
-
-        console.log('autogrow', autogrow.innerText);
       }
 
       if (this.cursorStart > -1 && this.cursorEnd > -1) {
@@ -238,9 +236,7 @@ export class TextInput extends FormElement {
   private updateValue(value: string): void {
     const cursorStart = this.inputElement.selectionStart;
     const cursorEnd = this.inputElement.selectionEnd;
-
     const sanitized = this.sanitizeGSM(value);
-    // console.log('sanitizing', "'" + value + "'", "'" + sanitized + "'");
 
     if (sanitized !== value) {
       this.cursorStart = cursorStart;
