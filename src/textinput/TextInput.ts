@@ -97,6 +97,7 @@ export class TextInput extends FormElement {
 
       .grow-wrap > div {
         border: 0px solid green;
+        white-space: pre-wrap;
         width: 100%;
         padding: var(--temba-textinput-padding);
         flex: 1;
@@ -110,6 +111,8 @@ export class TextInput extends FormElement {
         resize: none;
         width: 100%;
         word-break: break-word;
+        opacity: 0;
+        z-index: -1;
       }
 
       .grow-wrap textarea {
@@ -233,7 +236,6 @@ export class TextInput extends FormElement {
   private updateValue(value: string): void {
     const cursorStart = this.inputElement.selectionStart;
     const cursorEnd = this.inputElement.selectionEnd;
-
     const sanitized = this.sanitizeGSM(value);
 
     if (sanitized !== value) {
