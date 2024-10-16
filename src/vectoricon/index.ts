@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '9e79473a17f3f3c173d39b9315e644ac';
+export const SVG_FINGERPRINT = 'ad75877fb552efe34e7c5a0c03c27328';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -90,8 +90,9 @@ export enum Icon {
   inbox = 'inbox-01',
   incidents = 'alert-square',
   incoming_call = 'phone-incoming-01',
-  integrations = 'layers-three-01',
   info = 'user-square',
+  integrations = 'layers-three-01',
+  invitations = 'user-plus-01',
   issue = 'alert-square',
   label = 'tag-01',
   language = 'translate-01',
