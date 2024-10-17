@@ -1,7 +1,6 @@
 import { assert, expect } from '@open-wc/testing';
 import { Compose } from '../src/compose/Compose';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
-import { Button } from '../src/button/Button';
 import { Completion } from '../src/completion/Completion';
 import { DEFAULT_MEDIA_ENDPOINT } from '../src/utils';
 import { Attachment } from '../src/interfaces';
@@ -265,10 +264,9 @@ describe('temba-compose chatbox', () => {
       button: true
     });
     await updateComponent(compose, getValidText());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-and-click-send',
       getClip(compose)
@@ -383,13 +381,14 @@ describe('temba-compose attachments', () => {
   it('attachments with success uploaded files and click send', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true
+      chatbox: true
     });
     await updateComponent(compose, null, getValidAttachments());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
     await assertScreenshot(
       'compose/attachments-with-success-files-and-click-send',
       getClip(compose)
@@ -399,13 +398,12 @@ describe('temba-compose attachments', () => {
   it('attachments with success and failure uploaded files and click send', async () => {
     const compose: Compose = await getCompose({
       attachments: true,
-      button: true
+      chatbox: true
     });
     await updateComponent(compose, null, getValidAttachments());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/attachments-with-all-files-and-click-send',
       getClip(compose)
@@ -522,10 +520,9 @@ describe('temba-compose chatbox with text and attachments no files', () => {
       button: true
     });
     updateComponent(compose, getValidText());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-no-files-and-click-send',
       getClip(compose)
@@ -613,10 +610,9 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       button: true
     });
     await updateComponent(compose, null, getValidAttachments());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-success-files-and-click-send',
       getClip(compose)
@@ -630,10 +626,9 @@ describe('temba-compose chatbox no text and attachments with files', () => {
       button: true
     });
     await updateComponent(compose, null, getValidAttachments());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-no-text-attachments-with-all-files-and-click-send',
       getClip(compose)
@@ -707,10 +702,9 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true
     });
     await updateComponent(compose, getValidText(), getValidAttachments());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-success-files-and-click-send',
       getClip(compose)
@@ -724,10 +718,9 @@ describe('temba-compose chatbox with text and attachments with files', () => {
       button: true
     });
     await updateComponent(compose, getValidText(), getValidAttachments());
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await assertScreenshot(
       'compose/chatbox-with-text-attachments-with-all-files-and-click-send',
       getClip(compose)

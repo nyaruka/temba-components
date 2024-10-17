@@ -48,6 +48,9 @@ export class ShortcutList extends StoreMonitorElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
+  }
+
+  public storeUpdated(): void {
     this.filteredShortcuts = this.store.getShortcuts();
   }
 
