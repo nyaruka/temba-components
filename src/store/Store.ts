@@ -18,7 +18,8 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
-  User
+  User,
+  Shortcut
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { lru } from 'tiny-lru';
@@ -85,6 +86,9 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'users' })
   usersEndpoint: string;
 
+  @property({ type: String, attribute: 'shortcuts' })
+  shortcutsEndpoint: string;
+
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
 
@@ -98,6 +102,7 @@ export class Store extends RapidElement {
 
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
+  private shortcuts: Shortcut[] = [];
   private languages: any = {};
   private users: User[];
   private workspace: Workspace;
@@ -229,11 +234,19 @@ export class Store extends RapidElement {
       );
     }
 
+    if (this.shortcutsEndpoint) {
+      fetches.push(this.refreshShortcuts());
+    }
+
     this.initialHttpComplete = Promise.all(fetches);
 
     this.initialHttpComplete.then(() => {
       this.ready = true;
     });
+  }
+
+  public getShortcuts() {
+    return this.shortcuts || [];
   }
 
   public getAssignableUsers() {
@@ -257,13 +270,19 @@ export class Store extends RapidElement {
     return 'en';
   }
 
-  public refreshGlobals() {
-    getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
+  public async refreshGlobals() {
+    return getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
       this.keyedAssets['globals'] = assets.map((asset: Asset) => asset.key);
     });
   }
 
-  public refreshFields() {
+  public async refreshShortcuts() {
+    return getAssets(this.shortcutsEndpoint).then((shortcuts: Shortcut[]) => {
+      this.shortcuts = shortcuts;
+    });
+  }
+
+  public async refreshFields() {
     return getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
       this.keyedAssets['fields'] = [];
       this.featuredFields = [];

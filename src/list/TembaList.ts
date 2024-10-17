@@ -410,9 +410,6 @@ export class TembaList extends RapidElement {
       }
     }
 
-    // TODO: Not sure why this is needed
-    // this.requestUpdate('cursorIndex');
-
     if (this.value) {
       this.setSelection(this.value);
       this.value = null;
@@ -456,7 +453,12 @@ export class TembaList extends RapidElement {
   }
 
   protected handleSelection(event: CustomEvent) {
-    const { selected, index } = event.detail;
+    let index = event.detail.index;
+    const selected = event.detail.selected;
+
+    if (index === -1) {
+      index = 0;
+    }
 
     this.selected = selected;
     this.cursorIndex = index;
@@ -470,8 +472,9 @@ export class TembaList extends RapidElement {
       ${this.renderHeader()}
       <temba-options
         style="${this.getListStyle()}"
-        ?visible=${true}
-        ?block=${true}
+        visible
+        block
+        cursorSelection
         ?hideShadow=${this.hideShadow}
         ?collapsed=${this.collapsed}
         ?loading=${this.loading}

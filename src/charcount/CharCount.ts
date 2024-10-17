@@ -47,15 +47,14 @@ export class CharCount extends RapidElement {
         overflow: hidden;
         opacity: 0.3;
         transform: scale(0.7);
-        box-shadow: var(--shadow);
+        box-shadow: var(--dropdown-shadow);
         transition: transform cubic-bezier(0.71, 0.18, 0.61, 1.33)
           var(--transition-speed);
         visibility: hidden;
-        margin-top: var(--temba-charcount-summary-margin-top);
-        right: var(--temba-charcount-summary-right);
-        bottom: var(--temba-charcount-summary-bottom);
         text-align: left;
-        position: var(--temba-charcount-summary-position);
+        position: fixed;
+        margin-left: -190px;
+        margin-top: 20px;
         z-index: 1000;
       }
 

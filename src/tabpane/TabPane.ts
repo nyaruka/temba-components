@@ -82,7 +82,6 @@ export class TabPane extends RapidElement {
       }
 
       .focusedname .tab.selected {
-        transform: none;
       }
 
       .focusedname .tab .name {
@@ -119,8 +118,6 @@ export class TabPane extends RapidElement {
       }
 
       .embedded .tab.selected {
-        border: none;
-        transform: none;
       }
 
       .tab.selected .dot {
@@ -153,7 +150,10 @@ export class TabPane extends RapidElement {
         flex-direction: column;
         flex-grow: 1;
         background: var(--focused-tab-color, #fff);
-        border-radius: var(--curvature);
+        border-bottom-left-radius: var(--curvature);
+        border-bottom-right-radius: var(--curvature);
+        overflow: hidden;
+
         box-shadow: var(
           --tabs-shadow,
           rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
@@ -217,6 +217,9 @@ export class TabPane extends RapidElement {
       .embedded.pane {
         box-shadow: none;
         margin: 0;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
       }
 
       .embedded.tabs {
@@ -224,6 +227,13 @@ export class TabPane extends RapidElement {
       }
 
       .embedded .tab {
+        border-top: none !important;
+        border-bottom: none !important;
+        border-radius: 0px;
+      }
+
+      .embedded .tab.first {
+        border-left: none !important;
       }
 
       .embedded.tabs .tab.selected {
@@ -329,6 +339,14 @@ export class TabPane extends RapidElement {
           }
         }
       }
+    }
+  }
+
+  public focusTab(name: string): Tab {
+    const index = this.tabs.findIndex((tab) => tab.name === name);
+    if (index >= 0) {
+      this.index = index;
+      return this.getTab(index);
     }
   }
 
@@ -444,7 +462,11 @@ export class TabPane extends RapidElement {
       ${!this.bottom
         ? html`<div
             @temba-details-changed=${this.handleTabDetailsChanged}
-            style="border: 1px solid ${activeTab?.borderColor};background:${activeTab?.selectionBackground}"
+            style="${activeTab?.borderColor
+              ? `border: 1px solid ${activeTab?.borderColor};`
+              : ''} ${activeTab?.selectionBackground
+              ? `background:${activeTab?.selectionBackground};`
+              : ``}"
             class="pane ${getClasses({
               first: this.index == 0,
               embedded: this.embedded,
@@ -452,6 +474,7 @@ export class TabPane extends RapidElement {
             })}"
           >
             <slot></slot>
+            <slot name="pane-bottom"></slot>
           </div>`
         : null}
     `;

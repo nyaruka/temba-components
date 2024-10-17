@@ -62,13 +62,15 @@ export class TextInput extends FormElement {
         transition: height var(--transition-speed) ease-in-out;
       }
 
+      .textinput:focus {
+      }
+
       .textinput {
         padding: var(--temba-textinput-padding);
         border: none;
         flex: 1;
         margin: 0;
-        background: none;
-        background-color: transparent;
+        background: transparent;
         color: var(--color-widget-text);
         font-family: var(--font-family);
         font-size: var(--temba-textinput-font-size);
@@ -233,7 +235,11 @@ export class TextInput extends FormElement {
     this.value = null;
   }
 
-  private updateValue(value: string): void {
+  public getTextInput(): TextInput {
+    return this;
+  }
+
+  public updateValue(value: string): void {
     const cursorStart = this.inputElement.selectionStart;
     const cursorEnd = this.inputElement.selectionEnd;
     const sanitized = this.sanitizeGSM(value);

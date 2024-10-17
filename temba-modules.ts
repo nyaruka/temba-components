@@ -61,6 +61,7 @@ import { ContactNotepad } from './src/contacts/ContactNotepad';
 import { OutboxMonitor } from './src/outboxmonitor/OutboxMonitor';
 import { ProgressBar } from './src/progress/ProgressBar';
 import { StartProgress } from './src/progress/StartProgress';
+import { ShortcutList } from './src/list/ShortcutList';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -132,3 +133,4 @@ addCustomElement('temba-contact-notepad', ContactNotepad);
 addCustomElement('temba-outbox-monitor', OutboxMonitor);
 addCustomElement('temba-progress', ProgressBar);
 addCustomElement('temba-start-progress', StartProgress);
+addCustomElement('temba-shortcuts', ShortcutList);

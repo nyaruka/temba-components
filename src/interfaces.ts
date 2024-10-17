@@ -110,6 +110,13 @@ export interface ObjectReference {
   name: string;
 }
 
+export interface Shortcut {
+  uuid: string;
+  name: string;
+  text: string;
+  modified_on: string;
+}
+
 export interface ContactField {
   key: string;
   label: string;

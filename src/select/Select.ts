@@ -81,7 +81,7 @@ export class Select extends FormElement {
       }
 
       .wrapper-bg {
-        background: #f3f3f3;
+        background: #fff;
         box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%);
         border-radius: var(--curvature-widget);
       }

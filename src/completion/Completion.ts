@@ -116,6 +116,9 @@ export class Completion extends FormElement {
   @property({ type: Boolean })
   gsm: boolean;
 
+  @property({ type: Boolean })
+  disableCompletion: boolean;
+
   @property({ type: String })
   counter: string;
 
@@ -140,30 +143,32 @@ export class Completion extends FormElement {
   }
 
   private handleKeyUp(evt: KeyboardEvent) {
-    // if we have options, ignore keys that are meant for them
-    if (this.options && this.options.length > 0) {
-      if (evt.key === 'ArrowUp' || evt.key === 'ArrowDown') {
-        return;
-      }
-
-      if (evt.ctrlKey) {
-        if (evt.key === 'n' || evt.key === 'p') {
+    if (this.disableCompletion) {
+      // if we have options, ignore keys that are meant for them
+      if (this.options && this.options.length > 0) {
+        if (evt.key === 'ArrowUp' || evt.key === 'ArrowDown') {
           return;
         }
-      }
 
-      if (
-        evt.key === 'Enter' ||
-        evt.key === 'Escape' ||
-        evt.key === 'Tab' ||
-        evt.key.startsWith('Control')
-      ) {
-        evt.stopPropagation();
-        evt.preventDefault();
-        return;
-      }
+        if (evt.ctrlKey) {
+          if (evt.key === 'n' || evt.key === 'p') {
+            return;
+          }
+        }
 
-      this.executeQuery(evt.currentTarget as TextInput);
+        if (
+          evt.key === 'Enter' ||
+          evt.key === 'Escape' ||
+          evt.key === 'Tab' ||
+          evt.key.startsWith('Control')
+        ) {
+          evt.stopPropagation();
+          evt.preventDefault();
+          return;
+        }
+
+        this.executeQuery(evt.currentTarget as TextInput);
+      }
     }
   }
 
@@ -172,10 +177,15 @@ export class Completion extends FormElement {
   }
 
   private executeQuery(ele: TextInput) {
+    if (this.disableCompletion) {
+      return;
+    }
+
     const store: Store = document.querySelector('temba-store');
     if (!ele.inputElement) {
       return;
     }
+
     const result = executeCompletionQuery(
       ele.inputElement,
       store,
@@ -230,6 +240,10 @@ export class Completion extends FormElement {
     if (tabbed) {
       this.executeQuery(this.textInputElement);
     }
+  }
+
+  public getTextInput(): TextInput {
+    return this.textInputElement;
   }
 
   public click() {
