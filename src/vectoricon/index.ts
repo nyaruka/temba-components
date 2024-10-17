@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = 'ad75877fb552efe34e7c5a0c03c27328';
+export const SVG_FINGERPRINT = 'f3e1cdc8bc9f2e47455a9ef0f7fe4baf';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -145,7 +145,7 @@ export enum Icon {
   service = 'magic-wand-01',
   service_end = 'log-out-04',
   settings = 'settings-02',
-  shortcut = 'message-dots-circle',
+  shortcut = 'zap-fast',
   show = 'eye',
   simulator = 'phone-02',
   sort = 'chevron-selector-vertical',

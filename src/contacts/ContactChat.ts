@@ -269,17 +269,16 @@ export class ContactChat extends ContactStoreElement {
         min-height: 0;
       }
 
-      .chatbox {
+      .compose {
         background: #fff;
         display: flex;
         flex-direction: column;
-        --textarea-min-height: 1em;
-        --textarea-height: 1.2em;
+        --textarea-min-height: 8em;
+        --textarea-height: 0.5em;
         --widget-box-shadow-focused: none;
-      }
-
-      .chatbox.full {
-        border-bottom-right-radius: 0 !important;
+        --compose-curvature: 0px;
+        border-top: 1px solid #e6e6e6;
+        overflow: hidden;
       }
 
       .closed-footer {
@@ -314,8 +313,11 @@ export class ContactChat extends ContactStoreElement {
       }
 
       .border {
-        border-top: 1px solid #f1f1f1;
-        margin: 0 1em;
+      }
+
+      temba-compose {
+        border-top-right-radius: 0;
+        border-top-left-radius: 0;
       }
     `;
   }
@@ -487,10 +489,10 @@ export class ContactChat extends ContactStoreElement {
     const contactHistory = this.currentContact
       ? this.getTembaContactHistory()
       : null;
-    const chatbox = this.currentContact ? this.getTembaChatbox() : null;
+    const tembaCompose = this.currentContact ? this.getTembaCompose() : null;
 
     const contactHistoryAndChatbox = html`
-      <div class="chat-wrapper">${contactHistory} ${chatbox}</div>
+      <div class="chat-wrapper">${contactHistory} ${tembaCompose}</div>
     `;
     return html`${contactHistoryAndChatbox}`;
   }
@@ -851,7 +853,7 @@ export class ContactChat extends ContactStoreElement {
     ></temba-chat>`;
   }
 
-  private getTembaChatbox(): TemplateResult {
+  private getTembaCompose(): TemplateResult {
     if (this.currentTicket) {
       if (this.currentContact && this.currentContact.status !== 'active') {
         //no chatbox for archived, blocked, or stopped contacts
@@ -859,7 +861,7 @@ export class ContactChat extends ContactStoreElement {
       } else {
         if (!this.currentTicket.closed_on) {
           //chatbox for active contacts with an open ticket
-          return this.getChatbox();
+          return this.getCompose();
         } else {
           return null;
         }
@@ -871,13 +873,13 @@ export class ContactChat extends ContactStoreElement {
       return null;
     } else {
       //chatbox for active contacts
-      return this.getChatbox();
+      return this.getCompose();
     }
   }
 
-  private getChatbox(): TemplateResult {
+  private getCompose(): TemplateResult {
     return html`<div class="border"></div>
-      <div class="chatbox">
+      <div class="compose">
         <temba-compose
           chatbox
           attachments

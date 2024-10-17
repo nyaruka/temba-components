@@ -231,7 +231,7 @@ export class ContactTickets extends EndpointMonitorElement {
   ): void {
     super.updated(changes);
 
-    if (changes.has('data')) {
+    if (changes.has('data') && this.data) {
       this.fireCustomEvent(CustomEventType.DetailsChanged, {
         count: this.data.length
       });

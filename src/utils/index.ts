@@ -2,7 +2,13 @@
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
-import { Attachment, ContactField, Ticket, User } from '../interfaces';
+import {
+  Attachment,
+  ContactField,
+  Shortcut,
+  Ticket,
+  User
+} from '../interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from '../toast/Toast';
 
@@ -10,7 +16,7 @@ export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
 export const colorHash = new ColorHash();
 
-export type Asset = KeyedAsset & Ticket & ContactField;
+export type Asset = KeyedAsset & Ticket & ContactField & Shortcut;
 
 export const DATE_FORMAT =
   /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;

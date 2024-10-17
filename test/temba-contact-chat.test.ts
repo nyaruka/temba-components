@@ -1,5 +1,4 @@
 import { useFakeTimers } from 'sinon';
-import { Button } from '../src/button/Button';
 import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
 import { Attachment } from '../src/interfaces';
@@ -19,6 +18,7 @@ import {
   getValidText,
   updateComponent
 } from './temba-compose.test';
+import { Completion } from '../src/completion/Completion';
 
 let clock: any;
 mockNow('2021-03-31T00:31:00.000-00:00');
@@ -160,10 +160,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     };
     mockPOST(/api\/v2\/messages\.json/, response_body);
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-no-attachments-success',
@@ -193,10 +192,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-no-attachments-failure',
@@ -243,10 +241,9 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-attachments-no-text-success',
@@ -275,10 +272,9 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-attachments-no-text-failure',
@@ -319,10 +315,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     };
     mockPOST(/api\/v2\/messages\.json/, response_body);
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-and-attachments-success',
@@ -352,10 +347,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-and-attachments-failure-text',
@@ -385,10 +379,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-and-attachments-failure-attachments',
@@ -420,10 +413,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-and-attachments-failure-text-and-attachments',
@@ -450,10 +442,9 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       response_status
     );
 
-    const send = compose.shadowRoot.querySelector(
-      'temba-button#send-button'
-    ) as Button;
-    send.click();
+    // press enter
+    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
+    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
     await assertScreenshot(
       'contacts/compose-text-and-attachments-failure-generic',

@@ -10,11 +10,13 @@ export class Tab extends RapidElement {
         display: none;
         flex-direction: column;
         min-height: 0;
+        pointer-events: none;
       }
 
       :host(.selected) {
         display: flex;
         flex-grow: 1;
+        pointer-events: auto;
       }
     `;
   }
