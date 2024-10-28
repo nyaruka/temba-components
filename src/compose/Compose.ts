@@ -11,6 +11,15 @@ import { Tab } from '../tabpane/Tab';
 import { TextInput } from '../textinput/TextInput';
 import { ShortcutList } from '../list/ShortcutList';
 
+export interface ComposeValue {
+  text: string;
+  attachments: { uuid: string }[];
+  quick_replies: string[];
+  optin: string;
+  template: string;
+  variables: string[];
+}
+
 export class Compose extends FormElement {
   static get styles() {
     return css`
@@ -81,11 +90,6 @@ export class Compose extends FormElement {
         --temba-charcount-summary-bottom: 105px;
       }
 
-      temba-button {
-        --button-y: 1px;
-        --button-x: 12px;
-      }
-
       .send-error {
         color: rgba(250, 0, 0, 0.75);
         font-size: var(--help-text-size);
@@ -106,10 +110,6 @@ export class Compose extends FormElement {
         align-items: center;
         display: flex;
         margin: 0.5em;
-      }
-
-      #send-button {
-        margin: 0.3em;
       }
 
       temba-tabs {
@@ -180,9 +180,6 @@ export class Compose extends FormElement {
   completion: boolean;
 
   @property({ type: Boolean })
-  chatbox: boolean;
-
-  @property({ type: Boolean })
   attachments: boolean;
 
   @property({ type: Boolean })
@@ -196,9 +193,6 @@ export class Compose extends FormElement {
 
   @property({ type: Boolean })
   counter: boolean;
-
-  @property({ type: Boolean })
-  button: boolean;
 
   @property({ type: Boolean })
   autogrow: boolean;
@@ -405,15 +399,11 @@ export class Compose extends FormElement {
   }
 
   private setFocusOnChatbox(): void {
-    if (this.chatbox) {
-      const completion = this.shadowRoot.querySelector(
-        '.chatbox'
-      ) as Completion;
-      if (completion) {
-        window.setTimeout(() => {
-          completion.focus();
-        }, 0);
-      }
+    const completion = this.shadowRoot.querySelector('.chatbox') as Completion;
+    if (completion) {
+      window.setTimeout(() => {
+        completion.focus();
+      }, 0);
     }
   }
 
@@ -464,19 +454,13 @@ export class Compose extends FormElement {
   }
 
   public toggleButton() {
-    if (this.button) {
-      this.buttonError = '';
-      const chatboxEmpty = this.currentText.trim().length === 0;
-      const attachmentsEmpty = this.currentAttachments.length === 0;
-      if (this.chatbox && this.attachments) {
-        this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
-      } else if (this.chatbox) {
-        this.buttonDisabled = chatboxEmpty;
-      } else if (this.attachments) {
-        this.buttonDisabled = attachmentsEmpty;
-      } else {
-        this.buttonDisabled = true;
-      }
+    this.buttonError = '';
+    const chatboxEmpty = this.currentText.trim().length === 0;
+    const attachmentsEmpty = this.currentAttachments.length === 0;
+    if (this.attachments) {
+      this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
+    } else {
+      this.buttonDisabled = chatboxEmpty;
     }
   }
 
@@ -535,18 +519,16 @@ export class Compose extends FormElement {
       }
     }
 
-    if (this.button) {
-      if (evt.key === 'Enter') {
-        if (!evt.shiftKey) {
-          evt.preventDefault();
-          if (this.completion) {
-            const chat = evt.target as Completion;
-            if (!chat.hasVisibleOptions()) {
-              this.handleSend();
-            }
-          } else {
+    if (evt.key === 'Enter') {
+      if (!evt.shiftKey) {
+        evt.preventDefault();
+        if (this.completion) {
+          const chat = evt.target as Completion;
+          if (!chat.hasVisibleOptions()) {
             this.handleSend();
           }
+        } else {
+          this.handleSend();
         }
       }
     }
@@ -555,8 +537,9 @@ export class Compose extends FormElement {
   private handleSend() {
     if (!this.buttonDisabled) {
       this.buttonDisabled = true;
-      const name = this.buttonName;
-      this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
+      this.fireCustomEvent(CustomEventType.Submitted, {
+        langValues: this.langValues
+      });
     }
   }
 
@@ -773,21 +756,20 @@ export class Compose extends FormElement {
           slot="pane-bottom"
           class="pane-bottom ${this.hasPendingText ? 'pending' : ''}"
         >
-          ${this.chatbox
-            ? html`<temba-completion
-                class="chatbox"
-                .value=${this.initialText}
-                gsm
-                textarea
-                ?disableCompletion=${!this.completion}
-                ?autogrow=${this.autogrow}
-                maxlength=${this.maxLength}
-                @change=${this.handleChatboxChange}
-                @keydown=${this.handleKeyDown}
-                placeholder="Write something here"
-              >
-              </temba-completion>`
-            : null}
+          <temba-completion
+            class="chatbox"
+            .value=${this.initialText}
+            gsm
+            textarea
+            ?disableCompletion=${!this.completion}
+            ?autogrow=${this.autogrow}
+            maxlength=${this.maxLength}
+            @change=${this.handleChatboxChange}
+            @keydown=${this.handleKeyDown}
+            placeholder="Write something here"
+          >
+          </temba-completion>
+
           ${this.buttonError
             ? html`<div class="send-error">${this.buttonError}</div>`
             : null}
