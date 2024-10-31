@@ -333,6 +333,7 @@ export default {
           '--disable-web-security',
           '--force-device-scale-factor=1',
           '--no-sandbox',
+          '--disable-gpu',
         ],
         headless: true,
       },

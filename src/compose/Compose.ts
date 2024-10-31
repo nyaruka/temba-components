@@ -11,6 +11,15 @@ import { Tab } from '../tabpane/Tab';
 import { TextInput } from '../textinput/TextInput';
 import { ShortcutList } from '../list/ShortcutList';
 
+export interface ComposeValue {
+  text: string;
+  attachments: { uuid: string }[];
+  quick_replies: string[];
+  optin: string;
+  template: string;
+  variables: string[];
+}
+
 export class Compose extends FormElement {
   static get styles() {
     return css`
@@ -81,11 +90,6 @@ export class Compose extends FormElement {
         --temba-charcount-summary-bottom: 105px;
       }
 
-      temba-button {
-        --button-y: 1px;
-        --button-x: 12px;
-      }
-
       .send-error {
         color: rgba(250, 0, 0, 0.75);
         font-size: var(--help-text-size);
@@ -106,10 +110,6 @@ export class Compose extends FormElement {
         align-items: center;
         display: flex;
         margin: 0.5em;
-      }
-
-      #send-button {
-        margin: 0.3em;
       }
 
       temba-tabs {
@@ -180,9 +180,6 @@ export class Compose extends FormElement {
   completion: boolean;
 
   @property({ type: Boolean })
-  chatbox: boolean;
-
-  @property({ type: Boolean })
   attachments: boolean;
 
   @property({ type: Boolean })
@@ -198,10 +195,10 @@ export class Compose extends FormElement {
   counter: boolean;
 
   @property({ type: Boolean })
-  button: boolean;
+  autogrow: boolean;
 
   @property({ type: Boolean })
-  autogrow: boolean;
+  shortcuts: boolean;
 
   @property({ type: String })
   currentText = '';
@@ -249,14 +246,8 @@ export class Compose extends FormElement {
   @property({ type: String })
   templateEndpoint = '/api/internal/templates.json';
 
-  @property({ type: String })
-  buttonName = 'Send';
-
   @property({ type: Boolean, attribute: false })
-  buttonDisabled = true;
-
-  @property({ type: String, attribute: false })
-  buttonError = '';
+  empty = true;
 
   @property({ type: Boolean, attribute: 'widget_only' })
   widgetOnly: boolean;
@@ -371,7 +362,7 @@ export class Compose extends FormElement {
       changes.has('currentTemplate') ||
       changes.has('variables')
     ) {
-      this.toggleButton();
+      this.checkIfEmpty();
 
       const trimmed = this.currentText ? this.currentText.trim() : '';
       if (
@@ -405,15 +396,11 @@ export class Compose extends FormElement {
   }
 
   private setFocusOnChatbox(): void {
-    if (this.chatbox) {
-      const completion = this.shadowRoot.querySelector(
-        '.chatbox'
-      ) as Completion;
-      if (completion) {
-        window.setTimeout(() => {
-          completion.focus();
-        }, 0);
-      }
+    const completion = this.shadowRoot.querySelector('.chatbox') as Completion;
+    if (completion) {
+      window.setTimeout(() => {
+        completion.focus();
+      }, 0);
     }
   }
 
@@ -425,7 +412,6 @@ export class Compose extends FormElement {
     this.currentText = '';
     this.currentQuickReplies = [];
     this.currentAttachments = [];
-    this.buttonError = '';
     this.resetTabs();
   }
 
@@ -463,26 +449,14 @@ export class Compose extends FormElement {
     }
   }
 
-  public toggleButton() {
-    if (this.button) {
-      this.buttonError = '';
-      const chatboxEmpty = this.currentText.trim().length === 0;
-      const attachmentsEmpty = this.currentAttachments.length === 0;
-      if (this.chatbox && this.attachments) {
-        this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
-      } else if (this.chatbox) {
-        this.buttonDisabled = chatboxEmpty;
-      } else if (this.attachments) {
-        this.buttonDisabled = attachmentsEmpty;
-      } else {
-        this.buttonDisabled = true;
-      }
+  public checkIfEmpty() {
+    const chatboxEmpty = this.currentText.trim().length === 0;
+    const attachmentsEmpty = this.currentAttachments.length === 0;
+    if (this.attachments) {
+      this.empty = chatboxEmpty && attachmentsEmpty;
+    } else {
+      this.empty = chatboxEmpty;
     }
-  }
-
-  private handleSendClick(evt: Event) {
-    evt.stopPropagation();
-    this.handleSend();
   }
 
   private getCurrentLine(): { text: string; index: number } {
@@ -535,28 +509,26 @@ export class Compose extends FormElement {
       }
     }
 
-    if (this.button) {
-      if (evt.key === 'Enter') {
-        if (!evt.shiftKey) {
-          evt.preventDefault();
-          if (this.completion) {
-            const chat = evt.target as Completion;
-            if (!chat.hasVisibleOptions()) {
-              this.handleSend();
-            }
-          } else {
-            this.handleSend();
+    if (evt.key === 'Enter') {
+      if (!evt.shiftKey) {
+        evt.preventDefault();
+        if (this.completion) {
+          const chat = evt.target as Completion;
+          if (!chat.hasVisibleOptions()) {
+            this.triggerSend();
           }
+        } else {
+          this.triggerSend();
         }
       }
     }
   }
 
-  private handleSend() {
-    if (!this.buttonDisabled) {
-      this.buttonDisabled = true;
-      const name = this.buttonName;
-      this.fireCustomEvent(CustomEventType.ButtonClicked, { name });
+  public triggerSend() {
+    if (!this.empty) {
+      this.fireCustomEvent(CustomEventType.Submitted, {
+        langValues: this.langValues
+      });
     }
   }
 
@@ -567,6 +539,10 @@ export class Compose extends FormElement {
 
   public resetTabs() {
     (this.shadowRoot.querySelector('temba-tabs') as TabPane).index = 0;
+  }
+
+  public getTabs(): TabPane {
+    return this.shadowRoot.querySelector('temba-tabs') as TabPane;
   }
 
   public render(): TemplateResult {
@@ -757,13 +733,19 @@ export class Compose extends FormElement {
           borderColor="#ebdf6f"
         ></temba-tab-->
 
-        <temba-tab name="Shortcuts" icon="shortcut" selectionBackground="#fff">
-          <div class="shortcut-wrapper">
-            <temba-shortcuts
-              @temba-selection=${this.handleShortcutSelection}
-            ></temba-shortcuts>
-          </div>
-        </temba-tab>
+        ${this.shortcuts
+          ? html`<temba-tab
+              name="Shortcuts"
+              icon="shortcut"
+              selectionBackground="#fff"
+            >
+              <div class="shortcut-wrapper">
+                <temba-shortcuts
+                  @temba-selection=${this.handleShortcutSelection}
+                ></temba-shortcuts>
+              </div>
+            </temba-tab>`
+          : null}
 
         <div slot="tab-right" class="top-right">
           ${this.counter ? this.getCounter() : null}
@@ -773,24 +755,19 @@ export class Compose extends FormElement {
           slot="pane-bottom"
           class="pane-bottom ${this.hasPendingText ? 'pending' : ''}"
         >
-          ${this.chatbox
-            ? html`<temba-completion
-                class="chatbox"
-                .value=${this.initialText}
-                gsm
-                textarea
-                ?disableCompletion=${!this.completion}
-                ?autogrow=${this.autogrow}
-                maxlength=${this.maxLength}
-                @change=${this.handleChatboxChange}
-                @keydown=${this.handleKeyDown}
-                placeholder="Write something here"
-              >
-              </temba-completion>`
-            : null}
-          ${this.buttonError
-            ? html`<div class="send-error">${this.buttonError}</div>`
-            : null}
+          <temba-completion
+            class="chatbox"
+            .value=${this.initialText}
+            gsm
+            textarea
+            ?disableCompletion=${!this.completion}
+            ?autogrow=${this.autogrow}
+            maxlength=${this.maxLength}
+            @change=${this.handleChatboxChange}
+            @keydown=${this.handleKeyDown}
+            placeholder="Write something here"
+          >
+          </temba-completion>
         </div>
       </temba-tabs>
     `;
@@ -800,16 +777,5 @@ export class Compose extends FormElement {
     return html`<temba-charcount
       .text="${this.currentText}"
     ></temba-charcount>`;
-  }
-
-  private getButton(): TemplateResult {
-    return html`<temba-icon
-      tabindex="1"
-      class="send-icon"
-      name="send"
-      size="1"
-      clickable
-      @click=${this.handleSendClick}
-    ></temba-icon>`;
   }
 }

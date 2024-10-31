@@ -1,7 +1,7 @@
 import { useFakeTimers } from 'sinon';
 import { Compose } from '../src/compose/Compose';
 import { ContactChat } from '../src/contacts/ContactChat';
-import { Attachment } from '../src/interfaces';
+import { Attachment, CustomEventType } from '../src/interfaces';
 import {
   assertScreenshot,
   clearMockPosts,
@@ -13,12 +13,12 @@ import {
   mockPOST
 } from '../test/utils.test';
 import {
-  getInvalidText,
   getValidAttachments,
   getValidText,
   updateComponent
 } from './temba-compose.test';
-import { Completion } from '../src/completion/Completion';
+
+import { expect, oneEvent } from '@open-wc/testing';
 
 let clock: any;
 mockNow('2021-03-31T00:31:00.000-00:00');
@@ -48,88 +48,10 @@ const getResponseSuccessFiles = (attachments: Attachment[]) => {
   });
   return response_attachments;
 };
-const responseTextError = 'Maximum allowed text is 640 characters.';
-const responseAttachmentError = 'Maximum allowed attachments is 10 files.';
 
-describe('temba-contact-chat - contact tests', () => {
+describe('temba-contact-chat', () => {
   // map requests for contact history to our static files
   // we'll just us the same historylist for everybody for now
-  beforeEach(() => {
-    mockGET(
-      /\/contact\/history\/contact-.*/,
-      '/test-assets/contacts/history.json'
-    );
-    clock = useFakeTimers();
-  });
-
-  afterEach(function () {
-    clock.restore();
-  });
-
-  it('can be created', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-
-    await assertScreenshot('contacts/contact-active-default', getClip(chat));
-  });
-
-  it('show history and show chatbox if contact is active', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-
-    await assertScreenshot(
-      'contacts/contact-active-show-chatbox',
-      getClip(chat)
-    );
-  });
-
-  it('show history and hide chatbox if contact is archived', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-barack-archived'
-    });
-
-    await assertScreenshot(
-      'contacts/contact-archived-hide-chatbox',
-      getClip(chat)
-    );
-  });
-
-  it('show history and hide chatbox if contact is blocked', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-michelle-blocked'
-    });
-
-    await assertScreenshot(
-      'contacts/contact-blocked-hide-chatbox',
-      getClip(chat)
-    );
-  });
-
-  it('show history and hide chatbox if contact is stopped', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-tim-stopped'
-    });
-
-    await assertScreenshot(
-      'contacts/contact-stopped-hide-chatbox',
-      getClip(chat)
-    );
-  });
-});
-
-describe('temba-contact-chat - contact tests - handle send tests - text no attachments', () => {
   beforeEach(() => {
     clearMockPosts();
     mockGET(
@@ -143,7 +65,47 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     clock.restore();
   });
 
-  it('with text no attachments - success', async () => {
+  it('show history and show chatbox if contact is active', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    await assertScreenshot('contacts/chat-for-active-contact', getClip(chat));
+  });
+
+  it('show history and hide chatbox if contact is archived', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-barack-archived'
+    });
+
+    await assertScreenshot('contacts/chat-for-archived-contact', getClip(chat));
+  });
+
+  it('show history and hide chatbox if contact is blocked', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-michelle-blocked'
+    });
+
+    await assertScreenshot('contacts/chat-for-blocked-contact', getClip(chat));
+  });
+
+  it('show history and hide chatbox if contact is stopped', async () => {
+    // we are a StoreElement, so load a store first
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-tim-stopped'
+    });
+
+    await assertScreenshot('contacts/chat-for-stopped-contact', getClip(chat));
+  });
+
+  it('sends text without attachments', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -160,64 +122,14 @@ describe('temba-contact-chat - contact tests - handle send tests - text no attac
     };
     mockPOST(/api\/v2\/messages\.json/, response_body);
 
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    const listener = oneEvent(compose, CustomEventType.Submitted, false);
+    await typeInto('temba-contact-chat:temba-compose', text, true, true);
+    expect(await listener).to.exist;
 
-    await assertScreenshot(
-      'contacts/compose-text-no-attachments-success',
-      getClip(chat)
-    );
+    await assertScreenshot('contacts/chat-sends-text-only', getClip(chat));
   });
 
-  it('with text no attachments - failure - more than 640 chars', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    // set the chatbox to a string that is 640+ chars
-    await updateComponent(compose, getInvalidText());
-
-    const response_body = {
-      text: [responseTextError]
-    };
-    const response_headers = {};
-    const response_status = '400';
-    mockPOST(
-      /api\/v2\/messages\.json/,
-      response_body,
-      response_headers,
-      response_status
-    );
-
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-
-    await assertScreenshot(
-      'contacts/compose-text-no-attachments-failure',
-      getClip(chat)
-    );
-  });
-});
-
-describe('temba-contact-chat - contact tests - handle send tests - attachments no text', () => {
-  beforeEach(() => {
-    clearMockPosts();
-    mockGET(
-      /\/contact\/history\/contact-.*/,
-      '/test-assets/contacts/history.json'
-    );
-    clock = useFakeTimers();
-  });
-
-  afterEach(function () {
-    clock.restore();
-  });
-
-  it('with attachments no text - success', async () => {
+  it('sends attachments without text', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -241,63 +153,17 @@ describe('temba-contact-chat - contact tests - handle send tests - attachments n
       response_status
     );
 
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    const listener = oneEvent(compose, CustomEventType.Submitted, false);
+    await typeInto('temba-contact-chat:temba-compose', '', false, true);
+    expect(await listener).to.exist;
 
     await assertScreenshot(
-      'contacts/compose-attachments-no-text-success',
+      'contacts/chat-sends-attachments-only',
       getClip(chat)
     );
   });
-  it('with attachments no text - failure - more than 10 files', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    // set the attachments to a list that is 10+ items
-    await updateComponent(compose, null, getValidAttachments(11));
 
-    const response_body = {
-      attachments: [responseAttachmentError]
-    };
-    const response_headers = {};
-    const response_status = '400';
-    mockPOST(
-      /api\/v2\/messages\.json/,
-      response_body,
-      response_headers,
-      response_status
-    );
-
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-
-    await assertScreenshot(
-      'contacts/compose-attachments-no-text-failure',
-      getClip(chat)
-    );
-  });
-});
-
-describe('temba-contact-chat - contact tests - handle send tests - text and attachments', () => {
-  beforeEach(() => {
-    clearMockPosts();
-    mockGET(
-      /\/contact\/history\/contact-.*/,
-      '/test-assets/contacts/history.json'
-    );
-    clock = useFakeTimers();
-  });
-
-  afterEach(function () {
-    clock.restore();
-  });
-
-  it('with text and attachments - success', async () => {
+  it('sends text with attachments', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -316,114 +182,17 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
     mockPOST(/api\/v2\/messages\.json/, response_body);
 
     // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    const listener = oneEvent(compose, CustomEventType.Submitted, false);
+    await typeInto('temba-contact-chat:temba-compose', '', false, true);
+    expect(await listener).to.exist;
 
     await assertScreenshot(
-      'contacts/compose-text-and-attachments-success',
+      'contacts/chat-sends-text-and-attachments',
       getClip(chat)
     );
   });
 
-  it('with text and attachments - failure - more than 640 chars', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    // set the chatbox to a string that is 640+ chars
-    await updateComponent(compose, getInvalidText(), getValidAttachments());
-
-    const response_body = {
-      text: [responseTextError]
-    };
-    const response_headers = {};
-    const response_status = '400';
-    mockPOST(
-      /api\/v2\/messages\.json/,
-      response_body,
-      response_headers,
-      response_status
-    );
-
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-
-    await assertScreenshot(
-      'contacts/compose-text-and-attachments-failure-text',
-      getClip(chat)
-    );
-  });
-
-  it('with text and attachments - failure - more than 10 files', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    // set the attachments to a list that is 10+ items
-    await updateComponent(compose, getValidText(), getValidAttachments(11));
-
-    const response_body = {
-      attachments: [responseAttachmentError]
-    };
-    const response_headers = {};
-    const response_status = '400';
-    mockPOST(
-      /api\/v2\/messages\.json/,
-      response_body,
-      response_headers,
-      response_status
-    );
-
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-
-    await assertScreenshot(
-      'contacts/compose-text-and-attachments-failure-attachments',
-      getClip(chat)
-    );
-  });
-
-  it('with text and attachments - failure - more than 640 chars and more than 10 files', async () => {
-    // we are a StoreElement, so load a store first
-    await loadStore();
-    const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
-    });
-    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
-    // set the chatbox to a string that is 640+ chars
-    // set the attachments to a list that is 10+ items
-    await updateComponent(compose, getInvalidText(), getValidAttachments(11));
-
-    const response_body = {
-      text: [responseTextError],
-      attachments: [responseAttachmentError]
-    };
-    const response_headers = {};
-    const response_status = '400';
-    mockPOST(
-      /api\/v2\/messages\.json/,
-      response_body,
-      response_headers,
-      response_status
-    );
-
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-
-    await assertScreenshot(
-      'contacts/compose-text-and-attachments-failure-text-and-attachments',
-      getClip(chat)
-    );
-  });
-
-  it('with text and attachments - failure - generic', async () => {
+  it('shows failure message with retry', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -442,13 +211,11 @@ describe('temba-contact-chat - contact tests - handle send tests - text and atta
       response_status
     );
 
-    // press enter
-    const chatbox = compose.shadowRoot.querySelector('.chatbox') as Completion;
-    chatbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    // press
+    const listener = oneEvent(compose, CustomEventType.Submitted, false);
+    await typeInto('temba-contact-chat:temba-compose', '', false, true);
+    expect(await listener).to.exist;
 
-    await assertScreenshot(
-      'contacts/compose-text-and-attachments-failure-generic',
-      getClip(chat)
-    );
+    await assertScreenshot('contacts/chat-failure', getClip(chat));
   });
 });
