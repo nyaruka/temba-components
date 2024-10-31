@@ -319,6 +319,20 @@ export class ContactChat extends ContactStoreElement {
         border-top-right-radius: 0;
         border-top-left-radius: 0;
       }
+
+      .error-gutter {
+        display: flex;
+        padding: 0.5em 1em;
+        background: #f9f9f9;
+        item-align: center;
+      }
+
+      .error-message {
+        color: var(--color-error);
+        padding-right: 1em;
+        flex-grow: 1;
+        align-self: center;
+      }
     `;
   }
 
@@ -348,6 +362,9 @@ export class ContactChat extends ContactStoreElement {
 
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
+
+  @property({ type: String })
+  errorMessage: string;
 
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
@@ -408,13 +425,20 @@ export class ContactChat extends ContactStoreElement {
     this.newestEventTime = null;
     this.refreshId = null;
     this.polling = false;
+    this.errorMessage = null;
   }
 
   public refresh() {
     this.checkForNewMessages();
   }
 
+  private handleRetry() {
+    const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
+    compose.triggerSend();
+  }
+
   private handleSend(evt: CustomEvent) {
+    this.errorMessage = null;
     const composeEle = evt.currentTarget as Compose;
     const compose = evt.detail.langValues['und'] as ComposeValue;
 
@@ -436,49 +460,19 @@ export class ContactChat extends ContactStoreElement {
       payload['ticket'] = this.currentTicket.uuid;
     }
 
-    //const genericError = buttonName + ' failed, please try again.';
-
+    const genericError = 'Send failed, please try again.';
     postJSON(`/api/v2/messages.json`, payload)
       .then((response) => {
         if (response.status < 400) {
           this.checkForNewMessages();
           composeEle.reset();
           this.fireCustomEvent(CustomEventType.MessageSent, { msg: payload });
-        } else if (response.status < 500) {
-          if (
-            response.json.text &&
-            response.json.text.length > 0 &&
-            response.json.text[0].length > 0
-          ) {
-            /*let textError = response.json.text[0];
-            textError = textError.replace(
-              'Ensure this field has no more than',
-              'Maximum allowed text is'
-            );*/
-            //compose.buttonError = textError;
-          } else if (
-            response.json.attachments &&
-            response.json.attachments.length > 0 &&
-            response.json.attachments[0].length > 0
-          ) {
-            //let attachmentError = response.json.attachments[0];
-            /*attachmentError = attachmentError
-              .replace(
-                'Ensure this field has no more than',
-                'Maximum allowed attachments is'
-              )
-              .replace('elements', 'files');*/
-            //compose.buttonError = attachmentError;
-          } else {
-            //compose.buttonError = genericError;
-          }
         } else {
-          //compose.buttonError = genericError;
+          this.errorMessage = genericError;
         }
       })
-      .catch((error) => {
-        console.error(error);
-        //compose.buttonError = genericError;
+      .catch(() => {
+        this.errorMessage = genericError;
       });
   }
 
@@ -881,9 +875,19 @@ export class ContactChat extends ContactStoreElement {
           attachments
           counter
           autogrow
+          shortcuts
           @temba-submitted=${this.handleSend.bind(this)}
         >
         </temba-compose>
+        ${this.errorMessage
+          ? html` <div class="error-gutter">
+              <div class="error-message">${this.errorMessage}</div>
+              <temba-button
+                name="Retry"
+                @click=${this.handleRetry}
+              ></temba-button>
+            </div>`
+          : null}
       </div>`;
   }
 }

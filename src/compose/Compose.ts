@@ -197,6 +197,9 @@ export class Compose extends FormElement {
   @property({ type: Boolean })
   autogrow: boolean;
 
+  @property({ type: Boolean })
+  shortcuts: boolean;
+
   @property({ type: String })
   currentText = '';
 
@@ -243,14 +246,8 @@ export class Compose extends FormElement {
   @property({ type: String })
   templateEndpoint = '/api/internal/templates.json';
 
-  @property({ type: String })
-  buttonName = 'Send';
-
   @property({ type: Boolean, attribute: false })
-  buttonDisabled = true;
-
-  @property({ type: String, attribute: false })
-  buttonError = '';
+  empty = true;
 
   @property({ type: Boolean, attribute: 'widget_only' })
   widgetOnly: boolean;
@@ -365,7 +362,7 @@ export class Compose extends FormElement {
       changes.has('currentTemplate') ||
       changes.has('variables')
     ) {
-      this.toggleButton();
+      this.checkIfEmpty();
 
       const trimmed = this.currentText ? this.currentText.trim() : '';
       if (
@@ -415,7 +412,6 @@ export class Compose extends FormElement {
     this.currentText = '';
     this.currentQuickReplies = [];
     this.currentAttachments = [];
-    this.buttonError = '';
     this.resetTabs();
   }
 
@@ -453,20 +449,14 @@ export class Compose extends FormElement {
     }
   }
 
-  public toggleButton() {
-    this.buttonError = '';
+  public checkIfEmpty() {
     const chatboxEmpty = this.currentText.trim().length === 0;
     const attachmentsEmpty = this.currentAttachments.length === 0;
     if (this.attachments) {
-      this.buttonDisabled = chatboxEmpty && attachmentsEmpty;
+      this.empty = chatboxEmpty && attachmentsEmpty;
     } else {
-      this.buttonDisabled = chatboxEmpty;
+      this.empty = chatboxEmpty;
     }
-  }
-
-  private handleSendClick(evt: Event) {
-    evt.stopPropagation();
-    this.handleSend();
   }
 
   private getCurrentLine(): { text: string; index: number } {
@@ -525,18 +515,17 @@ export class Compose extends FormElement {
         if (this.completion) {
           const chat = evt.target as Completion;
           if (!chat.hasVisibleOptions()) {
-            this.handleSend();
+            this.triggerSend();
           }
         } else {
-          this.handleSend();
+          this.triggerSend();
         }
       }
     }
   }
 
-  private handleSend() {
-    if (!this.buttonDisabled) {
-      this.buttonDisabled = true;
+  public triggerSend() {
+    if (!this.empty) {
       this.fireCustomEvent(CustomEventType.Submitted, {
         langValues: this.langValues
       });
@@ -550,6 +539,10 @@ export class Compose extends FormElement {
 
   public resetTabs() {
     (this.shadowRoot.querySelector('temba-tabs') as TabPane).index = 0;
+  }
+
+  public getTabs(): TabPane {
+    return this.shadowRoot.querySelector('temba-tabs') as TabPane;
   }
 
   public render(): TemplateResult {
@@ -740,13 +733,19 @@ export class Compose extends FormElement {
           borderColor="#ebdf6f"
         ></temba-tab-->
 
-        <temba-tab name="Shortcuts" icon="shortcut" selectionBackground="#fff">
-          <div class="shortcut-wrapper">
-            <temba-shortcuts
-              @temba-selection=${this.handleShortcutSelection}
-            ></temba-shortcuts>
-          </div>
-        </temba-tab>
+        ${this.shortcuts
+          ? html`<temba-tab
+              name="Shortcuts"
+              icon="shortcut"
+              selectionBackground="#fff"
+            >
+              <div class="shortcut-wrapper">
+                <temba-shortcuts
+                  @temba-selection=${this.handleShortcutSelection}
+                ></temba-shortcuts>
+              </div>
+            </temba-tab>`
+          : null}
 
         <div slot="tab-right" class="top-right">
           ${this.counter ? this.getCounter() : null}
@@ -769,10 +768,6 @@ export class Compose extends FormElement {
             placeholder="Write something here"
           >
           </temba-completion>
-
-          ${this.buttonError
-            ? html`<div class="send-error">${this.buttonError}</div>`
-            : null}
         </div>
       </temba-tabs>
     `;
@@ -782,16 +777,5 @@ export class Compose extends FormElement {
     return html`<temba-charcount
       .text="${this.currentText}"
     ></temba-charcount>`;
-  }
-
-  private getButton(): TemplateResult {
-    return html`<temba-icon
-      tabindex="1"
-      class="send-icon"
-      name="send"
-      size="1"
-      clickable
-      @click=${this.handleSendClick}
-    ></temba-icon>`;
   }
 }
