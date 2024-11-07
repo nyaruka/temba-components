@@ -86,6 +86,9 @@ export const getHeaders = (headers: any = {}) => {
 
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
+  // include the current org id
+  fetchHeaders['X-Temba-Org'] = (window as any).org_id;
+
   // mark us as ajax
   fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 

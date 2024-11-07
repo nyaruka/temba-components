@@ -6,8 +6,8 @@ import { RapidElement } from '../RapidElement';
 import { getUrl, WebResponse } from '../utils';
 
 const HEADERS = {
-  'Temba-Content-Menu': '1',
-  'Temba-Spa': '1'
+  'X-Temba-Content-Menu': '1',
+  'X-Temba-Spa': '1'
 };
 export interface ContentMenuItem {
   type: string;
