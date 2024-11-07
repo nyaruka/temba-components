@@ -93,6 +93,11 @@ export const getHeaders = (headers: any = {}) => {
   fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 
   Object.keys(headers).forEach((key) => {
+    // if we are adding a service org, we omit temba-org
+    if (key === 'X-Temba-Service-Org') {
+      delete fetchHeaders['X-Temba-Org'];
+    }
+
     fetchHeaders[key] = headers[key];
   });
   return fetchHeaders;
