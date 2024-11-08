@@ -772,8 +772,8 @@ export class TembaMenu extends ResizeElement {
   private loadItems(item: MenuItem, event: MouseEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;
-      this.httpComplete = fetchResults(item.endpoint).then(
-        (items: MenuItem[]) => {
+      this.httpComplete = fetchResults(item.endpoint)
+        .then((items: MenuItem[]) => {
           items.forEach((newItem) => {
             if (!newItem.items) {
               const prevItem = (item.items || []).find(
@@ -811,8 +811,10 @@ export class TembaMenu extends ResizeElement {
 
           this.requestUpdate('root');
           this.scrollSelectedIntoView();
-        }
-      );
+        })
+        .catch((error) => {
+          this.fireCustomEvent(CustomEventType.Error, { error });
+        });
     }
   }
 

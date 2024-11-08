@@ -129,6 +129,11 @@ export class ContentMenu extends RapidElement {
           });
         })
         .catch((error: any) => {
+          this.fireCustomEvent(CustomEventType.Loaded, {
+            buttons: this.buttons,
+            items: this.items
+          });
+
           console.error(error);
         });
     }

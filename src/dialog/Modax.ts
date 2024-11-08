@@ -278,8 +278,8 @@ export class Modax extends RapidElement {
     // this.cancelToken = CancelToken.source();
     this.fetching = true;
     this.body = this.getLoading();
-    getUrl(this.endpoint, null, this.getHeaders()).then(
-      (response: WebResponse) => {
+    getUrl(this.endpoint, null, this.getHeaders())
+      .then((response: WebResponse) => {
         // if it's a full page, breakout of the modal
         if (response.body.indexOf('<!DOCTYPE HTML>') == 0) {
           this.open = false;
@@ -294,8 +294,12 @@ export class Modax extends RapidElement {
             });
           });
         }
-      }
-    );
+      })
+      .catch((error) => {
+        this.fetching = false;
+        this.open = false;
+        this.fireCustomEvent(CustomEventType.Error, { error });
+      });
   }
 
   public submit(extra = {}): void {
