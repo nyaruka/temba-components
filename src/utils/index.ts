@@ -123,6 +123,11 @@ export const getUrl = (
 
     fetch(url, options)
       .then((response) => {
+        if (response.status < 200 || response.status >= 300) {
+          reject(response);
+          return;
+        }
+
         response.text().then((body: string) => {
           let json = {};
           try {
@@ -177,7 +182,9 @@ export const fetchResultsPage = (
           next: response.json.next
         });
       })
-      .catch((error) => reject(error));
+      .catch((error) => {
+        return reject(error);
+      });
   });
 };
 
@@ -326,7 +333,6 @@ export const postFormData = (
         }
       })
       .catch((err) => {
-        console.error(err);
         reject(err);
       });
   });

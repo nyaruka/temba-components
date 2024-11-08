@@ -308,7 +308,7 @@ export class TembaList extends RapidElement {
         this.items = newItems;
       }
     } catch (error) {
-      // console.error(error);
+      this.paused = true;
     }
   }
 
@@ -332,7 +332,6 @@ export class TembaList extends RapidElement {
 
       try {
         const page = await fetchResultsPage(endpoint, controller);
-
         // sanitize our options if necessary
         if (this.sanitizeOption) {
           page.results.forEach(this.sanitizeOption);
@@ -350,10 +349,10 @@ export class TembaList extends RapidElement {
       } catch (error) {
         // aborted
         this.reset();
-        console.log(error);
+        this.paused = true;
+        this.loading = false;
         return;
       }
-
       this.nextPage = nextPage;
     }
     this.pages = pages;
