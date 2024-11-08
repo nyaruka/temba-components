@@ -282,6 +282,7 @@ export class Modax extends RapidElement {
       (response: WebResponse) => {
         // if it's a full page, breakout of the modal
         if (response.body.indexOf('<!DOCTYPE HTML>') == 0) {
+          this.open = false;
           document.location = response.url;
         } else {
           this.setBody(response.body);
@@ -342,6 +343,12 @@ export class Modax extends RapidElement {
               this.open = false;
             }
           } else {
+            if (response.body.indexOf('<!DOCTYPE HTML>') == 0) {
+              this.open = false;
+              document.location = response.url;
+              return;
+            }
+
             // if we set the body, update our submit button
             if (this.setBody(response.body)) {
               this.updateComplete.then(() => {
