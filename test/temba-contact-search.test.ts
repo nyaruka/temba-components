@@ -49,7 +49,7 @@ describe('temba-contact-search', () => {
     mockPOST(
       /contact-search-bad/,
       { query: '', total: 0, error: "'Missing' is not a valid group name" },
-      { 'Temba-Success': 'hide' }
+      { 'X-Temba-Success': 'hide' }
     );
 
     search.query = 'group = "Missing"';
@@ -93,7 +93,7 @@ describe('temba-contact-search', () => {
         ],
         blockers: []
       },
-      { 'Temba-Success': 'hide' }
+      { 'X-Temba-Success': 'hide' }
     );
 
     search.query = 'group = "Testers"';

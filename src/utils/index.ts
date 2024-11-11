@@ -280,7 +280,7 @@ export const postUrl = (
           return;
         }
 
-        const toasts = response.headers.get('x-temba-toasts');
+        const toasts = response.headers.get('X-Temba-Toasts');
         if (toasts) {
           const toastEle = document.querySelector('temba-toast') as Toast;
           if (toastEle) {

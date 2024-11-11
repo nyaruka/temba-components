@@ -325,7 +325,7 @@ export class Modax extends RapidElement {
     )
       .then((response: WebResponse) => {
         window.setTimeout(() => {
-          let redirect = response.headers.get('temba-success');
+          let redirect = response.headers.get('X-Temba-Success');
           if (
             !redirect &&
             response.url &&
