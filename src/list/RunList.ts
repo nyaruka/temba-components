@@ -25,7 +25,7 @@ export class RunList extends TembaList {
   selectedRun: any;
 
   @property({ type: Boolean })
-  allowDelete = true;
+  allowDelete = false;
 
   private resultKeys = {};
 
