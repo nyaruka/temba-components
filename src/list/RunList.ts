@@ -24,6 +24,9 @@ export class RunList extends TembaList {
   @property({ type: Object })
   selectedRun: any;
 
+  @property({ type: Boolean })
+  allowDelete = true;
+
   private resultKeys = {};
 
   static get styles() {
@@ -305,12 +308,14 @@ export class RunList extends TembaList {
               Started
             </div>
           </div>
-          <temba-icon
-            clickable
-            style="margin-left:0.75em;"
-            name=${Icon.delete}
-            onclick="deleteRun(${this.selectedRun.id});"
-          ></temba-icon>
+          ${this.allowDelete
+            ? html` <temba-icon
+                clickable
+                style="margin-left:0.75em;"
+                name=${Icon.delete}
+                onclick="deleteRun(${this.selectedRun.id});"
+              ></temba-icon>`
+            : null}
         </div>
 
         ${resultKeys.length > 0
