@@ -5,7 +5,7 @@ import {
   getClip,
   getComponent,
   loadStore,
-  mockGET,
+  mockAPI,
   mockNow
 } from './utils.test';
 
@@ -25,10 +25,7 @@ const getContactTickets = async (attrs: any = {}) => {
 mockNow('2023-04-07T00:00:00.000-00:00');
 describe('temba-contact-tickets', () => {
   beforeEach(() => {
-    mockGET(
-      /\/api\/v2\/tickets.json\?contact=24d64810-3315-4ff5-be85-48e3fe055bf9/,
-      '/test-assets/contacts/contact-tickets.json'
-    );
+    mockAPI();
     loadStore();
   });
 

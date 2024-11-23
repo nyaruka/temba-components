@@ -1,10 +1,11 @@
 import { PropertyValueMap, TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { User } from '../interfaces';
-import { StoreMonitorElement } from '../store/StoreMonitorElement';
 import { colorHash, extractInitials } from '../utils';
+import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
+import { DEFAULT_AVATAR } from '../webchat/assets';
 
-export class TembaUser extends StoreMonitorElement {
+export class TembaUser extends EndpointMonitorElement {
   public static styles = css`
     :host {
       display: flex;
@@ -33,45 +34,66 @@ export class TembaUser extends StoreMonitorElement {
   scale: number;
 
   @property({ type: Boolean })
-  name: string;
+  name: boolean;
+
+  @property({ type: Boolean })
+  system: boolean;
+
+  @property({ type: String, attribute: false })
+  background: string = '#e6e6e6';
+
+  @property({ type: String, attribute: false })
+  initials: string = '';
+
+  @property({ type: String })
+  fullname: string;
 
   @property({ type: Object, attribute: false })
-  user: User;
+  data: User;
 
-  @property({ type: String, attribute: false })
-  background: string;
+  prepareData(data: any) {
+    if (data.length > 0) {
+      return data[0];
+    }
 
-  @property({ type: String, attribute: false })
-  initials: string;
-
-  @property({ type: String, attribute: false })
-  fullName: string;
+    this.fullname = this.email;
+    return null;
+  }
 
   public updated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changed);
-    if (changed.has('email')) {
-      this.user = this.store.getUser(this.email);
-      if (this.user) {
-        this.fullName = [this.user.first_name, this.user.last_name].join(' ');
-        if (this.user.avatar) {
-          this.background = `url('${this.user.avatar}') center / contain no-repeat`;
-          this.initials = '';
-        } else {
-          this.background = colorHash.hex(this.fullName);
-          this.initials = extractInitials(this.fullName);
-        }
+
+    if (changed.has('email') && this.email) {
+      this.url = `/api/v2/users.json?email=${this.email}`;
+    }
+
+    if (changed.has('system') && this.system) {
+      this.background = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
+    }
+
+    if (changed.has('data') && this.data) {
+      if (this.data.first_name && this.data.last_name) {
+        this.fullname = [this.data.first_name, this.data.last_name].join(' ');
+        this.background = colorHash.hex(this.fullname);
+        this.initials = extractInitials(this.fullname);
       }
+
+      if (this.data.avatar) {
+        this.background = `url('${this.data.avatar}') center / contain no-repeat`;
+        this.initials = '';
+      }
+    }
+
+    if (changed.has('fullname') && this.fullname && !this.data) {
+      this.background = colorHash.hex(this.fullname);
+      this.initials = extractInitials(this.fullname);
     }
   }
 
   public render(): TemplateResult {
-    if (!this.user) {
-      return null;
-    }
-
-    return html` <div class="wrapper">
+    return html`<div class="wrapper">
       <div
         class="avatar-circle"
         style="
@@ -103,7 +125,7 @@ export class TembaUser extends StoreMonitorElement {
             style="margin: 0px ${this.scale - 0.5}em;font-size:${this.scale +
             0.2}em"
           >
-            ${this.fullName}
+            ${this.fullname}
           </div>`
         : null}
     </div>`;

@@ -8,6 +8,7 @@ import {
   getClip,
   getComponent,
   loadStore,
+  mockAPI,
   mockGET,
   mockNow,
   mockPOST
@@ -58,6 +59,8 @@ describe('temba-contact-chat', () => {
       /\/contact\/history\/contact-.*/,
       '/test-assets/contacts/history.json'
     );
+
+    mockAPI();
     clock = useFakeTimers();
   });
 

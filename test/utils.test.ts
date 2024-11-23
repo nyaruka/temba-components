@@ -114,6 +114,33 @@ after(() => {
   (window.fetch as any).restore();
 });
 
+const mockMapping = {
+  '/test-assets/api/users/admin1.json': [
+    /\/api\/v2\/users.json\?email=admin1@nyaruka.com/
+  ],
+  '/test-assets/api/users/editor1.json': [
+    /\/api\/v2\/users.json\?email=editor1@nyaruka.com/
+  ],
+  '/test-assets/api/users/agent1.json': [
+    /\/api\/v2\/users.json\?email=agent1@nyaruka.com/
+  ],
+  '/test-assets/api/users/viewer1.json': [
+    /\/api\/v2\/users.json\?email=viewer1@nyaruka.com/
+  ],
+  '/test-assets/contacts/contact-tickets.json': [
+    /\/api\/v2\/tickets.json\?contact=24d64810-3315-4ff5-be85-48e3fe055bf9/
+  ]
+};
+
+export const mockAPI = () => {
+  for (const key in mockMapping) {
+    const urls = mockMapping[key];
+    for (const url of urls) {
+      mockGET(url, key);
+    }
+  }
+};
+
 export const mockGET = (
   endpoint: RegExp,
   body: any,

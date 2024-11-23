@@ -109,6 +109,10 @@ export class Button extends LitElement {
         color: var(--color-button-primary-text);
       }
 
+      .affirmative {
+        background: var(--color-button-attention);
+      }
+
       .light-button {
         background: var(--color-button-light);
         color: var(--color-button-light-text);

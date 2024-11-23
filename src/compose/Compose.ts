@@ -406,13 +406,15 @@ export class Compose extends FormElement {
 
   public reset(): void {
     const completion = this.shadowRoot.querySelector('.chatbox') as Completion;
-    completion.textInputElement.value = '';
-    completion.value = '';
-    this.initialText = '';
-    this.currentText = '';
-    this.currentQuickReplies = [];
-    this.currentAttachments = [];
-    this.resetTabs();
+    if (completion) {
+      completion.textInputElement.value = '';
+      completion.value = '';
+      this.initialText = '';
+      this.currentText = '';
+      this.currentQuickReplies = [];
+      this.currentAttachments = [];
+      this.resetTabs();
+    }
   }
 
   private handleQuickReplyChange() {

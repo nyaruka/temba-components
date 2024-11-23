@@ -252,6 +252,7 @@ export class ContactChat extends ContactStoreElement {
         --compose-border: none;
         --compose-padding: 3px;
         --compose-curvature: none;
+        border-top: 1px inset rgba(0, 0, 0, 0.05);
       }
 
       .chat-wrapper {
@@ -259,6 +260,7 @@ export class ContactChat extends ContactStoreElement {
         flex-grow: 1;
         flex-direction: column;
         min-height: 0;
+        background: rgb(249, 249, 249);
       }
 
       temba-contact-history {
@@ -277,7 +279,6 @@ export class ContactChat extends ContactStoreElement {
         --textarea-height: 0.5em;
         --widget-box-shadow-focused: none;
         --compose-curvature: 0px;
-        border-top: 1px solid #e6e6e6;
         overflow: hidden;
       }
 
@@ -333,6 +334,83 @@ export class ContactChat extends ContactStoreElement {
         flex-grow: 1;
         align-self: center;
       }
+
+      temba-chat {
+        border-bottom: 1px solid #ddd;
+      }
+
+      .in-ticket-wrapper {
+      }
+
+      .in-flow {
+        text-align: center;
+
+        display: flex;
+
+        background: var(--color-primary-dark);
+        background: #777;
+        color: #fff;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .in-flow .flow-name {
+        padding: 0.5em 1em;
+        display: flex;
+        flex-grow: 1;
+      }
+
+      .in-flow a,
+      .in-flow .interrupt {
+        font-weight: bold;
+        color: #fff;
+      }
+
+      .in-flow .interrupt {
+        background: rgba(var(--error-rgb), 1);
+      }
+
+      .in-flow .interrupt {
+        text-align: center;
+        align-self: stretch;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        justify-content: center;
+        padding: 0.5em 1em;
+        font-weight: bold;
+      }
+
+      .in-flow .interrupt:hover {
+        background: rgba(var(--error-rgb), 0.92);
+      }
+
+      .in-flow temba-icon,
+      .in-ticket temba-icon {
+        margin-right: 0.5em;
+      }
+
+      .in-ticket {
+        --color-widget-border: transparent;
+        --color-widget-bg: transparent;
+        --widget-box-shadow: none;
+        --temba-select-selected-padding: 0.2em 0.8em;
+        --temba-select-min-height: 0;
+        --select-wrapper-bg: transparent;
+        --select-wrapper-shadow: none;
+        box-shadow: none;
+        padding: 0.5em;
+        text-align: center;
+
+        display: flex;
+        box-shadow: none;
+      }
+
+      .assign-button {
+        --button-mask: #ebebeb;
+        color: #333;
+        margin-right: 0.5em;
+      }
     `;
   }
 
@@ -359,6 +437,9 @@ export class ContactChat extends ContactStoreElement {
 
   @property({ type: Boolean })
   blockFetching = false;
+
+  @property({ type: Boolean })
+  showInterrupt = false;
 
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
@@ -392,6 +473,7 @@ export class ContactChat extends ContactStoreElement {
   }
 
   public disconnectedCallback() {
+    super.disconnectedCallback();
     if (this.refreshId) {
       clearInterval(this.refreshId);
     }
@@ -426,10 +508,17 @@ export class ContactChat extends ContactStoreElement {
     this.refreshId = null;
     this.polling = false;
     this.errorMessage = null;
+
+    const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
+    if (compose) {
+      compose.reset();
+    }
   }
 
-  public refresh() {
-    this.checkForNewMessages();
+  private handleInterrupt() {
+    this.fireCustomEvent(CustomEventType.Interrupt, {
+      contact: this.currentContact
+    });
   }
 
   private handleRetry() {
@@ -474,18 +563,6 @@ export class ContactChat extends ContactStoreElement {
       .catch(() => {
         this.errorMessage = genericError;
       });
-  }
-
-  public render(): TemplateResult {
-    const contactHistory = this.currentContact
-      ? this.getTembaContactHistory()
-      : null;
-    const tembaCompose = this.currentContact ? this.getTembaCompose() : null;
-
-    const contactHistoryAndChatbox = html`
-      <div class="chat-wrapper">${contactHistory} ${tembaCompose}</div>
-    `;
-    return html`${contactHistoryAndChatbox}`;
   }
 
   private getEndpoint() {
@@ -662,14 +739,10 @@ export class ContactChat extends ContactStoreElement {
   private getUserForEvent(event: MsgEvent | TicketEvent) {
     let user = null;
     if (event.created_by) {
-      const storeUser = this.store.getUser(event.created_by.email);
-      if (storeUser) {
-        user = {
-          email: event.created_by.email,
-          name: [storeUser.first_name, storeUser.last_name].join(' '),
-          avatar: storeUser.avatar
-        };
-      }
+      user = {
+        email: event.created_by.email,
+        name: `${event.created_by.first_name} ${event.created_by.last_name}`.trim()
+      };
     } else if (event.type === 'msg_received') {
       user = {
         name: this.currentContact.name
@@ -889,5 +962,85 @@ export class ContactChat extends ContactStoreElement {
             </div>`
           : null}
       </div>`;
+  }
+
+  public render(): TemplateResult {
+    const inFlow = this.currentContact && this.currentContact.flow;
+
+    // disable ticket view for now
+    const inTicket = false; // !!this.currentTicket;
+
+    const contactHistory = this.currentContact
+      ? this.getTembaContactHistory()
+      : null;
+    const tembaCompose = this.currentContact ? this.getTembaCompose() : null;
+
+    const contactHistoryAndChatbox = html`
+      <div class="chat-wrapper">
+        ${contactHistory}
+        ${inFlow
+          ? html`
+              <div class="in-flow">
+                <div class="flow-name">
+                  <temba-icon name="flow" size="1.2"></temba-icon>
+                  <div style="flex-grow:1;text-align:left">
+                    Currently in
+                    <a href="/flow/editor/${this.currentContact.flow.uuid}/"
+                      >${this.currentContact.flow.name}</a
+                    >
+                  </div>
+                </div>
+                ${this.showInterrupt
+                  ? html`<div class="interrupt" @click=${this.handleInterrupt}>
+                      Interrupt
+                    </div>`
+                  : null}
+              </div>
+            `
+          : ''}
+        ${inTicket
+          ? html`<div class="in-ticket-wrapper">
+              <div class="in-ticket">
+                ${this.currentTicket.assignee
+                  ? html`<temba-user
+                      email=${this.currentTicket.assignee.email}
+                      scale="0.8"
+                      style="margin-right:0.25em;margin-bottom:-0.5em;margin-top:-0.5em;margin-right:0.5em;"
+                    ></temba-user>`
+                  : html`<temba-button
+                      name="Assign"
+                      class="assign-button"
+                      light
+                    ></temba-button>`}
+                <temba-select
+                  searchable
+                  endpoint="/api/v2/topics.json"
+                  valueKey="uuid"
+                  .prepareOptions=${(options) => {
+                    options.forEach((option) => {
+                      option.icon = 'topic';
+                    });
+                    return options;
+                  }}
+                  values=${JSON.stringify([
+                    { ...this.currentTicket.topic, icon: 'topic' }
+                  ])}
+                  style="min-width:200px; max-width:300px;margin-right:0.5em;"
+                >
+                </temba-select>
+                <div style="min-width:20px"></div>
+
+                ${this.currentTicket.closed_on
+                  ? html`reopen`
+                  : html`<div style="text-align:right;flex-grow:1">
+                      <temba-button name="Close"></temba-button>
+                    </div>`}
+              </div>
+            </div>`
+          : ''}
+        ${tembaCompose}
+      </div>
+    `;
+    return html`${contactHistoryAndChatbox}`;
   }
 }

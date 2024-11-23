@@ -280,5 +280,6 @@ export enum CustomEventType {
   DragStop = 'temba-drag-stop',
   Resized = 'temba-resized',
   DetailsChanged = 'temba-details-changed',
-  Error = 'temba-error'
+  Error = 'temba-error',
+  Interrupt = 'temba-interrupt'
 }

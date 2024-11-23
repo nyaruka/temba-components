@@ -81,8 +81,11 @@ export class Select extends FormElement {
       }
 
       .wrapper-bg {
-        background: #fff;
-        box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%);
+        background: var(--select-wrapper-bg, #fff);
+        box-shadow: var(
+          --select-wrapper-shadow,
+          inset 0px 0px 4px rgb(0 0 0 / 10%)
+        );
         border-radius: var(--curvature-widget);
       }
 
@@ -168,6 +171,10 @@ export class Select extends FormElement {
         flex-direction: row;
         flex-wrap: nowrap;
         margin: 2px 2px;
+      }
+
+      .option-name > span {
+        text-align: left;
       }
 
       .selected-item .option-name {
@@ -411,6 +418,9 @@ export class Select extends FormElement {
   @property({ type: Boolean })
   clearable: boolean;
 
+  @property({ type: Boolean })
+  sorted: boolean;
+
   @property({ type: String })
   flavor = 'default';
 
@@ -447,7 +457,7 @@ export class Select extends FormElement {
   shouldExclude: (option: any) => boolean;
 
   @property({ attribute: false })
-  sortFunction: (a: any, b: any) => number;
+  sortFunction: (a: any, b: any) => number = null;
 
   @property({ attribute: false })
   renderOption: (option: any, selected: boolean) => TemplateResult;
@@ -471,11 +481,22 @@ export class Select extends FormElement {
   getOptions: (response: WebResponse) => any[] = this.getOptionsDefault;
 
   @property({ attribute: false })
+  prepareOptions: (options: any[]) => any[] = (options: any[]) => options;
+
+  @property({ attribute: false })
   isComplete: (newestOptions: any[], response: WebResponse) => boolean =
     this.isCompleteDefault;
 
   @property({ type: Array, attribute: 'options' })
   private staticOptions: any[] = [];
+
+  private alphaSort = (a: any, b: any) => {
+    // by default, all endpoint values are sorted by name
+    if (this.endpoint) {
+      return this.getName(a).localeCompare(this.getName(b));
+    }
+    return 0;
+  };
 
   private lastQuery: number;
 
@@ -571,6 +592,10 @@ export class Select extends FormElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    if (changedProperties.has('sorted')) {
+      this.sortFunction = this.sorted ? this.alphaSort : null;
+    }
 
     if (changedProperties.has('values')) {
       this.updateInputs();
@@ -962,6 +987,8 @@ export class Select extends FormElement {
         // if we are searchable, but doing it locally, fetch all the options
         if (this.searchable && !this.queryParam) {
           fetchResults(url).then((results: any) => {
+            results = this.prepareOptions(results);
+
             if (this.cache && !this.tags) {
               this.lruCache.set(url, {
                 options: results,
@@ -978,11 +1005,10 @@ export class Select extends FormElement {
         } else {
           getUrl(url)
             .then((response: WebResponse) => {
-              const results = this.getOptions(response).filter(
-                (option: any) => {
-                  return this.isMatch(option, q);
-                }
-              );
+              let results = this.getOptions(response).filter((option: any) => {
+                return this.isMatch(option, q);
+              });
+              results = this.prepareOptions(results);
 
               this.next = null;
               const json = response.json;

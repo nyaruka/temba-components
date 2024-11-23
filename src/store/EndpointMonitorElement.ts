@@ -18,6 +18,11 @@ export class EndpointMonitorElement extends StoreMonitorElement {
   @property({ type: Object, attribute: false })
   data: any;
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.prepareData = this.prepareData.bind(this);
+  }
+
   prepareData(data: any): any {
     return data;
   }
@@ -51,10 +56,5 @@ export class EndpointMonitorElement extends StoreMonitorElement {
         this.data = null;
       }
     }
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    this.prepareData = this.prepareData.bind(this);
   }
 }
