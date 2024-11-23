@@ -112,6 +112,7 @@ export class Options extends RapidElement {
         cursor: pointer;
         color: var(--color-text-dark);
         scroll-margin: 5px 0px;
+        text-align: left;
       }
 
       .option * {

@@ -223,17 +223,19 @@ export class TabPane extends RapidElement {
       }
 
       .embedded.tabs {
-        margin: 0;
+        padding-top: 0em;
       }
 
       .embedded .tab {
-        border-top: none !important;
         border-bottom: none !important;
-        border-radius: 0px;
+        border-radius: 0em;
+        border-top: none !important;
       }
 
       .embedded .tab.first {
-        border-left: none !important;
+        margin-left: 0em;
+        border-top: none !important;
+        border-left: none;
       }
 
       .embedded.tabs .tab.selected {

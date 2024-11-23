@@ -104,7 +104,7 @@ export class Store extends RapidElement {
   private groups: { [uuid: string]: ContactGroup } = {};
   private shortcuts: Shortcut[] = [];
   private languages: any = {};
-  private users: User[];
+  private users: User[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
 
@@ -253,10 +253,6 @@ export class Store extends RapidElement {
     return this.users.filter((user: User) =>
       ['administrator', 'editor', 'agent'].includes(user.role)
     );
-  }
-
-  public getUser(email: string) {
-    return this.users.find((user: User) => user.email === email);
   }
 
   public firstUpdated() {
@@ -521,16 +517,19 @@ export class Store extends RapidElement {
     const previousRequest = this.fetching[url];
     const now = new Date().getTime();
     // if the request was recently made, don't do anything
-    if (previousRequest && now - previousRequest < 500) {
+    if (previousRequest) {
+      setTimeout(() => {
+        this.makeRequest(url, options);
+      }, 500);
       return;
     }
 
-    this.fetching[url] = now;
-    options = options || {};
     const cached = this.cache.get(url);
     if (cached && !options.force) {
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
+      options = options || {};
+      this.fetching[url] = now;
       fetchResults(url).then((data) => {
         if (!data) {
           delete this.fetching[url];
@@ -539,8 +538,8 @@ export class Store extends RapidElement {
 
         data = options.prepareData ? options.prepareData(data) : data;
         this.cache.set(url, data);
-        this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
         delete this.fetching[url];
+        this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
       });
     }
   }
