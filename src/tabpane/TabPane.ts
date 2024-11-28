@@ -57,7 +57,7 @@ export class TabPane extends RapidElement {
 
       .tab .name {
         margin-left: 0.4em;
-        max-width: 80px;
+        max-width: 200px;
         overflow: hidden;
         transition: max-width 500ms ease-in-out, margin 500ms ease-in-out;
         white-space: nowrap;
@@ -308,6 +308,7 @@ export class TabPane extends RapidElement {
       }
     }
     this.tabs = tabs;
+    this.index = 0;
   }
 
   public firstUpdated(
@@ -322,11 +323,22 @@ export class TabPane extends RapidElement {
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
-    if (changedProperties.has('index') || changedProperties.has('tabs')) {
+
+    if (changedProperties.has('tabs')) {
       this.tabs.forEach((tab, index) => {
         tab.selected = index == this.index;
       });
-      this.fireEvent(CustomEventType.ContextChanged);
+    }
+
+    if (changedProperties.has('index')) {
+      if (this.tabs.length >= 0) {
+        if (this.index !== changedProperties.get('index')) {
+          this.tabs.forEach((tab, index) => {
+            tab.selected = index == this.index;
+          });
+          this.fireEvent(CustomEventType.ContextChanged);
+        }
+      }
     }
 
     // if our current tab is hidden, select the first visible one
