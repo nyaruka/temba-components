@@ -294,7 +294,6 @@ export class Compose extends FormElement {
   private handleTabChanged() {
     const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
     this.currentTab = tabs.getCurrentTab();
-
     if (this.currentTab && this.currentTab.name === 'Shortcuts') {
       const shortcuts = this.shadowRoot.querySelector(
         'temba-shortcuts'
@@ -441,9 +440,9 @@ export class Compose extends FormElement {
 
     if (line.startsWith('/')) {
       // switch to the shortcuts tab
-      const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
-      tabs.focusTab('Shortcuts');
-
+      if (this.currentTab.name !== 'Shortcuts') {
+        this.getTabs().focusTab('Shortcuts');
+      }
       const shortcuts = this.shadowRoot.querySelector(
         'temba-shortcuts'
       ) as ShortcutList;
@@ -489,19 +488,11 @@ export class Compose extends FormElement {
       tabs.index = num - 1;
     }
 
-    // if they type / as the first character in a line, switch to the shortcut
-    if (evt.key === '/' && this.currentTab.name !== 'Shortcuts') {
-      const line = this.getCurrentLine();
-      const text = line.text.trim();
-      if (text.trim().length === 1) {
-        evt.preventDefault();
-        tabs.index = tabs.tabs.findIndex((tab) => tab.name === 'Shortcuts');
-      }
-    } else if (evt.key === 'Backspace') {
+    if (evt.key === 'Backspace') {
       const line = this.getCurrentLine();
       const text = line.text;
       if (text === '/') {
-        tabs.index = tabs.tabs.findIndex((tab) => tab.name === 'Reply');
+        tabs.focusTab('Reply');
       }
     }
 
@@ -540,7 +531,7 @@ export class Compose extends FormElement {
   }
 
   public resetTabs() {
-    (this.shadowRoot.querySelector('temba-tabs') as TabPane).index = 0;
+    this.getTabs().focusTab('Reply');
   }
 
   public getTabs(): TabPane {
@@ -637,7 +628,6 @@ export class Compose extends FormElement {
       <temba-tabs
         embedded
         focusedname
-        index="0"
         @temba-context-changed=${this.handleTabChanged}
         refresh="${(this.currentAttachments || []).length}|${this.index}|${this
           .currentQuickReplies.length}|${showOptins}|${this
