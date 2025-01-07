@@ -28,6 +28,7 @@ import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { StoreMonitorElement } from './StoreMonitorElement';
+import { getFullName } from '../user/TembaUser';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -82,9 +83,6 @@ export class Store extends RapidElement {
 
   @property({ type: String, attribute: 'workspace' })
   workspaceEndpoint: string;
-
-  @property({ type: String, attribute: 'users' })
-  usersEndpoint: string;
 
   @property({ type: String, attribute: 'shortcuts' })
   shortcutsEndpoint: string;
@@ -226,14 +224,6 @@ export class Store extends RapidElement {
       );
     }
 
-    if (this.usersEndpoint) {
-      fetches.push(
-        getAssets(this.usersEndpoint).then((users: any[]) => {
-          this.users = users;
-        })
-      );
-    }
-
     if (this.shortcutsEndpoint) {
       fetches.push(this.refreshShortcuts());
     }
@@ -247,12 +237,6 @@ export class Store extends RapidElement {
 
   public getShortcuts() {
     return this.shortcuts || [];
-  }
-
-  public getAssignableUsers() {
-    return this.users.filter((user: User) =>
-      ['administrator', 'editor', 'agent'].includes(user.role)
-    );
   }
 
   public firstUpdated() {
@@ -560,6 +544,9 @@ export class Store extends RapidElement {
                   }
                   if (value && value.email === user.email) {
                     // only care about avatars for now
+                    const orginalUser = last[parts[parts.length - 1]];
+                    orginalUser.avatar = user.avatar;
+                    orginalUser.name = getFullName(user);
                     last[parts[parts.length - 1]].avatar = user.avatar;
                   }
                 });
