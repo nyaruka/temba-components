@@ -22,7 +22,6 @@ export class TicketList extends TembaList {
     return new Promise<any[]>((resolve) => {
       const contacts: Contact[] = results as Contact[];
       this.store.resolveUsers(contacts, ['ticket.assignee']).then(() => {
-        console.log('contacts', contacts);
         resolve(contacts);
       });
     });
