@@ -60,6 +60,22 @@ export class Chat extends RapidElement {
         z-index: 1;
       }
 
+      slot[name='header'] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: block;
+      }
+
+      slot[name='footer'] {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: block;
+      }
+
       .block {
         margin-bottom: 1em;
         display: flex;
@@ -160,6 +176,7 @@ export class Chat extends RapidElement {
         padding-bottom: 0.25em;
         background: var(--color-chat-in, #f1f1f1);
         border-radius: var(--curvature);
+        border: var(--chat-border-in, none);
       }
 
       .bubble .name {
@@ -179,6 +196,7 @@ export class Chat extends RapidElement {
 
       .incoming .bubble {
         background: var(--color-chat-out, #3c92dd);
+        border: var(--chat-border-out, none);
         color: white;
       }
 
@@ -228,7 +246,6 @@ export class Chat extends RapidElement {
       }
 
       .messages {
-        background: #fff;
         position: relative;
         flex-grow: 1;
         overflow: hidden;
@@ -245,6 +262,7 @@ export class Chat extends RapidElement {
         -webkit-overflow-scrolling: touch;
         overflow-scrolling: touch;
         padding: 1em 1em 1em 1em;
+        padding-bottom: 2.5em;
         display: flex;
         flex-direction: column-reverse;
       }
@@ -722,11 +740,13 @@ export class Chat extends RapidElement {
         </div>
         ${showAvatar
           ? html`<div class="avatar" style="align-self:flex-end">
-              ${email
-                ? html`<temba-user email=${email}></temba-user>`
-                : name
-                ? html`<temba-user fullname=${name}></temba-user>`
-                : html`<temba-user system></temba-user>`}
+              <temba-user
+                email=${email}
+                name=${name}
+                avatar=${currentMsg.user?.avatar}
+                ?system=${!email && !name}
+              >
+              </temba-user>
             </div>`
           : null}
       </div>
@@ -810,6 +830,8 @@ export class Chat extends RapidElement {
           class="${!this.fetching ? 'hidden' : ''}"
         ></temba-loading>
       </div>
+      <slot class="header" name="header"></slot>
+      <slot class="footer" name="footer"></slot>
     </div>`;
   }
 }

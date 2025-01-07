@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, CSSResult, CSSResultArray } from 'lit';
 import { property } from 'lit/decorators.js';
 import {
   getUrl,
@@ -22,16 +22,23 @@ import {
 import { Store } from '../store/Store';
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../vectoricon';
-import { msg } from '@lit/localize';
 
 const LOOK_AHEAD = 20;
 
-export class Select extends FormElement {
+export interface SelectOption {
+  name: string;
+  value?: string;
+  expression?: boolean;
+  selected?: boolean;
+}
+
+export class Select<T extends SelectOption> extends FormElement {
   private hiddenInputs: HTMLInputElement[] = [];
 
-  static get styles() {
+  static get styles(): CSSResult | CSSResultArray {
     return css`
       :host {
+        --transition-speed: 0;
         font-family: var(--font-family);
         transition: all ease-in-out var(--transition-speed);
         display: inline;
@@ -44,6 +51,7 @@ export class Select extends FormElement {
       temba-options {
         --temba-options-font-size: var(--temba-select-selected-font-size);
         --icon-color: var(--color-text-dark);
+        --color-options-bg: #fff;
       }
 
       :host:focus {
@@ -371,6 +379,9 @@ export class Select extends FormElement {
   fetching: boolean;
 
   @property({ type: Boolean })
+  resolving: boolean;
+
+  @property({ type: Boolean })
   searchable = false;
 
   @property({ type: String })
@@ -428,7 +439,7 @@ export class Select extends FormElement {
   infoText = '';
 
   @property({ type: Array })
-  values: any[] = [];
+  values: T[] = [];
 
   @property({ type: Object })
   selection: any;
@@ -438,10 +449,7 @@ export class Select extends FormElement {
     option[this.nameKey || 'name'];
 
   @property({ attribute: false })
-  isMatch: (option: any, q: string) => boolean = (option: any, q: string) => {
-    const name = this.getName(option) || '';
-    return name.toLowerCase().indexOf(q) > -1;
-  };
+  isMatch: (option: any, q: string) => boolean = this.isMatchDefault;
 
   @property({ attribute: false })
   getValue: (option: any) => string = (option: any) =>
@@ -481,7 +489,7 @@ export class Select extends FormElement {
   getOptions: (response: WebResponse) => any[] = this.getOptionsDefault;
 
   @property({ attribute: false })
-  prepareOptions: (options: any[]) => any[] = (options: any[]) => options;
+  prepareOptions: (options: any[]) => any[] = this.prepareOptionsDefault;
 
   @property({ attribute: false })
   isComplete: (newestOptions: any[], response: WebResponse) => boolean =
@@ -510,8 +518,25 @@ export class Select extends FormElement {
 
   private lruCache = lru(20, 60000);
 
+  constructor() {
+    super();
+    this.renderOptionDefault = this.renderOptionDefault.bind(this);
+    this.renderSelectedItemDefault = this.renderSelectedItemDefault.bind(this);
+    this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
+    this.isMatchDefault = this.isMatchDefault.bind(this);
+  }
+
+  public prepareOptionsDefault(options: T[]): T[] {
+    return options;
+  }
+
+  public isMatchDefault(option: T, q: string) {
+    const name = this.getName(option) || '';
+    return name.toLowerCase().indexOf(q) > -1;
+  }
+
   public handleSlotChange() {
-    if (this.staticOptions.length === 0) {
+    if (this.staticOptions && this.staticOptions.length === 0) {
       for (const child of this.children) {
         if (child.tagName === 'TEMBA-OPTION') {
           const option: any = {};
@@ -520,12 +545,26 @@ export class Select extends FormElement {
           }
 
           if (option) {
+            let selected = false;
+
+            // if the option is marked as selected then accept it
+            if (option['selected'] !== undefined) {
+              delete option['selected'];
+              selected = true;
+            }
+
+            // the option value might also match the widget value
+            const selectValue = this.value || this.getAttribute('value');
+            if (selectValue) {
+              const optionValue = this.getValue(option);
+              if (optionValue == selectValue) {
+                selected = true;
+              }
+            }
+
             this.staticOptions.push(option);
-            if (
-              child.getAttribute('selected') !== null ||
-              this.getValue(option) == this.value
-            ) {
-              if (this.getAttribute('multi') !== null) {
+            if (selected) {
+              if (this.multi) {
                 this.addValue(option);
               } else {
                 this.setValues([option]);
@@ -536,43 +575,49 @@ export class Select extends FormElement {
       }
     }
 
-    this.checkSelectedOption();
-
     if (this.searchable && this.staticOptions.length === 0) {
       this.quietMillis = 200;
     }
   }
 
   private checkSelectedOption() {
-    if (this.values.length === 0 && (!this.placeholder || this.value)) {
-      if (this.staticOptions.length == 0 && this.endpoint) {
-        const value = this.value;
-        // see if we need fetch to select an option
-        fetchResults(this.endpoint).then((results: any) => {
-          if (results && results.length > 0) {
-            if (value) {
-              // if we started with a value, see if we can find it in the results
-              const existing = results.find((option) => {
-                return this.getValue(option) === value;
-              });
+    // see if we need fetch to select an option
+    if (
+      this.value &&
+      this.values.length == 0 &&
+      this.staticOptions.length == 0 &&
+      this.endpoint
+    ) {
+      const value = this.value;
+      this.resolving = true;
 
-              if (existing) {
-                this.setValues([existing]);
-                return;
-              }
+      fetchResults(this.endpoint).then((results: any) => {
+        if (results && results.length > 0) {
+          if (value) {
+            // if we started with a value, see if we can find it in the results
+            const existing = results.find((option) => {
+              return this.getValue(option) === value;
+            });
+            if (existing) {
+              this.resolving = false;
+              this.fetching = false;
+              this.setValues([existing]);
+              return;
             }
-            this.setValues([results[0]]);
           }
-        });
-      } else if (this.staticOptions.length > 0) {
-        if (this.getAttribute('multi') !== null) {
-          this.addValue(this.staticOptions[0]);
+
+          this.setValues([results[0]]);
+          this.resolving = false;
+        }
+      });
+    } else if (this.staticOptions.length > 0) {
+      if (this.getAttribute('multi') !== null) {
+        this.addValue(this.staticOptions[0]);
+      } else {
+        if (this.getAttribute('value')) {
+          this.setSelectedValue(this.getAttribute('value'));
         } else {
-          if (this.getAttribute('value')) {
-            this.setSelectedValue(this.getAttribute('value'));
-          } else {
-            this.setValues([this.staticOptions[0]]);
-          }
+          this.setValues([this.staticOptions[0]]);
         }
       }
     }
@@ -587,39 +632,46 @@ export class Select extends FormElement {
       this.handleSlotChange.bind(this)
     );
 
-    this.checkSelectedOption();
+    // if (!this.placeholder || this.value) {
+    // this.checkSelectedOption();
+    // }
   }
 
-  public updated(changedProperties: Map<string, any>) {
-    super.updated(changedProperties);
+  public updated(changes: Map<string, any>) {
+    super.updated(changes);
 
-    if (changedProperties.has('sorted')) {
+    if (changes.has('sorted')) {
       this.sortFunction = this.sorted ? this.alphaSort : null;
     }
 
-    if (changedProperties.has('values')) {
+    if (changes.has('value')) {
+      // console.log('value from', changes.get('value'), 'to', this.value);
+      if (this.value && !this.values.length) {
+        // console.log('setting selected value for value change', this.value);
+        this.setSelectedValue(this.value);
+      }
+    }
+
+    if (changes.has('values')) {
+      // console.log('values from', changes.get('values'), 'to', this.values);
       this.updateInputs();
-      if (
-        this.multi ||
-        this.values.length === 1 ||
-        // fire change if being cleared
-        (this.values.length == 0 &&
-          changedProperties.get('values') &&
-          changedProperties.get('values').length > 0)
-      ) {
+      if (this.hasChanges(changes.get('values'))) {
+        // console.log('firing change', changes.get('values'), this.values);
         this.fireEvent('change');
+      } else {
+        // console.log('no changes', changes.get('values'), this.values);
       }
     }
 
     // if our cache key changes, clear it out
-    if (changedProperties.has('cacheKey')) {
+    if (changes.has('cacheKey')) {
       this.lruCache.clear();
     }
 
     if (
-      changedProperties.has('input') &&
-      !changedProperties.has('values') &&
-      !changedProperties.has('options') &&
+      changes.has('input') &&
+      !changes.has('values') &&
+      !changes.has('options') &&
       this.focused
     ) {
       if (this.lastQuery) {
@@ -635,7 +687,7 @@ export class Select extends FormElement {
       }, this.quietMillis);
     }
 
-    if (this.endpoint && changedProperties.has('fetching')) {
+    if (this.endpoint && changes.has('fetching')) {
       if (!this.fetching && !this.isPastFetchThreshold()) {
         this.fireCustomEvent(CustomEventType.FetchComplete);
       }
@@ -643,8 +695,7 @@ export class Select extends FormElement {
 
     // if our cursor changed, lets make sure our scrollbox is showing it
     if (
-      (changedProperties.has('cursorIndex') ||
-        changedProperties.has('visibleOptions')) &&
+      (changes.has('cursorIndex') || changes.has('visibleOptions')) &&
       this.endpoint &&
       !this.fetching
     ) {
@@ -657,11 +708,6 @@ export class Select extends FormElement {
       }
     }
 
-    // if they set an inital value, look through our static options for it
-    if (changedProperties.has('value') && this.value && !this.values.length) {
-      this.setSelectedValue(this.value);
-    }
-
     // default to the first option if we don't have a placeholder
     if (
       this.values.length === 0 &&
@@ -672,7 +718,31 @@ export class Select extends FormElement {
     }
   }
 
+  private hasChanges(prev: T[]): boolean {
+    if (prev === undefined) {
+      return false;
+    }
+
+    let prevValues = undefined;
+    if (prev !== undefined) {
+      prevValues = (prev || [])
+        .map((option: T) => {
+          return this.getValue(option);
+        })
+        .join(',');
+    }
+
+    const newValues = (this.values || [])
+      .map((option: T) => {
+        return this.getValue(option);
+      })
+      .join(',');
+
+    return prevValues !== newValues;
+  }
+
   public setSelectedValue(value: string) {
+    // console.log('setting value', value);
     if (this.staticOptions.length > 0) {
       const existing = this.staticOptions.find((option) => {
         return this.getValue(option) === value;
@@ -681,6 +751,8 @@ export class Select extends FormElement {
       if (existing) {
         this.setValues([existing]);
       }
+    } else {
+      this.checkSelectedOption();
     }
   }
 
@@ -742,6 +814,9 @@ export class Select extends FormElement {
   }
 
   public handleOptionSelection(event: CustomEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
     const selected = event.detail.selected;
     // check if we should post it
     if (selected.post && this.endpoint) {
@@ -776,7 +851,7 @@ export class Select extends FormElement {
     }
   }
 
-  private getNameInternal: (option: any) => string = (option: any) => {
+  protected getNameInternal: (option: T) => string = (option: T) => {
     return this.getName(option);
   };
 
@@ -802,7 +877,10 @@ export class Select extends FormElement {
   }
 
   public open(): void {
-    this.requestUpdate('input');
+    // this.requestUpdate('input');
+    (
+      this.shadowRoot.querySelector('.select-container') as HTMLDivElement
+    ).click();
   }
 
   public isOpen(): boolean {
@@ -1055,9 +1133,9 @@ export class Select extends FormElement {
   private handleFocus(): void {
     if (!this.focused && this.visibleOptions.length === 0) {
       this.focused = true;
-      if (this.searchOnFocus && !this.removingSelection) {
-        this.requestUpdate('input');
-      }
+      //if (this.searchOnFocus && !this.removingSelection) {
+      //this.requestUpdate('input');
+      //}
     }
   }
 
@@ -1087,7 +1165,7 @@ export class Select extends FormElement {
 
     if (this.multi) {
       if (
-        !this.values.find((option) => {
+        !this.values.find((option: T) => {
           return (
             option.expression &&
             option.value &&
@@ -1204,30 +1282,35 @@ export class Select extends FormElement {
   }
 
   private handleArrowClick(event: MouseEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.visibleOptions.length > 0) {
-      this.visibleOptions = [];
-    } else {
-      this.handleContainerClick(event);
+    if (this.isOpen()) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.blur();
     }
   }
 
-  private renderSelectedItemDefault(option: any): TemplateResult {
+  public renderOptionDefault(option: T): TemplateResult {
     if (!option) {
       return null;
     }
 
+    // special case for icons on any option type
+    const icon = (option as any).icon;
     return html`
       <div class="option-name" style="display:flex">
-        ${option.icon
+        ${icon
           ? html`<temba-icon
-              name="${option.icon}"
+              name="${icon}"
               style="margin-right:0.5em;"
             ></temba-icon>`
           : null}<span>${this.getName(option)}</span>
       </div>
     `;
+  }
+
+  public renderSelectedItemDefault(option: T): TemplateResult {
+    const renderFn = this.renderOption || this.renderOptionDefault;
+    return renderFn(option, true);
   }
 
   public serializeValue(value: any): string {
@@ -1241,8 +1324,8 @@ export class Select extends FormElement {
 
   public setSelection(value: string): void {
     for (const option of this.staticOptions) {
-      if (this.getValue(option.value) === value) {
-        if (this.values.length === 0 || this.values[0].value !== '' + value) {
+      if (this.getValue(option) === value) {
+        if (this.values.length === 0 || this.values[0].value != '' + value) {
           this.setValues([option]);
         }
         return;
@@ -1258,34 +1341,43 @@ export class Select extends FormElement {
       this.visibleOptions = [];
       this.requestUpdate();
     }
+
+    this.fireCustomEvent(CustomEventType.Selection, {
+      selected: null
+    });
   }
 
   public setValues(values: any[]) {
+    const oldValues = this.values;
     this.values = values;
-    this.requestUpdate('values');
+    this.requestUpdate('values', oldValues);
   }
 
   public addValue(value: any) {
+    const oldValues = [...this.values];
     this.values.push(value);
-    this.requestUpdate('values');
+    this.requestUpdate('values', oldValues);
   }
 
   public removeValue(valueToRemove: any) {
+    const oldValues = [...this.values];
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
       this.values.splice(idx, 1);
     }
-    this.requestUpdate('values');
+    this.requestUpdate('values', oldValues);
   }
 
   public popValue() {
+    const oldValues = [...this.values];
     this.values.pop();
-    this.requestUpdate('values');
+    this.requestUpdate('values', oldValues);
   }
 
   public clear() {
+    const oldValues = this.values;
     this.values = [];
-    this.requestUpdate('values');
+    this.requestUpdate('values', oldValues);
   }
 
   public render(): TemplateResult {
@@ -1361,11 +1453,17 @@ export class Select extends FormElement {
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
         > 
-          
-          <div class="left-side">
+          <div class="left-side" >
           <slot name="prefix"></slot>
-            <div class="selected">
-              ${!this.multi ? input : null}
+            <div class="selected" >
+              ${
+                this.resolving
+                  ? html`<temba-loading
+                      style="margin-left:1em"
+                    ></temba-loading>`
+                  : null
+              }
+              ${!this.multi && !this.resolving ? input : null}
               ${this.values.map(
                 (selected: any, index: number) => html`
                   <div
@@ -1412,7 +1510,7 @@ export class Select extends FormElement {
           ${
             !this.tags
               ? html`<div
-                  class="right-side"
+                  class="right-side arrow"
                   style="display:block;margin-right:5px"
                   @click=${this.handleArrowClick}
                 >
@@ -1439,13 +1537,13 @@ export class Select extends FormElement {
     .cursorIndex=${this.cursorIndex}
     .renderOptionDetail=${this.renderOptionDetail}
     .renderOptionName=${this.renderOptionName}
-    .renderOption=${this.renderOption}
+    .renderOption=${this.renderOption || this.renderOptionDefault}
     .anchorTo=${this.anchorElement}
     .options=${this.visibleOptions}
     .spaceSelect=${this.spaceSelect}
     .nameKey=${this.nameKey}
     .getName=${this.getNameInternal}
-    static-width=${this.optionWidth}
+    ?static-width=${this.optionWidth}
     ?anchor-right=${this.anchorRight}
     ?visible=${this.visibleOptions.length > 0}
     ></temba-options>
@@ -1475,6 +1573,7 @@ export class Select extends FormElement {
           : null
       }
     </temba-options>
+    
   </temba-field>
   `;
   }

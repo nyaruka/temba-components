@@ -3,16 +3,15 @@ import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement, EventHandler } from '../RapidElement';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import {
-  getClasses,
-  getScrollParent,
-  isElementVisible,
-  throttle
-} from '../utils';
+import { getClasses, getScrollParent, throttle } from '../utils';
 
 export class Options extends RapidElement {
   static get styles() {
     return css`
+      :host {
+        --transition-speed: 0;
+      }
+
       .options-container {
         background: var(--color-options-bg);
         user-select: none;
@@ -21,7 +20,7 @@ export class Options extends RapidElement {
         margin-top: var(--options-margin-top);
         display: flex;
         flex-direction: column;
-        transform: scaleY(0.5) translateY(-5em);
+        // transform: scaleY(0.5) translateY(-5em);
         transition: transform var(--transition-speed)
             cubic-bezier(0.71, 0.18, 0.61, 1.33),
           opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
@@ -93,12 +92,12 @@ export class Options extends RapidElement {
       .options {
         border-radius: var(--curvature-widget);
         overflow-y: auto;
-        max-height: 225px;
+        max-height: 200px;
         border: none;
       }
 
       .show {
-        transform: scaleY(1) translateY(0);
+        // transform: scaleY(1) translateY(0);
         border: 1px solid var(--color-widget-border);
         opacity: 1;
         z-index: 1;
@@ -281,14 +280,14 @@ export class Options extends RapidElement {
 
   resolvedRenderOption: { (option: any, selected: boolean): TemplateResult };
 
-  public firstUpdated() {
+  public firstUpdated(changed: Map<string, any>) {
+    super.firstUpdated(changed);
     if (!this.block) {
       this.scrollParent = getScrollParent(this);
       this.calculatePosition = this.calculatePosition.bind(this);
       if (this.scrollParent) {
         this.scrollParent.addEventListener('scroll', this.calculatePosition);
       }
-      this.calculatePosition();
     }
 
     this.resolvedRenderOption = (
@@ -302,9 +301,14 @@ export class Options extends RapidElement {
         this.scrollParent.removeEventListener('scroll', this.calculatePosition);
       }
     }
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
   }
 
-  private isFocused() {
+  private isFocused(): boolean {
+    // TODO: this really doesn't seem right
     const focused =
       this.closestElement(document.activeElement.tagName) ===
       document.activeElement;
@@ -312,8 +316,28 @@ export class Options extends RapidElement {
     return focused;
   }
 
+  private resizeObserver: ResizeObserver;
+
   public updated(changed: Map<string, any>) {
     super.updated(changed);
+
+    if (changed.has('anchorTo') && this.anchorTo) {
+      const optionsContainer =
+        this.shadowRoot.querySelector('.options-container');
+
+      if (!this.resizeObserver) {
+        this.resizeObserver = new ResizeObserver((entries) => {
+          window.requestAnimationFrame((): void | undefined => {
+            if (!Array.isArray(entries) || !entries.length) {
+              return;
+            }
+            this.calculatePosition();
+            this.adjustWidth();
+          });
+        });
+        this.resizeObserver.observe(optionsContainer);
+      }
+    }
 
     // if our cursor changed, lets make sure our scrollbox is showing it
     if (!this.internalFocusDisabled && changed.has('cursorIndex')) {
@@ -327,11 +351,12 @@ export class Options extends RapidElement {
         this.tempOptions = changed.get('options');
         window.setTimeout(() => {
           this.tempOptions = [];
-        }, 300);
+        }, 0);
       }
     }
 
     if (changed.has('options')) {
+      this.adjustWidth();
       this.calculatePosition();
 
       // allow scrolls to trigger again
@@ -369,12 +394,6 @@ export class Options extends RapidElement {
           this.fireCustomEvent(CustomEventType.ScrollThreshold);
         }
       }
-    }
-
-    if (changed.has('visible')) {
-      window.setTimeout(() => {
-        this.calculatePosition();
-      }, 100);
     }
   }
 
@@ -528,6 +547,16 @@ export class Options extends RapidElement {
     }
   }
 
+  private adjustWidth() {
+    if (this.anchorTo) {
+      const anchorBounds = this.anchorTo.getBoundingClientRect();
+      this.width =
+        this.staticWidth > 0
+          ? this.staticWidth
+          : anchorBounds.width - 2 - this.marginHorizontal * 2;
+    }
+  }
+
   private calculatePosition() {
     if (this.visible && !this.block) {
       const optionsBounds = this.shadowRoot
@@ -535,34 +564,16 @@ export class Options extends RapidElement {
         .getBoundingClientRect();
 
       if (this.anchorTo) {
+        this.top = 0;
         const anchorBounds = this.anchorTo.getBoundingClientRect();
-        const topTop = anchorBounds.top - optionsBounds.height;
-
-        if (this.anchorTo && this.scrollParent) {
-          if (!isElementVisible(this.anchorTo, this.scrollParent)) {
-            // this.fireCustomEvent(CustomEventType.Canceled);
-          }
+        if (anchorBounds.bottom + optionsBounds.height > window.innerHeight) {
+          this.top = -(optionsBounds.height + anchorBounds.height + 20);
         }
-
-        if (
-          topTop > 0 &&
-          anchorBounds.bottom + optionsBounds.height > window.innerHeight
-        ) {
-          this.top = topTop; //  + window.pageYOffset;
-          this.poppedTop = true;
-        } else {
-          this.top = anchorBounds.bottom; //  + window.pageYOffset;
-          this.poppedTop = false;
-        }
-
         this.left = anchorBounds.left;
-        this.width =
-          this.staticWidth > 0
-            ? this.staticWidth
-            : anchorBounds.width - 2 - this.marginHorizontal * 2;
 
-        if (this.anchorRight) {
-          this.left = anchorBounds.right - this.width;
+        // adjust for parent scrolling
+        if (this.scrollParent) {
+          this.top += -this.scrollParent.scrollTop;
         }
       }
     }
@@ -594,16 +605,7 @@ export class Options extends RapidElement {
     }
   }
 
-  // we need to swallow mouse down so we don't grab focus
-  private handleMouseDown(evt: MouseEvent) {
-    evt.preventDefault();
-    evt.stopPropagation();
-  }
-
   private handleOptionClick(evt: MouseEvent) {
-    evt.preventDefault();
-    evt.stopPropagation();
-
     const index = (evt.currentTarget as HTMLElement).getAttribute(
       'data-option-index'
     );
@@ -631,7 +633,7 @@ export class Options extends RapidElement {
     };
 
     if (this.top) {
-      containerStyle['top'] = `${this.top}px`;
+      containerStyle[`transform`] = `translateY(${this.top}px)`;
     }
 
     if (this.left) {
@@ -668,18 +670,13 @@ export class Options extends RapidElement {
 
     return html`
       <div class=${classes} style=${styleMap(containerStyle)}>
-        <div
-          class="options-scroll"
-          @scroll=${this.handleInnerScroll}
-          @mousedown=${this.handleMouseDown}
-        >
+        <div class="options-scroll" @scroll=${this.handleInnerScroll}>
           <div class="${classesInner}" style=${styleMap(optionsStyle)}>
             ${options.map((option, index) => {
               return html`<div
                 data-option-index="${index}"
                 @mousemove=${this.handleMouseMove}
-                @click=${this.handleOptionClick}
-                @mousedown=${this.handleMouseDown}
+                @mousedown=${this.handleOptionClick}
                 class="option ${index === this.cursorIndex &&
                 !this.internalFocusDisabled
                   ? 'focused'

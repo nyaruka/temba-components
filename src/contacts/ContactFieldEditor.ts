@@ -359,7 +359,7 @@ export class ContactFieldEditor extends RapidElement {
   }
 
   public handleSelectChange(evt: CustomEvent) {
-    const select = evt.currentTarget as Select;
+    const select = evt.currentTarget as Select<any>;
     let value = '';
 
     evt.preventDefault();

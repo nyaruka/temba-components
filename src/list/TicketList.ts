@@ -18,6 +18,16 @@ export class TicketList extends TembaList {
     return this.endpoint;
   }
 
+  protected sanitizeResults(results: any[]): Promise<any[]> {
+    return new Promise<any[]>((resolve) => {
+      const contacts: Contact[] = results as Contact[];
+      this.store.resolveUsers(contacts, ['ticket.assignee']).then(() => {
+        console.log('contacts', contacts);
+        resolve(contacts);
+      });
+    });
+  }
+
   constructor() {
     super();
 
@@ -76,7 +86,9 @@ export class TicketList extends TembaList {
               <div>
                 ${!contact.ticket.closed_on && contact.ticket.assignee
                   ? html`<temba-user
+                      name=${contact.ticket.assignee.name}
                       email=${contact.ticket.assignee.email}
+                      avatar=${contact.ticket.assignee.avatar}
                       scale="0.8"
                     ></temba-user>`
                   : null}

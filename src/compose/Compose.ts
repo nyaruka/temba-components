@@ -113,8 +113,14 @@ export class Compose extends FormElement {
       }
 
       temba-tabs {
-        --focused-tab-color: #f4f4f4;
-        min-height: var(--compose-min-height, 13.5em);
+        --temba-tabs-border-bottom: none;
+        --temba-tabs-border-left: none;
+        --temba-tabs-border-right: none;
+        --temba-tabs-options-padding: 0.25em 0 0 0.25em;
+      }
+
+      temba-completion {
+        --textarea-min-height: 8em;
       }
 
       .quick-replies {
@@ -483,7 +489,7 @@ export class Compose extends FormElement {
       num > 0 &&
       evt.ctrlKey &&
       evt.metaKey &&
-      num <= tabs.tabs.length
+      num <= tabs.options.length
     ) {
       tabs.index = num - 1;
     }
@@ -526,7 +532,7 @@ export class Compose extends FormElement {
   }
 
   private handleLanguageChange(evt: Event) {
-    const select = evt.target as Select;
+    const select = evt.target as Select<any>;
     this.currentLanguage = select.values[0].iso;
   }
 
@@ -618,7 +624,7 @@ export class Compose extends FormElement {
     }
 
     const tabs = this.shadowRoot.querySelector('temba-tabs') as TabPane;
-    tabs.index = tabs.tabs.findIndex((tab) => tab.name === 'Reply');
+    tabs.index = tabs.options.findIndex((tab) => tab.name === 'Reply');
   }
 
   private getActions(): TemplateResult {
@@ -626,7 +632,6 @@ export class Compose extends FormElement {
     const showTemplates = this.templates && this.isBaseLanguage();
     return html`
       <temba-tabs
-        embedded
         focusedname
         @temba-context-changed=${this.handleTabChanged}
         refresh="${(this.currentAttachments || []).length}|${this.index}|${this

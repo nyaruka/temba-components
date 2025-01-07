@@ -2,7 +2,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { oxford, oxfordFn, postJSON } from '../utils';
+import { fetchResults, oxford, oxfordFn, postJSON } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../compose/Compose';
 import { fetchContactHistory, getDisplayName } from './helpers';
@@ -30,6 +30,8 @@ import {
 import { Chat, ChatEvent, MessageType } from '../chat/Chat';
 import { getUserDisplay } from '../webchat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
+import { UserSelect } from '../select/UserSelect';
+import { Select } from '../select/Select';
 
 export enum Events {
   MESSAGE_CREATED = 'msg_created',
@@ -253,6 +255,8 @@ export class ContactChat extends ContactStoreElement {
         --compose-padding: 3px;
         --compose-curvature: none;
         border-top: 1px inset rgba(0, 0, 0, 0.05);
+
+
       }
 
       .chat-wrapper {
@@ -260,7 +264,7 @@ export class ContactChat extends ContactStoreElement {
         flex-grow: 1;
         flex-direction: column;
         min-height: 0;
-        background: rgb(249, 249, 249);
+        background: #f9f9f9;
       }
 
       temba-contact-history {
@@ -300,9 +304,8 @@ export class ContactChat extends ContactStoreElement {
         color: var(--color-link-primary-hover);
       }
 
-      temba-button#reopen-button {
-        --button-y: 1px;
-        --button-x: 12px;
+      temba-button {
+        margin: 0.1em 0.25em;
       }
 
       temba-completion {
@@ -319,6 +322,10 @@ export class ContactChat extends ContactStoreElement {
       temba-compose {
         border-top-right-radius: 0;
         border-top-left-radius: 0;
+        --temba-tabs-options-padding: 0.5em 0.5em 0 0.5em;
+        --temba-tabs-border-left: none;
+        --temba-tabs-border-right: none;
+        --temba-tabs-border-bottom: none;
       }
 
       .error-gutter {
@@ -337,37 +344,42 @@ export class ContactChat extends ContactStoreElement {
 
       temba-chat {
         border-bottom: 1px solid #ddd;
+        background: linear-gradient(0deg, #fff, #fff);
+        --chat-border-in: 1px solid #eee;
+        --color-chat-out: var(--color-message)
+        );
       }
 
-      .in-ticket-wrapper {
+      .action-bar {
       }
 
       .in-flow {
-        text-align: center;
-
-        display: flex;
-
-        background: var(--color-primary-dark);
-        background: #777;
-        color: #fff;
+        border-radius: 0.8em;
         align-items: center;
-        border-bottom: 1px solid #ddd;
+        background: #666;
+        padding: 0.5em 1em;
+        margin: 1em;
+        margin-right: 2em;
+        display: inline-flex;
+        opacity: 0.9;
+      }
+
+      .in-flow:hover {
+        opacity: 1;
       }
 
       .in-flow .flow-name {
-        padding: 0.5em 1em;
         display: flex;
-        flex-grow: 1;
+        color: #fff;
       }
 
-      .in-flow a,
-      .in-flow .interrupt {
+      .in-flow a {
         font-weight: bold;
         color: #fff;
       }
 
-      .in-flow .interrupt {
-        background: rgba(var(--error-rgb), 1);
+      .in-flow .interrupt-button {
+        margin-left: 1em;
       }
 
       .in-flow .interrupt {
@@ -390,26 +402,46 @@ export class ContactChat extends ContactStoreElement {
         margin-right: 0.5em;
       }
 
-      .in-ticket {
-        --color-widget-border: transparent;
-        --color-widget-bg: transparent;
-        --widget-box-shadow: none;
-        --temba-select-selected-padding: 0.2em 0.8em;
-        --temba-select-min-height: 0;
-        --select-wrapper-bg: transparent;
-        --select-wrapper-shadow: none;
-        box-shadow: none;
-        padding: 0.5em;
-        text-align: center;
+      .in-ticket-wrapper {
+      }
 
+      .in-ticket {
+        box-shadow: none;
+        padding: 0.5em 0.5em;
+        text-align: center;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
         display: flex;
         box-shadow: none;
+        margin: 0em;
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      temba-user {
+        border: 1px solid #ddd;
+        padding: 0.2em 0.5em;
+        border-radius: var(--curvature);
+        min-width: 10em;
+        background: #fff;
+      }
+
+      temba-user:hover {
+        border: 1px solid #ddd;
+        background: #f9f9f9;
       }
 
       .assign-button {
         --button-mask: #ebebeb;
         color: #333;
-        margin-right: 0.5em;
+        margin: 0.25em;
+      }
+
+      temba-user-select {
+        width: 250px;
+      }
+
+      temba-button {
+        --button-border: 1px solid #ddd;
       }
     `;
   }
@@ -494,6 +526,17 @@ export class ContactChat extends ContactStoreElement {
       this.chat = this.shadowRoot.querySelector('temba-chat');
       this.reset();
       this.fetchPreviousMessages();
+    }
+
+    if (changedProperties.has('currentTicket')) {
+      const users = this.shadowRoot.querySelector(
+        'temba-user-select'
+      ) as UserSelect;
+      if (users) {
+        users.setValues(
+          this.currentTicket?.assignee ? [this.currentTicket?.assignee] : []
+        );
+      }
     }
   }
 
@@ -738,14 +781,15 @@ export class ContactChat extends ContactStoreElement {
 
   private getUserForEvent(event: MsgEvent | TicketEvent) {
     let user = null;
-    if (event.created_by) {
-      user = {
-        email: event.created_by.email,
-        name: `${event.created_by.first_name} ${event.created_by.last_name}`.trim()
-      };
-    } else if (event.type === 'msg_received') {
+    if (event.type === 'msg_received') {
       user = {
         name: this.currentContact.name
+      };
+    } else if (event.created_by) {
+      user = {
+        email: event.created_by.email,
+        name: `${event.created_by.first_name} ${event.created_by.last_name}`.trim(),
+        avatar: event.created_by.avatar
       };
     }
     return user;
@@ -908,15 +952,6 @@ export class ContactChat extends ContactStoreElement {
     this.chat.fetching = false;
   }
 
-  private getTembaContactHistory(): TemplateResult {
-    return html`<temba-chat
-      @temba-scroll-threshold=${this.fetchPreviousMessages}
-      @temba-fetch-complete=${this.fetchComplete}
-      avatar=${this.avatar}
-      agent
-    ></temba-chat>`;
-  }
-
   private getTembaCompose(): TemplateResult {
     if (this.currentTicket) {
       if (this.currentContact && this.currentContact.status !== 'active') {
@@ -949,6 +984,7 @@ export class ContactChat extends ContactStoreElement {
           counter
           autogrow
           shortcuts
+          ?embeddedTabs=${!this.currentTicket}
           @temba-submitted=${this.handleSend.bind(this)}
         >
         </temba-compose>
@@ -964,83 +1000,189 @@ export class ContactChat extends ContactStoreElement {
       </div>`;
   }
 
+  private handleAssignmentChanged(evt: CustomEvent) {
+    const users = evt.currentTarget as UserSelect;
+    const assignee = users.values[0];
+    this.assignTicket(assignee ? assignee.email : null);
+    users.blur();
+  }
+
+  private handleTopicChanged(evt: CustomEvent) {
+    const select = evt.target as Select<any>;
+    const topic = select.values[0];
+
+    if (this.currentTicket.topic.uuid !== topic.uuid) {
+      postJSON(`/api/v2/ticket_actions.json`, {
+        tickets: [this.currentTicket.uuid],
+        action: 'change_topic',
+        topic: topic.uuid
+      })
+        .then(() => {
+          this.refreshTicket();
+        })
+        .catch((response: any) => {
+          console.error(response);
+        });
+    }
+  }
+
+  public assignTicket(email: string) {
+    // if its already assigned to use, it's a noop
+    if (
+      (this.currentTicket.assignee &&
+        this.currentTicket.assignee.email === email) ||
+      (this.currentTicket.assignee === null && email === null)
+    ) {
+      return;
+    }
+
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [this.currentTicket.uuid],
+      action: 'assign',
+      assignee: email
+    })
+      .then(() => {
+        this.refreshTicket();
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+    return true;
+  }
+
+  public refreshTicket() {
+    if (this.currentTicket) {
+      fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
+        (values) => {
+          if (values.length > 0) {
+            this.fireCustomEvent(CustomEventType.TicketUpdated, {
+              ticket: values[0],
+              previous: this.currentTicket
+            });
+            this.currentTicket = values[0];
+          }
+        }
+      );
+    }
+  }
+
+  private handleReopen() {
+    const uuid = this.currentTicket.uuid;
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'reopen'
+    })
+      .then(() => {
+        this.refreshTicket();
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
+  private handleClose() {
+    const uuid = this.currentTicket.uuid;
+    postJSON(`/api/v2/ticket_actions.json`, {
+      tickets: [uuid],
+      action: 'close'
+    })
+      .then(() => {
+        this.refreshTicket();
+      })
+      .catch((response: any) => {
+        console.error(response);
+      });
+  }
+
   public render(): TemplateResult {
     const inFlow = this.currentContact && this.currentContact.flow;
 
-    // disable ticket view for now
-    const inTicket = false; // !!this.currentTicket;
+    const inTicket = this.currentTicket;
+    const ticketClosed = this.currentTicket && this.currentTicket.closed_on;
 
-    const contactHistory = this.currentContact
-      ? this.getTembaContactHistory()
-      : null;
-    const tembaCompose = this.currentContact ? this.getTembaCompose() : null;
+    return html`<div class="chat-wrapper">
+      ${this.currentContact
+        ? html`<temba-chat
+              @temba-scroll-threshold=${this.fetchPreviousMessages}
+              @temba-fetch-complete=${this.fetchComplete}
+              avatar=${this.avatar}
+              agent
+            >
+              ${inFlow
+                ? html`
+                    <div slot="footer" style="text-align:center;">
+                      <div class="in-flow">
+                        <div class="flow-name">
+                          <temba-icon name="flow" size="1.2"></temba-icon>
+                          <div>
+                            Currently in
+                            <a
+                              href="/flow/editor/${this.currentContact.flow
+                                .uuid}/"
+                              >${this.currentContact.flow.name}</a
+                            >
+                          </div>
+                        </div>
+                        ${this.showInterrupt
+                          ? html`<temba-button
+                              class="interrupt-button"
+                              destructive
+                              small
+                              @click=${this.handleInterrupt}
+                              name="Interrupt"
+                            >
+                            </temba-button>`
+                          : null}
+                      </div>
+                    </div>
+                  `
+                : null}
+              <div slot="footer"></div>
+            </temba-chat>
+            ${inTicket
+              ? html`<div class="in-ticket-wrapper">
+                  <div class="in-ticket">
+                    <temba-user-select
+                      placeholder="Assign to.."
+                      searchable
+                      searchOnFocus
+                      clearable
+                      .values=${this.currentTicket.assignee
+                        ? [this.currentTicket.assignee]
+                        : []}
+                      @change=${this.handleAssignmentChanged}
+                      ?disabled=${ticketClosed}
+                    ></temba-user-select>
 
-    const contactHistoryAndChatbox = html`
-      <div class="chat-wrapper">
-        ${contactHistory}
-        ${inFlow
-          ? html`
-              <div class="in-flow">
-                <div class="flow-name">
-                  <temba-icon name="flow" size="1.2"></temba-icon>
-                  <div style="flex-grow:1;text-align:left">
-                    Currently in
-                    <a href="/flow/editor/${this.currentContact.flow.uuid}/"
-                      >${this.currentContact.flow.name}</a
-                    >
+                    <temba-select
+                      style="margin:0 0.5em; flex-grow:1"
+                      endpoint="/api/v2/topics.json"
+                      searchable
+                      valuekey="uuid"
+                      .values=${[this.currentTicket.topic]}
+                      @change=${this.handleTopicChanged}
+                      ?disabled=${ticketClosed}
+                    ></temba-select>
+
+                    ${this.currentTicket.closed_on
+                      ? html`
+                          <temba-button
+                            name="Reopen"
+                            @click=${this.handleReopen}
+                          ></temba-button>
+                        `
+                      : html`
+                          <temba-button
+                            name="Close"
+                            destructive
+                            @click=${this.handleClose}
+                          ></temba-button>
+                        `}
                   </div>
-                </div>
-                ${this.showInterrupt
-                  ? html`<div class="interrupt" @click=${this.handleInterrupt}>
-                      Interrupt
-                    </div>`
-                  : null}
-              </div>
-            `
-          : ''}
-        ${inTicket
-          ? html`<div class="in-ticket-wrapper">
-              <div class="in-ticket">
-                ${this.currentTicket.assignee
-                  ? html`<temba-user
-                      email=${this.currentTicket.assignee.email}
-                      scale="0.8"
-                      style="margin-right:0.25em;margin-bottom:-0.5em;margin-top:-0.5em;margin-right:0.5em;"
-                    ></temba-user>`
-                  : html`<temba-button
-                      name="Assign"
-                      class="assign-button"
-                      light
-                    ></temba-button>`}
-                <temba-select
-                  searchable
-                  endpoint="/api/v2/topics.json"
-                  valueKey="uuid"
-                  .prepareOptions=${(options) => {
-                    options.forEach((option) => {
-                      option.icon = 'topic';
-                    });
-                    return options;
-                  }}
-                  values=${JSON.stringify([
-                    { ...this.currentTicket.topic, icon: 'topic' }
-                  ])}
-                  style="min-width:200px; max-width:300px;margin-right:0.5em;"
-                >
-                </temba-select>
-                <div style="min-width:20px"></div>
-
-                ${this.currentTicket.closed_on
-                  ? html`reopen`
-                  : html`<div style="text-align:right;flex-grow:1">
-                      <temba-button name="Close"></temba-button>
-                    </div>`}
-              </div>
-            </div>`
-          : ''}
-        ${tembaCompose}
-      </div>
-    `;
-    return html`${contactHistoryAndChatbox}`;
+                </div> `
+              : null}
+            ${this.getTembaCompose()}`
+        : null}
+    </div>`;
   }
 }

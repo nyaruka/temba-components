@@ -224,6 +224,10 @@ export class TembaList extends RapidElement {
     return this.endpoint;
   }
 
+  protected sanitizeResults(results: any[]): Promise<any[]> {
+    return Promise.resolve(results);
+  }
+
   /**
    * Refreshes the first page, updating any found items in our list
    */
@@ -250,10 +254,12 @@ export class TembaList extends RapidElement {
         controller
       );
 
+      const sanitizedResults = await this.sanitizeResults(page.results);
       const items = [...this.items];
+
       // remove any dupes already in our list
-      if (page.results) {
-        page.results.forEach((newOption: any) => {
+      if (sanitizedResults) {
+        sanitizedResults.forEach((newOption: any) => {
           if (this.sanitizeOption) {
             this.sanitizeOption(newOption);
           }
@@ -268,9 +274,9 @@ export class TembaList extends RapidElement {
         });
 
         // insert our new items at the front
-        let results = page.results;
+        let results = sanitizedResults;
         if (this.reverseRefresh) {
-          results = page.results.reverse();
+          results = sanitizedResults.reverse();
         }
         const newItems = [...results, ...items];
 
@@ -332,13 +338,15 @@ export class TembaList extends RapidElement {
 
       try {
         const page = await fetchResultsPage(endpoint, controller);
+        const sanitizedResults = await this.sanitizeResults(page.results);
+
         // sanitize our options if necessary
         if (this.sanitizeOption) {
-          page.results.forEach(this.sanitizeOption);
+          sanitizedResults.forEach(this.sanitizeOption);
         }
 
-        if (page.results) {
-          fetchedItems = fetchedItems.concat(page.results);
+        if (sanitizedResults) {
+          fetchedItems = fetchedItems.concat(sanitizedResults);
         }
 
         // save our next pages
@@ -427,14 +435,16 @@ export class TembaList extends RapidElement {
     if (this.nextPage && !this.loading) {
       this.loading = true;
       fetchResultsPage(this.nextPage).then((page: ResultsPage) => {
-        if (this.sanitizeOption) {
-          page.results.forEach(this.sanitizeOption);
-        }
+        this.sanitizeResults(page.results).then((sanitizedResults) => {
+          if (this.sanitizeOption) {
+            sanitizedResults.forEach(this.sanitizeOption);
+          }
 
-        this.items = [...this.items, ...page.results];
-        this.nextPage = page.next;
-        this.pages++;
-        this.loading = false;
+          this.items = [...this.items, ...sanitizedResults];
+          this.nextPage = page.next;
+          this.pages++;
+          this.loading = false;
+        });
       });
     }
   }

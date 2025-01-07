@@ -1,4 +1,5 @@
 import { Contact, NamedUser, User } from '../interfaces';
+import { Store } from '../store/Store';
 import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
 import { ContactHistoryPage } from './events';
 
@@ -59,6 +60,8 @@ export const fetchContactHistory = (
       url += `&ticket=${ticket}`;
     }
 
+    const store = document.querySelector('temba-store') as Store;
+
     getUrl(url, controller)
       .then((response: WebResponse) => {
         // on success, remove our abort controller
@@ -67,7 +70,11 @@ export const fetchContactHistory = (
             return response.controller === controller;
           }
         );
-        resolve(response.json as ContactHistoryPage);
+
+        const page = response.json as ContactHistoryPage;
+        store.resolveUsers(page.events, ['created_by']).then(() => {
+          resolve(page);
+        });
       })
       .catch(() => {
         // canceled

@@ -1,8 +1,7 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { RapidElement } from '../RapidElement';
-import { Select } from '../select/Select';
+import { Select, SelectOption } from '../select/Select';
 import { Icon } from '../vectoricon';
 
 enum OmniType {
@@ -10,7 +9,7 @@ enum OmniType {
   Contact = 'contact'
 }
 
-export interface OmniOption {
+export interface OmniOption extends SelectOption {
   id: string;
   name: string;
   type: OmniType;
@@ -26,24 +25,9 @@ const postNameStyle = {
   fontSize: '12px'
 };
 
-export class Omnibox extends RapidElement {
-  static get styles() {
-    return css`
-      temba-select:focus {
-        outline: none;
-        box-shadow: none;
-      }
-
-      :host {
-      }
-    `;
-  }
-
-  @property()
-  endpoint: string;
-
-  @property()
-  name: string;
+export class Omnibox extends Select<OmniOption> {
+  @property({ type: String })
+  valueKey = 'uuid';
 
   @property({ type: Boolean })
   groups = false;
@@ -51,38 +35,43 @@ export class Omnibox extends RapidElement {
   @property({ type: Boolean })
   contacts = false;
 
-  @property({ type: Array })
-  value: OmniOption[] = [];
-
-  @property({ type: Array })
-  errors: string[];
-
-  @property()
+  @property({ type: String })
   placeholder = 'Select recipients';
 
   @property({ type: Boolean })
-  disabled = false;
+  multi = true;
 
-  @property({ type: String, attribute: 'help_text' })
-  helpText: string;
+  @property({ type: Boolean })
+  searchable = true;
 
-  @property({ type: Boolean, attribute: 'help_always' })
-  helpAlways: boolean;
+  @property({ type: Boolean })
+  searchOnFocus = true;
 
-  @property({ type: Boolean, attribute: 'widget_only' })
-  widgetOnly: boolean;
+  @property({ type: Boolean })
+  queryParam = 'search';
 
-  @property({ type: Boolean, attribute: 'hide_label' })
-  hideLabel: boolean;
+  public update(changes: PropertyValues): void {
+    super.update(changes);
 
-  @property({ type: String })
-  label: string;
+    if (
+      (changes.has('groups') || changes.has('contacts')) &&
+      (this.groups || this.contacts)
+    ) {
+      let types = '&types=';
+      if (this.groups) {
+        types += 'g';
+      }
 
-  @property({ type: String, attribute: 'info_text' })
-  infoText = '';
+      if (this.contacts) {
+        types += 'c';
+      }
+
+      this.endpoint = this.endpoint + types;
+    }
+  }
 
   /** An option in the drop down */
-  private renderOption(option: OmniOption): TemplateResult {
+  public renderOptionDefault(option: OmniOption): TemplateResult {
     return html`
       <div style="display:flex;">
         <div style="margin-right: 8px">${this.getIcon(option)}</div>
@@ -115,7 +104,7 @@ export class Omnibox extends RapidElement {
   }
 
   /** Selection in the multi-select select box */
-  private renderSelection(option: OmniOption): TemplateResult {
+  public renderSelectedItemDefault(option: OmniOption): TemplateResult {
     return html`
       <div
         style="flex:1 1 auto; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
@@ -148,29 +137,12 @@ export class Omnibox extends RapidElement {
     }
   }
 
-  private getEndpoint() {
-    const endpoint = this.endpoint;
-    let types = '&types=';
-    if (this.groups) {
-      types += 'g';
-    }
-
-    if (this.contacts) {
-      types += 'c';
-    }
-
-    return endpoint + types;
-  }
-
-  public getValues(): any[] {
-    const select = this.shadowRoot.querySelector('temba-select') as Select;
+  /*public getValues(): any[] {
+    const select = this.shadowRoot.querySelector('temba-select') as Select<any>;
     return select.values;
-  }
+  }*/
 
-  public isMatch() {
-    return true;
-  }
-
+  /* 
   public render(): TemplateResult {
     return html`
       <temba-select
@@ -196,5 +168,5 @@ export class Omnibox extends RapidElement {
           <slot name="right"></slot></div
       ></temba-select>
     `;
-  }
+  }*/
 }
