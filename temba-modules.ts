@@ -32,7 +32,6 @@ import { ContactFieldEditor } from './src/contacts/ContactFieldEditor';
 
 import { ContactBadges } from './src/contacts/ContactBadges';
 import { ContactPending } from './src/contacts/ContactPending';
-import { ContactTickets } from './src/contacts/ContactTickets';
 import { TembaSlider } from './src/slider/TembaSlider';
 import { RunList } from './src/list/RunList';
 import { FlowStoreElement } from './src/flow/FlowStoreElement';
@@ -62,6 +61,8 @@ import { OutboxMonitor } from './src/outboxmonitor/OutboxMonitor';
 import { ProgressBar } from './src/progress/ProgressBar';
 import { StartProgress } from './src/progress/StartProgress';
 import { ShortcutList } from './src/list/ShortcutList';
+import { PopupSelect } from './src/select/PopupSelect';
+import { UserSelect } from './src/select/UserSelect';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -114,7 +115,6 @@ addCustomElement('temba-tabs', TabPane);
 addCustomElement('temba-tab', Tab);
 addCustomElement('temba-contact-badges', ContactBadges);
 addCustomElement('temba-contact-pending', ContactPending);
-addCustomElement('temba-contact-tickets', ContactTickets);
 addCustomElement('temba-slider', TembaSlider);
 addCustomElement('temba-content-menu', ContentMenu);
 addCustomElement('temba-compose', Compose);
@@ -134,3 +134,5 @@ addCustomElement('temba-outbox-monitor', OutboxMonitor);
 addCustomElement('temba-progress', ProgressBar);
 addCustomElement('temba-start-progress', StartProgress);
 addCustomElement('temba-shortcuts', ShortcutList);
+addCustomElement('temba-popup-select', PopupSelect);
+addCustomElement('temba-user-select', UserSelect);

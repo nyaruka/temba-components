@@ -2,10 +2,16 @@ import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
+import { CustomEventType } from '../interfaces';
+
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 export class Dropdown extends RapidElement {
   static get styles() {
     return css`
+      :host {
+      }
+
       .wrapper {
         position: relative;
       }
@@ -19,15 +25,20 @@ export class Dropdown extends RapidElement {
         overflow: auto;
       }
 
-      .dropdown {
-        position: absolute;
-        opacity: 0;
-        z-index: 2;
+      .dropdown:focus {
+      }
+
+      .dropdown.dormant {
         pointer-events: none;
+      }
+
+      .dropdown {
+        position: fixed;
+        z-index: 2;
         padding: 0;
+        opacity: 0;
         border-radius: var(--curvature);
         background: #fff;
-        transform: translateY(1em) scale(0.9);
         transition: all calc(0.8 * var(--transition-speed)) var(--bounce);
         user-select: none;
         margin-top: 0px;
@@ -64,7 +75,7 @@ export class Dropdown extends RapidElement {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.7);
-        opacity: 0;
+        opacity: 0.5;
         transition: opacity var(--transition-speed) ease-in-out;
         pointer-events: none;
         z-index: 1;
@@ -85,149 +96,176 @@ export class Dropdown extends RapidElement {
   open = false;
 
   @property({ type: Boolean })
-  top = false;
-
-  @property({ type: Boolean })
-  bottom = false;
-
-  @property({ type: Boolean })
-  left = false;
-
-  @property({ type: Boolean })
-  right = false;
+  dormant = true;
 
   @property({ type: Number })
-  arrowSize = 6;
+  arrowSize = 8;
 
   @property({ type: Number })
-  arrowOffset = this.arrowSize * 2;
-
-  @property({ type: Number })
-  offsetX = 0;
-
-  @property({ type: Number })
-  offsetY = 0;
+  margin = 10;
 
   @property({ type: Boolean })
   mask = false;
 
+  @property({ type: Object, attribute: false })
+  dropdownStyle = {};
+
+  @property({ type: Object, attribute: false })
+  arrowStyle = {};
+
   constructor() {
     super();
-    this.ensureOnScreen = this.ensureOnScreen.bind(this);
+    this.calculatePosition = this.calculatePosition.bind(this);
   }
+
+  private activeFocus: any;
+  private blurHandler: any;
 
   public firstUpdated(props: any) {
     super.firstUpdated(props);
+    this.resetBlurHandler();
+  }
 
-    const arrow = this.shadowRoot.querySelector('.arrow') as HTMLDivElement;
-    arrow.style.borderWidth = this.arrowSize + 'px';
-    arrow.style.top = '-' + this.arrowSize + 'px';
-
-    if (this.arrowOffset < 0) {
-      arrow.style.right = Math.abs(this.arrowOffset) + 'px';
-    } else {
-      arrow.style.left = this.arrowOffset + 'px';
-    }
-
+  private resetBlurHandler() {
     const dropdown = this.shadowRoot.querySelector(
       '.dropdown'
     ) as HTMLDivElement;
 
-    dropdown.addEventListener('blur', () => {
-      // we nest this to deal with clicking the toggle to close
-      // as we don't want it to toggle an immediate open, probably
-      // a better way to deal with this
-      window.setTimeout(() => {
-        this.open = false;
-        // blur our host element too
-        (this.shadowRoot.host as HTMLDivElement).blur();
-      }, 200);
-    });
+    if (this.activeFocus) {
+      this.activeFocus.removeEventListener('blur', this.blurHandler);
+    }
+
+    this.activeFocus = dropdown;
+    this.blurHandler = this.handleBlur.bind(this);
+
+    this.activeFocus.addEventListener('blur', this.blurHandler);
+  }
+
+  private handleBlur(event: FocusEvent) {
+    const newTarget = event.relatedTarget as any;
+
+    if (this.contains(newTarget)) {
+      newTarget.addEventListener('blur', this.blurHandler);
+      this.activeFocus = newTarget;
+    } else {
+      this.closeDropdown();
+    }
+  }
+
+  private openDropdown() {
+    this.open = true;
+    this.dormant = false;
+    this.resetBlurHandler();
+
+    const dropdown = this.shadowRoot.querySelector(
+      '.dropdown'
+    ) as HTMLDivElement;
+    dropdown.focus();
+    dropdown.click();
+
+    this.fireCustomEvent(CustomEventType.Opened);
+  }
+
+  private closeDropdown() {
+    this.activeFocus.removeEventListener('blur', this.blurHandler);
+
+    this.open = false;
+    this.resetBlurHandler();
+
+    window.setTimeout(() => {
+      this.dormant = true;
+    }, 250);
+
+    this.blur();
   }
 
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
-    const dropdown = this.shadowRoot.querySelector(
-      '.dropdown'
-    ) as HTMLDivElement;
-
-    if (changedProperties.has('offsetY') || changedProperties.has('offsetX')) {
-      dropdown.style.marginTop = this.offsetY + 'px';
-      if (dropdown.offsetLeft + dropdown.clientWidth > window.outerWidth) {
-        dropdown.style.marginLeft =
-          '-' + (dropdown.clientWidth - this.clientWidth - this.offsetX) + 'px';
-      } else {
-        if (this.right) {
-          dropdown.style.marginRight = this.offsetX + 'px';
-        } else {
-          dropdown.style.marginLeft = this.offsetX + 'px';
-        }
-      }
-    }
 
     if (changedProperties.has('open')) {
-      // check right away if we are on the screen, and then again moments after render
-      window.setTimeout(this.ensureOnScreen, 0);
-      window.setTimeout(this.ensureOnScreen, 100);
+      this.dropdownStyle = {};
+    }
+
+    if (changedProperties.has('dropdownStyle')) {
+      if (Object.keys(this.dropdownStyle).length === 0) {
+        this.calculatePosition();
+      }
     }
   }
 
-  public ensureOnScreen() {
+  public calculatePosition() {
     const dropdown = this.shadowRoot.querySelector(
       '.dropdown'
     ) as HTMLDivElement;
+    const toggle = this.querySelector('div[slot="toggle"]');
 
-    if (dropdown) {
-      // dropdown will go off the screen, let's push it up
-      const toggle = this.querySelector('div[slot="toggle"]');
+    const arrow = this.shadowRoot.querySelector('.arrow') as HTMLDivElement;
+
+    let bumpedUp = false;
+    let bumpedLeft = false;
+
+    if (dropdown && toggle) {
+      const dropdownBounds = dropdown.getBoundingClientRect();
+      const toggleBounds = toggle.getBoundingClientRect();
+      const arrowBounds = arrow.getBoundingClientRect();
 
       if (!toggle) {
         return;
       }
 
-      if (dropdown.getBoundingClientRect().bottom > window.innerHeight - 100) {
-        if (this.bottom) {
-          dropdown.style.top = toggle.clientHeight + 'px';
-        } else {
-          dropdown.style.top = '';
-          dropdown.style.bottom = toggle.clientHeight + 'px';
-        }
-      } else if (dropdown.getBoundingClientRect().top < 0) {
-        if (this.bottom) {
-          dropdown.style.top = toggle.clientHeight + 'px';
-        } else {
-          dropdown.style.top = toggle.clientHeight + 'px';
-          dropdown.style.bottom = '';
-        }
+      const dropdownStyle = {
+        border: '1px solid rgba(0,0,0,0.1)',
+        marginTop: '0.5em'
+      };
+
+      // if off the the right, bump it left
+      if (dropdownBounds.right > window.innerWidth) {
+        dropdownStyle['left'] =
+          toggleBounds.right - dropdownBounds.width + 'px';
+        delete dropdownStyle['right'];
+        bumpedLeft = true;
       }
 
-      if (dropdown.getBoundingClientRect().right > window.innerWidth) {
-        dropdown.style.left = '';
-        dropdown.style.right = '0px';
-      } else if (dropdown.getBoundingClientRect().left < 0) {
-        dropdown.style.left = 0 + 'px';
-        dropdown.style.right = '';
+      // if off to the bottom, bump it up
+      if (dropdownBounds.bottom > window.innerHeight) {
+        dropdownStyle['top'] = toggleBounds.top - dropdownBounds.height + 'px';
+        dropdownStyle['margin-top'] = '-0.5em';
+        bumpedUp = true;
       }
+
+      const arrowStyle = {
+        left: toggleBounds.width / 2 - arrowBounds.width / 2 + 'px',
+        borderWidth: this.arrowSize + 'px',
+        top: '-' + this.arrowSize + 'px'
+      };
+
+      if (bumpedUp) {
+        // rotate our arrow 180 degrees
+        arrowStyle['transform'] = 'rotate(180deg)';
+
+        // and place it at the bottom of the dropdown
+        arrowStyle['top'] = 'auto';
+        arrowStyle['bottom'] = '-' + this.arrowSize + 'px';
+      }
+
+      if (bumpedLeft) {
+        arrowStyle['right'] =
+          toggleBounds.width / 2 - arrowBounds.width / 2 + 'px';
+        delete arrowStyle['left'];
+      }
+
+      this.arrowStyle = arrowStyle;
+      this.dropdownStyle = dropdownStyle;
     }
+    this.requestUpdate();
   }
 
   public handleToggleClicked(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    if (!this.open) {
-      this.open = true;
-
-      const dropdown = this.shadowRoot.querySelector(
-        '.dropdown'
-      ) as HTMLDivElement;
-      dropdown.focus();
+    if (!this.open && this.dormant) {
+      this.openDropdown();
     }
-  }
-
-  private handleDropdownMouseDown(event: MouseEvent): void {
-    // block mouse down when clicking inside dropdown so we don't lose focus yet
-    event.preventDefault();
-    event.stopPropagation();
   }
 
   public render(): TemplateResult {
@@ -236,7 +274,11 @@ export class Dropdown extends RapidElement {
         ? html`<div class="mask  ${this.open ? 'open' : ''}" />`
         : null}
 
-      <div class="wrapper ${this.open ? 'open' : ''}">
+      <div
+        class="wrapper ${getClasses({
+          open: this.open
+        })}"
+      >
         <slot
           name="toggle"
           class="toggle"
@@ -245,15 +287,12 @@ export class Dropdown extends RapidElement {
         <div
           class="${getClasses({
             dropdown: true,
-            right: this.right,
-            left: this.left,
-            top: this.top,
-            bottom: this.bottom
+            dormant: this.dormant
           })}"
+          style=${styleMap(this.dropdownStyle)}
           tabindex="0"
-          @mousedown=${this.handleDropdownMouseDown}
         >
-          <div class="arrow"></div>
+          <div class="arrow" style=${styleMap(this.arrowStyle)}></div>
           <div class="dropdown-wrapper">
             <slot name="dropdown" tabindex="1"></slot>
           </div>

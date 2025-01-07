@@ -194,7 +194,7 @@ export class AliasEditor extends LitElement {
   private handleSearchSelection(evt: CustomEvent) {
     const selection = evt.detail.selected as FeatureProperties;
     this.showAliasDialog(selection);
-    const select = this.shadowRoot.querySelector('temba-select') as Select;
+    const select = this.shadowRoot.querySelector('temba-select') as Select<any>;
     select.clear();
   }
 

@@ -15,12 +15,14 @@ export class TabPane extends RapidElement {
         flex-grow: 1;
       }
 
-      .tabs {
+      .options {
         display: flex;
         align-items: stretch;
+        padding: var(--temba-tabs-options-padding, 0);
+        border-bottom: none;
       }
 
-      .tab {
+      .option {
         user-select: none;
         padding: 0.5em 0.7em;
         margin: 0em 0em;
@@ -40,22 +42,22 @@ export class TabPane extends RapidElement {
         transition: all 100ms linear;
       }
 
-      .focusedname .tab .name {
+      .focusedname .option .name {
         transition: all 0s linear !important;
       }
 
-      .focusedname .tab.selected .name {
+      .focusedname .option.selected .name {
         transition: all 200ms linear !important;
       }
 
-      .tab.hidden {
+      .option.hidden {
         display: none;
       }
 
-      .tab temba-icon {
+      .option temba-icon {
       }
 
-      .tab .name {
+      .option .name {
         margin-left: 0.4em;
         max-width: 200px;
         overflow: hidden;
@@ -64,48 +66,48 @@ export class TabPane extends RapidElement {
         text-overflow: ellipsis;
       }
 
-      .tab .badge {
+      .option .badge {
         margin-left: 0.4em;
       }
 
       @media (max-width: 900px) {
-        .collapses .tab .name {
+        .collapses .option .name {
           max-width: 0px;
           margin: 0;
         }
       }
 
       @media (max-width: 600px) {
-        .collapses .tab .badge {
+        .collapses .option .badge {
           display: none;
         }
       }
 
-      .focusedname .tab.selected {
+      .focusedname .option.selected {
       }
 
-      .focusedname .tab .name {
+      .focusedname .option .name {
         max-width: 0px;
         margin: 0;
         transition: max-width 200ms linear, margin 200ms linear;
       }
 
-      .focusedname .tab.selected .name {
+      .focusedname .option.selected .name {
         margin-left: 0.4em;
         max-width: 200px;
       }
 
-      .tab {
+      .option {
         transform: scale(0.9) translateY(0em);
         --icon-color: rgba(0, 0, 0, 0.5);
         color: rgba(0, 0, 0, 0.5);
       }
 
-      .tab.selected {
+      .option.selected {
       }
 
-      .tab.selected,
-      .tab.selected:hover {
+      .option.selected,
+      .option.selected:hover {
         cursor: default;
         box-shadow: 0px -3px 3px 1px rgba(0, 0, 0, 0.02);
 
@@ -117,31 +119,25 @@ export class TabPane extends RapidElement {
         border-bottom: 0px;
       }
 
-      .embedded .tab.selected {
-      }
-
-      .tab.selected .dot {
+      .option.selected .dot {
         display: none;
       }
 
-      .bottom .tab.selected {
-      }
-
-      .unselect .tab.selected {
+      .unselect .option.selected {
         cursor: pointer;
       }
 
-      .unselect .tab.selected:hover {
+      .unselect .option.selected:hover {
         background: var(--unselect-tab-color, #eee);
       }
 
-      .tab:hover {
+      .option:hover {
         --icon-color: #666;
         color: #666;
         background: rgba(0, 0, 0, 0.02);
       }
 
-      .tab.dirty {
+      .option.dirty {
         font-weight: 500;
       }
 
@@ -165,9 +161,6 @@ export class TabPane extends RapidElement {
       .pane.first {
         border-top-left-radius: 0px;
         overflow: hidden;
-      }
-
-      .badge {
       }
 
       .count {
@@ -198,22 +191,6 @@ export class TabPane extends RapidElement {
         --icon-color: var(--color-alert);
       }
 
-      .bottom.tabs .tab {
-        border-radius: 0em;
-      }
-
-      .bottom.pane {
-        border-radius: 0em;
-      }
-
-      .bottom.pane.first {
-        border-bottom-left-radius: 0px;
-      }
-
-      .bottom .tab.first {
-        border-bottom-left-radius: var(--curvature);
-      }
-
       .embedded.pane {
         box-shadow: none;
         margin: 0;
@@ -222,28 +199,20 @@ export class TabPane extends RapidElement {
         border-bottom: none !important;
       }
 
-      .embedded.tabs {
-        padding-top: 0em;
-      }
-
-      .embedded .tab {
+      .embedded .option {
         border-bottom: none !important;
         border-radius: 0em;
         border-top: none !important;
       }
 
-      .embedded .tab.first {
+      .embedded .option.first {
         margin-left: 0em;
         border-top: none !important;
         border-left: none;
       }
 
-      .embedded.tabs .tab.selected {
+      .embedded.options .option.selected {
         box-shadow: none !important;
-      }
-
-      .embedded.pane {
-        // padding: 0.3em;
       }
 
       .check {
@@ -262,10 +231,6 @@ export class TabPane extends RapidElement {
   @property({ type: Boolean })
   collapses = false;
 
-  // are the tabs on the bottom of the pane?
-  @property({ type: Boolean })
-  bottom = false;
-
   // do we allow unselecting the current tab
   @property({ type: Boolean })
   unselect = false;
@@ -281,7 +246,7 @@ export class TabPane extends RapidElement {
   refresh = '';
 
   @property({ type: Array, attribute: false })
-  tabs: Tab[] = [];
+  options: Tab[] = [];
 
   private handleTabClick(event: MouseEvent): void {
     const newIndex = parseInt(
@@ -307,7 +272,7 @@ export class TabPane extends RapidElement {
         tabs.push(tab);
       }
     }
-    this.tabs = tabs;
+    this.options = tabs;
     this.index = 0;
   }
 
@@ -324,16 +289,16 @@ export class TabPane extends RapidElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('tabs')) {
-      this.tabs.forEach((tab, index) => {
+    if (changedProperties.has('options')) {
+      this.options.forEach((tab, index) => {
         tab.selected = index == this.index;
       });
     }
 
     if (changedProperties.has('index')) {
-      if (this.tabs.length >= 0) {
+      if (this.options.length >= 0) {
         if (this.index !== changedProperties.get('index')) {
-          this.tabs.forEach((tab, index) => {
+          this.options.forEach((tab, index) => {
             tab.selected = index == this.index;
           });
           this.fireEvent(CustomEventType.ContextChanged);
@@ -342,11 +307,11 @@ export class TabPane extends RapidElement {
     }
 
     // if our current tab is hidden, select the first visible one
-    if (this.index > this.tabs.length) {
-      const tab = this.tabs[this.index];
+    if (this.index > this.options.length) {
+      const tab = this.options[this.index];
       if (tab && tab.hidden) {
-        for (let i = 0; i < this.tabs.length; i++) {
-          const other = this.tabs[i];
+        for (let i = 0; i < this.options.length; i++) {
+          const other = this.options[i];
           if (other && !other.hidden) {
             this.index = i;
             return;
@@ -357,7 +322,7 @@ export class TabPane extends RapidElement {
   }
 
   public focusTab(name: string): Tab {
-    const index = this.tabs.findIndex((tab) => tab.name === name);
+    const index = this.options.findIndex((tab) => tab.name === name);
     if (index >= 0) {
       this.index = index;
       return this.getTab(index);
@@ -368,8 +333,8 @@ export class TabPane extends RapidElement {
     index: number,
     details: { count: number; hidden: boolean }
   ) {
-    if (index < this.tabs.length) {
-      const tab = this.tabs[index];
+    if (index < this.options.length) {
+      const tab = this.options[index];
       tab.count = details.count;
       tab.hidden = details.hidden;
       this.requestUpdate();
@@ -382,11 +347,11 @@ export class TabPane extends RapidElement {
   }
 
   public getCurrentTab(): Tab {
-    return this.tabs[this.index];
+    return this.options[this.index];
   }
 
   public getTab(index: number): Tab {
-    return this.tabs[index];
+    return this.options[index];
   }
 
   public handleTabContentChanged() {
@@ -398,37 +363,24 @@ export class TabPane extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const activeTab = this.tabs[this.index];
+    const activeTab = this.options[this.index];
     return html`
-      ${this.bottom
-        ? html`<div
-            class="pane ${getClasses({
-              first: this.index == 0,
-              embedded: this.embedded,
-              bottom: this.bottom
-            })}"
-          >
-            <slot></slot>
-          </div>`
-        : null}
-
       <div
-        class="tabs ${getClasses({
-          tabs: true,
-          bottom: this.bottom,
+        class="${getClasses({
+          options: true,
           collapses: this.collapses,
           embedded: this.embedded,
           focusedname: this.focusedName,
           unselect: this.unselect
         })}"
       >
-        ${this.tabs.map(
+        ${this.options.map(
           (tab, index) => html`
             <div
               @click=${this.handleTabClick}
               data-index=${index}
               class="${getClasses({
-                tab: true,
+                option: true,
                 first: index == 0,
                 selected: index == this.index,
                 hidden: tab.hidden,
@@ -473,24 +425,38 @@ export class TabPane extends RapidElement {
           <slot name="tab-right"></slot>
         </div>
       </div>
-      ${!this.bottom
-        ? html`<div
-            @temba-details-changed=${this.handleTabDetailsChanged}
-            style="${activeTab?.borderColor
-              ? `border: 1px solid ${activeTab?.borderColor};`
-              : ''} ${activeTab?.selectionBackground
-              ? `background:${activeTab?.selectionBackground};`
-              : ``}"
-            class="pane ${getClasses({
-              first: this.index == 0,
-              embedded: this.embedded,
-              bottom: this.bottom
-            })}"
-          >
-            <slot></slot>
-            <slot name="pane-bottom"></slot>
-          </div>`
-        : null}
+      <div
+        @temba-details-changed=${this.handleTabDetailsChanged}
+        style="${activeTab?.borderColor
+          ? `
+            border-top: var(--temba-tabs-border-top, 1px solid ${
+              activeTab?.borderColor || 'var(--color-widget-border)'
+            });
+
+            border-left: var(--temba-tabs-border-left, 1px solid ${
+              activeTab?.borderColor || 'var(--color-widget-border)'
+            });
+
+            border-bottom: var(--temba-tabs-border-bottom, 1px solid ${
+              activeTab?.borderColor || 'var(--color-widget-border)'
+            });
+
+            border-right: var(--temba-tabs-border-right, 1px solid ${
+              activeTab?.borderColor || 'var(--color-widget-border)'
+            });
+
+            `
+          : ''} ${activeTab?.selectionBackground
+          ? `background:${activeTab?.selectionBackground};`
+          : ``}"
+        class="pane ${getClasses({
+          first: this.index == 0,
+          embedded: this.embedded
+        })}"
+      >
+        <slot></slot>
+        <slot name="pane-bottom"></slot>
+      </div>
     `;
   }
 }

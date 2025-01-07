@@ -239,6 +239,11 @@ export const getClip = (ele: HTMLElement) => {
   return newClip;
 };
 
+export const mouseClickElement = async (ele: HTMLElement) => {
+  const bounds = ele.getBoundingClientRect();
+  await mouseClick(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+};
+
 export const getHTMLAttrs = (attrs: any = {}) => {
   return Object.keys(attrs)
     .map((name: string) => `${name}='${attrs[name]}'`)

@@ -1,14 +1,25 @@
 import { PropertyValueMap, TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
-import { User } from '../interfaces';
-import { colorHash, extractInitials } from '../utils';
-import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
-import { DEFAULT_AVATAR } from '../webchat/assets';
 
-export class TembaUser extends EndpointMonitorElement {
+import { colorHash, extractInitials } from '../utils';
+
+import { DEFAULT_AVATAR } from '../webchat/assets';
+import { RapidElement } from '../RapidElement';
+
+export const getFullName = (user: {
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+}) => {
+  return user.name || [user.first_name, user.last_name].join(' ');
+};
+
+export class TembaUser extends RapidElement {
   public static styles = css`
     :host {
       display: flex;
+      transform: scale(var(--temba-scale, 1));
+      box-sizing: border-box;
     }
 
     .wrapper {
@@ -27,14 +38,11 @@ export class TembaUser extends EndpointMonitorElement {
     }
   `;
 
-  @property({ type: String })
-  email: string;
-
   @property({ type: Number })
   scale: number;
 
   @property({ type: Boolean })
-  name: boolean;
+  showName: boolean;
 
   @property({ type: Boolean })
   system: boolean;
@@ -46,49 +54,30 @@ export class TembaUser extends EndpointMonitorElement {
   initials: string = '';
 
   @property({ type: String })
-  fullname: string;
+  name: string;
 
-  @property({ type: Object, attribute: false })
-  data: User;
+  @property({ type: String })
+  email: string;
 
-  prepareData(data: any) {
-    if (data.length > 0) {
-      return data[0];
-    }
-
-    this.fullname = this.email;
-    return null;
-  }
+  @property({ type: String })
+  avatar: string;
 
   public updated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changed);
 
-    if (changed.has('email') && this.email) {
-      this.url = `/api/v2/users.json?email=${this.email}`;
-    }
-
     if (changed.has('system') && this.system) {
       this.background = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
     }
 
-    if (changed.has('data') && this.data) {
-      if (this.data.first_name && this.data.last_name) {
-        this.fullname = [this.data.first_name, this.data.last_name].join(' ');
-        this.background = colorHash.hex(this.fullname);
-        this.initials = extractInitials(this.fullname);
-      }
-
-      if (this.data.avatar) {
-        this.background = `url('${this.data.avatar}') center / contain no-repeat`;
-        this.initials = '';
-      }
+    if (changed.has('name') && this.name) {
+      this.background = colorHash.hex(this.name);
+      this.initials = extractInitials(this.name);
     }
 
-    if (changed.has('fullname') && this.fullname && !this.data) {
-      this.background = colorHash.hex(this.fullname);
-      this.initials = extractInitials(this.fullname);
+    if (changed.has('avatar') && this.avatar) {
+      this.background = `url('${this.avatar}') center / contain no-repeat`;
     }
   }
 
@@ -99,8 +88,8 @@ export class TembaUser extends EndpointMonitorElement {
         style="
               transform:scale(${this.scale || 1});
               display: flex;
-              height: 30px;
-              width: 30px;
+              min-height: 26px;
+              min-width: 26px;
               flex-direction: row;
               align-items: center;
               color: #fff;
@@ -111,7 +100,7 @@ export class TembaUser extends EndpointMonitorElement {
               box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
               background:${this.background}"
       >
-        ${this.initials
+        ${this.initials && !this.avatar
           ? html` <div
               style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
             >
@@ -119,13 +108,13 @@ export class TembaUser extends EndpointMonitorElement {
             </div>`
           : null}
       </div>
-      ${this.name
+      ${this.showName
         ? html`<div
             class="name"
             style="margin: 0px ${this.scale - 0.5}em;font-size:${this.scale +
             0.2}em"
           >
-            ${this.fullname}
+            ${this.name}
           </div>`
         : null}
     </div>`;

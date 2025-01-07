@@ -56,6 +56,7 @@ export interface User {
   id?: number;
   first_name?: string;
   last_name?: string;
+  name?: string;
   email?: string;
   role?: string;
   created_on?: string;
@@ -281,5 +282,7 @@ export enum CustomEventType {
   Resized = 'temba-resized',
   DetailsChanged = 'temba-details-changed',
   Error = 'temba-error',
-  Interrupt = 'temba-interrupt'
+  Interrupt = 'temba-interrupt',
+  Opened = 'temba-opened',
+  TicketUpdated = 'temba-ticket-updated'
 }

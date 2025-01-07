@@ -130,7 +130,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
   });
 };
 
-const wireScreenshots = async (page, context, wait) => {
+const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   // clear out any past tests
   const diffs = path.resolve(SCREENSHOTS, DIFF);
   const tests = path.resolve(SCREENSHOTS, TEST);
@@ -142,6 +142,7 @@ const wireScreenshots = async (page, context, wait) => {
     'matchPageSnapshot',
     (filename, clip, excluded, threshold) => {
       return new Promise(async (resolve, reject) => {
+        // const start = Date.now();
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
@@ -182,9 +183,16 @@ const wireScreenshots = async (page, context, wait) => {
 
           try {
             const result = await checkScreenshot(filename);
+            // const end = Date.now();
+            // console.log(`Screenshot took ${end - start}ms`);
             resolve(result);
           } catch (error) {
-            reject(error);
+            if (replaceScreenshots) {
+              await page.screenshot({ path: truthFile, clip });
+              resolve();
+            } else  {
+              reject(error);
+            }
             return;
           }
         }
@@ -243,6 +251,7 @@ const wireScreenshots = async (page, context, wait) => {
     const ele = await frame.$(element);
     await ele.click({});
   });
+
 
   await page.exposeFunction(
     'typeInto',
@@ -338,7 +347,10 @@ export default {
         headless: true,
       },
       createPage: async ({ context, config }) => {
-        const wait = !(config['unknown'] || []).includes('--fast');
+        const params = (config['unknown'] || [])
+        const wait = !params.includes('--fast');
+        const replaceScreenshots = params.includes('--replace-screenshots');
+
         const page = await context.newPage();
         await page.setUserAgent(
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
@@ -350,7 +362,7 @@ export default {
           `,
           });
 
-          await wireScreenshots(page, context, wait);
+          await wireScreenshots(page, context, wait, replaceScreenshots);
         });
 
         await page.emulateTimezone('GMT');

@@ -154,7 +154,7 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-0 > temba-dropdown .icon-wrapper {
-        padding: 0.2em 0.4em 0.2em 0.4em;
+        padding: 0.2em 0.4em 0.2em 0em;
       }
 
       .level-0 > .item.selected::before,
@@ -202,6 +202,12 @@ export class TembaMenu extends ResizeElement {
       }
 
       temba-dropdown {
+        margin: 0 0.25em;
+      }
+
+      temba-dropdown > div[slot='dropdown'] {
+        width: 300px;
+        overflow: hidden;
       }
 
       temba-dropdown > div[slot='dropdown'] .avatar > .details {
@@ -1200,21 +1206,14 @@ export class TembaMenu extends ResizeElement {
 
     if (menuItem.popup) {
       return html`
-        <temba-dropdown
-          offsetx="10"
-          arrowoffset="8"
-          arrowSize="0"
-          drop_align="left"
-          id="dd-${menuItem.id}"
-        >
+        <temba-dropdown id="dd-${menuItem.id}">
           <div slot="toggle">${item}</div>
-          <div slot="dropdown" style="width:300px;overflow:hidden;">
-            <div style="max-height:400px;overflow-y:auto">
-              ${(menuItem.items || []).map((child: MenuItem) => {
-                child.level = menuItem.level + 1;
-                return html`${this.renderMenuItem(child, menuItem)}`;
-              })}
-            </div>
+
+          <div slot="dropdown">
+            ${(menuItem.items || []).map((child: MenuItem) => {
+              child.level = menuItem.level + 1;
+              return html`${this.renderMenuItem(child, menuItem)}`;
+            })}
           </div>
         </temba-dropdown>
       `;

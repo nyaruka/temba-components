@@ -34,10 +34,14 @@ export enum ContentMenuItemType {
 export class ContentMenu extends RapidElement {
   static get styles() {
     return css`
+      :host {
+        tabindex: 0;
+      }
       .container {
         --button-y: 0.4em;
         --button-x: 1em;
         display: flex;
+        align-items: center;
       }
 
       .button_item,
@@ -45,10 +49,12 @@ export class ContentMenu extends RapidElement {
         margin-left: 1rem;
       }
 
+      temba-button {
+        margin-right: 0.5rem;
+      }
       .toggle {
         --icon-color: rgb(102, 102, 102);
-        padding: 0.5rem;
-        margin-left: 0.5rem;
+        padding: 0.4em;
       }
 
       .toggle:hover {
@@ -62,6 +68,7 @@ export class ContentMenu extends RapidElement {
         color: rgb(45, 45, 45);
         z-index: 50;
         min-width: 200px;
+        tabindex: 0;
       }
 
       .divider {
@@ -75,6 +82,7 @@ export class ContentMenu extends RapidElement {
         font-size: 1.1rem;
         cursor: pointer;
         font-weight: 400;
+        tabindex: 0;
       }
 
       .item:hover {
@@ -145,7 +153,6 @@ export class ContentMenu extends RapidElement {
 
   protected updated(changes: Map<string, any>) {
     super.updated(changes);
-
     if (changes.has('endpoint') || changes.has('legacy')) {
       this.fetchContentMenu();
     }
@@ -168,12 +175,7 @@ export class ContentMenu extends RapidElement {
           </temba-button>`;
         })}
         ${this.items && this.items.length > 0
-          ? html`<temba-dropdown
-              arrowsize="8"
-              arrowoffset="${this.arrowTopLeft ? '12' : '-12'}"
-              offsety="6"
-              bottom
-            >
+          ? html`<temba-dropdown>
               <div slot="toggle" class="toggle">
                 <temba-icon name="menu" size="1.5"></temba-icon>
               </div>

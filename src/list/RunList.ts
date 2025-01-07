@@ -70,7 +70,9 @@ export class RunList extends TembaList {
 
     if (changedProperties.has('results')) {
       if (this.results) {
-        const select = this.shadowRoot.querySelector('temba-select') as Select;
+        const select = this.shadowRoot.querySelector(
+          'temba-select'
+        ) as Select<any>;
         select.setOptions(this.results);
         this.resultKeys = this.results.reduce(
           (current, result) => ({ ...current, [result.key]: result }),

@@ -516,6 +516,18 @@ export class Stubbable {
 
 export const stubbable = new Stubbable();
 
+export const spreadAttributes = (obj): TemplateResult[] => {
+  return Object.entries(obj).map(([key, value]) => {
+    if (key.startsWith('@')) {
+      return html`@${key.slice(1)}=${value}`;
+    } else if (key.startsWith('.')) {
+      return html`.${key.slice(1)}=${value}`;
+    } else {
+      return html`${key}=${value}`;
+    }
+  });
+};
+
 export const timeSince = (
   date: Date,
   options: { compareDate?: Date; hideRecentText?: boolean; suffix?: string } = {
@@ -728,14 +740,6 @@ export const stopEvent = (event: Event) => {
     event.stopPropagation();
     event.preventDefault();
   }
-};
-
-export const getFullName = (user: User) => {
-  if (user.first_name && user.last_name) {
-    return `${user.first_name} ${user.last_name}`;
-  }
-
-  return user.email;
 };
 
 /**

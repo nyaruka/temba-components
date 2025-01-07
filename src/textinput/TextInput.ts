@@ -371,6 +371,7 @@ export class TextInput extends FormElement {
 
     let input = html`
       <input
+        autofocus
         class="textinput"
         autocomplete="off"
         name=${this.name}

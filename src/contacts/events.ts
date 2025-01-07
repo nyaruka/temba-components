@@ -11,6 +11,7 @@ export interface EventGroup {
 export interface ContactEvent {
   type: string;
   created_on: string;
+  created_by?: User;
 }
 
 export interface ChannelEvent extends ContactEvent {

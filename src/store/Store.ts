@@ -28,6 +28,7 @@ import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { StoreMonitorElement } from './StoreMonitorElement';
+import { getFullName } from '../user/TembaUser';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
@@ -82,9 +83,6 @@ export class Store extends RapidElement {
 
   @property({ type: String, attribute: 'workspace' })
   workspaceEndpoint: string;
-
-  @property({ type: String, attribute: 'users' })
-  usersEndpoint: string;
 
   @property({ type: String, attribute: 'shortcuts' })
   shortcutsEndpoint: string;
@@ -226,14 +224,6 @@ export class Store extends RapidElement {
       );
     }
 
-    if (this.usersEndpoint) {
-      fetches.push(
-        getAssets(this.usersEndpoint).then((users: any[]) => {
-          this.users = users;
-        })
-      );
-    }
-
     if (this.shortcutsEndpoint) {
       fetches.push(this.refreshShortcuts());
     }
@@ -247,12 +237,6 @@ export class Store extends RapidElement {
 
   public getShortcuts() {
     return this.shortcuts || [];
-  }
-
-  public getAssignableUsers() {
-    return this.users.filter((user: User) =>
-      ['administrator', 'editor', 'agent'].includes(user.role)
-    );
   }
 
   public firstUpdated() {
@@ -397,7 +381,7 @@ export class Store extends RapidElement {
     // we treat missing groups as dynamic since the
     // api excludes initializing groups
     if (!group) {
-      console.warn('No group for ' + uuid);
+      // console.warn('No group for ' + uuid);
     }
 
     if (!group || group.query) {
@@ -510,6 +494,71 @@ export class Store extends RapidElement {
     this.cache.delete(url);
   }
 
+  public resolveUsers(items: any, keys: string[]): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const emails = new Set<string>();
+
+      // keys are dot notation paths to user fields
+      items.forEach((item) => {
+        keys.forEach((key) => {
+          const parts = key.split('.');
+          let value = item;
+          for (let i = 0; i < parts.length; i++) {
+            value = value[parts[i]];
+            if (!value) {
+              break;
+            }
+          }
+          if (value && value.email) {
+            emails.add(value.email);
+          }
+        });
+      });
+
+      const promises = [];
+      // we don't want to fetch all users at once so we can benefit from caching
+      emails.forEach((email) => {
+        promises.push(this.getUrl(`/api/v2/users.json?email=${email}`));
+      });
+
+      // wait for all of our user fetches to complete
+      Promise.all(promises).then((promises) => {
+        promises.forEach((response: WebResponse) => {
+          if (response && response.json) {
+            const results = response.json.results;
+            if (results && results.length === 1) {
+              const user = results[0];
+
+              items.forEach((item) => {
+                // replace each key with a matching user
+                keys.forEach((key) => {
+                  const parts = key.split('.');
+                  let value = item;
+                  let last = value;
+                  for (let i = 0; i < parts.length; i++) {
+                    last = value;
+                    value = value[parts[i]];
+                    if (!value) {
+                      break;
+                    }
+                  }
+                  if (value && value.email === user.email) {
+                    // only care about avatars for now
+                    const orginalUser = last[parts[parts.length - 1]];
+                    orginalUser.avatar = user.avatar;
+                    orginalUser.name = getFullName(user);
+                    last[parts[parts.length - 1]].avatar = user.avatar;
+                  }
+                });
+              });
+            }
+          }
+        });
+        resolve();
+      });
+    });
+  }
+
   public makeRequest(
     url: string,
     options?: { force?: boolean; prepareData?: (data: any) => any }
@@ -524,8 +573,9 @@ export class Store extends RapidElement {
       return;
     }
 
-    const cached = this.cache.get(url);
+    let cached = this.cache.get(url);
     if (cached && !options.force) {
+      cached = options.prepareData ? options.prepareData(cached) : cached;
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
       options = options || {};
@@ -535,10 +585,9 @@ export class Store extends RapidElement {
           delete this.fetching[url];
           return;
         }
-
-        data = options.prepareData ? options.prepareData(data) : data;
         this.cache.set(url, data);
         delete this.fetching[url];
+        data = options.prepareData ? options.prepareData(data) : data;
         this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
       });
     }
