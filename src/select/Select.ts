@@ -1454,12 +1454,6 @@ export class Select<T extends SelectOption> extends FormElement {
                           <div
                             class="remove-item"
                             style="margin-top:1px"
-                            @mousedown=${() => {
-                              this.removingSelection = true;
-                            }}
-                            @mouseup=${() => {
-                              this.removingSelection = false;
-                            }}
                             @click=${(evt: MouseEvent) => {
                               evt.preventDefault();
                               evt.stopPropagation();
@@ -1551,7 +1545,6 @@ export class Select<T extends SelectOption> extends FormElement {
           : null
       }
     </temba-options>
-    
   </temba-field>
   `;
   }
