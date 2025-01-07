@@ -154,7 +154,7 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-0 > temba-dropdown .icon-wrapper {
-        padding: 0.2em 0em;
+        padding: 0.2em 0.4em 0.2em 0em;
       }
 
       .level-0 > .item.selected::before,
