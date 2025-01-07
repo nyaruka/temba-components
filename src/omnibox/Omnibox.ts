@@ -136,37 +136,4 @@ export class Omnibox extends Select<OmniOption> {
       return html`<temba-icon name="${Icon.contact}"></temba-icon>`;
     }
   }
-
-  /*public getValues(): any[] {
-    const select = this.shadowRoot.querySelector('temba-select') as Select<any>;
-    return select.values;
-  }*/
-
-  /* 
-  public render(): TemplateResult {
-    return html`
-      <temba-select
-        name=${this.name}
-        endpoint=${this.getEndpoint()}
-        placeholder=${this.placeholder}
-        queryParam="search"
-        .label=${this.label}
-        .helpText=${this.helpText}
-        .widgetOnly=${this.widgetOnly}
-        ?disabled=${this.disabled}
-        .errors=${this.errors}
-        .values=${this.value}
-        .renderOption=${this.renderOption.bind(this)}
-        .renderSelectedItem=${this.renderSelection.bind(this)}
-        .inputRoot=${this}
-        .isMatch=${this.isMatch}
-        .infoText=${this.infoText}
-        searchable
-        searchOnFocus
-        multi
-        ><div slot="right">
-          <slot name="right"></slot></div
-      ></temba-select>
-    `;
-  }*/
 }

@@ -509,13 +509,10 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private lastQuery: number;
 
-  // private cancelToken: CancelTokenSource;
   private complete: boolean;
   private page: number;
   private next: string = null;
   private query: string;
-
-  private removingSelection: boolean;
 
   private lruCache = lru(20, 60000);
 
@@ -632,10 +629,6 @@ export class Select<T extends SelectOption> extends FormElement {
       'slotchange',
       this.handleSlotChange.bind(this)
     );
-
-    // if (!this.placeholder || this.value) {
-    // this.checkSelectedOption();
-    // }
   }
 
   public updated(changes: Map<string, any>) {
@@ -646,21 +639,15 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     if (changes.has('value')) {
-      // console.log('value from', changes.get('value'), 'to', this.value);
       if (this.value && !this.values.length) {
-        // console.log('setting selected value for value change', this.value);
         this.setSelectedValue(this.value);
       }
     }
 
     if (changes.has('values')) {
-      // console.log('values from', changes.get('values'), 'to', this.values);
       this.updateInputs();
       if (this.hasChanges(changes.get('values'))) {
-        // console.log('firing change', changes.get('values'), this.values);
         this.fireEvent('change');
-      } else {
-        // console.log('no changes', changes.get('values'), this.values);
       }
     }
 
@@ -743,7 +730,6 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public setSelectedValue(value: string) {
-    // console.log('setting value', value);
     if (this.staticOptions.length > 0) {
       const existing = this.staticOptions.find((option) => {
         return this.getValue(option) === value;
@@ -878,7 +864,6 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public open(): void {
-    // this.requestUpdate('input');
     (
       this.shadowRoot.querySelector('.select-container') as HTMLDivElement
     ).click();
@@ -1003,11 +988,6 @@ export class Select<T extends SelectOption> extends FormElement {
     this.completionOptions = [];
     if (!this.fetching) {
       this.fetching = true;
-
-      // make sure we cancel any previous request
-      // if (this.cancelToken) {
-      // this.cancelToken.cancel();
-      // }
 
       const options: any = [...this.staticOptions];
       const q = (query || '').trim().toLowerCase();
@@ -1134,9 +1114,6 @@ export class Select<T extends SelectOption> extends FormElement {
   private handleFocus(): void {
     if (!this.focused && this.visibleOptions.length === 0) {
       this.focused = true;
-      //if (this.searchOnFocus && !this.removingSelection) {
-      //this.requestUpdate('input');
-      //}
     }
   }
 
