@@ -518,7 +518,9 @@ export class Store extends RapidElement {
       const promises = [];
       // we don't want to fetch all users at once so we can benefit from caching
       emails.forEach((email) => {
-        promises.push(this.getUrl(`/api/v2/users.json?email=${email}`));
+        promises.push(
+          this.getUrl(`/api/v2/users.json?email=${encodeURIComponent(email)}`)
+        );
       });
 
       // wait for all of our user fetches to complete
