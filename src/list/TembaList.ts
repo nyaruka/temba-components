@@ -195,12 +195,9 @@ export class TembaList extends RapidElement {
     const index = this.getItemIndex(value);
     this.items.splice(index, 1);
     this.items = [...this.items];
-
-    // if we were at the end, move us down
-    this.cursorIndex = Math.max(
-      0,
-      Math.min(this.items.length - 1, this.cursorIndex - 1)
-    );
+    if (this.cursorIndex === index) {
+      this.cursorIndex = -1;
+    }
 
     // request a change even if it is the same, the item is different
     this.requestUpdate('cursorIndex');

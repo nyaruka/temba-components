@@ -519,6 +519,12 @@ export class ContactChat extends ContactStoreElement {
       changedProperties.has('data') ||
       changedProperties.has('currentContact')
     ) {
+      // unschedule any previous refreshes
+      if (this.refreshId) {
+        clearTimeout(this.refreshId);
+        this.refreshId = null;
+      }
+
       this.currentContact = this.data;
     }
 
@@ -526,17 +532,6 @@ export class ContactChat extends ContactStoreElement {
       this.chat = this.shadowRoot.querySelector('temba-chat');
       this.reset();
       this.fetchPreviousMessages();
-    }
-
-    if (changedProperties.has('currentTicket')) {
-      const users = this.shadowRoot.querySelector(
-        'temba-user-select'
-      ) as UserSelect;
-      if (users) {
-        users.setValues(
-          this.currentTicket?.assignee ? [this.currentTicket?.assignee] : []
-        );
-      }
     }
   }
 
@@ -609,7 +604,10 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getEndpoint() {
-    return `/contact/history/${this.contact}/?_format=json`;
+    if (this.contact) {
+      return `/contact/history/${this.contact}/?_format=json`;
+    }
+    return null;
   }
 
   private scheduleRefresh() {
@@ -894,6 +892,9 @@ export class ContactChat extends ContactStoreElement {
     if (this.currentContact && this.newestEventTime) {
       this.polling = true;
       const endpoint = this.getEndpoint();
+      if (!endpoint) {
+        return;
+      }
 
       const fetchContact = this.currentContact.uuid;
 
@@ -929,6 +930,10 @@ export class ContactChat extends ContactStoreElement {
     chat.fetching = true;
     if (this.currentContact) {
       const endpoint = this.getEndpoint();
+      if (!endpoint) {
+        return;
+      }
+
       fetchContactHistory(
         false,
         endpoint,
@@ -949,7 +954,9 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private fetchComplete() {
-    this.chat.fetching = false;
+    if (this.chat) {
+      this.chat.fetching = false;
+    }
   }
 
   private getTembaCompose(): TemplateResult {
@@ -1003,6 +1010,7 @@ export class ContactChat extends ContactStoreElement {
   private handleAssignmentChanged(evt: CustomEvent) {
     const users = evt.currentTarget as UserSelect;
     const assignee = users.values[0];
+
     this.assignTicket(assignee ? assignee.email : null);
     users.blur();
   }
@@ -1054,13 +1062,15 @@ export class ContactChat extends ContactStoreElement {
     if (this.currentTicket) {
       fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
         (values) => {
-          if (values.length > 0) {
-            this.fireCustomEvent(CustomEventType.TicketUpdated, {
-              ticket: values[0],
-              previous: this.currentTicket
-            });
-            this.currentTicket = values[0];
-          }
+          this.store.resolveUsers(values, ['assignee']).then(() => {
+            if (values.length > 0) {
+              this.fireCustomEvent(CustomEventType.TicketUpdated, {
+                ticket: values[0],
+                previous: this.currentTicket
+              });
+              this.currentTicket = values[0];
+            }
+          });
         }
       );
     }

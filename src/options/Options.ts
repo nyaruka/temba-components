@@ -372,7 +372,7 @@ export class Options extends RapidElement {
         (previousCount === 0 && newCount > 0 && !changed.has('cursorIndex'))
       ) {
         if (!this.internalFocusDisabled) {
-          if (!this.block || this.cursorIndex === -1) {
+          if (!this.block) {
             this.cursorIndex = 0;
           } else {
             if (this.cursorIndex >= newCount) {
@@ -442,6 +442,10 @@ export class Options extends RapidElement {
       if (index === -1) {
         index = this.cursorIndex;
       }
+    }
+
+    if (index === -1) {
+      return;
     }
 
     const selected = this.options[index];

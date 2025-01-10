@@ -48,7 +48,10 @@ export class TembaUser extends RapidElement {
   system: boolean;
 
   @property({ type: String, attribute: false })
-  background: string = '#e6e6e6';
+  bgimage: string = null;
+
+  @property({ type: String, attribute: false })
+  bgcolor: string = '#e6e6e6';
 
   @property({ type: String, attribute: false })
   initials: string = '';
@@ -68,16 +71,25 @@ export class TembaUser extends RapidElement {
     super.updated(changed);
 
     if (changed.has('system') && this.system) {
-      this.background = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
+      this.bgimage = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;
     }
 
-    if (changed.has('name') && this.name) {
-      this.background = colorHash.hex(this.name);
-      this.initials = extractInitials(this.name);
+    if (changed.has('name')) {
+      if (this.name) {
+        this.bgcolor = colorHash.hex(this.name);
+        this.initials = extractInitials(this.name);
+      } else {
+        this.bgcolor = '#e6e6e6';
+        this.initials = '';
+      }
     }
 
-    if (changed.has('avatar') && this.avatar) {
-      this.background = `url('${this.avatar}') center / contain no-repeat`;
+    if (changed.has('avatar')) {
+      if (this.avatar) {
+        this.bgimage = `url('${this.avatar}') center / contain no-repeat`;
+      } else if (!this.system) {
+        this.bgimage = null;
+      }
     }
   }
 
@@ -98,9 +110,9 @@ export class TembaUser extends RapidElement {
               overflow: hidden;
               font-size: 12px;
               box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
-              background:${this.background}"
+              background:${this.bgimage || this.bgcolor};"
       >
-        ${this.initials && !this.avatar
+        ${this.initials && !this.bgimage
           ? html` <div
               style="border: 0px solid red; display:flex; flex-direction: column; align-items:center;flex-grow:1"
             >
