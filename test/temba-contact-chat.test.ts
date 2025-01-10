@@ -60,6 +60,11 @@ describe('temba-contact-chat', () => {
       '/test-assets/contacts/history.json'
     );
 
+    mockGET(
+      /\/api\/v2\/users\.json\?email=admin1%40nyaruka\.com/,
+      '/test-assets/api/users/admin1.json'
+    );
+
     mockAPI();
     clock = useFakeTimers();
   });

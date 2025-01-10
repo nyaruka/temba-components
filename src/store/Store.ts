@@ -519,7 +519,9 @@ export class Store extends RapidElement {
       // we don't want to fetch all users at once so we can benefit from caching
       emails.forEach((email) => {
         promises.push(
-          this.getUrl(`/api/v2/users.json?email=${encodeURIComponent(email)}`)
+          this.getUrl(`/api/v2/users.json?email=${encodeURIComponent(email)}`, {
+            force: true
+          })
         );
       });
 
