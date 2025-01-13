@@ -223,6 +223,10 @@ export class Chat extends RapidElement {
         word-break: break-word;
       }
 
+      .message-text {
+        white-space: pre-line;
+      }
+
       .chat {
         width: 28rem;
         border-radius: var(--curvature);
@@ -780,7 +784,7 @@ export class Chat extends RapidElement {
               ? html`
                   <div class="bubble">
                     ${name ? html`<div class="name">${name}</div>` : null}
-                    <div class="message">${message.text}</div>
+                    <div class="message message-text">${message.text}</div>
 
                     <!--div>${message.date.toLocaleDateString(
                       undefined,
