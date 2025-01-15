@@ -64,7 +64,7 @@ export class Compose extends FormElement {
         display: block;
         flex-grow: 1;
         --widget-box-shadow-focused: none;
-        --temba-textinput-padding: 1em 1em;
+        --temba-textinput-padding: 0.5em;
       }
 
       .actions {
@@ -136,14 +136,14 @@ export class Compose extends FormElement {
       }
 
       .attachments {
-        min-height: 5em;
-        padding: 0.2em;
+        padding: 0.5em;
         align-items: center;
         display: flex;
-        background: #f9f9f9;
         border-radius: var(--curvature);
-        margin: 0.6em;
-        margin-bottom: 0em;
+      }
+
+      temba-media-picker {
+        flex-grow: 1;
       }
 
       .pane-bottom {
@@ -378,7 +378,7 @@ export class Compose extends FormElement {
       ) {
         this.langValues[this.currentLanguage] = {
           text: trimmed,
-          attachments: this.currentAttachments,
+          attachments: this.currentAttachments || [],
           quick_replies: this.currentQuickReplies.map((option) => option.value),
           optin: this.currentOptin.length > 0 ? this.currentOptin[0] : null,
           template: this.currentTemplate ? this.currentTemplate.uuid : null,
@@ -432,6 +432,8 @@ export class Compose extends FormElement {
   }
 
   private handleChatboxChange(evt: Event) {
+    evt.preventDefault();
+    evt.stopPropagation();
     const chatbox = evt.target as Completion;
     const inputElement = chatbox.getTextInput().inputElement;
 
@@ -638,28 +640,34 @@ export class Compose extends FormElement {
           .currentQuickReplies.length}|${showOptins}|${this
           .currentOptin}|${showTemplates}|${this.currentTemplate}"
       >
-        <temba-tab
-          name="Reply"
-          icon="message"
-          selectionBackground="#fff"
-        ></temba-tab>
-        ${this.attachments
-          ? html`<temba-tab
-              name="Attachments"
-              icon="attachment"
-              selectionBackground="#fff"
-              .count=${(this.currentAttachments || []).length}
-            >
-              <div class="items attachments">
+        <temba-tab name="Reply" icon="message" selectionBackground="#fff">
+          ${this.attachments
+            ? html`<div class="items attachments">
                 <temba-media-picker
                   accept=${this.accept}
                   max=${this.maxAttachments}
                   attachments=${JSON.stringify(this.currentAttachments || [])}
                   @change=${this.handleAttachmentsChanged.bind(this)}
-                ></temba-media-picker>
-              </div>
-            </temba-tab>`
-          : null}
+                >
+                  <div slot="top">
+                    <temba-completion
+                      class="chatbox"
+                      .value=${this.initialText}
+                      gsm
+                      textarea
+                      ?disableCompletion=${!this.completion}
+                      ?autogrow=${this.autogrow}
+                      maxlength=${this.maxLength}
+                      @change=${this.handleChatboxChange}
+                      @keydown=${this.handleKeyDown}
+                      placeholder="Write something here"
+                    >
+                    </temba-completion>
+                  </div>
+                </temba-media-picker>
+              </div> `
+            : null}
+        </temba-tab>
         ${this.quickReplies
           ? html`<temba-tab
               name="Quick Replies"
@@ -751,21 +759,7 @@ export class Compose extends FormElement {
         <div
           slot="pane-bottom"
           class="pane-bottom ${this.hasPendingText ? 'pending' : ''}"
-        >
-          <temba-completion
-            class="chatbox"
-            .value=${this.initialText}
-            gsm
-            textarea
-            ?disableCompletion=${!this.completion}
-            ?autogrow=${this.autogrow}
-            maxlength=${this.maxLength}
-            @change=${this.handleChatboxChange}
-            @keydown=${this.handleKeyDown}
-            placeholder="Write something here"
-          >
-          </temba-completion>
-        </div>
+        ></div>
       </temba-tabs>
     `;
   }

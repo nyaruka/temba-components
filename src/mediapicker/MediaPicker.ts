@@ -289,7 +289,7 @@ export class MediaPicker extends RapidElement {
     if (this.uploading) {
       return html`<temba-loading units="3" size="12"></temba-loading>`;
     } else {
-      return this.attachments.length < this.max
+      return this.attachments.length < this.max && this.attachments.length >= 1
         ? html`<input
               type="file"
               id="upload-input"
@@ -319,6 +319,7 @@ export class MediaPicker extends RapidElement {
       @drop="${this.handleDrop}"
     >
       <div class="drop-mask">
+        <slot name="top"></slot>
         <div class="attachments-list">
           ${this.attachments.map((validAttachment) => {
             return html`<div class="attachment-item">
@@ -335,6 +336,7 @@ export class MediaPicker extends RapidElement {
           })}
           ${this.renderUploader()}
         </div>
+        <slot name="bottom"></slot>
       </div>
     </div>`;
   }
