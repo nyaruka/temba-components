@@ -63,6 +63,7 @@ import { StartProgress } from './src/progress/StartProgress';
 import { ShortcutList } from './src/list/ShortcutList';
 import { PopupSelect } from './src/select/PopupSelect';
 import { UserSelect } from './src/select/UserSelect';
+import { WorkspaceSelect } from './src/select/WorkspaceSelect';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -136,3 +137,4 @@ addCustomElement('temba-start-progress', StartProgress);
 addCustomElement('temba-shortcuts', ShortcutList);
 addCustomElement('temba-popup-select', PopupSelect);
 addCustomElement('temba-user-select', UserSelect);
+addCustomElement('temba-workspace-select', WorkspaceSelect);
