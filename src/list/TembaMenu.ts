@@ -8,6 +8,7 @@ import { Dropdown } from '../dropdown/Dropdown';
 import { NotificationList } from './NotificationList';
 import { ResizeElement } from '../ResizeElement';
 import { Store } from '../store/Store';
+
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -32,6 +33,7 @@ export interface MenuItem {
   trigger?: boolean;
   event?: string;
   mobile?: boolean;
+  initial?: string;
 }
 
 interface MenuItemState {
@@ -587,11 +589,6 @@ export class TembaMenu extends ResizeElement {
         margin-right: 0.75em;
       }
 
-      temba-button[lined] {
-        margin: 0.2em 0;
-        display: block;
-      }
-
       .expand-icon {
         transform: rotate(180deg);
         --icon-color: rgba(255, 255, 255, 0.5);
@@ -652,6 +649,14 @@ export class TembaMenu extends ResizeElement {
 
       .level-0 .icon-wrapper {
         padding: 0.4em 0.9em;
+      }
+
+      temba-workspace-select {
+        margin: 0.2em;
+        display: block;
+        --options-shadow: none;
+        --color-widget-border: transparent;
+        --widget-box-shadow: none;
       }
     `;
   }
@@ -1060,6 +1065,16 @@ export class TembaMenu extends ResizeElement {
   ): TemplateResult => {
     if (menuItem.type === 'divider') {
       return html`<div class="divider"></div>`;
+    }
+
+    if (menuItem.type === 'temba-workspace-select') {
+      return html`<temba-workspace-select
+        @change=${(event) => {
+          event.stopPropagation();
+          event.preventDefault();
+        }}
+        .values=${[JSON.parse(menuItem.initial)]}
+      ></temba-workspace-select>`;
     }
 
     if (menuItem.type === 'temba-notification-list') {

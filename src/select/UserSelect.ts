@@ -64,7 +64,6 @@ export class UserSelect extends Select<UserOption> {
       email=${option.email}
       name=${option.name}
       avatar=${option.avatar}
-      scale="0.8"
       showname
     ></temba-user>`;
   }

@@ -499,6 +499,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Array, attribute: 'options' })
   private staticOptions: any[] = [];
 
+  @property({ type: Boolean })
+  allowAnchor: boolean = true;
+
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -1510,7 +1513,7 @@ export class Select<T extends SelectOption> extends FormElement {
     .renderOptionDetail=${this.renderOptionDetail}
     .renderOptionName=${this.renderOptionName}
     .renderOption=${this.renderOption || this.renderOptionDefault}
-    .anchorTo=${this.anchorElement}
+    .anchorTo=${this.allowAnchor ? this.anchorElement : null}
     .options=${this.visibleOptions}
     .spaceSelect=${this.spaceSelect}
     .nameKey=${this.nameKey}
@@ -1523,7 +1526,7 @@ export class Select<T extends SelectOption> extends FormElement {
     <temba-options
     @temba-selection=${this.handleExpressionSelection}
     @temba-canceled=${() => {}}
-    .anchorTo=${this.anchorExpressions}
+    .anchorTo=${this.allowAnchor ? this.anchorExpressions : null}
     .options=${this.completionOptions}
     .renderOption=${renderCompletionOption}
     ?visible=${this.completionOptions.length > 0}

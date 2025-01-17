@@ -17,16 +17,14 @@ export class Options extends RapidElement {
         user-select: none;
         border-radius: var(--curvature-widget);
         overflow: hidden;
-        margin-top: var(--options-margin-top);
         display: flex;
         flex-direction: column;
-        // transform: scaleY(0.5) translateY(-5em);
         transition: transform var(--transition-speed)
             cubic-bezier(0.71, 0.18, 0.61, 1.33),
           opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
         opacity: 0;
-        border: 1px transparent;
         z-index: 1000;
+        pointer-events: none;
       }
 
       .shadow {
@@ -97,10 +95,11 @@ export class Options extends RapidElement {
       }
 
       .show {
-        // transform: scaleY(1) translateY(0);
         border: 1px solid var(--color-widget-border);
         opacity: 1;
         z-index: 1;
+        pointer-events: auto;
+        margin-top: var(--options-margin-top);
       }
 
       .option {
@@ -351,7 +350,7 @@ export class Options extends RapidElement {
         this.tempOptions = changed.get('options');
         window.setTimeout(() => {
           this.tempOptions = [];
-        }, 0);
+        }, 200);
       }
     }
 
@@ -568,17 +567,12 @@ export class Options extends RapidElement {
         .getBoundingClientRect();
 
       if (this.anchorTo) {
-        this.top = 0;
         const anchorBounds = this.anchorTo.getBoundingClientRect();
+        this.top = anchorBounds.bottom;
         if (anchorBounds.bottom + optionsBounds.height > window.innerHeight) {
           this.top = -(optionsBounds.height + anchorBounds.height + 20);
         }
         this.left = anchorBounds.left;
-
-        // adjust for parent scrolling
-        if (this.scrollParent) {
-          this.top += -this.scrollParent.scrollTop;
-        }
       }
     }
   }
@@ -631,13 +625,15 @@ export class Options extends RapidElement {
       vertical *= -1;
     }
 
-    const containerStyle = {
-      'margin-left': `${this.marginHorizontal}px`,
-      'margin-top': `${vertical}px`
-    };
+    const containerStyle = this.visible
+      ? {
+          'margin-left': `${this.marginHorizontal}px`,
+          'margin-top': `${vertical}px`
+        }
+      : {};
 
     if (this.top) {
-      containerStyle[`transform`] = `translateY(${this.top}px)`;
+      containerStyle['top'] = `${this.top}px`;
     }
 
     if (this.left) {
@@ -653,7 +649,7 @@ export class Options extends RapidElement {
       'options-container': true,
       show: this.visible,
       top: this.poppedTop,
-      anchored: !this.block,
+      anchored: !this.block && !!this.anchorTo,
       loading: this.loading,
       shadow: !this.hideShadow,
       bordered: this.hideShadow

@@ -128,6 +128,11 @@ export class Button extends LitElement {
         background: transparent;
       }
 
+      .lined-button .button-mask {
+        display: block;
+        flex-grow: 1;
+      }
+
       .lined-button .button-mask:hover {
         background: rgba(0, 0, 0, 0.03);
       }

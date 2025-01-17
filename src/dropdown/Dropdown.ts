@@ -37,7 +37,7 @@ export class Dropdown extends RapidElement {
         z-index: 2;
         padding: 0;
         opacity: 0;
-        border-radius: var(--curvature);
+        border-radius: calc(var(--curvature) * 1.5);
         background: #fff;
         transition: all calc(0.8 * var(--transition-speed)) var(--bounce);
         user-select: none;
