@@ -129,7 +129,6 @@ export class Button extends LitElement {
       }
 
       .lined-button .button-mask {
-        display: block;
         flex-grow: 1;
       }
 
