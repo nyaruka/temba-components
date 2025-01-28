@@ -54,7 +54,6 @@ export class Dropdown extends RapidElement {
         content: '';
         width: 0px;
         height: 0;
-        top: -6px;
         z-index: 10;
         position: absolute;
         border-left: 6px solid transparent;
@@ -197,7 +196,7 @@ export class Dropdown extends RapidElement {
     const dropdown = this.shadowRoot.querySelector(
       '.dropdown'
     ) as HTMLDivElement;
-    const toggle = this.querySelector('div[slot="toggle"]');
+    const toggle = this.querySelector('*[slot="toggle"]');
 
     const arrow = this.shadowRoot.querySelector('.arrow') as HTMLDivElement;
 
@@ -233,8 +232,16 @@ export class Dropdown extends RapidElement {
         bumpedUp = true;
       }
 
+      // if our arrow is aligned with the left of the dropdown, scootch
+      // the dropdown left a pinch so our arrow still overlaps properly
+      let arrowLeft = toggleBounds.width / 2 - arrowBounds.width / 2;
+      if (arrowLeft <= 0) {
+        dropdownStyle['marginLeft'] = '-10px';
+        arrowLeft = 10;
+      }
+
       const arrowStyle = {
-        left: toggleBounds.width / 2 - arrowBounds.width / 2 + 'px',
+        left: arrowLeft + 'px',
         borderWidth: this.arrowSize + 'px',
         top: '-' + this.arrowSize + 'px'
       };
