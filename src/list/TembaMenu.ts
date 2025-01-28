@@ -155,10 +155,6 @@ export class TembaMenu extends ResizeElement {
         align-items: center;
       }
 
-      .level-0 > temba-dropdown .icon-wrapper {
-        padding: 0.2em 0.4em 0.2em 0em;
-      }
-
       .level-0 > .item.selected::before,
       .level-0 > .item.selected::after {
         content: ' ';
@@ -648,7 +644,7 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-0 .icon-wrapper {
-        padding: 0.4em 0.9em;
+        padding: 0.4em 0.2em;
       }
 
       temba-workspace-select {
@@ -1182,7 +1178,10 @@ export class TembaMenu extends ResizeElement {
         ${menuItem.level === 0
           ? menuItem.avatar
             ? icon
-            : html`<temba-tip style="display:flex;" text="${menuItem.name}"
+            : html`<temba-tip
+                position="right"
+                style="display:flex;"
+                text="${menuItem.name}"
                 >${icon}</temba-tip
               >`
           : html`${icon}${collapsedIcon}`}
