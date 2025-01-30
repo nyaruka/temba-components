@@ -804,9 +804,6 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public handleOptionSelection(event: CustomEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-
     const selected = event.detail.selected;
     // check if we should post it
     if (selected.post && this.endpoint) {

@@ -29,7 +29,8 @@ export class Dropdown extends RapidElement {
       }
 
       .dropdown.dormant {
-        pointer-events: none;
+        height: 0;
+        overflow: hidden;
       }
 
       .dropdown {
@@ -63,7 +64,6 @@ export class Dropdown extends RapidElement {
 
       .open .dropdown {
         opacity: 1;
-        pointer-events: auto;
         transform: translateY(0.5em) scale(1);
       }
 
