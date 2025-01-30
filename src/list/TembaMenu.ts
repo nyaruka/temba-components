@@ -647,6 +647,13 @@ export class TembaMenu extends ResizeElement {
         padding: 0.4em 0.2em;
       }
 
+      .level-0 temba-dropdown div[slot='dropdown'] .icon-wrapper {
+        padding: 0em !important;
+        align-self: center;
+        margin-right: 0.4em;
+        margin-left: 0.4em;
+      }
+
       temba-workspace-select {
         margin: 0.2em;
         display: block;
