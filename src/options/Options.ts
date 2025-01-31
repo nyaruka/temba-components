@@ -570,7 +570,9 @@ export class Options extends RapidElement {
         const anchorBounds = this.anchorTo.getBoundingClientRect();
         this.top = anchorBounds.bottom;
         if (anchorBounds.bottom + optionsBounds.height > window.innerHeight) {
-          this.top = -(optionsBounds.height + anchorBounds.height + 20);
+          this.top =
+            anchorBounds.bottom -
+            (optionsBounds.height + anchorBounds.height + 10);
         }
         this.left = anchorBounds.left;
       }
