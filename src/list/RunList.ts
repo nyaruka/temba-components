@@ -215,6 +215,7 @@ export class RunList extends TembaList {
                 <temba-select
                   clearable
                   placeholder="Result Preview"
+                  valueKey="key"
                   @change=${this.handleColumnChanged}
                 />
               `
