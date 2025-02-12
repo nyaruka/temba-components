@@ -152,7 +152,6 @@ export class Lightbox extends RapidElement {
       styles['left'] = this.left + 'px';
       styles['top'] = this.top + 'px';
       styles['width'] = this.width + 'px';
-      // styles['height'] = this.height + 'px';
     }
 
     if (this.zoom) {
@@ -178,15 +177,6 @@ export class Lightbox extends RapidElement {
           ${this.show ? html`${this.ele}` : null}
         </div>
       </div>
-
-      <!--div
-        class="download ${this.show ? 'visible' : ''}"
-        style="top:${this.height * this.scale}px;left:${this.left +
-      this.xTrans}px;"
-      >
-        <div style="padding:0.2em;margin-right:0.5em">Download</div>
-        <temba-icon size="1" name="download"></temba-icon>
-      </div-->
     `;
   }
 }
