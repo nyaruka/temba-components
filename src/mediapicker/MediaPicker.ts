@@ -47,6 +47,7 @@ export class MediaPicker extends RapidElement {
         flex-direction: row;
         flex-wrap: wrap;
         padding: 0.2em;
+        align-items: center;
       }
 
       .attachment-item {
