@@ -60,6 +60,7 @@ export enum Icon {
   delete_small = 'x',
   down = 'chevron-down',
   download = 'download-01',
+  disabled = 'slash-circle-01',
   edit = 'edit-03',
   email = 'mail-01',
   error = 'alert-circle',

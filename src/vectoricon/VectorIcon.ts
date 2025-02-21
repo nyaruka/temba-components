@@ -47,6 +47,9 @@ export class VectorIcon extends LitElement {
   @property({ type: String })
   easing = 'cubic-bezier(0.68, -0.55, 0.265, 1.55)';
 
+  @property({ type: String })
+  overlay: string;
+
   static get styles() {
     return css`
       :host {
@@ -61,6 +64,11 @@ export class VectorIcon extends LitElement {
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
           padding 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
           margin 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .overlay {
+        --icon-color: maroon;
+        color: maroon;
       }
 
       .sheet.spin {
@@ -82,6 +90,10 @@ export class VectorIcon extends LitElement {
 
       .sheet.pulse {
         transform: scale(1);
+      }
+
+      .overlay {
+        position: absolute;
       }
 
       .sheet.pulse-1 {
@@ -253,6 +265,25 @@ export class VectorIcon extends LitElement {
                 }svg/index.svg?v=${SVG_FINGERPRINT}#${name}`}"
           />
         </svg>
+        ${this.overlay
+          ? html`
+              <svg
+                style="height:${this.size * 1.5}em;width:${this.size *
+                1.5}em;margin-left:-0.25em;margin-top:-0.25em"
+                class="overlay"
+              >
+                <use
+                  href="${this.src
+                    ? this.src
+                    : `${
+                        this.prefix || (window as any).static_url || '/static/'
+                      }svg/index.svg?v=${SVG_FINGERPRINT}#${
+                        Icon[this.overlay]
+                      }`}"
+                />
+              </svg>
+            `
+          : ''}
       </div>
     `;
   }

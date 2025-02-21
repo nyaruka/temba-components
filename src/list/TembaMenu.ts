@@ -34,6 +34,7 @@ export interface MenuItem {
   event?: string;
   mobile?: boolean;
   initial?: string;
+  overlay?: string;
 }
 
 interface MenuItemState {
@@ -1114,8 +1115,9 @@ export class TembaMenu extends ResizeElement {
           <temba-icon
             size="${menuItem.level === 0 ? '1.5' : '1'}"
             name="${menuItem.icon}"
-          ></temba-icon
-          >${menuItem.bubble && !menuItem.count
+            overlay="${menuItem.overlay}"
+          ></temba-icon>
+          ${menuItem.bubble && !menuItem.count
             ? html`<div
                 style="background-color: ${menuItem.bubble}"
                 class="bubble"
