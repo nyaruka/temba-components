@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '806e188e57d6bdd94c5dd55e0fc9c39e';
+export const SVG_FINGERPRINT = '46e3fb369b8069df3118c8f746df02f0';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
+  ai = 'beaker-02',
   alert_warning = 'alert-square',
   account = 'user-01',
   active = 'play',
@@ -248,9 +249,13 @@ export enum Icon {
   channel_yo = 'zap', // TODO https://www.yo.co.ug/
   channel_zvw = 'channel-whatsapp',
 
+  // classifiers
   bothub = 'bothub',
   chatbase = 'chatbase',
   dtone = 'dtone',
+
+  // ai
+  openai = 'openai',
 
   // demo
   default = 'list',
