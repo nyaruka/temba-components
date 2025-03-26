@@ -60,6 +60,7 @@ export class TextInput extends FormElement {
         height: var(--textarea-height);
         min-height: var(--textarea-min-height, var(--textarea-height));
         transition: height var(--transition-speed) ease-in-out;
+        unicode-bidi: var(--unicode-bidi, normal);
       }
 
       .textinput:focus {
@@ -95,6 +96,7 @@ export class TextInput extends FormElement {
         display: flex;
         align-items: stretch;
         width: 100%;
+        margin-bottom: 1em;
       }
 
       .grow-wrap > div {
@@ -115,11 +117,13 @@ export class TextInput extends FormElement {
         word-break: break-word;
         opacity: 0;
         z-index: -1;
+        max-height: var(--temba-textinput-max-height, 30em);
       }
 
       .grow-wrap textarea {
         margin-left: -100%;
         height: 100%;
+        flex-grow: 1;
       }
 
       input[type='number'] {
