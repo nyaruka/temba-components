@@ -1,5 +1,5 @@
 import { property } from 'lit/decorators.js';
-import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { TemplateResult, html, css } from 'lit';
 import { Button } from '../button/Button';
 import { CustomEventType } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
@@ -258,10 +258,9 @@ export class Dialog extends ResizeElement {
     super();
   }
 
-  protected firstUpdated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    if (changes.has('cancelButtonName') && this.cancelButtonName) {
+  private updateButtons() {
+    this.buttons = [];
+    if (this.cancelButtonName) {
       this.buttons.push({
         name: this.cancelButtonName,
         type: ButtonType.SECONDARY,
@@ -269,7 +268,7 @@ export class Dialog extends ResizeElement {
       });
     }
 
-    if (changes.has('primaryButtonName') && this.primaryButtonName) {
+    if (this.primaryButtonName) {
       this.buttons.push({
         name: this.primaryButtonName,
         type: ButtonType.PRIMARY
@@ -277,8 +276,12 @@ export class Dialog extends ResizeElement {
     }
   }
 
-  public updated(changedProperties: Map<string, any>) {
-    if (changedProperties.has('open')) {
+  public updated(changes: Map<string, any>) {
+    if (changes.has('cancelButtonName') || changes.has('primaryButtonName')) {
+      this.updateButtons();
+    }
+
+    if (changes.has('open')) {
       const body = document.querySelector('body');
 
       if (this.open) {
@@ -304,7 +307,7 @@ export class Dialog extends ResizeElement {
       }
 
       // make sure our buttons aren't in progress on show
-      if (this.open && !changedProperties.get('open')) {
+      if (this.open && !changes.get('open')) {
         this.shadowRoot
           .querySelectorAll('temba-button')
           .forEach((button: Button) => {

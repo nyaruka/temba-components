@@ -421,6 +421,7 @@ export class Store extends RapidElement {
     url: string,
     options?: {
       force?: boolean;
+      skipCache?: boolean;
       controller?: AbortController;
       headers?: { [key: string]: string };
     }
@@ -436,7 +437,9 @@ export class Store extends RapidElement {
       (response: WebResponse) => {
         return new Promise<WebResponse>((resolve, reject) => {
           if (response.status >= 200 && response.status <= 300) {
-            this.cache.set(url, response);
+            if (!options.skipCache) {
+              this.cache.set(url, response);
+            }
             resolve(response);
           } else {
             reject('Status: ' + response.status);

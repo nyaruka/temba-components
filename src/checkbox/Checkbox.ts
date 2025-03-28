@@ -21,7 +21,7 @@ export class Checkbox extends FormElement {
       }
 
       .wrapper.label:hover {
-        background: #f9f9f9;
+        background: var(--checkbox-hover-bg, #f9f9f9);
       }
 
       temba-field {
@@ -91,7 +91,12 @@ export class Checkbox extends FormElement {
     return value;
   }
 
-  private handleClick(): void {
+  private handleClick(evt: MouseEvent = null): void {
+    if (evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+    }
+
     if (!this.disabled) {
       this.checked = !this.checked;
     }
