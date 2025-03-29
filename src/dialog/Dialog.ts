@@ -274,9 +274,12 @@ export class Dialog extends ResizeElement {
         type: ButtonType.PRIMARY
       });
     }
+    this.requestUpdate();
   }
 
   public updated(changes: Map<string, any>) {
+    super.updated(changes);
+
     if (changes.has('cancelButtonName') || changes.has('primaryButtonName')) {
       this.updateButtons();
     }
