@@ -1,5 +1,4 @@
-<svg version="1.1" id="Layer_1" xmlns:x="ns_extend;" xmlns:i="ns_ai;" xmlns:graph="ns_graphs;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 92.2 65" style="" xml:space="preserve">
- <path  d="M66.5,0H52.4l25.7,65h14.1L66.5,0z M25.7,0L0,65h14.4l5.3-13.6h26.9L51.8,65h14.4L40.5,0C40.5,0,25.7,0,25.7,0z
-	 M24.3,39.3l8.8-22.8l8.8,22.8H24.3z">
- </path>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path id="Path" fill="currentColor" stroke="none" d="M 17.310196 3 L 13.639914 3 L 20.329718 19.919739 L 24 19.919739 L 17.310196 3 Z M 6.689805 3 L 0 19.919739 L 3.748373 19.919739 L 5.127983 16.379608 L 12.130152 16.379608 L 13.483731 19.919739 L 17.232103 19.919739 L 10.542299 3 C 10.542299 3 6.689805 3 6.689805 3 Z M 6.325379 13.229935 L 8.616052 7.295012 L 10.906725 13.229935 L 6.325379 13.229935 Z"/>
 </svg>
