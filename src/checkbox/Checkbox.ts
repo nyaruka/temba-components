@@ -91,12 +91,7 @@ export class Checkbox extends FormElement {
     return value;
   }
 
-  private handleClick(evt: MouseEvent = null): void {
-    if (evt) {
-      evt.preventDefault();
-      evt.stopPropagation();
-    }
-
+  private handleClick(): void {
     if (!this.disabled) {
       this.checked = !this.checked;
     }
