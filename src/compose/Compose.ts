@@ -668,7 +668,6 @@ export class Compose extends FormElement {
               .count=${this.currentQuickReplies.length}
             >
               <temba-select
-                class="quick-replies"
                 @change=${this.handleQuickReplyChange}
                 .values=${this.currentQuickReplies}
                 class="quick-replies"
@@ -692,6 +691,7 @@ export class Compose extends FormElement {
                 @change=${this.handleOptInChange}
                 .values=${this.currentOptin}
                 endpoint="${this.optinEndpoint}"
+                valueKey="uuid"
                 class="optins"
                 searchable
                 clearable
