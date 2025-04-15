@@ -31,7 +31,7 @@
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "locale:extract": "lit-localize extract --config localize.config.json",
-    "locale:build": "lit-localize build --config localize.config.json"
+    "locale:build": "echo 'Building localizations..' && lit-localize build --config localize.config.json > dist/locale.out 2>&1"
   },
   "dependencies": {
     "@lit/localize": "^0.12.1",
