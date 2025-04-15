@@ -16,6 +16,25 @@ export default {
         name: 'TembaComponents',
         sourcemap: true
     },
+    onwarn: function(warning, handler) {
+        // Skip certain warnings
+        if ( warning.code === 'THIS_IS_UNDEFINED' ) { return; }
+
+
+        if (warning.code === 'CIRCULAR_DEPENDENCY') {
+            
+            // luxon has a ton of circular dependencies they don't care about
+            if(warning.message.includes('luxon')) {
+                return;
+            }
+
+            // same with lit-localize
+            if(warning.message.includes('lit-localize')) {
+                return;
+            }
+        }
+        handler( warning );
+    },
     plugins: [
         // inline our icons
         svg({ stringify: true }),
