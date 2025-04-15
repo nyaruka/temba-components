@@ -710,6 +710,9 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private hasChanges(prev: T[]): boolean {
+    // This will compare values to see if there is a change
+    // Note: make sure value is populated or valueKey is set
+
     if (prev === undefined) {
       return false;
     }

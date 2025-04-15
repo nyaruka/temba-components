@@ -692,6 +692,7 @@ export class Compose extends FormElement {
                 @change=${this.handleOptInChange}
                 .values=${this.currentOptin}
                 endpoint="${this.optinEndpoint}"
+                valueKey="uuid"
                 class="optins"
                 searchable
                 clearable
