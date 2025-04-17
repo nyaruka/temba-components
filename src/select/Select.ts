@@ -358,6 +358,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: String })
   valueKey = 'value';
 
+  @property({ type: Number })
+  maxItems = 0;
+
   @property({ attribute: false })
   currentFunction: CompletionOption;
 
@@ -807,6 +810,12 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public handleOptionSelection(event: CustomEvent) {
+    if (this.multi && this.maxItems > 0 && this.values.length >= this.maxItems) {
+      this.infoText = "Maximum items reached"
+      return
+    } else {
+      this.infoText = ""
+    }
     const selected = event.detail.selected;
     // check if we should post it
     if (selected.post && this.endpoint) {
