@@ -166,10 +166,6 @@ export class Compose extends FormElement {
       temba-shortcuts {
         flex-grow: 1;
       }
-
-      .quick-replies {
-        background: #f9f9f9;
-      }
     `;
   }
 
@@ -674,6 +670,8 @@ export class Compose extends FormElement {
                 @change=${this.handleQuickReplyChange}
                 .values=${this.currentQuickReplies}
                 maxitems=${this.maxQuickReplies}
+                max_items_text="You can only add ${this
+                  .maxQuickReplies} Quick Replies"
                 class="quick-replies"
                 tags
                 multi
