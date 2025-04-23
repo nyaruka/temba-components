@@ -816,6 +816,7 @@ export class Select<T extends SelectOption> extends FormElement {
     } else {
       this.infoText = ""
     }
+
     const selected = event.detail.selected;
     // check if we should post it
     if (selected.post && this.endpoint) {
@@ -960,6 +961,11 @@ export class Select<T extends SelectOption> extends FormElement {
         }
         this.requestUpdate('cursorIndex');
       }
+    }
+
+    if (this.multi && this.maxItems > 0 && this.values.length >= this.maxItems) {
+      options = [];
+      this.infoText = "Maximum items reached";
     }
 
     // finally sort
@@ -1137,6 +1143,10 @@ export class Select<T extends SelectOption> extends FormElement {
       this.complete = true;
       this.visibleOptions = [];
       this.cursorIndex = 0;
+    }
+
+    if (this.multi && this.maxItems > 0 && this.values.length >= this.maxItems) {
+      this.infoText = "";
     }
   }
 
@@ -1356,6 +1366,7 @@ export class Select<T extends SelectOption> extends FormElement {
       this.values.splice(idx, 1);
     }
     this.requestUpdate('values', oldValues);
+    this.infoText = "";
   }
 
   public popValue() {

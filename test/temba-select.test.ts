@@ -338,7 +338,8 @@ describe('temba-select', () => {
       assert(changeEvent.called, 'change event not fired');
 
       changeEvent.resetHistory();
-      await openAndClick(clock, select, 0);
+      await open(clock, select);
+      assert.equal(select.visibleOptions.length, 0);
       assert(!changeEvent.called, 'change event should not be fired');
 
       // but we should have red and green selected only, no blue
