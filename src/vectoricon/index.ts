@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '8bdaba6d3a9e0a4e52fa01f31ac86eac';
+export const SVG_FINGERPRINT = 'fdc002188459c72f93a899ac53dcffa9';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -257,6 +257,9 @@ export enum Icon {
   // ai
   openai = 'openai',
   anthropic = 'anthropic',
+  google = 'gemini',
+  openai_azure = 'openai',
+  deepseek = 'deepseek',
 
   // demo
   default = 'list',
