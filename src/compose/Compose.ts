@@ -166,10 +166,6 @@ export class Compose extends FormElement {
       temba-shortcuts {
         flex-grow: 1;
       }
-
-      .quick-replies {
-        background: #f9f9f9;
-      }
     `;
   }
 
@@ -181,6 +177,9 @@ export class Compose extends FormElement {
 
   @property({ type: Number })
   maxLength = 640;
+
+  @property({ type: Number })
+  maxQuickReplies = 10;
 
   @property({ type: Boolean })
   completion: boolean;
@@ -668,9 +667,11 @@ export class Compose extends FormElement {
               .count=${this.currentQuickReplies.length}
             >
               <temba-select
-                class="quick-replies"
                 @change=${this.handleQuickReplyChange}
                 .values=${this.currentQuickReplies}
+                maxItems=${this.maxQuickReplies}
+                maxItemsText="You can only add ${this
+                  .maxQuickReplies} Quick Replies"
                 class="quick-replies"
                 tags
                 multi

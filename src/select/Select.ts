@@ -361,7 +361,7 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Number })
   maxItems = 0;
 
-  @property({ type: String, attribute: 'max_items_text' })
+  @property({ type: String })
   maxItemsText: string = 'Maximum items reached';
 
   @property({ attribute: false })
