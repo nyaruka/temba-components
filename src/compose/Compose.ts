@@ -669,8 +669,8 @@ export class Compose extends FormElement {
               <temba-select
                 @change=${this.handleQuickReplyChange}
                 .values=${this.currentQuickReplies}
-                maxitems=${this.maxQuickReplies}
-                max_items_text="You can only add ${this
+                maxItems=${this.maxQuickReplies}
+                maxItemsText="You can only add ${this
                   .maxQuickReplies} Quick Replies"
                 class="quick-replies"
                 tags
