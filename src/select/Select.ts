@@ -358,6 +358,12 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: String })
   valueKey = 'value';
 
+  @property({ type: Number })
+  maxItems = 0;
+
+  @property({ type: String, attribute: 'max_items_text' })
+  maxItemsText: string = 'Maximum items reached';
+
   @property({ attribute: false })
   currentFunction: CompletionOption;
 
@@ -807,6 +813,17 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public handleOptionSelection(event: CustomEvent) {
+    if (
+      this.multi &&
+      this.maxItems > 0 &&
+      this.values.length >= this.maxItems
+    ) {
+      this.infoText = this.maxItemsText;
+      return;
+    } else {
+      this.infoText = '';
+    }
+
     const selected = event.detail.selected;
     // check if we should post it
     if (selected.post && this.endpoint) {
@@ -951,6 +968,15 @@ export class Select<T extends SelectOption> extends FormElement {
         }
         this.requestUpdate('cursorIndex');
       }
+    }
+
+    if (
+      this.multi &&
+      this.maxItems > 0 &&
+      this.values.length >= this.maxItems
+    ) {
+      options = [];
+      this.infoText = this.maxItemsText;
     }
 
     // finally sort
@@ -1128,6 +1154,14 @@ export class Select<T extends SelectOption> extends FormElement {
       this.complete = true;
       this.visibleOptions = [];
       this.cursorIndex = 0;
+    }
+
+    if (
+      this.multi &&
+      this.maxItems > 0 &&
+      this.values.length >= this.maxItems
+    ) {
+      this.infoText = '';
     }
   }
 
@@ -1347,12 +1381,14 @@ export class Select<T extends SelectOption> extends FormElement {
       this.values.splice(idx, 1);
     }
     this.requestUpdate('values', oldValues);
+    this.infoText = '';
   }
 
   public popValue() {
     const oldValues = [...this.values];
     this.values.pop();
     this.requestUpdate('values', oldValues);
+    this.infoText = '';
   }
 
   public clear() {

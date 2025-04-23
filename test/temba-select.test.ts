@@ -319,6 +319,40 @@ describe('temba-select', () => {
       );
     });
 
+    it('can select multiple options until maxitems', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(colors, { placeholder: 'Select a color', multi: true, maxItems: 2 })
+      );
+      expect(select.values.length).to.equal(0);
+
+      const changeEvent = sinon.spy();
+      select.addEventListener('change', changeEvent);
+
+      // select the first option 3 times, only 2 (maxitems) options are handled and added
+      await openAndClick(clock, select, 0);
+      assert(changeEvent.called, 'change event not fired');
+
+      changeEvent.resetHistory();
+      await openAndClick(clock, select, 0);
+      assert(changeEvent.called, 'change event not fired');
+
+      changeEvent.resetHistory();
+      await open(clock, select);
+      assert.equal(select.visibleOptions.length, 0);
+      assert(!changeEvent.called, 'change event should not be fired');
+
+      // but we should have red and green selected only, no blue
+      expect(select.values.length).to.equal(2);
+      expect(select.shadowRoot.innerHTML).to.contain('Red');
+      expect(select.shadowRoot.innerHTML).to.contain('Green');
+
+      await assertScreenshot(
+        'select/selected-multi-maxitems-reached',
+        getClipWithOptions(select)
+      );
+    });
+
     it('shows multiple values on initialization', async () => {
       const select = await createSelect(
         clock,
