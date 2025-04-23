@@ -361,6 +361,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Number })
   maxItems = 0;
 
+  @property({ type: String, attribute: 'max_items_text' })
+  maxItemsText: string = 'Maximum items reached';
+
   @property({ attribute: false })
   currentFunction: CompletionOption;
 
@@ -810,11 +813,15 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public handleOptionSelection(event: CustomEvent) {
-    if (this.multi && this.maxItems > 0 && this.values.length >= this.maxItems) {
-      this.infoText = "Maximum items reached"
-      return
+    if (
+      this.multi &&
+      this.maxItems > 0 &&
+      this.values.length >= this.maxItems
+    ) {
+      this.infoText = this.maxItemsText;
+      return;
     } else {
-      this.infoText = ""
+      this.infoText = '';
     }
 
     const selected = event.detail.selected;
@@ -963,9 +970,13 @@ export class Select<T extends SelectOption> extends FormElement {
       }
     }
 
-    if (this.multi && this.maxItems > 0 && this.values.length >= this.maxItems) {
+    if (
+      this.multi &&
+      this.maxItems > 0 &&
+      this.values.length >= this.maxItems
+    ) {
       options = [];
-      this.infoText = "Maximum items reached";
+      this.infoText = this.maxItemsText;
     }
 
     // finally sort
@@ -1145,8 +1156,12 @@ export class Select<T extends SelectOption> extends FormElement {
       this.cursorIndex = 0;
     }
 
-    if (this.multi && this.maxItems > 0 && this.values.length >= this.maxItems) {
-      this.infoText = "";
+    if (
+      this.multi &&
+      this.maxItems > 0 &&
+      this.values.length >= this.maxItems
+    ) {
+      this.infoText = '';
     }
   }
 
@@ -1366,13 +1381,14 @@ export class Select<T extends SelectOption> extends FormElement {
       this.values.splice(idx, 1);
     }
     this.requestUpdate('values', oldValues);
-    this.infoText = "";
+    this.infoText = '';
   }
 
   public popValue() {
     const oldValues = [...this.values];
     this.values.pop();
     this.requestUpdate('values', oldValues);
+    this.infoText = '';
   }
 
   public clear() {
