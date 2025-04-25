@@ -4,7 +4,9 @@
     "dockerfile": "Dockerfile"
   },
   "features": {},
-  "forwardPorts": [3010],
+  "forwardPorts": [
+    3010
+  ],
   "runArgs": [
     "--name=dev-components",
     "--network=textit_default",
@@ -14,14 +16,20 @@
   "postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install",
   "customizations": {
     "vscode": {
-      "extensions": ["esbenp.prettier-vscode", "lfs.vscode-emacs-friendly"],
+      "extensions": [
+        "esbenp.prettier-vscode"
+      ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
         "editor.formatOnSave": true,
-        "editor.rulers": [120],
+        "editor.rulers": [
+          120
+        ],
         "prettier": {
           "configPath": "/workspaces/temba-components/.prettierrc",
-          "documentSelectors": ["*.{ts,js}"]
+          "documentSelectors": [
+            "*.{ts,js}"
+          ]
         }
       }
     }
