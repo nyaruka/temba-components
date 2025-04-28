@@ -352,6 +352,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property()
   endpoint: string;
 
+  @property({ type: Boolean })
+  allowCreate: boolean = false;
+
   @property({ type: String })
   nameKey = 'name';
 
@@ -640,6 +643,17 @@ export class Select<T extends SelectOption> extends FormElement {
     );
   }
 
+  public async createOptionPost(payload: any) {
+    return postJSON(this.endpoint, payload).then((response) => {
+      if (response.status >= 200 && response.status < 300) {
+        return {
+          json: response.json,
+          payload
+        };
+      }
+    });
+  }
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
 
@@ -655,8 +669,58 @@ export class Select<T extends SelectOption> extends FormElement {
 
     if (changes.has('values')) {
       this.updateInputs();
+
       if (this.hasChanges(changes.get('values'))) {
-        this.fireEvent('change');
+        const materialized = [];
+
+        // see if we need to materialize anything
+        if (this.allowCreate) {
+          // arbitrary values need to be posted
+          const arbitraryValues = this.values.filter((value) => {
+            return (value as any).arbitrary;
+          });
+
+          for (const value of arbitraryValues) {
+            if ((value as any).arbitrary) {
+              materialized.push(this.createOptionPost(value));
+            }
+          }
+
+          // update our created values
+          Promise.all(materialized).then((responses) => {
+            for (const response of responses) {
+              if (response) {
+                // find the value that matches our payload
+                const original = arbitraryValues.find((value) => {
+                  return value === response.payload;
+                }) as any;
+
+                if (original) {
+                  // remove our arbitrary flag
+                  delete original.arbitrary;
+
+                  // add in the new values from our respones.json
+                  if (response.json) {
+                    for (const key in response.json) {
+                      original[key] = response.json[key];
+                    }
+                  }
+                }
+              }
+            }
+
+            // remove any arbitrary values
+            this.values = this.values.filter((value) => {
+              return !(value as any).arbitrary;
+            });
+
+            // reset our cache
+            this.cacheKey = new Date().getTime().toString();
+            this.fireEvent('change');
+          });
+        } else {
+          this.fireEvent('change');
+        }
       }
     }
 
