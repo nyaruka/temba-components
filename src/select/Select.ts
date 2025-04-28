@@ -31,6 +31,7 @@ export interface SelectOption {
   value?: string;
   expression?: boolean;
   selected?: boolean;
+  arbitrary?: boolean;
 }
 
 export class Select<T extends SelectOption> extends FormElement {
@@ -798,7 +799,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
     const newValues = (this.values || [])
       .map((option: T) => {
-        return this.getValue(option);
+        return option.arbitrary || this.getValue(option);
       })
       .join(',');
 
