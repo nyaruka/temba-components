@@ -105,6 +105,7 @@ export class Store extends RapidElement {
   private users: User[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
+  private flowContents: FlowContents;
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
@@ -615,4 +616,64 @@ export class Store extends RapidElement {
       return html`<temba-loading size="10" units="8"></temba-loading>`;
     }
   }
+
+  // TODO: for now we let the flow editor set this externally to avoid
+  // double fetches and updates
+  public setFlowContents(contents: FlowContents) {
+    console.log('Setting flow contents', contents);
+    this.flowContents = contents;
+  }
+
+  public setFlowInfo(info: FlowInfo) {
+    console.log('Setting flow info', info);
+    this.flowContents.info = info;
+  }
+
+  public async loadFlow(
+    flowUUID: string,
+    revision = 'latest'
+  ): Promise<FlowContents> {
+    const response = await getUrl(
+      `/flow/revisions/${flowUUID}/${revision}/?version=14.3`
+    );
+    this.flowContents = response.json;
+    return this.flowContents;
+  }
+
+  public getFlowResults(): InfoResult[] {
+    return this.flowContents.info.results;
+  }
+}
+
+export interface InfoResult {
+  key: string;
+  name: string;
+  categories: string[];
+  node_uuids: string[];
+}
+
+export interface ObjectRef {
+  uuid: string;
+  name: string;
+}
+
+export interface TypedObjectRef extends ObjectRef {
+  type: string;
+}
+
+export interface Language {
+  code: string;
+  name: string;
+}
+
+export interface FlowInfo {
+  results: InfoResult[];
+  dependencies: TypedObjectRef[];
+  counts: { nodes: number; languages: number };
+  locals: string[];
+}
+
+export interface FlowContents {
+  definition: any;
+  info: FlowInfo;
 }
