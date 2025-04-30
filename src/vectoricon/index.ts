@@ -41,9 +41,6 @@ export enum Icon {
   checkbox = 'square',
   checkbox_checked = 'check-square',
   checkbox_partial = 'stop-square',
-  classifier_wit = 'classifier-wit',
-  classifier_luis = 'classifier-luis',
-  classifier_bothub = 'classifier-bothub',
   close = 'x',
   compose = 'send-01',
   contact = 'user-01',
@@ -195,10 +192,7 @@ export enum Icon {
   users = 'users-01',
   video = 'video-recorder',
   webhook = 'link-external-01',
-  wit = 'wit',
   workspace = 'folder',
-  zapier = 'zapier',
-  zendesk = 'zendesk',
 
   // channel types
   channel_a = 'channel-android',
@@ -249,17 +243,19 @@ export enum Icon {
   channel_yo = 'zap', // TODO https://www.yo.co.ug/
   channel_zvw = 'channel-whatsapp',
 
-  // classifiers
-  bothub = 'bothub',
-  chatbase = 'chatbase',
-  dtone = 'dtone',
-
   // ai
-  openai = 'openai',
-  anthropic = 'anthropic',
-  google = 'gemini',
-  openai_azure = 'openai',
-  deepseek = 'deepseek',
+  ai_openai = 'openai',
+  ai_anthropic = 'anthropic',
+  ai_google = 'gemini',
+  ai_microsoft = 'azure',
+  ai_deepseek = 'deepseek',
+
+  // classifiers
+  classifier_wit = 'classifier-wit',
+
+  // other brands
+  dtone = 'dtone',
+  zapier = 'zapier',
 
   // demo
   default = 'list',
