@@ -6,8 +6,7 @@ import {
   CompletionProperty,
   CompletionResult,
   CompletionSchema,
-  CompletionType,
-  KeyedAssets
+  CompletionType
 } from '../interfaces';
 import { Store } from '../store/Store';
 import { renderMarkdown } from '../markdown';
@@ -23,6 +22,7 @@ const sessionParser = new ExcellentParser('@', [
   'contact',
   'fields',
   'globals',
+  'locals',
   'urns',
   'results',
   'input',
@@ -95,8 +95,8 @@ export const getFunctions = (
 export const getCompletions = (
   schema: CompletionSchema,
   dotQuery: string,
-  keyedAssets: KeyedAssets = {},
-  session: boolean
+  session: boolean,
+  store: Store
 ): CompletionOption[] => {
   const parts = (dotQuery || '').split('.');
   let currentProps: CompletionProperty[] = session
@@ -127,8 +127,10 @@ export const getCompletions = (
         } else if (nextType && nextType.property_template) {
           prefix += part + '.';
           const template = nextType.property_template;
-          if (keyedAssets[nextType.name]) {
-            currentProps = keyedAssets[nextType.name].map((key: string) => ({
+
+          const keys = store.getCompletions(nextType.name);
+          if (keys) {
+            currentProps = keys.map((key: string) => ({
               key: template.key.replace('{key}', key),
               help: template.help.replace('{key}', key),
               type: template.type
@@ -341,8 +343,9 @@ export const executeCompletionQuery = (
           ...getCompletions(
             store.getCompletionSchema(),
             result.query,
-            store.getKeyedAssets(),
-            session
+
+            session,
+            store
           ),
           ...(includeFunctions
             ? getFunctions(store.getFunctions(), result.query)
