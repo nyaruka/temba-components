@@ -641,6 +641,14 @@ export class Store extends RapidElement {
   public getFlowResults(): InfoResult[] {
     return this.flowContents.info.results;
   }
+
+  public getCompletions(type: string) {
+    if (type === 'results') {
+      return this.flowContents.info.results.map((result) => result.key);
+    } else if (type === 'locals') {
+      return this.flowContents.info.locals;
+    }
+  }
 }
 
 export interface InfoResult {
