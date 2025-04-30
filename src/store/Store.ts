@@ -620,12 +620,10 @@ export class Store extends RapidElement {
   // TODO: for now we let the flow editor set this externally to avoid
   // double fetches and updates
   public setFlowContents(contents: FlowContents) {
-    console.log('Setting flow contents', contents);
     this.flowContents = contents;
   }
 
   public setFlowInfo(info: FlowInfo) {
-    console.log('Setting flow info', info);
     this.flowContents.info = info;
   }
 
