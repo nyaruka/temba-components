@@ -19,5 +19,5 @@
     "declaration": false,
     "noEmit": false,
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "setup-test.js"]
 }

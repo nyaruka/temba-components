@@ -8,7 +8,7 @@ import {
   CompletionSchema,
   CompletionType
 } from '../interfaces';
-import { Store } from '../store/Store';
+import { getStore, Store } from '../store/Store';
 import { renderMarkdown } from '../markdown';
 
 const messageParser = new ExcellentParser('@', [
@@ -264,7 +264,6 @@ export const updateInputElementWithCompletion = (
 
 export const executeCompletionQuery = (
   ele: HTMLInputElement,
-  store: Store,
   session: boolean
 ): CompletionResult => {
   const result: CompletionResult = {
@@ -277,6 +276,8 @@ export const executeCompletionQuery = (
   if (!ele) {
     return;
   }
+
+  const store = getStore();
 
   // we need a store to do anything useful
   if (!store) {

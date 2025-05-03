@@ -18,7 +18,6 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
-  User,
   Shortcut
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -29,12 +28,18 @@ import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { StoreMonitorElement } from './StoreMonitorElement';
 import { getFullName } from '../user/TembaUser';
+import app, { AppState } from './AppState';
+import { StoreApi } from 'zustand/vanilla';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
   targetLocales,
   loadLocale: (locale) => import(`./locales/${locale}.js`)
 });
+
+export const getStore = () => {
+  return document.querySelector('temba-store') as Store;
+};
 
 export class Store extends RapidElement {
   public static get styles() {
@@ -102,10 +107,8 @@ export class Store extends RapidElement {
   private groups: { [uuid: string]: ContactGroup } = {};
   private shortcuts: Shortcut[] = [];
   private languages: any = {};
-  private users: User[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
-  private flowContents: FlowContents;
 
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
@@ -146,6 +149,7 @@ export class Store extends RapidElement {
   }
 
   public reset() {
+    const appState = this.getState();
     this.ready = false;
     this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
@@ -188,6 +192,7 @@ export class Store extends RapidElement {
     }
 
     if (this.languagesEndpoint) {
+      appState.fetchAllLanguages(this.languagesEndpoint);
       fetches.push(
         getAssets(this.languagesEndpoint).then((results: any[]) => {
           // convert array of objects to lookup
@@ -214,6 +219,7 @@ export class Store extends RapidElement {
     }
 
     if (this.workspaceEndpoint) {
+      appState.fetchWorkspace(this.workspaceEndpoint);
       fetches.push(
         getUrl(this.workspaceEndpoint).then((response: WebResponse) => {
           this.workspace = response.json;
@@ -617,69 +623,20 @@ export class Store extends RapidElement {
     }
   }
 
-  // TODO: for now we let the flow editor set this externally to avoid
-  // double fetches and updates
-  public setFlowContents(contents: FlowContents) {
-    this.flowContents = contents;
-  }
-
-  public setFlowInfo(info: FlowInfo) {
-    this.flowContents.info = info;
-  }
-
-  public async loadFlow(
-    flowUUID: string,
-    revision = 'latest'
-  ): Promise<FlowContents> {
-    const response = await getUrl(
-      `/flow/revisions/${flowUUID}/${revision}/?version=14.3`
-    );
-    this.flowContents = response.json;
-    return this.flowContents;
-  }
-
-  public getFlowResults(): InfoResult[] {
-    return this.flowContents.info.results;
-  }
-
   public getCompletions(type: string) {
+    const info = this.getState().flow.info;
     if (type === 'results') {
-      return this.flowContents.info.results.map((result) => result.key);
+      return info.results.map((result) => result.key);
     } else if (type === 'locals') {
-      return this.flowContents.info.locals;
+      return info.locals;
     }
   }
-}
 
-export interface InfoResult {
-  key: string;
-  name: string;
-  categories: string[];
-  node_uuids: string[];
-}
+  public getApp(): StoreApi<AppState> {
+    return app;
+  }
 
-export interface ObjectRef {
-  uuid: string;
-  name: string;
-}
-
-export interface TypedObjectRef extends ObjectRef {
-  type: string;
-}
-
-export interface Language {
-  code: string;
-  name: string;
-}
-
-export interface FlowInfo {
-  results: InfoResult[];
-  dependencies: TypedObjectRef[];
-  counts: { nodes: number; languages: number };
-  locals: string[];
-}
-
-export interface FlowContents {
-  definition: any;
-  info: FlowInfo;
+  public getState(): AppState {
+    return app.getState();
+  }
 }

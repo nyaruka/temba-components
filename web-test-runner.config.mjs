@@ -11,6 +11,10 @@ import sizeOf from 'image-size';
 
 import rimraf from 'rimraf';
 
+import replace from '@rollup/plugin-replace';
+import { fromRollup } from '@web/dev-server-rollup';
+const replacePlugin = fromRollup(replace);
+
 const SCREENSHOTS = 'screenshots';
 const DIFF = 'diff';
 const TEST = 'test';
@@ -297,7 +301,7 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-
+  setupFiles: ['./test-setup.js'],
   testFramework: {
     config: {
       timeout: '10000',
@@ -305,6 +309,10 @@ export default {
   },
 
   plugins: [
+    replacePlugin({
+      preventAssignment: true,
+      'process.env.NODE_ENV': JSON.stringify('test'),
+    }),
     {
       name: 'add-style',
       transform(context) {
@@ -372,3 +380,4 @@ export default {
     }),
   ],
 };
+

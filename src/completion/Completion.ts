@@ -10,7 +10,6 @@ import {
 
 import { FormElement } from '../FormElement';
 import { CompletionOption, Position } from '../interfaces';
-import { Store } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { msg } from '@lit/localize';
 
@@ -181,16 +180,11 @@ export class Completion extends FormElement {
       return;
     }
 
-    const store: Store = document.querySelector('temba-store');
     if (!ele.inputElement) {
       return;
     }
 
-    const result = executeCompletionQuery(
-      ele.inputElement,
-      store,
-      this.session
-    );
+    const result = executeCompletionQuery(ele.inputElement, this.session);
 
     this.query = result.query;
     this.options = result.options;

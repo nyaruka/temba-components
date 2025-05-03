@@ -1065,7 +1065,6 @@ export class Select<T extends SelectOption> extends FormElement {
 
       const result = executeCompletionQuery(
         ele,
-        store,
         this.expressions === 'session'
       );
       this.query = result.query;
