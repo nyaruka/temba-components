@@ -1,9 +1,11 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import replace from '@rollup/plugin-replace'
 import typescript from '@rollup/plugin-typescript';
 import { terser } from 'rollup-plugin-terser';
 import svg from 'rollup-plugin-svg-import';
 import copy from 'rollup-plugin-copy';
+
 
 export default {
     input: 'temba-components.ts',
@@ -36,6 +38,11 @@ export default {
         handler( warning );
     },
     plugins: [
+        replace({
+            preventAssignment: true,
+            'process.env.NODE_ENV': JSON.stringify('development'),
+          }),
+
         // inline our icons
         svg({ stringify: true }),
 

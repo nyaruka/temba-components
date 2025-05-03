@@ -82,7 +82,7 @@ const createJSONResponse = (mocked) => {
   return Promise.resolve(mockResponse);
 };
 
-const getResponse = (endpoint: string, options) => {
+const getResponse = (endpoint: string, options = { method: 'GET' }) => {
   // check if our path has been mocked in code
   const mocks = options.method === 'GET' ? gets : posts;
   const codeMock = mocks.find((mock) => mock.endpoint.test(endpoint));
@@ -99,7 +99,6 @@ const getResponse = (endpoint: string, options) => {
       return createJSONResponse(codeMock);
     }
   }
-
   // otherwise fetch over http
   return normalFetch(endpoint, options);
 };
@@ -262,6 +261,7 @@ export const loadStore = async () => {
       languages='/test-assets/store/languages.json'
       fields='/test-assets/store/fields.json'
       users='/test-assets/store/users.json'
+      workspace='/test-assets/store/workspace.json'
     />`
   );
   await store.initialHttpComplete;
