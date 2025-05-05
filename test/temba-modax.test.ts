@@ -159,7 +159,7 @@ describe('temba-modax', () => {
 
     // click the submit button
     mockPOST(/\/test-assets\/modax\/form\.html/, 'arst', {
-      'Temba-Success': 'hide'
+      'X-Temba-Success': 'hide'
     });
 
     const hideTest = new Promise<void>((resolve) => {

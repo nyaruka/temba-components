@@ -8,8 +8,7 @@ import {
   postUrl,
   postJSON,
   postForm,
-  getCookie,
-  fetchResultsPage
+  getCookie
 } from '../utils';
 import {
   ContactField,
@@ -19,7 +18,7 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
-  User
+  Shortcut
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { lru } from 'tiny-lru';
@@ -29,12 +28,19 @@ import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { FlowSpec } from '../flow/interfaces';
 import { StoreMonitorElement } from './StoreMonitorElement';
+import { getFullName } from '../user/TembaUser';
+import app, { AppState } from './AppState';
+import { StoreApi } from 'zustand/vanilla';
 
 const { setLocale } = configureLocalization({
   sourceLocale,
   targetLocales,
   loadLocale: (locale) => import(`./locales/${locale}.js`)
 });
+
+export const getStore = () => {
+  return document.querySelector('temba-store') as Store;
+};
 
 export class Store extends RapidElement {
   public static get styles() {
@@ -84,8 +90,8 @@ export class Store extends RapidElement {
   @property({ type: String, attribute: 'workspace' })
   workspaceEndpoint: string;
 
-  @property({ type: String, attribute: 'users' })
-  usersEndpoint: string;
+  @property({ type: String, attribute: 'shortcuts' })
+  shortcutsEndpoint: string;
 
   @property({ type: Object, attribute: false })
   private schema: CompletionSchema;
@@ -100,8 +106,8 @@ export class Store extends RapidElement {
 
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: ContactGroup } = {};
+  private shortcuts: Shortcut[] = [];
   private languages: any = {};
-  private users: User[];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
 
@@ -147,6 +153,7 @@ export class Store extends RapidElement {
   }
 
   public reset() {
+    const appState = this.getState();
     this.ready = false;
     this.clearCache();
     this.settings = JSON.parse(getCookie('settings') || '{}');
@@ -189,6 +196,7 @@ export class Store extends RapidElement {
     }
 
     if (this.languagesEndpoint) {
+      appState.fetchAllLanguages(this.languagesEndpoint);
       fetches.push(
         getAssets(this.languagesEndpoint).then((results: any[]) => {
           // convert array of objects to lookup
@@ -215,6 +223,7 @@ export class Store extends RapidElement {
     }
 
     if (this.workspaceEndpoint) {
+      appState.fetchWorkspace(this.workspaceEndpoint);
       fetches.push(
         getUrl(this.workspaceEndpoint).then((response: WebResponse) => {
           this.workspace = response.json;
@@ -226,12 +235,8 @@ export class Store extends RapidElement {
       );
     }
 
-    if (this.usersEndpoint) {
-      fetches.push(
-        getAssets(this.usersEndpoint).then((users: any[]) => {
-          this.users = users;
-        })
-      );
+    if (this.shortcutsEndpoint) {
+      fetches.push(this.refreshShortcuts());
     }
 
     this.initialHttpComplete = Promise.all(fetches);
@@ -241,51 +246,8 @@ export class Store extends RapidElement {
     });
   }
 
-  public getFlowSpec(): FlowSpec {
-    return this.flow;
-  }
-
-  public getNodeUI = (uuid: string) => {
-    return this.flow.definition._ui.nodes[uuid];
-  };
-
-  public getFlowNode = (uuid: string) => {
-    return this.flow.definition.nodes.find((node) => node.uuid === uuid);
-  };
-
-  public async fetchRevisions(flow: string, version: string) {
-    const revisionsEndpoint = `/flow/revisions/${flow}/?version=${version}`;
-    return fetchResultsPage(revisionsEndpoint).then((data) => {
-      return data;
-    });
-  }
-
-  public async fetchFlow(flow: string, version: string, revision?: string) {
-    if (!revision) {
-      revision = await this.fetchRevisions(flow, version).then((data) => {
-        return data.results[0].id;
-      });
-    }
-
-    console.log(
-      `Fetching flow ${flow} version ${version} revision ${revision}`
-    );
-    // https://localhost.textit.com/flow/revisions/9331e5b3-33fe-41d9-8f01-34b6bcdd72c5/194/?version=13.5
-    const flowEndpoint = `/flow/revisions/${flow}/${revision}/?version=${version}`;
-    return getUrl(flowEndpoint).then((data) => {
-      this.flow = data.json;
-      return data.json;
-    });
-  }
-
-  public getAssignableUsers() {
-    return this.users.filter((user: User) =>
-      ['administrator', 'editor', 'agent'].includes(user.role)
-    );
-  }
-
-  public getUser(email: string) {
-    return this.users.find((user: User) => user.email === email);
+  public getShortcuts() {
+    return this.shortcuts || [];
   }
 
   public firstUpdated() {
@@ -299,13 +261,19 @@ export class Store extends RapidElement {
     return 'en';
   }
 
-  public refreshGlobals() {
-    getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
+  public async refreshGlobals() {
+    return getAssets(this.globalsEndpoint).then((assets: Asset[]) => {
       this.keyedAssets['globals'] = assets.map((asset: Asset) => asset.key);
     });
   }
 
-  public refreshFields() {
+  public async refreshShortcuts() {
+    return getAssets(this.shortcutsEndpoint).then((shortcuts: Shortcut[]) => {
+      this.shortcuts = shortcuts;
+    });
+  }
+
+  public async refreshFields() {
     return getAssets(this.fieldsEndpoint).then((assets: Asset[]) => {
       this.keyedAssets['fields'] = [];
       this.featuredFields = [];
@@ -424,7 +392,7 @@ export class Store extends RapidElement {
     // we treat missing groups as dynamic since the
     // api excludes initializing groups
     if (!group) {
-      console.warn('No group for ' + uuid);
+      // console.warn('No group for ' + uuid);
     }
 
     if (!group || group.query) {
@@ -464,6 +432,7 @@ export class Store extends RapidElement {
     url: string,
     options?: {
       force?: boolean;
+      skipCache?: boolean;
       controller?: AbortController;
       headers?: { [key: string]: string };
     }
@@ -479,7 +448,9 @@ export class Store extends RapidElement {
       (response: WebResponse) => {
         return new Promise<WebResponse>((resolve, reject) => {
           if (response.status >= 200 && response.status <= 300) {
-            this.cache.set(url, response);
+            if (!options.skipCache) {
+              this.cache.set(url, response);
+            }
             resolve(response);
           } else {
             reject('Status: ' + response.status);
@@ -537,6 +508,75 @@ export class Store extends RapidElement {
     this.cache.delete(url);
   }
 
+  public resolveUsers(items: any, keys: string[]): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const emails = new Set<string>();
+
+      // keys are dot notation paths to user fields
+      items.forEach((item) => {
+        keys.forEach((key) => {
+          const parts = key.split('.');
+          let value = item;
+          for (let i = 0; i < parts.length; i++) {
+            value = value[parts[i]];
+            if (!value) {
+              break;
+            }
+          }
+          if (value && value.email) {
+            emails.add(value.email);
+          }
+        });
+      });
+
+      const promises = [];
+      // we don't want to fetch all users at once so we can benefit from caching
+      emails.forEach((email) => {
+        promises.push(
+          this.getUrl(`/api/v2/users.json?email=${encodeURIComponent(email)}`, {
+            force: true
+          })
+        );
+      });
+
+      // wait for all of our user fetches to complete
+      Promise.all(promises).then((promises) => {
+        promises.forEach((response: WebResponse) => {
+          if (response && response.json) {
+            const results = response.json.results;
+            if (results && results.length === 1) {
+              const user = results[0];
+
+              items.forEach((item) => {
+                // replace each key with a matching user
+                keys.forEach((key) => {
+                  const parts = key.split('.');
+                  let value = item;
+                  let last = value;
+                  for (let i = 0; i < parts.length; i++) {
+                    last = value;
+                    value = value[parts[i]];
+                    if (!value) {
+                      break;
+                    }
+                  }
+                  if (value && value.email === user.email) {
+                    // only care about avatars for now
+                    const orginalUser = last[parts[parts.length - 1]];
+                    orginalUser.avatar = user.avatar;
+                    orginalUser.name = getFullName(user);
+                    last[parts[parts.length - 1]].avatar = user.avatar;
+                  }
+                });
+              });
+            }
+          }
+        });
+        resolve();
+      });
+    });
+  }
+
   public makeRequest(
     url: string,
     options?: { force?: boolean; prepareData?: (data: any) => any }
@@ -544,26 +584,29 @@ export class Store extends RapidElement {
     const previousRequest = this.fetching[url];
     const now = new Date().getTime();
     // if the request was recently made, don't do anything
-    if (previousRequest && now - previousRequest < 500) {
+    if (previousRequest) {
+      setTimeout(() => {
+        this.makeRequest(url, options);
+      }, 500);
       return;
     }
 
-    this.fetching[url] = now;
-    options = options || {};
-    const cached = this.cache.get(url);
+    let cached = this.cache.get(url);
     if (cached && !options.force) {
+      cached = options.prepareData ? options.prepareData(cached) : cached;
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
+      options = options || {};
+      this.fetching[url] = now;
       fetchResults(url).then((data) => {
         if (!data) {
           delete this.fetching[url];
           return;
         }
-
-        data = options.prepareData ? options.prepareData(data) : data;
         this.cache.set(url, data);
-        this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
         delete this.fetching[url];
+        data = options.prepareData ? options.prepareData(data) : data;
+        this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
       });
     }
   }
@@ -582,5 +625,22 @@ export class Store extends RapidElement {
     if (!this.ready && this.loader) {
       return html`<temba-loading size="10" units="8"></temba-loading>`;
     }
+  }
+
+  public getCompletions(type: string) {
+    const info = this.getState().flow.info;
+    if (type === 'results') {
+      return info.results.map((result) => result.key);
+    } else if (type === 'locals') {
+      return info.locals;
+    }
+  }
+
+  public getApp(): StoreApi<AppState> {
+    return app;
+  }
+
+  public getState(): AppState {
+    return app.getState();
   }
 }

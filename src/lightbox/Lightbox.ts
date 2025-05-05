@@ -41,6 +41,19 @@ export class Lightbox extends RapidElement {
         overflow: hidden;
         box-shadow: 0 0 12px 3px rgba(0, 0, 0, 0.15);
       }
+
+      .download {
+        background: rgba(0, 0, 0, 0.5);
+        position: absolute;
+        display:flex;
+        align-items:center;
+        color:#fff;
+        padding:0.5em;
+        border-radius:var(--curvature);
+        background:rgba(0,0,0,0.5);
+      }
+
+  }
     `;
   }
 
@@ -62,8 +75,8 @@ export class Lightbox extends RapidElement {
   private height: number;
   private width: number;
   private scale = 1;
-  private xTrans = '0px';
-  private yTrans = '0px';
+  private xTrans = 0;
+  private yTrans = 0;
 
   protected updated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -92,8 +105,8 @@ export class Lightbox extends RapidElement {
     this.width = bounds.width;
     this.height = bounds.height;
 
-    this.xTrans = '0px';
-    this.yTrans = '0px';
+    this.xTrans = 0;
+    this.yTrans = 0;
     this.scale = 1;
 
     let desiredWidth = this.width;
@@ -116,11 +129,11 @@ export class Lightbox extends RapidElement {
 
     const xGrowth = (desiredWidth - this.width) / 2;
     const xDest = (window.innerWidth - desiredWidth) / 2;
-    this.xTrans = xDest - this.left + xGrowth + 'px';
+    this.xTrans = xDest - this.left + xGrowth;
 
     const yGrowth = (desiredHeight - this.height) / 2;
     const yDest = (window.innerHeight - desiredHeight) / 2;
-    this.yTrans = yDest - this.top + yGrowth + 'px';
+    this.yTrans = yDest - this.top + yGrowth;
 
     this.scale = desiredScale;
     this.show = true;
@@ -139,13 +152,12 @@ export class Lightbox extends RapidElement {
       styles['left'] = this.left + 'px';
       styles['top'] = this.top + 'px';
       styles['width'] = this.width + 'px';
-      styles['height'] = this.height + 'px';
     }
 
     if (this.zoom) {
       styles[
         'transform'
-      ] = `translate(${this.xTrans}, ${this.yTrans}) scale(${this.scale}, ${this.scale})`;
+      ] = `translate(${this.xTrans}px, ${this.yTrans}px) scale(${this.scale}, ${this.scale})`;
     }
 
     return html`
@@ -162,7 +174,7 @@ export class Lightbox extends RapidElement {
           style="transition: all ${this.animationTime}ms; ease"
         ></div>
         <div class=${getClasses({ matte: true })} style=${styleMap(styles)}>
-          ${this.show ? this.ele : null}
+          ${this.show ? html`${this.ele}` : null}
         </div>
       </div>
     `;

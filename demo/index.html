@@ -1,298 +1,403 @@
 <!DOCTYPE html>
 <html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
 
-<head>
-  <meta charset="utf-8" />
-  <link href="/static/css/temba-components.css" rel="stylesheet" type="text/css" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
 
-  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500" rel="stylesheet" />
-
-  <style>
-    .linked {
-      text-decoration: underline;
-      color: blue;
-      cursor: pointer;
-    }
-
-    .example {
-      border: 0px solid gray;
-      padding: 10px;
-      max-width: 500px;
-      --temba-select-selected-font-size: 1em;
-    }
-
-    temba-dropdown.open {
-      --icon-background: rgb(241, 241, 241);
-      --icon-circle-size: 0.35em;
-    }
-
-    .more {
-      background: rgba(0, 0, 0, .1);
-      padding: 0.5em
-    }
-
-    .open .more,
-    .more:hover {
-      background: rgba(0, 0, 0, .3);
-    }
-
-    body {
-      background: #f3f3f3;
-    }
-
-    temba-tabs {
-      margin: 2em;
-    }
-
-    temba-tabs *,
-    temba-tab * {
-      opacity: 0;
-    }
-
-    temba-tabs:defined *,
-    temba-tab:defined * {
-      opacity: 1;
-    }
-
-    temba-tab {
-      padding: 1em;
-    }
-
-    .dropdown {
-      padding: 2em;
-    }
-
-    .dropdown .title {
-      font-weight: 400;
-      margin-bottom: 0.5em;
-    }
-
-    .dropdown .item {
-      padding: 0.5em;
-    }
-
-    .header {
-      margin-bottom: 1em;
-      font-size: 2em;
-      font-weight: 400;
-      color: #777;
-      display: inline;
-    }
-
-    temba-dropdown {
-      position: relative;
-      display: inline-block;
-      margin: 0em 0.5em;
-    }
-
-    temba-slider {
-      margin-top: 1em;
-    }
-
-    temba-datepicker,
-    temba-select,
-    temba-textinput,
-    temba-completion {
-      margin: 0.5em;
-      flex-grow: 1;
-    }
-  </style>
-  <script type="module">
-    import '../out-tsc/temba-modules.js';
-  </script>
-  <script>
-
-    function handleDateChange(event) {
-
-    }
-
-    // var static_url = '/static/';
-    function handleColorChange(event) {
-      var color = event.target.values[0].name;
-      if (color == 'Green') {
-        event.target.infoText = 'Green is super dangerous!';
-      } else {
-        event.target.infoText = null;
+    <style>
+      .linked {
+        text-decoration: underline;
+        color: blue;
+        cursor: pointer;
       }
-    }
 
-    function storeTest() {
-      var store = document.querySelector("temba-store");
-      store.getResults("http://localhost.textit.in:8888/api/v2/fields.json", { force: true }).then(function (response) {
-        console.log(response);
-      })
-    }
+      .example {
+        border: 0px solid gray;
+        padding: 10px;
+        max-width: 500px;
+        --temba-select-selected-font-size: 1em;
+      }
 
-  </script>
-</head>
+      temba-dropdown.open {
+        --icon-background: rgb(241, 241, 241);
+        --icon-circle-size: 0.35em;
+      }
 
-<body>
-  <temba-webchat channel="f2f0c0fc-c287-4826-96f5-84ed4ce0717a"></temba-webchat>
-  <temba-store completion="/static/api/completion.json" functions="/static/api/functions.json"
-    fields="/static/api/fields.json" globals="/static/api/globals.json" groups="/static/api/groups.json"></temba-store>
+      .more {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 0.5em;
+      }
 
-  <temba-dropdown>
-    <div style="display:inline-block; margin-bottom:1em;" slot="toggle">
-      <temba-icon name="menu" size="1.3" clickable></temba-icon>
-    </div>
-    <div slot="dropdown" class="dropdown" style="width:250px; padding:0.5em 1em;">
-      <div class="item">
-        <div class="title">Check this out!</div>
-        <div class="details">temba-dropdown lets you do little popup menus like this.</div>
+      .open .more,
+      .more:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      body {
+        background: #f3f3f3;
+      }
+
+      temba-tabs {
+        margin: 2em;
+      }
+
+      temba-tabs *,
+      temba-tab * {
+        opacity: 0;
+      }
+
+      temba-tabs:defined *,
+      temba-tab:defined * {
+        opacity: 1;
+      }
+
+      temba-tab {
+        padding: 1em;
+      }
+
+      .dropdown {
+        padding: 2em;
+      }
+
+      .dropdown .title {
+        font-weight: 400;
+        margin-bottom: 0.5em;
+      }
+
+      .dropdown .item {
+        padding: 0.5em;
+      }
+
+      .header {
+        margin-bottom: 1em;
+        font-size: 2em;
+        font-weight: 400;
+        color: #777;
+        display: inline;
+      }
+
+      temba-dropdown {
+        position: relative;
+        display: inline-block;
+        margin: 0em 0.5em;
+      }
+
+      temba-slider {
+        margin-top: 1em;
+      }
+
+      temba-datepicker,
+      temba-select,
+      temba-textinput,
+      temba-completion {
+        margin: 0.5em;
+        flex-grow: 1;
+      }
+    </style>
+    <script type="module">
+      import '../out-tsc/temba-modules.js';
+    </script>
+    <script>
+      function handleDateChange(event) {}
+
+      // var static_url = '/static/';
+      function handleColorChange(event) {
+        var color = event.target.values[0].name;
+        if (color == 'Green') {
+          event.target.infoText = 'Green is super dangerous!';
+        } else {
+          event.target.infoText = null;
+        }
+      }
+
+      function storeTest() {
+        var store = document.querySelector('temba-store');
+        store
+          .getResults('http://localhost.textit.in:8888/api/v2/fields.json', {
+            force: true
+          })
+          .then(function (response) {
+            console.log(response);
+          });
+      }
+    </script>
+  </head>
+
+  <body>
+    <temba-webchat
+      channel="967cd415-8616-4b11-b38f-60f70e0999f4"
+    ></temba-webchat>
+    <temba-store
+      completion="/static/api/completion.json"
+      functions="/static/api/functions.json"
+      fields="/static/api/fields.json"
+      globals="/static/api/globals.json"
+      groups="/static/api/groups.json"
+    ></temba-store>
+
+    <temba-dropdown>
+      <div style="display: inline-block; margin-bottom: 1em" slot="toggle">
+        <temba-icon name="menu" size="1.3" clickable></temba-icon>
       </div>
-    </div>
-  </temba-dropdown>
+      <div
+        slot="dropdown"
+        class="dropdown"
+        style="width: 250px; padding: 0.5em 1em"
+      >
+        <div class="item">
+          <div class="title">Check this out!</div>
+          <div class="details">
+            temba-dropdown lets you do little popup menus like this.
+          </div>
+        </div>
+      </div>
+    </temba-dropdown>
 
-  <div class="header">temba-components</div>
-  <!--temba-image-picker name="avatar" label="Profile Picture" shape="circle"></temba-image-picker-->
-  <!--temba-webchat channel="9e6b37a8-c649-48b3-92d1-dfa7c00b85dc"></temba-webchat-->
-  <!-- temba-template-editor url="/static/api/templates.json" lang="eng" template="580b124f-32cb-4003-b9e5-9eb783e29101"
+    <div class="header">temba-components</div>
+    <!--temba-image-picker name="avatar" label="Profile Picture" shape="circle"></temba-image-picker-->
+    <!--temba-webchat channel="9e6b37a8-c649-48b3-92d1-dfa7c00b85dc"></temba-webchat-->
+    <!-- temba-template-editor url="/static/api/templates.json" lang="eng" template="580b124f-32cb-4003-b9e5-9eb783e29101"
     params="{&quot;body&quot;:[&quot;this&quot;, &quot;&quot;, &quot;that&quot;]}">
   </temba-template-editor-->
 
-  <temba-tabs collapses index="0">
-    <temba-tab name="Overview" icon="default">
-      <temba-progress style="margin-bottom:8px" total="100" current="25" eta="2030-09-17T07:00:00.000Z"></temba-progress>
-      
-      <div style="display:flex;flex-wrap: wrap;">
-        <temba-checkbox label="Check this out" checked></temba-checkbox>
-        <temba-select placeholder="Select a color" clearable>
-          <temba-option name="Red" value="0"></temba-option>
-          <temba-option name="Green" value="1"></temba-option>
-          <temba-option name="Blue" value="2"></temba-option>
-        </temba-select>
+    <temba-tabs collapses index="0">
+      <temba-tab name="Overview" icon="default">
+        <temba-progress
+          style="margin-bottom: 8px"
+          total="100"
+          current="25"
+          eta="2030-09-17T07:00:00.000Z"
+        ></temba-progress>
 
-        <temba-datepicker time value="2022-10-02 01:00:00+00:00" timezone="Africa/Lagos"
-          onChange="handleDateChange(event)"></temba-datepicker>
+        <div style="display: flex; flex-wrap: wrap">
+          <temba-checkbox label="Check this out" checked></temba-checkbox>
+          <temba-select placeholder="Select a color" clearable>
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+          </temba-select>
 
-      </div>
+          <temba-datepicker
+            time
+            value="2022-10-02 01:00:00+00:00"
+            timezone="Africa/Lagos"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+        </div>
 
-      <temba-slider style="margin-bottom: 1em" value="50" min="0" max="100" range></temba-slider>
-      <temba-textinput value="plain text"></temba-textinput>
-      <temba-completion value="you complete me @cont"></temba-completion>
-    </temba-tab>
+        <temba-slider
+          style="margin-bottom: 1em"
+          value="50"
+          min="0"
+          max="100"
+          range
+        ></temba-slider>
+        <temba-textinput value="plain text"></temba-textinput>
+        <temba-completion value="you complete me @cont"></temba-completion>
+      </temba-tab>
 
-    <temba-tab name="datepicker" icon="datepicker">
-      <div style="display:flex;flex-wrap: wrap;">
-        <temba-datepicker time value="2020-01-20T14:00+00:00" timezone="UTC"
-          onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker value="2022-10-09" onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker time timezone="" value="2022-09-29T20:20:00.000000Z"></temba-datepicker>
-        <temba-datepicker time onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker time value="2022-10-03 01:00:00+00:00" onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker time value="2022-10-04 01:00:00+00:00" timezone="Africa/Nairobi"
-          onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker time value="2022-10-05 01:00:00+00:00" timezone="Africa/Lagos"
-          onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker time value="2022-10-06 01:00:00+00:00" timezone="America/Phoenix"
-          onChange="handleDateChange(event)"></temba-datepicker>
-        <temba-datepicker time value="2022-10-07 01:00:00+00:00" timezone="America/Phoenix"
-          onChange="handleDateChange(event)"></temba-datepicker>
+      <temba-tab name="datepicker" icon="datepicker">
+        <div style="display: flex; flex-wrap: wrap">
+          <temba-datepicker
+            time
+            value="2020-01-20T14:00+00:00"
+            timezone="UTC"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            value="2022-10-09"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            timezone=""
+            value="2022-09-29T20:20:00.000000Z"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            value="2022-10-03 01:00:00+00:00"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            value="2022-10-04 01:00:00+00:00"
+            timezone="Africa/Nairobi"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            value="2022-10-05 01:00:00+00:00"
+            timezone="Africa/Lagos"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            value="2022-10-06 01:00:00+00:00"
+            timezone="America/Phoenix"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+          <temba-datepicker
+            time
+            value="2022-10-07 01:00:00+00:00"
+            timezone="America/Phoenix"
+            onChange="handleDateChange(event)"
+          ></temba-datepicker>
+        </div>
+        <div style="display: flex; margin-top: 0.5em"></div>
+      </temba-tab>
 
-      </div>
-      <div style="display:flex;margin-top:0.5em">
+      <temba-tab name="slider" icon="slider">
+        <div class="example">
+          With Range
+          <temba-slider value="50" min="0" max="100" range></temba-slider>
+        </div>
 
+        <div class="example">
+          Without Range
+          <temba-slider value="50" min="0" max="100"></temba-slider>
+        </div>
+      </temba-tab>
 
-      </div>
-
-    </temba-tab>
-
-    <temba-tab name="slider" icon="slider">
-
-
-      <div class="example">
-        With Range
-        <temba-slider value="50" min="0" max="100" range></temba-slider>
-      </div>
-
-      <div class="example">
-        Without Range
-        <temba-slider value="50" min="0" max="100"></temba-slider>
-      </div>
-
-    </temba-tab>
-
-    <temba-tab name="select" icon="select">
-
-      <div class="example">
-        <temba-select placeholder="Select a color" info_text="Some colors are very dangerous, choose wisely"
-          onchange="handleColorChange(event)">
-          <temba-option name="Red" value="0"></temba-option>
-          <temba-option name="Green" value="1"></temba-option>
-          <temba-option name="Blue" value="2"></temba-option>
-        </temba-select>
-      </div>
-
-      <div class="example">
-        <temba-select placeholder="Select a color" clearable>
-          <temba-option name="Red" value="0"></temba-option>
-          <temba-option name="Green" value="1"></temba-option>
-          <temba-option name="Blue" value="2"></temba-option>
-        </temba-select>
-      </div>
-
-      <div class="example">
-        <temba-select placeholder="Select a color" expressions="message" values='[{"name":"Red","value":"0"}]'
-          searchable multi>
-          <temba-option name="Red" value="0"></temba-option>
-          <temba-option name="Green" value="1"></temba-option>
-          <temba-option name="Blue" value="2"></temba-option>
-        </temba-select>
-      </div>
-
-      <div class="example">
-        <temba-select name="Color" label="Color" help_text="I'm not really enabled at the moment"
-          placeholder="Select a color" expressions="message" values='[{"name":"Red","value":"0"}]' searchable multi
-          disabled>
-          <temba-option name="Red" value="0"></temba-option>
-          <temba-option name="Green" value="1"></temba-option>
-          <temba-option name="Blue" value="2"></temba-option>
-        </temba-select>
-      </div>
-
-      <div class="example">
-        <script>
-          function toggleSelect(evt) {
-            document.getElementById('select-toggle').disabled = !evt.currentTarget
-              .checked;
-          }
-        </script>
-        <div style="display: flex; align-items: center">
-          <temba-checkbox onchange="toggleSelect(event)" checked></temba-checkbox>
-          <temba-select style="margin-left: 10px" id="select-toggle" placeholder="Select a color" expressions="message">
+      <temba-tab name="select" icon="select">
+        <div class="example">
+          <temba-select
+            placeholder="Select a color"
+            info_text="Some colors are very dangerous, choose wisely"
+            onchange="handleColorChange(event)"
+          >
             <temba-option name="Red" value="0"></temba-option>
             <temba-option name="Green" value="1"></temba-option>
             <temba-option name="Blue" value="2"></temba-option>
           </temba-select>
         </div>
-      </div>
 
-    </temba-tab>
+        <div class="example">
+          <temba-select placeholder="Select a color" clearable>
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+          </temba-select>
+        </div>
 
-    <temba-tab name="textinput" icon="edit-05">
+        <div class="example">
+          <temba-select
+            placeholder="Select a color"
+            expressions="message"
+            values='[{"name":"Red","value":"0"}]'
+            searchable
+            multi
+          >
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+          </temba-select>
+        </div>
 
-      <div class="example">
-        <temba-textinput value="plain text"></temba-textinput>
-      </div>
+        <div class="example">
+          <temba-select
+            placeholder="Select 2 colors"
+            name="Color2"
+            label="Select up to 2 colors"
+            expressions="message"
+            maxItems="2"
+            values='[{"name":"Red","value":"0"}]'
+            searchable
+            multi
+          >
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+          </temba-select>
+        </div>
 
-      <div class="example">
-        <temba-completion value="you complete me @cont"></temba-completion>
-      </div>
+        <div class="example">
+          <temba-select
+            name="Color"
+            label="Color"
+            help_text="I'm not really enabled at the moment"
+            placeholder="Select a color"
+            expressions="message"
+            values='[{"name":"Red","value":"0"}]'
+            searchable
+            multi
+            disabled
+          >
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+          </temba-select>
+        </div>
 
-      <div class="example">
-        <temba-textinput name="start" label="Start Time"
-          help_text="This is something you should think long and hard about" placeholder="Put something down, for real"
-          value="2020-11-28 15:03" clearable datetimepicker></temba-textinput>
-      </div>
+        <div class="example">
+          <script>
+            function toggleSelect(evt) {
+              document.getElementById('select-toggle').disabled =
+                !evt.currentTarget.checked;
+            }
+          </script>
+          <div style="display: flex; align-items: center">
+            <temba-checkbox
+              onchange="toggleSelect(event)"
+              checked
+            ></temba-checkbox>
+            <temba-select
+              style="margin-left: 10px"
+              id="select-toggle"
+              placeholder="Select a color"
+              expressions="message"
+            >
+              <temba-option name="Red" value="0"></temba-option>
+              <temba-option name="Green" value="1"></temba-option>
+              <temba-option name="Blue" value="2"></temba-option>
+            </temba-select>
+          </div>
+        </div>
+      </temba-tab>
 
-      <div class="example">
-        <temba-completion counter="temba-charcount" value="This is a GSM charcounter in a textarea" gsm
-          textarea></temba-completion>
-        <temba-charcount text='count this text'></temba-charcount>
-      </div>
-    </temba-tab>
+      <temba-tab name="textinput" icon="edit-05">
+        <div class="example">
+          <temba-textinput value="plain text"></temba-textinput>
+        </div>
 
-  </temba-tabs>
-</body>
+        <div class="example">
+          <temba-completion value="you complete me @cont"></temba-completion>
+        </div>
 
+        <div class="example">
+          <temba-textinput
+            name="start"
+            label="Start Time"
+            help_text="This is something you should think long and hard about"
+            placeholder="Put something down, for real"
+            value="2020-11-28 15:03"
+            clearable
+            datetimepicker
+          ></temba-textinput>
+        </div>
+
+        <div class="example">
+          <temba-completion
+            counter="temba-charcount"
+            value="This is a GSM charcounter in a textarea"
+            gsm
+            textarea
+          ></temba-completion>
+          <temba-charcount text="count this text"></temba-charcount>
+        </div>
+      </temba-tab>
+    </temba-tabs>
+  </body>
 </html>

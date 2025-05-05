@@ -60,6 +60,10 @@ export class TextInput extends FormElement {
         height: var(--textarea-height);
         min-height: var(--textarea-min-height, var(--textarea-height));
         transition: height var(--transition-speed) ease-in-out;
+        unicode-bidi: var(--unicode-bidi, normal);
+      }
+
+      .textinput:focus {
       }
 
       .textinput {
@@ -67,8 +71,7 @@ export class TextInput extends FormElement {
         border: none;
         flex: 1;
         margin: 0;
-        background: none;
-        background-color: transparent;
+        background: transparent;
         color: var(--color-widget-text);
         font-family: var(--font-family);
         font-size: var(--temba-textinput-font-size);
@@ -93,10 +96,12 @@ export class TextInput extends FormElement {
         display: flex;
         align-items: stretch;
         width: 100%;
+        margin-bottom: 1em;
       }
 
       .grow-wrap > div {
         border: 0px solid green;
+        white-space: pre-wrap;
         width: 100%;
         padding: var(--temba-textinput-padding);
         flex: 1;
@@ -110,11 +115,15 @@ export class TextInput extends FormElement {
         resize: none;
         width: 100%;
         word-break: break-word;
+        opacity: 0;
+        z-index: -1;
+        max-height: var(--temba-textinput-max-height, 30em);
       }
 
       .grow-wrap textarea {
         margin-left: -100%;
         height: 100%;
+        flex-grow: 1;
       }
 
       input[type='number'] {
@@ -230,10 +239,13 @@ export class TextInput extends FormElement {
     this.value = null;
   }
 
-  private updateValue(value: string): void {
+  public getTextInput(): TextInput {
+    return this;
+  }
+
+  public updateValue(value: string): void {
     const cursorStart = this.inputElement.selectionStart;
     const cursorEnd = this.inputElement.selectionEnd;
-
     const sanitized = this.sanitizeGSM(value);
 
     if (sanitized !== value) {
@@ -363,6 +375,7 @@ export class TextInput extends FormElement {
 
     let input = html`
       <input
+        autofocus
         class="textinput"
         autocomplete="off"
         name=${this.name}

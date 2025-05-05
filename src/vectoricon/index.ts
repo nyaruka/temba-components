@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = 'dc95e2d3afdb9e2559d67b0bf9f016ea';
+export const SVG_FINGERPRINT = '6ba60d8c1832b26e5dab7ba5c4cb6b74';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
+  ai = 'beaker-02',
   alert_warning = 'alert-square',
   account = 'user-01',
   active = 'play',
@@ -40,9 +41,6 @@ export enum Icon {
   checkbox = 'square',
   checkbox_checked = 'check-square',
   checkbox_partial = 'stop-square',
-  classifier_wit = 'classifier-wit',
-  classifier_luis = 'classifier-luis',
-  classifier_bothub = 'classifier-bothub',
   close = 'x',
   compose = 'send-01',
   contact = 'user-01',
@@ -90,8 +88,9 @@ export enum Icon {
   inbox = 'inbox-01',
   incidents = 'alert-square',
   incoming_call = 'phone-incoming-01',
-  integrations = 'layers-three-01',
   info = 'user-square',
+  integrations = 'layers-three-01',
+  invitations = 'user-plus-01',
   issue = 'alert-square',
   label = 'tag-01',
   language = 'translate-01',
@@ -144,6 +143,7 @@ export enum Icon {
   service = 'magic-wand-01',
   service_end = 'log-out-04',
   settings = 'settings-02',
+  shortcut = 'zap-fast',
   show = 'eye',
   simulator = 'phone-02',
   sort = 'chevron-selector-vertical',
@@ -159,6 +159,7 @@ export enum Icon {
   tickets_all = 'archive',
   tickets_closed = 'check',
   tickets_mine = 'coffee',
+  tickets_mine_done = 'coffee-empty',
   tickets_open = 'inbox-01',
   tickets_export = 'download-cloud-01',
   tickets_unassigned = 'inbox-01',
@@ -191,10 +192,7 @@ export enum Icon {
   users = 'users-01',
   video = 'video-recorder',
   webhook = 'link-external-01',
-  wit = 'wit',
   workspace = 'folder',
-  zapier = 'zapier',
-  zendesk = 'zendesk',
 
   // channel types
   channel_a = 'channel-android',
@@ -245,9 +243,19 @@ export enum Icon {
   channel_yo = 'zap', // TODO https://www.yo.co.ug/
   channel_zvw = 'channel-whatsapp',
 
-  bothub = 'bothub',
-  chatbase = 'chatbase',
+  // ai
+  ai_openai = 'openai',
+  ai_anthropic = 'anthropic',
+  ai_google = 'gemini',
+  ai_microsoft = 'azure',
+  ai_deepseek = 'deepseek',
+
+  // classifiers
+  classifier_wit = 'classifier-wit',
+
+  // other brands
   dtone = 'dtone',
+  zapier = 'zapier',
 
   // demo
   default = 'list',

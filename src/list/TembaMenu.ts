@@ -8,6 +8,7 @@ import { Dropdown } from '../dropdown/Dropdown';
 import { NotificationList } from './NotificationList';
 import { ResizeElement } from '../ResizeElement';
 import { Store } from '../store/Store';
+
 export interface MenuItem {
   id?: string;
   vanity_id?: string;
@@ -32,6 +33,7 @@ export interface MenuItem {
   trigger?: boolean;
   event?: string;
   mobile?: boolean;
+  initial?: string;
 }
 
 interface MenuItemState {
@@ -153,10 +155,6 @@ export class TembaMenu extends ResizeElement {
         align-items: center;
       }
 
-      .level-0 > temba-dropdown .icon-wrapper {
-        padding: 0.2em 0.4em 0.2em 0.4em;
-      }
-
       .level-0 > .item.selected::before,
       .level-0 > .item.selected::after {
         content: ' ';
@@ -202,6 +200,12 @@ export class TembaMenu extends ResizeElement {
       }
 
       temba-dropdown {
+        margin: 0 0.25em;
+      }
+
+      temba-dropdown > div[slot='dropdown'] {
+        width: 300px;
+        overflow: hidden;
       }
 
       temba-dropdown > div[slot='dropdown'] .avatar > .details {
@@ -581,11 +585,6 @@ export class TembaMenu extends ResizeElement {
         margin-right: 0.75em;
       }
 
-      temba-button[lined] {
-        margin: 0.2em 0;
-        display: block;
-      }
-
       .expand-icon {
         transform: rotate(180deg);
         --icon-color: rgba(255, 255, 255, 0.5);
@@ -645,7 +644,22 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-0 .icon-wrapper {
-        padding: 0.4em 0.9em;
+        padding: 0.4em 0.2em;
+      }
+
+      .level-0 temba-dropdown div[slot='dropdown'] .icon-wrapper {
+        padding: 0em !important;
+        align-self: center;
+        margin-right: 0.4em;
+        margin-left: 0.4em;
+      }
+
+      temba-workspace-select {
+        margin: 0.2em;
+        display: block;
+        --options-shadow: none;
+        --color-widget-border: transparent;
+        --widget-box-shadow: none;
       }
     `;
   }
@@ -772,8 +786,8 @@ export class TembaMenu extends ResizeElement {
   private loadItems(item: MenuItem, event: MouseEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;
-      this.httpComplete = fetchResults(item.endpoint).then(
-        (items: MenuItem[]) => {
+      this.httpComplete = fetchResults(item.endpoint)
+        .then((items: MenuItem[]) => {
           items.forEach((newItem) => {
             if (!newItem.items) {
               const prevItem = (item.items || []).find(
@@ -811,8 +825,10 @@ export class TembaMenu extends ResizeElement {
 
           this.requestUpdate('root');
           this.scrollSelectedIntoView();
-        }
-      );
+        })
+        .catch((error) => {
+          this.fireCustomEvent(CustomEventType.Error, { error });
+        });
     }
   }
 
@@ -1054,6 +1070,16 @@ export class TembaMenu extends ResizeElement {
       return html`<div class="divider"></div>`;
     }
 
+    if (menuItem.type === 'temba-workspace-select') {
+      return html`<temba-workspace-select
+        @change=${(event) => {
+          event.stopPropagation();
+          event.preventDefault();
+        }}
+        .values=${[JSON.parse(menuItem.initial)]}
+      ></temba-workspace-select>`;
+    }
+
     if (menuItem.type === 'temba-notification-list') {
       return html`<temba-notification-list
         endpoint=${menuItem.href}
@@ -1159,7 +1185,10 @@ export class TembaMenu extends ResizeElement {
         ${menuItem.level === 0
           ? menuItem.avatar
             ? icon
-            : html`<temba-tip style="display:flex;" text="${menuItem.name}"
+            : html`<temba-tip
+                position="right"
+                style="display:flex;"
+                text="${menuItem.name}"
                 >${icon}</temba-tip
               >`
           : html`${icon}${collapsedIcon}`}
@@ -1198,21 +1227,14 @@ export class TembaMenu extends ResizeElement {
 
     if (menuItem.popup) {
       return html`
-        <temba-dropdown
-          offsetx="10"
-          arrowoffset="8"
-          arrowSize="0"
-          drop_align="left"
-          id="dd-${menuItem.id}"
-        >
+        <temba-dropdown id="dd-${menuItem.id}">
           <div slot="toggle">${item}</div>
-          <div slot="dropdown" style="width:300px;overflow:hidden;">
-            <div style="max-height:400px;overflow-y:auto">
-              ${(menuItem.items || []).map((child: MenuItem) => {
-                child.level = menuItem.level + 1;
-                return html`${this.renderMenuItem(child, menuItem)}`;
-              })}
-            </div>
+
+          <div slot="dropdown">
+            ${(menuItem.items || []).map((child: MenuItem) => {
+              child.level = menuItem.level + 1;
+              return html`${this.renderMenuItem(child, menuItem)}`;
+            })}
           </div>
         </temba-dropdown>
       `;

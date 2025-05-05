@@ -1,9 +1,11 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import replace from '@rollup/plugin-replace'
 import typescript from '@rollup/plugin-typescript';
 import { terser } from 'rollup-plugin-terser';
 import svg from 'rollup-plugin-svg-import';
 import copy from 'rollup-plugin-copy';
+
 
 export default {
     input: 'temba-components.ts',
@@ -16,7 +18,31 @@ export default {
         name: 'TembaComponents',
         sourcemap: true
     },
+    onwarn: function(warning, handler) {
+        // Skip certain warnings
+        if ( warning.code === 'THIS_IS_UNDEFINED' ) { return; }
+
+
+        if (warning.code === 'CIRCULAR_DEPENDENCY') {
+            
+            // luxon has a ton of circular dependencies they don't care about
+            if(warning.message.includes('luxon')) {
+                return;
+            }
+
+            // same with lit-localize
+            if(warning.message.includes('lit-localize')) {
+                return;
+            }
+        }
+        handler( warning );
+    },
     plugins: [
+        replace({
+            preventAssignment: true,
+            'process.env.NODE_ENV': JSON.stringify('development'),
+          }),
+
         // inline our icons
         svg({ stringify: true }),
 

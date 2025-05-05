@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.108.3",
+  "version": "0.121.1",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
@@ -31,7 +31,7 @@
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "locale:extract": "lit-localize extract --config localize.config.json",
-    "locale:build": "lit-localize build --config localize.config.json"
+    "locale:build": "echo 'Building localizations..' && lit-localize build --config localize.config.json > dist/locale.out 2>&1"
   },
   "dependencies": {
     "@lit/localize": "^0.12.1",
@@ -39,6 +39,7 @@
     "croppie": "^2.6.5",
     "geojson": "^0.5.0",
     "image-size": "^1.1.1",
+    "immer": "10",
     "leaflet": "1.5.1",
     "lit": "3.1.2",
     "lit-element": "^4.0.4",
@@ -46,7 +47,8 @@
     "luxon": "3.5",
     "remarkable": "^2.0.1",
     "serialize-javascript": "^6.0.2",
-    "tiny-lru": "^11.2.5"
+    "tiny-lru": "^11.2.5",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@lit/localize-tools": "^0.7.2",
@@ -55,6 +57,7 @@
     "@open-wc/testing": "4.0.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-image": "^3.0.3",
+    "@rollup/plugin-replace": "^6.0.2",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/leaflet": "1.4.4",

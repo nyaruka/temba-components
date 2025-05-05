@@ -11,6 +11,10 @@ import sizeOf from 'image-size';
 
 import rimraf from 'rimraf';
 
+import replace from '@rollup/plugin-replace';
+import { fromRollup } from '@web/dev-server-rollup';
+const replacePlugin = fromRollup(replace);
+
 const SCREENSHOTS = 'screenshots';
 const DIFF = 'diff';
 const TEST = 'test';
@@ -130,7 +134,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
   });
 };
 
-const wireScreenshots = async (page, context, wait) => {
+const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   // clear out any past tests
   const diffs = path.resolve(SCREENSHOTS, DIFF);
   const tests = path.resolve(SCREENSHOTS, TEST);
@@ -142,6 +146,7 @@ const wireScreenshots = async (page, context, wait) => {
     'matchPageSnapshot',
     (filename, clip, excluded, threshold) => {
       return new Promise(async (resolve, reject) => {
+        // const start = Date.now();
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
@@ -182,9 +187,16 @@ const wireScreenshots = async (page, context, wait) => {
 
           try {
             const result = await checkScreenshot(filename);
+            // const end = Date.now();
+            // console.log(`Screenshot took ${end - start}ms`);
             resolve(result);
           } catch (error) {
-            reject(error);
+            if (replaceScreenshots) {
+              await page.screenshot({ path: truthFile, clip });
+              resolve();
+            } else  {
+              reject(error);
+            }
             return;
           }
         }
@@ -244,6 +256,7 @@ const wireScreenshots = async (page, context, wait) => {
     await ele.click({});
   });
 
+
   await page.exposeFunction(
     'typeInto',
     async (selector, text, replace = false, enter = false) => {
@@ -288,7 +301,7 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-
+  setupFiles: ['./test-setup.js'],
   testFramework: {
     config: {
       timeout: '10000',
@@ -296,6 +309,10 @@ export default {
   },
 
   plugins: [
+    replacePlugin({
+      preventAssignment: true,
+      'process.env.NODE_ENV': JSON.stringify('test'),
+    }),
     {
       name: 'add-style',
       transform(context) {
@@ -333,11 +350,15 @@ export default {
           '--disable-web-security',
           '--force-device-scale-factor=1',
           '--no-sandbox',
+          '--disable-gpu',
         ],
         headless: true,
       },
       createPage: async ({ context, config }) => {
-        const wait = !(config['unknown'] || []).includes('--fast');
+        const params = (config['unknown'] || [])
+        const wait = !params.includes('--fast');
+        const replaceScreenshots = params.includes('--replace-screenshots');
+
         const page = await context.newPage();
         await page.setUserAgent(
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
@@ -349,7 +370,7 @@ export default {
           `,
           });
 
-          await wireScreenshots(page, context, wait);
+          await wireScreenshots(page, context, wait, replaceScreenshots);
         });
 
         await page.emulateTimezone('GMT');
@@ -359,3 +380,4 @@ export default {
     }),
   ],
 };
+

@@ -1,14 +1,66 @@
 import { fixture, assert } from '@open-wc/testing';
 import { Omnibox } from '../src/omnibox/Omnibox';
-import './utils.test';
+import { assertScreenshot, getClip } from './utils.test';
+import { openAndClick } from './temba-select.test';
+import { useFakeTimers, spy } from 'sinon';
 
-export const getHTML = () => {
-  return `<temba-omnibox></temba-omnibox>`;
+export const getHTML = (attrs: any = { name: 'recipients' }): string => {
+  const selectHTML = `
+  <temba-omnibox${Object.keys(attrs)
+    .map((name: string) => {
+      // check if it's a string attribute
+      if (typeof attrs[name] === 'string') {
+        return ` ${name}="${attrs[name].replace(/"/g, '&quot;')}"`;
+      }
+      return ` ${name}="${attrs[name]}"`;
+    })
+    .join(' ')}>
+  </temba-select>`;
+  return selectHTML;
+};
+
+export const createOmnibox = async (
+  clock: any,
+  attrs: any = {}
+): Promise<Omnibox> => {
+  const parentNode = document.createElement('div');
+  parentNode.setAttribute('style', 'width: 250px;');
+
+  const omnibox: Omnibox = await fixture(getHTML(attrs), { parentNode });
+  clock.runAll();
+  await omnibox.updateComplete;
+  return omnibox;
 };
 
 describe('temba-omnibox', () => {
+  let clock: any;
+  beforeEach(function () {
+    clock = useFakeTimers();
+    setViewport({ width: 500, height: 1000, deviceScaleFactor: 2 });
+  });
+
+  afterEach(function () {
+    clock.restore();
+  });
+
   it('can be created', async () => {
-    const omnibox: Omnibox = await fixture(getHTML());
+    const omnibox: Omnibox = await fixture(
+      getHTML({ endpoint: '/test-assets/select/omnibox.json' })
+    );
     assert.instanceOf(omnibox, Omnibox);
+  });
+
+  it('fires change events on selection', async () => {
+    const omnibox: Omnibox = await createOmnibox(clock, {
+      endpoint: '/test-assets/select/omnibox.json'
+    });
+
+    const changeEvent = spy();
+    omnibox.addEventListener('change', changeEvent);
+
+    await openAndClick(clock, omnibox, 0);
+    assert(changeEvent.called, 'change event not fired');
+
+    await assertScreenshot('omnibox/selected', getClip(omnibox));
   });
 });

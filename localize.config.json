@@ -3,6 +3,7 @@
   "sourceLocale": "en",
   "targetLocales": ["es", "fr", "pt"],
   "tsConfig": "./tsconfig.json",
+
   "output": {
     "mode": "runtime",
     "outputDir": "./src/locales",

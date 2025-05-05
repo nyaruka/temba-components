@@ -15,7 +15,7 @@ export const getDate = async (attrs: any = {}) => {
   return (await getComponent(TAG, attrs)) as TembaDate;
 };
 
-mockNow('2022-12-02T21:00:00.000000-07:00');
+mockNow('2022-12-02T21:00:00.000000');
 
 describe('temba-date', () => {
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe('temba-date', () => {
   });
 
   it('renders default', async () => {
-    const date = await getDate({ value: '1978-11-18T02:22:00.000000-07:00' });
+    const date = await getDate({ value: '1978-11-18T02:22:00.000000' });
     const dateString = (
       date.shadowRoot.querySelector('.date') as HTMLSpanElement
     ).innerText;
@@ -34,7 +34,7 @@ describe('temba-date', () => {
 
   it('renders duration', async () => {
     const date = await getDate({
-      value: '1978-11-18T02:22:00.000000-07:00',
+      value: '1978-11-18T02:22:00.000000',
       display: 'duration'
     });
     const dateString = (
@@ -47,7 +47,7 @@ describe('temba-date', () => {
 
   it('renders datetime', async () => {
     const date = await getDate({
-      value: '1978-11-18T02:22:00.000000-07:00',
+      value: '1978-11-18T02:22:00.000000',
       display: 'datetime'
     });
     const dateString = (
@@ -55,15 +55,26 @@ describe('temba-date', () => {
     ).innerText;
 
     await assertScreenshot('date/datetime', getClip(date));
-    expect(dateString).to.equal('11/18/1978, 9:22 AM');
+    expect(dateString).to.equal('11/18/1978, 2:22 AM');
+  });
+
+  it('renders timedate', async () => {
+    const date = await getDate({
+      value: '2022-12-01T21:30:00.000000',
+      display: 'timedate'
+    });
+    const dateString = (
+      date.shadowRoot.querySelector('.date') as HTMLSpanElement
+    ).innerText;
+    await assertScreenshot('date/timedate', getClip(date));
+    expect(dateString).to.equal('Dec 1');
   });
 
   it('renders inline', async () => {
     const el: HTMLElement = await fixture(html`
       <span
         >Your birthday is
-        <temba-date value="1978-11-18T02:22:00.000000-07:00"></temba-date
-        >!</span
+        <temba-date value="1978-11-18T02:22:00.000000"></temba-date>!</span
       >
     `);
 

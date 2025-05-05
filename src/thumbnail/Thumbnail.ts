@@ -3,7 +3,6 @@ import { RapidElement } from '../RapidElement';
 import { property } from 'lit/decorators.js';
 import { getClasses } from '../utils';
 import { Lightbox } from '../lightbox/Lightbox';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { WebChatIcon } from '../webchat';
 
 enum ThumbnailContentType {
@@ -48,8 +47,7 @@ export class Thumbnail extends RapidElement {
       .zoom .thumb {
         border-radius: 0px !important;
         width: calc(var(--thumb-size, 4em) + 0.8em);
-        height: calc(var(--thumb-size, 4em) + 0.8em);
-        max-height: calc(var(--thumb-size, 4em) + 0.8em);
+        max-height: calc(90vh - 10em);
       }
 
       .thumb {
@@ -57,8 +55,7 @@ export class Thumbnail extends RapidElement {
         background-position: center;
         background-repeat: no-repeat;
         border-radius: var(--curvature);
-        max-height: var(--thumb-size, 4em);
-        height: var(--thumb-size, 4em);
+        max-height: calc(var(--thumb-size, 4em) * 2);
         width: var(--thumb-size, 4em);
         display: flex;
         align-items: center;
@@ -84,8 +81,24 @@ export class Thumbnail extends RapidElement {
         display: block;
       }
 
-      .zoom temba-icon {
+      .download {
         display: none;
+        position: absolute;
+        right: 0em;
+        bottom: 0em;
+        border-radius: var(--curvature);
+        transform: scale(0.2) translate(3em, 3em);
+        padding: 0.4em;
+      }
+
+      .zoom .download {
+        display: block;
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      .zoom .download:hover {
+        background: rgba(0, 0, 0, 0.6);
+        cursor: pointer;
       }
     `;
   }
@@ -95,6 +108,12 @@ export class Thumbnail extends RapidElement {
 
   @property({ type: String })
   attachment: string;
+
+  @property({ type: Number })
+  ratio: number = 0;
+
+  @property({ type: Boolean })
+  preview: boolean = true;
 
   @property({ type: Boolean, attribute: false })
   zoom: boolean;
@@ -106,6 +125,23 @@ export class Thumbnail extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (
+      changes.has('contentType') &&
+      this.contentType === ThumbnailContentType.IMAGE
+    ) {
+      const toObserve = this.shadowRoot.querySelector('.observe');
+      if (toObserve) {
+        new ResizeObserver((e, observer) => {
+          if (toObserve.clientHeight > 0 && toObserve.clientWidth > 0) {
+            this.ratio = toObserve.clientHeight / toObserve.clientWidth;
+            this.preview =
+              this.ratio === 0 || (this.ratio > 0.25 && this.ratio <= 1.5);
+            observer.disconnect();
+          }
+        }).observe(toObserve);
+      }
+    }
 
     // convert our attachment to a url and label
     if (changes.has('attachment')) {
@@ -134,7 +170,7 @@ export class Thumbnail extends RapidElement {
   }
 
   public handleThumbnailClicked() {
-    if (this.contentType === ThumbnailContentType.IMAGE) {
+    if (this.contentType === ThumbnailContentType.IMAGE && this.preview) {
       window.setTimeout(() => {
         const lightbox = document.querySelector('temba-lightbox') as Lightbox;
         lightbox.showElement(this);
@@ -144,6 +180,14 @@ export class Thumbnail extends RapidElement {
     }
   }
 
+  public handleDownload(e: Event) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // open this.url in another tab
+    window.open(this.url, '_blank');
+  }
+
   public render() {
     return html`
       <div
@@ -151,21 +195,21 @@ export class Thumbnail extends RapidElement {
         class="${getClasses({ wrapper: true, zoom: this.zoom })}"
         url=${this.url}
       >
-        <div
-          class="thumb ${this.contentType} "
-          style="${this.url
-            ? styleMap({
-                backgroundImage: `url(${this.url})`
-              })
-            : ''}"
-        >
-          ${this.contentType !== ThumbnailContentType.IMAGE
-            ? html`<temba-icon
+        ${this.contentType === ThumbnailContentType.IMAGE && this.preview
+          ? html`<div class=""><div class="download" @click=${this.handleDownload.bind(
+              this
+            )}><temba-icon size="1" style="color:#fff;" name="download"></temba-icon></div><img
+          class="observe thumb ${this.contentType}"
+          src="${this.url}"
+        ></img></div>`
+          : html`<div
+              style="padding:1em; background:rgba(0,0,0,.05);border-radius:var(--curvature);"
+            >
+              <temba-icon
                 size="1.5"
                 name="${ThumbnailIcons[this.contentType]}"
-              ></temba-icon>`
-            : null}
-        </div>
+              ></temba-icon>
+            </div>`}
       </div>
     `;
   }

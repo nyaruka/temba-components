@@ -64,7 +64,9 @@ export class TembaDate extends RapidElement {
         const hours = Math.abs(
           this.datetime.diffNow().milliseconds / 1000 / 60 / 60
         );
-        if (hours < 24) {
+
+        const day = this.datetime.get('day');
+        if (hours < 24 && day == DateTime.now().get('day')) {
           formatted = this.datetime.toLocaleString(Display.time);
         } else if (hours < 24 * 365) {
           formatted = this.datetime.toFormat(Display.day);

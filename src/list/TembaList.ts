@@ -195,12 +195,9 @@ export class TembaList extends RapidElement {
     const index = this.getItemIndex(value);
     this.items.splice(index, 1);
     this.items = [...this.items];
-
-    // if we were at the end, move us down
-    this.cursorIndex = Math.max(
-      0,
-      Math.min(this.items.length - 1, this.cursorIndex - 1)
-    );
+    if (this.cursorIndex === index) {
+      this.cursorIndex = -1;
+    }
 
     // request a change even if it is the same, the item is different
     this.requestUpdate('cursorIndex');
@@ -222,6 +219,10 @@ export class TembaList extends RapidElement {
 
   public getRefreshEndpoint() {
     return this.endpoint;
+  }
+
+  protected sanitizeResults(results: any[]): Promise<any[]> {
+    return Promise.resolve(results);
   }
 
   /**
@@ -250,10 +251,12 @@ export class TembaList extends RapidElement {
         controller
       );
 
+      const sanitizedResults = await this.sanitizeResults(page.results);
       const items = [...this.items];
+
       // remove any dupes already in our list
-      if (page.results) {
-        page.results.forEach((newOption: any) => {
+      if (sanitizedResults) {
+        sanitizedResults.forEach((newOption: any) => {
           if (this.sanitizeOption) {
             this.sanitizeOption(newOption);
           }
@@ -268,9 +271,9 @@ export class TembaList extends RapidElement {
         });
 
         // insert our new items at the front
-        let results = page.results;
+        let results = sanitizedResults;
         if (this.reverseRefresh) {
-          results = page.results.reverse();
+          results = sanitizedResults.reverse();
         }
         const newItems = [...results, ...items];
 
@@ -308,7 +311,7 @@ export class TembaList extends RapidElement {
         this.items = newItems;
       }
     } catch (error) {
-      // console.error(error);
+      this.paused = true;
     }
   }
 
@@ -332,14 +335,15 @@ export class TembaList extends RapidElement {
 
       try {
         const page = await fetchResultsPage(endpoint, controller);
+        const sanitizedResults = await this.sanitizeResults(page.results);
 
         // sanitize our options if necessary
         if (this.sanitizeOption) {
-          page.results.forEach(this.sanitizeOption);
+          sanitizedResults.forEach(this.sanitizeOption);
         }
 
-        if (page.results) {
-          fetchedItems = fetchedItems.concat(page.results);
+        if (sanitizedResults) {
+          fetchedItems = fetchedItems.concat(sanitizedResults);
         }
 
         // save our next pages
@@ -350,10 +354,10 @@ export class TembaList extends RapidElement {
       } catch (error) {
         // aborted
         this.reset();
-        console.log(error);
+        this.paused = true;
+        this.loading = false;
         return;
       }
-
       this.nextPage = nextPage;
     }
     this.pages = pages;
@@ -410,9 +414,6 @@ export class TembaList extends RapidElement {
       }
     }
 
-    // TODO: Not sure why this is needed
-    // this.requestUpdate('cursorIndex');
-
     if (this.value) {
       this.setSelection(this.value);
       this.value = null;
@@ -431,14 +432,16 @@ export class TembaList extends RapidElement {
     if (this.nextPage && !this.loading) {
       this.loading = true;
       fetchResultsPage(this.nextPage).then((page: ResultsPage) => {
-        if (this.sanitizeOption) {
-          page.results.forEach(this.sanitizeOption);
-        }
+        this.sanitizeResults(page.results).then((sanitizedResults) => {
+          if (this.sanitizeOption) {
+            sanitizedResults.forEach(this.sanitizeOption);
+          }
 
-        this.items = [...this.items, ...page.results];
-        this.nextPage = page.next;
-        this.pages++;
-        this.loading = false;
+          this.items = [...this.items, ...sanitizedResults];
+          this.nextPage = page.next;
+          this.pages++;
+          this.loading = false;
+        });
       });
     }
   }
@@ -456,7 +459,12 @@ export class TembaList extends RapidElement {
   }
 
   protected handleSelection(event: CustomEvent) {
-    const { selected, index } = event.detail;
+    let index = event.detail.index;
+    const selected = event.detail.selected;
+
+    if (index === -1) {
+      index = 0;
+    }
 
     this.selected = selected;
     this.cursorIndex = index;
@@ -470,8 +478,9 @@ export class TembaList extends RapidElement {
       ${this.renderHeader()}
       <temba-options
         style="${this.getListStyle()}"
-        ?visible=${true}
-        ?block=${true}
+        visible
+        block
+        cursorSelection
         ?hideShadow=${this.hideShadow}
         ?collapsed=${this.collapsed}
         ?loading=${this.loading}

@@ -175,7 +175,7 @@ export class ContactBadges extends ContactStoreElement {
                 <temba-label
                   class="group"
                   onclick="goto(event)"
-                  href="/contact/filter/${group.uuid}/"
+                  href="/contact/group/${group.uuid}/"
                   icon=${group.is_dynamic ? Icon.group_smart : Icon.group}
                   clickable
                   shadow

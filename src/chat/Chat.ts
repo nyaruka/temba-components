@@ -3,7 +3,7 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { hashCode, renderAvatar } from '../utils';
+import { hashCode } from '../utils';
 import { renderMarkdown } from '../markdown';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
@@ -60,8 +60,30 @@ export class Chat extends RapidElement {
         z-index: 1;
       }
 
+      slot[name='header'] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: block;
+      }
+
+      slot[name='footer'] {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: block;
+      }
+
       .block {
         margin-bottom: 1em;
+        display: flex;
+        flex-direction: row;
+      }
+
+      .block.outgoing {
+        flex-direction: row-reverse;
       }
 
       .block.collapse {
@@ -115,7 +137,7 @@ export class Chat extends RapidElement {
         background: #fff;
       }
 
-      .avatar {
+      temba-user {
         margin-right: 0.6em;
         margin-left: 0.6em;
         width: 2em;
@@ -154,6 +176,7 @@ export class Chat extends RapidElement {
         padding-bottom: 0.25em;
         background: var(--color-chat-in, #f1f1f1);
         border-radius: var(--curvature);
+        border: var(--chat-border-in, none);
       }
 
       .bubble .name {
@@ -173,6 +196,7 @@ export class Chat extends RapidElement {
 
       .incoming .bubble {
         background: var(--color-chat-out, #3c92dd);
+        border: var(--chat-border-out, none);
         color: white;
       }
 
@@ -199,6 +223,10 @@ export class Chat extends RapidElement {
         word-break: break-word;
       }
 
+      .message-text {
+        white-space: pre-line;
+      }
+
       .chat {
         width: 28rem;
         border-radius: var(--curvature);
@@ -222,7 +250,6 @@ export class Chat extends RapidElement {
       }
 
       .messages {
-        background: #fff;
         position: relative;
         flex-grow: 1;
         overflow: hidden;
@@ -239,6 +266,7 @@ export class Chat extends RapidElement {
         -webkit-overflow-scrolling: touch;
         overflow-scrolling: touch;
         padding: 1em 1em 1em 1em;
+        padding-bottom: 2.5em;
         display: flex;
         flex-direction: column-reverse;
       }
@@ -463,6 +491,7 @@ export class Chat extends RapidElement {
       .bubble-wrap:hover .popup {
         transform: translateY(-120%);
         opacity: 1;
+        transition-delay: 1s;
       }
     `;
   }
@@ -689,46 +718,41 @@ export class Chat extends RapidElement {
     const incoming = this.agent
       ? currentMsg.type !== 'msg_in'
       : currentMsg.type === 'msg_in';
+
     const name = currentMsg.user?.name;
-    let avatar = currentMsg.user?.avatar;
+    const email = currentMsg.user?.email;
 
-    if (!currentMsg.user) {
-      avatar = this.defaultAvatar;
-    }
-
-    let showAvatar =
+    const showAvatar =
       ((currentMsg.type === 'note' ||
         currentMsg.type === 'msg_in' ||
         currentMsg.type === 'msg_out') &&
         this.agent) ||
       !incoming;
 
-    // if we don't have a name or avatar, skip it
-    showAvatar = showAvatar && (!!avatar || !!name);
-
     return html`
       ${!firstGroup ? timeDisplay : null}
       <div
         class="block  ${incoming ? 'incoming' : 'outgoing'} ${currentMsg.type}"
       >
-        ${msgIds.slice(0, msgIds.length - 1).map((msgId, index) => {
-          const msg = this.msgMap.get(msgId);
-          return html`<div class="row message">
-            ${showAvatar ? html`<div class="avatar"></div>` : null}
-            ${this.renderMessage(msg, index == 0 ? name : null)}
-          </div>`;
-        })}
-        <div class="row latest message">
-          ${showAvatar
-            ? html`<div class="avatar">
-                ${renderAvatar({ name: name, user: { avatar: avatar } })}
-              </div>`
-            : null}
-          ${this.renderMessage(
-            currentMsg,
-            showAvatar && msgIds.length === 1 ? name : null
-          )}
+        <div class="group-messages" style="flex-grow:1">
+          ${msgIds.map((msgId, index) => {
+            const msg = this.msgMap.get(msgId);
+            return html`<div class="row message">
+              ${this.renderMessage(msg, index == 0 ? name : null)}
+            </div>`;
+          })}
         </div>
+        ${showAvatar
+          ? html`<div class="avatar" style="align-self:flex-end">
+              <temba-user
+                email=${email}
+                name=${name}
+                avatar=${currentMsg.user?.avatar}
+                ?system=${!email && !name}
+              >
+              </temba-user>
+            </div>`
+          : null}
       </div>
       ${firstGroup ? timeDisplay : null}
     `;
@@ -760,7 +784,7 @@ export class Chat extends RapidElement {
               ? html`
                   <div class="bubble">
                     ${name ? html`<div class="name">${name}</div>` : null}
-                    <div class="message">${message.text}</div>
+                    <div class="message message-text">${message.text}</div>
 
                     <!--div>${message.date.toLocaleDateString(
                       undefined,
@@ -810,6 +834,8 @@ export class Chat extends RapidElement {
           class="${!this.fetching ? 'hidden' : ''}"
         ></temba-loading>
       </div>
+      <slot class="header" name="header"></slot>
+      <slot class="footer" name="footer"></slot>
     </div>`;
   }
 }

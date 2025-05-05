@@ -1,4 +1,4 @@
-import { html, PropertyValueMap, TemplateResult } from 'lit';
+import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -39,19 +39,11 @@ export class StoreMonitorElement extends RapidElement {
   }
 
   private handleStoreUpdated(event: CustomEvent) {
-    this.store.initialHttpComplete.then(() => {
-      this.storeUpdated(event);
-    });
+    this.storeUpdated(event);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
   protected storeUpdated(event: CustomEvent) {}
-
-  protected updated(
-    properties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(properties);
-  }
 
   connectedCallback(): void {
     super.connectedCallback();

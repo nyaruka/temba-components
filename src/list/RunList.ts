@@ -24,6 +24,9 @@ export class RunList extends TembaList {
   @property({ type: Object })
   selectedRun: any;
 
+  @property({ type: Boolean })
+  allowDelete = false;
+
   private resultKeys = {};
 
   static get styles() {
@@ -67,7 +70,9 @@ export class RunList extends TembaList {
 
     if (changedProperties.has('results')) {
       if (this.results) {
-        const select = this.shadowRoot.querySelector('temba-select') as Select;
+        const select = this.shadowRoot.querySelector(
+          'temba-select'
+        ) as Select<any>;
         select.setOptions(this.results);
         this.resultKeys = this.results.reduce(
           (current, result) => ({ ...current, [result.key]: result }),
@@ -210,6 +215,7 @@ export class RunList extends TembaList {
                 <temba-select
                   clearable
                   placeholder="Result Preview"
+                  valueKey="key"
                   @change=${this.handleColumnChanged}
                 />
               `
@@ -305,12 +311,14 @@ export class RunList extends TembaList {
               Started
             </div>
           </div>
-          <temba-icon
-            clickable
-            style="margin-left:0.75em;"
-            name=${Icon.delete}
-            onclick="deleteRun(${this.selectedRun.id});"
-          ></temba-icon>
+          ${this.allowDelete
+            ? html` <temba-icon
+                clickable
+                style="margin-left:0.75em;"
+                name=${Icon.delete}
+                onclick="deleteRun(${this.selectedRun.id});"
+              ></temba-icon>`
+            : null}
         </div>
 
         ${resultKeys.length > 0

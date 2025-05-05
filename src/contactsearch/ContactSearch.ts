@@ -423,7 +423,7 @@ export class ContactSearch extends FormElement {
   }
 
   private handleActivityLevelChanged(evt: any) {
-    const select = evt.target as Select;
+    const select = evt.target as Select<any>;
     const option = select.values[0];
     if (option) {
       if (this.exclusions['not_seen_since_days']) {
@@ -455,7 +455,7 @@ export class ContactSearch extends FormElement {
       if (checkbox.name === 'not_seen_since_days' && value) {
         const select = checkbox.parentElement.querySelector(
           'temba-select'
-        ) as Select;
+        ) as Select<any>;
         if (select.values[0]) {
           value = parseInt(select.values[0].value);
         } else {
@@ -563,7 +563,7 @@ export class ContactSearch extends FormElement {
                 .errors=${this.errors}
                 id="recipients"
                 name="recipients"
-                .value=${this.recipients}
+                .values=${this.recipients}
                 endpoint="/contact/omnibox/?"
                 @change=${this.handleRecipientsChanged}
               >

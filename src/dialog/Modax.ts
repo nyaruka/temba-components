@@ -278,10 +278,11 @@ export class Modax extends RapidElement {
     // this.cancelToken = CancelToken.source();
     this.fetching = true;
     this.body = this.getLoading();
-    getUrl(this.endpoint, null, this.getHeaders()).then(
-      (response: WebResponse) => {
+    getUrl(this.endpoint, null, this.getHeaders())
+      .then((response: WebResponse) => {
         // if it's a full page, breakout of the modal
         if (response.body.indexOf('<!DOCTYPE HTML>') == 0) {
+          this.open = false;
           document.location = response.url;
         } else {
           this.setBody(response.body);
@@ -293,8 +294,12 @@ export class Modax extends RapidElement {
             });
           });
         }
-      }
-    );
+      })
+      .catch((error) => {
+        this.fetching = false;
+        this.open = false;
+        this.fireCustomEvent(CustomEventType.Error, { error });
+      });
   }
 
   public submit(extra = {}): void {
@@ -320,7 +325,7 @@ export class Modax extends RapidElement {
     )
       .then((response: WebResponse) => {
         window.setTimeout(() => {
-          let redirect = response.headers.get('temba-success');
+          let redirect = response.headers.get('X-Temba-Success');
           if (
             !redirect &&
             response.url &&
@@ -342,6 +347,12 @@ export class Modax extends RapidElement {
               this.open = false;
             }
           } else {
+            if (response.body.indexOf('<!DOCTYPE HTML>') == 0) {
+              this.open = false;
+              document.location = response.url;
+              return;
+            }
+
             // if we set the body, update our submit button
             if (this.setBody(response.body)) {
               this.updateComplete.then(() => {

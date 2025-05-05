@@ -5,7 +5,7 @@ declare function typeInto(
   selector: string,
   text: string,
   replace?: boolean,
-  blur?: boolean
+  enter?: boolean
 );
 
 declare function type(text: string);

@@ -7,7 +7,8 @@ export class Button extends LitElement {
   static get styles() {
     return css`
       :host {
-        display: inline-block;
+        display: flex;
+        align-self: stretch;
         font-family: var(--font-family);
         font-weight: 400;
       }
@@ -29,13 +30,15 @@ export class Button extends LitElement {
       .button-container {
         color: #fff;
         cursor: pointer;
-        display: block;
+        display: flex;
+        flex-grow: 1;
         border-radius: var(--curvature);
         outline: none;
         transition: background ease-in var(--transition-speed);
         user-select: none;
         -webkit-user-select: none;
         text-align: center;
+        border: var(--button-border, none);
       }
 
       .button-name {
@@ -70,6 +73,7 @@ export class Button extends LitElement {
         transition: var(--transition-speed);
         background: var(--button-mask);
         display: flex;
+        align-items: center;
       }
 
       .button-container.disabled-button {
@@ -109,6 +113,10 @@ export class Button extends LitElement {
         color: var(--color-button-primary-text);
       }
 
+      .affirmative {
+        background: var(--color-button-attention);
+      }
+
       .light-button {
         background: var(--color-button-light);
         color: var(--color-button-light-text);
@@ -118,6 +126,10 @@ export class Button extends LitElement {
         border: 1px solid rgba(0, 0, 0, 0.1);
         color: rgba(0, 0, 0, 0.7);
         background: transparent;
+      }
+
+      .lined-button .button-mask {
+        flex-grow: 1;
       }
 
       .lined-button .button-mask:hover {

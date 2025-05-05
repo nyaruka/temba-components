@@ -82,7 +82,7 @@ const createJSONResponse = (mocked) => {
   return Promise.resolve(mockResponse);
 };
 
-const getResponse = (endpoint: string, options) => {
+const getResponse = (endpoint: string, options = { method: 'GET' }) => {
   // check if our path has been mocked in code
   const mocks = options.method === 'GET' ? gets : posts;
   const codeMock = mocks.find((mock) => mock.endpoint.test(endpoint));
@@ -99,7 +99,6 @@ const getResponse = (endpoint: string, options) => {
       return createJSONResponse(codeMock);
     }
   }
-
   // otherwise fetch over http
   return normalFetch(endpoint, options);
 };
@@ -113,6 +112,33 @@ before(async () => {
 after(() => {
   (window.fetch as any).restore();
 });
+
+const mockMapping = {
+  '/test-assets/api/users/admin1.json': [
+    /\/api\/v2\/users.json\?email=admin1@nyaruka.com/
+  ],
+  '/test-assets/api/users/editor1.json': [
+    /\/api\/v2\/users.json\?email=editor1@nyaruka.com/
+  ],
+  '/test-assets/api/users/agent1.json': [
+    /\/api\/v2\/users.json\?email=agent1@nyaruka.com/
+  ],
+  '/test-assets/api/users/viewer1.json': [
+    /\/api\/v2\/users.json\?email=viewer1@nyaruka.com/
+  ],
+  '/test-assets/contacts/contact-tickets.json': [
+    /\/api\/v2\/tickets.json\?contact=24d64810-3315-4ff5-be85-48e3fe055bf9/
+  ]
+};
+
+export const mockAPI = () => {
+  for (const key in mockMapping) {
+    const urls = mockMapping[key];
+    for (const url of urls) {
+      mockGET(url, key);
+    }
+  }
+};
 
 export const mockGET = (
   endpoint: RegExp,
@@ -212,6 +238,11 @@ export const getClip = (ele: HTMLElement) => {
   return newClip;
 };
 
+export const mouseClickElement = async (ele: HTMLElement) => {
+  const bounds = ele.getBoundingClientRect();
+  await mouseClick(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+};
+
 export const getHTMLAttrs = (attrs: any = {}) => {
   return Object.keys(attrs)
     .map((name: string) => `${name}='${attrs[name]}'`)
@@ -230,6 +261,7 @@ export const loadStore = async () => {
       languages='/test-assets/store/languages.json'
       fields='/test-assets/store/fields.json'
       users='/test-assets/store/users.json'
+      workspace='/test-assets/store/workspace.json'
     />`
   );
   await store.initialHttpComplete;

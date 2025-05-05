@@ -2,7 +2,13 @@
 import { html, TemplateResult } from 'lit-html';
 import { Button } from '../button/Button';
 import { Dialog } from '../dialog/Dialog';
-import { Attachment, ContactField, Ticket, User } from '../interfaces';
+import {
+  Attachment,
+  ContactField,
+  Shortcut,
+  Ticket,
+  User
+} from '../interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from '../toast/Toast';
 
@@ -10,7 +16,7 @@ export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
 export const colorHash = new ColorHash();
 
-export type Asset = KeyedAsset & Ticket & ContactField;
+export type Asset = KeyedAsset & Ticket & ContactField & Shortcut;
 
 export const DATE_FORMAT =
   /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
@@ -80,10 +86,21 @@ export const getHeaders = (headers: any = {}) => {
 
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
+  // include the current org id
+  const org_id = (window as any).org_id;
+  if (org_id) {
+    fetchHeaders['X-Temba-Org'] = org_id;
+  }
+
   // mark us as ajax
   fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 
   Object.keys(headers).forEach((key) => {
+    // if we are adding a service org, we omit temba-org
+    if (key === 'X-Temba-Service-Org') {
+      delete fetchHeaders['X-Temba-Org'];
+    }
+
     fetchHeaders[key] = headers[key];
   });
   return fetchHeaders;
@@ -106,6 +123,11 @@ export const getUrl = (
 
     fetch(url, options)
       .then((response) => {
+        if (response.status < 200 || response.status >= 300) {
+          reject(response);
+          return;
+        }
+
         response.text().then((body: string) => {
           let json = {};
           try {
@@ -160,7 +182,9 @@ export const fetchResultsPage = (
           next: response.json.next
         });
       })
-      .catch((error) => reject(error));
+      .catch((error) => {
+        return reject(error);
+      });
   });
 };
 
@@ -256,7 +280,7 @@ export const postUrl = (
           return;
         }
 
-        const toasts = response.headers.get('x-temba-toasts');
+        const toasts = response.headers.get('X-Temba-Toasts');
         if (toasts) {
           const toastEle = document.querySelector('temba-toast') as Toast;
           if (toastEle) {
@@ -309,7 +333,6 @@ export const postFormData = (
         }
       })
       .catch((err) => {
-        console.error(err);
         reject(err);
       });
   });
@@ -492,6 +515,18 @@ export class Stubbable {
 }
 
 export const stubbable = new Stubbable();
+
+export const spreadAttributes = (obj): TemplateResult[] => {
+  return Object.entries(obj).map(([key, value]) => {
+    if (key.startsWith('@')) {
+      return html`@${key.slice(1)}=${value}`;
+    } else if (key.startsWith('.')) {
+      return html`.${key.slice(1)}=${value}`;
+    } else {
+      return html`${key}=${value}`;
+    }
+  });
+};
 
 export const timeSince = (
   date: Date,
@@ -705,14 +740,6 @@ export const stopEvent = (event: Event) => {
     event.stopPropagation();
     event.preventDefault();
   }
-};
-
-export const getFullName = (user: User) => {
-  if (user.first_name && user.last_name) {
-    return `${user.first_name} ${user.last_name}`;
-  }
-
-  return user.email;
 };
 
 /**

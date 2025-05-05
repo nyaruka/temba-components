@@ -21,7 +21,7 @@ export class Checkbox extends FormElement {
       }
 
       .wrapper.label:hover {
-        background: #f9f9f9;
+        background: var(--checkbox-hover-bg, #f9f9f9);
       }
 
       temba-field {

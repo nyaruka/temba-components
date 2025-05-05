@@ -56,6 +56,7 @@ export interface User {
   id?: number;
   first_name?: string;
   last_name?: string;
+  name?: string;
   email?: string;
   role?: string;
   created_on?: string;
@@ -108,6 +109,13 @@ export interface Msg {
 export interface ObjectReference {
   uuid: string;
   name: string;
+}
+
+export interface Shortcut {
+  uuid: string;
+  name: string;
+  text: string;
+  modified_on: string;
 }
 
 export interface ContactField {
@@ -272,5 +280,9 @@ export enum CustomEventType {
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
   Resized = 'temba-resized',
-  DetailsChanged = 'temba-details-changed'
+  DetailsChanged = 'temba-details-changed',
+  Error = 'temba-error',
+  Interrupt = 'temba-interrupt',
+  Opened = 'temba-opened',
+  TicketUpdated = 'temba-ticket-updated'
 }
