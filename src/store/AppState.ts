@@ -168,7 +168,10 @@ export default createStore<AppState>()(
     updateCanvasPositions: (positions: CanvasPositions) => {
       set((state: AppState) => {
         for (const uuid in positions) {
-          state.flow.definition._ui.nodes[uuid].position = positions[uuid];
+          // todo: add nodes that are created and then moved, for now ignore
+          if (state.flow.definition._ui.nodes[uuid]) {
+            state.flow.definition._ui.nodes[uuid].position = positions[uuid];
+          }
         }
       });
     },
