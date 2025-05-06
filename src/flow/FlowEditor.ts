@@ -1,22 +1,26 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
+import { FlowDefinition } from '../store/flow-definition';
+import { getStore } from '../store/Store';
+import { AppState, fromStore, zustand } from '../store/AppState';
+import { RapidElement } from '../RapidElement';
 
-export class FlowEditor extends EndpointMonitorElement {
+export class FlowEditor extends RapidElement {
   @property({ type: String })
-  flow: string;
+  public flow: string;
 
   @property({ type: String })
-  version: string;
+  public version: string;
 
-  @property({ type: Boolean })
-  loading = true;
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private definition!: FlowDefinition;
 
   static get styles() {
     return css`
       :host {
         flex-grow: 1;
+        font-size: 13px;
       }
 
       .editor {
@@ -27,6 +31,7 @@ export class FlowEditor extends EndpointMonitorElement {
 
       .canvas {
         overflow: auto;
+        padding: 24px;
         box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
         border-top: 1px solid #e0e0e0;
         flex-grow: 1;
@@ -60,7 +65,15 @@ export class FlowEditor extends EndpointMonitorElement {
         background-size: 40px 40px;
         position: relative;
       }
+
+      .canvas-positions {
+        position: relative;
+      }
     `;
+  }
+
+  constructor() {
+    super();
   }
 
   protected updated(
@@ -68,24 +81,31 @@ export class FlowEditor extends EndpointMonitorElement {
   ): void {
     super.updated(changes);
     if (changes.has('flow')) {
-      this.store.fetchFlow(this.flow, this.version).then(() => {
-        this.loading = false;
-      });
+      getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+    }
+
+    if (changes.has('definition')) {
+      // console.log('definition updated', this.definition);
+      // test update renders
+      // if (this.definition) {
+      // getStore().getState().setTestUpdate();
+      // }
     }
   }
 
   public render(): TemplateResult {
     return html` <div class="editor">
       <div class="canvas">
-        ${this.loading
-          ? html`<temba-loading></temba-loading>`
-          : html`
-              ${this.store.getFlowSpec().definition.nodes.map((node) => {
+        <div class="canvas-positions">
+          ${this.definition
+            ? this.definition.nodes.map((node) => {
                 return html`<temba-flow-node
-                  node=${node.uuid}
+                  .node=${node}
+                  .ui=${this.definition._ui.nodes[node.uuid]}
                 ></temba-flow-node>`;
-              })}
-            `}
+              })
+            : html`<temba-loading></temba-loading>`}
+        </div>
       </div>
     </div>`;
   }

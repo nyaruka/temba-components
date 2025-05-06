@@ -7,12 +7,14 @@ import {
   renderSetRunResult
 } from './render';
 
-export const UI_CONFIG: {
-  [key: string]: {
-    name: string;
-    color: string;
-    render?: (node: any, action: any) => TemplateResult;
-  };
+export interface UIConfig {
+  name: string;
+  color: string;
+  render?: (node: any, action: any) => TemplateResult;
+}
+
+export const EDITOR_CONFIG: {
+  [key: string]: UIConfig;
 } = {
   set_run_result: {
     name: 'Save Flow Result',
