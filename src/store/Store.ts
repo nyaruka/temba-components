@@ -634,6 +634,8 @@ export class Store extends RapidElement {
     } else if (type === 'locals') {
       return info.locals;
     }
+
+    return this.keyedAssets[type] || [];
   }
 
   public getApp(): StoreApi<AppState> {
