@@ -69,6 +69,7 @@ export class Editor extends RapidElement {
         box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
         border-top: 1px solid #e0e0e0;
         display: inline-block;
+        width: 100%;
       }
 
       #canvas {
@@ -174,8 +175,8 @@ export class Editor extends RapidElement {
       <div id="editor">
         <div
           id="grid"
-          style="width:${this.canvasSize.width}px; height:${this.canvasSize
-            .height}px"
+          style="min-width:100%;width:${this.canvasSize.width}px; height:${this
+            .canvasSize.height}px"
         >
           <div id="canvas">
             ${this.definition
