@@ -322,7 +322,11 @@ describe('temba-select', () => {
     it('can select multiple options until maxitems', async () => {
       const select = await createSelect(
         clock,
-        getSelectHTML(colors, { placeholder: 'Select a color', multi: true, maxItems: 2 })
+        getSelectHTML(colors, {
+          placeholder: 'Select a color',
+          multi: true,
+          maxItems: 2
+        })
       );
       expect(select.values.length).to.equal(0);
 

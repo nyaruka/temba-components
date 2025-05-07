@@ -62,6 +62,41 @@ export interface Action {
   uuid: string;
 }
 
+export interface NamedObject {
+  uuid: string;
+  name: string;
+}
+
+export interface Group extends NamedObject {
+  status: string;
+  system: boolean;
+  query: string;
+  count: number;
+}
+
+export interface SendMsg extends Action {
+  text: string;
+  quick_replies: string[];
+}
+
+export interface SetRunResult extends Action {
+  category: string;
+  name: string;
+  value: string;
+}
+
+export interface SetContactName extends Action {
+  name: string;
+}
+
+export interface CallWebhook extends Action {
+  url: string;
+}
+
+export interface AddToGroup extends Action {
+  groups: Group[];
+}
+
 export interface Exit {
   uuid: string;
   destination_uuid?: string;
@@ -99,7 +134,7 @@ export interface Router {
   wait?: Wait;
 }
 
-export interface FlowNode {
+export interface Node {
   uuid: string;
   actions: Action[];
   exits: Exit[];
@@ -113,14 +148,14 @@ export interface FlowPosition {
   bottom?: number;
 }
 
-export interface UINode {
+export interface NodeUI {
   position: FlowPosition;
   type?: ActionType;
   config?: Record<string, any>;
 }
 
-export interface UIMetaData {
-  nodes: Record<string, UINode>;
+export interface FlowUI {
+  nodes: Record<string, NodeUI>;
   languages: Record<string, string>[];
   translation_filters?: { categories: boolean };
   auto_translations?: Record<string, Record<string, string[]>>;
@@ -130,10 +165,10 @@ export interface FlowDefinition {
   localization: LocalizationMap;
   language: string;
   name: string;
-  nodes: FlowNode[];
+  nodes: Node[];
   uuid: string;
   type: FlowTypes;
   revision: number;
   spec_version: string;
-  _ui: UIMetaData;
+  _ui: FlowUI;
 }

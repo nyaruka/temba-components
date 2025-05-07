@@ -28,7 +28,7 @@ import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { StoreMonitorElement } from './StoreMonitorElement';
 import { getFullName } from '../user/TembaUser';
-import app, { AppState } from './AppState';
+import { AppState, zustand } from './AppState';
 import { StoreApi } from 'zustand/vanilla';
 
 const { setLocale } = configureLocalization({
@@ -624,7 +624,7 @@ export class Store extends RapidElement {
   }
 
   public getCompletions(type: string) {
-    const info = this.getState().flow.info;
+    const info = this.getState().flowInfo;
     if (type === 'results') {
       return info.results.map((result) => result.key);
     } else if (type === 'locals') {
@@ -635,10 +635,10 @@ export class Store extends RapidElement {
   }
 
   public getApp(): StoreApi<AppState> {
-    return app;
+    return zustand;
   }
 
   public getState(): AppState {
-    return app.getState();
+    return zustand.getState();
   }
 }
