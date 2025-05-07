@@ -6,6 +6,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { property } from 'lit/decorators.js';
 
 export const FLOW_SPEC_VERSION = '14.3';
+const CANVAS_PADDING = 800;
 
 export interface InfoResult {
   key: string;
@@ -64,6 +65,8 @@ export interface AppState {
   workspace: Workspace;
   isTranslating: boolean;
 
+  canvasSize: { width: number; height: number };
+
   fetchRevision: (endpoint: string, id?: string) => void;
   fetchWorkspace: (endpoint: string) => Promise<void>;
   fetchAllLanguages: (endpoint: string) => Promise<void>;
@@ -75,6 +78,7 @@ export interface AppState {
   setFlowInfo: (info: FlowInfo) => void;
   setLanguageCode: (languageCode: string) => void;
   setTestUpdate: () => void;
+  expandCanvas: (width: number, height: number) => void;
 
   updateCanvasPositions: (positions: CanvasPositions) => void;
   removeNodes: (uuids: string[]) => void;
@@ -84,6 +88,7 @@ export const zustand = createStore<AppState>()(
   subscribeWithSelector(
     immer((set, get) => ({
       languageNames: {},
+      canvasSize: { width: 0, height: 0 },
       languageCode: '',
       workspace: null,
       flowDefinition: null,
@@ -176,6 +181,22 @@ export const zustand = createStore<AppState>()(
       setTestUpdate: () => {
         set((state: AppState) => {
           state.flowDefinition.name = 'Bloop!';
+        });
+      },
+
+      expandCanvas: (width: number, height: number) => {
+        set((state: AppState) => {
+          const minWidth = Math.max(
+            state.canvasSize.width,
+            width + CANVAS_PADDING
+          );
+          const minHeight = Math.max(
+            state.canvasSize.height,
+            height + CANVAS_PADDING
+          );
+
+          state.canvasSize.width = minWidth;
+          state.canvasSize.height = minHeight;
         });
       },
 

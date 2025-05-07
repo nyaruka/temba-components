@@ -1,7 +1,7 @@
 import { html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { FlowDetails } from '../interfaces';
-import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
+import { EndpointMonitorElement } from './EndpointMonitorElement';
 
 export class FlowStoreElement extends EndpointMonitorElement {
   @property({ type: String })
