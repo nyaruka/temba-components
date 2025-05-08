@@ -6,7 +6,7 @@ import { Icon } from '../vectoricon';
 interface Notification {
   created_on: string;
   type: string;
-  target_url: string;
+  url: string;
   is_seen: boolean;
   export?: {
     type: string;
@@ -58,7 +58,7 @@ export class NotificationList extends TembaList {
 
   constructor() {
     super();
-    this.valueKey = 'target_url';
+    this.valueKey = 'url';
     this.renderOption = (notification: Notification): TemplateResult => {
       let icon = null;
       let body = null;
