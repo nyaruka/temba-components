@@ -88,7 +88,7 @@ export class Editor extends RapidElement {
       }
 
       .plumb-source {
-        z-index: 300;
+        z-index: 800;
         border: 0px solid var(--color-connectors);
       }
 
@@ -132,11 +132,17 @@ export class Editor extends RapidElement {
       body svg.jtk-connector.jtk-hover path {
         stroke: var(--color-success) !important;
         stroke-width: 3px;
+        z-index: 1;
       }
 
       body .plumb-connector.jtk-hover .plumb-arrow {
         fill: var(--color-success) !important;
         stroke-width: 0px;
+      }
+
+      temba-flow-node {
+        z-index: 500;
+        position: absolute;
       }
     `;
   }

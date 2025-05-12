@@ -66,7 +66,6 @@ export class EditorNode extends RapidElement {
       .categories {
         display: flex;
         flex-direction: row;
-
       }
 
       .category {
@@ -75,6 +74,10 @@ export class EditorNode extends RapidElement {
         padding: 0.75em;
         flex-grow:1;
         text-align: center;
+        white-space: nowrap;
+        max-width: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .action-exits {
@@ -99,6 +102,7 @@ export class EditorNode extends RapidElement {
       .exit {
         padding-top: 10px;
         margin-bottom: -10px;
+        z-index: 600;
       }
   }`;
   }
