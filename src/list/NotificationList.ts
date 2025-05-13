@@ -141,10 +141,6 @@ export class NotificationList extends TembaList {
     </div>`;
   }
 
-  protected handleSelection(event: CustomEvent) {
-    super.handleSelected(event);
-  }
-
   public scrollToTop(): void {
     // scroll back to the top
     window.setTimeout(() => {

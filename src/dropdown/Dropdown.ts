@@ -120,11 +120,6 @@ export class Dropdown extends RapidElement {
   private activeFocus: any;
   private blurHandler: any;
 
-  public firstUpdated(props: any) {
-    super.firstUpdated(props);
-    this.resetBlurHandler();
-  }
-
   private resetBlurHandler() {
     const dropdown = this.shadowRoot.querySelector(
       '.dropdown'
@@ -136,7 +131,6 @@ export class Dropdown extends RapidElement {
 
     this.activeFocus = dropdown;
     this.blurHandler = this.handleBlur.bind(this);
-
     this.activeFocus.addEventListener('blur', this.blurHandler);
   }
 
@@ -167,9 +161,7 @@ export class Dropdown extends RapidElement {
 
   private closeDropdown() {
     this.activeFocus.removeEventListener('blur', this.blurHandler);
-
     this.open = false;
-    this.resetBlurHandler();
 
     window.setTimeout(() => {
       this.dormant = true;
