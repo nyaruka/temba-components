@@ -25,6 +25,7 @@ export class Options extends RapidElement {
         opacity: 0;
         z-index: 1000;
         pointer-events: none;
+        position: relative;
       }
 
       .shadow {

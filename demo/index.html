@@ -14,6 +14,11 @@
     />
 
     <style>
+
+      body {
+        overflow-x: hidden;
+      }
+
       .linked {
         text-decoration: underline;
         color: blue;
@@ -162,21 +167,23 @@
       </div>
     </temba-dropdown>
 
-    <div class="header">temba-components</div>
-    <!--temba-image-picker name="avatar" label="Profile Picture" shape="circle"></temba-image-picker-->
-    <!--temba-webchat channel="9e6b37a8-c649-48b3-92d1-dfa7c00b85dc"></temba-webchat-->
-    <!-- temba-template-editor url="/static/api/templates.json" lang="eng" template="580b124f-32cb-4003-b9e5-9eb783e29101"
+  <div class="header">temba-components</div>
+  <!--temba-image-picker name="avatar" label="Profile Picture" shape="circle"></temba-image-picker-->
+  <temba-webchat channel="3c475f82-fe6d-4c33-af35-954d1adbce03"></temba-webchat>
+  <!-- temba-template-editor url="/static/api/templates.json" lang="eng" template="580b124f-32cb-4003-b9e5-9eb783e29101"
     params="{&quot;body&quot;:[&quot;this&quot;, &quot;&quot;, &quot;that&quot;]}">
   </temba-template-editor-->
 
-    <temba-tabs collapses index="0">
-      <temba-tab name="Overview" icon="default">
-        <temba-progress
-          style="margin-bottom: 8px"
-          total="100"
-          current="25"
-          eta="2030-09-17T07:00:00.000Z"
-        ></temba-progress>
+  <temba-tabs collapses index="0">
+    <temba-tab name="Overview" icon="default">
+      <temba-chart style="margin-bottom:8px"></temba-chart>
+      <temba-progress style="margin-bottom:8px" total="100" current="25" eta="2030-09-17T07:00:00.000Z"></temba-progress>
+        <temba-checkbox label="Check this out" checked></temba-checkbox>
+        <temba-select placeholder="Select a color" clearable>
+          <temba-option name="Red" value="0"></temba-option>
+          <temba-option name="Green" value="1"></temba-option>
+          <temba-option name="Blue" value="2"></temba-option>
+        </temba-select>
 
         <div style="display: flex; flex-wrap: wrap">
           <temba-checkbox label="Check this out" checked></temba-checkbox>
