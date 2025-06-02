@@ -10,27 +10,22 @@ import Chart, { ChartType } from 'chart.js/auto';
 import 'chartjs-adapter-luxon';
 
 const colors = [
+  'rgba(54, 162, 235, 0.2)',
   'rgba(255, 159, 64, 0.2)',
   'rgba(75, 192, 192, 0.2)',
-  'rgba(54, 162, 235, 0.2)',
   'rgba(153, 102, 255, 0.2)',
   'rgba(255, 205, 86, 0.2)',
-  'rgba(255, 99, 132, 0.2)',
-  'rgba(201, 203, 207, 0.2)'
+  'rgba(255, 99, 132, 0.2)'
 ];
 
 const colorsBorder = [
+  'rgb(54, 162, 235)',
   'rgb(255, 159, 64)',
   'rgb(75, 192, 192)',
-  'rgb(54, 162, 235)',
   'rgb(153, 102, 255)',
   'rgb(255, 205, 86)',
-  'rgb(255, 99, 132)',
-  'rgb(201, 203, 207)'
+  'rgb(255, 99, 132)'
 ];
-
-const allBorderColor = 'rgb(54, 162, 235)';
-const allBackgroundColor = 'rgba(54, 162, 235, 0.2)';
 
 const otherBackgroundColor = 'rgba(201, 203, 207, 0.2)';
 const otherBorderColor = 'rgb(201, 203, 207)';
@@ -69,7 +64,16 @@ export class TembaChart extends RapidElement {
   dataname = 'Counts';
 
   @property({ type: Boolean })
+  single: boolean = false;
+
+  @property({ type: Boolean })
+  legend: boolean = false;
+
+  @property({ type: Boolean })
   config: boolean = false;
+
+  @property({ type: Number })
+  colorIndex: number = 0;
 
   @state()
   showConfig: boolean = false;
@@ -180,8 +184,12 @@ export class TembaChart extends RapidElement {
         } else {
           datasets.push({
             ...dataset,
-            backgroundColor: colors[datasets.length % colors.length],
-            borderColor: colorsBorder[datasets.length % colorsBorder.length],
+            backgroundColor:
+              colors[datasets.length + (this.colorIndex % colors.length)],
+            borderColor:
+              colorsBorder[
+                datasets.length + (this.colorIndex % colorsBorder.length)
+              ],
             borderWidth: 1
           });
         }
@@ -189,10 +197,10 @@ export class TembaChart extends RapidElement {
 
       if (datasets.length === 0) {
         datasets.push({
-          label: `All ${this.dataname}`,
+          label: this.single ? this.dataname : `All ${this.dataname}`,
           data: sums,
-          backgroundColor: allBackgroundColor,
-          borderColor: allBorderColor,
+          backgroundColor: colors[this.colorIndex % colors.length],
+          borderColor: colorsBorder[this.colorIndex % colorsBorder.length],
           borderWidth: 1
         });
       } else {
@@ -222,6 +230,11 @@ export class TembaChart extends RapidElement {
             datasets: this.datasets
           },
           options: {
+            plugins: {
+              legend: {
+                display: this.legend
+              }
+            },
             responsive: true,
             maintainAspectRatio: false,
             animation: {
