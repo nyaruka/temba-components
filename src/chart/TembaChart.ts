@@ -8,6 +8,7 @@ import { getStore } from '../store/Store';
 
 import Chart, { ChartType } from 'chart.js/auto';
 import 'chartjs-adapter-luxon';
+import { Duration } from 'luxon';
 
 const colors = [
   'rgba(255, 159, 64, 0.2)',
@@ -70,6 +71,9 @@ export class TembaChart extends RapidElement {
 
   @property({ type: Boolean })
   config: boolean = false;
+
+  @property({ type: Boolean })
+  durationFormat: boolean = false;
 
   @state()
   showConfig: boolean = false;
@@ -154,12 +158,44 @@ export class TembaChart extends RapidElement {
       this.updateChart();
     }
 
+    if (changes.has('durationFormat')) {
+      // If durationFormat changes, we need to recreate the chart with new options
+      if (this.chart) {
+        this.chart.destroy();
+        this.chart = null;
+      }
+      this.updateChart();
+    }
+
     if (changes.has('url')) {
       const store = getStore();
       store.getUrl(this.url).then((response) => {
         this.data = response.json.data;
       });
     }
+  }
+
+  private formatDuration(seconds: number): string {
+    const duration = Duration.fromObject({ seconds });
+    const units = duration.rescale();
+    
+    // Get all non-zero units in order of magnitude
+    const nonZeroUnits = [];
+    if (units.years > 0) nonZeroUnits.push({ value: Math.floor(units.years), unit: 'y' });
+    if (units.months > 0) nonZeroUnits.push({ value: Math.floor(units.months), unit: 'mo' });
+    if (units.days > 0) nonZeroUnits.push({ value: Math.floor(units.days), unit: 'd' });
+    if (units.hours > 0) nonZeroUnits.push({ value: Math.floor(units.hours), unit: 'h' });
+    if (units.minutes > 0) nonZeroUnits.push({ value: Math.floor(units.minutes), unit: 'm' });
+    if (units.seconds > 0) nonZeroUnits.push({ value: Math.floor(units.seconds), unit: 's' });
+    
+    // Return only the two largest units
+    const topTwoUnits = nonZeroUnits.slice(0, 2);
+    
+    if (topTwoUnits.length === 0) {
+      return '0s';
+    }
+    
+    return topTwoUnits.map(u => `${u.value}${u.unit}`).join(' ');
   }
 
   private calculateSplits() {
@@ -237,10 +273,30 @@ export class TembaChart extends RapidElement {
                 loop: true
               }
             },
+            ...(this.durationFormat && {
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: (context: any) => {
+                      const label = context.dataset.label || '';
+                      const formattedValue = this.formatDuration(context.parsed.y);
+                      return `${label}: ${formattedValue}`;
+                    }
+                  }
+                }
+              }
+            }),
             scales: {
               y: {
                 min: 0,
-                stacked: true
+                stacked: true,
+                ...(this.durationFormat && {
+                  ticks: {
+                    callback: (value: number) => {
+                      return this.formatDuration(value);
+                    }
+                  }
+                })
               },
               x: {
                 type: 'time',
