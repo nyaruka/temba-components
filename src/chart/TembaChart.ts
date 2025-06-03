@@ -210,7 +210,6 @@ export class TembaChart extends RapidElement {
       // keep a running list of values that is the sum at each index
       const sums = [];
       for (const dataset of this.data.datasets) {
-        console.log(dataset);
         if (this.splits.find((s) => s === dataset.label) === undefined) {
           // update our sums
           for (let i = 0; i < dataset.data.length; i++) {
