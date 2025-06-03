@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { RapidChartData, TembaChart } from '../src/chart/TembaChart';
+import { RapidChartData, TembaChart, formatDurationFromSeconds } from '../src/chart/TembaChart';
 import { getComponent } from './utils.test';
 
 const sampleData: RapidChartData = {
@@ -62,5 +62,148 @@ describe('temba-chart', () => {
     // Test that we can set formatDuration to true
     chart.formatDuration = true;
     expect(chart.formatDuration).to.equal(true);
+  });
+
+  it('formats duration values correctly', async () => {
+    const chart: TembaChart = await getChart();
+    
+    // Access the formatDurationFromSeconds function through the chart's module
+    // We need to test the duration formatting logic
+    const durationData: RapidChartData = {
+      labels: ['Day 1', 'Day 2', 'Day 3'],
+      datasets: [
+        {
+          label: 'Process Time',
+          data: [68787, 958000, 3661] // seconds that should be formatted as durations
+        }
+      ]
+    };
+
+    chart.formatDuration = true;
+    chart.data = durationData;
+    await chart.updateComplete;
+    
+    // Wait for the chart to be created after data is set
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Test that the chart was created and has the duration formatting enabled
+    expect(chart.formatDuration).to.equal(true);
+    expect(chart.chart).to.exist;
+    
+    // Test that the chart configuration includes the duration formatting
+    const chartConfig = chart.chart.options;
+    expect(chartConfig.scales.y.ticks).to.exist;
+    expect(chartConfig.scales.y.ticks.callback).to.be.a('function');
+    
+    // Test the tick callback function formatting
+    const tickCallback = chartConfig.scales.y.ticks.callback;
+    expect(tickCallback(68787)).to.equal('19h 6m');
+    expect(tickCallback(958000)).to.equal('11d 2h');
+    expect(tickCallback(3661)).to.equal('1h 1m');
+    expect(tickCallback(120)).to.equal('2m');
+    expect(tickCallback(0)).to.equal('0s');
+    
+    // Test tooltip formatting
+    expect(chartConfig.plugins.tooltip.callbacks.label).to.be.a('function');
+    const tooltipCallback = chartConfig.plugins.tooltip.callbacks.label;
+    
+    const mockContext = {
+      dataset: { label: 'Process Time' },
+      parsed: { y: 68787 }
+    };
+    expect(tooltipCallback(mockContext)).to.equal('Process Time: 19h 6m');
+  });
+
+  it('formats various duration edge cases correctly', async () => {
+    const chart: TembaChart = await getChart();
+    chart.formatDuration = true;
+    chart.data = sampleData;
+    await chart.updateComplete;
+    
+    // Wait for the chart to be created after data is set
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(chart.chart).to.exist;
+    const tickCallback = chart.chart.options.scales.y.ticks.callback;
+    
+    // Test edge cases for duration formatting
+    expect(tickCallback(0)).to.equal('0s');
+    expect(tickCallback(1)).to.equal('1s');
+    expect(tickCallback(59)).to.equal('59s');
+    expect(tickCallback(60)).to.equal('1m');
+    expect(tickCallback(61)).to.equal('1m 1s');
+    expect(tickCallback(3600)).to.equal('1h');
+    expect(tickCallback(3661)).to.equal('1h 1m');
+    expect(tickCallback(86400)).to.equal('1d');
+    expect(tickCallback(90061)).to.equal('1d 1h'); // 1 day, 1 hour, 1 minute, 1 second - should show only first two units
+    expect(tickCallback(604800)).to.equal('7d'); // 1 week in seconds
+    expect(tickCallback(1209600)).to.equal('14d'); // 2 weeks in seconds
+  });
+
+  it('respects formatDuration property state', async () => {
+    const chart: TembaChart = await getChart();
+    
+    // Test default state
+    expect(chart.formatDuration).to.equal(false);
+    
+    chart.data = sampleData;
+    await chart.updateComplete;
+    
+    // Test that formatDuration property can be toggled
+    chart.formatDuration = true;
+    expect(chart.formatDuration).to.equal(true);
+    
+    chart.formatDuration = false;
+    expect(chart.formatDuration).to.equal(false);
+  });
+});
+
+describe('formatDurationFromSeconds', () => {
+  it('formats zero correctly', () => {
+    expect(formatDurationFromSeconds(0)).to.equal('0s');
+  });
+
+  it('formats seconds only', () => {
+    expect(formatDurationFromSeconds(1)).to.equal('1s');
+    expect(formatDurationFromSeconds(30)).to.equal('30s');
+    expect(formatDurationFromSeconds(59)).to.equal('59s');
+  });
+
+  it('formats minutes and seconds', () => {
+    expect(formatDurationFromSeconds(60)).to.equal('1m');
+    expect(formatDurationFromSeconds(61)).to.equal('1m 1s');
+    expect(formatDurationFromSeconds(90)).to.equal('1m 30s');
+    expect(formatDurationFromSeconds(120)).to.equal('2m');
+    expect(formatDurationFromSeconds(3599)).to.equal('59m 59s');
+  });
+
+  it('formats hours and minutes', () => {
+    expect(formatDurationFromSeconds(3600)).to.equal('1h');
+    expect(formatDurationFromSeconds(3661)).to.equal('1h 1m');
+    expect(formatDurationFromSeconds(7200)).to.equal('2h');
+    expect(formatDurationFromSeconds(68787)).to.equal('19h 6m');
+  });
+
+  it('formats days and hours', () => {
+    expect(formatDurationFromSeconds(86400)).to.equal('1d');
+    expect(formatDurationFromSeconds(90000)).to.equal('1d 1h');
+    expect(formatDurationFromSeconds(958000)).to.equal('11d 2h');
+  });
+
+  it('shows only two most significant units', () => {
+    // 1 day, 1 hour, 1 minute, 1 second - should show only "1d 1h"
+    expect(formatDurationFromSeconds(90061)).to.equal('1d 1h');
+    
+    // 2 hours, 30 minutes, 45 seconds - should show only "2h 30m"
+    expect(formatDurationFromSeconds(9045)).to.equal('2h 30m');
+    
+    // 5 minutes, 30 seconds - should show "5m 30s"
+    expect(formatDurationFromSeconds(330)).to.equal('5m 30s');
+  });
+
+  it('handles large durations', () => {
+    expect(formatDurationFromSeconds(604800)).to.equal('7d'); // 1 week
+    expect(formatDurationFromSeconds(1209600)).to.equal('14d'); // 2 weeks
+    expect(formatDurationFromSeconds(2678400)).to.equal('31d'); // ~1 month
   });
 });

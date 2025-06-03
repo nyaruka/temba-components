@@ -39,7 +39,7 @@ const otherBorderColor = 'rgb(201, 203, 207)';
  * Formats a duration in seconds to a human-readable string showing the two largest units.
  * Examples: 68787 -> "19h 6m", 958000 -> "11d 2h", 3661 -> "1h 1m"
  */
-function formatDurationFromSeconds(seconds: number): string {
+export function formatDurationFromSeconds(seconds: number): string {
   if (seconds === 0) {
     return '0s';
   }
