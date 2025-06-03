@@ -410,6 +410,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   disabled = false;
 
+  @property({ type: Boolean })
+  attemptedOpen = false;
+
   @property({ attribute: false })
   selectedIndex = -1;
 
@@ -863,6 +866,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     this.visibleOptions = [];
+    this.attemptedOpen = false;
     this.input = '';
     this.next = null;
     this.complete = true;
@@ -1212,6 +1216,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleBlur() {
     this.focused = false;
+    this.attemptedOpen = false;
     if (this.visibleOptions.length > 0) {
       this.input = '';
       this.next = null;
@@ -1322,6 +1327,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleCancel() {
     this.visibleOptions = [];
+    this.attemptedOpen = false;
   }
 
   private handleCursorChanged(event: CustomEvent) {
@@ -1332,6 +1338,7 @@ export class Select<T extends SelectOption> extends FormElement {
     event.stopPropagation();
     event.preventDefault();
     this.focused = true;
+    this.attemptedOpen = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
       if (input) {
@@ -1620,7 +1627,7 @@ export class Select<T extends SelectOption> extends FormElement {
     .getName=${this.getNameInternal}
     ?static-width=${this.optionWidth}
     ?anchor-right=${this.anchorRight}
-    ?visible=${this.visibleOptions.length > 0}
+    ?visible=${this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)}
     ></temba-options>
 
     <temba-options
