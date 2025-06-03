@@ -1341,7 +1341,6 @@ export class Select<T extends SelectOption> extends FormElement {
     event.stopPropagation();
     event.preventDefault();
     this.focused = true;
-    this.attemptedOpen = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
       if (input) {
@@ -1350,10 +1349,12 @@ export class Select<T extends SelectOption> extends FormElement {
         return;
       }
 
-      if (this.visibleOptions.length > 0) {
+      // Check if dropdown is currently open (either with options or showing "No options")
+      if (this.isOpen()) {
         this.visibleOptions = [];
         this.attemptedOpen = false;
       } else {
+        this.attemptedOpen = true;
         this.requestUpdate('input');
         // Also trigger an immediate update to show empty dropdown
         this.requestUpdate();
