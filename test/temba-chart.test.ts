@@ -58,7 +58,7 @@ describe('temba-chart', () => {
 
     // Test the formatDuration method directly
     expect((chart as any).formatDuration(68787)).to.equal('19h 6m');
-    expect((chart as any).formatDuration(958000)).to.equal('11d 2h'); 
+    expect((chart as any).formatDuration(958000)).to.equal('11d 2h');
     expect((chart as any).formatDuration(0)).to.equal('0s');
     expect((chart as any).formatDuration(60)).to.equal('1m');
     expect((chart as any).formatDuration(3600)).to.equal('1h');
