@@ -310,6 +310,10 @@ describe('utils/index', () => {
   });
 
   describe('oxford', () => {
+    it('returns empty string for empty array', () => {
+      expect(oxford([])).to.equal('');
+    });
+
     it('returns single item unchanged', () => {
       expect(oxford(['apple'])).to.equal('apple');
     });
@@ -318,13 +322,20 @@ describe('utils/index', () => {
       expect(oxford(['apple', 'banana'])).to.equal('apple and banana');
     });
 
-    it('joins three items with oxford comma (but note: this has a bug in the implementation)', () => {
-      // The current implementation has a bug - it duplicates the last item
-      expect(oxford(['apple', 'banana', 'cherry'])).to.equal('apple, banana, cherryandcherry');
+    it('joins three items with oxford comma', () => {
+      expect(oxford(['apple', 'banana', 'cherry'])).to.equal('apple, banana, and cherry');
+    });
+
+    it('joins four items with oxford comma', () => {
+      expect(oxford(['apple', 'banana', 'cherry', 'date'])).to.equal('apple, banana, cherry, and date');
     });
 
     it('uses custom joiner', () => {
       expect(oxford(['apple', 'banana'], 'or')).to.equal('apple or banana');
+    });
+
+    it('uses custom joiner with three items', () => {
+      expect(oxford(['apple', 'banana', 'cherry'], 'or')).to.equal('apple, banana, or cherry');
     });
 
     it('handles template results for two items', () => {
@@ -342,21 +353,19 @@ describe('utils/index', () => {
   });
 
   describe('oxfordFn', () => {
-    it('applies function to items before joining (inherits oxford bug)', () => {
+    it('applies function to items before joining', () => {
       const items = [1, 2, 3];
       const fn = (x: number) => x * 2;
       const result = oxfordFn(items, fn);
-      // This also has the oxford bug
-      expect(result).to.equal('2, 4, 6and6');
+      expect(result).to.equal('2, 4, and 6');
     });
   });
 
   describe('oxfordNamed', () => {
-    it('joins named objects (inherits oxford bug)', () => {
+    it('joins named objects', () => {
       const items = [{ name: 'Alice' }, { name: 'Bob' }, { name: 'Charlie' }];
       const result = oxfordNamed(items);
-      // This also has the oxford bug
-      expect(result).to.equal('Alice, Bob, CharlieandCharlie');
+      expect(result).to.equal('Alice, Bob, and Charlie');
     });
   });
 
@@ -1328,8 +1337,8 @@ describe('utils/index', () => {
 
     describe('edge cases', () => {
       it('handles oxford function with edge cases', () => {
-        // Test empty array - the function behavior on empty array
-        expect(oxford([])).to.equal('andundefined'); // This is the actual buggy behavior
+        // Test empty array - should return empty string
+        expect(oxford([])).to.equal('');
         
         // Test with non-string items - returns template result
         const result = oxford([null, undefined]);
