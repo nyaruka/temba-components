@@ -685,7 +685,7 @@ export class Options extends RapidElement {
       <div class=${classes} style=${styleMap(containerStyle)}>
         <div class="options-scroll" @scroll=${this.handleInnerScroll}>
           <div class="${classesInner}" style=${styleMap(optionsStyle)}>
-            ${options.length > 0 
+            ${options.length > 0
               ? options.map((option, index) => {
                   return html`<div
                     data-option-index="${index}"
@@ -696,13 +696,18 @@ export class Options extends RapidElement {
                       ? 'focused'
                       : ''}"
                   >
-                    ${this.resolvedRenderOption(option, index === this.cursorIndex)}
+                    ${this.resolvedRenderOption(
+                      option,
+                      index === this.cursorIndex
+                    )}
                   </div>`;
                 })
-              : html`<div class="option no-options" style="color: var(--color-text-dark-secondary); cursor: default;">
+              : html`<div
+                  class="option no-options"
+                  style="color: var(--color-text-dark-secondary); cursor: default;"
+                >
                   ${msg('No options')}
-                </div>`
-            }
+                </div>`}
             ${this.block ? html`<div style="height:0.1em"></div>` : null}
           </div>
           <slot></slot>

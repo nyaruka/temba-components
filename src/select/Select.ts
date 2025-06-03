@@ -959,7 +959,9 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public isOpen(): boolean {
-    return this.visibleOptions.length > 0;
+    return (
+      this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)
+    );
   }
 
   public setOptions(options: any[]): void {
@@ -1292,6 +1294,7 @@ export class Select<T extends SelectOption> extends FormElement {
         this.visibleOptions.length === 0 &&
         this.completionOptions.length === 0
       ) {
+        this.attemptedOpen = true;
         this.requestUpdate('input');
         return;
       }
@@ -1351,6 +1354,8 @@ export class Select<T extends SelectOption> extends FormElement {
         this.visibleOptions = [];
       } else {
         this.requestUpdate('input');
+        // Also trigger an immediate update to show empty dropdown
+        this.requestUpdate();
       }
     }
   }
@@ -1627,7 +1632,9 @@ export class Select<T extends SelectOption> extends FormElement {
     .getName=${this.getNameInternal}
     ?static-width=${this.optionWidth}
     ?anchor-right=${this.anchorRight}
-    ?visible=${this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)}
+    ?visible=${
+      this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)
+    }
     ></temba-options>
 
     <temba-options

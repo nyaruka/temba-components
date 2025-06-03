@@ -235,26 +235,29 @@ describe('temba-select', () => {
   });
 
   it('shows no options message when opening with empty options', async () => {
-    const select = await createSelect(clock, getSelectHTML([], { placeholder: 'Select an option' }));
-    
+    const select = await createSelect(
+      clock,
+      getSelectHTML([], { placeholder: 'Select an option' })
+    );
+
     // attempt to open the select with no options
     await open(clock, select);
-    
+
     // should show options dropdown even though there are no options
     const options = getOptions(select);
     assert.instanceOf(options, Options);
-    
+
     // the options dropdown should be visible
     assert.isTrue(
       options.shadowRoot
         .querySelector('.options-container')
         .classList.contains('show')
     );
-    
+
     // should contain a "No options" message
     const noOptionsText = options.shadowRoot.textContent;
     assert.include(noOptionsText.toLowerCase(), 'no options');
-    
+
     await assertScreenshot('select/empty-options', getClipWithOptions(select));
   });
 
