@@ -702,12 +702,14 @@ export class Options extends RapidElement {
                     )}
                   </div>`;
                 })
-              : html`<div
+              : this.visible
+              ? html`<div
                   class="option no-options"
                   style="color: var(--color-text-dark-secondary); cursor: default;"
                 >
                   ${msg('No options')}
-                </div>`}
+                </div>`
+              : null}
             ${this.block ? html`<div style="height:0.1em"></div>` : null}
           </div>
           <slot></slot>
