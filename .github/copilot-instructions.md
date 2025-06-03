@@ -108,6 +108,10 @@ This ordering ensures:
 - Write descriptive test names and clear assertions
 - Ensure all modified code paths have corresponding test coverage
 
+## Formatting ##
+- We use prettier for formatting, review the settings in .prettierrc
+- When commmenting, if it is more than one sentence use standard case and punctuation, however for short comments, all lowercase is preferred
+
 ## Component Development
 When creating or modifying components:
 
