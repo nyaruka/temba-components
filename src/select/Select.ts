@@ -1638,7 +1638,7 @@ export class Select<T extends SelectOption> extends FormElement {
     ?visible=${
       this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)
     }
-    ?showEmptyMessage=${this.attemptedOpen && this.focused}
+    ?showEmptyMessage=${this.attemptedOpen && this.focused && this.visibleOptions.length === 0 && !this.input && this.staticOptions.length === 0 && !this.endpoint}
     ></temba-options>
 
     <temba-options
