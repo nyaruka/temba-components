@@ -21,6 +21,8 @@ All tests are run using:
 yarn test
 ```
 
+This will generate coverage information by default.
+
 ### Test Coverage Requirements
 - **100% code coverage** is expected for all code we touch
 - The aim is to maintain complete test coverage across the codebase
@@ -39,6 +41,8 @@ Tests live under the `/test` directory and follow these patterns:
 2. **Test file naming:** Use the pattern `temba-{component}.test.ts`
 
 3. **Test organization:** Use `describe()` blocks for component grouping and `it()` for individual test cases
+
+4. **Test methodology:** These are ui based tests, so whenever possbile, the test should be written from the user's perspective. In other words, you should instrument a click in the browser to test behavior as a user would instead of calling instance methods on components. Instance method calling can be appropriate at times but should be used sparingly. For example, use the mouseClickElement() test method or the methods in src/untyped.d.ts for pressing keys, typing, using the mouse, etc.
 
 ### Screenshot Testing
 This project includes visual regression testing through screenshot comparison:
