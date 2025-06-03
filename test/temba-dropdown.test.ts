@@ -4,6 +4,14 @@ import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-dropdown';
 
+// Helper function to wait for stable rendering
+const waitForStableRender = async (dropdown: Dropdown, timeoutMs = 200) => {
+  await dropdown.updateComplete;
+  // Double wait to ensure any async positioning is complete
+  await new Promise(resolve => setTimeout(resolve, timeoutMs));
+  await dropdown.updateComplete;
+};
+
 // Helper function to get expanded clip that includes dropdown content when open
 const getDropdownClip = (dropdown: Dropdown) => {
   if (!dropdown.open) {
@@ -87,10 +95,7 @@ describe(TAG, () => {
     
     // Open the dropdown properly by clicking
     toggle.click();
-    await dropdown.updateComplete;
-    
-    // Wait for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Test expected values first
     expect(dropdown.mask).to.equal(true);
@@ -111,10 +116,7 @@ describe(TAG, () => {
     
     // Click the toggle
     toggle.click();
-    await dropdown.updateComplete;
-    
-    // Wait a bit for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Verify dropdown opened
     expect(dropdown.open).to.equal(true);
@@ -130,10 +132,7 @@ describe(TAG, () => {
     
     // Open the dropdown properly by clicking
     toggle.click();
-    await dropdown.updateComplete;
-    
-    // Wait for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Test expected values first
     expect(dropdown.arrowSize).to.equal(12);
@@ -154,10 +153,7 @@ describe(TAG, () => {
     
     // Trigger position calculation
     dropdown.calculatePosition();
-    await dropdown.updateComplete;
-    
-    // Wait for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Verify position styles were calculated
     expect(Object.keys(dropdown.dropdownStyle).length).to.be.greaterThan(0);
@@ -253,10 +249,7 @@ describe(TAG, () => {
     
     // Open the dropdown properly by clicking
     toggle.click();
-    await dropdown.updateComplete;
-    
-    // Wait for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Get actual element bounds to simulate collision
     const dropdownDiv = dropdown.shadowRoot.querySelector('.dropdown') as HTMLDivElement;
@@ -279,7 +272,7 @@ describe(TAG, () => {
     try {
       // Trigger position calculation
       dropdown.calculatePosition();
-      await dropdown.updateComplete;
+      await waitForStableRender(dropdown);
       
       // Verify position was adjusted for right edge
       expect(dropdown.dropdownStyle).to.have.property('left');
@@ -303,10 +296,7 @@ describe(TAG, () => {
     
     // Open the dropdown properly by clicking
     toggle.click();
-    await dropdown.updateComplete;
-    
-    // Wait for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Get actual element bounds to simulate collision
     const dropdownDiv = dropdown.shadowRoot.querySelector('.dropdown') as HTMLDivElement;
@@ -329,7 +319,7 @@ describe(TAG, () => {
     try {
       // Trigger position calculation
       dropdown.calculatePosition();
-      await dropdown.updateComplete;
+      await waitForStableRender(dropdown);
       
       // Verify position was adjusted for bottom edge (bumped up)
       expect(dropdown.dropdownStyle).to.have.property('top');
@@ -358,10 +348,7 @@ describe(TAG, () => {
     
     // Trigger position calculation
     dropdown.calculatePosition();
-    await dropdown.updateComplete;
-    
-    // Wait for positioning and transitions
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitForStableRender(dropdown);
     
     // Verify arrow positioning was adjusted for narrow toggle
     expect(dropdown.dropdownStyle).to.have.property('marginLeft');
