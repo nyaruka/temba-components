@@ -210,6 +210,7 @@ export class TembaChart extends RapidElement {
       // keep a running list of values that is the sum at each index
       const sums = [];
       for (const dataset of this.data.datasets) {
+        console.log(dataset);
         if (this.splits.find((s) => s === dataset.label) === undefined) {
           // update our sums
           for (let i = 0; i < dataset.data.length; i++) {
@@ -271,7 +272,19 @@ export class TembaChart extends RapidElement {
             plugins: {
               legend: {
                 display: this.legend
-              }
+              },
+              ...(this.formatDuration && {
+                tooltip: {
+                  callbacks: {
+                    label: (context: any) => {
+                      const label = context.dataset.label || '';
+                      const value = context.parsed.y;
+                      const formattedValue = formatDurationFromSeconds(value);
+                      return `${label}: ${formattedValue}`;
+                    }
+                  }
+                }
+              })
             },
             responsive: true,
             maintainAspectRatio: false,
@@ -314,21 +327,7 @@ export class TembaChart extends RapidElement {
                 },
                 stacked: true
               }
-            },
-            ...(this.formatDuration && {
-              plugins: {
-                tooltip: {
-                  callbacks: {
-                    label: (context: any) => {
-                      const label = context.dataset.label || '';
-                      const value = context.parsed.y;
-                      const formattedValue = formatDurationFromSeconds(value);
-                      return `${label}: ${formattedValue}`;
-                    }
-                  }
-                }
-              }
-            })
+            }
           }
         };
         this.chart = new Chart(this.ctx, chartData as any);
