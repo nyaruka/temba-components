@@ -112,5 +112,6 @@ When creating or modifying components:
 3. Add screenshot tests for visual states
 4. Verify 100% coverage of modified code
 5. Run full test suite to ensure no regressions
+6. Make sure building for production yields no errors
 
 Remember: The goal is robust, well-tested components with both functional and visual verification.
