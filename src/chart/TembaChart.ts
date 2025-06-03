@@ -185,10 +185,10 @@ export class TembaChart extends RapidElement {
           datasets.push({
             ...dataset,
             backgroundColor:
-              colors[datasets.length + (this.colorIndex % colors.length)],
+              colors[(datasets.length + this.colorIndex) % colors.length],
             borderColor:
               colorsBorder[
-                datasets.length + (this.colorIndex % colorsBorder.length)
+                (datasets.length + this.colorIndex) % colorsBorder.length
               ],
             borderWidth: 1
           });
