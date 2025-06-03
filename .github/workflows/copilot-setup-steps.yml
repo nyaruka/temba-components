@@ -6,7 +6,7 @@ on:
   push:
 
 jobs:
-  setup:
+  copilot-setup-steps:
     # Only run when push is initiated by the Copilot agent (GitHub Actions bot)
     # This avoids unnecessary runs on regular developer pushes
     if: github.actor == 'github-actions[bot]'
