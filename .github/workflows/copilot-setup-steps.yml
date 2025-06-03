@@ -19,6 +19,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      
+      # Setup Chrome browser for Puppeteer tests to avoid firewall issues
+      # This uses the official Chrome setup that handles firewall restrictions
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
           
       # Cache yarn dependencies to speed up future runs
       # Uses yarn.lock as the cache key for dependency consistency
@@ -32,17 +39,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
       
-      # Install project dependencies using yarn
-      # Skip Puppeteer Chromium download since it's not needed for setup
+      # Cache Puppeteer browsers to avoid repeated downloads
+      - name: Cache Puppeteer browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/puppeteer
+            node_modules/.cache/puppeteer
+          key: ${{ runner.os }}-puppeteer-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-puppeteer-
+      
+      # Install project dependencies including Puppeteer with Chromium
+      # Now allows Puppeteer to download Chromium since we handle firewall issues
       - name: Install dependencies
         run: yarn install
         env:
-          PUPPETEER_SKIP_DOWNLOAD: true
+          # Set Puppeteer to use system Chrome if available to avoid downloads
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
       
       # Pre-build the project to warm up the environment
       # This compiles TypeScript, processes SVG icons, and creates distribution files
       - name: Build project
         run: yarn build
+        
+      # Run tests to ensure Puppeteer setup works correctly
+      # This validates that the browser dependencies are properly configured
+      - name: Validate Puppeteer setup
+        run: yarn test --reporter=summary
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
         
       # Cache the built output to speed up subsequent operations
       - name: Cache build output
