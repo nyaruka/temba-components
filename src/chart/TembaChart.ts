@@ -35,6 +35,41 @@ const allBackgroundColor = 'rgba(54, 162, 235, 0.2)';
 const otherBackgroundColor = 'rgba(201, 203, 207, 0.2)';
 const otherBorderColor = 'rgb(201, 203, 207)';
 
+/**
+ * Formats a duration in seconds to a human-readable string showing the two largest units.
+ * Examples: 68787 -> "19h 6m", 958000 -> "11d 2h", 3661 -> "1h 1m"
+ */
+function formatDurationFromSeconds(seconds: number): string {
+  if (seconds === 0) {
+    return '0s';
+  }
+
+  const totalDays = Math.floor(seconds / 86400);
+  const remainingAfterDays = seconds % 86400;
+  const remainingHours = Math.floor(remainingAfterDays / 3600);
+  const remainingAfterHours = remainingAfterDays % 3600;
+  const remainingMinutes = Math.floor(remainingAfterHours / 60);
+  const remainingSeconds = remainingAfterHours % 60;
+
+  const units = [];
+
+  if (totalDays > 0) {
+    units.push(`${totalDays}d`);
+  }
+  if (remainingHours > 0) {
+    units.push(`${remainingHours}h`);
+  }
+  if (remainingMinutes > 0 && units.length < 2) {
+    units.push(`${remainingMinutes}m`);
+  }
+  if (remainingSeconds > 0 && units.length < 2) {
+    units.push(`${remainingSeconds}s`);
+  }
+
+  // Return the first two most significant units
+  return units.slice(0, 2).join(' ');
+}
+
 export interface RapidChartData {
   labels: string[];
   datasets: { label: string; data: number[] }[];
@@ -70,6 +105,9 @@ export class TembaChart extends RapidElement {
 
   @property({ type: Boolean })
   config: boolean = false;
+
+  @property({ type: Boolean })
+  formatDuration: boolean = false;
 
   @state()
   showConfig: boolean = false;
@@ -240,7 +278,14 @@ export class TembaChart extends RapidElement {
             scales: {
               y: {
                 min: 0,
-                stacked: true
+                stacked: true,
+                ...(this.formatDuration && {
+                  ticks: {
+                    callback: (value: any) => {
+                      return formatDurationFromSeconds(value);
+                    }
+                  }
+                })
               },
               x: {
                 type: 'time',
@@ -256,7 +301,21 @@ export class TembaChart extends RapidElement {
                 },
                 stacked: true
               }
-            }
+            },
+            ...(this.formatDuration && {
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: (context: any) => {
+                      const label = context.dataset.label || '';
+                      const value = context.parsed.y;
+                      const formattedValue = formatDurationFromSeconds(value);
+                      return `${label}: ${formattedValue}`;
+                    }
+                  }
+                }
+              }
+            })
           }
         };
         this.chart = new Chart(this.ctx, chartData as any);

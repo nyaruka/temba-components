@@ -52,4 +52,15 @@ describe('temba-chart', () => {
     // now others should be everything but general and support
     expect(chart.datasets[2].data).to.deep.equal([58, 28, 10, 1, 0, 19, 20]);
   });
+
+  it('supports duration formatting', async () => {
+    const chart: TembaChart = await getChart();
+
+    // Test that formatDuration property exists and defaults to false
+    expect(chart.formatDuration).to.equal(false);
+
+    // Test that we can set formatDuration to true
+    chart.formatDuration = true;
+    expect(chart.formatDuration).to.equal(true);
+  });
 });
