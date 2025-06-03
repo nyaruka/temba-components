@@ -7,6 +7,9 @@ on:
 
 jobs:
   setup:
+    # Only run when push is initiated by the Copilot agent (GitHub Actions bot)
+    # This avoids unnecessary runs on regular developer pushes
+    if: github.actor == 'github-actions[bot]'
     runs-on: ubuntu-latest
     
     steps:
