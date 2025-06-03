@@ -1292,7 +1292,8 @@ export class Select<T extends SelectOption> extends FormElement {
     ) {
       if (
         this.visibleOptions.length === 0 &&
-        this.completionOptions.length === 0
+        this.completionOptions.length === 0 &&
+        !this.input
       ) {
         this.attemptedOpen = true;
         this.requestUpdate('input');
@@ -1637,6 +1638,7 @@ export class Select<T extends SelectOption> extends FormElement {
     ?visible=${
       this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)
     }
+    ?showEmptyMessage=${this.attemptedOpen && this.focused}
     ></temba-options>
 
     <temba-options

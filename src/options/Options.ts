@@ -286,6 +286,9 @@ export class Options extends RapidElement {
   @property({ type: Boolean })
   triggerScroll = false;
 
+  @property({ type: Boolean })
+  showEmptyMessage = false;
+
   scrollParent: HTMLElement = null;
 
   resolvedRenderOption: { (option: any, selected: boolean): TemplateResult };
@@ -702,7 +705,7 @@ export class Options extends RapidElement {
                     )}
                   </div>`;
                 })
-              : this.visible
+              : this.visible && this.showEmptyMessage
               ? html`<div
                   class="option no-options"
                   style="color: var(--color-text-dark-secondary); cursor: default;"
