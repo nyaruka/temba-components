@@ -175,7 +175,7 @@ export class TembaChart extends RapidElement {
     }
   }
 
-  private formatDuration(seconds: number): string {
+  public formatDuration(seconds: number): string {
     const duration = Duration.fromObject({ seconds });
     const units = duration.rescale();
 

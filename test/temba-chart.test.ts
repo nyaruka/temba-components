@@ -57,13 +57,13 @@ describe('temba-chart', () => {
     const chart: TembaChart = await getChart();
 
     // Test the formatDuration method directly
-    expect((chart as any).formatDuration(68787)).to.equal('19h 6m');
-    expect((chart as any).formatDuration(958000)).to.equal('11d 2h');
-    expect((chart as any).formatDuration(0)).to.equal('0s');
-    expect((chart as any).formatDuration(60)).to.equal('1m');
-    expect((chart as any).formatDuration(3600)).to.equal('1h');
-    expect((chart as any).formatDuration(3661)).to.equal('1h 1m');
-    expect((chart as any).formatDuration(90061)).to.equal('1d 1h');
+    expect(chart.formatDuration(68787)).to.equal('19h 6m');
+    expect(chart.formatDuration(958000)).to.equal('11d 2h');
+    expect(chart.formatDuration(0)).to.equal('0s');
+    expect(chart.formatDuration(60)).to.equal('1m');
+    expect(chart.formatDuration(3600)).to.equal('1h');
+    expect(chart.formatDuration(3661)).to.equal('1h 1m');
+    expect(chart.formatDuration(90061)).to.equal('1d 1h');
   });
 
   it('enables duration formatting when durationFormat is true', async () => {
