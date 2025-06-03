@@ -175,9 +175,14 @@ export class TembaChart extends RapidElement {
   }
 
   public formatDuration(seconds: number): string {
+    // Handle negative values by returning 0s
+    if (seconds <= 0) {
+      return '0s';
+    }
+    
     // Don't use Luxon's rescale() as it introduces weeks which we don't want
     // Instead, manually break down the duration
-    let remainingSeconds = seconds;
+    let remainingSeconds = Math.floor(seconds);
     
     const years = Math.floor(remainingSeconds / (365 * 24 * 3600));
     remainingSeconds %= (365 * 24 * 3600);
