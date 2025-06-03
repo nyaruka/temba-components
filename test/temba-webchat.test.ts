@@ -415,4 +415,625 @@ describe('temba-webchat', () => {
       expect(webChat.status).to.equal('connecting');
     });
   });
+
+  describe('Message Handling', () => {
+    it('handles chat_started message', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      expect(webChat.status).to.equal('connected');
+      
+      // Simulate chat_started message
+      mockWebSocket.simulateMessage({
+        type: 'chat_started',
+        chat_id: 'new-chat-456'
+      });
+      await webChat.updateComplete;
+      
+      expect(webChat.urn).to.equal('new-chat-456');
+      expect(webChat.messageGroups).to.deep.equal([]);
+    });
+
+    it('handles chat_resumed message and fetches history', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Simulate chat_resumed message
+      mockWebSocket.simulateMessage({
+        type: 'chat_resumed',
+        chat_id: 'resumed-chat-789'
+      });
+      await webChat.updateComplete;
+      
+      expect(webChat.urn).to.equal('resumed-chat-789');
+      
+      // Should have sent get_history command
+      expect(mockWebSocket.sentMessages.length).to.be.greaterThan(1);
+      const lastMessage = JSON.parse(mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]);
+      expect(lastMessage.type).to.equal('get_history');
+    });
+
+    it('handles chat_out message and sends ack', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Simulate incoming message
+      mockWebSocket.simulateMessage({
+        type: 'chat_out',
+        msg_out: {
+          id: 'msg-123',
+          text: 'Hello from server',
+          time: '2021-03-31T00:31:00.000Z',
+          user: {
+            id: 'user-1',
+            name: 'Test User',
+            email: 'test@example.com'
+          }
+        }
+      });
+      await webChat.updateComplete;
+      
+      // Should have sent ack
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount + 1);
+      const ackMessage = JSON.parse(mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]);
+      expect(ackMessage.type).to.equal('ack_chat');
+      expect(ackMessage.msg_id).to.equal('msg-123');
+    });
+
+    it('handles history response', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Simulate history response
+      mockWebSocket.simulateMessage({
+        type: 'history',
+        history: [
+          {
+            msg_out: {
+              id: 'msg-1',
+              text: 'First message',
+              time: '2021-03-31T00:30:00.000Z',
+              user: { id: 'user-1', name: 'User', email: 'user@example.com' }
+            }
+          },
+          {
+            msg_in: {
+              id: 'msg-2',
+              text: 'Second message',
+              time: '2021-03-31T00:30:30.000Z'
+            }
+          }
+        ]
+      });
+      await webChat.updateComplete;
+      
+      // Should have updated beforeTime and unblocked history fetching
+      expect(webChat.blockHistoryFetching).to.equal(false);
+    });
+
+    it('clears messages when chat_id changes', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel',
+        urn: 'old-chat-123'
+      });
+      
+      webChat.messageGroups = [['existing', 'messages']];
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Simulate chat_started with different chat_id
+      mockWebSocket.simulateMessage({
+        type: 'chat_started',
+        chat_id: 'new-chat-456'
+      });
+      await webChat.updateComplete;
+      
+      expect(webChat.urn).to.equal('new-chat-456');
+      expect(webChat.messageGroups).to.deep.equal([]);
+    });
+
+    it('keeps messages when chat_id is the same', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // First, simulate a chat_started to set the URN
+      mockWebSocket.simulateMessage({
+        type: 'chat_started',
+        chat_id: 'same-chat-123'
+      });
+      await webChat.updateComplete;
+      
+      // Now set some messages
+      webChat.messageGroups = [['existing', 'messages']];
+      await webChat.updateComplete;
+      
+      // Simulate another chat_started with the same chat_id
+      mockWebSocket.simulateMessage({
+        type: 'chat_started',
+        chat_id: 'same-chat-123'
+      });
+      await webChat.updateComplete;
+      
+      expect(webChat.urn).to.equal('same-chat-123');
+      expect(webChat.messageGroups).to.deep.equal([['existing', 'messages']]);
+    });
+  });
+
+  describe('User Input and Message Sending', () => {
+    it('updates hasPendingText on keyup', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel',
+        open: true,
+        status: 'connected'
+      });
+      
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      expect(inputField).to.exist;
+      
+      expect(webChat.hasPendingText).to.equal(false);
+      
+      // Simulate typing
+      inputField.value = 'Hello';
+      inputField.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }));
+      await webChat.updateComplete;
+      
+      expect(webChat.hasPendingText).to.equal(true);
+      
+      // Clear input
+      inputField.value = '';
+      inputField.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' }));
+      await webChat.updateComplete;
+      
+      expect(webChat.hasPendingText).to.equal(false);
+    });
+
+    it('sends message on Enter key', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Ensure the socket is properly set
+      expect(webChat.status).to.equal('connected');
+      
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      inputField.value = 'Test message';
+      webChat.hasPendingText = true;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Call handleKeyUp directly with Enter key event
+      webChat.handleKeyUp({ key: 'Enter', target: inputField });
+      await webChat.updateComplete;
+      
+      // Should have sent message
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount + 1);
+      const sentMessage = JSON.parse(mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]);
+      expect(sentMessage.type).to.equal('send_msg');
+      expect(sentMessage.text).to.equal('Test message');
+      
+      // Input should be cleared and hasPendingText should be false
+      expect(inputField.value).to.equal('');
+      expect(webChat.hasPendingText).to.equal(false);
+    });
+
+    it('sends message via send button click', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      const sendButton = webChat.shadowRoot.querySelector('.send-icon');
+      
+      inputField.value = 'Button click message';
+      webChat.hasPendingText = true;
+      await webChat.updateComplete;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Call sendPendingMessage directly since it's a private method called by click handler
+      (webChat as any).sendPendingMessage();
+      await webChat.updateComplete;
+      
+      // Should have sent message
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount + 1);
+      const sentMessage = JSON.parse(mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]);
+      expect(sentMessage.type).to.equal('send_msg');
+      expect(sentMessage.text).to.equal('Button click message');
+    });
+
+    it('focuses input when input panel is clicked', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel',
+        open: true,
+        status: 'connected'
+      });
+      
+      const inputPanel = webChat.shadowRoot.querySelector('.input-panel');
+      expect(inputPanel).to.exist;
+      
+      // Mock focus method
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      let focusCalled = false;
+      inputField.focus = () => { focusCalled = true; };
+      
+      inputPanel.dispatchEvent(new MouseEvent('click'));
+      
+      expect(focusCalled).to.be.true;
+    });
+
+    it('does not send message when disconnected', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel',
+        open: true
+      });
+      
+      // Keep the status as disconnected - don't connect the socket
+      expect(webChat.status).to.equal('disconnected');
+      
+      // Find input field - it might not exist in disconnected state
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      if (inputField) {
+        inputField.value = 'Should not send';
+        webChat.hasPendingText = true;
+        
+        // Try to send message by calling handleKeyUp
+        webChat.handleKeyUp({ key: 'Enter', target: inputField });
+        await webChat.updateComplete;
+      }
+      
+      // Should not have created any WebSocket connections
+      expect(webSocketStub.called).to.be.false;
+    });
+  });
+
+  describe('History Fetching', () => {
+    it('fetches previous messages when requested', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Manually call fetchPreviousMessages
+      webChat.fetchPreviousMessages();
+      await webChat.updateComplete;
+      
+      expect(webChat.blockHistoryFetching).to.equal(true);
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount + 1);
+      
+      const historyRequest = JSON.parse(mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]);
+      expect(historyRequest.type).to.equal('get_history');
+      expect(historyRequest.before).to.exist;
+    });
+
+    it('does not fetch when already fetching', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.blockHistoryFetching = true;
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Try to fetch - should be blocked
+      webChat.fetchPreviousMessages();
+      await webChat.updateComplete;
+      
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount);
+    });
+
+    it('completes fetch and unblocks history fetching', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.blockHistoryFetching = true;
+      
+      webChat.fetchComplete();
+      
+      expect(webChat.blockHistoryFetching).to.equal(false);
+    });
+  });
+
+  describe('Edge Cases and Additional Coverage', () => {
+    it('handles keyup events that are not Enter', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      inputField.value = 'Some text';
+      
+      // Test with non-Enter key
+      webChat.handleKeyUp({ key: 'a', target: inputField });
+      await webChat.updateComplete;
+      
+      expect(webChat.hasPendingText).to.equal(true);
+      
+      // Test with empty value
+      inputField.value = '';
+      webChat.handleKeyUp({ key: 'Backspace', target: inputField });
+      await webChat.updateComplete;
+      
+      expect(webChat.hasPendingText).to.equal(false);
+    });
+
+    it('does not send message on Enter if no pending text', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const inputField = webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+      inputField.value = '';
+      webChat.hasPendingText = false;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Try to send with Enter but no pending text
+      webChat.handleKeyUp({ key: 'Enter', target: inputField });
+      await webChat.updateComplete;
+      
+      // Should not have sent any new messages
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount);
+    });
+
+    it('updates status when open changes from false to true', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      expect(webChat.status).to.equal('disconnected');
+      
+      // Open the chat for the first time
+      webChat.open = true;
+      await webChat.updateComplete;
+      
+      expect(webChat.status).to.equal('connecting');
+      expect(webSocketStub.called).to.be.true;
+    });
+
+    it('focuses input when status changes to connected', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      // Open chat to trigger connection
+      webChat.open = true;
+      await webChat.updateComplete;
+      
+      expect(webChat.status).to.equal('connecting');
+      
+      // Mock focus method before the input is rendered
+      let focusCalled = false;
+      const originalFocus = HTMLInputElement.prototype.focus;
+      HTMLInputElement.prototype.focus = function() {
+        focusCalled = true;
+      };
+      
+      // Manually open socket to trigger status change to connected
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Restore original focus
+      HTMLInputElement.prototype.focus = originalFocus;
+      
+      // Focus should have been called when status changed to connected
+      expect(focusCalled).to.be.true;
+    });
+
+    it('handles focus input when input element does not exist', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel',
+        open: true,
+        status: 'disconnected'
+      });
+      
+      // Try to focus input when it might not exist
+      (webChat as any).focusInput();
+      
+      // Should not throw an error
+      expect(true).to.be.true;
+    });
+
+    it('handles empty history response', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Simulate empty history response
+      mockWebSocket.simulateMessage({
+        type: 'history',
+        history: []
+      });
+      await webChat.updateComplete;
+      
+      expect(webChat.blockHistoryFetching).to.equal(false);
+    });
+
+    it('handles message with msg_in in history response', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Simulate history response with msg_in first
+      mockWebSocket.simulateMessage({
+        type: 'history',
+        history: [
+          {
+            msg_in: {
+              id: 'msg-1',
+              text: 'Incoming message',
+              time: '2021-03-31T00:30:00.000Z'
+            }
+          }
+        ]
+      });
+      await webChat.updateComplete;
+      
+      expect(webChat.blockHistoryFetching).to.equal(false);
+    });
+
+    it('prevents event propagation on input panel click', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel',
+        open: true,
+        status: 'connected'
+      });
+      
+      const inputPanel = webChat.shadowRoot.querySelector('.input-panel');
+      expect(inputPanel).to.exist;
+      
+      let preventDefaultCalled = false;
+      let stopPropagationCalled = false;
+      
+      const mockEvent = {
+        preventDefault: () => { preventDefaultCalled = true; },
+        stopPropagation: () => { stopPropagationCalled = true; }
+      };
+      
+      (webChat as any).handleClickInputPanel(mockEvent);
+      
+      expect(preventDefaultCalled).to.be.true;
+      expect(stopPropagationCalled).to.be.true;
+    });
+
+    it('handles unknown message types gracefully', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      // Simulate unknown message type
+      mockWebSocket.simulateMessage({
+        type: 'unknown_message_type',
+        data: 'some data'
+      });
+      await webChat.updateComplete;
+      
+      // Should not throw an error
+      expect(true).to.be.true;
+    });
+  });
+
+  describe('Integration with Chat Component', () => {
+    it('listens to scroll threshold event for history fetching', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.open = true;
+      await webChat.updateComplete;
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      
+      const chatElement = webChat.shadowRoot.querySelector('temba-chat');
+      expect(chatElement).to.exist;
+      
+      const initialMessageCount = mockWebSocket.sentMessages.length;
+      
+      // Simulate scroll threshold event
+      chatElement.dispatchEvent(new CustomEvent('temba-scroll-threshold'));
+      await webChat.updateComplete;
+      
+      // Should have triggered history fetch
+      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount + 1);
+      const historyRequest = JSON.parse(mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]);
+      expect(historyRequest.type).to.equal('get_history');
+    });
+
+    it('listens to fetch complete event', async () => {
+      const webChat = await getWebChat({
+        channel: 'test-channel'
+      });
+      
+      webChat.blockHistoryFetching = true;
+      
+      const chatElement = webChat.shadowRoot.querySelector('temba-chat');
+      expect(chatElement).to.exist;
+      
+      // Simulate fetch complete event
+      chatElement.dispatchEvent(new CustomEvent('temba-fetch-complete'));
+      
+      expect(webChat.blockHistoryFetching).to.equal(false);
+    });
+  });
 });
