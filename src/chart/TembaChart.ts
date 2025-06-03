@@ -8,7 +8,6 @@ import { getStore } from '../store/Store';
 
 import Chart, { ChartType } from 'chart.js/auto';
 import 'chartjs-adapter-luxon';
-import { Duration } from 'luxon';
 
 const colors = [
   'rgba(255, 159, 64, 0.2)',
@@ -176,23 +175,33 @@ export class TembaChart extends RapidElement {
   }
 
   public formatDuration(seconds: number): string {
-    const duration = Duration.fromObject({ seconds });
-    const units = duration.rescale();
+    // Don't use Luxon's rescale() as it introduces weeks which we don't want
+    // Instead, manually break down the duration
+    let remainingSeconds = seconds;
+    
+    const years = Math.floor(remainingSeconds / (365 * 24 * 3600));
+    remainingSeconds %= (365 * 24 * 3600);
+    
+    const months = Math.floor(remainingSeconds / (30 * 24 * 3600));
+    remainingSeconds %= (30 * 24 * 3600);
+    
+    const days = Math.floor(remainingSeconds / (24 * 3600));
+    remainingSeconds %= (24 * 3600);
+    
+    const hours = Math.floor(remainingSeconds / 3600);
+    remainingSeconds %= 3600;
+    
+    const minutes = Math.floor(remainingSeconds / 60);
+    const secs = remainingSeconds % 60;
 
     // Get all non-zero units in order of magnitude
     const nonZeroUnits = [];
-    if (units.years > 0)
-      nonZeroUnits.push({ value: Math.floor(units.years), unit: 'y' });
-    if (units.months > 0)
-      nonZeroUnits.push({ value: Math.floor(units.months), unit: 'mo' });
-    if (units.days > 0)
-      nonZeroUnits.push({ value: Math.floor(units.days), unit: 'd' });
-    if (units.hours > 0)
-      nonZeroUnits.push({ value: Math.floor(units.hours), unit: 'h' });
-    if (units.minutes > 0)
-      nonZeroUnits.push({ value: Math.floor(units.minutes), unit: 'm' });
-    if (units.seconds > 0)
-      nonZeroUnits.push({ value: Math.floor(units.seconds), unit: 's' });
+    if (years > 0) nonZeroUnits.push({ value: years, unit: 'y' });
+    if (months > 0) nonZeroUnits.push({ value: months, unit: 'mo' });
+    if (days > 0) nonZeroUnits.push({ value: days, unit: 'd' });
+    if (hours > 0) nonZeroUnits.push({ value: hours, unit: 'h' });
+    if (minutes > 0) nonZeroUnits.push({ value: minutes, unit: 'm' });
+    if (secs > 0) nonZeroUnits.push({ value: secs, unit: 's' });
 
     // Return only the two largest units
     const topTwoUnits = nonZeroUnits.slice(0, 2);
