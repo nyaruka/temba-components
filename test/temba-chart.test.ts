@@ -97,11 +97,11 @@ describe('temba-chart', () => {
     
     // Test the tick callback function formatting
     const tickCallback = chartConfig.scales.y.ticks.callback;
-    expect(tickCallback(68787)).to.equal('19h 6m');
-    expect(tickCallback(958000)).to.equal('11d 2h');
-    expect(tickCallback(3661)).to.equal('1h 1m');
-    expect(tickCallback(120)).to.equal('2m');
-    expect(tickCallback(0)).to.equal('0s');
+    expect(tickCallback.call({}, 68787, 0, [])).to.equal('19h 6m');
+    expect(tickCallback.call({}, 958000, 1, [])).to.equal('11d 2h');
+    expect(tickCallback.call({}, 3661, 2, [])).to.equal('1h 1m');
+    expect(tickCallback.call({}, 120, 3, [])).to.equal('2m');
+    expect(tickCallback.call({}, 0, 4, [])).to.equal('0s');
     
     // Test tooltip formatting
     expect(chartConfig.plugins.tooltip.callbacks.label).to.be.a('function');
@@ -111,7 +111,7 @@ describe('temba-chart', () => {
       dataset: { label: 'Process Time' },
       parsed: { y: 68787 }
     };
-    expect(tooltipCallback(mockContext)).to.equal('Process Time: 19h 6m');
+    expect(tooltipCallback.call({}, mockContext)).to.equal('Process Time: 19h 6m');
   });
 
   it('formats various duration edge cases correctly', async () => {
@@ -127,17 +127,17 @@ describe('temba-chart', () => {
     const tickCallback = chart.chart.options.scales.y.ticks.callback;
     
     // Test edge cases for duration formatting
-    expect(tickCallback(0)).to.equal('0s');
-    expect(tickCallback(1)).to.equal('1s');
-    expect(tickCallback(59)).to.equal('59s');
-    expect(tickCallback(60)).to.equal('1m');
-    expect(tickCallback(61)).to.equal('1m 1s');
-    expect(tickCallback(3600)).to.equal('1h');
-    expect(tickCallback(3661)).to.equal('1h 1m');
-    expect(tickCallback(86400)).to.equal('1d');
-    expect(tickCallback(90061)).to.equal('1d 1h'); // 1 day, 1 hour, 1 minute, 1 second - should show only first two units
-    expect(tickCallback(604800)).to.equal('7d'); // 1 week in seconds
-    expect(tickCallback(1209600)).to.equal('14d'); // 2 weeks in seconds
+    expect(tickCallback.call({}, 0, 0, [])).to.equal('0s');
+    expect(tickCallback.call({}, 1, 1, [])).to.equal('1s');
+    expect(tickCallback.call({}, 59, 2, [])).to.equal('59s');
+    expect(tickCallback.call({}, 60, 3, [])).to.equal('1m');
+    expect(tickCallback.call({}, 61, 4, [])).to.equal('1m 1s');
+    expect(tickCallback.call({}, 3600, 5, [])).to.equal('1h');
+    expect(tickCallback.call({}, 3661, 6, [])).to.equal('1h 1m');
+    expect(tickCallback.call({}, 86400, 7, [])).to.equal('1d');
+    expect(tickCallback.call({}, 90061, 8, [])).to.equal('1d 1h'); // 1 day, 1 hour, 1 minute, 1 second - should show only first two units
+    expect(tickCallback.call({}, 604800, 9, [])).to.equal('7d'); // 1 week in seconds
+    expect(tickCallback.call({}, 1209600, 10, [])).to.equal('14d'); // 2 weeks in seconds
   });
 
   it('respects formatDuration property state', async () => {
