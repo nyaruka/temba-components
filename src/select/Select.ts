@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css, CSSResult, CSSResultArray } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import {
   getUrl,
   getClasses,
@@ -410,7 +410,7 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   disabled = false;
 
-  @property({ type: Boolean })
+  @state()
   attemptedOpen = false;
 
   @property({ attribute: false })
@@ -1352,6 +1352,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
       if (this.visibleOptions.length > 0) {
         this.visibleOptions = [];
+        this.attemptedOpen = false;
       } else {
         this.requestUpdate('input');
         // Also trigger an immediate update to show empty dropdown
