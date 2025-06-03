@@ -4,6 +4,7 @@ import { CustomEventType } from '../interfaces';
 import { RapidElement, EventHandler } from '../RapidElement';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { getClasses, getScrollParent, throttle } from '../utils';
+import { msg } from '@lit/localize';
 
 export class Options extends RapidElement {
   static get styles() {
@@ -177,6 +178,15 @@ export class Options extends RapidElement {
         background: var(--color-selection);
         color: var(--color-text-dark);
       }
+
+      .option.no-options {
+        pointer-events: none;
+      }
+
+      .option.no-options:hover {
+        background: transparent;
+        color: var(--color-text-dark-secondary);
+      }
     `;
   }
 
@@ -275,6 +285,9 @@ export class Options extends RapidElement {
 
   @property({ type: Boolean })
   triggerScroll = false;
+
+  @property({ type: Boolean })
+  showEmptyMessage = false;
 
   scrollParent: HTMLElement = null;
 
@@ -675,19 +688,31 @@ export class Options extends RapidElement {
       <div class=${classes} style=${styleMap(containerStyle)}>
         <div class="options-scroll" @scroll=${this.handleInnerScroll}>
           <div class="${classesInner}" style=${styleMap(optionsStyle)}>
-            ${options.map((option, index) => {
-              return html`<div
-                data-option-index="${index}"
-                @mousemove=${this.handleMouseMove}
-                @mousedown=${this.handleOptionClick}
-                class="option ${index === this.cursorIndex &&
-                !this.internalFocusDisabled
-                  ? 'focused'
-                  : ''}"
-              >
-                ${this.resolvedRenderOption(option, index === this.cursorIndex)}
-              </div>`;
-            })}
+            ${options.length > 0
+              ? options.map((option, index) => {
+                  return html`<div
+                    data-option-index="${index}"
+                    @mousemove=${this.handleMouseMove}
+                    @mousedown=${this.handleOptionClick}
+                    class="option ${index === this.cursorIndex &&
+                    !this.internalFocusDisabled
+                      ? 'focused'
+                      : ''}"
+                  >
+                    ${this.resolvedRenderOption(
+                      option,
+                      index === this.cursorIndex
+                    )}
+                  </div>`;
+                })
+              : this.visible && this.showEmptyMessage
+              ? html`<div
+                  class="option no-options"
+                  style="color: var(--color-text-dark-secondary); cursor: default;"
+                >
+                  ${msg('No options')}
+                </div>`
+              : null}
             ${this.block ? html`<div style="height:0.1em"></div>` : null}
           </div>
           <slot></slot>

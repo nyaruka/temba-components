@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css, CSSResult, CSSResultArray } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import {
   getUrl,
   getClasses,
@@ -409,6 +409,9 @@ export class Select<T extends SelectOption> extends FormElement {
 
   @property({ type: Boolean })
   disabled = false;
+
+  @state()
+  attemptedOpen = false;
 
   @property({ attribute: false })
   selectedIndex = -1;
@@ -863,6 +866,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     this.visibleOptions = [];
+    this.attemptedOpen = false;
     this.input = '';
     this.next = null;
     this.complete = true;
@@ -955,7 +959,9 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public isOpen(): boolean {
-    return this.visibleOptions.length > 0;
+    return (
+      this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)
+    );
   }
 
   public setOptions(options: any[]): void {
@@ -1212,6 +1218,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleBlur() {
     this.focused = false;
+    this.attemptedOpen = false;
     if (this.visibleOptions.length > 0) {
       this.input = '';
       this.next = null;
@@ -1285,8 +1292,10 @@ export class Select<T extends SelectOption> extends FormElement {
     ) {
       if (
         this.visibleOptions.length === 0 &&
-        this.completionOptions.length === 0
+        this.completionOptions.length === 0 &&
+        !this.input
       ) {
+        this.attemptedOpen = true;
         this.requestUpdate('input');
         return;
       }
@@ -1322,6 +1331,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleCancel() {
     this.visibleOptions = [];
+    this.attemptedOpen = false;
   }
 
   private handleCursorChanged(event: CustomEvent) {
@@ -1340,10 +1350,15 @@ export class Select<T extends SelectOption> extends FormElement {
         return;
       }
 
-      if (this.visibleOptions.length > 0) {
+      // Check if dropdown is currently open (either with options or showing "No options")
+      if (this.isOpen()) {
         this.visibleOptions = [];
+        this.attemptedOpen = false;
       } else {
+        this.attemptedOpen = true;
         this.requestUpdate('input');
+        // Also trigger an immediate update to show empty dropdown
+        this.requestUpdate();
       }
     }
   }
@@ -1459,6 +1474,15 @@ export class Select<T extends SelectOption> extends FormElement {
     const oldValues = this.values;
     this.values = [];
     this.requestUpdate('values', oldValues);
+  }
+
+  private shouldShowEmptyMessage(): boolean {
+    return this.attemptedOpen && 
+           this.focused && 
+           this.visibleOptions.length === 0 && 
+           !this.input && 
+           this.staticOptions.length === 0 && 
+           !this.endpoint;
   }
 
   public render(): TemplateResult {
@@ -1620,7 +1644,8 @@ export class Select<T extends SelectOption> extends FormElement {
     .getName=${this.getNameInternal}
     ?static-width=${this.optionWidth}
     ?anchor-right=${this.anchorRight}
-    ?visible=${this.visibleOptions.length > 0}
+    ?visible=${this.visibleOptions.length > 0 || this.shouldShowEmptyMessage()}
+    ?showEmptyMessage=${this.shouldShowEmptyMessage()}
     ></temba-options>
 
     <temba-options
