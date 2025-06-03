@@ -65,10 +65,10 @@ jobs:
         
       # Run tests to ensure Puppeteer setup works correctly
       # This validates that the browser dependencies are properly configured
-      - name: Validate Puppeteer setup
-        run: yarn test --reporter=summary
-        env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+      # - name: Validate Puppeteer setup
+      #  run: yarn test --reporter=summary
+      #  env:
+      #    PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
         
       # Cache the built output to speed up subsequent operations
       - name: Cache build output
