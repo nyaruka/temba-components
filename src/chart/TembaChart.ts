@@ -30,6 +30,41 @@ const colorsBorder = [
 const otherBackgroundColor = 'rgba(201, 203, 207, 0.2)';
 const otherBorderColor = 'rgb(201, 203, 207)';
 
+/**
+ * Formats a duration in seconds to a human-readable string showing the two largest units.
+ * Examples: 68787 -> "19h 6m", 958000 -> "11d 2h", 3661 -> "1h 1m"
+ */
+export function formatDurationFromSeconds(seconds: number): string {
+  if (seconds === 0) {
+    return '0s';
+  }
+
+  const totalDays = Math.floor(seconds / 86400);
+  const remainingAfterDays = seconds % 86400;
+  const remainingHours = Math.floor(remainingAfterDays / 3600);
+  const remainingAfterHours = remainingAfterDays % 3600;
+  const remainingMinutes = Math.floor(remainingAfterHours / 60);
+  const remainingSeconds = remainingAfterHours % 60;
+
+  const units = [];
+
+  if (totalDays > 0) {
+    units.push(`${totalDays}d`);
+  }
+  if (remainingHours > 0) {
+    units.push(`${remainingHours}h`);
+  }
+  if (remainingMinutes > 0 && units.length < 2) {
+    units.push(`${remainingMinutes}m`);
+  }
+  if (remainingSeconds > 0 && units.length < 2) {
+    units.push(`${remainingSeconds}s`);
+  }
+
+  // Return the first two most significant units
+  return units.slice(0, 2).join(' ');
+}
+
 export interface RapidChartData {
   labels: string[];
   datasets: { label: string; data: number[] }[];
@@ -71,6 +106,9 @@ export class TembaChart extends RapidElement {
 
   @property({ type: Boolean })
   config: boolean = false;
+
+  @property({ type: Boolean })
+  formatDuration: boolean = false;
 
   @property({ type: Number })
   colorIndex: number = 0;
@@ -172,6 +210,7 @@ export class TembaChart extends RapidElement {
       // keep a running list of values that is the sum at each index
       const sums = [];
       for (const dataset of this.data.datasets) {
+        console.log(dataset);
         if (this.splits.find((s) => s === dataset.label) === undefined) {
           // update our sums
           for (let i = 0; i < dataset.data.length; i++) {
@@ -233,7 +272,19 @@ export class TembaChart extends RapidElement {
             plugins: {
               legend: {
                 display: this.legend
-              }
+              },
+              ...(this.formatDuration && {
+                tooltip: {
+                  callbacks: {
+                    label: (context: any) => {
+                      const label = context.dataset.label || '';
+                      const value = context.parsed.y;
+                      const formattedValue = formatDurationFromSeconds(value);
+                      return `${label}: ${formattedValue}`;
+                    }
+                  }
+                }
+              })
             },
             responsive: true,
             maintainAspectRatio: false,
@@ -253,7 +304,14 @@ export class TembaChart extends RapidElement {
             scales: {
               y: {
                 min: 0,
-                stacked: true
+                stacked: true,
+                ...(this.formatDuration && {
+                  ticks: {
+                    callback: (value: any) => {
+                      return formatDurationFromSeconds(value);
+                    }
+                  }
+                })
               },
               x: {
                 type: 'time',

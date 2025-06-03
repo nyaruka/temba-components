@@ -138,6 +138,23 @@
   </head>
 
   <body>
+    <script>
+      // Initialize duration chart when DOM is loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        const durationChart = document.getElementById('duration-chart');
+        if (durationChart) {
+          // Sample data with durations in seconds from the issue examples
+          durationChart.data = {
+            labels: ['Process A', 'Process B', 'Process C', 'Process D', 'Process E'],
+            datasets: [{
+              label: 'Processing Time',
+              data: [68787, 958000, 3661, 120, 86400] // seconds: 19h6m, 11d2h, 1h1m, 2m, 1d
+            }]
+          };
+          console.log('Duration chart initialized with formatDuration:', durationChart.formatDuration);
+        }
+      });
+    </script>
     <temba-webchat
       channel="967cd415-8616-4b11-b38f-60f70e0999f4"
     ></temba-webchat>
@@ -177,6 +194,13 @@
   <temba-tabs collapses index="0">
     <temba-tab name="Overview" icon="default">
       <temba-chart style="margin-bottom:8px"></temba-chart>
+      
+      <!-- Chart with duration formatting -->
+      <div style="margin: 20px 0;">
+        <h3>Duration Formatted Chart</h3>
+        <temba-chart id="duration-chart" style="margin-bottom:8px" format-duration header="Process Times"></temba-chart>
+      </div>
+      
       <temba-progress style="margin-bottom:8px" total="100" current="25" eta="2030-09-17T07:00:00.000Z"></temba-progress>
         <temba-checkbox label="Check this out" checked></temba-checkbox>
         <temba-select placeholder="Select a color" clearable>
