@@ -4,6 +4,38 @@ import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-dropdown';
 
+// Helper function to get expanded clip that includes dropdown content when open
+const getDropdownClip = (dropdown: Dropdown) => {
+  if (!dropdown.open) {
+    // If closed, use regular clipping
+    return getClip(dropdown);
+  }
+  
+  // For open dropdowns, include the positioned dropdown content
+  const dropdownDiv = dropdown.shadowRoot.querySelector('.dropdown') as HTMLDivElement;
+  const dropdownBounds = dropdownDiv.getBoundingClientRect();
+  const componentBounds = dropdown.getBoundingClientRect();
+  
+  // If dropdown content has no meaningful size, fall back to regular clip
+  if (dropdownBounds.width < 10 || dropdownBounds.height < 10) {
+    return getClip(dropdown);
+  }
+  
+  // Create a clipping region that includes both the component and the dropdown content
+  const minX = Math.min(componentBounds.x, dropdownBounds.x);
+  const minY = Math.min(componentBounds.y, dropdownBounds.y);
+  const maxX = Math.max(componentBounds.right, dropdownBounds.right);
+  const maxY = Math.max(componentBounds.bottom, dropdownBounds.bottom);
+  
+  // Clamp to reasonable bounds to avoid excessive screenshot sizes
+  const x = Math.max(0, minX - 10);
+  const y = Math.max(0, minY - 10);
+  const width = Math.min(1000, maxX - minX + 20);
+  const height = Math.min(800, maxY - minY + 20);
+  
+  return { x, y, width, height };
+};
+
 const getDropdown = async (
   attrs: { 
     open?: boolean;
@@ -50,15 +82,23 @@ describe(TAG, () => {
   });
 
   it('renders with mask when enabled', async () => {
-    const dropdown = await getDropdown({ mask: true, open: true, dormant: false });
+    const dropdown = await getDropdown({ mask: true });
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
+    
+    // Open the dropdown properly by clicking
+    toggle.click();
+    await dropdown.updateComplete;
+    
+    // Wait for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Test expected values first
     expect(dropdown.mask).to.equal(true);
     expect(dropdown.open).to.equal(true);
-    // Note: dormant may automatically be set based on open state
+    expect(dropdown.dormant).to.equal(false);
     
     // Then screenshot  
-    await assertScreenshot('dropdown/with-mask', getClip(dropdown));
+    await assertScreenshot('dropdown/with-mask', getDropdownClip(dropdown));
   });
 
   it('handles toggle click and opens dropdown', async () => {
@@ -73,38 +113,60 @@ describe(TAG, () => {
     toggle.click();
     await dropdown.updateComplete;
     
+    // Wait a bit for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Verify dropdown opened
     expect(dropdown.open).to.equal(true);
     expect(dropdown.dormant).to.equal(false);
     
-    // Screenshot the opened state
-    await assertScreenshot('dropdown/opened', getClip(dropdown));
+    // Screenshot the opened state with expanded clip
+    await assertScreenshot('dropdown/opened', getDropdownClip(dropdown));
   });
 
   it('handles custom arrow size', async () => {
-    const dropdown = await getDropdown({ arrowSize: 12, open: true, dormant: false });
+    const dropdown = await getDropdown({ arrowSize: 12 });
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
+    
+    // Open the dropdown properly by clicking
+    toggle.click();
+    await dropdown.updateComplete;
+    
+    // Wait for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Test expected values first
     expect(dropdown.arrowSize).to.equal(12);
     expect(dropdown.open).to.equal(true);
+    expect(dropdown.dormant).to.equal(false);
     
     // Then screenshot
-    await assertScreenshot('dropdown/custom-arrow-size', getClip(dropdown));
+    await assertScreenshot('dropdown/custom-arrow-size', getDropdownClip(dropdown));
   });
 
   it('calculates position correctly', async () => {
-    const dropdown = await getDropdown({ open: true, dormant: false });
+    const dropdown = await getDropdown();
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
+    
+    // Open the dropdown properly by clicking
+    toggle.click();
+    await dropdown.updateComplete;
     
     // Trigger position calculation
     dropdown.calculatePosition();
     await dropdown.updateComplete;
     
+    // Wait for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Verify position styles were calculated
     expect(Object.keys(dropdown.dropdownStyle).length).to.be.greaterThan(0);
     expect(Object.keys(dropdown.arrowStyle).length).to.be.greaterThan(0);
+    expect(dropdown.open).to.equal(true);
+    expect(dropdown.dormant).to.equal(false);
     
     // Screenshot positioned dropdown
-    await assertScreenshot('dropdown/positioned', getClip(dropdown));
+    await assertScreenshot('dropdown/positioned', getDropdownClip(dropdown));
   });
 
   it('handles blur events to close dropdown', async () => {
@@ -183,12 +245,18 @@ describe(TAG, () => {
   it('handles position calculation with right edge collision', async () => {
     // Create dropdown positioned near right edge
     const dropdown = await getDropdown(
-      { open: true, dormant: false },
+      {},
       '<button slot="toggle" style="position: fixed; right: 50px; top: 100px; width: 100px; height: 30px;">Toggle</button>',
       '<div slot="dropdown" style="width: 200px; height: 100px;">Wide content</div>'
     );
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
     
+    // Open the dropdown properly by clicking
+    toggle.click();
     await dropdown.updateComplete;
+    
+    // Wait for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get actual element bounds to simulate collision
     const dropdownDiv = dropdown.shadowRoot.querySelector('.dropdown') as HTMLDivElement;
@@ -217,7 +285,7 @@ describe(TAG, () => {
       expect(dropdown.dropdownStyle).to.have.property('left');
       
       // Screenshot positioned dropdown
-      await assertScreenshot('dropdown/right-edge-collision', getClip(dropdown));
+      await assertScreenshot('dropdown/right-edge-collision', getDropdownClip(dropdown));
     } finally {
       // Restore original method
       dropdownDiv.getBoundingClientRect = originalGetBoundingClientRect;
@@ -227,12 +295,18 @@ describe(TAG, () => {
   it('handles position calculation with bottom edge collision', async () => {
     // Create dropdown positioned near bottom edge
     const dropdown = await getDropdown(
-      { open: true, dormant: false },
+      {},
       '<button slot="toggle" style="position: fixed; left: 100px; bottom: 50px; width: 100px; height: 30px;">Toggle</button>',
       '<div slot="dropdown" style="width: 200px; height: 100px; position: absolute;">Tall content</div>'
     );
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
     
+    // Open the dropdown properly by clicking
+    toggle.click();
     await dropdown.updateComplete;
+    
+    // Wait for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get actual element bounds to simulate collision
     const dropdownDiv = dropdown.shadowRoot.querySelector('.dropdown') as HTMLDivElement;
@@ -260,10 +334,10 @@ describe(TAG, () => {
       // Verify position was adjusted for bottom edge (bumped up)
       expect(dropdown.dropdownStyle).to.have.property('top');
       expect(dropdown.arrowStyle).to.have.property('transform');
-      expect(dropdown.arrowStyle.transform).to.include('rotate(180deg)');
+      expect(dropdown.arrowStyle['transform']).to.include('rotate(180deg)');
       
       // Screenshot positioned dropdown
-      await assertScreenshot('dropdown/bottom-edge-collision', getClip(dropdown));
+      await assertScreenshot('dropdown/bottom-edge-collision', getDropdownClip(dropdown));
     } finally {
       // Restore original method
       dropdownDiv.getBoundingClientRect = originalGetBoundingClientRect;
@@ -272,21 +346,31 @@ describe(TAG, () => {
 
   it('handles arrow positioning when toggle is very narrow', async () => {
     const dropdown = await getDropdown(
-      { open: true, dormant: false },
+      {},
       '<button slot="toggle" style="width: 5px;">•</button>',
       '<div slot="dropdown">Content</div>'
     );
+    const toggle = dropdown.querySelector('[slot="toggle"]') as HTMLElement;
+    
+    // Open the dropdown properly by clicking
+    toggle.click();
+    await dropdown.updateComplete;
     
     // Trigger position calculation
     dropdown.calculatePosition();
     await dropdown.updateComplete;
     
+    // Wait for positioning and transitions
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Verify arrow positioning was adjusted for narrow toggle
     expect(dropdown.dropdownStyle).to.have.property('marginLeft');
-    expect(dropdown.dropdownStyle.marginLeft).to.equal('-10px');
+    expect(dropdown.dropdownStyle['marginLeft']).to.equal('-10px');
+    expect(dropdown.open).to.equal(true);
+    expect(dropdown.dormant).to.equal(false);
     
     // Screenshot with adjusted arrow
-    await assertScreenshot('dropdown/narrow-toggle', getClip(dropdown));
+    await assertScreenshot('dropdown/narrow-toggle', getDropdownClip(dropdown));
   });
 
   it('handles position calculation when toggle element is missing', async () => {
