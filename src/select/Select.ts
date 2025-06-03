@@ -1476,6 +1476,15 @@ export class Select<T extends SelectOption> extends FormElement {
     this.requestUpdate('values', oldValues);
   }
 
+  private shouldShowEmptyMessage(): boolean {
+    return this.attemptedOpen && 
+           this.focused && 
+           this.visibleOptions.length === 0 && 
+           !this.input && 
+           this.staticOptions.length === 0 && 
+           !this.endpoint;
+  }
+
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : '';
     const placeholderDiv = html`
@@ -1635,10 +1644,8 @@ export class Select<T extends SelectOption> extends FormElement {
     .getName=${this.getNameInternal}
     ?static-width=${this.optionWidth}
     ?anchor-right=${this.anchorRight}
-    ?visible=${
-      this.visibleOptions.length > 0 || (this.attemptedOpen && this.focused)
-    }
-    ?showEmptyMessage=${this.attemptedOpen && this.focused && this.visibleOptions.length === 0 && !this.input && this.staticOptions.length === 0 && !this.endpoint}
+    ?visible=${this.visibleOptions.length > 0 || this.shouldShowEmptyMessage()}
+    ?showEmptyMessage=${this.shouldShowEmptyMessage()}
     ></temba-options>
 
     <temba-options
