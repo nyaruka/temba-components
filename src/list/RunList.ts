@@ -155,8 +155,8 @@ export class RunList extends TembaList {
             style="width:16em;white-space:nowrap;overflow: hidden; text-overflow: ellipsis;"
           >
             <temba-contact-name
-              name=${run.contact.name || run.contact.anon_display}
-              urn=${run.contact.urn}
+              name=${run.contact?.name || run.contact?.anon_display || ''}
+              urn=${run.contact?.urn || ''}
               icon-size="15"
             />
           </div>
@@ -255,7 +255,7 @@ export class RunList extends TembaList {
       return null;
     }
 
-    const resultKeys = Object.keys(this.selectedRun.values);
+    const resultKeys = Object.keys(this.selectedRun.values || {});
 
     return html` <div
       style="margin-top: 1.5em; margin-bottom:0.5em;flex-grow:1;border-radius:var(--curvature); border: 1px solid var(--color-widget-border);"
@@ -267,11 +267,12 @@ export class RunList extends TembaList {
           <div>
             <temba-contact-name
               style="cursor:pointer"
-              name=${this.selectedRun.contact.name ||
-              this.selectedRun.contact.anon_display}
-              urn=${this.selectedRun.contact.urn}
+              name=${this.selectedRun.contact?.name ||
+              this.selectedRun.contact?.anon_display ||
+              ''}
+              urn=${this.selectedRun.contact?.urn || ''}
               onclick="goto(event, this)"
-              href="/contact/read/${this.selectedRun.contact.uuid}/"
+              href="/contact/read/${this.selectedRun.contact?.uuid || ''}/"
             ></temba-contact-name>
             <div
               style="display:flex;margin-left:-0.2em;margin-top:0.25em;font-size: 0.65em"
@@ -303,7 +304,9 @@ export class RunList extends TembaList {
           <div style="flex-grow:1"></div>
           <div style="display:flex;flex-direction: column">
             <div style="font-size:0.75em">
-              ${new Date(this.selectedRun.created_on).toLocaleString()}
+              ${this.selectedRun.created_on
+                ? new Date(this.selectedRun.created_on).toLocaleString()
+                : ''}
             </div>
             <div
               style="font-size:0.6em;align-self:flex-end;color:#888;line-height:0.75em"
