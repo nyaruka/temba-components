@@ -532,6 +532,10 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: String })
   draggingId: string;
 
+  // Track pending order change during drag
+  private originalDragIdx: number = -1;
+  private pendingTargetIdx: number = -1;
+
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -1509,22 +1513,42 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleOrderChanged(event: CustomEvent): void {
     const detail = event.detail;
-    const fromIdx = detail.fromIdx;
     const toIdx = detail.toIdx;
 
-    // Swap the values in the array
-    const temp = this.values[fromIdx];
-    this.values[fromIdx] = this.values[toIdx];
-    this.values[toIdx] = temp;
-    this.requestUpdate('values');
+    if (this.draggingId) {
+      // During drag, just store the target index without applying it
+      this.pendingTargetIdx = toIdx;
+    } else {
+      // If not dragging, apply immediately (shouldn't happen in current implementation)
+      const fromIdx = detail.fromIdx;
+      const temp = this.values[fromIdx];
+      this.values[fromIdx] = this.values[toIdx];
+      this.values[toIdx] = temp;
+      this.requestUpdate('values');
+    }
   }
 
   private handleDragStart(event: CustomEvent): void {
     this.draggingId = event.detail.id;
+    // Extract the index from the ID (e.g., "selected-0" -> 0)
+    const idParts = this.draggingId.split('-');
+    this.originalDragIdx = parseInt(idParts[idParts.length - 1]);
+    this.pendingTargetIdx = -1;
   }
 
   private handleDragStop(): void {
+    // Apply the pending order change when drag stops
+    if (this.originalDragIdx !== -1 && this.pendingTargetIdx !== -1 && 
+        this.originalDragIdx !== this.pendingTargetIdx) {
+      const temp = this.values[this.originalDragIdx];
+      this.values[this.originalDragIdx] = this.values[this.pendingTargetIdx];
+      this.values[this.pendingTargetIdx] = temp;
+      this.requestUpdate('values');
+    }
+    
     this.draggingId = null;
+    this.originalDragIdx = -1;
+    this.pendingTargetIdx = -1;
   }
 
   public render(): TemplateResult {
