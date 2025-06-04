@@ -635,6 +635,10 @@ export const truncate = (input: string, max: number): string => {
 };
 
 export const oxford = (items: any[], joiner = 'and'): any => {
+  if (items.length === 0) {
+    return '';
+  }
+
   if (items.length === 1) {
     return items[0];
   }
@@ -657,7 +661,9 @@ export const oxford = (items: any[], joiner = 'and'): any => {
     });
   }
 
-  return items.join(', ') + joiner + items[items.length - 1];
+  const allButLast = items.slice(0, -1);
+  const last = items[items.length - 1];
+  return allButLast.join(', ') + ', ' + joiner + ' ' + last;
 };
 
 export const oxfordFn = (
