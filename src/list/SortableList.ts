@@ -42,6 +42,25 @@ export class SortableList extends RapidElement {
         margin-bottom: 0.25em;
       }
 
+      .drop-indicator {
+        position: absolute;
+        background: var(--color-primary, #1c7cd6);
+        z-index: 1000;
+        pointer-events: none;
+      }
+
+      .container.horizontal .drop-indicator {
+        width: 2px;
+        height: 100%;
+        top: 0;
+      }
+
+      .container:not(.horizontal) .drop-indicator {
+        height: 2px;
+        width: 100%;
+        left: 0;
+      }
+
       .sortable:hover temba-icon {
         opacity: 1;
         cursor: move;
@@ -49,8 +68,15 @@ export class SortableList extends RapidElement {
 
       .ghost {
         position: absolute;
-        opacity: 0.5;
+        opacity: 0.7;
         transition: none;
+        background: var(--color-background, white);
+        border: 1px solid var(--color-primary, #1c7cd6);
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        pointer-events: none;
+        z-index: 999;
+        transform: rotate(2deg);
       }
 
       .slot {
@@ -75,6 +101,9 @@ export class SortableList extends RapidElement {
   @property({ type: Boolean })
   horizontal: boolean = false;
 
+  @property({ type: String })
+  dropTargetId: string;
+
   ghostElement: HTMLDivElement = null;
   downEle: HTMLDivElement = null;
   xOffset = 0;
@@ -83,6 +112,7 @@ export class SortableList extends RapidElement {
 
   draggingIdx = -1;
   draggingEle = null;
+  dropIndicator: HTMLDivElement = null;
 
   public constructor() {
     super();
@@ -136,6 +166,40 @@ export class SortableList extends RapidElement {
     return ele as HTMLDivElement;
   }
 
+  private showDropIndicator(targetElement: HTMLElement) {
+    this.hideDropIndicator();
+    
+    if (!targetElement) return;
+    
+    const container = this.shadowRoot.querySelector('.container');
+    this.dropIndicator = document.createElement('div');
+    this.dropIndicator.className = 'drop-indicator';
+    
+    const targetRect = targetElement.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    
+    if (this.horizontal) {
+      // For horizontal layout, show vertical line
+      this.dropIndicator.style.left = (targetRect.left - containerRect.left) + 'px';
+      this.dropIndicator.style.height = targetRect.height + 'px';
+      this.dropIndicator.style.top = (targetRect.top - containerRect.top) + 'px';
+    } else {
+      // For vertical layout, show horizontal line  
+      this.dropIndicator.style.top = (targetRect.top - containerRect.top) + 'px';
+      this.dropIndicator.style.width = targetRect.width + 'px';
+      this.dropIndicator.style.left = (targetRect.left - containerRect.left) + 'px';
+    }
+    
+    container.appendChild(this.dropIndicator);
+  }
+
+  private hideDropIndicator() {
+    if (this.dropIndicator) {
+      this.dropIndicator.remove();
+      this.dropIndicator = null;
+    }
+  }
+
   private handleMouseDown(event: MouseEvent) {
     let ele = event.target as HTMLDivElement;
     ele = ele.closest('.sortable');
@@ -172,12 +236,10 @@ export class SortableList extends RapidElement {
       this.ghostElement.classList.add('ghost');
 
       const computedStyle = getComputedStyle(this.downEle);
+      const rect = this.downEle.getBoundingClientRect();
 
-      this.ghostElement.style.width =
-        this.downEle.clientWidth -
-        parseFloat(computedStyle.paddingLeft) -
-        parseFloat(computedStyle.paddingRight) +
-        'px';
+      this.ghostElement.style.width = rect.width + 'px';
+      this.ghostElement.style.height = rect.height + 'px';
       const container = this.shadowRoot.querySelector('.container');
 
       container.appendChild(this.ghostElement);
@@ -196,6 +258,10 @@ export class SortableList extends RapidElement {
         const dragId = this.ghostElement.id;
         const otherId = other.id;
 
+        // Show drop indicator
+        this.showDropIndicator(other);
+        this.dropTargetId = otherId;
+
         this.fireCustomEvent(CustomEventType.OrderChanged, {
           from: dragId,
           to: otherId,
@@ -206,6 +272,9 @@ export class SortableList extends RapidElement {
         // TODO: Dont do swapping, just send the full order?
         this.draggingIdx = otherIdx;
         this.draggingId = otherId;
+      } else {
+        this.hideDropIndicator();
+        this.dropTargetId = null;
       }
     }
   }
@@ -217,12 +286,15 @@ export class SortableList extends RapidElement {
       });
 
       this.draggingId = null;
+      this.dropTargetId = null;
       this.downEle = null;
 
       if (this.ghostElement) {
         this.ghostElement.remove();
         this.ghostElement = null;
       }
+      
+      this.hideDropIndicator();
     }
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
