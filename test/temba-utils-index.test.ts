@@ -104,7 +104,7 @@ describe('utils/index', () => {
     });
 
     afterEach(() => {
-      // Clear cookies
+      // clear cookies
       document.cookie.split(';').forEach(cookie => {
         const eqPos = cookie.indexOf('=');
         const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
@@ -143,7 +143,7 @@ describe('utils/index', () => {
       originalCookie = document.cookie;
       originalOrgId = (window as any).org_id;
       
-      // Clear existing CSRF token element
+      // clear existing CSRF token element
       const existing = document.querySelector('[name=csrfmiddlewaretoken]');
       if (existing) {
         existing.remove();
@@ -151,7 +151,7 @@ describe('utils/index', () => {
     });
 
     afterEach(() => {
-      // Clear cookies
+      // clear cookies
       document.cookie.split(';').forEach(cookie => {
         const eqPos = cookie.indexOf('=');
         const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
@@ -471,15 +471,15 @@ describe('utils/index', () => {
 
   describe('hslToHex', () => {
     it('converts HSL to hex', () => {
-      expect(hslToHex(0, 100, 50)).to.equal('#ff0000'); // Red
+      expect(hslToHex(0, 100, 50)).to.equal('#ff0000'); // red
     });
 
     it('converts HSL to hex for green', () => {
-      expect(hslToHex(120, 100, 50)).to.equal('#00ff00'); // Green
+      expect(hslToHex(120, 100, 50)).to.equal('#00ff00'); // green
     });
 
     it('converts HSL to hex for blue', () => {
-      expect(hslToHex(240, 100, 50)).to.equal('#0000ff'); // Blue
+      expect(hslToHex(240, 100, 50)).to.equal('#0000ff'); // blue
     });
 
     it('handles white', () => {
@@ -532,15 +532,15 @@ describe('utils/index', () => {
       const fn = stub();
       const debouncedFn = debounce(fn, 50);
       
-      // Call multiple times
+      // call multiple times
       debouncedFn('arg1');
       debouncedFn('arg2');
       debouncedFn('arg3');
       
-      // The function should not be called immediately
+      // the function should not be called immediately
       expect(fn.called).to.be.false;
       
-      // Wait for the debounce delay and check if called
+      // wait for the debounce delay and check if called
       setTimeout(() => {
         expect(fn.calledOnce).to.be.true;
         expect(fn.calledWith('arg3')).to.be.true;
@@ -564,18 +564,18 @@ describe('utils/index', () => {
       const fn = stub();
       const throttledFn = throttle(fn, 50);
       
-      // First call should execute immediately
+      // first call should execute immediately
       throttledFn('arg1');
       expect(fn.calledOnce).to.be.true;
       
-      // Subsequent calls should be ignored until ready
+      // subsequent calls should be ignored until ready
       throttledFn('arg2');
       throttledFn('arg3');
       
-      // Should still be called only once
+      // should still be called only once
       expect(fn.callCount).to.equal(1);
       
-      // Wait for throttle to reset and test again
+      // wait for throttle to reset and test again
       setTimeout(() => {
         throttledFn('arg4');
         expect(fn.callCount).to.equal(2);
@@ -624,7 +624,7 @@ describe('utils/index', () => {
     it('returns formatted date for times more than 6 months ago', () => {
       const longAgo = new Date(baseDate.getTime() - 8 * 30 * 24 * 60 * 60 * 1000); // ~8 months ago
       const result = timeSince(longAgo);
-      expect(result).to.match(/\d+ \w+ \d+/); // Format like "1 May 2022"
+      expect(result).to.match(/\d+ \w+ \d+/); // format like "1 May 2022"
     });
 
     it('handles suffix parameter', () => {
@@ -675,7 +675,7 @@ describe('utils/index', () => {
     });
 
     afterEach(() => {
-      // Clear all cookies
+      // clear all cookies
       document.cookie.split(';').forEach(cookie => {
         const eqPos = cookie.indexOf('=');
         const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
@@ -689,7 +689,7 @@ describe('utils/index', () => {
     });
 
     it('setCookie sets a cookie with custom path', () => {
-      // Just test that the function doesn't throw
+      // just test that the function doesn't throw
       expect(() => setCookie('testcookie', 'testvalue', '/custom/path')).to.not.throw;
     });
 
@@ -698,10 +698,10 @@ describe('utils/index', () => {
     });
 
     it('getCookie handles empty cookie string', () => {
-      // Save original cookie getter
+      // save original cookie getter
       const originalGetter = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
       
-      // Mock empty cookie
+      // mock empty cookie
       Object.defineProperty(document, 'cookie', {
         value: '',
         configurable: true
@@ -709,7 +709,7 @@ describe('utils/index', () => {
       
       expect(getCookie('test')).to.be.null;
       
-      // Restore original getter
+      // restore original getter
       if (originalGetter) {
         Object.defineProperty(document, 'cookie', originalGetter);
       }
@@ -718,7 +718,7 @@ describe('utils/index', () => {
 
   describe('getCookieBoolean', () => {
     beforeEach(() => {
-      // Clear all cookies
+      // clear all cookies
       document.cookie.split(';').forEach(cookie => {
         const eqPos = cookie.indexOf('=');
         const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
@@ -880,7 +880,7 @@ describe('utils/index', () => {
 
     it('finds scrollable parent', () => {
       const scrollParent = getScrollParent(child);
-      // Should find a scrollable parent or return null
+      // should find a scrollable parent or return null
       expect(scrollParent === null || scrollParent instanceof HTMLElement).to.be.true;
     });
 
@@ -904,7 +904,7 @@ describe('utils/index', () => {
   describe('renderIf', () => {
     it('renders then clause when predicate is true', () => {
       const result = renderIf(true)(() => html`<span>true</span>`);
-      expect(result.strings).to.exist; // It's a TemplateResult
+      expect(result.strings).to.exist; // it's a TemplateResult
     });
 
     it('renders otherwise clause when predicate is false', () => {
@@ -912,12 +912,12 @@ describe('utils/index', () => {
         () => html`<span>true</span>`,
         () => html`<span>false</span>`
       );
-      expect(result.strings).to.exist; // It's a TemplateResult
+      expect(result.strings).to.exist; // it's a TemplateResult
     });
 
     it('renders empty when predicate is false and no otherwise clause', () => {
       const result = renderIf(false)(() => html`<span>true</span>`);
-      expect(result.strings).to.exist; // Empty TemplateResult
+      expect(result.strings).to.exist; // empty TemplateResult
     });
 
     it('handles truthy values', () => {
@@ -927,7 +927,7 @@ describe('utils/index', () => {
 
     it('handles falsy values', () => {
       const result = renderIf(0)(() => html`<span>falsy</span>`);
-      expect(result.strings).to.exist; // Empty TemplateResult
+      expect(result.strings).to.exist; // empty TemplateResult
     });
   });
 
@@ -937,7 +937,7 @@ describe('utils/index', () => {
       const replacements = { name: 'Alice', count: 5 };
       const result = fillTemplate(template, replacements);
       
-      expect(result.strings).to.exist; // It's a TemplateResult
+      expect(result.strings).to.exist; // it's a TemplateResult
     });
 
     it('handles empty replacements', () => {
@@ -985,7 +985,7 @@ describe('utils/index', () => {
   describe('renderAvatar', () => {
     it('renders avatar with name only', () => {
       const result = renderAvatar({ name: 'John Doe' });
-      expect(result.strings).to.exist; // It's a TemplateResult
+      expect(result.strings).to.exist; // it's a TemplateResult
     });
 
     it('renders avatar with user object', () => {
@@ -1100,7 +1100,7 @@ describe('utils/index', () => {
         const toastData = JSON.stringify([{ message: 'Success!', type: 'success' }]);
         mockPOST(/\/test\/endpoint/, { success: true }, { 'X-Temba-Toasts': toastData }, '200');
         
-        // Create a mock toast element
+        // create a mock toast element
         const mockToast = {
           addMessages: stub()
         };
@@ -1112,7 +1112,7 @@ describe('utils/index', () => {
         
         expect(response.status).to.equal(200);
         
-        // Clean up
+        // clean up
         document.body.removeChild(toastElement);
       });
 
@@ -1311,10 +1311,10 @@ describe('utils/index', () => {
     });
   });
 
-  describe('Additional Coverage Tests', () => {
+  describe('Dialog and date utilities', () => {
     describe('getDialog', () => {
       it('extracts dialog from button shadow root', () => {
-        // Create a mock button with shadow root
+        // create a mock button with shadow root
         const shadowRoot = {
           host: { type: 'dialog' }
         };
@@ -1335,14 +1335,14 @@ describe('utils/index', () => {
       });
     });
 
-    describe('edge cases', () => {
+    describe('Boundary conditions and error handling', () => {
       it('handles oxford function with edge cases', () => {
-        // Test empty array - should return empty string
+        // test empty array - should return empty string
         expect(oxford([])).to.equal('');
         
-        // Test with non-string items - returns template result
+        // test with non-string items - returns template result
         const result = oxford([null, undefined]);
-        expect(result.strings).to.exist; // It's a TemplateResult because items are objects
+        expect(result.strings).to.exist; // it's a TemplateResult because items are objects
       });
 
       it('handles hexToRgb edge cases', () => {
@@ -1362,7 +1362,7 @@ describe('utils/index', () => {
         const now = new Date();
         const future = new Date(now.getTime() + 1000);
         
-        // Test future date (negative seconds)
+        // test future date (negative seconds)
         expect(timeSince(future, { compareDate: now, suffix: '' })).to.match(/\d+s/);
       });
 
@@ -1376,7 +1376,7 @@ describe('utils/index', () => {
       it('handles serialize edge cases', () => {
         const form = document.createElement('form');
         
-        // Add checkbox without value
+        // add checkbox without value
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.name = 'checknovalue';
@@ -1384,27 +1384,27 @@ describe('utils/index', () => {
         form.appendChild(checkbox);
         
         const serialized = serialize(form);
-        expect(serialized).to.include('checknovalue=on'); // Default checkbox value is "on"
+        expect(serialized).to.include('checknovalue=on'); // default checkbox value is "on"
       });
 
       it('handles getScrollParent edge cases', () => {
-        // Test with null parent
+        // test with null parent
         const orphan = document.createElement('div');
         expect(getScrollParent(orphan)).to.be.null;
         
-        // Test with non-scrollable parent
+        // test with non-scrollable parent
         const parent = document.createElement('div');
         const child = document.createElement('div');
         parent.appendChild(child);
         
-        // Most browsers won't have scrollable overflow by default
+        // most browsers won't have scrollable overflow by default
         const result = getScrollParent(child);
         expect(result === null || result instanceof HTMLElement).to.be.true;
       });
 
       it('handles getElementOffset with different positions', () => {
         const element = document.createElement('div');
-        // Set some basic styling
+        // set some basic styling
         element.style.position = 'relative';
         element.style.width = '100px';
         element.style.height = '50px';
@@ -1418,18 +1418,18 @@ describe('utils/index', () => {
       });
 
       it('handles renderIf with various predicates', () => {
-        // Test with object predicate
+        // test with object predicate
         expect(renderIf({ test: true })(() => html`<span>object</span>`).strings).to.exist;
         
-        // Test with array predicate
+        // test with array predicate
         expect(renderIf([1, 2, 3])(() => html`<span>array</span>`).strings).to.exist;
         
-        // Test with empty array (falsy)
+        // test with empty array (falsy)
         expect(renderIf([])(() => html`<span>empty</span>`).strings).to.exist;
       });
 
       it('handles postFormData edge cases', async () => {
-        // Test with different error status for media endpoint
+        // test with different error status for media endpoint
         mockPOST(/\/api\/v2\/media\.json/, 'Forbidden', {}, '403');
         
         const formData = new FormData();
@@ -1444,7 +1444,7 @@ describe('utils/index', () => {
       });
 
       it('handles postUrl with different response scenarios', async () => {
-        // Test response without toasts
+        // test response without toasts
         mockPOST(/\/test\/notoasts/, { success: true }, {}, '201');
         
         const response = await postUrl('/test/notoasts', 'data');
