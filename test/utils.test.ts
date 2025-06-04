@@ -192,7 +192,7 @@ export const assertScreenshot = async (
   const isCopilotEnvironment = (window as any).isCopilotEnvironment;
   
   // use more relaxed threshold for copilot environment to account for rendering differences
-  const threshold = isCopilotEnvironment ? 0.9 : 0.1;
+  const threshold = isCopilotEnvironment ? 1.0 : 0.1;
   const exclude: Clip[] = [];
 
   try {

@@ -385,17 +385,17 @@ export default {
         await page.setUserAgent(
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
         );
+        
+        // detect if we're running in copilot's environment
+        const isCopilotEnvironment = process.env.COPILOT_API_URL || process.env.COPILOT_AGENT_CALLBACK_URL;
+        
+        // inject script into every document that loads
+        await page.evaluateOnNewDocument((watched, copilotEnv) => {
+          window.watched = watched;
+          window.isCopilotEnvironment = copilotEnv;
+        }, config.watch, !!isCopilotEnvironment);
+        
         await page.once('load', async () => {
-          // detect if we're running in copilot's environment
-          const isCopilotEnvironment = process.env.COPILOT_API_URL || process.env.COPILOT_AGENT_CALLBACK_URL;
-          
-          await page.addScriptTag({
-            content: `
-            window.watched = ${config.watch};
-            window.isCopilotEnvironment = ${!!isCopilotEnvironment};
-          `,
-          });
-
           await wireScreenshots(page, context, wait, replaceScreenshots);
         });
 
