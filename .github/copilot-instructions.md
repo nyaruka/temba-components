@@ -21,13 +21,20 @@ All tests are run using:
 yarn test
 ```
 
-This will generate coverage information by default.
+This will check linting, formatting, compilation, and run the tests. No task is complete until this passes fully.
+
+To run the tests without all the extra tests while debugging, you can use
+
+```bash
+yarn runtests
+```
 
 ### Test Coverage Requirements
 - **100% code coverage** is expected for all code we touch
 - The aim is to maintain complete test coverage across the codebase
 - When modifying existing code, ensure all changed lines are covered by tests
-- When adding new features, write comprehensive tests that cover all code paths
+- When adding new features, write comprehensive tests that cover all reachable code paths
+- Never add tests to try to test unreachable or dead code, instead make a comment in the dead scope that it is unreachable
 
 ### Test Structure
 Tests live under the `/test` directory and follow these patterns:
@@ -43,6 +50,8 @@ Tests live under the `/test` directory and follow these patterns:
 3. **Test organization:** Use `describe()` blocks for component grouping and `it()` for individual test cases
 
 4. **Test methodology:** These are ui based tests, so whenever possbile, the test should be written from the user's perspective. In other words, you should instrument a click in the browser to test behavior as a user would instead of calling instance methods on components. Instance method calling can be appropriate at times but should be used sparingly. For example, use the mouseClickElement() test method or the methods in src/untyped.d.ts for pressing keys, typing, using the mouse, etc.
+
+5. **Example Test:** A good example test to model after is `temba-textinput.test.ts`
 
 ### Screenshot Testing
 This project includes visual regression testing through screenshot comparison:
