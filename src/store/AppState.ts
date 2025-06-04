@@ -157,11 +157,11 @@ export const zustand = createStore<AppState>()(
       setFlowContents: (flow: FlowContents) => {
         set((state: AppState) => {
           const flowLang = flow.definition.language;
-          const languageCode = state.languageCode || flowLang;
           state.flowDefinition = flow.definition;
           state.flowInfo = flow.info;
-          state.isTranslating = flowLang !== languageCode;
-          state.languageCode = languageCode || flowLang;
+          // Reset to the flow's default language when loading a new flow
+          state.languageCode = flowLang;
+          state.isTranslating = false;
         });
       },
 
