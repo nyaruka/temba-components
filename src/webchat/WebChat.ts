@@ -398,8 +398,11 @@ export class WebChat extends LitElement {
     super.firstUpdated(changed);
     this.chat = this.shadowRoot.querySelector('temba-chat');
 
-    const lightbox = document.createElement('temba-lightbox');
-    document.querySelector('body').appendChild(lightbox);
+    // Only create lightbox if one doesn't already exist
+    if (!document.querySelector('temba-lightbox')) {
+      const lightbox = document.createElement('temba-lightbox');
+      document.querySelector('body').appendChild(lightbox);
+    }
   }
 
   private handleReconnect() {
