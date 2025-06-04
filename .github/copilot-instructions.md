@@ -133,9 +133,10 @@ This ordering ensures:
 
 1. **Install dependencies:** `yarn install`
 2. **Start development server:** `yarn start`
-3. **Run tests during development:** `yarn test:watch`
-4. **Lint code:** `yarn lint`
-5. **Build for production:** `yarn build`
+3. **Run tests during development:** `yarn test`
+4. **Pre-commit checks before committing:** `yarn pre-commit`
+5. **Validate changes:** `yarn validate`
+6. **Check Coverage:** Once validated, check for 100% coverage
 
 ## Code Quality
 
