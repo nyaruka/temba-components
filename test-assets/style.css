@@ -25,6 +25,11 @@ temba-dialog {
   caret-color: transparent;
 }
 
+/* Specifically disable the spinning icon animation for deterministic screenshots */
+.spin-forever {
+  animation: none !important;
+}
+
 html {
   --transition-speed: 0ms !important;
   --input-caret: transparent !important;
