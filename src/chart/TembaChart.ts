@@ -6,6 +6,7 @@ import { Select, SelectOption } from '../select/Select';
 import { getClasses } from '../utils';
 import { getStore } from '../store/Store';
 
+// eslint-disable-next-line import/no-named-as-default
 import Chart, { ChartType } from 'chart.js/auto';
 import 'chartjs-adapter-luxon';
 
