@@ -268,7 +268,8 @@ export class RunList extends TembaList {
             <temba-contact-name
               style="cursor:pointer"
               name=${this.selectedRun.contact?.name ||
-              this.selectedRun.contact?.anon_display || ''}
+              this.selectedRun.contact?.anon_display ||
+              ''}
               urn=${this.selectedRun.contact?.urn || ''}
               onclick="goto(event, this)"
               href="/contact/read/${this.selectedRun.contact?.uuid || ''}/"
@@ -303,7 +304,9 @@ export class RunList extends TembaList {
           <div style="flex-grow:1"></div>
           <div style="display:flex;flex-direction: column">
             <div style="font-size:0.75em">
-              ${this.selectedRun.created_on ? new Date(this.selectedRun.created_on).toLocaleString() : ''}
+              ${this.selectedRun.created_on
+                ? new Date(this.selectedRun.created_on).toLocaleString()
+                : ''}
             </div>
             <div
               style="font-size:0.6em;align-self:flex-end;color:#888;line-height:0.75em"
