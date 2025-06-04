@@ -9,6 +9,7 @@ import {
   postJSON
 } from '../utils';
 import '../options/Options';
+import '../list/SortableList';
 import { EventHandler } from '../RapidElement';
 import { FormElement } from '../FormElement';
 
@@ -205,6 +206,24 @@ export class Select<T extends SelectOption> extends FormElement {
 
       .multi .selected .selected-item.focused {
         background: rgba(100, 100, 100, 0.3);
+      }
+
+      .multi .selected-item.sortable {
+        cursor: move;
+      }
+
+      .multi .selected-item.dragging {
+        opacity: 0.5;
+      }
+
+      .multi temba-sortable-list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .multi temba-sortable-list .sortable {
+        padding: 0;
       }
 
       input {
@@ -515,6 +534,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   allowAnchor: boolean = true;
 
+  @property({ type: String })
+  draggingId: string;
+
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -538,6 +560,9 @@ export class Select<T extends SelectOption> extends FormElement {
     this.renderSelectedItemDefault = this.renderSelectedItemDefault.bind(this);
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
+    this.handleOrderChanged = this.handleOrderChanged.bind(this);
+    this.handleDragStart = this.handleDragStart.bind(this);
+    this.handleDragStop = this.handleDragStop.bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -1487,6 +1512,26 @@ export class Select<T extends SelectOption> extends FormElement {
     );
   }
 
+  private handleOrderChanged(event: CustomEvent): void {
+    const detail = event.detail;
+    const fromIdx = detail.fromIdx;
+    const toIdx = detail.toIdx;
+    
+    // Swap the values in the array
+    const temp = this.values[fromIdx];
+    this.values[fromIdx] = this.values[toIdx];
+    this.values[toIdx] = temp;
+    this.requestUpdate('values');
+  }
+
+  private handleDragStart(event: CustomEvent): void {
+    this.draggingId = event.detail.id;
+  }
+
+  private handleDragStop(): void {
+    this.draggingId = null;
+  }
+
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : '';
     const placeholderDiv = html`
@@ -1571,35 +1616,74 @@ export class Select<T extends SelectOption> extends FormElement {
                   : null
               }
               ${!this.multi && !this.resolving ? input : null}
-              ${this.values.map(
-                (selected: any, index: number) => html`
-                  <div
-                    class="selected-item ${index === this.selectedIndex
-                      ? 'focused'
-                      : ''}"
-                  >
-                    ${this.multi
-                      ? html`
+              ${this.multi && this.values.length > 1
+                ? html`
+                    <temba-sortable-list
+                      @temba-order-changed=${this.handleOrderChanged}
+                      @temba-drag-start=${this.handleDragStart}
+                      @temba-drag-stop=${this.handleDragStop}
+                    >
+                      ${this.values.map(
+                        (selected: any, index: number) => html`
                           <div
-                            class="remove-item"
-                            style="margin-top:1px"
-                            @click=${(evt: MouseEvent) => {
-                              evt.preventDefault();
-                              evt.stopPropagation();
-                              this.handleRemoveSelection(selected);
-                            }}
+                            class="selected-item sortable ${index === this.selectedIndex
+                              ? 'focused'
+                              : ''} ${this.draggingId === `selected-${index}` ? 'dragging' : ''}"
+                            id="selected-${index}"
                           >
-                            <temba-icon
-                              name="${Icon.delete_small}"
-                              size="1"
-                            ></temba-icon>
+                            ${this.multi
+                              ? html`
+                                  <div
+                                    class="remove-item"
+                                    style="margin-top:1px"
+                                    @click=${(evt: MouseEvent) => {
+                                      evt.preventDefault();
+                                      evt.stopPropagation();
+                                      this.handleRemoveSelection(selected);
+                                    }}
+                                  >
+                                    <temba-icon
+                                      name="${Icon.delete_small}"
+                                      size="1"
+                                    ></temba-icon>
+                                  </div>
+                                `
+                              : null}
+                            ${this.renderSelectedItem(selected)}
                           </div>
                         `
-                      : null}
-                    ${this.renderSelectedItem(selected)}
-                  </div>
-                `
-              )}
+                      )}
+                    </temba-sortable-list>
+                  `
+                : this.values.map(
+                    (selected: any, index: number) => html`
+                      <div
+                        class="selected-item ${index === this.selectedIndex
+                          ? 'focused'
+                          : ''}"
+                      >
+                        ${this.multi
+                          ? html`
+                              <div
+                                class="remove-item"
+                                style="margin-top:1px"
+                                @click=${(evt: MouseEvent) => {
+                                  evt.preventDefault();
+                                  evt.stopPropagation();
+                                  this.handleRemoveSelection(selected);
+                                }}
+                              >
+                                <temba-icon
+                                  name="${Icon.delete_small}"
+                                  size="1"
+                                ></temba-icon>
+                              </div>
+                            `
+                          : null}
+                        ${this.renderSelectedItem(selected)}
+                      </div>
+                    `
+                  )}
               ${this.multi ? input : null}
             </div>
 

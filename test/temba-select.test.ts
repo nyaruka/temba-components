@@ -404,6 +404,117 @@ describe('temba-select', () => {
     });
   });
 
+  describe('drag and drop reordering', () => {
+    it('can reorder multiple selected items by dragging', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(
+          [
+            { name: 'Red', value: '0', selected: true },
+            { name: 'Green', value: '1', selected: true },
+            { name: 'Blue', value: '2', selected: true }
+          ],
+          {
+            placeholder: 'Select colors',
+            multi: true
+          }
+        )
+      );
+
+      // Verify initial order
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Green');
+      expect(select.values[2].name).to.equal('Blue');
+
+      // Take screenshot of initial state
+      await assertScreenshot(
+        'select/multi-reorder-initial',
+        getClipWithOptions(select)
+      );
+
+      // Find the sortable list in the shadow DOM
+      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      expect(sortableList).to.not.be.null;
+
+      const bounds = sortableList.getBoundingClientRect();
+      
+      // Get the first and second items for dragging
+      const firstItem = sortableList.querySelector('#selected-0');
+      const secondItem = sortableList.querySelector('#selected-1');
+      expect(firstItem).to.not.be.null;
+      expect(secondItem).to.not.be.null;
+
+      const firstBounds = firstItem.getBoundingClientRect();
+      const secondBounds = secondItem.getBoundingClientRect();
+
+      // Start drag from first item (Red)
+      await moveMouse(firstBounds.left + 10, firstBounds.top + 10);
+      await mouseDown();
+      
+      // Drag to second item position (Green) 
+      await moveMouse(secondBounds.left + 10, secondBounds.top + 10);
+      await mouseUp();
+
+      // Verify the order has changed - Red and Green should be swapped
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Green');
+      expect(select.values[1].name).to.equal('Red');
+      expect(select.values[2].name).to.equal('Blue');
+
+      // Take screenshot of final state
+      await assertScreenshot(
+        'select/multi-reorder-final',
+        getClipWithOptions(select)
+      );
+    });
+
+    it('does not show sortable list for single item', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(
+          [
+            { name: 'Red', value: '0', selected: true }
+          ],
+          {
+            placeholder: 'Select a color',
+            multi: true
+          }
+        )
+      );
+
+      // Should not have a sortable list with only one item
+      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      expect(sortableList).to.be.null;
+
+      // Should still show the selected item normally
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal('Red');
+    });
+
+    it('does not show sortable list for non-multi select', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(
+          [
+            { name: 'Red', value: '0', selected: true }
+          ],
+          {
+            placeholder: 'Select a color',
+            multi: false
+          }
+        )
+      );
+
+      // Should not have a sortable list for single select
+      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      expect(sortableList).to.be.null;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal('Red');
+    });
+  });
+
   describe('static options', () => {
     it('accepts an initial value', async () => {
       const select = await createSelect(
