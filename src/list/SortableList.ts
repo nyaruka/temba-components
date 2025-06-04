@@ -20,6 +20,12 @@ export class SortableList extends RapidElement {
         user-select: none;
       }
 
+      .container.horizontal {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
       .dragging {
         background: var(--color-selection);
       }
@@ -28,6 +34,12 @@ export class SortableList extends RapidElement {
         transition: all 300ms ease-in-out;
         display: flex;
         padding: 0.4em 0;
+      }
+
+      .container.horizontal .sortable {
+        padding: 0;
+        margin-right: 0.25em;
+        margin-bottom: 0.25em;
       }
 
       .sortable:hover temba-icon {
@@ -59,6 +71,9 @@ export class SortableList extends RapidElement {
 
   @property({ type: String })
   draggingId: string;
+
+  @property({ type: Boolean })
+  horizontal: boolean = false;
 
   ghostElement: HTMLDivElement = null;
   downEle: HTMLDivElement = null;
@@ -216,7 +231,7 @@ export class SortableList extends RapidElement {
 
   public render(): TemplateResult {
     return html`
-      <div class="container">
+      <div class="container ${this.horizontal ? 'horizontal' : ''}">
         <slot @mousedown=${this.handleMouseDown}></slot>
       </div>
     `;

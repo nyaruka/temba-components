@@ -217,15 +217,8 @@ export class Select<T extends SelectOption> extends FormElement {
       }
 
       .multi temba-sortable-list {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
+        width: 100%;
         margin: 0 !important;
-      }
-
-      .multi temba-sortable-list .sortable {
-        padding: 0 !important;
-        margin: 0;
       }
 
       input {
@@ -1621,6 +1614,7 @@ export class Select<T extends SelectOption> extends FormElement {
               ${this.multi && this.values.length > 1
                 ? html`
                     <temba-sortable-list
+                      horizontal
                       @temba-order-changed=${this.handleOrderChanged}
                       @temba-drag-start=${this.handleDragStart}
                       @temba-drag-stop=${this.handleDragStop}

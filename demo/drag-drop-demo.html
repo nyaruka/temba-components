@@ -1,8 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 <head>
+    <meta charset="utf-8" />
     <title>Multi-Select Drag and Drop Demo</title>
-    <script type="module" src="./dist/temba-components.js"></script>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
     <style>
         body { 
             font-family: sans-serif; 
@@ -127,6 +132,10 @@
                 });
             }, 500);
         });
+    </script>
+
+    <script type="module">
+      import '../out-tsc/temba-modules.js';
     </script>
 </body>
 </html>
