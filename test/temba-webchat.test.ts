@@ -181,8 +181,12 @@ describe('temba-webchat', () => {
         status: 'connecting'
       });
       
+      // Wait for component to be fully rendered
+      await webChat.updateComplete;
+      
       // Advance fake timers to ensure animations are in a consistent state
-      clock.tick(2000); // Advance past any animation cycles
+      // The spin animation has a 2000ms duration, so advance beyond that
+      clock.tick(5000); // Advance well past any animation cycles
       await webChat.updateComplete;
       
       await assertScreenshot('webchat/connecting-state', getClip(webChat));
