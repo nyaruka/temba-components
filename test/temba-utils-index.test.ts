@@ -289,6 +289,18 @@ describe('utils/index', () => {
     it('returns null for short hex', () => {
       expect(hexToRgb('#fff')).to.be.null;
     });
+
+    it('returns null for empty hex', () => {
+      expect(hexToRgb('')).to.be.null;
+    });
+
+    it('returns null for hash only', () => {
+      expect(hexToRgb('#')).to.be.null;
+    });
+
+    it('returns null for partial hex', () => {
+      expect(hexToRgb('#12')).to.be.null;
+    });
   });
 
   describe('truncate', () => {
@@ -349,6 +361,12 @@ describe('utils/index', () => {
       const items = [html`<span>apple</span>`, html`<span>banana</span>`, html`<span>cherry</span>`];
       const result = oxford(items);
       expect(Array.isArray(result)).to.be.true;
+    });
+
+    it('handles non-string items returning template result', () => {
+      // test with non-string items - returns template result
+      const result = oxford([null, undefined]);
+      expect(result.strings).to.exist; // it's a TemplateResult because items are objects
     });
   });
 
@@ -424,6 +442,18 @@ describe('utils/index', () => {
 
     it('uses default decimal places', () => {
       expect(formatFileSize(1536)).to.equal('1.5 KB');
+    });
+
+    it('formats zero bytes with default precision', () => {
+      expect(formatFileSize(0)).to.equal('0 KB');
+    });
+
+    it('formats with zero decimal places', () => {
+      expect(formatFileSize(1, 0)).to.equal('1 B');
+    });
+
+    it('formats gigabytes with single decimal place', () => {
+      expect(formatFileSize(1024 * 1024 * 1024, 1)).to.equal('1 GB');
     });
   });
 
@@ -642,6 +672,14 @@ describe('utils/index', () => {
       const recentDate = new Date(baseDate.getTime() - 30 * 1000);
       expect(timeSince(recentDate, { hideRecentText: true, suffix: ' ago' })).to.equal('just now');
     });
+
+    it('handles future dates', () => {
+      const now = new Date();
+      const future = new Date(now.getTime() + 1000);
+      
+      // test future date (negative seconds)
+      expect(timeSince(future, { compareDate: now, suffix: '' })).to.match(/\d+s/);
+    });
   });
 
   describe('isDate', () => {
@@ -664,6 +702,16 @@ describe('utils/index', () => {
     it('handles strings with replace method', () => {
       const str = '  2023-01-01T12:00:00Z  ';
       expect(isDate(str)).to.be.true;
+    });
+
+    it('returns true for Date instances', () => {
+      expect(isDate(new Date())).to.be.true;
+    });
+
+    it('returns false for non-date values', () => {
+      expect(isDate(123 as any)).to.be.false;
+      // Don't test with null as it causes errors - this reveals a bug in the function
+      expect(isDate({ replace: () => {} } as any)).to.be.false;
     });
   });
 
@@ -811,6 +859,20 @@ describe('utils/index', () => {
       
       expect(serialize(disabledForm)).to.equal('');
     });
+
+    it('handles checkbox without value attribute', () => {
+      const form = document.createElement('form');
+      
+      // add checkbox without value
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'checknovalue';
+      checkbox.checked = true;
+      form.appendChild(checkbox);
+      
+      const serialized = serialize(form);
+      expect(serialized).to.include('checknovalue=on'); // default checkbox value is "on"
+    });
   });
 
   describe('getElementOffset', () => {
@@ -838,6 +900,21 @@ describe('utils/index', () => {
       expect(typeof offset.left).to.equal('number');
       expect(typeof offset.width).to.equal('number');
       expect(typeof offset.height).to.equal('number');
+    });
+
+    it('handles elements with relative positioning', () => {
+      const element = document.createElement('div');
+      // set some basic styling
+      element.style.position = 'relative';
+      element.style.width = '100px';
+      element.style.height = '50px';
+      document.body.appendChild(element);
+      
+      const offset = getElementOffset(element);
+      expect(offset.width).to.equal(100);
+      expect(offset.height).to.equal(50);
+      
+      document.body.removeChild(element);
     });
   });
 
@@ -899,6 +976,21 @@ describe('utils/index', () => {
       const result = getScrollParent(shadowChild);
       expect(result === null || result instanceof HTMLElement).to.be.true;
     });
+
+    it('handles elements with no scrollable parents', () => {
+      // test with null parent
+      const orphan = document.createElement('div');
+      expect(getScrollParent(orphan)).to.be.null;
+      
+      // test with non-scrollable parent
+      const parent = document.createElement('div');
+      const child = document.createElement('div');
+      parent.appendChild(child);
+      
+      // most browsers won't have scrollable overflow by default
+      const result = getScrollParent(child);
+      expect(result === null || result instanceof HTMLElement).to.be.true;
+    });
   });
 
   describe('renderIf', () => {
@@ -928,6 +1020,19 @@ describe('utils/index', () => {
     it('handles falsy values', () => {
       const result = renderIf(0)(() => html`<span>falsy</span>`);
       expect(result.strings).to.exist; // empty TemplateResult
+    });
+
+    it('handles object predicates', () => {
+      // test with object predicate
+      expect(renderIf({ test: true })(() => html`<span>object</span>`).strings).to.exist;
+    });
+
+    it('handles array predicates', () => {
+      // test with array predicate
+      expect(renderIf([1, 2, 3])(() => html`<span>array</span>`).strings).to.exist;
+      
+      // test with empty array (falsy)
+      expect(renderIf([])(() => html`<span>empty</span>`).strings).to.exist;
     });
   });
 
@@ -1018,6 +1123,29 @@ describe('utils/index', () => {
     it('handles empty input', () => {
       const result = renderAvatar({});
       expect(result.strings).to.exist;
+    });
+  });
+
+  describe('getDialog', () => {
+    it('extracts dialog from button shadow root', () => {
+      // create a mock button with shadow root
+      const shadowRoot = {
+        host: { type: 'dialog' }
+      };
+      const button = {
+        getRootNode: stub().returns(shadowRoot)
+      };
+      
+      const dialog = getDialog(button as any);
+      expect(dialog).to.equal(shadowRoot.host);
+      expect(button.getRootNode.calledOnce).to.be.true;
+    });
+  });
+
+  describe('stubbable', () => {
+    it('returns current date', () => {
+      const date = stubbable.getCurrentDate();
+      expect(date).to.be.instanceOf(Date);
     });
   });
 
@@ -1124,6 +1252,14 @@ describe('utils/index', () => {
         expect(response.status).to.equal(400);
         expect(response.json).to.deep.equal({});
       });
+
+      it('handles response without toasts', async () => {
+        // test response without toasts
+        mockPOST(/\/test\/notoasts/, { success: true }, {}, '201');
+        
+        const response = await postUrl('/test/notoasts', 'data');
+        expect(response.status).to.equal(201);
+      });
     });
 
     describe('postJSON', () => {
@@ -1188,6 +1324,21 @@ describe('utils/index', () => {
         } catch (error) {
           expect(error).to.exist;
           expect(error.status).to.equal(400);
+        }
+      });
+
+      it('handles different error status for media endpoint', async () => {
+        // test with different error status for media endpoint
+        mockPOST(/\/api\/v2\/media\.json/, 'Forbidden', {}, '403');
+        
+        const formData = new FormData();
+        formData.append('file', 'test');
+        
+        try {
+          await postFormData('/api/v2/media.json', formData);
+          expect.fail('Should have rejected');
+        } catch (error) {
+          expect(error).to.exist;
         }
       });
     });
@@ -1296,6 +1447,17 @@ describe('utils/index', () => {
           expect(error).to.exist;
         }
       });
+
+      it('handles server error scenarios', async () => {
+        mockGET(/\/api\/asseterror/, 'Server Error', {}, '500');
+        
+        try {
+          await getAssetPage('/api/asseterror/');
+          expect.fail('Should have rejected');
+        } catch (error) {
+          expect(error).to.exist;
+        }
+      });
     });
 
     describe('getAssets', () => {
@@ -1307,159 +1469,6 @@ describe('utils/index', () => {
       it('returns empty array for empty URL', async () => {
         const assets = await getAssets('');
         expect(assets).to.deep.equal([]);
-      });
-    });
-  });
-
-  describe('Dialog and date utilities', () => {
-    describe('getDialog', () => {
-      it('extracts dialog from button shadow root', () => {
-        // create a mock button with shadow root
-        const shadowRoot = {
-          host: { type: 'dialog' }
-        };
-        const button = {
-          getRootNode: stub().returns(shadowRoot)
-        };
-        
-        const dialog = getDialog(button as any);
-        expect(dialog).to.equal(shadowRoot.host);
-        expect(button.getRootNode.calledOnce).to.be.true;
-      });
-    });
-
-    describe('Stubbable', () => {
-      it('returns current date', () => {
-        const date = stubbable.getCurrentDate();
-        expect(date).to.be.instanceOf(Date);
-      });
-    });
-
-    describe('Boundary conditions and error handling', () => {
-      it('handles oxford function with edge cases', () => {
-        // test empty array - should return empty string
-        expect(oxford([])).to.equal('');
-        
-        // test with non-string items - returns template result
-        const result = oxford([null, undefined]);
-        expect(result.strings).to.exist; // it's a TemplateResult because items are objects
-      });
-
-      it('handles hexToRgb edge cases', () => {
-        expect(hexToRgb('')).to.be.null;
-        expect(hexToRgb('#')).to.be.null;
-        expect(hexToRgb('#12')).to.be.null;
-        expect(hexToRgb('invalid')).to.be.null;
-      });
-
-      it('handles formatFileSize edge cases', () => {
-        expect(formatFileSize(0)).to.equal('0 KB');
-        expect(formatFileSize(1, 0)).to.equal('1 B');
-        expect(formatFileSize(1024 * 1024 * 1024, 1)).to.equal('1 GB');
-      });
-
-      it('handles timeSince edge cases', () => {
-        const now = new Date();
-        const future = new Date(now.getTime() + 1000);
-        
-        // test future date (negative seconds)
-        expect(timeSince(future, { compareDate: now, suffix: '' })).to.match(/\d+s/);
-      });
-
-      it('handles isDate edge cases', () => {
-        expect(isDate(new Date())).to.be.true;
-        expect(isDate(123 as any)).to.be.false;
-        // Don't test with null as it causes errors - this reveals a bug in the function
-        expect(isDate({ replace: () => {} } as any)).to.be.false;
-      });
-
-      it('handles serialize edge cases', () => {
-        const form = document.createElement('form');
-        
-        // add checkbox without value
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.name = 'checknovalue';
-        checkbox.checked = true;
-        form.appendChild(checkbox);
-        
-        const serialized = serialize(form);
-        expect(serialized).to.include('checknovalue=on'); // default checkbox value is "on"
-      });
-
-      it('handles getScrollParent edge cases', () => {
-        // test with null parent
-        const orphan = document.createElement('div');
-        expect(getScrollParent(orphan)).to.be.null;
-        
-        // test with non-scrollable parent
-        const parent = document.createElement('div');
-        const child = document.createElement('div');
-        parent.appendChild(child);
-        
-        // most browsers won't have scrollable overflow by default
-        const result = getScrollParent(child);
-        expect(result === null || result instanceof HTMLElement).to.be.true;
-      });
-
-      it('handles getElementOffset with different positions', () => {
-        const element = document.createElement('div');
-        // set some basic styling
-        element.style.position = 'relative';
-        element.style.width = '100px';
-        element.style.height = '50px';
-        document.body.appendChild(element);
-        
-        const offset = getElementOffset(element);
-        expect(offset.width).to.equal(100);
-        expect(offset.height).to.equal(50);
-        
-        document.body.removeChild(element);
-      });
-
-      it('handles renderIf with various predicates', () => {
-        // test with object predicate
-        expect(renderIf({ test: true })(() => html`<span>object</span>`).strings).to.exist;
-        
-        // test with array predicate
-        expect(renderIf([1, 2, 3])(() => html`<span>array</span>`).strings).to.exist;
-        
-        // test with empty array (falsy)
-        expect(renderIf([])(() => html`<span>empty</span>`).strings).to.exist;
-      });
-
-      it('handles postFormData edge cases', async () => {
-        // test with different error status for media endpoint
-        mockPOST(/\/api\/v2\/media\.json/, 'Forbidden', {}, '403');
-        
-        const formData = new FormData();
-        formData.append('file', 'test');
-        
-        try {
-          await postFormData('/api/v2/media.json', formData);
-          expect.fail('Should have rejected');
-        } catch (error) {
-          expect(error).to.exist;
-        }
-      });
-
-      it('handles postUrl with different response scenarios', async () => {
-        // test response without toasts
-        mockPOST(/\/test\/notoasts/, { success: true }, {}, '201');
-        
-        const response = await postUrl('/test/notoasts', 'data');
-        expect(response.status).to.equal(201);
-      });
-
-      it('handles getAssetPage error scenarios', async () => {
-        mockGET(/\/api\/asseterror/, 'Server Error', {}, '500');
-        
-        try {
-          await getAssetPage('/api/asseterror/');
-          expect.fail('Should have rejected');
-        } catch (error) {
-          expect(error).to.exist;
-        }
       });
     });
   });
