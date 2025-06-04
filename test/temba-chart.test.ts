@@ -1,5 +1,9 @@
 import { expect } from '@open-wc/testing';
-import { RapidChartData, TembaChart, formatDurationFromSeconds } from '../src/chart/TembaChart';
+import {
+  RapidChartData,
+  TembaChart,
+  formatDurationFromSeconds
+} from '../src/chart/TembaChart';
 import { getComponent } from './utils.test';
 
 const sampleData: RapidChartData = {
@@ -66,7 +70,7 @@ describe('temba-chart', () => {
 
   it('formats duration values correctly', async () => {
     const chart: TembaChart = await getChart();
-    
+
     // Access the formatDurationFromSeconds function through the chart's module
     // We need to test the duration formatting logic
     const durationData: RapidChartData = {
@@ -82,19 +86,19 @@ describe('temba-chart', () => {
     chart.formatDuration = true;
     chart.data = durationData;
     await chart.updateComplete;
-    
+
     // Wait for the chart to be created after data is set
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Test that the chart was created and has the duration formatting enabled
     expect(chart.formatDuration).to.equal(true);
     expect(chart.chart).to.exist;
-    
+
     // Test that the chart configuration includes the duration formatting
     const chartConfig = chart.chart.options;
     expect(chartConfig.scales.y.ticks).to.exist;
     expect(chartConfig.scales.y.ticks.callback).to.be.a('function');
-    
+
     // Test the tick callback function formatting
     const tickCallback = chartConfig.scales.y.ticks.callback;
     expect(tickCallback.call({}, 68787, 0, [])).to.equal('19h 6m');
@@ -102,16 +106,18 @@ describe('temba-chart', () => {
     expect(tickCallback.call({}, 3661, 2, [])).to.equal('1h 1m');
     expect(tickCallback.call({}, 120, 3, [])).to.equal('2m');
     expect(tickCallback.call({}, 0, 4, [])).to.equal('0s');
-    
+
     // Test tooltip formatting
     expect(chartConfig.plugins.tooltip.callbacks.label).to.be.a('function');
     const tooltipCallback = chartConfig.plugins.tooltip.callbacks.label;
-    
+
     const mockContext = {
       dataset: { label: 'Process Time' },
       parsed: { y: 68787 }
     };
-    expect(tooltipCallback.call({}, mockContext)).to.equal('Process Time: 19h 6m');
+    expect(tooltipCallback.call({}, mockContext)).to.equal(
+      'Process Time: 19h 6m'
+    );
   });
 
   it('formats various duration edge cases correctly', async () => {
@@ -119,13 +125,13 @@ describe('temba-chart', () => {
     chart.formatDuration = true;
     chart.data = sampleData;
     await chart.updateComplete;
-    
+
     // Wait for the chart to be created after data is set
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(chart.chart).to.exist;
     const tickCallback = chart.chart.options.scales.y.ticks.callback;
-    
+
     // Test edge cases for duration formatting
     expect(tickCallback.call({}, 0, 0, [])).to.equal('0s');
     expect(tickCallback.call({}, 1, 1, [])).to.equal('1s');
@@ -142,17 +148,17 @@ describe('temba-chart', () => {
 
   it('respects formatDuration property state', async () => {
     const chart: TembaChart = await getChart();
-    
+
     // Test default state
     expect(chart.formatDuration).to.equal(false);
-    
+
     chart.data = sampleData;
     await chart.updateComplete;
-    
+
     // Test that formatDuration property can be toggled
     chart.formatDuration = true;
     expect(chart.formatDuration).to.equal(true);
-    
+
     chart.formatDuration = false;
     expect(chart.formatDuration).to.equal(false);
   });
@@ -193,10 +199,10 @@ describe('formatDurationFromSeconds', () => {
   it('shows only two most significant units', () => {
     // 1 day, 1 hour, 1 minute, 1 second - should show only "1d 1h"
     expect(formatDurationFromSeconds(90061)).to.equal('1d 1h');
-    
+
     // 2 hours, 30 minutes, 45 seconds - should show only "2h 30m"
     expect(formatDurationFromSeconds(9045)).to.equal('2h 30m');
-    
+
     // 5 minutes, 30 seconds - should show "5m 30s"
     expect(formatDurationFromSeconds(330)).to.equal('5m 30s');
   });

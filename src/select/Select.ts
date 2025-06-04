@@ -1477,12 +1477,14 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private shouldShowEmptyMessage(): boolean {
-    return this.attemptedOpen && 
-           this.focused && 
-           this.visibleOptions.length === 0 && 
-           !this.input && 
-           this.staticOptions.length === 0 && 
-           !this.endpoint;
+    return (
+      this.attemptedOpen &&
+      this.focused &&
+      this.visibleOptions.length === 0 &&
+      !this.input &&
+      this.staticOptions.length === 0 &&
+      !this.endpoint
+    );
   }
 
   public render(): TemplateResult {
