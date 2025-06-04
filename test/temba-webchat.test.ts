@@ -181,6 +181,10 @@ describe('temba-webchat', () => {
         status: 'connecting'
       });
       
+      // Advance fake timers to ensure animations are in a consistent state
+      clock.tick(2000); // Advance past any animation cycles
+      await webChat.updateComplete;
+      
       await assertScreenshot('webchat/connecting-state', getClip(webChat));
     });
     
