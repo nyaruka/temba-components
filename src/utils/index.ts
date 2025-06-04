@@ -494,7 +494,7 @@ export const getScrollParent = (node: any): any => {
   return null;
 };
 
-export const isElementVisible = (el: any, holder: any) => {
+export const isElementVisible = (el: any, holder?: any) => {
   holder = holder || document.body;
   const { top, bottom } = el.getBoundingClientRect();
   const holderRect = holder.getBoundingClientRect();
@@ -575,7 +575,7 @@ export const timeSince = (
   }
 };
 
-export const isDate = (value: string): boolean => {
+export const isDate = (value: any): boolean => {
   if (toString.call(value) === '[object Date]') {
     return true;
   }
@@ -719,13 +719,19 @@ export enum COOKIE_KEYS {
   TICKET_SHOW_DETAILS = 'tickets.show-details'
 }
 
-export const capitalize = ([first, ...rest], locale = navigator.language) =>
+export const capitalize = (
+  [first, ...rest]: string[] | string,
+  locale = navigator.language
+) =>
   first === undefined ? '' : first.toLocaleUpperCase(locale) + rest.join('');
 
 export const formatFileType = (type: string): string => {
   return type.split('/')[1];
 };
-export const formatFileSize = (bytes: number, decimalPoint: number): string => {
+export const formatFileSize = (
+  bytes: number,
+  decimalPoint?: number
+): string => {
   if (bytes == 0) return '0 KB';
   const k = 1024,
     dm = decimalPoint || 2,
