@@ -127,9 +127,10 @@ export class VectorIcon extends LitElement {
 
       .spin-forever {
         animation-name: spin;
-        animation-duration: 2000ms;
+        animation-duration: var(--test-animation-duration, 2000ms);
         animation-iteration-count: infinite;
         animation-timing-function: linear;
+        animation-play-state: var(--test-animation-play-state, running);
       }
 
       @keyframes spin {

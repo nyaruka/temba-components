@@ -25,6 +25,29 @@ temba-dialog {
   caret-color: transparent;
 }
 
+/* Disable CSS animations for deterministic screenshots */
+*,
+*::before,
+*::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+}
+
+/* Override CSS custom properties for animation control in tests */
+:root {
+  --test-animation-duration: 0s !important;
+  --test-animation-play-state: paused !important;
+}
+
+/* Force disable spin animations by overriding keyframes - this pierces shadow DOM */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(0deg); }
+}
+
 html {
   --transition-speed: 0ms !important;
   --input-caret: transparent !important;
