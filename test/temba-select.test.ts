@@ -434,11 +434,11 @@ describe('temba-select', () => {
       );
 
       // Find the sortable list in the shadow DOM
-      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
       expect(sortableList).to.not.be.null;
 
-      const bounds = sortableList.getBoundingClientRect();
-      
       // Get the first and second items for dragging
       const firstItem = sortableList.querySelector('#selected-0');
       const secondItem = sortableList.querySelector('#selected-1');
@@ -451,8 +451,8 @@ describe('temba-select', () => {
       // Start drag from first item (Red)
       await moveMouse(firstBounds.left + 10, firstBounds.top + 10);
       await mouseDown();
-      
-      // Drag to second item position (Green) 
+
+      // Drag to second item position (Green)
       await moveMouse(secondBounds.left + 10, secondBounds.top + 10);
       await mouseUp();
 
@@ -472,19 +472,16 @@ describe('temba-select', () => {
     it('does not show sortable list for single item', async () => {
       const select = await createSelect(
         clock,
-        getSelectHTML(
-          [
-            { name: 'Red', value: '0', selected: true }
-          ],
-          {
-            placeholder: 'Select a color',
-            multi: true
-          }
-        )
+        getSelectHTML([{ name: 'Red', value: '0', selected: true }], {
+          placeholder: 'Select a color',
+          multi: true
+        })
       );
 
       // Should not have a sortable list with only one item
-      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
       expect(sortableList).to.be.null;
 
       // Should still show the selected item normally
@@ -495,19 +492,16 @@ describe('temba-select', () => {
     it('does not show sortable list for non-multi select', async () => {
       const select = await createSelect(
         clock,
-        getSelectHTML(
-          [
-            { name: 'Red', value: '0', selected: true }
-          ],
-          {
-            placeholder: 'Select a color',
-            multi: false
-          }
-        )
+        getSelectHTML([{ name: 'Red', value: '0', selected: true }], {
+          placeholder: 'Select a color',
+          multi: false
+        })
       );
 
       // Should not have a sortable list for single select
-      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
       expect(sortableList).to.be.null;
 
       expect(select.values.length).to.equal(1);

@@ -168,28 +168,30 @@ export class SortableList extends RapidElement {
 
   private showDropIndicator(targetElement: HTMLElement) {
     this.hideDropIndicator();
-    
+
     if (!targetElement) return;
-    
+
     const container = this.shadowRoot.querySelector('.container');
     this.dropIndicator = document.createElement('div');
     this.dropIndicator.className = 'drop-indicator';
-    
+
     const targetRect = targetElement.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-    
+
     if (this.horizontal) {
       // For horizontal layout, show vertical line
-      this.dropIndicator.style.left = (targetRect.left - containerRect.left) + 'px';
+      this.dropIndicator.style.left =
+        targetRect.left - containerRect.left + 'px';
       this.dropIndicator.style.height = targetRect.height + 'px';
-      this.dropIndicator.style.top = (targetRect.top - containerRect.top) + 'px';
+      this.dropIndicator.style.top = targetRect.top - containerRect.top + 'px';
     } else {
-      // For vertical layout, show horizontal line  
-      this.dropIndicator.style.top = (targetRect.top - containerRect.top) + 'px';
+      // For vertical layout, show horizontal line
+      this.dropIndicator.style.top = targetRect.top - containerRect.top + 'px';
       this.dropIndicator.style.width = targetRect.width + 'px';
-      this.dropIndicator.style.left = (targetRect.left - containerRect.left) + 'px';
+      this.dropIndicator.style.left =
+        targetRect.left - containerRect.left + 'px';
     }
-    
+
     container.appendChild(this.dropIndicator);
   }
 
@@ -235,7 +237,6 @@ export class SortableList extends RapidElement {
       this.ghostElement = this.downEle.cloneNode(true) as HTMLDivElement;
       this.ghostElement.classList.add('ghost');
 
-      const computedStyle = getComputedStyle(this.downEle);
       const rect = this.downEle.getBoundingClientRect();
 
       this.ghostElement.style.width = rect.width + 'px';
@@ -293,7 +294,7 @@ export class SortableList extends RapidElement {
         this.ghostElement.remove();
         this.ghostElement = null;
       }
-      
+
       this.hideDropIndicator();
     }
     document.removeEventListener('mousemove', this.handleMouseMove);
