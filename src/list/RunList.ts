@@ -303,7 +303,7 @@ export class RunList extends TembaList {
           <div style="flex-grow:1"></div>
           <div style="display:flex;flex-direction: column">
             <div style="font-size:0.75em">
-              ${new Date(this.selectedRun.created_on).toLocaleString()}
+              ${this.selectedRun.created_on ? new Date(this.selectedRun.created_on).toLocaleString() : ''}
             </div>
             <div
               style="font-size:0.6em;align-self:flex-end;color:#888;line-height:0.75em"
