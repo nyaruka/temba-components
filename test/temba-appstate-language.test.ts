@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { zustand, AppState } from '../src/store/AppState';
+import { zustand } from '../src/store/AppState';
 
 describe('AppState Language Reset', () => {
   beforeEach(() => {
@@ -75,8 +75,16 @@ describe('AppState Language Reset', () => {
     state.setFlowContents(mockFlowContents);
 
     // The language should reset to the flow's default language
-    assert.equal(zustand.getState().languageCode, 'en', 'Language should reset to flow default');
-    assert.equal(zustand.getState().isTranslating, false, 'Should not be in translation mode');
+    assert.equal(
+      zustand.getState().languageCode,
+      'en',
+      'Language should reset to flow default'
+    );
+    assert.equal(
+      zustand.getState().isTranslating,
+      false,
+      'Should not be in translation mode'
+    );
   });
 
   it('should set isTranslating correctly when languages differ', () => {
@@ -115,7 +123,11 @@ describe('AppState Language Reset', () => {
     // Now switch to English for localization
     state.setLanguageCode('en');
     assert.equal(zustand.getState().languageCode, 'en');
-    assert.equal(zustand.getState().isTranslating, true, 'Should be translating when language differs from flow default');
+    assert.equal(
+      zustand.getState().isTranslating,
+      true,
+      'Should be translating when language differs from flow default'
+    );
   });
 
   it('should preserve flow default language when no previous language is set', () => {
@@ -148,8 +160,16 @@ describe('AppState Language Reset', () => {
     state.setFlowContents(mockFlowContents);
 
     // Should use the flow's default language
-    assert.equal(zustand.getState().languageCode, 'fr', 'Should use flow default language');
-    assert.equal(zustand.getState().isTranslating, false, 'Should not be translating');
+    assert.equal(
+      zustand.getState().languageCode,
+      'fr',
+      'Should use flow default language'
+    );
+    assert.equal(
+      zustand.getState().isTranslating,
+      false,
+      'Should not be translating'
+    );
   });
 
   it('should handle language switching after flow is loaded', () => {
