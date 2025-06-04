@@ -4,7 +4,8 @@ import {
   assertScreenshot,
   getClip,
   getComponent,
-  mockNow
+  mockNow,
+  mouseClickElement
 } from '../test/utils.test';
 import { expect, assert } from '@open-wc/testing';
 import { stub, SinonStub } from 'sinon';
@@ -176,18 +177,22 @@ describe('temba-webchat', () => {
     
     it('renders connecting state', async () => {
       const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'connecting'
+        channel: 'test-channel'
       });
       
-      // Wait for component to be fully rendered
+      expect(webChat.open).to.equal(false);
+      expect(webChat.status).to.equal('disconnected');
+      
+      // Click to open the widget, which should trigger connecting state
+      const toggleElement = webChat.shadowRoot.querySelector('.toggle');
+      expect(toggleElement).to.exist;
+      
+      await mouseClickElement(toggleElement);
       await webChat.updateComplete;
       
-      // Advance fake timers to ensure animations are in a consistent state
-      // The spin animation has a 2000ms duration, so advance beyond that
-      clock.tick(5000); // Advance well past any animation cycles
-      await webChat.updateComplete;
+      // Now it should be open and connecting
+      expect(webChat.open).to.equal(true);
+      expect(webChat.status).to.equal('connecting');
       
       await assertScreenshot('webchat/connecting-state', getClip(webChat));
     });
@@ -221,17 +226,17 @@ describe('temba-webchat', () => {
       
       expect(webChat.open).to.equal(false);
       
-      // Click the toggle container (div wrapping the .toggle div)
-      const toggleContainer = webChat.shadowRoot.querySelector('.toggle').parentElement;
-      expect(toggleContainer).to.exist;
+      // Click the toggle element
+      const toggleElement = webChat.shadowRoot.querySelector('.toggle');
+      expect(toggleElement).to.exist;
       
-      toggleContainer.dispatchEvent(new MouseEvent('click'));
+      await mouseClickElement(toggleElement);
       await webChat.updateComplete;
       
       expect(webChat.open).to.equal(true);
       
       // Click toggle again
-      toggleContainer.dispatchEvent(new MouseEvent('click'));
+      await mouseClickElement(toggleElement);
       await webChat.updateComplete;
       
       expect(webChat.open).to.equal(false);
@@ -249,7 +254,7 @@ describe('temba-webchat', () => {
       const closeButton = webChat.shadowRoot.querySelector('.close-button');
       expect(closeButton).to.exist;
       
-      closeButton.dispatchEvent(new MouseEvent('click'));
+      await mouseClickElement(closeButton);
       await webChat.updateComplete;
       
       expect(webChat.open).to.equal(false);
@@ -416,7 +421,7 @@ describe('temba-webchat', () => {
       const reconnectButton = webChat.shadowRoot.querySelector('.reconnect');
       expect(reconnectButton).to.exist;
       
-      reconnectButton.dispatchEvent(new MouseEvent('click'));
+      await mouseClickElement(reconnectButton);
       await webChat.updateComplete;
       
       expect(webSocketStub.called).to.be.true;
@@ -709,7 +714,7 @@ describe('temba-webchat', () => {
       let focusCalled = false;
       inputField.focus = () => { focusCalled = true; };
       
-      inputPanel.dispatchEvent(new MouseEvent('click'));
+      await mouseClickElement(inputPanel);
       
       expect(focusCalled).to.be.true;
     });
