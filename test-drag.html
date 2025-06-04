@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="module" src="/dist/temba-components.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .example { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Multi-Select Drag and Drop Test</h1>
+    
+    <div class="example">
+        <h3>With 3 items (should show sortable list)</h3>
+        <temba-select multi id="test3">
+            <temba-option name="Red" value="0" selected></temba-option>
+            <temba-option name="Green" value="1" selected></temba-option>
+            <temba-option name="Blue" value="2" selected></temba-option>
+        </temba-select>
+    </div>
+    
+    <div class="example">
+        <h3>With 2 items (should NOT show sortable list)</h3>
+        <temba-select multi id="test2">
+            <temba-option name="Red" value="0" selected></temba-option>
+            <temba-option name="Green" value="1" selected></temba-option>
+        </temba-select>
+    </div>
+    
+    <script>
+        window.addEventListener('load', () => {
+            const test3 = document.getElementById('test3');
+            const test2 = document.getElementById('test2');
+            
+            console.log('Test3 values:', test3.values);
+            console.log('Test2 values:', test2.values);
+            
+            setTimeout(() => {
+                console.log('After delay - Test3 values:', test3.values);
+                console.log('After delay - Test2 values:', test2.values);
+                
+                const sortableList3 = test3.shadowRoot.querySelector('temba-sortable-list');
+                const sortableList2 = test2.shadowRoot.querySelector('temba-sortable-list');
+                
+                console.log('Test3 has sortable list:', !!sortableList3);
+                console.log('Test2 has sortable list:', !!sortableList2);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
