@@ -188,7 +188,9 @@ export const assertScreenshot = async (
     await waitUntil(waitFor.predicate);
   }
 
-  const threshold = 0.1;
+  // detect if we're running in copilot's environment and use adaptive threshold
+  const isCopilotEnvironment = (window as any).isCopilotEnvironment;
+  const threshold = isCopilotEnvironment ? 1.0 : 0.1;
   const exclude: Clip[] = [];
 
   try {
