@@ -16,6 +16,7 @@
     "build-wc": "rollup -c rollup.webchat.mjs",
     "dev": "yarn build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
     "postversion": "git push --tags && git push origin main",
+    "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/vectoricon ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
     "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore",
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --config .prettierrc --write --ignore-path .gitignore",
     "format": "yarn format:eslint && yarn format:prettier",
@@ -93,7 +94,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/vectoricon ./static/svg/index.svg ./xliff ./src/locales && lint-staged"
+      "pre-commit": "yarn pre-commit"
     }
   },
   "lint-staged": {

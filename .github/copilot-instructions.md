@@ -41,6 +41,10 @@ Before a PR is ready it must pass validation checks for linting, formatting, and
 yarn validate
 ```
 
+### Making commits
+
+Before committing always run `yarn precommit` and include any changes it makes.
+
 ### Test Coverage Requirements
 
 - **100% code coverage** is expected for all code we touch
