@@ -220,10 +220,12 @@ export class Select<T extends SelectOption> extends FormElement {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        margin: 0 !important;
       }
 
       .multi temba-sortable-list .sortable {
-        padding: 0;
+        padding: 0 !important;
+        margin: 0;
       }
 
       input {
