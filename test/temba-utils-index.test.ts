@@ -1,5 +1,5 @@
-import { expect, assert, fixture, html } from '@open-wc/testing';
-import { stub, restore, SinonStub } from 'sinon';
+import { expect, fixture, html } from '@open-wc/testing';
+import { stub, SinonStub } from 'sinon';
 import {
   log,
   getHTTPCookie,
@@ -28,7 +28,6 @@ import {
   getCookieBoolean,
   setCookie,
   serialize,
-  extractInitials,
   renderIf,
   getElementOffset,
   isElementVisible,
@@ -48,7 +47,6 @@ import {
   getAssets,
   getDialog,
   DEFAULT_MEDIA_ENDPOINT,
-  getDialog,
   Color,
   COOKIE_KEYS
 } from '../src/utils/index';
@@ -87,28 +85,35 @@ describe('utils/index', () => {
     it('logs an object with styling', () => {
       const obj = { test: 'value' };
       log(obj, 'color: red;');
-      expect(consoleLogStub.calledOnceWith('%c' + JSON.stringify(obj, null, 2), 'color: red;')).to.be.true;
+      expect(
+        consoleLogStub.calledOnceWith(
+          '%c' + JSON.stringify(obj, null, 2),
+          'color: red;'
+        )
+      ).to.be.true;
     });
 
     it('logs a string with styling and details', () => {
       log('test message', 'color: blue;', ['detail1', 'detail2']);
-      expect(consoleLogStub.calledOnceWith('%ctest message', 'color: blue;', 'detail1', 'detail2')).to.be.true;
+      expect(
+        consoleLogStub.calledOnceWith(
+          '%ctest message',
+          'color: blue;',
+          'detail1',
+          'detail2'
+        )
+      ).to.be.true;
     });
   });
 
   describe('getHTTPCookie', () => {
-    let originalCookie: string;
-
-    beforeEach(() => {
-      originalCookie = document.cookie;
-    });
-
     afterEach(() => {
       // clear cookies
-      document.cookie.split(';').forEach(cookie => {
+      document.cookie.split(';').forEach((cookie) => {
         const eqPos = cookie.indexOf('=');
         const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        document.cookie =
+          name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
       });
     });
 
@@ -135,14 +140,12 @@ describe('utils/index', () => {
   });
 
   describe('getHeaders', () => {
-    let originalCookie: string;
     let originalOrgId: any;
     let csrfTokenElement: HTMLInputElement;
 
     beforeEach(() => {
-      originalCookie = document.cookie;
       originalOrgId = (window as any).org_id;
-      
+
       // clear existing CSRF token element
       const existing = document.querySelector('[name=csrfmiddlewaretoken]');
       if (existing) {
@@ -152,14 +155,15 @@ describe('utils/index', () => {
 
     afterEach(() => {
       // clear cookies
-      document.cookie.split(';').forEach(cookie => {
+      document.cookie.split(';').forEach((cookie) => {
         const eqPos = cookie.indexOf('=');
         const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        document.cookie =
+          name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
       });
-      
+
       (window as any).org_id = originalOrgId;
-      
+
       if (csrfTokenElement) {
         csrfTokenElement.remove();
       }
@@ -181,7 +185,7 @@ describe('utils/index', () => {
       csrfTokenElement.name = 'csrfmiddlewaretoken';
       csrfTokenElement.value = 'form-csrf-token';
       document.body.appendChild(csrfTokenElement);
-      
+
       const headers = getHeaders();
       expect(headers['X-CSRFToken']).to.equal('form-csrf-token');
     });
@@ -216,7 +220,11 @@ describe('utils/index', () => {
     });
 
     it('returns multiple classes when multiple are true', () => {
-      const result = getClasses({ active: true, disabled: true, hidden: false });
+      const result = getClasses({
+        active: true,
+        disabled: true,
+        hidden: false
+      });
       expect(result).to.equal('active disabled');
     });
 
@@ -225,7 +233,9 @@ describe('utils/index', () => {
     });
 
     it('trims whitespace correctly', () => {
-      expect(getClasses({ class1: true, class2: true })).to.equal('class1 class2');
+      expect(getClasses({ class1: true, class2: true })).to.equal(
+        'class1 class2'
+      );
     });
   });
 
@@ -335,11 +345,15 @@ describe('utils/index', () => {
     });
 
     it('joins three items with oxford comma', () => {
-      expect(oxford(['apple', 'banana', 'cherry'])).to.equal('apple, banana, and cherry');
+      expect(oxford(['apple', 'banana', 'cherry'])).to.equal(
+        'apple, banana, and cherry'
+      );
     });
 
     it('joins four items with oxford comma', () => {
-      expect(oxford(['apple', 'banana', 'cherry', 'date'])).to.equal('apple, banana, cherry, and date');
+      expect(oxford(['apple', 'banana', 'cherry', 'date'])).to.equal(
+        'apple, banana, cherry, and date'
+      );
     });
 
     it('uses custom joiner', () => {
@@ -347,7 +361,9 @@ describe('utils/index', () => {
     });
 
     it('uses custom joiner with three items', () => {
-      expect(oxford(['apple', 'banana', 'cherry'], 'or')).to.equal('apple, banana, or cherry');
+      expect(oxford(['apple', 'banana', 'cherry'], 'or')).to.equal(
+        'apple, banana, or cherry'
+      );
     });
 
     it('handles template results for two items', () => {
@@ -358,7 +374,11 @@ describe('utils/index', () => {
     });
 
     it('handles template results for multiple items', () => {
-      const items = [html`<span>apple</span>`, html`<span>banana</span>`, html`<span>cherry</span>`];
+      const items = [
+        html`<span>apple</span>`,
+        html`<span>banana</span>`,
+        html`<span>cherry</span>`
+      ];
       const result = oxford(items);
       expect(Array.isArray(result)).to.be.true;
     });
@@ -483,9 +503,9 @@ describe('utils/index', () => {
         stopPropagation: stub(),
         preventDefault: stub()
       };
-      
+
       stopEvent(event as any);
-      
+
       expect(event.stopPropagation.calledOnce).to.be.true;
       expect(event.preventDefault.calledOnce).to.be.true;
     });
@@ -553,7 +573,9 @@ describe('utils/index', () => {
 
     it('calls window.showModax with title and endpoint', () => {
       showModax('Test Title', '/test/endpoint');
-      expect((window as any).showModax.calledOnceWith('Test Title', '/test/endpoint')).to.be.true;
+      expect(
+        (window as any).showModax.calledOnceWith('Test Title', '/test/endpoint')
+      ).to.be.true;
     });
   });
 
@@ -561,15 +583,15 @@ describe('utils/index', () => {
     it('debounces function calls', (done) => {
       const fn = stub();
       const debouncedFn = debounce(fn, 50);
-      
+
       // call multiple times
       debouncedFn('arg1');
       debouncedFn('arg2');
       debouncedFn('arg3');
-      
+
       // the function should not be called immediately
       expect(fn.called).to.be.false;
-      
+
       // wait for the debounce delay and check if called
       setTimeout(() => {
         expect(fn.calledOnce).to.be.true;
@@ -581,9 +603,9 @@ describe('utils/index', () => {
     it('calls immediately when immediate flag is true', () => {
       const fn = stub();
       const debouncedFn = debounce(fn, 100, true);
-      
+
       debouncedFn('test');
-      
+
       expect(fn.calledOnce).to.be.true;
       expect(fn.calledWith('test')).to.be.true;
     });
@@ -593,18 +615,18 @@ describe('utils/index', () => {
     it('throttles function calls', (done) => {
       const fn = stub();
       const throttledFn = throttle(fn, 50);
-      
+
       // first call should execute immediately
       throttledFn('arg1');
       expect(fn.calledOnce).to.be.true;
-      
+
       // subsequent calls should be ignored until ready
       throttledFn('arg2');
       throttledFn('arg3');
-      
+
       // should still be called only once
       expect(fn.callCount).to.equal(1);
-      
+
       // wait for throttle to reset and test again
       setTimeout(() => {
         throttledFn('arg4');
@@ -647,12 +669,16 @@ describe('utils/index', () => {
     });
 
     it('returns months for times less than 6 months ago', () => {
-      const monthsAgo = new Date(baseDate.getTime() - 3 * 30 * 24 * 60 * 60 * 1000); // ~3 months ago
+      const monthsAgo = new Date(
+        baseDate.getTime() - 3 * 30 * 24 * 60 * 60 * 1000
+      ); // ~3 months ago
       expect(timeSince(monthsAgo)).to.equal('3mth');
     });
 
     it('returns formatted date for times more than 6 months ago', () => {
-      const longAgo = new Date(baseDate.getTime() - 8 * 30 * 24 * 60 * 60 * 1000); // ~8 months ago
+      const longAgo = new Date(
+        baseDate.getTime() - 8 * 30 * 24 * 60 * 60 * 1000
+      ); // ~8 months ago
       const result = timeSince(longAgo);
       expect(result).to.match(/\d+ \w+ \d+/); // format like "1 May 2022"
     });
@@ -670,15 +696,19 @@ describe('utils/index', () => {
 
     it('handles hideRecentText option', () => {
       const recentDate = new Date(baseDate.getTime() - 30 * 1000);
-      expect(timeSince(recentDate, { hideRecentText: true, suffix: ' ago' })).to.equal('just now');
+      expect(
+        timeSince(recentDate, { hideRecentText: true, suffix: ' ago' })
+      ).to.equal('just now');
     });
 
     it('handles future dates', () => {
       const now = new Date();
       const future = new Date(now.getTime() + 1000);
-      
+
       // test future date (negative seconds)
-      expect(timeSince(future, { compareDate: now, suffix: '' })).to.match(/\d+s/);
+      expect(timeSince(future, { compareDate: now, suffix: '' })).to.match(
+        /\d+s/
+      );
     });
   });
 
@@ -716,18 +746,14 @@ describe('utils/index', () => {
   });
 
   describe('getCookie and setCookie', () => {
-    let originalCookie: string;
-
-    beforeEach(() => {
-      originalCookie = document.cookie;
-    });
-
     afterEach(() => {
       // clear all cookies
-      document.cookie.split(';').forEach(cookie => {
+      document.cookie.split(';').forEach((cookie) => {
         const eqPos = cookie.indexOf('=');
-        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        const name =
+          eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        document.cookie =
+          name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
       });
     });
 
@@ -738,7 +764,8 @@ describe('utils/index', () => {
 
     it('setCookie sets a cookie with custom path', () => {
       // just test that the function doesn't throw
-      expect(() => setCookie('testcookie', 'testvalue', '/custom/path')).to.not.throw;
+      expect(() => setCookie('testcookie', 'testvalue', '/custom/path')).to.not
+        .throw;
     });
 
     it('getCookie returns null for non-existent cookie', () => {
@@ -747,16 +774,19 @@ describe('utils/index', () => {
 
     it('getCookie handles empty cookie string', () => {
       // save original cookie getter
-      const originalGetter = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
-      
+      const originalGetter = Object.getOwnPropertyDescriptor(
+        Document.prototype,
+        'cookie'
+      );
+
       // mock empty cookie
       Object.defineProperty(document, 'cookie', {
         value: '',
         configurable: true
       });
-      
+
       expect(getCookie('test')).to.be.null;
-      
+
       // restore original getter
       if (originalGetter) {
         Object.defineProperty(document, 'cookie', originalGetter);
@@ -767,10 +797,12 @@ describe('utils/index', () => {
   describe('getCookieBoolean', () => {
     beforeEach(() => {
       // clear all cookies
-      document.cookie.split(';').forEach(cookie => {
+      document.cookie.split(';').forEach((cookie) => {
         const eqPos = cookie.indexOf('=');
-        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        const name =
+          eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        document.cookie =
+          name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
       });
     });
 
@@ -804,7 +836,13 @@ describe('utils/index', () => {
           <input name="email" type="email" value="test@example.com" />
           <input name="checkbox1" type="checkbox" value="check1" checked />
           <input name="checkbox2" type="checkbox" value="check2" />
-          <input name="radio1" type="radio" name="radiogroup" value="radio1" checked />
+          <input
+            name="radio1"
+            type="radio"
+            name="radiogroup"
+            value="radio1"
+            checked
+          />
           <input name="radio2" type="radio" name="radiogroup" value="radio2" />
           <input name="hidden" type="hidden" value="hiddenvalue" />
           <input name="disabled" type="text" value="disabledvalue" disabled />
@@ -828,7 +866,7 @@ describe('utils/index', () => {
 
     it('serializes form data correctly', () => {
       const serialized = serialize(form);
-      
+
       expect(serialized).to.include('text=textvalue');
       expect(serialized).to.include('email=test%40example.com');
       expect(serialized).to.include('checkbox1=check1');
@@ -856,20 +894,20 @@ describe('utils/index', () => {
       input.value = 'value';
       input.disabled = true;
       disabledForm.appendChild(input);
-      
+
       expect(serialize(disabledForm)).to.equal('');
     });
 
     it('handles checkbox without value attribute', () => {
       const form = document.createElement('form');
-      
+
       // add checkbox without value
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.name = 'checknovalue';
       checkbox.checked = true;
       form.appendChild(checkbox);
-      
+
       const serialized = serialize(form);
       expect(serialized).to.include('checknovalue=on'); // default checkbox value is "on"
     });
@@ -880,7 +918,9 @@ describe('utils/index', () => {
 
     beforeEach(async () => {
       element = await fixture(html`
-        <div style="position: absolute; top: 100px; left: 50px; width: 200px; height: 150px;">
+        <div
+          style="position: absolute; top: 100px; left: 50px; width: 200px; height: 150px;"
+        >
           Test Element
         </div>
       `);
@@ -888,14 +928,14 @@ describe('utils/index', () => {
 
     it('returns element offset information', () => {
       const offset = getElementOffset(element);
-      
+
       expect(offset).to.have.property('top');
       expect(offset).to.have.property('left');
       expect(offset).to.have.property('bottom');
       expect(offset).to.have.property('right');
       expect(offset).to.have.property('width');
       expect(offset).to.have.property('height');
-      
+
       expect(typeof offset.top).to.equal('number');
       expect(typeof offset.left).to.equal('number');
       expect(typeof offset.width).to.equal('number');
@@ -909,11 +949,11 @@ describe('utils/index', () => {
       element.style.width = '100px';
       element.style.height = '50px';
       document.body.appendChild(element);
-      
+
       const offset = getElementOffset(element);
       expect(offset.width).to.equal(100);
       expect(offset.height).to.equal(50);
-      
+
       document.body.removeChild(element);
     });
   });
@@ -925,7 +965,9 @@ describe('utils/index', () => {
     beforeEach(async () => {
       container = await fixture(html`
         <div style="height: 200px; overflow: hidden;">
-          <div id="testelement" style="height: 100px; margin-top: 50px;">Test Element</div>
+          <div id="testelement" style="height: 100px; margin-top: 50px;">
+            Test Element
+          </div>
         </div>
       `);
       element = container.querySelector('#testelement') as HTMLElement;
@@ -958,7 +1000,8 @@ describe('utils/index', () => {
     it('finds scrollable parent', () => {
       const scrollParent = getScrollParent(child);
       // should find a scrollable parent or return null
-      expect(scrollParent === null || scrollParent instanceof HTMLElement).to.be.true;
+      expect(scrollParent === null || scrollParent instanceof HTMLElement).to.be
+        .true;
     });
 
     it('returns null when no scrollable parent exists', () => {
@@ -972,7 +1015,7 @@ describe('utils/index', () => {
       const shadowRoot = shadowHost.attachShadow({ mode: 'open' });
       const shadowChild = document.createElement('div');
       shadowRoot.appendChild(shadowChild);
-      
+
       const result = getScrollParent(shadowChild);
       expect(result === null || result instanceof HTMLElement).to.be.true;
     });
@@ -981,12 +1024,12 @@ describe('utils/index', () => {
       // test with null parent
       const orphan = document.createElement('div');
       expect(getScrollParent(orphan)).to.be.null;
-      
+
       // test with non-scrollable parent
       const parent = document.createElement('div');
       const child = document.createElement('div');
       parent.appendChild(child);
-      
+
       // most browsers won't have scrollable overflow by default
       const result = getScrollParent(child);
       expect(result === null || result instanceof HTMLElement).to.be.true;
@@ -1024,13 +1067,15 @@ describe('utils/index', () => {
 
     it('handles object predicates', () => {
       // test with object predicate
-      expect(renderIf({ test: true })(() => html`<span>object</span>`).strings).to.exist;
+      expect(renderIf({ test: true })(() => html`<span>object</span>`).strings)
+        .to.exist;
     });
 
     it('handles array predicates', () => {
       // test with array predicate
-      expect(renderIf([1, 2, 3])(() => html`<span>array</span>`).strings).to.exist;
-      
+      expect(renderIf([1, 2, 3])(() => html`<span>array</span>`).strings).to
+        .exist;
+
       // test with empty array (falsy)
       expect(renderIf([])(() => html`<span>empty</span>`).strings).to.exist;
     });
@@ -1041,14 +1086,14 @@ describe('utils/index', () => {
       const template = 'Hello {name}, you have {count} messages';
       const replacements = { name: 'Alice', count: 5 };
       const result = fillTemplate(template, replacements);
-      
+
       expect(result.strings).to.exist; // it's a TemplateResult
     });
 
     it('handles empty replacements', () => {
       const template = 'No replacements here';
       const result = fillTemplate(template, {});
-      
+
       expect(result.strings).to.exist;
     });
   });
@@ -1057,7 +1102,7 @@ describe('utils/index', () => {
     it('spreads regular attributes', () => {
       const attrs = { id: 'test', class: 'example' };
       const result = spreadAttributes(attrs);
-      
+
       expect(Array.isArray(result)).to.be.true;
       expect(result.length).to.equal(2);
     });
@@ -1065,7 +1110,7 @@ describe('utils/index', () => {
     it('handles event attributes with @', () => {
       const attrs = { '@click': 'handleClick' };
       const result = spreadAttributes(attrs);
-      
+
       expect(Array.isArray(result)).to.be.true;
       expect(result.length).to.equal(1);
     });
@@ -1073,7 +1118,7 @@ describe('utils/index', () => {
     it('handles property attributes with .', () => {
       const attrs = { '.value': 'test' };
       const result = spreadAttributes(attrs);
-      
+
       expect(Array.isArray(result)).to.be.true;
       expect(result.length).to.equal(1);
     });
@@ -1081,7 +1126,7 @@ describe('utils/index', () => {
     it('handles mixed attribute types', () => {
       const attrs = { id: 'test', '@click': 'handler', '.prop': 'value' };
       const result = spreadAttributes(attrs);
-      
+
       expect(Array.isArray(result)).to.be.true;
       expect(result.length).to.equal(3);
     });
@@ -1100,7 +1145,11 @@ describe('utils/index', () => {
     });
 
     it('renders avatar with user avatar URL', () => {
-      const user = { first_name: 'Jane', last_name: 'Smith', avatar: 'https://example.com/avatar.jpg' };
+      const user = {
+        first_name: 'Jane',
+        last_name: 'Smith',
+        avatar: 'https://example.com/avatar.jpg'
+      };
       const result = renderAvatar({ user });
       expect(result.strings).to.exist;
     });
@@ -1135,7 +1184,7 @@ describe('utils/index', () => {
       const button = {
         getRootNode: stub().returns(shadowRoot)
       };
-      
+
       const dialog = getDialog(button as any);
       expect(dialog).to.equal(shadowRoot.host);
       expect(button.getRootNode.calledOnce).to.be.true;
@@ -1157,9 +1206,9 @@ describe('utils/index', () => {
     describe('getUrl', () => {
       it('makes GET request and returns response', async () => {
         mockGET(/\/test\/endpoint/, { data: 'test response' }, {}, '200');
-        
+
         const response = await getUrl('/test/endpoint');
-        
+
         expect(response.status).to.equal(200);
         expect(response.json).to.deep.equal({ data: 'test response' });
         expect(response.body).to.be.a('string');
@@ -1167,25 +1216,27 @@ describe('utils/index', () => {
 
       it('handles request with custom headers', async () => {
         mockGET(/\/test\/endpoint/, { data: 'test' }, {}, '200');
-        
-        const response = await getUrl('/test/endpoint', null, { 'Custom-Header': 'value' });
-        
+
+        const response = await getUrl('/test/endpoint', null, {
+          'Custom-Header': 'value'
+        });
+
         expect(response.status).to.equal(200);
       });
 
       it('handles request with abort controller', async () => {
         mockGET(/\/test\/endpoint/, { data: 'test' }, {}, '200');
-        
+
         const controller = new AbortController();
         const response = await getUrl('/test/endpoint', controller);
-        
+
         expect(response.status).to.equal(200);
         expect(response.controller).to.equal(controller);
       });
 
       it('rejects on error status', async () => {
         mockGET(/\/test\/endpoint/, 'Error response', {}, '404');
-        
+
         try {
           await getUrl('/test/endpoint');
           expect.fail('Should have rejected');
@@ -1198,24 +1249,29 @@ describe('utils/index', () => {
     describe('postUrl', () => {
       it('makes POST request and returns response', async () => {
         mockPOST(/\/test\/endpoint/, { success: true }, {}, '200');
-        
+
         const response = await postUrl('/test/endpoint', 'test data');
-        
+
         expect(response.status).to.equal(200);
         expect(response.json).to.deep.equal({ success: true });
       });
 
       it('handles custom content type', async () => {
         mockPOST(/\/test\/endpoint/, { success: true }, {}, '200');
-        
-        const response = await postUrl('/test/endpoint', 'test data', {}, 'text/plain');
-        
+
+        const response = await postUrl(
+          '/test/endpoint',
+          'test data',
+          {},
+          'text/plain'
+        );
+
         expect(response.status).to.equal(200);
       });
 
       it('handles server errors', async () => {
         mockPOST(/\/test\/endpoint/, 'Server Error', {}, '500');
-        
+
         try {
           await postUrl('/test/endpoint', 'test data');
           expect.fail('Should have rejected');
@@ -1225,9 +1281,16 @@ describe('utils/index', () => {
       });
 
       it('handles toast headers', async () => {
-        const toastData = JSON.stringify([{ message: 'Success!', type: 'success' }]);
-        mockPOST(/\/test\/endpoint/, { success: true }, { 'X-Temba-Toasts': toastData }, '200');
-        
+        const toastData = JSON.stringify([
+          { message: 'Success!', type: 'success' }
+        ]);
+        mockPOST(
+          /\/test\/endpoint/,
+          { success: true },
+          { 'X-Temba-Toasts': toastData },
+          '200'
+        );
+
         // create a mock toast element
         const mockToast = {
           addMessages: stub()
@@ -1235,20 +1298,20 @@ describe('utils/index', () => {
         const toastElement = document.createElement('temba-toast');
         Object.assign(toastElement, mockToast);
         document.body.appendChild(toastElement);
-        
+
         const response = await postUrl('/test/endpoint', 'test data');
-        
+
         expect(response.status).to.equal(200);
-        
+
         // clean up
         document.body.removeChild(toastElement);
       });
 
       it('handles client errors gracefully', async () => {
         mockPOST(/\/test\/endpoint/, 'Client Error', {}, '400');
-        
+
         const response = await postUrl('/test/endpoint', 'test data');
-        
+
         expect(response.status).to.equal(400);
         expect(response.json).to.deep.equal({});
       });
@@ -1256,7 +1319,7 @@ describe('utils/index', () => {
       it('handles response without toasts', async () => {
         // test response without toasts
         mockPOST(/\/test\/notoasts/, { success: true }, {}, '201');
-        
+
         const response = await postUrl('/test/notoasts', 'data');
         expect(response.status).to.equal(201);
       });
@@ -1265,10 +1328,10 @@ describe('utils/index', () => {
     describe('postJSON', () => {
       it('posts JSON data', async () => {
         mockPOST(/\/test\/endpoint/, { received: true }, {}, '200');
-        
+
         const payload = { test: 'data' };
         const response = await postJSON('/test/endpoint', payload);
-        
+
         expect(response.status).to.equal(200);
         expect(response.json).to.deep.equal({ received: true });
       });
@@ -1277,33 +1340,35 @@ describe('utils/index', () => {
     describe('postFormData', () => {
       it('posts form data successfully', async () => {
         mockPOST(/\/test\/endpoint/, { uploaded: true }, {}, '200');
-        
+
         const formData = new FormData();
         formData.append('key', 'value');
-        
+
         const response = await postFormData('/test/endpoint', formData);
-        
+
         expect(response.status).to.equal(200);
         expect(response.json).to.deep.equal({ uploaded: true });
       });
 
       it('handles form data with custom headers', async () => {
         mockPOST(/\/test\/endpoint/, { uploaded: true }, {}, '200');
-        
+
         const formData = new FormData();
         formData.append('key', 'value');
-        
-        const response = await postFormData('/test/endpoint', formData, { 'Custom-Header': 'value' });
-        
+
+        const response = await postFormData('/test/endpoint', formData, {
+          'Custom-Header': 'value'
+        });
+
         expect(response.status).to.equal(200);
       });
 
       it('rejects on client error for non-media endpoint', async () => {
         mockPOST(/\/test\/endpoint/, 'Bad Request', {}, '400');
-        
+
         const formData = new FormData();
         formData.append('key', 'value');
-        
+
         try {
           await postFormData('/test/endpoint', formData);
           expect.fail('Should have rejected');
@@ -1314,10 +1379,10 @@ describe('utils/index', () => {
 
       it('rejects with response for media endpoint errors', async () => {
         mockPOST(/\/api\/v2\/media\.json/, 'Bad Request', {}, '400');
-        
+
         const formData = new FormData();
         formData.append('key', 'value');
-        
+
         try {
           await postFormData('/api/v2/media.json', formData);
           expect.fail('Should have rejected');
@@ -1330,10 +1395,10 @@ describe('utils/index', () => {
       it('handles different error status for media endpoint', async () => {
         // test with different error status for media endpoint
         mockPOST(/\/api\/v2\/media\.json/, 'Forbidden', {}, '403');
-        
+
         const formData = new FormData();
         formData.append('file', 'test');
-        
+
         try {
           await postFormData('/api/v2/media.json', formData);
           expect.fail('Should have rejected');
@@ -1346,20 +1411,22 @@ describe('utils/index', () => {
     describe('postForm', () => {
       it('converts object to FormData and posts', async () => {
         mockPOST(/\/test\/endpoint/, { submitted: true }, {}, '200');
-        
+
         const payload = { name: 'John', age: 30 };
         const response = await postForm('/test/endpoint', payload);
-        
+
         expect(response.status).to.equal(200);
         expect(response.json).to.deep.equal({ submitted: true });
       });
 
       it('handles form data with custom headers', async () => {
         mockPOST(/\/test\/endpoint/, { submitted: true }, {}, '200');
-        
+
         const payload = { name: 'John' };
-        const response = await postForm('/test/endpoint', payload, { 'Custom-Header': 'value' });
-        
+        const response = await postForm('/test/endpoint', payload, {
+          'Custom-Header': 'value'
+        });
+
         expect(response.status).to.equal(200);
       });
     });
@@ -1371,9 +1438,9 @@ describe('utils/index', () => {
           next: 'https://example.com/api/page2'
         };
         mockGET(/\/api\/results/, mockResults, {}, '200');
-        
+
         const page = await fetchResultsPage('/api/results/');
-        
+
         expect(page.results).to.deep.equal([{ id: 1 }, { id: 2 }]);
         expect(page.next).to.equal('https://example.com/api/page2');
       });
@@ -1381,17 +1448,19 @@ describe('utils/index', () => {
       it('handles requests with controller and headers', async () => {
         const mockResults = { results: [], next: null };
         mockGET(/\/api\/uniqueresults/, mockResults, {}, '200');
-        
+
         const controller = new AbortController();
-        const page = await fetchResultsPage('/api/uniqueresults/', controller, { 'Custom-Header': 'value' });
-        
+        const page = await fetchResultsPage('/api/uniqueresults/', controller, {
+          'Custom-Header': 'value'
+        });
+
         expect(page.results).to.deep.equal([]);
         expect(page.next).to.be.null;
       });
 
       it('propagates errors', async () => {
         mockGET(/\/api\/resultserror/, 'Error', {}, '500');
-        
+
         try {
           await fetchResultsPage('/api/resultserror/');
           expect.fail('Should have rejected');
@@ -1420,16 +1489,19 @@ describe('utils/index', () => {
           next: 'https://example.com/api/assets/page2'
         };
         mockGET(/\/api\/assets/, mockAssets, {}, '200');
-        
+
         const page = await getAssetPage('/api/assets/');
-        
-        expect(page.assets).to.deep.equal([{ key: 'asset1' }, { key: 'asset2' }]);
+
+        expect(page.assets).to.deep.equal([
+          { key: 'asset1' },
+          { key: 'asset2' }
+        ]);
         expect(page.next).to.equal('https://example.com/api/assets/page2');
       });
 
       it('rejects on error status', async () => {
         mockGET(/\/api\/assets/, 'Not Found', {}, '404');
-        
+
         try {
           await getAssetPage('/api/assets/');
           expect.fail('Should have rejected');
@@ -1450,7 +1522,7 @@ describe('utils/index', () => {
 
       it('handles server error scenarios', async () => {
         mockGET(/\/api\/asseterror/, 'Server Error', {}, '500');
-        
+
         try {
           await getAssetPage('/api/asseterror/');
           expect.fail('Should have rejected');

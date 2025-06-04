@@ -238,7 +238,7 @@ export const getClip = (ele: HTMLElement) => {
   return newClip;
 };
 
-export const mouseClickElement = async (ele: HTMLElement) => {
+export const mouseClickElement = async (ele: HTMLElement | Element) => {
   const bounds = ele.getBoundingClientRect();
   await mouseClick(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 };
