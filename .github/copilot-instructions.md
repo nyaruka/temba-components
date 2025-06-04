@@ -1,6 +1,7 @@
 # Copilot Development Instructions
 
 ## Package Management
+
 We use **yarn** for package management. Always use yarn commands instead of npm:
 
 ```bash
@@ -10,26 +11,42 @@ yarn install
 # Add new dependencies
 yarn add <package-name>
 
-# Add dev dependencies  
+# Add dev dependencies
 yarn add -D <package-name>
 ```
 
 ## Testing
+
 All tests are run using:
 
 ```bash
 yarn test
 ```
 
-This will check linting, formatting, compilation, and run the tests. No task is complete until this passes fully.
-
-To run the tests without all the extra tests while debugging, you can use
+To check for coverage, use:
 
 ```bash
-yarn runtests
+yarn test --coverage
 ```
 
+You also can run an idividual test to speed up development
+
+```bash
+yarn test test/temba-textinput.test.ts
+```
+
+Before a PR is ready it must pass validation checks for linting, formatting, and tests. This will also report coverage and you need to manually verify coverage does not drop.
+
+```bash
+yarn validate
+```
+
+### Making commits
+
+Before committing always run `yarn precommit` and include any changes it makes.
+
 ### Test Coverage Requirements
+
 - **100% code coverage** is expected for all code we touch
 - The aim is to maintain complete test coverage across the codebase
 - When modifying existing code, ensure all changed lines are covered by tests
@@ -37,9 +54,11 @@ yarn runtests
 - Never add tests to try to test unreachable or dead code, instead make a comment in the dead scope that it is unreachable
 
 ### Test Structure
+
 Tests live under the `/test` directory and follow these patterns:
 
 1. **Import required testing utilities:**
+
    ```typescript
    import { fixture, assert } from '@open-wc/testing';
    import { assertScreenshot, getClip, getComponent } from './utils.test';
@@ -54,15 +73,18 @@ Tests live under the `/test` directory and follow these patterns:
 5. **Example Test:** A good example test to model after is `temba-textinput.test.ts`
 
 ### Screenshot Testing
+
 This project includes visual regression testing through screenshot comparison:
 
 #### How Screenshot Tests Work
+
 - Screenshots are captured during test execution using Puppeteer/Chromium
 - "Truth" images are stored in `/screenshots/truth/` directory
 - Test screenshots are compared pixel-by-pixel against truth images
 - Failed comparisons generate diff images showing visual changes
 
 #### Screenshot Test Implementation
+
 ```typescript
 // Take a screenshot of a component
 await assertScreenshot('component/state-name', clipRegion);
@@ -77,34 +99,38 @@ customClip.height += 10;
 ```
 
 #### Critical Test Ordering
+
 **Tests must validate expected values FIRST, then screenshots:**
 
 ```typescript
 it('validates component behavior', async () => {
   const component = await getComponent('temba-example', { prop: 'value' });
-  
+
   // 1. FIRST: Test expected values and behavior
   assert.instanceOf(component, ExampleComponent);
   expect(component.prop).to.equal('value');
   expect(component.textContent).to.contain('expected text');
-  
+
   // 2. SECOND: Take screenshot for visual verification
   await assertScreenshot('example/state', getClip(component));
 });
 ```
 
 This ordering ensures:
+
 - Functional correctness is verified before visual verification
 - Failed functional tests provide clearer debugging information
 - Screenshot tests serve as additional visual regression protection
 
 #### Screenshot Test Best Practices
+
 - Use descriptive names: `'component/specific-state'` not `'test1'`
 - Include sufficient context in clip regions to show component state
 - Adjust clip regions when components have dynamic sizing
 - Group related screenshots in subdirectories (e.g., `tip/left`, `tip/right`)
 
 ## Development Workflow
+
 1. **Install dependencies:** `yarn install`
 2. **Start development server:** `yarn start`
 3. **Run tests during development:** `yarn test:watch`
@@ -112,16 +138,19 @@ This ordering ensures:
 5. **Build for production:** `yarn build`
 
 ## Code Quality
+
 - Follow existing TypeScript patterns in the codebase
 - Use ESLint and Prettier configurations (automatically enforced)
 - Write descriptive test names and clear assertions
 - Ensure all modified code paths have corresponding test coverage
 
-## Formatting ##
+## Formatting
+
 - We use prettier for formatting, review the settings in .prettierrc
 - When commmenting, if it is more than one sentence use standard case and punctuation, however for short comments, all lowercase is preferred
 
 ## Component Development
+
 When creating or modifying components:
 
 1. Create/update the component implementation
