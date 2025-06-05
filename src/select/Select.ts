@@ -293,6 +293,11 @@ export class Select<T extends SelectOption> extends FormElement {
         margin-right: 0em;
       }
 
+      .multi .input-wrapper {
+        flex-shrink: 0;
+        min-width: 100px;
+      }
+
       .input-wrapper .searchbox {
       }
 
@@ -1516,8 +1521,28 @@ export class Select<T extends SelectOption> extends FormElement {
     const toIdx = detail.toIdx;
 
     if (this.draggingId) {
-      // During drag, just store the target index without applying it
-      this.pendingTargetIdx = toIdx;
+      // Calculate if this represents a real position change
+      // When dragging an item, SortableList reports the target position of where
+      // the item will be inserted relative to the other items (excluding the dragged item)
+      
+      let actualTargetIdx = toIdx;
+      
+      // If the target position is after the original position, we need to account
+      // for the fact that the dragged item will be removed from its original position
+      if (toIdx > this.originalDragIdx) {
+        actualTargetIdx = toIdx;
+      } else if (toIdx <= this.originalDragIdx) {
+        // If target is at or before original position, the actual target is the same
+        actualTargetIdx = toIdx;
+      }
+      
+      // Only store the change if it's actually different from the original position
+      if (actualTargetIdx !== this.originalDragIdx) {
+        this.pendingTargetIdx = actualTargetIdx;
+      } else {
+        // No real change - clear any pending target
+        this.pendingTargetIdx = -1;
+      }
     } else {
       // If not dragging, apply immediately (shouldn't happen in current implementation)
       const fromIdx = detail.fromIdx;
