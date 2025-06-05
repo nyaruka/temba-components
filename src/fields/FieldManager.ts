@@ -121,7 +121,7 @@ export class FieldManager extends EndpointMonitorElement {
         border-radius: var(--curvature);
       }
 
-      .featured temba-sortable-list .field:hover {
+      .featured:not(.dragging) temba-sortable-list .field:hover {
         cursor: move;
         border-color: #e6e6e6;
         background: #fcfcfc;
@@ -327,7 +327,7 @@ export class FieldManager extends EndpointMonitorElement {
 
       ${this.featuredFields.length > 0
         ? html`
-            <div class="featured">
+            <div class="featured${this.draggingId ? ' dragging' : ''}">
               <div class="header">
                 <temba-icon name="featured"></temba-icon>
                 <div class="label">Featured</div>

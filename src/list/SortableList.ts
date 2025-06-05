@@ -296,10 +296,9 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
       this.ghostElement.style.pointerEvents = 'none';
-      this.ghostElement.style.transform = 'rotate(-0.5deg)';
       this.ghostElement.style.border =
         '1px solid var(--color-primary, #1c7cd6)';
-      this.ghostElement.style.zIndex = '9999';
+      this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.background = '#fff';
       this.ghostElement.style.opacity = '0.7';
       this.ghostElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
@@ -366,7 +365,7 @@ export class SortableList extends RapidElement {
   }
 
   private handleMouseUp(evt: MouseEvent) {
-    if (this.draggingId) {
+    if (this.draggingId && this.ghostElement) {
       evt.preventDefault();
       evt.stopPropagation();
 

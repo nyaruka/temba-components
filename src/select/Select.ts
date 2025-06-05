@@ -1379,9 +1379,6 @@ export class Select<T extends SelectOption> extends FormElement {
       return;
     }
 
-    event.stopPropagation();
-    event.preventDefault();
-
     this.focused = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
@@ -1568,12 +1565,14 @@ export class Select<T extends SelectOption> extends FormElement {
         this.pendingTargetIdx = -1;
       }
     } else {
-      // If not dragging, apply immediately (shouldn't happen in current implementation)
+      // if not dragging, apply immediately
+      const oldValues = [...this.values];
       const fromIdx = detail.fromIdx;
       const temp = this.values[fromIdx];
       this.values[fromIdx] = this.values[toIdx];
       this.values[toIdx] = temp;
-      this.requestUpdate('values');
+
+      this.requestUpdate('values', oldValues);
     }
   }
 
@@ -1586,22 +1585,24 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleDragStop(): void {
+    console.log('handleDragStop');
     // Apply the pending order change when drag stops
     if (
       this.originalDragIdx !== -1 &&
       this.pendingTargetIdx !== -1 &&
       this.originalDragIdx !== this.pendingTargetIdx
     ) {
+      const oldValues = [...this.values];
       const temp = this.values[this.originalDragIdx];
       this.values[this.originalDragIdx] = this.values[this.pendingTargetIdx];
       this.values[this.pendingTargetIdx] = temp;
-      this.requestUpdate('values');
+      this.requestUpdate('values', oldValues);
     }
 
     this.draggingId = null;
     this.originalDragIdx = -1;
     this.pendingTargetIdx = -1;
-    this.justReordered = true; // set flag after drag stop
+    this.justReordered = true;
     setTimeout(() => (this.justReordered = false), 0); // clear flag after event loop
   }
 
@@ -1698,7 +1699,7 @@ export class Select<T extends SelectOption> extends FormElement {
                         @temba-drag-start=${this.handleDragStart}
                         @temba-drag-stop=${this.handleDragStop}
                         .prepareGhost=${(item: any) => {
-                          item.style.transform = 'scale(1.05)';
+                          item.style.transform = 'scale(1.25) rotate(-1.2deg)';
                           item.querySelector('.remove-item').style.display =
                             'none';
                         }}
@@ -1751,6 +1752,10 @@ export class Select<T extends SelectOption> extends FormElement {
                                         margin-top:1px;
                                       "
                                       @click=${(evt: MouseEvent) => {
+                                        console.log(
+                                          'clicking on remove item',
+                                          this.justReordered
+                                        );
                                         if (!this.justReordered) {
                                           evt.preventDefault();
                                           evt.stopPropagation();
