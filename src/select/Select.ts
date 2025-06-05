@@ -1538,14 +1538,17 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleDragStop(): void {
     // Apply the pending order change when drag stops
-    if (this.originalDragIdx !== -1 && this.pendingTargetIdx !== -1 && 
-        this.originalDragIdx !== this.pendingTargetIdx) {
+    if (
+      this.originalDragIdx !== -1 &&
+      this.pendingTargetIdx !== -1 &&
+      this.originalDragIdx !== this.pendingTargetIdx
+    ) {
       const temp = this.values[this.originalDragIdx];
       this.values[this.originalDragIdx] = this.values[this.pendingTargetIdx];
       this.values[this.pendingTargetIdx] = temp;
       this.requestUpdate('values');
     }
-    
+
     this.draggingId = null;
     this.originalDragIdx = -1;
     this.pendingTargetIdx = -1;

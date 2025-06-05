@@ -142,7 +142,10 @@ export class SortableList extends RapidElement {
       .findIndex((ele) => ele.id === id);
   }
 
-  private getDropTargetInfo(mouseX: number, mouseY: number): { element: HTMLDivElement; insertAfter: boolean } | null {
+  private getDropTargetInfo(
+    mouseX: number,
+    mouseY: number
+  ): { element: HTMLDivElement; insertAfter: boolean } | null {
     const elements = this.shadowRoot
       .querySelector('slot')
       .assignedElements()
@@ -156,28 +159,34 @@ export class SortableList extends RapidElement {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
-        
+
         if (mouseX < centerX) {
           // Insert before this element
           return { element: ele as HTMLDivElement, insertAfter: false };
         }
       }
       // If we're past all elements, insert after the last one
-      return { element: elements[elements.length - 1] as HTMLDivElement, insertAfter: true };
+      return {
+        element: elements[elements.length - 1] as HTMLDivElement,
+        insertAfter: true
+      };
     } else {
       // For vertical layout, find the insertion point based on mouse Y position
       for (let i = 0; i < elements.length; i++) {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
         const centerY = rect.top + rect.height / 2;
-        
+
         if (mouseY < centerY) {
           // Insert before this element
           return { element: ele as HTMLDivElement, insertAfter: false };
         }
       }
       // If we're past all elements, insert after the last one
-      return { element: elements[elements.length - 1] as HTMLDivElement, insertAfter: true };
+      return {
+        element: elements[elements.length - 1] as HTMLDivElement,
+        insertAfter: true
+      };
     }
   }
 
@@ -197,25 +206,30 @@ export class SortableList extends RapidElement {
       // For horizontal layout, show vertical line
       this.dropIndicator.style.height = targetRect.height + 'px';
       this.dropIndicator.style.top = targetRect.top - containerRect.top + 'px';
-      
+
       if (insertAfter) {
         // Show line after target
-        this.dropIndicator.style.left = targetRect.right - containerRect.left + 'px';
+        this.dropIndicator.style.left =
+          targetRect.right - containerRect.left + 'px';
       } else {
         // Show line before target
-        this.dropIndicator.style.left = targetRect.left - containerRect.left + 'px';
+        this.dropIndicator.style.left =
+          targetRect.left - containerRect.left + 'px';
       }
     } else {
       // For vertical layout, show horizontal line
       this.dropIndicator.style.width = targetRect.width + 'px';
-      this.dropIndicator.style.left = targetRect.left - containerRect.left + 'px';
-      
+      this.dropIndicator.style.left =
+        targetRect.left - containerRect.left + 'px';
+
       if (insertAfter) {
         // Show line after target
-        this.dropIndicator.style.top = targetRect.bottom - containerRect.top + 'px';
+        this.dropIndicator.style.top =
+          targetRect.bottom - containerRect.top + 'px';
       } else {
         // Show line before target
-        this.dropIndicator.style.top = targetRect.top - containerRect.top + 'px';
+        this.dropIndicator.style.top =
+          targetRect.top - containerRect.top + 'px';
       }
     }
 
@@ -257,7 +271,7 @@ export class SortableList extends RapidElement {
       !this.ghostElement &&
       this.downEle &&
       (Math.abs(event.clientY - this.yDown) > DRAG_THRESHOLD ||
-       Math.abs(event.clientX - this.xDown) > DRAG_THRESHOLD)
+        Math.abs(event.clientX - this.xDown) > DRAG_THRESHOLD)
     ) {
       this.fireCustomEvent(CustomEventType.DragStart, {
         id: this.downEle.id
@@ -287,7 +301,7 @@ export class SortableList extends RapidElement {
         const { element: targetElement, insertAfter } = targetInfo;
         const targetIdx = this.getRowIndex(targetElement.id);
         const originalDragIdx = this.getRowIndex(this.draggingEle.id);
-        
+
         // Show drop indicator
         this.showDropIndicator(targetElement, insertAfter);
         this.dropTargetId = targetElement.id;
