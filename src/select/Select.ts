@@ -37,6 +37,7 @@ export interface SelectOption {
 
 export class Select<T extends SelectOption> extends FormElement {
   private hiddenInputs: HTMLInputElement[] = [];
+  private justReordered = false;
 
   static get styles(): CSSResult | CSSResultArray {
     return css`
@@ -1367,9 +1368,16 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
+    if (this.justReordered) {
+      // prevent opening dropdown right after drag-and-drop
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+
     event.stopPropagation();
     event.preventDefault();
-    console.log('Container clicked', event);
+
     this.focused = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
@@ -1590,6 +1598,8 @@ export class Select<T extends SelectOption> extends FormElement {
     this.draggingId = null;
     this.originalDragIdx = -1;
     this.pendingTargetIdx = -1;
+    this.justReordered = true; // set flag after drag stop
+    setTimeout(() => (this.justReordered = false), 0); // clear flag after event loop
   }
 
   public render(): TemplateResult {
