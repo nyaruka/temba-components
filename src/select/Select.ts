@@ -1487,6 +1487,18 @@ export class Select<T extends SelectOption> extends FormElement {
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
       this.values.splice(idx, 1);
+      
+      // Also remove the 'selected' attribute from the corresponding temba-option element
+      const valueToMatch = this.getValue(valueToRemove);
+      for (const child of this.children) {
+        if (child.tagName === 'TEMBA-OPTION') {
+          const childValue = child.getAttribute('value');
+          if (childValue === valueToMatch) {
+            child.removeAttribute('selected');
+            break;
+          }
+        }
+      }
     }
     this.requestUpdate('values', oldValues);
     this.infoText = '';
