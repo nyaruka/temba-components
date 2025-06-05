@@ -351,6 +351,10 @@ export class Select<T extends SelectOption> extends FormElement {
         pointer-events: none;
         padding: 0px;
       }
+
+      .ghost .remove-item {
+        display: none !important;
+      }
     `;
   }
 
@@ -1588,7 +1592,6 @@ export class Select<T extends SelectOption> extends FormElement {
       this.pendingTargetIdx !== -1 &&
       this.originalDragIdx !== this.pendingTargetIdx
     ) {
-      console.log(this.originalDragIdx, this.pendingTargetIdx);
       const temp = this.values[this.originalDragIdx];
       this.values[this.originalDragIdx] = this.values[this.pendingTargetIdx];
       this.values[this.pendingTargetIdx] = temp;
@@ -1694,6 +1697,11 @@ export class Select<T extends SelectOption> extends FormElement {
                         @temba-order-changed=${this.handleOrderChanged}
                         @temba-drag-start=${this.handleDragStart}
                         @temba-drag-stop=${this.handleDragStop}
+                        .prepareGhost=${(item: any) => {
+                          item.style.transform = 'scale(1.05)';
+                          item.querySelector('.remove-item').style.display =
+                            'none';
+                        }}
                       >
                         ${this.values.map(
                           (selected: any, index: number) => html`
@@ -1705,16 +1713,49 @@ export class Select<T extends SelectOption> extends FormElement {
                                 ? 'dragging'
                                 : ''}"
                               id="selected-${index}"
+                              style="
+                                transition: all 2s linear;
+                                transform: scale(1);
+                                vertical-align: middle;
+                                background: rgba(100,100,100,0.1);
+                                user-select: none;
+                                border-radius: 2px;
+                                align-items: stretch;
+                                flex-direction: row;
+                                flex-wrap: nowrap;
+                                margin: 2px 2px;
+                                display: flex;
+                                overflow: hidden;
+                                color: var(--color-widget-text);
+                                line-height: var(--temba-select-selected-line-height);
+                                --icon-color: var(--color-text-dark);
+                                ${index === this.selectedIndex
+                                ? 'background: rgba(100,100,100,0.3);'
+                                : ''}
+                                ${this.draggingId === `selected-${index}`
+                                ? 'opacity: 0.5;'
+                                : ''}
+                              "
                             >
                               ${this.multi
                                 ? html`
                                     <div
                                       class="remove-item"
-                                      style="margin-top:1px"
+                                      style="
+                                        cursor: pointer;
+                                        display: inline-block;
+                                        padding: 3px 6px;
+                                        border-right: 1px solid rgba(100,100,100,0.2);
+                                        margin: 0;
+                                        background: rgba(100,100,100,0.05);
+                                        margin-top:1px;
+                                      "
                                       @click=${(evt: MouseEvent) => {
-                                        evt.preventDefault();
-                                        evt.stopPropagation();
-                                        this.handleRemoveSelection(selected);
+                                        if (!this.justReordered) {
+                                          evt.preventDefault();
+                                          evt.stopPropagation();
+                                          this.handleRemoveSelection(selected);
+                                        }
                                       }}
                                     >
                                       <temba-icon
@@ -1724,7 +1765,21 @@ export class Select<T extends SelectOption> extends FormElement {
                                     </div>
                                   `
                                 : null}
-                              ${this.renderSelectedItem(selected)}
+                              <div
+                                class="option-name"
+                                style="
+                                  flex: 1 1 auto;
+                                  align-self: center;
+                                  white-space: nowrap;
+                                  overflow: hidden;
+                                  text-overflow: ellipsis;
+                                  font-size: 12px;
+                                  padding: 2px 8px;
+                                  display: flex;
+                                "
+                              >
+                                ${this.getName(selected)}
+                              </div>
                             </div>
                           `
                         )}
@@ -1736,12 +1791,30 @@ export class Select<T extends SelectOption> extends FormElement {
                           class="selected-item ${index === this.selectedIndex
                             ? 'focused'
                             : ''}"
+                          style="
+                            display: flex;
+                            overflow: hidden;
+                            color: var(--color-widget-text);
+                            line-height: var(--temba-select-selected-line-height);
+                            --icon-color: var(--color-text-dark);
+                            ${index === this.selectedIndex
+                            ? 'background: rgba(100,100,100,0.3);'
+                            : ''}
+                          "
                         >
                           ${this.multi
                             ? html`
                                 <div
                                   class="remove-item"
-                                  style="margin-top:1px"
+                                  style="
+                                    cursor: pointer;
+                                    display: inline-block;
+                                    padding: 3px 6px;
+                                    border-right: 1px solid rgba(100,100,100,0.2);
+                                    margin: 0;
+                                    background: rgba(100,100,100,0.05);
+                                    margin-top:1px;
+                                  "
                                   @click=${(evt: MouseEvent) => {
                                     evt.preventDefault();
                                     evt.stopPropagation();

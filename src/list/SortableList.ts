@@ -18,6 +18,7 @@ export class SortableList extends RapidElement {
 
       .container {
         user-select: none;
+        position: relative;
       }
 
       .container.horizontal {
@@ -44,20 +45,19 @@ export class SortableList extends RapidElement {
 
       .drop-indicator {
         position: absolute;
-        background: var(--color-primary, #1c7cd6);
+        background: var(--color-primary-dark, #1c7cd6);
         z-index: 1000;
         pointer-events: none;
       }
 
       .container.horizontal .drop-indicator {
         width: 2px;
-        margin-top: 5px;
-        margin-left: 1px;
+        margin-top: -5px;
+        padding-bottom: 10px;
       }
 
       .container:not(.horizontal) .drop-indicator {
         height: 2px;
-        width: 100%;
         left: 0;
       }
 
@@ -76,7 +76,6 @@ export class SortableList extends RapidElement {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         pointer-events: none;
         z-index: 999;
-        transform: rotate(2deg);
       }
 
       .slot {
@@ -103,6 +102,13 @@ export class SortableList extends RapidElement {
 
   @property({ type: String })
   dropTargetId: string;
+
+  /**
+   * Optional callback to allow parent components to customize the ghost node.
+   * Called after the ghost node is cloned but before it is appended to the DOM.
+   */
+  @property({ attribute: false })
+  prepareGhost?: (ghost: HTMLElement) => void;
 
   ghostElement: HTMLDivElement = null;
   downEle: HTMLDivElement = null;
@@ -255,8 +261,10 @@ export class SortableList extends RapidElement {
       this.draggingIdx = this.getRowIndex(ele.id);
       this.draggingEle = ele;
 
-      this.xOffset = event.clientX - ele.offsetLeft;
-      this.yOffset = event.clientY - ele.offsetTop;
+      // Use getBoundingClientRect for accurate offsets
+      const rect = ele.getBoundingClientRect();
+      this.xOffset = event.clientX - rect.left;
+      this.yOffset = event.clientY - rect.top;
       this.yDown = event.clientY;
       this.xDown = event.clientX;
 
@@ -266,10 +274,6 @@ export class SortableList extends RapidElement {
   }
 
   private handleMouseMove(event: MouseEvent) {
-    const scrollTop = this.shadowRoot
-      .querySelector('slot')
-      .assignedElements()[0].parentElement.scrollTop;
-
     if (
       !this.ghostElement &&
       this.downEle &&
@@ -284,20 +288,36 @@ export class SortableList extends RapidElement {
       this.ghostElement.classList.add('ghost');
 
       const rect = this.downEle.getBoundingClientRect();
+      this.ghostElement.style.transition = 'transform 300ms linear';
 
       this.ghostElement.style.width = rect.width + 'px';
       this.ghostElement.style.height = rect.height + 'px';
-      const container = this.shadowRoot.querySelector('.container');
+      this.ghostElement.style.position = 'fixed';
+      this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
+      this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
+      this.ghostElement.style.pointerEvents = 'none';
+      this.ghostElement.style.transform = 'rotate(-0.5deg)';
+      this.ghostElement.style.border =
+        '1px solid var(--color-primary, #1c7cd6)';
+      this.ghostElement.style.zIndex = '9999';
+      this.ghostElement.style.background = '#fff';
+      this.ghostElement.style.opacity = '0.7';
+      this.ghostElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+      this.ghostElement.style.borderRadius = 'var(--curvature)';
 
-      container.appendChild(this.ghostElement);
+      // allow component to customize the ghost node
+      if (this.prepareGhost) {
+        this.prepareGhost(this.ghostElement);
+      }
+
+      document.body.appendChild(this.ghostElement);
 
       this.downEle = null;
     }
 
     if (this.ghostElement) {
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
-      this.ghostElement.style.top =
-        event.clientY - this.yOffset - scrollTop + 'px';
+      this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
 
       const targetInfo = this.getDropTargetInfo(event.clientX, event.clientY);
       if (targetInfo) {
@@ -359,7 +379,10 @@ export class SortableList extends RapidElement {
       this.downEle = null;
 
       if (this.ghostElement) {
-        this.ghostElement.remove();
+        // Remove from body if present
+        if (this.ghostElement.parentNode) {
+          this.ghostElement.parentNode.removeChild(this.ghostElement);
+        }
         this.ghostElement = null;
       }
 

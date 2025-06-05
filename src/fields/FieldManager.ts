@@ -189,28 +189,43 @@ export class FieldManager extends EndpointMonitorElement {
     }
   }
 
-  private handleSaveOrder(event) {
-    const list = event.currentTarget as SortableList;
-    postJSON(
-      this.priorityEndpoint,
-      list
-        .getIds()
-        .reverse()
-        .reduce((map, key, idx) => {
-          map[key] = idx;
-          return map;
-        }, {})
-    ).then(() => {
-      this.store.refreshFields();
-    });
-  }
+  private pendingOrder: { fromIdx: number; toIdx: number } = null;
 
   private handleOrderChanged(event) {
-    const swapsies = event.detail;
-    const temp = this.featuredFields[swapsies.fromIdx];
-    this.featuredFields[swapsies.fromIdx] = this.featuredFields[swapsies.toIdx];
-    this.featuredFields[swapsies.toIdx] = temp;
-    this.requestUpdate('featuredFields');
+    // Only store the intended order, don't mutate featuredFields yet
+    const { fromIdx, toIdx } = event.detail;
+    this.pendingOrder = { fromIdx, toIdx };
+    // Optionally, requestUpdate for visual feedback if needed
+  }
+
+  private handleSaveOrder(event) {
+    // Only now, on drop, actually change the order
+    if (this.pendingOrder) {
+      const { fromIdx, toIdx } = this.pendingOrder;
+      if (fromIdx !== toIdx) {
+        const arr = [...this.featuredFields];
+        const [moved] = arr.splice(fromIdx, 1);
+        arr.splice(toIdx, 0, moved);
+        this.featuredFields = arr;
+        this.requestUpdate('featuredFields');
+      }
+      this.pendingOrder = null;
+      const list = event.currentTarget as SortableList;
+      setTimeout(() => {
+        postJSON(
+          this.priorityEndpoint,
+          list
+            .getIds()
+            .reverse()
+            .reduce((map, key, idx) => {
+              map[key] = idx;
+              return map;
+            }, {})
+        ).then(() => {
+          this.store.refreshFields();
+        });
+      }, 0);
+    }
   }
 
   private handleDragStart(event) {
