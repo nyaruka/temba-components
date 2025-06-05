@@ -1,4 +1,4 @@
-import { html, fixture, expect, assert } from '@open-wc/testing';
+import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { Plumber } from '../src/flow/Plumber';
 import { stub, restore } from 'sinon';
@@ -45,7 +45,7 @@ describe('Editor', () => {
       editor = document.createElement('temba-flow-editor') as Editor;
       editor.flow = 'test-flow-uuid';
       editor.version = '1.0';
-      
+
       expect(editor.flow).to.equal('test-flow-uuid');
       expect(editor.version).to.equal('1.0');
     });
@@ -65,19 +65,18 @@ describe('Editor', () => {
 
     it('verifies firstUpdated method exists and can be called', () => {
       editor = new Editor();
-      
+
       // Mock canvas element
       const mockCanvas = document.createElement('div');
       mockCanvas.id = 'canvas';
-      
+
       // Mock querySelector to return our mock canvas
       stub(editor, 'querySelector').returns(mockCanvas);
-      
+
       // Verify firstUpdated method exists
       expect(typeof (editor as any).firstUpdated).to.equal('function');
-      
+
       // Test that calling firstUpdated doesn't throw (without getStore)
-      const changes = new Map();
       expect(() => {
         // Only test the plumber initialization part
         (editor as any).plumber = new Plumber(mockCanvas);
@@ -98,11 +97,14 @@ describe('Editor', () => {
       (editor as any).canvasSize = { width: 800, height: 600 };
       const changes = new Map();
       changes.set('canvasSize', true);
-      
+
       (editor as any).updated(changes);
 
-      expect(consoleStub).to.have.been.calledWith('Setting canvas size', { width: 800, height: 600 });
-      
+      expect(consoleStub).to.have.been.calledWith('Setting canvas size', {
+        width: 800,
+        height: 600
+      });
+
       consoleStub.restore();
     });
 
@@ -117,11 +119,11 @@ describe('Editor', () => {
 
       const changes = new Map();
       changes.set('other', true);
-      
+
       (editor as any).updated(changes);
 
       expect(consoleStub).to.not.have.been.called;
-      
+
       consoleStub.restore();
     });
   });
@@ -151,7 +153,7 @@ describe('Editor', () => {
             exits: []
           },
           {
-            uuid: 'node-2', 
+            uuid: 'node-2',
             actions: [],
             exits: []
           }
@@ -206,7 +208,7 @@ describe('Editor', () => {
 
       const gridElement = editor.querySelector('#grid');
       expect(gridElement).to.exist;
-      
+
       const style = gridElement?.getAttribute('style');
       expect(style).to.contain('width:1200px');
       expect(style).to.contain('height:800px');
@@ -265,7 +267,7 @@ describe('Editor', () => {
   describe('store integration', () => {
     it('has fromStore decorators for definition and canvasSize', () => {
       editor = new Editor();
-      
+
       // Check that the properties exist (they are private but we can verify they exist)
       expect(editor).to.have.property('definition');
       expect(editor).to.have.property('canvasSize');

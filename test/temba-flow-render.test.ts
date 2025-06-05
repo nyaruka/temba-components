@@ -1,19 +1,19 @@
-import { html, fixture, expect, assert } from '@open-wc/testing';
-import { 
-  renderSendMsg, 
-  renderSetContactName, 
-  renderSetRunResult, 
-  renderCallWebhook, 
-  renderAddToGroups 
+import { html, fixture, expect } from '@open-wc/testing';
+import {
+  renderSendMsg,
+  renderSetContactName,
+  renderSetRunResult,
+  renderCallWebhook,
+  renderAddToGroups
 } from '../src/flow/render';
-import { 
-  Node, 
-  SendMsg, 
-  SetContactName, 
-  SetRunResult, 
-  CallWebhook, 
-  AddToGroup 
-} from '../src/store/flow-definition';
+import {
+  Node,
+  SendMsg,
+  SetContactName,
+  SetRunResult,
+  CallWebhook,
+  AddToGroup
+} from '../src/store/flow-definition.d';
 
 describe('Flow Render Functions', () => {
   const mockNode: Node = {
@@ -26,26 +26,30 @@ describe('Flow Render Functions', () => {
     it('renders message text with line breaks', async () => {
       const action: SendMsg = {
         type: 'send_msg',
+        uuid: 'action-uuid-1',
         text: 'Hello world\nThis is a new line',
         quick_replies: []
       };
 
       const result = renderSendMsg(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
-      expect(container.innerHTML).to.contain('Hello world<br>This is a new line');
+
+      expect(container.innerHTML).to.contain(
+        'Hello world<br>This is a new line'
+      );
     });
 
     it('renders quick replies when present', async () => {
       const action: SendMsg = {
         type: 'send_msg',
+        uuid: 'action-uuid-2',
         text: 'Choose an option:',
         quick_replies: ['Yes', 'No', 'Maybe']
       };
 
       const result = renderSendMsg(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.innerHTML).to.contain('Choose an option:');
       expect(container.innerHTML).to.contain('quick-replies');
       expect(container.innerHTML).to.contain('Yes');
@@ -56,13 +60,14 @@ describe('Flow Render Functions', () => {
     it('renders without quick replies when none provided', async () => {
       const action: SendMsg = {
         type: 'send_msg',
+        uuid: 'action-uuid-3',
         text: 'Simple message',
         quick_replies: []
       };
 
       const result = renderSendMsg(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.innerHTML).to.contain('Simple message');
       expect(container.innerHTML).to.not.contain('quick-replies');
     });
@@ -72,12 +77,13 @@ describe('Flow Render Functions', () => {
     it('renders contact name setting', async () => {
       const action: SetContactName = {
         type: 'set_contact_name',
+        uuid: 'action-uuid-4',
         name: 'John Doe'
       };
 
       const result = renderSetContactName(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.textContent).to.contain('Set contact name to');
       expect(container.textContent).to.contain('John Doe');
       expect(container.querySelector('b')).to.exist;
@@ -88,13 +94,15 @@ describe('Flow Render Functions', () => {
     it('renders run result setting', async () => {
       const action: SetRunResult = {
         type: 'set_run_result',
+        uuid: 'action-uuid-5',
+        category: 'success',
         name: 'favorite_color',
         value: 'blue'
       };
 
       const result = renderSetRunResult(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.textContent).to.contain('Save blue as');
       expect(container.textContent).to.contain('favorite_color');
       expect(container.querySelector('b')).to.exist;
@@ -105,14 +113,18 @@ describe('Flow Render Functions', () => {
     it('renders webhook URL', async () => {
       const action: CallWebhook = {
         type: 'call_webhook',
+        uuid: 'action-uuid-6',
         url: 'https://example.com/webhook'
       };
 
       const result = renderCallWebhook(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.innerHTML).to.contain('https://example.com/webhook');
-      expect(container.querySelector('div')).to.have.style('word-break', 'break-all');
+      expect(container.querySelector('div')).to.have.style(
+        'word-break',
+        'break-all'
+      );
     });
   });
 
@@ -120,21 +132,22 @@ describe('Flow Render Functions', () => {
     it('renders groups with icons', async () => {
       const action: AddToGroup = {
         type: 'add_contact_groups',
+        uuid: 'action-uuid-7',
         groups: [
-          { uuid: 'group1', name: 'VIP Customers' },
-          { uuid: 'group2', name: 'Newsletter Subscribers' }
+          { uuid: 'group1', name: 'VIP Customers', status: 'active', system: false, query: '', count: 10 },
+          { uuid: 'group2', name: 'Newsletter Subscribers', status: 'active', system: false, query: '', count: 25 }
         ]
       };
 
       const result = renderAddToGroups(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.innerHTML).to.contain('VIP Customers');
       expect(container.innerHTML).to.contain('Newsletter Subscribers');
       expect(container.querySelectorAll('temba-icon')).to.have.length(2);
-      
+
       const icons = container.querySelectorAll('temba-icon');
-      icons.forEach(icon => {
+      icons.forEach((icon) => {
         expect(icon.getAttribute('name')).to.equal('group');
       });
     });
@@ -142,12 +155,13 @@ describe('Flow Render Functions', () => {
     it('renders empty groups array', async () => {
       const action: AddToGroup = {
         type: 'add_contact_groups',
+        uuid: 'action-uuid-8',
         groups: []
       };
 
       const result = renderAddToGroups(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.querySelectorAll('temba-icon')).to.have.length(0);
     });
 
@@ -155,25 +169,19 @@ describe('Flow Render Functions', () => {
       // Test the renderNamedObjects function without an icon parameter
       const action: AddToGroup = {
         type: 'add_contact_groups',
-        groups: [
-          { uuid: 'group1', name: 'Test Group' }
-        ]
+        uuid: 'action-uuid-9',
+        groups: [{ uuid: 'group1', name: 'Test Group', status: 'active', system: false, query: '', count: 5 }]
       };
 
-      // We need to directly test renderNamedObjects without an icon
+      // Create a test version that calls renderNamedObjects without icon
       // to cover the null case in the render.ts file
       const namedObjects = action.groups;
-      
+
       // Create a test version that calls renderNamedObjects without icon
       const testRender = (assets: any[]) => {
         return assets.map((asset) => {
           return html`<div style="display:flex;items-align:center">
-            ${undefined // This should trigger the null branch
-              ? html`<temba-icon
-                  name="test"
-                  style="margin-right:0.5em"
-                ></temba-icon>`
-              : null}
+            ${null /* This should trigger the null branch */}
             <div>${asset.name}</div>
           </div>`;
         });
@@ -181,7 +189,7 @@ describe('Flow Render Functions', () => {
 
       const result = testRender(namedObjects);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       expect(container.innerHTML).to.contain('Test Group');
       expect(container.querySelectorAll('temba-icon')).to.have.length(0);
     });

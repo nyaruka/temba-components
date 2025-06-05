@@ -1,4 +1,4 @@
-import { html, fixture, expect, assert } from '@open-wc/testing';
+import { html, fixture, expect } from '@open-wc/testing';
 import { Plumber, SOURCE_DEFAULTS, TARGET_DEFAULTS } from '../src/flow/Plumber';
 import { stub, restore } from 'sinon';
 
@@ -18,16 +18,16 @@ describe('Plumber', () => {
         <div id="test-to">To Element</div>
       </div>
     `);
-    
+
     const canvas = container.querySelector('#test-canvas') as HTMLElement;
-    
+
     // Mock jsPlumb functionality
     mockJsPlumb = {
       addEndpoint: stub().returns({ uuid: 'mock-endpoint' }),
       connect: stub(),
-      batch: stub().callsFake((fn: Function) => fn())
+      batch: stub().callsFake((fn: () => void) => fn())
     };
-    
+
     // Create plumber instance and replace jsPlumb
     plumber = new Plumber(canvas);
     // Access private property for testing
@@ -47,7 +47,7 @@ describe('Plumber', () => {
   describe('makeTarget', () => {
     it('creates a target endpoint for the specified element', () => {
       plumber.makeTarget('test-target');
-      
+
       expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
         container.querySelector('#test-target'),
         TARGET_DEFAULTS
@@ -56,7 +56,7 @@ describe('Plumber', () => {
 
     it('handles non-existent elements gracefully', () => {
       plumber.makeTarget('non-existent');
-      
+
       expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
         null,
         TARGET_DEFAULTS
@@ -67,7 +67,7 @@ describe('Plumber', () => {
   describe('makeSource', () => {
     it('creates a source endpoint for the specified element', () => {
       plumber.makeSource('test-source');
-      
+
       expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
         container.querySelector('#test-source'),
         SOURCE_DEFAULTS
@@ -76,7 +76,7 @@ describe('Plumber', () => {
 
     it('handles non-existent elements gracefully', () => {
       plumber.makeSource('non-existent');
-      
+
       expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
         null,
         SOURCE_DEFAULTS
@@ -87,7 +87,7 @@ describe('Plumber', () => {
   describe('connectIds', () => {
     it('adds connection to pending connections and processes them', () => {
       plumber.connectIds('test-from', 'test-to');
-      
+
       // Verify that the method doesn't throw and plumber exists
       expect(plumber).to.exist;
     });
@@ -97,7 +97,7 @@ describe('Plumber', () => {
     it('processes pending connections with timeout', (done) => {
       // Add a connection to pending connections
       plumber.connectIds('test-from', 'test-to');
-      
+
       // Wait for the debounced timeout
       setTimeout(() => {
         expect(mockJsPlumb.batch).to.have.been.called;
@@ -107,7 +107,7 @@ describe('Plumber', () => {
 
     it('creates endpoints and connections for pending connections', (done) => {
       plumber.connectIds('test-from', 'test-to');
-      
+
       setTimeout(() => {
         expect(mockJsPlumb.addEndpoint).to.have.been.called;
         expect(mockJsPlumb.connect).to.have.been.called;
@@ -119,7 +119,7 @@ describe('Plumber', () => {
       // Call processPendingConnections directly
       plumber.processPendingConnections();
       plumber.processPendingConnections();
-      
+
       // This mainly tests that no errors are thrown
       expect(plumber).to.exist;
     });
@@ -127,7 +127,7 @@ describe('Plumber', () => {
     it('handles empty pending connections', (done) => {
       // Call without adding any connections
       plumber.processPendingConnections();
-      
+
       setTimeout(() => {
         expect(mockJsPlumb.batch).to.have.been.called;
         done();
@@ -180,7 +180,10 @@ describe('Plumber', () => {
       expect(anchor.options.faces).to.include('top');
       expect(anchor.options.faces).to.include('left');
       expect(anchor.options.faces).to.include('right');
-      expect(anchor.options).to.have.property('cssClass', 'continuos plumb-target-anchor');
+      expect(anchor.options).to.have.property(
+        'cssClass',
+        'continuos plumb-target-anchor'
+      );
     });
   });
 });

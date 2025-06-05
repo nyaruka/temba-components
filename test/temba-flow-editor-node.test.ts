@@ -1,7 +1,12 @@
-import { html, fixture, expect, assert } from '@open-wc/testing';
+import { html, fixture, expect } from '@open-wc/testing';
 import { EditorNode } from '../src/flow/EditorNode';
-import { Plumber } from '../src/flow/Plumber';
-import { Node, NodeUI, Action, Exit, Router, Category } from '../src/store/flow-definition.d';
+import {
+  Node,
+  NodeUI,
+  Action,
+  Exit,
+  Router
+} from '../src/store/flow-definition.d';
 import { stub, restore } from 'sinon';
 
 // Register the component
@@ -167,10 +172,7 @@ describe('EditorNode', () => {
       const mockNode: Node = {
         uuid: 'test-node-9',
         actions: [],
-        exits: [
-          { uuid: 'exit-1' },
-          { uuid: 'exit-2' }
-        ],
+        exits: [{ uuid: 'exit-1' }, { uuid: 'exit-2' }],
         router: {
           type: 'switch',
           categories: [
@@ -198,7 +200,7 @@ describe('EditorNode', () => {
 
       const result = (editorNode as any).renderExit(exit);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       const exitElement = container.querySelector('.exit');
       expect(exitElement).to.exist;
       expect(exitElement?.classList.contains('connected')).to.be.true;
@@ -212,7 +214,7 @@ describe('EditorNode', () => {
 
       const result = (editorNode as any).renderExit(exit);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       const exitElement = container.querySelector('.exit');
       expect(exitElement).to.exist;
       expect(exitElement?.classList.contains('connected')).to.be.false;
@@ -233,7 +235,7 @@ describe('EditorNode', () => {
 
       const result = (editorNode as any).renderTitle(config);
       const container = await fixture(html`<div>${result}</div>`);
-      
+
       const title = container.querySelector('.title');
       expect(title).to.exist;
       expect(title?.textContent?.trim()).to.equal('Test Action');
@@ -245,15 +247,15 @@ describe('EditorNode', () => {
     it('handles updated without node changes', () => {
       editorNode = new EditorNode();
       (editorNode as any).plumber = mockPlumber;
-      
+
       const changes = new Map();
       changes.set('other', true);
-      
+
       // Should not throw and not call plumber methods
       expect(() => {
         (editorNode as any).updated(changes);
       }).to.not.throw();
-      
+
       expect(mockPlumber.makeTarget).to.not.have.been.called;
     });
 
@@ -265,7 +267,7 @@ describe('EditorNode', () => {
     it('processes node changes and calls plumber methods', () => {
       editorNode = new EditorNode();
       (editorNode as any).plumber = mockPlumber;
-      
+
       const mockNode: Node = {
         uuid: 'test-node-10',
         actions: [],
@@ -273,10 +275,6 @@ describe('EditorNode', () => {
           { uuid: 'exit-1', destination_uuid: 'node-2' },
           { uuid: 'exit-2' } // This should call makeSource
         ]
-      };
-
-      const mockUI: NodeUI = {
-        position: { left: 75, top: 125 }
       };
 
       // Mock querySelector to return a mock element with getBoundingClientRect
@@ -287,28 +285,33 @@ describe('EditorNode', () => {
 
       // Simulate the updated lifecycle
       (editorNode as any).node = mockNode;
-      (editorNode as any).ui = mockUI;
-      
+
       const changes = new Map();
       changes.set('node', true);
-      
+
       // Test just the plumber method calls without store dependency
       // by directly calling the logic that would be in updated
       if ((editorNode as any).plumber && mockNode) {
         (editorNode as any).plumber.makeTarget(mockNode.uuid);
-        
+
         for (const exit of mockNode.exits) {
           if (!exit.destination_uuid) {
             (editorNode as any).plumber.makeSource(exit.uuid);
           } else {
-            (editorNode as any).plumber.connectIds(exit.uuid, exit.destination_uuid);
+            (editorNode as any).plumber.connectIds(
+              exit.uuid,
+              exit.destination_uuid
+            );
           }
         }
       }
 
       expect(mockPlumber.makeTarget).to.have.been.calledWith('test-node-10');
       expect(mockPlumber.makeSource).to.have.been.calledWith('exit-2');
-      expect(mockPlumber.connectIds).to.have.been.calledWith('exit-1', 'node-2');
+      expect(mockPlumber.connectIds).to.have.been.calledWith(
+        'exit-1',
+        'node-2'
+      );
     });
   });
 
@@ -324,21 +327,17 @@ describe('EditorNode', () => {
             quick_replies: []
           } as any
         ],
-        exits: [
-          { uuid: 'exit-1', destination_uuid: 'next-node' }
-        ]
-      };
-
-      const mockUI: NodeUI = {
-        position: { left: 100, top: 200 },
-        type: 'wait_for_response'
+        exits: [{ uuid: 'exit-1', destination_uuid: 'next-node' }]
       };
 
       // Test individual render methods work
       editorNode = new EditorNode();
-      
-      // Test renderAction 
-      const actionResult = (editorNode as any).renderAction(mockNode, mockNode.actions[0]);
+
+      // Test renderAction
+      const actionResult = (editorNode as any).renderAction(
+        mockNode,
+        mockNode.actions[0]
+      );
       expect(actionResult).to.exist;
 
       // Test renderExit
