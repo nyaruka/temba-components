@@ -228,15 +228,25 @@ export class FieldManager extends EndpointMonitorElement {
     }
   }
 
+  private justDragged = false;
+
   private handleDragStart(event) {
     this.draggingId = event.detail.id;
   }
 
   private handleDragStop() {
     this.draggingId = null;
+    this.justDragged = true;
+    // clear the flag after the event loop so it only blocks the next click
+    setTimeout(() => (this.justDragged = false), 0);
   }
 
   private handleFieldAction(event: MouseEvent) {
+    if (this.justDragged) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     const ele = event.target as HTMLDivElement;
     const key = ele.dataset.key;
     const action = ele.dataset.action;
@@ -267,6 +277,18 @@ export class FieldManager extends EndpointMonitorElement {
             ${field.key === this.draggingId
           ? 'background: var(--color-selection)'
           : ''}"
+        @click=${(e: MouseEvent) => {
+          if (this.justDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.justDragged = false;
+            return;
+          }
+          const ele = e.currentTarget as HTMLDivElement;
+          const key = ele.dataset.key;
+          const action = ele.dataset.action;
+          this.fireCustomEvent(CustomEventType.Selection, { key, action });
+        }}
       >
         <div
           style="display: flex; min-width: 200px; width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 2em"

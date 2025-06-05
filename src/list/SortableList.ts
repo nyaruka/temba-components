@@ -335,13 +335,6 @@ export class SortableList extends RapidElement {
           dropIdx -= 1;
         }
 
-        // If dropping back in the same place, do nothing
-        if (dropIdx === originalDragIdx) {
-          this.hideDropIndicator();
-          this.dropTargetId = null;
-          return;
-        }
-
         // Show drop indicator
         this.showDropIndicator(targetElement, insertAfter);
         this.dropTargetId = targetElement.id;

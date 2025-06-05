@@ -1699,7 +1699,7 @@ export class Select<T extends SelectOption> extends FormElement {
                         @temba-drag-start=${this.handleDragStart}
                         @temba-drag-stop=${this.handleDragStop}
                         .prepareGhost=${(item: any) => {
-                          item.style.transform = 'scale(1.25) rotate(-1.2deg)';
+                          item.style.transform = 'scale(1.25)';
                           item.querySelector('.remove-item').style.display =
                             'none';
                         }}
@@ -1715,8 +1715,6 @@ export class Select<T extends SelectOption> extends FormElement {
                                 : ''}"
                               id="selected-${index}"
                               style="
-                                transition: all 2s linear;
-                                transform: scale(1);
                                 vertical-align: middle;
                                 background: rgba(100,100,100,0.1);
                                 user-select: none;
