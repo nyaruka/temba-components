@@ -134,8 +134,22 @@ describe('Flow Render Functions', () => {
         type: 'add_contact_groups',
         uuid: 'action-uuid-7',
         groups: [
-          { uuid: 'group1', name: 'VIP Customers', status: 'active', system: false, query: '', count: 10 },
-          { uuid: 'group2', name: 'Newsletter Subscribers', status: 'active', system: false, query: '', count: 25 }
+          {
+            uuid: 'group1',
+            name: 'VIP Customers',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 10
+          },
+          {
+            uuid: 'group2',
+            name: 'Newsletter Subscribers',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 25
+          }
         ]
       };
 
@@ -170,7 +184,16 @@ describe('Flow Render Functions', () => {
       const action: AddToGroup = {
         type: 'add_contact_groups',
         uuid: 'action-uuid-9',
-        groups: [{ uuid: 'group1', name: 'Test Group', status: 'active', system: false, query: '', count: 5 }]
+        groups: [
+          {
+            uuid: 'group1',
+            name: 'Test Group',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 5
+          }
+        ]
       };
 
       // Create a test version that calls renderNamedObjects without icon

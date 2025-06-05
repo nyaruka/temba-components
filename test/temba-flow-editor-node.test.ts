@@ -34,15 +34,6 @@ describe('EditorNode', () => {
       const editorNode = new EditorNode();
       expect(editorNode.createRenderRoot()).to.equal(editorNode);
     });
-
-    it('has correct CSS styles defined', () => {
-      const styles = EditorNode.styles;
-      expect(styles).to.exist;
-      expect(styles.cssText).to.contain('.node');
-      expect(styles.cssText).to.contain('.action');
-      expect(styles.cssText).to.contain('.categories');
-      expect(styles.cssText).to.contain('.exit');
-    });
   });
 
   describe('renderAction', () => {

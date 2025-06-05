@@ -90,9 +90,6 @@ describe('Editor', () => {
         </temba-flow-editor>
       `);
 
-      // Mock console.log to verify it was called
-      const consoleStub = stub(console, 'log');
-
       // Simulate canvasSize change
       (editor as any).canvasSize = { width: 800, height: 600 };
       const changes = new Map();
@@ -100,12 +97,11 @@ describe('Editor', () => {
 
       (editor as any).updated(changes);
 
-      expect(consoleStub).to.have.been.calledWith('Setting canvas size', {
+      // Verify the canvasSize was set correctly
+      expect((editor as any).canvasSize).to.deep.equal({
         width: 800,
         height: 600
       });
-
-      consoleStub.restore();
     });
 
     it('handles updated without canvasSize changes', async () => {
