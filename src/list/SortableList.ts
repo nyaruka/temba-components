@@ -51,8 +51,8 @@ export class SortableList extends RapidElement {
 
       .container.horizontal .drop-indicator {
         width: 2px;
-        height: 100%;
-        top: 0;
+        margin-top: 5px;
+        margin-left: 1px;
       }
 
       .container:not(.horizontal) .drop-indicator {
@@ -247,6 +247,9 @@ export class SortableList extends RapidElement {
     let ele = event.target as HTMLDivElement;
     ele = ele.closest('.sortable');
     if (ele) {
+      event.preventDefault();
+      event.stopPropagation();
+
       this.downEle = ele;
       this.draggingId = ele.id;
       this.draggingIdx = this.getRowIndex(ele.id);
@@ -302,6 +305,24 @@ export class SortableList extends RapidElement {
         const targetIdx = this.getRowIndex(targetElement.id);
         const originalDragIdx = this.getRowIndex(this.draggingEle.id);
 
+        // Calculate the intended drop index
+        let dropIdx = targetIdx;
+        if (insertAfter) {
+          dropIdx += 1;
+        }
+
+        // Adjust dropIdx if dragging forward in the list
+        if (originalDragIdx < dropIdx) {
+          dropIdx -= 1;
+        }
+
+        // If dropping back in the same place, do nothing
+        if (dropIdx === originalDragIdx) {
+          this.hideDropIndicator();
+          this.dropTargetId = null;
+          return;
+        }
+
         // Show drop indicator
         this.showDropIndicator(targetElement, insertAfter);
         this.dropTargetId = targetElement.id;
@@ -311,7 +332,8 @@ export class SortableList extends RapidElement {
           from: this.draggingEle.id,
           to: targetElement.id,
           fromIdx: originalDragIdx,
-          toIdx: targetIdx
+          toIdx: dropIdx,
+          insertAfter
         });
 
         // Update dragging index for visual feedback
@@ -323,8 +345,11 @@ export class SortableList extends RapidElement {
     }
   }
 
-  private handleMouseUp() {
+  private handleMouseUp(evt: MouseEvent) {
     if (this.draggingId) {
+      evt.preventDefault();
+      evt.stopPropagation();
+
       this.fireCustomEvent(CustomEventType.DragStop, {
         id: this.draggingId
       });

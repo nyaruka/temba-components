@@ -217,7 +217,6 @@ export class Select<T extends SelectOption> extends FormElement {
       }
 
       .multi temba-sortable-list {
-        width: 100%;
         margin: 0 !important;
       }
 
@@ -1370,6 +1369,7 @@ export class Select<T extends SelectOption> extends FormElement {
   private handleContainerClick(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
+    console.log('Container clicked', event);
     this.focused = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
@@ -1487,7 +1487,7 @@ export class Select<T extends SelectOption> extends FormElement {
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
       this.values.splice(idx, 1);
-      
+
       // Also remove the 'selected' attribute from the corresponding temba-option element
       const valueToMatch = this.getValue(valueToRemove);
       for (const child of this.children) {
@@ -1536,9 +1536,9 @@ export class Select<T extends SelectOption> extends FormElement {
       // Calculate if this represents a real position change
       // When dragging an item, SortableList reports the target position of where
       // the item will be inserted relative to the other items (excluding the dragged item)
-      
+
       let actualTargetIdx = toIdx;
-      
+
       // If the target position is after the original position, we need to account
       // for the fact that the dragged item will be removed from its original position
       if (toIdx > this.originalDragIdx) {
@@ -1547,7 +1547,7 @@ export class Select<T extends SelectOption> extends FormElement {
         // If target is at or before original position, the actual target is the same
         actualTargetIdx = toIdx;
       }
-      
+
       // Only store the change if it's actually different from the original position
       if (actualTargetIdx !== this.originalDragIdx) {
         this.pendingTargetIdx = actualTargetIdx;
@@ -1580,6 +1580,7 @@ export class Select<T extends SelectOption> extends FormElement {
       this.pendingTargetIdx !== -1 &&
       this.originalDragIdx !== this.pendingTargetIdx
     ) {
+      console.log(this.originalDragIdx, this.pendingTargetIdx);
       const temp = this.values[this.originalDragIdx];
       this.values[this.originalDragIdx] = this.values[this.pendingTargetIdx];
       this.values[this.pendingTargetIdx] = temp;

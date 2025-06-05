@@ -47,7 +47,7 @@
     <div class="example">
         <h3>With 3 items (drag and drop enabled)</h3>
         <p>This multi-select has 3 pre-selected items. You should be able to drag and drop to reorder them.</p>
-        <temba-select multi id="test3">
+        <temba-select multi searchable id="test3" placeholder="Select colors">
             <temba-option name="Red" value="0" selected></temba-option>
             <temba-option name="Green" value="1" selected></temba-option>
             <temba-option name="Blue" value="2" selected></temba-option>
@@ -114,7 +114,7 @@
         // Add event listeners to monitor changes
         document.querySelectorAll('temba-select[multi]').forEach(select => {
             select.addEventListener('change', () => {
-                console.log(`${select.id} values changed:`, select.values);
+                 console.log(`${select.id} values changed:`, select.values);
             });
         });
         
