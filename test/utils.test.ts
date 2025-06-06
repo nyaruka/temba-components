@@ -11,6 +11,9 @@ import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
+import { Select, SelectOption } from '../src/select/Select';
+import { CustomEventType } from '../src/interfaces';
+import { Options } from '../src/options/Options';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -278,4 +281,59 @@ export const mockNow = (isodate: string) => {
   replace(DateTime, 'now', () => {
     return now;
   });
+};
+
+export const getOptions = (select: Select<SelectOption>): Options => {
+  return select.shadowRoot.querySelector('temba-options[visible]');
+};
+
+export const clickOption = async (
+  clock: any,
+  select: Select<SelectOption>,
+  index: number
+) => {
+  const options = getOptions(select);
+  const option = options.shadowRoot.querySelector(
+    `[data-option-index="${index}"]`
+  ) as HTMLDivElement;
+
+  await mouseClickElement(option);
+  await options.updateComplete;
+  await select.updateComplete;
+  await clock.runAll();
+
+  checkTimers(clock);
+};
+export const openSelect = async (clock, select: Select<SelectOption>) => {
+  if (!select.endpoint) {
+    await mouseClickElement(select);
+    await clock.runAll();
+    await clock.runAll();
+    return select;
+  }
+
+  const promise = new Promise<Select<SelectOption>>((resolve) => {
+    select.addEventListener(
+      CustomEventType.FetchComplete,
+      async () => {
+        await clock.runAll();
+        resolve(select);
+      },
+      { once: true }
+    );
+  });
+
+  await mouseClickElement(select);
+  await clock.runAll();
+
+  return promise;
+};
+
+export const openAndClick = async (
+  clock: any,
+  select: Select<SelectOption>,
+  index: number
+) => {
+  await openSelect(clock, select);
+  await clickOption(clock, select, index);
 };

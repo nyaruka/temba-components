@@ -5,12 +5,12 @@ import { Options } from '../src/options/Options';
 import { Select, SelectOption } from '../src/select/Select';
 import {
   assertScreenshot,
-  checkTimers,
   getClip,
+  getOptions,
   loadStore,
-  mouseClickElement
+  openAndClick,
+  openSelect
 } from './utils.test';
-import { CustomEventType } from '../src/interfaces';
 
 const colors = [
   { name: 'Red', value: '0' },
@@ -28,64 +28,8 @@ export const createSelect = async (clock, def: string) => {
   return select;
 };
 
-export const open = async (clock, select: Select<SelectOption>) => {
-  if (!select.endpoint) {
-    await mouseClickElement(select);
-    await clock.runAll();
-    await clock.runAll();
-    return select;
-  }
-
-  const promise = new Promise<Select<SelectOption>>((resolve) => {
-    select.addEventListener(
-      CustomEventType.FetchComplete,
-      async () => {
-        await clock.runAll();
-        resolve(select);
-      },
-      { once: true }
-    );
-  });
-
-  await mouseClickElement(select);
-  await clock.runAll();
-
-  return promise;
-};
-
 export const clear = (select: Select<SelectOption>) => {
   (select.shadowRoot.querySelector('.clear-button') as HTMLDivElement).click();
-};
-
-export const getOptions = (select: Select<SelectOption>): Options => {
-  return select.shadowRoot.querySelector('temba-options[visible]');
-};
-
-export const clickOption = async (
-  clock: any,
-  select: Select<SelectOption>,
-  index: number
-) => {
-  const options = getOptions(select);
-  const option = options.shadowRoot.querySelector(
-    `[data-option-index="${index}"]`
-  ) as HTMLDivElement;
-
-  await mouseClickElement(option);
-  await options.updateComplete;
-  await select.updateComplete;
-  await clock.runAll();
-
-  checkTimers(clock);
-};
-
-export const openAndClick = async (
-  clock: any,
-  select: Select<SelectOption>,
-  index: number
-) => {
-  await open(clock, select);
-  await clickOption(clock, select, index);
 };
 
 export const getSelectHTML = (
@@ -190,7 +134,7 @@ describe('temba-select', () => {
     expect(select.disabled).to.equal(true);
 
     // make sure we can't select anymore
-    await open(clock, select);
+    await openSelect(clock, select);
     expect(select.isOpen()).to.equal(false);
     await assertScreenshot('select/disabled-multi-selection', getClip(select));
   });
@@ -211,7 +155,7 @@ describe('temba-select', () => {
 
   it('shows options when opened', async () => {
     const select = await createSelect(clock, getSelectHTML());
-    await open(clock, select);
+    await openSelect(clock, select);
     const options = getOptions(select);
     assert.instanceOf(options, Options);
 
@@ -241,7 +185,7 @@ describe('temba-select', () => {
     );
 
     // attempt to open the select with no options
-    await open(clock, select);
+    await openSelect(clock, select);
 
     // should show options dropdown even though there are no options
     const options = getOptions(select);
@@ -297,13 +241,13 @@ describe('temba-select', () => {
       expect(select.values[0].name).to.equal('Green');
 
       // for single selection our current selection should be in the list and focused
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.cursorIndex, 1);
       assert.equal(select.visibleOptions.length, 3);
 
       // now lets do a search, we should see our selection (green) and one other (red)
       await typeInto('temba-select', 're', false);
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot(
@@ -369,7 +313,7 @@ describe('temba-select', () => {
       assert(changeEvent.called, 'change event not fired');
 
       changeEvent.resetHistory();
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 0);
       assert(!changeEvent.called, 'change event should not be fired');
 
@@ -447,10 +391,6 @@ describe('temba-select', () => {
 
       const firstBounds = firstItem.getBoundingClientRect();
       const secondBounds = secondItem.getBoundingClientRect();
-
-      console.log('list', sortableList.getBoundingClientRect());
-
-      console.log(firstBounds, secondBounds);
 
       // Start drag from first item (Red)
       await moveMouse(firstBounds.left + 10, firstBounds.top + 10);
@@ -543,7 +483,7 @@ describe('temba-select', () => {
         })
       );
 
-      await open(clock, select);
+      await openSelect(clock, select);
       await assertScreenshot(
         'select/remote-options',
         getClipWithOptions(select)
@@ -562,7 +502,7 @@ describe('temba-select', () => {
       );
 
       await typeInto('temba-select', 're', false);
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot('select/searching', getClipWithOptions(select));
@@ -599,7 +539,7 @@ describe('temba-select', () => {
         })
       );
 
-      await open(clock, select);
+      await openSelect(clock, select);
 
       // should have all three pages visible right away
       assert.equal(select.visibleOptions.length, 15);
@@ -617,14 +557,14 @@ describe('temba-select', () => {
       );
 
       // wait for updates from fetching three pages
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen
       select.blur();
       await clock.tick(250);
 
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen once more (previous bug failed on third opening)
@@ -645,7 +585,7 @@ describe('temba-select', () => {
       );
 
       await typeInto('temba-select', 'Hi there @contact', false);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       assert.equal(select.completionOptions.length, 14);
       await assertScreenshot('select/expressions', getClipWithOptions(select));
@@ -705,7 +645,7 @@ describe('temba-select', () => {
       await openAndClick(clock, select, 1);
 
       // now open and look at focus
-      await open(clock, select);
+      await openSelect(clock, select);
       await assertScreenshot(
         'select/search-selected-focus',
         getClipWithOptions(select)
@@ -725,11 +665,11 @@ describe('temba-select', () => {
       // select the first option
       await openAndClick(clock, select, 0);
       await openAndClick(clock, select, 0);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       // now lets do a search, we should see our selection (green) and one other (red)
       await typeInto('temba-select', 're', false);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       // should have two things selected and active query and no matching options
       await assertScreenshot(
@@ -751,7 +691,7 @@ describe('temba-select', () => {
       );
 
       await typeInto('temba-select', 'look at @(max(m', false);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       await assertScreenshot('select/functions', getClipWithOptions(select));
     });
@@ -759,7 +699,7 @@ describe('temba-select', () => {
     it('should truncate selection if necessesary', async () => {
       const options = [
         {
-          name: 'this_is_a_long_selection_to_make_sure_it_truncates',
+          name: 'this_is_a_long_selection_to_make_sure_it_truncates_but_it_needs_to_be_longer',
           value: '0'
         }
       ];

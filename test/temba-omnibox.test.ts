@@ -1,7 +1,6 @@
 import { fixture, assert } from '@open-wc/testing';
 import { Omnibox } from '../src/omnibox/Omnibox';
-import { assertScreenshot, getClip } from './utils.test';
-import { openAndClick } from './temba-select.test';
+import { assertScreenshot, getClip, openAndClick } from './utils.test';
 import { useFakeTimers, spy } from 'sinon';
 
 export const getHTML = (attrs: any = { name: 'recipients' }): string => {

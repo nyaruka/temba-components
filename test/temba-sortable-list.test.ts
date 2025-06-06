@@ -39,8 +39,9 @@ describe('temba-sortable-list', () => {
     expect(orderEvent.detail).to.deep.equal({
       from: 'fish',
       to: 'chicken',
+      insertAfter: true,
       fromIdx: 1,
-      toIdx: 0
+      toIdx: 1
     });
 
     // should be hovered
