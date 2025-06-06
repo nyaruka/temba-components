@@ -19,32 +19,35 @@
     />
 </head>
 <body>
+    <temba-store></temba-store>
     <h1>Chart Examples</h1>
     <p><a href="../index.html">← Back to main demo</a></p>
     
     <div class="example">
-        <h3>Basic Chart</h3>
-        <p>A basic chart component loading data from JSON</p>
-        <div style="height: 400px; width: 100%; max-width: 600px;">
-            <temba-chart url="../data/server/basic-chart.json"></temba-chart>
-        </div>
+        <h3>Summation Chart</h3>
+        <p>A basic chart, summing all datasets</p>
+        <temba-chart url="../data/server/opened-tickets.json"></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Summation with Splits</h3>
+        <p>Normal summation, but with optional splits in the config options </p>
+        <temba-chart url="../data/server/opened-tickets.json" dataname="Tickets" config legend></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Summation with Configured Splits</h3>
+        <p>Normal summation, but with configured splits</p>
+        <temba-chart url="../data/server/opened-tickets.json" dataname="Tickets" splits="Tracking,Orders" hideother legend></temba-chart>
     </div>
 
     <div class="example">
         <h3>Duration Formatted Chart</h3>
-        <p>A chart with duration formatting for time-based data</p>
-        <div style="height: 400px; width: 100%; max-width: 600px;">
-            <temba-chart format-duration header="Process Times" url="../data/server/duration-chart.json"></temba-chart>
-        </div>
-    </div>
-
-    <div class="example">
-        <h3>Chart with Custom Header</h3>
-        <p>A chart with a custom header loading financial data</p>
-        <div style="height: 400px; width: 100%; max-width: 600px;">
-            <temba-chart header="Financial Overview" url="../data/server/custom-chart.json"></temba-chart>
-        </div>
-    </div>
+        <p>This chart expects series data in seconds and displays them as durations on the y axis and in tooltips.</p>
+        <temba-chart single dataname="Average Response" formatDuration header="Response Time" url="../data/server/response-time.json"></temba-chart>
+        <p>Here is the same duration chart, but as a line chart</p>
+        <temba-chart style="margin:2em" chartType="line" single dataName="Average Response" formatDuration url="../data/server/response-time.json"></temba-chart>
+    </div>  
 
     <script type="module">
       import '../../out-tsc/temba-modules.js';
