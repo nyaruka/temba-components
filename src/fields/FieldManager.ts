@@ -139,9 +139,6 @@ export class FieldManager extends EndpointMonitorElement {
   otherFieldKeys: string[] = [];
 
   @property({ type: String })
-  draggingId: string;
-
-  @property({ type: String })
   query = '';
 
   protected firstUpdated(
@@ -189,64 +186,34 @@ export class FieldManager extends EndpointMonitorElement {
     }
   }
 
-  private pendingOrder: { fromIdx: number; toIdx: number } = null;
-
   private handleOrderChanged(event) {
-    // Only store the intended order, don't mutate featuredFields yet
+    // Apply the reordering immediately - the SortableList now provides accurate indexes
     const { fromIdx, toIdx } = event.detail;
-    this.pendingOrder = { fromIdx, toIdx };
-    // Optionally, requestUpdate for visual feedback if needed
-  }
-
-  private handleSaveOrder(event) {
-    // Only now, on drop, actually change the order
-    if (this.pendingOrder) {
-      const { fromIdx, toIdx } = this.pendingOrder;
-      if (fromIdx !== toIdx) {
-        const arr = [...this.featuredFields];
-        const [moved] = arr.splice(fromIdx, 1);
-        arr.splice(toIdx, 0, moved);
-        this.featuredFields = arr;
-        this.requestUpdate('featuredFields');
-      }
-      this.pendingOrder = null;
-      const list = event.currentTarget as SortableList;
-      setTimeout(() => {
-        postJSON(
-          this.priorityEndpoint,
-          list
-            .getIds()
-            .reverse()
-            .reduce((map, key, idx) => {
-              map[key] = idx;
-              return map;
-            }, {})
-        ).then(() => {
-          this.store.refreshFields();
-        });
-      }, 0);
-    }
-  }
-
-  private justDragged = false;
-
-  private handleDragStart(event) {
-    this.draggingId = event.detail.id;
-  }
-
-  private handleDragStop() {
-    this.draggingId = null;
-    this.justDragged = true;
-    // clear the flag after the event loop so it only blocks the next click
-    setTimeout(() => (this.justDragged = false), 0);
+    
+    const temp = this.featuredFields[fromIdx];
+    this.featuredFields.splice(fromIdx, 1);
+    this.featuredFields.splice(toIdx, 0, temp);
+    this.requestUpdate();
+    
+    // Save the new order to the server
+    const list = event.currentTarget as SortableList;
+    setTimeout(() => {
+      postJSON(
+        this.priorityEndpoint,
+        list
+          .getIds()
+          .reverse()
+          .reduce((map, key, idx) => {
+            map[key] = idx;
+            return map;
+          }, {})
+      ).then(() => {
+        this.store.refreshFields();
+      });
+    }, 0);
   }
 
   private handleFieldAction(event: MouseEvent) {
-    if (this.justDragged) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
     const ele = event.target as HTMLDivElement;
     const key = ele.dataset.key;
     const action = ele.dataset.action;
@@ -273,17 +240,8 @@ export class FieldManager extends EndpointMonitorElement {
             display: flex; 
             flex-direction: row; 
             align-items: center;
-            padding: 0.25em 1em; 
-            ${field.key === this.draggingId
-          ? 'background: var(--color-selection)'
-          : ''}"
+            padding: 0.25em 1em;"
         @click=${(e: MouseEvent) => {
-          if (this.justDragged) {
-            e.preventDefault();
-            e.stopPropagation();
-            this.justDragged = false;
-            return;
-          }
           const ele = e.currentTarget as HTMLDivElement;
           const key = ele.dataset.key;
           const action = ele.dataset.action;
@@ -349,7 +307,7 @@ export class FieldManager extends EndpointMonitorElement {
 
       ${this.featuredFields.length > 0
         ? html`
-            <div class="featured${this.draggingId ? ' dragging' : ''}">
+            <div class="featured">
               <div class="header">
                 <temba-icon name="featured"></temba-icon>
                 <div class="label">Featured</div>
@@ -364,10 +322,7 @@ export class FieldManager extends EndpointMonitorElement {
                   `
                 : html`
                     <temba-sortable-list
-                      @change=${this.handleSaveOrder}
                       @temba-order-changed=${this.handleOrderChanged}
-                      @temba-drag-start=${this.handleDragStart}
-                      @temba-drag-stop=${this.handleDragStop}
                     >
                       ${this.featuredFields.map((field) =>
                         this.renderField(field)

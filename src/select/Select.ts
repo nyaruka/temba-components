@@ -37,7 +37,6 @@ export interface SelectOption {
 
 export class Select<T extends SelectOption> extends FormElement {
   private hiddenInputs: HTMLInputElement[] = [];
-  private justReordered = false;
 
   static get styles(): CSSResult | CSSResultArray {
     return css`
@@ -538,13 +537,6 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   allowAnchor: boolean = true;
 
-  @property({ type: String })
-  draggingId: string;
-
-  // Track pending order change during drag
-  private originalDragIdx: number = -1;
-  private pendingTargetIdx: number = -1;
-
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -569,8 +561,6 @@ export class Select<T extends SelectOption> extends FormElement {
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
     this.handleOrderChanged = this.handleOrderChanged.bind(this);
-    this.handleDragStart = this.handleDragStart.bind(this);
-    this.handleDragStop = this.handleDragStop.bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -1372,13 +1362,6 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
-    if (this.justReordered) {
-      // prevent opening dropdown right after drag-and-drop
-      event.stopPropagation();
-      event.preventDefault();
-      return;
-    }
-
     this.focused = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
@@ -1540,71 +1523,18 @@ export class Select<T extends SelectOption> extends FormElement {
   private handleOrderChanged(event: CustomEvent): void {
     const detail = event.detail;
     
-    if (this.draggingId) {
-      // Extract the target index from the target element ID instead of using the calculated toIdx
-      const targetElementId = detail.to; // e.g., "selected-1"
-      const targetIdParts = targetElementId.split('-');
-      const targetElementIdx = parseInt(targetIdParts[targetIdParts.length - 1]);
-      
-      let actualTargetIdx = targetElementIdx;
-      
-      // If insertAfter is true, we want to insert after the target element
-      if (detail.insertAfter) {
-        actualTargetIdx += 1;
-      }
-      // If insertAfter is false, we want to insert before the target element (use targetElementIdx as-is)
-
-      // Only store the change if it's actually different from the original position
-      if (actualTargetIdx !== this.originalDragIdx) {
-        this.pendingTargetIdx = actualTargetIdx;
-      } else {
-        // No real change - clear any pending target
-        this.pendingTargetIdx = -1;
-      }
-    } else {
-      // if not dragging, apply immediately
-      const oldValues = [...this.values];
-      const fromIdx = detail.fromIdx;
-      const toIdx = detail.toIdx;
-      const temp = this.values[fromIdx];
-      this.values[fromIdx] = this.values[toIdx];
-      this.values[toIdx] = temp;
-
-      this.requestUpdate('values', oldValues);
-    }
-  }
-
-  private handleDragStart(event: CustomEvent): void {
-    this.draggingId = event.detail.id;
-    // Extract the index from the ID (e.g., "selected-0" -> 0)
-    const idParts = this.draggingId.split('-');
-    this.originalDragIdx = parseInt(idParts[idParts.length - 1]);
-    this.pendingTargetIdx = -1;
-  }
-
-  private handleDragStop(): void {
-    // Apply the pending order change when drag stops
-    if (
-      this.originalDragIdx !== -1 &&
-      this.pendingTargetIdx !== -1 &&
-      this.originalDragIdx !== this.pendingTargetIdx
-    ) {
-      const oldValues = [...this.values];
-      
-      // Remove the item from its original position
-      const movedItem = this.values.splice(this.originalDragIdx, 1)[0];
-      
-      // Insert it at the target position
-      this.values.splice(this.pendingTargetIdx, 0, movedItem);
-      
-      this.requestUpdate('values', oldValues);
-    }
-
-    this.draggingId = null;
-    this.originalDragIdx = -1;
-    this.pendingTargetIdx = -1;
-    this.justReordered = true;
-    setTimeout(() => (this.justReordered = false), 0); // clear flag after event loop
+    // Apply the reordering immediately - the SortableList now provides accurate indexes
+    const oldValues = [...this.values];
+    const fromIdx = detail.fromIdx;
+    const toIdx = detail.toIdx;
+    
+    // Remove the item from its original position
+    const movedItem = this.values.splice(fromIdx, 1)[0];
+    
+    // Insert it at the target position
+    this.values.splice(toIdx, 0, movedItem);
+    
+    this.requestUpdate('values', oldValues);
   }
 
   public render(): TemplateResult {
@@ -1697,8 +1627,6 @@ export class Select<T extends SelectOption> extends FormElement {
                       <temba-sortable-list
                         horizontal
                         @temba-order-changed=${this.handleOrderChanged}
-                        @temba-drag-start=${this.handleDragStart}
-                        @temba-drag-stop=${this.handleDragStop}
                         .prepareGhost=${(item: any) => {
                           item.style.transform = 'scale(1.25)';
                           item.querySelector('.remove-item').style.display =
@@ -1711,8 +1639,6 @@ export class Select<T extends SelectOption> extends FormElement {
                               class="selected-item sortable ${index ===
                               this.selectedIndex
                                 ? 'focused'
-                                : ''} ${this.draggingId === `selected-${index}`
-                                ? 'dragging'
                                 : ''}"
                               id="selected-${index}"
                               style="
@@ -1732,9 +1658,6 @@ export class Select<T extends SelectOption> extends FormElement {
                                 ${index === this.selectedIndex
                                 ? 'background: rgba(100,100,100,0.3);'
                                 : ''}
-                                ${this.draggingId === `selected-${index}`
-                                ? 'opacity: 0.5;'
-                                : ''}
                               "
                             >
                               ${this.multi
@@ -1751,15 +1674,9 @@ export class Select<T extends SelectOption> extends FormElement {
                                         margin-top:1px;
                                       "
                                       @click=${(evt: MouseEvent) => {
-                                        console.log(
-                                          'clicking on remove item',
-                                          this.justReordered
-                                        );
-                                        if (!this.justReordered) {
-                                          evt.preventDefault();
-                                          evt.stopPropagation();
-                                          this.handleRemoveSelection(selected);
-                                        }
+                                        evt.preventDefault();
+                                        evt.stopPropagation();
+                                        this.handleRemoveSelection(selected);
                                       }}
                                     >
                                       <temba-icon

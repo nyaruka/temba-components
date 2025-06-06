@@ -120,6 +120,7 @@ export class SortableList extends RapidElement {
   draggingIdx = -1;
   draggingEle = null;
   dropIndicator: HTMLDivElement = null;
+  pendingDropIndex = -1;
 
   public constructor() {
     super();
@@ -151,56 +152,100 @@ export class SortableList extends RapidElement {
   private getDropTargetInfo(
     mouseX: number,
     mouseY: number
-  ): { element: HTMLDivElement; insertAfter: boolean } | null {
+  ): { targetIndex: number } | null {
     const elements = this.shadowRoot
       .querySelector('slot')
-      .assignedElements()
-      .filter((ele) => ele.id !== this.draggingEle?.id);
+      .assignedElements();
 
     if (elements.length === 0) return null;
 
     if (this.horizontal) {
-      // For horizontal layout, find the insertion point based on mouse X position
+      // For horizontal layout, find which element we're over
       for (let i = 0; i < elements.length; i++) {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
 
-        if (mouseX < centerX) {
-          // Insert before this element
-          return { element: ele as HTMLDivElement, insertAfter: false };
+        if (mouseX >= rect.left && mouseX <= rect.right) {
+          // We're over this element - check if we're on the left or right half
+          const centerX = rect.left + rect.width / 2;
+          if (mouseX < centerX) {
+            // Left half - insert before this element
+            return { targetIndex: i };
+          } else {
+            // Right half - insert after this element  
+            return { targetIndex: i + 1 };
+          }
         }
       }
-      // If we're past all elements, insert after the last one
-      return {
-        element: elements[elements.length - 1] as HTMLDivElement,
-        insertAfter: true
-      };
+      
+      // Not over any element - find the closest insertion point
+      for (let i = 0; i < elements.length; i++) {
+        const ele = elements[i];
+        const rect = ele.getBoundingClientRect();
+        
+        if (mouseX < rect.left) {
+          // Insert before this element
+          return { targetIndex: i };
+        }
+      }
+      
+      // Past all elements
+      return { targetIndex: elements.length };
     } else {
-      // For vertical layout, find the insertion point based on mouse Y position
+      // For vertical layout, find which element we're over
       for (let i = 0; i < elements.length; i++) {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
-        const centerY = rect.top + rect.height / 2;
 
-        if (mouseY < centerY) {
-          // Insert before this element
-          return { element: ele as HTMLDivElement, insertAfter: false };
+        if (mouseY >= rect.top && mouseY <= rect.bottom) {
+          // We're over this element - check if we're on the top or bottom half
+          const centerY = rect.top + rect.height / 2;
+          if (mouseY < centerY) {
+            // Top half - insert before this element
+            return { targetIndex: i };
+          } else {
+            // Bottom half - insert after this element
+            return { targetIndex: i + 1 };
+          }
         }
       }
-      // If we're past all elements, insert after the last one
-      return {
-        element: elements[elements.length - 1] as HTMLDivElement,
-        insertAfter: true
-      };
+      
+      // Not over any element - find the closest insertion point
+      for (let i = 0; i < elements.length; i++) {
+        const ele = elements[i];
+        const rect = ele.getBoundingClientRect();
+        
+        if (mouseY < rect.top) {
+          // Insert before this element
+          return { targetIndex: i };
+        }
+      }
+      
+      // Past all elements
+      return { targetIndex: elements.length };
     }
   }
 
-  private showDropIndicator(targetElement: HTMLElement, insertAfter: boolean) {
+  private showDropIndicator(targetIndex: number) {
     this.hideDropIndicator();
 
-    if (!targetElement) return;
+    if (targetIndex < 0) return;
 
+    const elements = this.shadowRoot.querySelector('slot').assignedElements();
+    if (targetIndex >= elements.length) {
+      // Inserting at the end - show indicator after the last element
+      if (elements.length > 0) {
+        const lastElement = elements[elements.length - 1];
+        this.showIndicatorRelativeToElement(lastElement, true);
+      }
+    } else {
+      // Inserting before the element at targetIndex
+      const targetElement = elements[targetIndex];
+      this.showIndicatorRelativeToElement(targetElement, false);
+    }
+  }
+
+  private showIndicatorRelativeToElement(targetElement: Element, insertAfter: boolean) {
     const container = this.shadowRoot.querySelector('.container');
     this.dropIndicator = document.createElement('div');
     this.dropIndicator.className = 'drop-indicator';
@@ -320,39 +365,11 @@ export class SortableList extends RapidElement {
 
       const targetInfo = this.getDropTargetInfo(event.clientX, event.clientY);
       if (targetInfo) {
-        const { element: targetElement, insertAfter } = targetInfo;
-        const targetIdx = this.getRowIndex(targetElement.id);
-        const originalDragIdx = this.getRowIndex(this.draggingEle.id);
-
-        // Calculate the intended drop index
-        let dropIdx = targetIdx;
-        if (insertAfter) {
-          dropIdx += 1;
-        }
-
-        // Adjust dropIdx if dragging forward in the list
-        if (originalDragIdx < dropIdx) {
-          dropIdx -= 1;
-        }
-
-        // Show drop indicator
-        this.showDropIndicator(targetElement, insertAfter);
-        this.dropTargetId = targetElement.id;
-
-        // Report the target element's index - the consuming component handles the logic
-        this.fireCustomEvent(CustomEventType.OrderChanged, {
-          from: this.draggingEle.id,
-          to: targetElement.id,
-          fromIdx: originalDragIdx,
-          toIdx: dropIdx,
-          insertAfter
-        });
-
-        // Update dragging index for visual feedback
-        this.draggingIdx = targetIdx;
+        this.pendingDropIndex = targetInfo.targetIndex;
+        this.showDropIndicator(targetInfo.targetIndex);
       } else {
+        this.pendingDropIndex = -1;
         this.hideDropIndicator();
-        this.dropTargetId = null;
       }
     }
   }
@@ -362,6 +379,16 @@ export class SortableList extends RapidElement {
       evt.preventDefault();
       evt.stopPropagation();
 
+      // Fire the order changed event only if we have a valid drop position
+      if (this.pendingDropIndex >= 0) {
+        const originalIdx = this.getRowIndex(this.draggingId);
+        this.fireCustomEvent(CustomEventType.OrderChanged, {
+          fromIdx: originalIdx,
+          toIdx: this.pendingDropIndex,
+          id: this.draggingId
+        });
+      }
+
       this.fireCustomEvent(CustomEventType.DragStop, {
         id: this.draggingId
       });
@@ -369,6 +396,7 @@ export class SortableList extends RapidElement {
       this.draggingId = null;
       this.dropTargetId = null;
       this.downEle = null;
+      this.pendingDropIndex = -1;
 
       if (this.ghostElement) {
         // Remove from body if present
