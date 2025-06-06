@@ -12,7 +12,6 @@ import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
 import { Select, SelectOption } from '../src/select/Select';
-import { CustomEventType } from '../src/interfaces';
 import { Options } from '../src/options/Options';
 
 export interface CodeMock {
@@ -304,36 +303,31 @@ export const clickOption = async (
 
   checkTimers(clock);
 };
-export const openSelect = async (clock, select: Select<SelectOption>) => {
-  if (!select.endpoint) {
-    await mouseClickElement(select);
-    await clock.runAll();
-    await clock.runAll();
-    return select;
-  }
+export const openSelect = async (clock: any, select: Select<SelectOption>) => {
+  const container = select.shadowRoot.querySelector('.select-container');
+  container.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-  const promise = new Promise<Select<SelectOption>>((resolve) => {
-    select.addEventListener(
-      CustomEventType.FetchComplete,
-      async () => {
-        await clock.runAll();
-        resolve(select);
-      },
-      { once: true }
-    );
-  });
+  clock.runAll();
 
-  await mouseClickElement(select);
-  await clock.runAll();
+  // add more explicit waiting and clock ticks
+  await select.updateComplete;
+  clock.runAll();
 
-  return promise;
+  // ensure options are visible before proceeding
+  await waitFor(100);
+  clock.runAll();
 };
 
 export const openAndClick = async (
   clock: any,
   select: Select<SelectOption>,
-  index: number
+  idx: number
 ) => {
   await openSelect(clock, select);
-  await clickOption(clock, select, index);
+
+  // Add this line to ensure proper timing when running as part of a test suite
+  await select.updateComplete;
+  clock.tick(50); // Give extra time for options to render
+
+  await clickOption(clock, select, idx);
 };

@@ -188,13 +188,13 @@ export class FieldManager extends EndpointMonitorElement {
 
   private handleOrderChanged(event) {
     // Apply the reordering immediately - the SortableList now provides accurate indexes
-    const { fromIdx, toIdx } = event.detail;
-    
+    const [fromIdx, toIdx] = event.detail.swap;
+
     const temp = this.featuredFields[fromIdx];
     this.featuredFields.splice(fromIdx, 1);
     this.featuredFields.splice(toIdx, 0, temp);
     this.requestUpdate();
-    
+
     // Save the new order to the server
     const list = event.currentTarget as SortableList;
     setTimeout(() => {

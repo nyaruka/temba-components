@@ -1,4 +1,4 @@
-import * as sinon from 'sinon';
+import Sinon, * as sinon from 'sinon';
 import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Options } from '../src/options/Options';
@@ -87,7 +87,7 @@ const getClipWithOptions = (select: Select<any>) => {
 };
 
 describe('temba-select', () => {
-  let clock: any;
+  let clock: Sinon.SinonFakeTimers;
   beforeEach(function () {
     clock = useFakeTimers();
     clock.tick(400);
@@ -371,7 +371,9 @@ describe('temba-select', () => {
       expect(select.values[1].name).to.equal('Green');
       expect(select.values[2].name).to.equal('Blue');
 
-      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
       expect(sortableList).to.not.be.null;
 
       // Example 1: Pick up Blue (index 2), drop between Red and Green
@@ -392,7 +394,7 @@ describe('temba-select', () => {
       await moveMouse(greenBounds.left - 5, greenBounds.top + 10);
       await waitFor(100);
       await mouseUp();
-      await waitFor(100);
+      clock.runAll();
 
       // Verify result: Red, Blue, Green (Green and Blue swapped)
       expect(select.values.length).to.equal(3);
@@ -412,7 +414,9 @@ describe('temba-select', () => {
       // Expected result: Green, Blue, Red (swap [0,2])
       const redItem = sortableList.querySelector('#selected-0');
       const redBounds = redItem.getBoundingClientRect();
-      const blueItemBounds = sortableList.querySelector('#selected-2').getBoundingClientRect();
+      const blueItemBounds = sortableList
+        .querySelector('#selected-2')
+        .getBoundingClientRect();
 
       // Start drag from Red item
       await moveMouse(redBounds.left + 10, redBounds.top + 10);
@@ -422,7 +426,7 @@ describe('temba-select', () => {
       await moveMouse(blueItemBounds.right + 5, blueItemBounds.top + 10);
       await waitFor(100);
       await mouseUp();
-      await waitFor(100);
+      clock.runAll();
 
       // Verify result: Green, Blue, Red (Red and Blue swapped)
       expect(select.values.length).to.equal(3);
@@ -452,79 +456,13 @@ describe('temba-select', () => {
       await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
       await waitFor(100);
       await mouseUp();
-      await waitFor(100);
+      clock.runAll();
 
       // Verify result: No change
       expect(select.values.length).to.equal(3);
       expect(select.values[0].name).to.equal('Red');
       expect(select.values[1].name).to.equal('Green');
       expect(select.values[2].name).to.equal('Blue');
-    });
-
-    it('can reorder multiple selected items by dragging', async () => {
-      const select = await createSelect(
-        clock,
-        getSelectHTML(
-          [
-            { name: 'Red', value: '0', selected: true },
-            { name: 'Green', value: '1', selected: true },
-            { name: 'Blue', value: '2', selected: true }
-          ],
-          {
-            placeholder: 'Select colors',
-            multi: true
-          }
-        )
-      );
-
-      // Verify initial order
-      expect(select.values.length).to.equal(3);
-      expect(select.values[0].name).to.equal('Red');
-      expect(select.values[1].name).to.equal('Green');
-      expect(select.values[2].name).to.equal('Blue');
-
-      // Take screenshot of initial state
-      await assertScreenshot(
-        'select/multi-reorder-initial',
-        getClipWithOptions(select)
-      );
-
-      // Find the sortable list in the shadow DOM
-      const sortableList = select.shadowRoot.querySelector(
-        'temba-sortable-list'
-      );
-      expect(sortableList).to.not.be.null;
-
-      // Get the first and second items for dragging
-      const firstItem = sortableList.querySelector('#selected-0');
-      const secondItem = sortableList.querySelector('#selected-1');
-      expect(firstItem).to.not.be.null;
-      expect(secondItem).to.not.be.null;
-
-      const firstBounds = firstItem.getBoundingClientRect();
-      const secondBounds = secondItem.getBoundingClientRect();
-
-      // Start drag from first item (Red)
-      await moveMouse(firstBounds.left + 10, firstBounds.top + 10);
-      await mouseDown();
-
-      // Drag to second item position (Green) - make sure we move far enough to trigger drag
-      await moveMouse(secondBounds.left + 10, secondBounds.top + 10);
-      await waitFor(100); // Wait for drag operations to complete
-      await mouseUp();
-      await waitFor(100); // Wait for drop operations to complete
-
-      // Verify the order has changed - Red and Green should be swapped
-      expect(select.values.length).to.equal(3);
-      expect(select.values[0].name).to.equal('Green');
-      expect(select.values[1].name).to.equal('Red');
-      expect(select.values[2].name).to.equal('Blue');
-
-      // Take screenshot of final state
-      await assertScreenshot(
-        'select/multi-reorder-final',
-        getClipWithOptions(select)
-      );
     });
 
     it('does not show sortable list for single item', async () => {

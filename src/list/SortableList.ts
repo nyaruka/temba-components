@@ -126,8 +126,9 @@ export class SortableList extends RapidElement {
   draggingEle = null;
   dropIndicator: HTMLDivElement = null;
   pendingDropIndex = -1;
-  pendingInsertAfter = false;
   pendingTargetElement: HTMLElement = null;
+
+  private clickBlocker: ((e: MouseEvent) => void) | null = null;
 
   public constructor() {
     super();
@@ -142,28 +143,28 @@ export class SortableList extends RapidElement {
     super.firstUpdated(_changedProperties);
   }
 
-  public getIds() {
+  private getSortableElements(): Element[] {
     return this.shadowRoot
       .querySelector('slot')
       .assignedElements()
-      .map((ele) => ele.id);
+      .filter((ele) => ele.classList.contains('sortable'));
+  }
+
+  public getIds() {
+    return this.getSortableElements().map((ele) => ele.id);
   }
 
   private getRowIndex(id: string): number {
-    return this.shadowRoot
-      .querySelector('slot')
-      .assignedElements()
-      .findIndex((ele) => ele.id === id);
+    return this.getSortableElements().findIndex((ele) => ele.id === id);
   }
 
   private getDropTargetInfo(
     mouseX: number,
     mouseY: number
   ): { element: HTMLDivElement; insertAfter: boolean } | null {
-    const elements = this.shadowRoot
-      .querySelector('slot')
-      .assignedElements()
-      .filter((ele) => ele.id !== this.draggingEle?.id);
+    const elements = this.getSortableElements().filter(
+      (ele) => ele.id !== this.draggingEle?.id
+    );
 
     if (elements.length === 0) return null;
 
@@ -292,12 +293,12 @@ export class SortableList extends RapidElement {
         id: this.downEle.id
       });
 
-      // Hide the original item during drag
-      this.downEle.classList.add('dragged-item');
-
       this.ghostElement = this.downEle.cloneNode(true) as HTMLDivElement;
       this.ghostElement.classList.add('ghost');
-      this.ghostElement.classList.remove('dragged-item'); // Make sure ghost is visible
+
+      // dim the original element while dragging
+      this.downEle.style.pointerEvents = 'none';
+      this.downEle.style.opacity = '0.5';
 
       const rect = this.downEle.getBoundingClientRect();
       this.ghostElement.style.transition = 'transform 300ms linear';
@@ -323,7 +324,17 @@ export class SortableList extends RapidElement {
 
       document.body.appendChild(this.ghostElement);
 
-      this.downEle = null;
+      // this.downEle = null;
+
+      // Add global click blocker when drag starts
+      if (!this.clickBlocker) {
+        this.clickBlocker = (e: MouseEvent) => {
+          e.stopPropagation();
+          e.preventDefault();
+        };
+        // Use capture phase to intercept clicks before they reach any elements
+        document.addEventListener('click', this.clickBlocker, true);
+      }
     }
 
     if (this.ghostElement) {
@@ -350,7 +361,6 @@ export class SortableList extends RapidElement {
         // Store pending drop info but don't fire event yet
         this.dropTargetId = targetElement.id;
         this.pendingDropIndex = dropIdx;
-        this.pendingInsertAfter = insertAfter;
         this.pendingTargetElement = targetElement;
 
         // Show drop indicator
@@ -359,7 +369,6 @@ export class SortableList extends RapidElement {
         this.hideDropIndicator();
         this.dropTargetId = null;
         this.pendingDropIndex = -1;
-        this.pendingInsertAfter = false;
         this.pendingTargetElement = null;
       }
     }
@@ -370,31 +379,25 @@ export class SortableList extends RapidElement {
       evt.preventDefault();
       evt.stopPropagation();
 
-      // Restore visibility of the dragged item
-      const draggedElement = this.shadowRoot.querySelector(`#${this.draggingId}`);
-      if (draggedElement) {
-        draggedElement.classList.remove('dragged-item');
+      // restore visibility of the dragged item
+
+      if (this.downEle) {
+        this.downEle.style.pointerEvents = '';
+        this.downEle.style.opacity = '1';
       }
 
-      // Fire the order changed event only when dropped if we have a valid drop position
+      // fire the order changed event only when dropped if we have a valid drop position
       if (this.pendingDropIndex >= 0 && this.pendingTargetElement) {
         const originalDragIdx = this.getRowIndex(this.draggingEle.id);
-        
-        // Use swap-based logic - report which indexes need to be swapped
+
+        // use swap-based logic - report which indexes need to be swapped
         const fromIdx = originalDragIdx;
         const toIdx = this.pendingDropIndex;
-        
-        // Only fire if the position actually changed
+
+        // only fire if the position actually changed
         if (fromIdx !== toIdx) {
           this.fireCustomEvent(CustomEventType.OrderChanged, {
-            // New swap format
-            swap: [fromIdx, toIdx],
-            // Old format for backward compatibility
-            from: this.draggingEle.id,
-            to: this.pendingTargetElement.id,
-            fromIdx: fromIdx,
-            toIdx: toIdx,
-            insertAfter: this.pendingInsertAfter
+            swap: [fromIdx, toIdx]
           });
         }
       }
@@ -407,7 +410,6 @@ export class SortableList extends RapidElement {
       this.dropTargetId = null;
       this.downEle = null;
       this.pendingDropIndex = -1;
-      this.pendingInsertAfter = false;
       this.pendingTargetElement = null;
 
       if (this.ghostElement) {
@@ -419,6 +421,17 @@ export class SortableList extends RapidElement {
       }
 
       this.hideDropIndicator();
+
+      // Keep the click blocker active for a short time after drop
+      if (this.clickBlocker) {
+        // We'll clean it up after a timeout
+        setTimeout(() => {
+          if (this.clickBlocker) {
+            document.removeEventListener('click', this.clickBlocker, true);
+            this.clickBlocker = null;
+          }
+        }, 100);
+      }
     }
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);

@@ -3,21 +3,41 @@ import { html, TemplateResult } from 'lit';
 import { CustomEventType } from '../src/interfaces';
 import { SortableList } from '../src/list/SortableList';
 import { assertScreenshot, getClip } from './utils.test';
+import Sinon, { useFakeTimers } from 'sinon';
 
 const BORING_LIST = html`
   <temba-sortable-list>
-    <div class="sortable" id="chicken" style="padding:10px">Chicken</div>
-    <div class="sortable" id="fish" style="padding:10px">Fish</div>
+    <style>
+      .sortable {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 20px;
+      }
+    </style>
+    <div class="sortable" id="chicken" style="">Chicken</div>
+    <div class="sortable" id="fish">Fish</div>
   </temba-sortable-list>
 `;
 
 const createSorter = async (def: TemplateResult) => {
   const parentNode = document.createElement('div');
-  parentNode.setAttribute('style', 'width: 200px;');
+  parentNode.setAttribute('style', 'width: 100px;');
   return (await fixture(def, { parentNode })) as SortableList;
 };
 
 describe('temba-sortable-list', () => {
+  let clock: Sinon.SinonFakeTimers;
+  beforeEach(function () {
+    clock = useFakeTimers();
+    clock.runAll();
+  });
+
+  afterEach(function () {
+    clock.restore();
+  });
+
   it('renders default', async () => {
     const list: SortableList = await createSorter(BORING_LIST);
     await assertScreenshot('list/sortable', getClip(list));
@@ -31,7 +51,7 @@ describe('temba-sortable-list', () => {
 
     await moveMouse(bounds.left + 20, bounds.bottom - 10);
     await mouseDown();
-    await moveMouse(bounds.left + 30, bounds.top + 20);
+    await moveMouse(bounds.left + 20, bounds.top + 5);
 
     // should be hovered
     await assertScreenshot('list/sortable-dragging', getClip(list));
@@ -39,16 +59,14 @@ describe('temba-sortable-list', () => {
     // now lets drop - this will fire the order changed event
     const orderChanged = oneEvent(list, CustomEventType.OrderChanged, false);
     await mouseUp();
-    
+    clock.runAll();
+    await list.updateComplete;
+    clock.runAll();
+
     // we should fire an order changed event on drop
     const orderEvent = await orderChanged;
     expect(orderEvent.detail).to.deep.equal({
-      swap: [1, 0],
-      from: 'fish',
-      to: 'chicken',
-      fromIdx: 1,
-      toIdx: 0,
-      insertAfter: true
+      swap: [1, 0]
     });
 
     await assertScreenshot('list/sortable-dropped', getClip(list));

@@ -541,10 +541,6 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: String })
   draggingId: string;
 
-  // Track pending order change during drag
-  private originalDragIdx: number = -1;
-  private pendingTargetIdx: number = -1;
-
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -569,8 +565,6 @@ export class Select<T extends SelectOption> extends FormElement {
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
     this.handleOrderChanged = this.handleOrderChanged.bind(this);
-    this.handleDragStart = this.handleDragStart.bind(this);
-    this.handleDragStop = this.handleDragStop.bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -1372,7 +1366,7 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
-    if (this.justReordered) {
+    if (this.justReordered || this.disabled) {
       // prevent opening dropdown right after drag-and-drop
       event.stopPropagation();
       event.preventDefault();
@@ -1414,6 +1408,9 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleArrowClick(event: MouseEvent): void {
+    if (this.disabled) {
+      return;
+    }
     if (this.isOpen()) {
       event.preventDefault();
       event.stopPropagation();
@@ -1429,7 +1426,16 @@ export class Select<T extends SelectOption> extends FormElement {
     // special case for icons on any option type
     const icon = (option as any).icon;
     return html`
-      <div class="option-name" style="display:flex">
+      <div
+        class="option-name"
+        style="flex: 1 1 auto;
+        align-self: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 2px 8px;
+        display: flex;"
+      >
         ${icon
           ? html`<temba-icon
               name="${icon}"
@@ -1539,42 +1545,26 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleOrderChanged(event: CustomEvent): void {
     const detail = event.detail;
-    
+
     // Handle new swap-based format
     if (detail.swap && Array.isArray(detail.swap) && detail.swap.length === 2) {
       const [fromIdx, toIdx] = detail.swap;
-      
+
       // Only reorder if the indexes are different and valid
-      if (fromIdx !== toIdx && fromIdx >= 0 && toIdx >= 0 && 
-          fromIdx < this.values.length && toIdx < this.values.length) {
+      if (
+        fromIdx !== toIdx &&
+        fromIdx >= 0 &&
+        toIdx >= 0 &&
+        fromIdx < this.values.length &&
+        toIdx < this.values.length
+      ) {
         const oldValues = [...this.values];
-        
         // Move the item from fromIdx to toIdx
         const movedItem = this.values.splice(fromIdx, 1)[0];
         this.values.splice(toIdx, 0, movedItem);
-        
         this.requestUpdate('values', oldValues);
       }
-    } else {
-      // Fallback to old format for backward compatibility
-      const oldValues = [...this.values];
-      const fromIdx = detail.fromIdx;
-      const toIdx = detail.toIdx;
-      
-      // Move the item from fromIdx to toIdx
-      const movedItem = this.values.splice(fromIdx, 1)[0];
-      this.values.splice(toIdx, 0, movedItem);
-      
-      this.requestUpdate('values', oldValues);
     }
-  }
-
-  private handleDragStart(event: CustomEvent): void {
-    // Simple drag start handler - no complex state needed with new approach
-  }
-
-  private handleDragStop(): void {
-    // Simple drag stop handler - no complex state needed with new approach
   }
 
   public render(): TemplateResult {
@@ -1667,10 +1657,8 @@ export class Select<T extends SelectOption> extends FormElement {
                       <temba-sortable-list
                         horizontal
                         @temba-order-changed=${this.handleOrderChanged}
-                        @temba-drag-start=${this.handleDragStart}
-                        @temba-drag-stop=${this.handleDragStop}
                         .prepareGhost=${(item: any) => {
-                          item.style.transform = 'scale(1.25)';
+                          item.style.transform = 'scale(1)';
                           item.querySelector('.remove-item').style.display =
                             'none';
                         }}
@@ -1690,7 +1678,7 @@ export class Select<T extends SelectOption> extends FormElement {
                                 background: rgba(100,100,100,0.1);
                                 user-select: none;
                                 border-radius: 2px;
-                                align-items: stretch;
+                                align-items: center;
                                 flex-direction: row;
                                 flex-wrap: nowrap;
                                 margin: 2px 2px;
@@ -1721,10 +1709,6 @@ export class Select<T extends SelectOption> extends FormElement {
                                         margin-top:1px;
                                       "
                                       @click=${(evt: MouseEvent) => {
-                                        console.log(
-                                          'clicking on remove item',
-                                          this.justReordered
-                                        );
                                         if (!this.justReordered) {
                                           evt.preventDefault();
                                           evt.stopPropagation();
