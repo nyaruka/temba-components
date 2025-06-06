@@ -23,8 +23,7 @@
     "test": "wtr --node-resolve",
     "validate": "yarn format && yarn build && yarn test --coverage",
     "test:watch": "wtr --node-resolve --watch",
-    "storybook": "concurrently --kill-others --names tsc,storybook \"npm run tsc:watch\" \"start-storybook --node-resolve --watch --open\"",
-    "storybook:build": "build-storybook",
+
     "svg": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/index.svg' --usage='./src/vectoricon/index.ts'",
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",

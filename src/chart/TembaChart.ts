@@ -93,6 +93,12 @@ export class TembaChart extends RapidElement {
   @property({ type: Number })
   maxSplits: number = 2;
 
+  @property({ type: String, attribute: 'splits' })
+  splitNames: string;
+
+  @property({ type: Boolean })
+  hideOther: boolean = false;
+
   @state()
   splits: string[] = [];
 
@@ -189,6 +195,11 @@ export class TembaChart extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (changes.has('splitNames')) {
+      this.splits = this.splitNames.split(',').map((s) => s.trim());
+    }
+
     if (changes.has('data') || changes.has('splits')) {
       this.calculateSplits();
     }
@@ -243,13 +254,15 @@ export class TembaChart extends RapidElement {
           borderWidth: 1
         });
       } else {
-        datasets.push({
-          label: 'Other',
-          data: sums,
-          backgroundColor: otherBackgroundColor,
-          borderColor: otherBorderColor,
-          borderWidth: 1
-        });
+        if (!this.hideOther) {
+          datasets.push({
+            label: 'Other',
+            data: sums,
+            backgroundColor: otherBackgroundColor,
+            borderColor: otherBorderColor,
+            borderWidth: 1
+          });
+        }
       }
       this.datasets = datasets;
     }
@@ -291,15 +304,6 @@ export class TembaChart extends RapidElement {
             animation: {
               x: { from: 500 },
               y: { from: 500 }
-            },
-            animations: {
-              tension: {
-                duration: 1000,
-                easing: 'linear',
-                from: 1,
-                to: 0,
-                loop: true
-              }
             },
             scales: {
               y: {

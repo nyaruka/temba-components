@@ -118,7 +118,7 @@ export class Thumbnail extends RapidElement {
   @property({ type: Boolean, attribute: false })
   zoom: boolean;
 
-  @property({ type: String, attribute: false })
+  @property({ type: String, attribute: true })
   contentType: string;
 
   protected updated(

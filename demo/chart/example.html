@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <title>Chart Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link
+      href="../styles.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+</head>
+<body>
+    <temba-store></temba-store>
+    <h1>Chart Examples</h1>
+    <p><a href="../index.html">← Back to main demo</a></p>
+    
+    <div class="example">
+        <h3>Summation Chart</h3>
+        <p>A basic chart, summing all datasets</p>
+        <temba-chart url="../data/server/opened-tickets.json"></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Summation with Splits</h3>
+        <p>Normal summation, but with optional splits in the config options </p>
+        <temba-chart url="../data/server/opened-tickets.json" dataname="Tickets" config legend></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Summation with Configured Splits</h3>
+        <p>Normal summation, but with configured splits</p>
+        <temba-chart url="../data/server/opened-tickets.json" dataname="Tickets" splits="Tracking,Orders" hideother legend></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Duration Formatted Chart</h3>
+        <p>This chart expects series data in seconds and displays them as durations on the y axis and in tooltips.</p>
+        <temba-chart single dataname="Average Response" formatDuration header="Response Time" url="../data/server/response-time.json"></temba-chart>
+        <p>Here is the same duration chart, but as a line chart</p>
+        <temba-chart style="margin:2em" chartType="line" single dataName="Average Response" formatDuration url="../data/server/response-time.json"></temba-chart>
+    </div>  
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+</body>
+</html>
