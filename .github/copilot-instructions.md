@@ -29,11 +29,28 @@ To check for coverage, use:
 yarn test --coverage
 ```
 
-You also can run an idividual test to speed up development
+
+### Isolating Tests for Quicker Development ###
+You also can run an idividual test file to speed up development:
 
 ```bash
 yarn test test/temba-textinput.test.ts
 ```
+
+You can isolate a specific test within a file you are working to speed things up by updating the method in the file from it(...) to it.only(...)
+
+For example:
+```typescript
+it('can select a single option', async () => {...});
+```
+becomes..
+```typescript
+it.only('can select a single option', async () => {...});
+```
+
+By doing this and only running the individual test file, you can drastically speed up iteration while running tests.
+
+### Validation ###
 
 Before a PR is ready it must pass validation checks for linting, formatting, and tests. This will also report coverage and you need to manually verify coverage does not drop.
 
