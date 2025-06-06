@@ -30,6 +30,25 @@ To view the interactive demo, use start.
 % yarn start
 ```
 
+## Storybook
+
+Comprehensive Storybook documentation and examples are available for all components. Launch Storybook to explore component APIs, see live examples, and test different variations:
+
+```bash
+% yarn storybook
+```
+
+This will start Storybook on `http://localhost:8000` with live demos of all 65+ components organized by category:
+- Forms (checkbox, textinput, button, select, etc.)
+- UI (alert, loading, tip, dialog, etc.)  
+- Lists (list, sortable-list, run-list, etc.)
+- Contacts (contact-name, contact-field, etc.)
+- Media (image-picker, thumbnail, etc.)
+- Flow (flow-editor, flow-node)
+- Communication (webchat, chat, compose, etc.)
+- Utility (store, charcount, date, etc.)
+- Advanced (omnibox, flow-details, label)
+
 ## Testing
 
 All tests live under [/test](test). When running tests, some tests capture screenshots for pixel
