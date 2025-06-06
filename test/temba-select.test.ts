@@ -405,7 +405,7 @@ describe('temba-select', () => {
   });
 
   describe('drag and drop reordering', () => {
-    it.only('can reorder multiple selected items by dragging', async () => {
+    it('can reorder multiple selected items by dragging', async () => {
       const select = await createSelect(
         clock,
         getSelectHTML(
