@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <title>Chart Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link
+      href="../common.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+</head>
+<body>
+    <h1>Chart Examples</h1>
+    <p><a href="../index.html">← Back to main demo</a></p>
+    
+    <div class="example">
+        <h3>Basic Chart</h3>
+        <p>A basic chart component</p>
+        <temba-chart></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Duration Formatted Chart</h3>
+        <p>A chart with duration formatting for time-based data</p>
+        <temba-chart format-duration header="Process Times"></temba-chart>
+    </div>
+
+    <div class="example">
+        <h3>Chart with Custom Header</h3>
+        <p>A chart with a custom header</p>
+        <temba-chart header="Custom Chart Title"></temba-chart>
+    </div>
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+</body>
+</html>
