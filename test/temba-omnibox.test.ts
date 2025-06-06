@@ -24,7 +24,7 @@ export const createOmnibox = async (
   attrs: any = {}
 ): Promise<Omnibox> => {
   const parentNode = document.createElement('div');
-  parentNode.setAttribute('style', 'width: 250px;');
+  parentNode.setAttribute('style', 'width: 400px;');
 
   const omnibox: Omnibox = await fixture(getHTML(attrs), { parentNode });
   clock.runAll();

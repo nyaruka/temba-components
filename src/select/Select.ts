@@ -78,7 +78,7 @@ export class Select<T extends SelectOption> extends FormElement {
         background: rgba(100, 100, 100, 0.05);
       }
 
-      .selected-item.multi .remove-item {
+      . selected-item.multi .remove-item {
         display: none;
       }
 
@@ -1585,7 +1585,6 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleDragStop(): void {
-    console.log('handleDragStop');
     // Apply the pending order change when drag stops
     if (
       this.originalDragIdx !== -1 &&
@@ -1768,21 +1767,7 @@ export class Select<T extends SelectOption> extends FormElement {
                                     </div>
                                   `
                                 : null}
-                              <div
-                                class="option-name"
-                                style="
-                                  flex: 1 1 auto;
-                                  align-self: center;
-                                  white-space: nowrap;
-                                  overflow: hidden;
-                                  text-overflow: ellipsis;
-                                  font-size: 12px;
-                                  padding: 2px 8px;
-                                  display: flex;
-                                "
-                              >
-                                ${this.getName(selected)}
-                              </div>
+                              ${this.renderSelectedItem(selected)}
                             </div>
                           `
                         )}
@@ -1831,7 +1816,9 @@ export class Select<T extends SelectOption> extends FormElement {
                                 </div>
                               `
                             : null}
-                          ${this.renderSelectedItem(selected)}
+                          ${!this.input
+                            ? this.renderSelectedItem(selected)
+                            : null}
                         </div>
                       `
                     )

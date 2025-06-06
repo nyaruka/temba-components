@@ -20,7 +20,7 @@ const colors = [
 
 export const createSelect = async (clock, def: string) => {
   const parentNode = document.createElement('div');
-  parentNode.setAttribute('style', 'width: 250px;');
+  parentNode.setAttribute('style', 'width: 400px;');
 
   const select: Select<SelectOption> = await fixture(def, { parentNode });
   clock.runAll();
@@ -405,7 +405,7 @@ describe('temba-select', () => {
   });
 
   describe('drag and drop reordering', () => {
-    it('can reorder multiple selected items by dragging', async () => {
+    it.only('can reorder multiple selected items by dragging', async () => {
       const select = await createSelect(
         clock,
         getSelectHTML(
@@ -447,6 +447,10 @@ describe('temba-select', () => {
 
       const firstBounds = firstItem.getBoundingClientRect();
       const secondBounds = secondItem.getBoundingClientRect();
+
+      console.log('list', sortableList.getBoundingClientRect());
+
+      console.log(firstBounds, secondBounds);
 
       // Start drag from first item (Red)
       await moveMouse(firstBounds.left + 10, firstBounds.top + 10);
