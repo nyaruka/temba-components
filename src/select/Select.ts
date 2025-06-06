@@ -114,7 +114,7 @@ export class Select<T extends SelectOption> extends FormElement {
         padding-top: 1px;
         box-shadow: var(--widget-box-shadow);
         position: relative;
-        min-height: var(--temba-select-min-height, 2.5em);
+        min-height: var(--temba-select-min-height, 2.4em);
       }
 
       temba-icon.select-open:hover,
@@ -150,7 +150,7 @@ export class Select<T extends SelectOption> extends FormElement {
         flex-direction: row;
         align-items: stretch;
         user-select: none;
-        padding: var(--temba-select-selected-padding);
+        padding: var(--temba-select-selected-padding, 0px 4px);
       }
 
       .searchable .selected {
@@ -239,16 +239,15 @@ export class Select<T extends SelectOption> extends FormElement {
         border: 0px solid purple !important;
       }
 
-      .input-wrapper {
-        min-width: 1px;
-      }
-
       .input-wrapper:focus-within {
         min-width: 1px;
       }
 
       .input-wrapper {
+        min-width: 1px;
         margin-left: 6px;
+        margin-right: -6px;
+        display: flex;
       }
 
       .multi .input-wrapper {
@@ -288,11 +287,6 @@ export class Select<T extends SelectOption> extends FormElement {
         box-shadow: none !important;
       }
 
-      .input-wrapper {
-        display: flex;
-        margin-right: 0em;
-      }
-
       .multi .input-wrapper {
         flex-shrink: 0;
         min-width: 100px;
@@ -310,6 +304,7 @@ export class Select<T extends SelectOption> extends FormElement {
         color: var(--color-placeholder);
         display: none;
         line-height: var(--temba-select-selected-line-height);
+        margin-left: 6px;
       }
 
       .footer {
