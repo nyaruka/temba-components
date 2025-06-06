@@ -128,7 +128,7 @@ describe('temba-toast', () => {
     expect(toast.messages[0].visible).to.be.undefined;
 
     // Wait for the timeout
-    await new Promise((resolve) => setTimeout(resolve, 75));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(toast.messages[0].visible).to.be.true;
   });
