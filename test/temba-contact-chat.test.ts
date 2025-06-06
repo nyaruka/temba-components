@@ -7,17 +7,15 @@ import {
   clearMockPosts,
   getClip,
   getComponent,
+  getValidAttachments,
+  getValidText,
   loadStore,
   mockAPI,
   mockGET,
   mockNow,
-  mockPOST
-} from '../test/utils.test';
-import {
-  getValidAttachments,
-  getValidText,
+  mockPOST,
   updateComponent
-} from './temba-compose.test';
+} from '../test/utils.test';
 
 import { expect, oneEvent } from '@open-wc/testing';
 

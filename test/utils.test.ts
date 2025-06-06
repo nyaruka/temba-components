@@ -13,6 +13,8 @@ import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
 import { Select, SelectOption } from '../src/select/Select';
 import { Options } from '../src/options/Options';
+import { Attachment } from '../src/interfaces';
+import { Compose } from '../src/compose/Compose';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -330,4 +332,38 @@ export const openAndClick = async (
   clock.tick(25); // Reduced from 50 to give minimum time for options to render
 
   await clickOption(clock, select, idx);
+};
+
+// valid = attachments that are uploaded sent to the server when the user clicks send
+export const getValidAttachments = (numFiles = 2): Attachment[] => {
+  const attachments = [];
+  let index = 1;
+  while (index <= numFiles) {
+    const s = 's' + index;
+    const attachment = {
+      uuid: s,
+      content_type: 'image/png',
+      type: 'image/png',
+      filename: 'name_' + s,
+      url: 'url_' + s,
+      size: 1024,
+      error: null
+    } as Attachment;
+    attachments.push(attachment);
+    index++;
+  }
+  return attachments;
+};
+
+export const updateComponent = async (
+  compose: Compose,
+  text?: string,
+  attachments?: Attachment[]
+): Promise<void> => {
+  compose.initialText = text ? text : '';
+  compose.currentAttachments = attachments ? attachments : [];
+  await compose.updateComplete;
+};
+export const getValidText = () => {
+  return 'sà-wàd-dee!';
 };
