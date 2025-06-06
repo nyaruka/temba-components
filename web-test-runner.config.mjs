@@ -150,8 +150,9 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
+        // Only wait for network idle if explicitly requested
         if (wait) {
-          await page.waitForNetworkIdle();
+          await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
         }
 
         if (!(await fileExists(truthFile))) {
@@ -302,9 +303,10 @@ export default {
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
   setupFiles: ['./test-setup.js'],
+  concurrency: 4,
   testFramework: {
     config: {
-      timeout: '10000',
+      timeout: '5000',
     },
   },
 

@@ -21,6 +21,8 @@
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --config .prettierrc --write --ignore-path .gitignore",
     "format": "yarn format:eslint && yarn format:prettier",
     "test": "wtr --node-resolve",
+    "test:fast": "wtr --node-resolve --fast",
+    "test:unit": "wtr --node-resolve --files '**/test/**/*.test.ts' --exclude '**/test/**/screenshot/**' --exclude '**/test/**/*screenshot*'",
     "validate": "yarn format && yarn build && yarn test --coverage",
     "test:watch": "wtr --node-resolve --watch",
 

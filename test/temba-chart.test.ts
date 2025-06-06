@@ -127,7 +127,7 @@ describe('temba-chart', () => {
     await chart.updateComplete;
 
     // Wait for the chart to be created after data is set
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(chart.chart).to.exist;
     const tickCallback = chart.chart.options.scales.y.ticks.callback;

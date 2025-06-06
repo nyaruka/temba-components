@@ -5,7 +5,7 @@ import { assertScreenshot, getClip, getComponent } from './utils.test';
 const TAG = 'temba-dropdown';
 
 // Helper function to wait for stable rendering
-const waitForStableRender = async (dropdown: Dropdown, timeoutMs = 200) => {
+const waitForStableRender = async (dropdown: Dropdown, timeoutMs = 100) => {
   await dropdown.updateComplete;
   // Double wait to ensure any async positioning is complete
   await new Promise((resolve) => setTimeout(resolve, timeoutMs));

@@ -313,8 +313,8 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
   await select.updateComplete;
   clock.runAll();
 
-  // ensure options are visible before proceeding
-  await waitFor(100);
+  // reduce wait time for options to become visible
+  await waitFor(25);
   clock.runAll();
 };
 
@@ -327,7 +327,7 @@ export const openAndClick = async (
 
   // Add this line to ensure proper timing when running as part of a test suite
   await select.updateComplete;
-  clock.tick(50); // Give extra time for options to render
+  clock.tick(25); // Reduced from 50 to give minimum time for options to render
 
   await clickOption(clock, select, idx);
 };
