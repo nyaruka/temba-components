@@ -25,7 +25,6 @@ describe('temba-sortable-list', () => {
 
   it('drags', async () => {
     const list: SortableList = await createSorter(BORING_LIST);
-    const orderChanged = oneEvent(list, CustomEventType.OrderChanged, false);
     const updated = oneEvent(list, 'change', false);
 
     const bounds = list.getBoundingClientRect();
@@ -34,22 +33,24 @@ describe('temba-sortable-list', () => {
     await mouseDown();
     await moveMouse(bounds.left + 30, bounds.top + 20);
 
-    // we should fire an order changed event
-    const orderEvent = await orderChanged;
-    expect(orderEvent.detail).to.deep.equal({
-      from: 'fish',
-      to: 'chicken',
-      insertAfter: true,
-      fromIdx: 1,
-      toIdx: 1
-    });
-
     // should be hovered
     await assertScreenshot('list/sortable-dragging', getClip(list));
 
-    // now lets drop, it'll look the same as before dragging since
-    // its the consuming elements job to do the reordering
+    // now lets drop - this will fire the order changed event
+    const orderChanged = oneEvent(list, CustomEventType.OrderChanged, false);
     await mouseUp();
+    
+    // we should fire an order changed event on drop
+    const orderEvent = await orderChanged;
+    expect(orderEvent.detail).to.deep.equal({
+      swap: [1, 0],
+      from: 'fish',
+      to: 'chicken',
+      fromIdx: 1,
+      toIdx: 0,
+      insertAfter: true
+    });
+
     await assertScreenshot('list/sortable-dropped', getClip(list));
 
     // we should fire a change event

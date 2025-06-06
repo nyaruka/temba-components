@@ -37,6 +37,7 @@ export interface SelectOption {
 
 export class Select<T extends SelectOption> extends FormElement {
   private hiddenInputs: HTMLInputElement[] = [];
+  private justReordered = false;
 
   static get styles(): CSSResult | CSSResultArray {
     return css`
@@ -537,6 +538,13 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   allowAnchor: boolean = true;
 
+  @property({ type: String })
+  draggingId: string;
+
+  // Track pending order change during drag
+  private originalDragIdx: number = -1;
+  private pendingTargetIdx: number = -1;
+
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -561,6 +569,8 @@ export class Select<T extends SelectOption> extends FormElement {
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
     this.handleOrderChanged = this.handleOrderChanged.bind(this);
+    this.handleDragStart = this.handleDragStart.bind(this);
+    this.handleDragStop = this.handleDragStop.bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -1362,6 +1372,13 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
+    if (this.justReordered) {
+      // prevent opening dropdown right after drag-and-drop
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+
     this.focused = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
@@ -1523,18 +1540,41 @@ export class Select<T extends SelectOption> extends FormElement {
   private handleOrderChanged(event: CustomEvent): void {
     const detail = event.detail;
     
-    // Apply the reordering immediately - the SortableList now provides accurate indexes
-    const oldValues = [...this.values];
-    const fromIdx = detail.fromIdx;
-    const toIdx = detail.toIdx;
-    
-    // Remove the item from its original position
-    const movedItem = this.values.splice(fromIdx, 1)[0];
-    
-    // Insert it at the target position
-    this.values.splice(toIdx, 0, movedItem);
-    
-    this.requestUpdate('values', oldValues);
+    // Handle new swap-based format
+    if (detail.swap && Array.isArray(detail.swap) && detail.swap.length === 2) {
+      const [fromIdx, toIdx] = detail.swap;
+      
+      // Only reorder if the indexes are different and valid
+      if (fromIdx !== toIdx && fromIdx >= 0 && toIdx >= 0 && 
+          fromIdx < this.values.length && toIdx < this.values.length) {
+        const oldValues = [...this.values];
+        
+        // Move the item from fromIdx to toIdx
+        const movedItem = this.values.splice(fromIdx, 1)[0];
+        this.values.splice(toIdx, 0, movedItem);
+        
+        this.requestUpdate('values', oldValues);
+      }
+    } else {
+      // Fallback to old format for backward compatibility
+      const oldValues = [...this.values];
+      const fromIdx = detail.fromIdx;
+      const toIdx = detail.toIdx;
+      
+      // Move the item from fromIdx to toIdx
+      const movedItem = this.values.splice(fromIdx, 1)[0];
+      this.values.splice(toIdx, 0, movedItem);
+      
+      this.requestUpdate('values', oldValues);
+    }
+  }
+
+  private handleDragStart(event: CustomEvent): void {
+    // Simple drag start handler - no complex state needed with new approach
+  }
+
+  private handleDragStop(): void {
+    // Simple drag stop handler - no complex state needed with new approach
   }
 
   public render(): TemplateResult {
@@ -1627,6 +1667,8 @@ export class Select<T extends SelectOption> extends FormElement {
                       <temba-sortable-list
                         horizontal
                         @temba-order-changed=${this.handleOrderChanged}
+                        @temba-drag-start=${this.handleDragStart}
+                        @temba-drag-stop=${this.handleDragStop}
                         .prepareGhost=${(item: any) => {
                           item.style.transform = 'scale(1.25)';
                           item.querySelector('.remove-item').style.display =
@@ -1639,6 +1681,8 @@ export class Select<T extends SelectOption> extends FormElement {
                               class="selected-item sortable ${index ===
                               this.selectedIndex
                                 ? 'focused'
+                                : ''} ${this.draggingId === `selected-${index}`
+                                ? 'dragging'
                                 : ''}"
                               id="selected-${index}"
                               style="
@@ -1658,6 +1702,9 @@ export class Select<T extends SelectOption> extends FormElement {
                                 ${index === this.selectedIndex
                                 ? 'background: rgba(100,100,100,0.3);'
                                 : ''}
+                                ${this.draggingId === `selected-${index}`
+                                ? 'opacity: 0.5;'
+                                : ''}
                               "
                             >
                               ${this.multi
@@ -1674,9 +1721,15 @@ export class Select<T extends SelectOption> extends FormElement {
                                         margin-top:1px;
                                       "
                                       @click=${(evt: MouseEvent) => {
-                                        evt.preventDefault();
-                                        evt.stopPropagation();
-                                        this.handleRemoveSelection(selected);
+                                        console.log(
+                                          'clicking on remove item',
+                                          this.justReordered
+                                        );
+                                        if (!this.justReordered) {
+                                          evt.preventDefault();
+                                          evt.stopPropagation();
+                                          this.handleRemoveSelection(selected);
+                                        }
                                       }}
                                     >
                                       <temba-icon

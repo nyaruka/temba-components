@@ -31,6 +31,11 @@ export class SortableList extends RapidElement {
         background: var(--color-selection);
       }
 
+      .dragged-item {
+        opacity: 0;
+        pointer-events: none;
+      }
+
       .sortable {
         transition: all 300ms ease-in-out;
         display: flex;
@@ -121,6 +126,8 @@ export class SortableList extends RapidElement {
   draggingEle = null;
   dropIndicator: HTMLDivElement = null;
   pendingDropIndex = -1;
+  pendingInsertAfter = false;
+  pendingTargetElement: HTMLElement = null;
 
   public constructor() {
     super();
@@ -152,100 +159,56 @@ export class SortableList extends RapidElement {
   private getDropTargetInfo(
     mouseX: number,
     mouseY: number
-  ): { targetIndex: number } | null {
+  ): { element: HTMLDivElement; insertAfter: boolean } | null {
     const elements = this.shadowRoot
       .querySelector('slot')
-      .assignedElements();
+      .assignedElements()
+      .filter((ele) => ele.id !== this.draggingEle?.id);
 
     if (elements.length === 0) return null;
 
     if (this.horizontal) {
-      // For horizontal layout, find which element we're over
+      // For horizontal layout, find the insertion point based on mouse X position
       for (let i = 0; i < elements.length; i++) {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
 
-        if (mouseX >= rect.left && mouseX <= rect.right) {
-          // We're over this element - check if we're on the left or right half
-          const centerX = rect.left + rect.width / 2;
-          if (mouseX < centerX) {
-            // Left half - insert before this element
-            return { targetIndex: i };
-          } else {
-            // Right half - insert after this element  
-            return { targetIndex: i + 1 };
-          }
-        }
-      }
-      
-      // Not over any element - find the closest insertion point
-      for (let i = 0; i < elements.length; i++) {
-        const ele = elements[i];
-        const rect = ele.getBoundingClientRect();
-        
-        if (mouseX < rect.left) {
+        if (mouseX < centerX) {
           // Insert before this element
-          return { targetIndex: i };
+          return { element: ele as HTMLDivElement, insertAfter: false };
         }
       }
-      
-      // Past all elements
-      return { targetIndex: elements.length };
+      // If we're past all elements, insert after the last one
+      return {
+        element: elements[elements.length - 1] as HTMLDivElement,
+        insertAfter: true
+      };
     } else {
-      // For vertical layout, find which element we're over
+      // For vertical layout, find the insertion point based on mouse Y position
       for (let i = 0; i < elements.length; i++) {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
 
-        if (mouseY >= rect.top && mouseY <= rect.bottom) {
-          // We're over this element - check if we're on the top or bottom half
-          const centerY = rect.top + rect.height / 2;
-          if (mouseY < centerY) {
-            // Top half - insert before this element
-            return { targetIndex: i };
-          } else {
-            // Bottom half - insert after this element
-            return { targetIndex: i + 1 };
-          }
-        }
-      }
-      
-      // Not over any element - find the closest insertion point
-      for (let i = 0; i < elements.length; i++) {
-        const ele = elements[i];
-        const rect = ele.getBoundingClientRect();
-        
-        if (mouseY < rect.top) {
+        if (mouseY < centerY) {
           // Insert before this element
-          return { targetIndex: i };
+          return { element: ele as HTMLDivElement, insertAfter: false };
         }
       }
-      
-      // Past all elements
-      return { targetIndex: elements.length };
+      // If we're past all elements, insert after the last one
+      return {
+        element: elements[elements.length - 1] as HTMLDivElement,
+        insertAfter: true
+      };
     }
   }
 
-  private showDropIndicator(targetIndex: number) {
+  private showDropIndicator(targetElement: HTMLElement, insertAfter: boolean) {
     this.hideDropIndicator();
 
-    if (targetIndex < 0) return;
+    if (!targetElement) return;
 
-    const elements = this.shadowRoot.querySelector('slot').assignedElements();
-    if (targetIndex >= elements.length) {
-      // Inserting at the end - show indicator after the last element
-      if (elements.length > 0) {
-        const lastElement = elements[elements.length - 1];
-        this.showIndicatorRelativeToElement(lastElement, true);
-      }
-    } else {
-      // Inserting before the element at targetIndex
-      const targetElement = elements[targetIndex];
-      this.showIndicatorRelativeToElement(targetElement, false);
-    }
-  }
-
-  private showIndicatorRelativeToElement(targetElement: Element, insertAfter: boolean) {
     const container = this.shadowRoot.querySelector('.container');
     this.dropIndicator = document.createElement('div');
     this.dropIndicator.className = 'drop-indicator';
@@ -329,8 +292,12 @@ export class SortableList extends RapidElement {
         id: this.downEle.id
       });
 
+      // Hide the original item during drag
+      this.downEle.classList.add('dragged-item');
+
       this.ghostElement = this.downEle.cloneNode(true) as HTMLDivElement;
       this.ghostElement.classList.add('ghost');
+      this.ghostElement.classList.remove('dragged-item'); // Make sure ghost is visible
 
       const rect = this.downEle.getBoundingClientRect();
       this.ghostElement.style.transition = 'transform 300ms linear';
@@ -365,11 +332,35 @@ export class SortableList extends RapidElement {
 
       const targetInfo = this.getDropTargetInfo(event.clientX, event.clientY);
       if (targetInfo) {
-        this.pendingDropIndex = targetInfo.targetIndex;
-        this.showDropIndicator(targetInfo.targetIndex);
+        const { element: targetElement, insertAfter } = targetInfo;
+        const targetIdx = this.getRowIndex(targetElement.id);
+        const originalDragIdx = this.getRowIndex(this.draggingEle.id);
+
+        // Calculate the intended drop index
+        let dropIdx = targetIdx;
+        if (insertAfter) {
+          dropIdx += 1;
+        }
+
+        // Adjust dropIdx if dragging forward in the list
+        if (originalDragIdx < dropIdx) {
+          dropIdx -= 1;
+        }
+
+        // Store pending drop info but don't fire event yet
+        this.dropTargetId = targetElement.id;
+        this.pendingDropIndex = dropIdx;
+        this.pendingInsertAfter = insertAfter;
+        this.pendingTargetElement = targetElement;
+
+        // Show drop indicator
+        this.showDropIndicator(targetElement, insertAfter);
       } else {
-        this.pendingDropIndex = -1;
         this.hideDropIndicator();
+        this.dropTargetId = null;
+        this.pendingDropIndex = -1;
+        this.pendingInsertAfter = false;
+        this.pendingTargetElement = null;
       }
     }
   }
@@ -379,14 +370,33 @@ export class SortableList extends RapidElement {
       evt.preventDefault();
       evt.stopPropagation();
 
-      // Fire the order changed event only if we have a valid drop position
-      if (this.pendingDropIndex >= 0) {
-        const originalIdx = this.getRowIndex(this.draggingId);
-        this.fireCustomEvent(CustomEventType.OrderChanged, {
-          fromIdx: originalIdx,
-          toIdx: this.pendingDropIndex,
-          id: this.draggingId
-        });
+      // Restore visibility of the dragged item
+      const draggedElement = this.shadowRoot.querySelector(`#${this.draggingId}`);
+      if (draggedElement) {
+        draggedElement.classList.remove('dragged-item');
+      }
+
+      // Fire the order changed event only when dropped if we have a valid drop position
+      if (this.pendingDropIndex >= 0 && this.pendingTargetElement) {
+        const originalDragIdx = this.getRowIndex(this.draggingEle.id);
+        
+        // Use swap-based logic - report which indexes need to be swapped
+        const fromIdx = originalDragIdx;
+        const toIdx = this.pendingDropIndex;
+        
+        // Only fire if the position actually changed
+        if (fromIdx !== toIdx) {
+          this.fireCustomEvent(CustomEventType.OrderChanged, {
+            // New swap format
+            swap: [fromIdx, toIdx],
+            // Old format for backward compatibility
+            from: this.draggingEle.id,
+            to: this.pendingTargetElement.id,
+            fromIdx: fromIdx,
+            toIdx: toIdx,
+            insertAfter: this.pendingInsertAfter
+          });
+        }
       }
 
       this.fireCustomEvent(CustomEventType.DragStop, {
@@ -397,6 +407,8 @@ export class SortableList extends RapidElement {
       this.dropTargetId = null;
       this.downEle = null;
       this.pendingDropIndex = -1;
+      this.pendingInsertAfter = false;
+      this.pendingTargetElement = null;
 
       if (this.ghostElement) {
         // Remove from body if present

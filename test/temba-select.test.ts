@@ -349,6 +349,118 @@ describe('temba-select', () => {
   });
 
   describe('drag and drop reordering', () => {
+    it('handles drag and drop with swap-based logic', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(
+          [
+            { name: 'Red', value: '0', selected: true },
+            { name: 'Green', value: '1', selected: true },
+            { name: 'Blue', value: '2', selected: true }
+          ],
+          {
+            placeholder: 'Select colors',
+            multi: true
+          }
+        )
+      );
+
+      // Verify initial order: Red, Green, Blue
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Green');
+      expect(select.values[2].name).to.equal('Blue');
+
+      const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+      expect(sortableList).to.not.be.null;
+
+      // Example 1: Pick up Blue (index 2), drop between Red and Green
+      // Expected result: Red, Blue, Green (swap [1,2])
+      const blueItem = sortableList.querySelector('#selected-2');
+      const greenItem = sortableList.querySelector('#selected-1');
+      expect(blueItem).to.not.be.null;
+      expect(greenItem).to.not.be.null;
+
+      const blueBounds = blueItem.getBoundingClientRect();
+      const greenBounds = greenItem.getBoundingClientRect();
+
+      // Start drag from Blue item
+      await moveMouse(blueBounds.left + 10, blueBounds.top + 10);
+      await mouseDown();
+
+      // Drag to position between Red and Green (left side of Green)
+      await moveMouse(greenBounds.left - 5, greenBounds.top + 10);
+      await waitFor(100);
+      await mouseUp();
+      await waitFor(100);
+
+      // Verify result: Red, Blue, Green (Green and Blue swapped)
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Blue');
+      expect(select.values[2].name).to.equal('Green');
+
+      // Reset for next test
+      select.values = [
+        { name: 'Red', value: '0', selected: true },
+        { name: 'Green', value: '1', selected: true },
+        { name: 'Blue', value: '2', selected: true }
+      ];
+      await select.updateComplete;
+
+      // Example 2: Pick up Red (index 0), drop at end
+      // Expected result: Green, Blue, Red (swap [0,2])
+      const redItem = sortableList.querySelector('#selected-0');
+      const redBounds = redItem.getBoundingClientRect();
+      const blueItemBounds = sortableList.querySelector('#selected-2').getBoundingClientRect();
+
+      // Start drag from Red item
+      await moveMouse(redBounds.left + 10, redBounds.top + 10);
+      await mouseDown();
+
+      // Drag to end position (right side of Blue)
+      await moveMouse(blueItemBounds.right + 5, blueItemBounds.top + 10);
+      await waitFor(100);
+      await mouseUp();
+      await waitFor(100);
+
+      // Verify result: Green, Blue, Red (Red and Blue swapped)
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Green');
+      expect(select.values[1].name).to.equal('Blue');
+      expect(select.values[2].name).to.equal('Red');
+
+      // Reset for next test
+      select.values = [
+        { name: 'Red', value: '0', selected: true },
+        { name: 'Green', value: '1', selected: true },
+        { name: 'Blue', value: '2', selected: true }
+      ];
+      await select.updateComplete;
+
+      // Example 3: Pick up Green (index 1), drop at same position
+      // Expected result: No change, no event
+      const greenItemNew = sortableList.querySelector('#selected-1');
+      const greenBoundsNew = greenItemNew.getBoundingClientRect();
+
+      // Start drag from Green item
+      await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
+      await mouseDown();
+
+      // Drag slightly but return to same position
+      await moveMouse(greenBoundsNew.left + 15, greenBoundsNew.top + 10);
+      await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
+      await waitFor(100);
+      await mouseUp();
+      await waitFor(100);
+
+      // Verify result: No change
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Green');
+      expect(select.values[2].name).to.equal('Blue');
+    });
+
     it('can reorder multiple selected items by dragging', async () => {
       const select = await createSelect(
         clock,
