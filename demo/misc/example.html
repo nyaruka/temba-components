@@ -34,11 +34,11 @@
 
     <div class="example">
         <h3>Thumbnail Component</h3>
-        <p>Image thumbnails with various sizes</p>
+        <p>Image thumbnails with various sizes using real images</p>
         <div style="display: flex; gap: 15px; align-items: center;">
-            <temba-thumbnail src="https://via.placeholder.com/150x150/4f46e5/ffffff?text=Image" size="small"></temba-thumbnail>
-            <temba-thumbnail src="https://via.placeholder.com/150x150/7c3aed/ffffff?text=Medium"></temba-thumbnail>
-            <temba-thumbnail src="https://via.placeholder.com/150x150/dc2626/ffffff?text=Large" size="large"></temba-thumbnail>
+            <temba-thumbnail url="../data/images/sample1.png" size="small"></temba-thumbnail>
+            <temba-thumbnail url="../data/images/sample2.png"></temba-thumbnail>
+            <temba-thumbnail url="../data/images/sample3.png" size="large"></temba-thumbnail>
         </div>
     </div>
 
@@ -71,7 +71,7 @@
         <div style="display: flex; align-items: center; gap: 15px;">
             <temba-loading size="small"></temba-loading>
             <span>Loading...</span>
-            <temba-thumbnail src="https://via.placeholder.com/100x100/22c55e/ffffff?text=OK" size="small"></temba-thumbnail>
+            <temba-thumbnail url="../data/images/sample1.png" size="small"></temba-thumbnail>
             <div>
                 <span>Help</span>
                 <temba-tip text="These components can be used together to create rich interfaces"></temba-tip>
