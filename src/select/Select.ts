@@ -37,7 +37,6 @@ export interface SelectOption {
 
 export class Select<T extends SelectOption> extends FormElement {
   private hiddenInputs: HTMLInputElement[] = [];
-  private justReordered = false;
 
   static get styles(): CSSResult | CSSResultArray {
     return css`
@@ -1361,7 +1360,7 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
-    if (this.justReordered || this.disabled) {
+    if (this.disabled) {
       // prevent opening dropdown right after drag-and-drop
       event.stopPropagation();
       event.preventDefault();
@@ -1704,11 +1703,9 @@ export class Select<T extends SelectOption> extends FormElement {
                                         margin-top:1px;
                                       "
                                       @click=${(evt: MouseEvent) => {
-                                        if (!this.justReordered) {
-                                          evt.preventDefault();
-                                          evt.stopPropagation();
-                                          this.handleRemoveSelection(selected);
-                                        }
+                                        evt.preventDefault();
+                                        evt.stopPropagation();
+                                        this.handleRemoveSelection(selected);
                                       }}
                                     >
                                       <temba-icon
