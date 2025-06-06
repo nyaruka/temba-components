@@ -373,6 +373,21 @@
         </div>
 
         <div class="example">
+          <h3>Multi-select with 3 items (Drag and Drop Test)</h3>
+          <temba-select
+            placeholder="Select colors"
+            values='[{"name":"Red","value":"0"},{"name":"Green","value":"1"},{"name":"Blue","value":"2"}]'
+            multi
+          >
+            <temba-option name="Red" value="0"></temba-option>
+            <temba-option name="Green" value="1"></temba-option>
+            <temba-option name="Blue" value="2"></temba-option>
+            <temba-option name="Yellow" value="3"></temba-option>
+            <temba-option name="Purple" value="4"></temba-option>
+          </temba-select>
+        </div>
+
+        <div class="example">
           <script>
             function toggleSelect(evt) {
               document.getElementById('select-toggle').disabled =

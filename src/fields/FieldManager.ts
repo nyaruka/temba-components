@@ -121,7 +121,7 @@ export class FieldManager extends EndpointMonitorElement {
         border-radius: var(--curvature);
       }
 
-      .featured temba-sortable-list .field:hover {
+      .featured:not(.dragging) temba-sortable-list .field:hover {
         cursor: move;
         border-color: #e6e6e6;
         background: #fcfcfc;
@@ -137,9 +137,6 @@ export class FieldManager extends EndpointMonitorElement {
 
   @property({ type: Object, attribute: false })
   otherFieldKeys: string[] = [];
-
-  @property({ type: String })
-  draggingId: string;
 
   @property({ type: String })
   query = '';
@@ -189,36 +186,31 @@ export class FieldManager extends EndpointMonitorElement {
     }
   }
 
-  private handleSaveOrder(event) {
-    const list = event.currentTarget as SortableList;
-    postJSON(
-      this.priorityEndpoint,
-      list
-        .getIds()
-        .reverse()
-        .reduce((map, key, idx) => {
-          map[key] = idx;
-          return map;
-        }, {})
-    ).then(() => {
-      this.store.refreshFields();
-    });
-  }
-
   private handleOrderChanged(event) {
-    const swapsies = event.detail;
-    const temp = this.featuredFields[swapsies.fromIdx];
-    this.featuredFields[swapsies.fromIdx] = this.featuredFields[swapsies.toIdx];
-    this.featuredFields[swapsies.toIdx] = temp;
-    this.requestUpdate('featuredFields');
-  }
+    // Apply the reordering immediately - the SortableList now provides accurate indexes
+    const [fromIdx, toIdx] = event.detail.swap;
 
-  private handleDragStart(event) {
-    this.draggingId = event.detail.id;
-  }
+    const temp = this.featuredFields[fromIdx];
+    this.featuredFields.splice(fromIdx, 1);
+    this.featuredFields.splice(toIdx, 0, temp);
+    this.requestUpdate();
 
-  private handleDragStop() {
-    this.draggingId = null;
+    // Save the new order to the server
+    const list = event.currentTarget as SortableList;
+    setTimeout(() => {
+      postJSON(
+        this.priorityEndpoint,
+        list
+          .getIds()
+          .reverse()
+          .reduce((map, key, idx) => {
+            map[key] = idx;
+            return map;
+          }, {})
+      ).then(() => {
+        this.store.refreshFields();
+      });
+    }, 0);
   }
 
   private handleFieldAction(event: MouseEvent) {
@@ -248,10 +240,13 @@ export class FieldManager extends EndpointMonitorElement {
             display: flex; 
             flex-direction: row; 
             align-items: center;
-            padding: 0.25em 1em; 
-            ${field.key === this.draggingId
-          ? 'background: var(--color-selection)'
-          : ''}"
+            padding: 0.25em 1em;"
+        @click=${(e: MouseEvent) => {
+          const ele = e.currentTarget as HTMLDivElement;
+          const key = ele.dataset.key;
+          const action = ele.dataset.action;
+          this.fireCustomEvent(CustomEventType.Selection, { key, action });
+        }}
       >
         <div
           style="display: flex; min-width: 200px; width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 2em"
@@ -327,10 +322,7 @@ export class FieldManager extends EndpointMonitorElement {
                   `
                 : html`
                     <temba-sortable-list
-                      @change=${this.handleSaveOrder}
                       @temba-order-changed=${this.handleOrderChanged}
-                      @temba-drag-start=${this.handleDragStart}
-                      @temba-drag-stop=${this.handleDragStop}
                     >
                       ${this.featuredFields.map((field) =>
                         this.renderField(field)

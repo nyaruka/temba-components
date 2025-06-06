@@ -11,6 +11,8 @@ import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { replace, stub } from 'sinon';
+import { Select, SelectOption } from '../src/select/Select';
+import { Options } from '../src/options/Options';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -278,4 +280,54 @@ export const mockNow = (isodate: string) => {
   replace(DateTime, 'now', () => {
     return now;
   });
+};
+
+export const getOptions = (select: Select<SelectOption>): Options => {
+  return select.shadowRoot.querySelector('temba-options[visible]');
+};
+
+export const clickOption = async (
+  clock: any,
+  select: Select<SelectOption>,
+  index: number
+) => {
+  const options = getOptions(select);
+  const option = options.shadowRoot.querySelector(
+    `[data-option-index="${index}"]`
+  ) as HTMLDivElement;
+
+  await mouseClickElement(option);
+  await options.updateComplete;
+  await select.updateComplete;
+  await clock.runAll();
+
+  checkTimers(clock);
+};
+export const openSelect = async (clock: any, select: Select<SelectOption>) => {
+  const container = select.shadowRoot.querySelector('.select-container');
+  container.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+  clock.runAll();
+
+  // add more explicit waiting and clock ticks
+  await select.updateComplete;
+  clock.runAll();
+
+  // ensure options are visible before proceeding
+  await waitFor(100);
+  clock.runAll();
+};
+
+export const openAndClick = async (
+  clock: any,
+  select: Select<SelectOption>,
+  idx: number
+) => {
+  await openSelect(clock, select);
+
+  // Add this line to ensure proper timing when running as part of a test suite
+  await select.updateComplete;
+  clock.tick(50); // Give extra time for options to render
+
+  await clickOption(clock, select, idx);
 };

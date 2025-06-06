@@ -107,7 +107,7 @@ export class Omnibox extends Select<OmniOption> {
   public renderSelectedItemDefault(option: OmniOption): TemplateResult {
     return html`
       <div
-        style="flex:1 1 auto; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
+        style="flex:1 1 auto; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display: flex; align-items: stretch; color: var(--color-text-dark); font-size: 12px;"
       >
         <div style="align-self: center; padding: 0px 7px; color: #bbb">
           ${this.getIcon(option)}

@@ -9,6 +9,7 @@ import {
   postJSON
 } from '../utils';
 import '../options/Options';
+import '../list/SortableList';
 import { EventHandler } from '../RapidElement';
 import { FormElement } from '../FormElement';
 
@@ -76,7 +77,7 @@ export class Select<T extends SelectOption> extends FormElement {
         background: rgba(100, 100, 100, 0.05);
       }
 
-      .selected-item.multi .remove-item {
+      . selected-item.multi .remove-item {
         display: none;
       }
 
@@ -112,7 +113,7 @@ export class Select<T extends SelectOption> extends FormElement {
         padding-top: 1px;
         box-shadow: var(--widget-box-shadow);
         position: relative;
-        min-height: var(--temba-select-min-height, 2.5em);
+        min-height: var(--temba-select-min-height, 2.4em);
       }
 
       temba-icon.select-open:hover,
@@ -148,7 +149,7 @@ export class Select<T extends SelectOption> extends FormElement {
         flex-direction: row;
         align-items: stretch;
         user-select: none;
-        padding: var(--temba-select-selected-padding);
+        padding: var(--temba-select-selected-padding, 0px 4px);
       }
 
       .searchable .selected {
@@ -207,6 +208,18 @@ export class Select<T extends SelectOption> extends FormElement {
         background: rgba(100, 100, 100, 0.3);
       }
 
+      .multi .selected-item.sortable {
+        cursor: move;
+      }
+
+      .multi .selected-item.dragging {
+        opacity: 0.5;
+      }
+
+      .multi temba-sortable-list {
+        margin: 0 !important;
+      }
+
       input {
         font-size: 13px;
         width: 0px;
@@ -225,16 +238,15 @@ export class Select<T extends SelectOption> extends FormElement {
         border: 0px solid purple !important;
       }
 
-      .input-wrapper {
-        min-width: 1px;
-      }
-
       .input-wrapper:focus-within {
         min-width: 1px;
       }
 
       .input-wrapper {
+        min-width: 1px;
         margin-left: 6px;
+        margin-right: -6px;
+        display: flex;
       }
 
       .multi .input-wrapper {
@@ -274,9 +286,9 @@ export class Select<T extends SelectOption> extends FormElement {
         box-shadow: none !important;
       }
 
-      .input-wrapper {
-        display: flex;
-        margin-right: 0em;
+      .multi .input-wrapper {
+        flex-shrink: 0;
+        min-width: 100px;
       }
 
       .input-wrapper .searchbox {
@@ -291,6 +303,7 @@ export class Select<T extends SelectOption> extends FormElement {
         color: var(--color-placeholder);
         display: none;
         line-height: var(--temba-select-selected-line-height);
+        margin-left: 6px;
       }
 
       .footer {
@@ -331,6 +344,10 @@ export class Select<T extends SelectOption> extends FormElement {
         margin-bottom: 0px;
         pointer-events: none;
         padding: 0px;
+      }
+
+      .ghost .remove-item {
+        display: none !important;
       }
     `;
   }
@@ -515,6 +532,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   allowAnchor: boolean = true;
 
+  @property({ type: String })
+  draggingId: string;
+
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
@@ -538,6 +558,7 @@ export class Select<T extends SelectOption> extends FormElement {
     this.renderSelectedItemDefault = this.renderSelectedItemDefault.bind(this);
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
+    this.handleOrderChanged = this.handleOrderChanged.bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -1339,8 +1360,13 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleContainerClick(event: MouseEvent) {
-    event.stopPropagation();
-    event.preventDefault();
+    if (this.disabled) {
+      // prevent opening dropdown right after drag-and-drop
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+
     this.focused = true;
     if ((event.target as any).tagName !== 'INPUT') {
       const input = this.shadowRoot.querySelector('input');
@@ -1376,6 +1402,9 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private handleArrowClick(event: MouseEvent): void {
+    if (this.disabled) {
+      return;
+    }
     if (this.isOpen()) {
       event.preventDefault();
       event.stopPropagation();
@@ -1391,7 +1420,16 @@ export class Select<T extends SelectOption> extends FormElement {
     // special case for icons on any option type
     const icon = (option as any).icon;
     return html`
-      <div class="option-name" style="display:flex">
+      <div
+        class="option-name"
+        style="flex: 1 1 auto;
+        align-self: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 2px 8px;
+        display: flex;"
+      >
         ${icon
           ? html`<temba-icon
               name="${icon}"
@@ -1458,6 +1496,18 @@ export class Select<T extends SelectOption> extends FormElement {
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
       this.values.splice(idx, 1);
+
+      // Also remove the 'selected' attribute from the corresponding temba-option element
+      const valueToMatch = this.getValue(valueToRemove);
+      for (const child of this.children) {
+        if (child.tagName === 'TEMBA-OPTION') {
+          const childValue = child.getAttribute('value');
+          if (childValue === valueToMatch) {
+            child.removeAttribute('selected');
+            break;
+          }
+        }
+      }
     }
     this.requestUpdate('values', oldValues);
     this.infoText = '';
@@ -1485,6 +1535,30 @@ export class Select<T extends SelectOption> extends FormElement {
       this.staticOptions.length === 0 &&
       !this.endpoint
     );
+  }
+
+  private handleOrderChanged(event: CustomEvent): void {
+    const detail = event.detail;
+
+    // Handle new swap-based format
+    if (detail.swap && Array.isArray(detail.swap) && detail.swap.length === 2) {
+      const [fromIdx, toIdx] = detail.swap;
+
+      // Only reorder if the indexes are different and valid
+      if (
+        fromIdx !== toIdx &&
+        fromIdx >= 0 &&
+        toIdx >= 0 &&
+        fromIdx < this.values.length &&
+        toIdx < this.values.length
+      ) {
+        const oldValues = [...this.values];
+        // Move the item from fromIdx to toIdx
+        const movedItem = this.values.splice(fromIdx, 1)[0];
+        this.values.splice(toIdx, 0, movedItem);
+        this.requestUpdate('values', oldValues);
+      }
+    }
   }
 
   public render(): TemplateResult {
@@ -1571,35 +1645,132 @@ export class Select<T extends SelectOption> extends FormElement {
                   : null
               }
               ${!this.multi && !this.resolving ? input : null}
-              ${this.values.map(
-                (selected: any, index: number) => html`
-                  <div
-                    class="selected-item ${index === this.selectedIndex
-                      ? 'focused'
-                      : ''}"
-                  >
-                    ${this.multi
-                      ? html`
-                          <div
-                            class="remove-item"
-                            style="margin-top:1px"
-                            @click=${(evt: MouseEvent) => {
-                              evt.preventDefault();
-                              evt.stopPropagation();
-                              this.handleRemoveSelection(selected);
-                            }}
-                          >
-                            <temba-icon
-                              name="${Icon.delete_small}"
-                              size="1"
-                            ></temba-icon>
-                          </div>
-                        `
-                      : null}
-                    ${this.renderSelectedItem(selected)}
-                  </div>
-                `
-              )}
+              ${
+                this.multi && this.values.length > 1
+                  ? html`
+                      <temba-sortable-list
+                        horizontal
+                        @temba-order-changed=${this.handleOrderChanged}
+                        .prepareGhost=${(item: any) => {
+                          item.style.transform = 'scale(1)';
+                          item.querySelector('.remove-item').style.display =
+                            'none';
+                        }}
+                      >
+                        ${this.values.map(
+                          (selected: any, index: number) => html`
+                            <div
+                              class="selected-item sortable ${index ===
+                              this.selectedIndex
+                                ? 'focused'
+                                : ''} ${this.draggingId === `selected-${index}`
+                                ? 'dragging'
+                                : ''}"
+                              id="selected-${index}"
+                              style="
+                                vertical-align: middle;
+                                background: rgba(100,100,100,0.1);
+                                user-select: none;
+                                border-radius: 2px;
+                                align-items: center;
+                                flex-direction: row;
+                                flex-wrap: nowrap;
+                                margin: 2px 2px;
+                                display: flex;
+                                overflow: hidden;
+                                color: var(--color-widget-text);
+                                line-height: var(--temba-select-selected-line-height);
+                                --icon-color: var(--color-text-dark);
+                                ${index === this.selectedIndex
+                                ? 'background: rgba(100,100,100,0.3);'
+                                : ''}
+                                ${this.draggingId === `selected-${index}`
+                                ? 'opacity: 0.5;'
+                                : ''}
+                              "
+                            >
+                              ${this.multi
+                                ? html`
+                                    <div
+                                      class="remove-item"
+                                      style="
+                                        cursor: pointer;
+                                        display: inline-block;
+                                        padding: 3px 6px;
+                                        border-right: 1px solid rgba(100,100,100,0.2);
+                                        margin: 0;
+                                        background: rgba(100,100,100,0.05);
+                                        margin-top:1px;
+                                      "
+                                      @click=${(evt: MouseEvent) => {
+                                        evt.preventDefault();
+                                        evt.stopPropagation();
+                                        this.handleRemoveSelection(selected);
+                                      }}
+                                    >
+                                      <temba-icon
+                                        name="${Icon.delete_small}"
+                                        size="1"
+                                      ></temba-icon>
+                                    </div>
+                                  `
+                                : null}
+                              ${this.renderSelectedItem(selected)}
+                            </div>
+                          `
+                        )}
+                      </temba-sortable-list>
+                    `
+                  : this.values.map(
+                      (selected: any, index: number) => html`
+                        <div
+                          class="selected-item ${index === this.selectedIndex
+                            ? 'focused'
+                            : ''}"
+                          style="
+                            display: flex;
+                            overflow: hidden;
+                            color: var(--color-widget-text);
+                            line-height: var(--temba-select-selected-line-height);
+                            --icon-color: var(--color-text-dark);
+                            ${index === this.selectedIndex
+                            ? 'background: rgba(100,100,100,0.3);'
+                            : ''}
+                          "
+                        >
+                          ${this.multi
+                            ? html`
+                                <div
+                                  class="remove-item"
+                                  style="
+                                    cursor: pointer;
+                                    display: inline-block;
+                                    padding: 3px 6px;
+                                    border-right: 1px solid rgba(100,100,100,0.2);
+                                    margin: 0;
+                                    background: rgba(100,100,100,0.05);
+                                    margin-top:1px;
+                                  "
+                                  @click=${(evt: MouseEvent) => {
+                                    evt.preventDefault();
+                                    evt.stopPropagation();
+                                    this.handleRemoveSelection(selected);
+                                  }}
+                                >
+                                  <temba-icon
+                                    name="${Icon.delete_small}"
+                                    size="1"
+                                  ></temba-icon>
+                                </div>
+                              `
+                            : null}
+                          ${!this.input
+                            ? this.renderSelectedItem(selected)
+                            : null}
+                        </div>
+                      `
+                    )
+              }
               ${this.multi ? input : null}
             </div>
 

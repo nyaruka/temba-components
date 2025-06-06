@@ -1,7 +1,6 @@
 import { fixture, assert } from '@open-wc/testing';
 import { Omnibox } from '../src/omnibox/Omnibox';
-import { assertScreenshot, getClip } from './utils.test';
-import { openAndClick } from './temba-select.test';
+import { assertScreenshot, getClip, openAndClick } from './utils.test';
 import { useFakeTimers, spy } from 'sinon';
 
 export const getHTML = (attrs: any = { name: 'recipients' }): string => {
@@ -24,7 +23,7 @@ export const createOmnibox = async (
   attrs: any = {}
 ): Promise<Omnibox> => {
   const parentNode = document.createElement('div');
-  parentNode.setAttribute('style', 'width: 250px;');
+  parentNode.setAttribute('style', 'width: 400px;');
 
   const omnibox: Omnibox = await fixture(getHTML(attrs), { parentNode });
   clock.runAll();

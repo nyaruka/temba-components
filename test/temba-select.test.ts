@@ -1,16 +1,16 @@
-import * as sinon from 'sinon';
+import Sinon, * as sinon from 'sinon';
 import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { Options } from '../src/options/Options';
 import { Select, SelectOption } from '../src/select/Select';
 import {
   assertScreenshot,
-  checkTimers,
   getClip,
+  getOptions,
   loadStore,
-  mouseClickElement
+  openAndClick,
+  openSelect
 } from './utils.test';
-import { CustomEventType } from '../src/interfaces';
 
 const colors = [
   { name: 'Red', value: '0' },
@@ -20,7 +20,7 @@ const colors = [
 
 export const createSelect = async (clock, def: string) => {
   const parentNode = document.createElement('div');
-  parentNode.setAttribute('style', 'width: 250px;');
+  parentNode.setAttribute('style', 'width: 400px;');
 
   const select: Select<SelectOption> = await fixture(def, { parentNode });
   clock.runAll();
@@ -28,64 +28,8 @@ export const createSelect = async (clock, def: string) => {
   return select;
 };
 
-export const open = async (clock, select: Select<SelectOption>) => {
-  if (!select.endpoint) {
-    await mouseClickElement(select);
-    await clock.runAll();
-    await clock.runAll();
-    return select;
-  }
-
-  const promise = new Promise<Select<SelectOption>>((resolve) => {
-    select.addEventListener(
-      CustomEventType.FetchComplete,
-      async () => {
-        await clock.runAll();
-        resolve(select);
-      },
-      { once: true }
-    );
-  });
-
-  await mouseClickElement(select);
-  await clock.runAll();
-
-  return promise;
-};
-
 export const clear = (select: Select<SelectOption>) => {
   (select.shadowRoot.querySelector('.clear-button') as HTMLDivElement).click();
-};
-
-export const getOptions = (select: Select<SelectOption>): Options => {
-  return select.shadowRoot.querySelector('temba-options[visible]');
-};
-
-export const clickOption = async (
-  clock: any,
-  select: Select<SelectOption>,
-  index: number
-) => {
-  const options = getOptions(select);
-  const option = options.shadowRoot.querySelector(
-    `[data-option-index="${index}"]`
-  ) as HTMLDivElement;
-
-  await mouseClickElement(option);
-  await options.updateComplete;
-  await select.updateComplete;
-  await clock.runAll();
-
-  checkTimers(clock);
-};
-
-export const openAndClick = async (
-  clock: any,
-  select: Select<SelectOption>,
-  index: number
-) => {
-  await open(clock, select);
-  await clickOption(clock, select, index);
 };
 
 export const getSelectHTML = (
@@ -143,7 +87,7 @@ const getClipWithOptions = (select: Select<any>) => {
 };
 
 describe('temba-select', () => {
-  let clock: any;
+  let clock: Sinon.SinonFakeTimers;
   beforeEach(function () {
     clock = useFakeTimers();
     clock.tick(400);
@@ -190,7 +134,7 @@ describe('temba-select', () => {
     expect(select.disabled).to.equal(true);
 
     // make sure we can't select anymore
-    await open(clock, select);
+    await openSelect(clock, select);
     expect(select.isOpen()).to.equal(false);
     await assertScreenshot('select/disabled-multi-selection', getClip(select));
   });
@@ -211,7 +155,7 @@ describe('temba-select', () => {
 
   it('shows options when opened', async () => {
     const select = await createSelect(clock, getSelectHTML());
-    await open(clock, select);
+    await openSelect(clock, select);
     const options = getOptions(select);
     assert.instanceOf(options, Options);
 
@@ -241,7 +185,7 @@ describe('temba-select', () => {
     );
 
     // attempt to open the select with no options
-    await open(clock, select);
+    await openSelect(clock, select);
 
     // should show options dropdown even though there are no options
     const options = getOptions(select);
@@ -297,13 +241,13 @@ describe('temba-select', () => {
       expect(select.values[0].name).to.equal('Green');
 
       // for single selection our current selection should be in the list and focused
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.cursorIndex, 1);
       assert.equal(select.visibleOptions.length, 3);
 
       // now lets do a search, we should see our selection (green) and one other (red)
       await typeInto('temba-select', 're', false);
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot(
@@ -369,7 +313,7 @@ describe('temba-select', () => {
       assert(changeEvent.called, 'change event not fired');
 
       changeEvent.resetHistory();
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 0);
       assert(!changeEvent.called, 'change event should not be fired');
 
@@ -404,6 +348,163 @@ describe('temba-select', () => {
     });
   });
 
+  describe('drag and drop reordering', () => {
+    it('handles drag and drop with swap-based logic', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(
+          [
+            { name: 'Red', value: '0', selected: true },
+            { name: 'Green', value: '1', selected: true },
+            { name: 'Blue', value: '2', selected: true }
+          ],
+          {
+            placeholder: 'Select colors',
+            multi: true
+          }
+        )
+      );
+
+      // Verify initial order: Red, Green, Blue
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Green');
+      expect(select.values[2].name).to.equal('Blue');
+
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
+      expect(sortableList).to.not.be.null;
+
+      // Example 1: Pick up Blue (index 2), drop between Red and Green
+      // Expected result: Red, Blue, Green (swap [1,2])
+      const blueItem = sortableList.querySelector('#selected-2');
+      const greenItem = sortableList.querySelector('#selected-1');
+      expect(blueItem).to.not.be.null;
+      expect(greenItem).to.not.be.null;
+
+      const blueBounds = blueItem.getBoundingClientRect();
+      const greenBounds = greenItem.getBoundingClientRect();
+
+      // Start drag from Blue item
+      await moveMouse(blueBounds.left + 10, blueBounds.top + 10);
+      await mouseDown();
+
+      // Drag to position between Red and Green (left side of Green)
+      await moveMouse(greenBounds.left - 5, greenBounds.top + 10);
+      await waitFor(100);
+      await mouseUp();
+      clock.runAll();
+
+      // Verify result: Red, Blue, Green (Green and Blue swapped)
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Blue');
+      expect(select.values[2].name).to.equal('Green');
+
+      // Reset for next test
+      select.values = [
+        { name: 'Red', value: '0', selected: true },
+        { name: 'Green', value: '1', selected: true },
+        { name: 'Blue', value: '2', selected: true }
+      ];
+      await select.updateComplete;
+
+      // Example 2: Pick up Red (index 0), drop at end
+      // Expected result: Green, Blue, Red (swap [0,2])
+      const redItem = sortableList.querySelector('#selected-0');
+      const redBounds = redItem.getBoundingClientRect();
+      const blueItemBounds = sortableList
+        .querySelector('#selected-2')
+        .getBoundingClientRect();
+
+      // Start drag from Red item
+      await moveMouse(redBounds.left + 10, redBounds.top + 10);
+      await mouseDown();
+
+      // Drag to end position (right side of Blue)
+      await moveMouse(blueItemBounds.right + 5, blueItemBounds.top + 10);
+      await waitFor(100);
+      await mouseUp();
+      clock.runAll();
+
+      // Verify result: Green, Blue, Red (Red and Blue swapped)
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Green');
+      expect(select.values[1].name).to.equal('Blue');
+      expect(select.values[2].name).to.equal('Red');
+
+      // Reset for next test
+      select.values = [
+        { name: 'Red', value: '0', selected: true },
+        { name: 'Green', value: '1', selected: true },
+        { name: 'Blue', value: '2', selected: true }
+      ];
+      await select.updateComplete;
+
+      // Example 3: Pick up Green (index 1), drop at same position
+      // Expected result: No change, no event
+      const greenItemNew = sortableList.querySelector('#selected-1');
+      const greenBoundsNew = greenItemNew.getBoundingClientRect();
+
+      // Start drag from Green item
+      await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
+      await mouseDown();
+
+      // Drag slightly but return to same position
+      await moveMouse(greenBoundsNew.left + 15, greenBoundsNew.top + 10);
+      await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
+      await waitFor(100);
+      await mouseUp();
+      clock.runAll();
+
+      // Verify result: No change
+      expect(select.values.length).to.equal(3);
+      expect(select.values[0].name).to.equal('Red');
+      expect(select.values[1].name).to.equal('Green');
+      expect(select.values[2].name).to.equal('Blue');
+    });
+
+    it('does not show sortable list for single item', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([{ name: 'Red', value: '0', selected: true }], {
+          placeholder: 'Select a color',
+          multi: true
+        })
+      );
+
+      // Should not have a sortable list with only one item
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
+      expect(sortableList).to.be.null;
+
+      // Should still show the selected item normally
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal('Red');
+    });
+
+    it('does not show sortable list for non-multi select', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([{ name: 'Red', value: '0', selected: true }], {
+          placeholder: 'Select a color',
+          multi: false
+        })
+      );
+
+      // Should not have a sortable list for single select
+      const sortableList = select.shadowRoot.querySelector(
+        'temba-sortable-list'
+      );
+      expect(sortableList).to.be.null;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal('Red');
+    });
+  });
+
   describe('static options', () => {
     it('accepts an initial value', async () => {
       const select = await createSelect(
@@ -434,7 +535,7 @@ describe('temba-select', () => {
         })
       );
 
-      await open(clock, select);
+      await openSelect(clock, select);
       await assertScreenshot(
         'select/remote-options',
         getClipWithOptions(select)
@@ -453,7 +554,7 @@ describe('temba-select', () => {
       );
 
       await typeInto('temba-select', 're', false);
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot('select/searching', getClipWithOptions(select));
@@ -490,7 +591,7 @@ describe('temba-select', () => {
         })
       );
 
-      await open(clock, select);
+      await openSelect(clock, select);
 
       // should have all three pages visible right away
       assert.equal(select.visibleOptions.length, 15);
@@ -508,14 +609,14 @@ describe('temba-select', () => {
       );
 
       // wait for updates from fetching three pages
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen
       select.blur();
       await clock.tick(250);
 
-      await open(clock, select);
+      await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen once more (previous bug failed on third opening)
@@ -536,7 +637,7 @@ describe('temba-select', () => {
       );
 
       await typeInto('temba-select', 'Hi there @contact', false);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       assert.equal(select.completionOptions.length, 14);
       await assertScreenshot('select/expressions', getClipWithOptions(select));
@@ -596,7 +697,7 @@ describe('temba-select', () => {
       await openAndClick(clock, select, 1);
 
       // now open and look at focus
-      await open(clock, select);
+      await openSelect(clock, select);
       await assertScreenshot(
         'select/search-selected-focus',
         getClipWithOptions(select)
@@ -616,11 +717,11 @@ describe('temba-select', () => {
       // select the first option
       await openAndClick(clock, select, 0);
       await openAndClick(clock, select, 0);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       // now lets do a search, we should see our selection (green) and one other (red)
       await typeInto('temba-select', 're', false);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       // should have two things selected and active query and no matching options
       await assertScreenshot(
@@ -642,7 +743,7 @@ describe('temba-select', () => {
       );
 
       await typeInto('temba-select', 'look at @(max(m', false);
-      await open(clock, select);
+      await openSelect(clock, select);
 
       await assertScreenshot('select/functions', getClipWithOptions(select));
     });
@@ -650,7 +751,7 @@ describe('temba-select', () => {
     it('should truncate selection if necessesary', async () => {
       const options = [
         {
-          name: 'this_is_a_long_selection_to_make_sure_it_truncates',
+          name: 'this_is_a_long_selection_to_make_sure_it_truncates_but_it_needs_to_be_longer',
           value: '0'
         }
       ];
