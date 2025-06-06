@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <title>Button Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link
+      href="../common.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+</head>
+<body>
+    <h1>Button Examples</h1>   
+    <p><a href="../index.html">← Back to main demo</a></p>
+    
+    <div class="example">
+        <h3>Basic Button</h3>
+        <p>A simple button component</p>
+        <temba-button>Click Me</temba-button>
+    </div>
+
+    <div class="example">
+        <h3>Primary Button</h3>
+        <p>A primary styled button</p>
+        <temba-button primary>Primary Action</temba-button>
+    </div>
+
+    <div class="example">
+        <h3>Secondary Button</h3>
+        <p>A secondary styled button</p>
+        <temba-button secondary>Secondary Action</temba-button>
+    </div>
+
+    <div class="example">
+        <h3>Small Button</h3>
+        <p>A smaller button variant</p>
+        <temba-button small>Small Button</temba-button>
+    </div>
+
+    <div class="example">
+        <h3>Disabled Button</h3>
+        <p>A button that cannot be clicked</p>
+        <temba-button disabled>Disabled Button</temba-button>
+    </div>
+
+    <div class="example">
+        <h3>Multiple Buttons</h3>
+        <p>Several buttons in a row</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <temba-button>Save</temba-button>
+            <temba-button secondary>Cancel</temba-button>
+            <temba-button primary>Submit</temba-button>
+        </div>
+    </div>
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+</body>
+</html>

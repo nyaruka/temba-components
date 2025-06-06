@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <title>Compose Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link
+      href="../common.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+</head>
+<body>
+    <h1>Compose Examples</h1>
+    <p><a href="../index.html">← Back to main demo</a></p>
+    
+    <div class="example">
+        <h3>Basic Compose</h3>
+        <p>A simple compose component for text input</p>
+        <temba-compose placeholder="Type your message here..."></temba-compose>
+    </div>
+
+    <div class="example">
+        <h3>Compose with Counter</h3>
+        <p>A compose component with character counting</p>
+        <temba-compose 
+            placeholder="Enter your message (max 160 characters)..."
+            counter
+            maxlength="160">
+        </temba-compose>
+    </div>
+
+    <div class="example">
+        <h3>Compose with Attachments</h3>
+        <p>A compose component that supports file attachments</p>
+        <temba-compose 
+            placeholder="Write your message and attach files..."
+            attachments>
+        </temba-compose>
+    </div>
+
+    <div class="example">
+        <h3>Rich Text Compose</h3>
+        <p>A compose component with rich text formatting</p>
+        <temba-compose 
+            placeholder="Format your text with rich editing..."
+            rich-text>
+        </temba-compose>
+    </div>
+
+    <div class="example">
+        <h3>Multi-line Compose</h3>
+        <p>A compose component with multiple lines</p>
+        <temba-compose 
+            placeholder="Enter a longer message..."
+            rows="4">
+        </temba-compose>
+    </div>
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+</body>
+</html>

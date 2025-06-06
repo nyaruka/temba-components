@@ -82,10 +82,46 @@ body {
 }
 
 .component-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
     margin: 20px 0;
+}
+
+.component-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.component-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    border-bottom: 2px solid #0066cc;
+    padding-bottom: 10px;
+}
+
+.component-section .component-card {
+    display: inline-block;
+    width: calc(50% - 10px);
+    margin-right: 20px;
+    margin-bottom: 20px;
+    vertical-align: top;
+    border: 1px solid #eee;
+    background: #f9f9f9;
+}
+
+.component-section .component-card:nth-child(even) {
+    margin-right: 0;
+}
+
+@media (max-width: 768px) {
+    .component-section .component-card {
+        width: 100%;
+        margin-right: 0;
+    }
 }
 
 .component-card {
