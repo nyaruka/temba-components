@@ -396,9 +396,11 @@ describe('temba-select', () => {
       await moveMouse(firstBounds.left + 10, firstBounds.top + 10);
       await mouseDown();
 
-      // Drag to second item position (Green)
+      // Drag to second item position (Green) - make sure we move far enough to trigger drag
       await moveMouse(secondBounds.left + 10, secondBounds.top + 10);
+      await waitFor(100); // Wait for drag operations to complete
       await mouseUp();
+      await waitFor(100); // Wait for drop operations to complete
 
       // Verify the order has changed - Red and Green should be swapped
       expect(select.values.length).to.equal(3);

@@ -1539,23 +1539,20 @@ export class Select<T extends SelectOption> extends FormElement {
 
   private handleOrderChanged(event: CustomEvent): void {
     const detail = event.detail;
-    const toIdx = detail.toIdx;
-
+    
     if (this.draggingId) {
-      // Calculate if this represents a real position change
-      // When dragging an item, SortableList reports the target position of where
-      // the item will be inserted relative to the other items (excluding the dragged item)
-
-      let actualTargetIdx = toIdx;
-
-      // If the target position is after the original position, we need to account
-      // for the fact that the dragged item will be removed from its original position
-      if (toIdx > this.originalDragIdx) {
-        actualTargetIdx = toIdx;
-      } else if (toIdx <= this.originalDragIdx) {
-        // If target is at or before original position, the actual target is the same
-        actualTargetIdx = toIdx;
+      // Extract the target index from the target element ID instead of using the calculated toIdx
+      const targetElementId = detail.to; // e.g., "selected-1"
+      const targetIdParts = targetElementId.split('-');
+      const targetElementIdx = parseInt(targetIdParts[targetIdParts.length - 1]);
+      
+      let actualTargetIdx = targetElementIdx;
+      
+      // If insertAfter is true, we want to insert after the target element
+      if (detail.insertAfter) {
+        actualTargetIdx += 1;
       }
+      // If insertAfter is false, we want to insert before the target element (use targetElementIdx as-is)
 
       // Only store the change if it's actually different from the original position
       if (actualTargetIdx !== this.originalDragIdx) {
@@ -1568,6 +1565,7 @@ export class Select<T extends SelectOption> extends FormElement {
       // if not dragging, apply immediately
       const oldValues = [...this.values];
       const fromIdx = detail.fromIdx;
+      const toIdx = detail.toIdx;
       const temp = this.values[fromIdx];
       this.values[fromIdx] = this.values[toIdx];
       this.values[toIdx] = temp;
@@ -1592,9 +1590,13 @@ export class Select<T extends SelectOption> extends FormElement {
       this.originalDragIdx !== this.pendingTargetIdx
     ) {
       const oldValues = [...this.values];
-      const temp = this.values[this.originalDragIdx];
-      this.values[this.originalDragIdx] = this.values[this.pendingTargetIdx];
-      this.values[this.pendingTargetIdx] = temp;
+      
+      // Remove the item from its original position
+      const movedItem = this.values.splice(this.originalDragIdx, 1)[0];
+      
+      // Insert it at the target position
+      this.values.splice(this.pendingTargetIdx, 0, movedItem);
+      
       this.requestUpdate('values', oldValues);
     }
 
