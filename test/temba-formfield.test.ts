@@ -19,8 +19,12 @@ describe('temba-field', () => {
     // Check that errors are rendered
     const errorElements = formField.shadowRoot.querySelectorAll('.alert-error');
     expect(errorElements.length).to.equal(2);
-    expect(errorElements[0].textContent.trim()).to.equal('This is a plain text error');
-    expect(errorElements[1].textContent.trim()).to.equal('Another error message');
+    expect(errorElements[0].textContent.trim()).to.equal(
+      'This is a plain text error'
+    );
+    expect(errorElements[1].textContent.trim()).to.equal(
+      'Another error message'
+    );
 
     await assertScreenshot('formfield/plain-text-errors', getClip(formField));
   });
@@ -73,10 +77,7 @@ describe('temba-field', () => {
 
   it('renders field without errors', async () => {
     const formField: FormField = await fixture(html`
-      <temba-field
-        label="Test Field"
-        name="test"
-      >
+      <temba-field label="Test Field" name="test">
         <input type="text" />
       </temba-field>
     `);
@@ -112,6 +113,9 @@ describe('temba-field', () => {
     expect(boldElement).to.not.be.null;
     expect(linkElement).to.not.be.null;
 
-    await assertScreenshot('formfield/widget-only-markdown-errors', getClip(formField));
+    await assertScreenshot(
+      'formfield/widget-only-markdown-errors',
+      getClip(formField)
+    );
   });
 });

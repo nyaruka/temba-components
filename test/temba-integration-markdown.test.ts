@@ -17,7 +17,9 @@ describe('FormElement markdown integration', () => {
     await checkbox.updateComplete;
 
     // Check that errors are rendered with markdown
-    const errorElements = checkbox.shadowRoot.querySelectorAll('temba-field')[0].shadowRoot.querySelectorAll('.alert-error');
+    const errorElements = checkbox.shadowRoot
+      .querySelectorAll('temba-field')[0]
+      .shadowRoot.querySelectorAll('.alert-error');
     expect(errorElements.length).to.equal(2);
 
     // First error should have bold text and link
@@ -35,6 +37,9 @@ describe('FormElement markdown integration', () => {
     expect(italicElement).to.not.be.null;
     expect(italicElement.textContent).to.equal('requires');
 
-    await assertScreenshot('integration/checkbox-markdown-errors', getClip(checkbox));
+    await assertScreenshot(
+      'integration/checkbox-markdown-errors',
+      getClip(checkbox)
+    );
   });
 });

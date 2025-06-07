@@ -95,7 +95,9 @@ export class FormField extends LitElement {
   public render(): TemplateResult {
     const errors = !this.hideErrors
       ? (this.errors || []).map((error: string) => {
-          return html` <div class="alert-error">${renderMarkdown(error)}</div> `;
+          return html`
+            <div class="alert-error">${renderMarkdown(error)}</div>
+          `;
         })
       : [];
 
