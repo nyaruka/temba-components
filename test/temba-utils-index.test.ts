@@ -597,7 +597,7 @@ describe('utils/index', () => {
         expect(fn.calledOnce).to.be.true;
         expect(fn.calledWith('arg3')).to.be.true;
         done();
-      }, 100);
+      }, 75);
     });
 
     it('calls immediately when immediate flag is true', () => {
@@ -632,7 +632,7 @@ describe('utils/index', () => {
         throttledFn('arg4');
         expect(fn.callCount).to.equal(2);
         done();
-      }, 100);
+      }, 75);
     });
   });
 

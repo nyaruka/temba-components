@@ -17,6 +17,7 @@ export const createToast = async (attrs: any = {}) => {
 describe('temba-toast', () => {
   it('can be created', async () => {
     const toast = await createToast();
+
     assert.instanceOf(toast, Toast);
     expect(toast.messages).to.deep.equal([]);
     expect(toast.staleDuration).to.equal(5000);
@@ -127,8 +128,7 @@ describe('temba-toast', () => {
     // Initially not visible
     expect(toast.messages[0].visible).to.be.undefined;
 
-    // Wait for the timeout
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await waitFor(200);
 
     expect(toast.messages[0].visible).to.be.true;
   });

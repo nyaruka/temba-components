@@ -160,7 +160,7 @@ export class Editor extends RapidElement {
   ): void {
     super.updated(changes);
     if (changes.has('canvasSize')) {
-      console.log('Setting canvas size', this.canvasSize);
+      // console.log('Setting canvas size', this.canvasSize);
     }
   }
 

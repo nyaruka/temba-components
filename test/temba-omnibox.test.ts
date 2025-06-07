@@ -57,7 +57,12 @@ describe('temba-omnibox', () => {
     const changeEvent = spy();
     omnibox.addEventListener('change', changeEvent);
 
+    clock.runAll();
+    await omnibox.updateComplete;
+    clock.runAll();
+
     await openAndClick(clock, omnibox, 0);
+    clock.runAll();
     assert(changeEvent.called, 'change event not fired');
 
     await assertScreenshot('omnibox/selected', getClip(omnibox));

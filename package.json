@@ -21,9 +21,9 @@
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --config .prettierrc --write --ignore-path .gitignore",
     "format": "yarn format:eslint && yarn format:prettier",
     "test": "wtr --node-resolve",
+    "test:fast": "wtr --node-resolve --fast",
     "validate": "yarn format && yarn build && yarn test --coverage",
     "test:watch": "wtr --node-resolve --watch",
-
     "svg": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/index.svg' --usage='./src/vectoricon/index.ts'",
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
