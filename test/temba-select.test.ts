@@ -505,6 +505,73 @@ describe('temba-select', () => {
     });
   });
 
+  describe('tags functionality', () => {
+    it('shows selected item text when typing second tag', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter tags',
+          multi: true,
+          searchable: true,
+          tags: true
+        })
+      );
+
+      // Add first tag programmatically (simulating user adding first tag)
+      select.addValue({ name: 'Yes', value: 'Yes' });
+      await select.updateComplete;
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal('Yes');
+
+      // Check that the first tag is displayed with text
+      let selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+      expect(selectedItems.length).to.equal(1);
+      expect(selectedItems[0].textContent).to.contain('Yes');
+
+      // Start typing second tag (this should not hide the first tag's text)
+      await typeInto('temba-select', 'No', false, false);
+
+      // Check that first tag text is still visible while typing second tag
+      selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+      expect(selectedItems.length).to.equal(1);
+      
+      // The selected item should still contain the text "Yes"
+      const firstItemText = selectedItems[0].textContent;
+      expect(firstItemText).to.contain('Yes');
+    });
+
+    it('hides selected item text when typing in single-select mode', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML(colors, {
+          placeholder: 'Select a color',
+          searchable: true
+        })
+      );
+
+      // Select an option first
+      await openAndClick(clock, select, 0); // Select Red
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].name).to.equal('Red');
+
+      // Check that the selected item is displayed with text when not typing
+      let selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+      expect(selectedItems.length).to.equal(1);
+      expect(selectedItems[0].textContent).to.contain('Red');
+
+      // Start typing in the search box
+      await typeInto('temba-select', 'gr', false, false);
+
+      // Check that selected item text is hidden while typing (preserving single-select behavior)
+      selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+      expect(selectedItems.length).to.equal(1);
+      
+      // The selected item should NOT contain the text "Red" when typing
+      const itemText = selectedItems[0].textContent.trim();
+      expect(itemText).to.not.contain('Red');
+    });
+  });
+
   describe('static options', () => {
     it('accepts an initial value', async () => {
       const select = await createSelect(
