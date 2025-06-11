@@ -117,6 +117,9 @@ export class TembaChart extends RapidElement {
   @property({ type: Boolean })
   formatDuration: boolean = false;
 
+  @property({ type: Boolean })
+  showAll: boolean = false;
+
   @property({ type: Number })
   colorIndex: number = 0;
 
@@ -158,7 +161,6 @@ export class TembaChart extends RapidElement {
 
       .config {
         max-height: 0px;
-        margin: 2em 0.5em;
         padding: 0em 1em;
         border-radius: var(--curvature);
         border: 1px solid transparent;
@@ -168,10 +170,8 @@ export class TembaChart extends RapidElement {
       }
 
       .config.show {
-        padding: 1em;
+        padding: 2em 1em 1.5em 1em;
         max-height: 50px;
-        background: rgba(0, 0, 0, 0.02);
-        border: 1px solid rgba(0, 0, 0, 0.09);
       }
     `;
   }
@@ -210,7 +210,7 @@ export class TembaChart extends RapidElement {
 
     if (changes.has('url')) {
       const store = getStore();
-      store.getUrl(this.url).then((response) => {
+      store.getUrl(this.url, { skipCache: true }).then((response) => {
         this.data = response.json.data;
       });
     }
@@ -222,7 +222,10 @@ export class TembaChart extends RapidElement {
       // keep a running list of values that is the sum at each index
       const sums = [];
       for (const dataset of this.data.datasets) {
-        if (this.splits.find((s) => s === dataset.label) === undefined) {
+        if (
+          !this.showAll &&
+          this.splits.find((s) => s === dataset.label) === undefined
+        ) {
           // update our sums
           for (let i = 0; i < dataset.data.length; i++) {
             if (sums[i] === undefined) {
@@ -254,7 +257,7 @@ export class TembaChart extends RapidElement {
           borderWidth: 1
         });
       } else {
-        if (!this.hideOther) {
+        if (!this.hideOther && !this.showAll) {
           datasets.push({
             label: 'Other',
             data: sums,
