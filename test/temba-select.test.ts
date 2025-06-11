@@ -534,7 +534,7 @@ describe('temba-select', () => {
       // Check that first tag text is still visible while typing second tag
       selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
       expect(selectedItems.length).to.equal(1);
-      
+
       // The selected item should still contain the text "Yes"
       const firstItemText = selectedItems[0].textContent;
       expect(firstItemText).to.contain('Yes');
@@ -565,7 +565,7 @@ describe('temba-select', () => {
       // Check that selected item text is hidden while typing (preserving single-select behavior)
       selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
       expect(selectedItems.length).to.equal(1);
-      
+
       // The selected item should NOT contain the text "Red" when typing
       const itemText = selectedItems[0].textContent.trim();
       expect(itemText).to.not.contain('Red');
