@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 
 import { Select, SelectOption } from '../select/Select';
-import { getClasses } from '../utils';
+import { darkenColor, getClasses } from '../utils';
 import { getStore } from '../store/Store';
 
 // eslint-disable-next-line import/no-named-as-default
@@ -435,9 +435,7 @@ export class TembaChart extends RapidElement {
     // Clamp transparency between 0 and 1
     const alpha = Math.max(0, Math.min(1, this.opacity));
     // Borders: darken base color, no transparency
-    const borderColors = baseColors.map((color) =>
-      this.darkenColor(color, 0.25)
-    );
+    const borderColors = baseColors.map((color) => darkenColor(color, 0.25));
     // Backgrounds: apply transparency to base color
     const backgroundColors = baseColors.map((color) => {
       // If already rgba, just replace the alpha
@@ -482,45 +480,6 @@ export class TembaChart extends RapidElement {
   /**
    * Utility to darken an rgba or hex color by a given factor (0-1).
    */
-  darkenColor(color: string, factor: number): string {
-    // If rgba or rgb
-    const rgbaMatch = color.match(
-      /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/
-    );
-    if (rgbaMatch) {
-      // eslint-disable-next-line prefer-const
-      let [r, g, b, a] = rgbaMatch
-        .slice(1)
-        .map((v, i) => (i < 3 ? parseInt(v) : parseFloat(v)));
-      r = Math.max(0, Math.floor(r * (1 - factor)));
-      g = Math.max(0, Math.floor(g * (1 - factor)));
-      b = Math.max(0, Math.floor(b * (1 - factor)));
-      if (rgbaMatch[4] !== undefined) {
-        return `rgba(${r},${g},${b},${a})`;
-      }
-      return `rgb(${r},${g},${b})`;
-    }
-    // If hex
-    if (color.startsWith('#')) {
-      let hex = color.replace('#', '');
-      if (hex.length === 3) {
-        hex = hex
-          .split('')
-          .map((c) => c + c)
-          .join('');
-      }
-      const num = parseInt(hex, 16);
-      let r = (num >> 16) & 255;
-      let g = (num >> 8) & 255;
-      let b = num & 255;
-      r = Math.max(0, Math.floor(r * (1 - factor)));
-      g = Math.max(0, Math.floor(g * (1 - factor)));
-      b = Math.max(0, Math.floor(b * (1 - factor)));
-      return `rgb(${r},${g},${b})`;
-    }
-    // fallback
-    return color;
-  }
 
   private calculateSplits() {
     if (this.data) {
@@ -571,7 +530,7 @@ export class TembaChart extends RapidElement {
             label: 'Other',
             data: sums,
             backgroundColor: otherBackgroundColor,
-            borderColor: this.darkenColor(otherBackgroundColor, 0.05),
+            borderColor: darkenColor(otherBackgroundColor, 0.05),
             borderWidth: 1,
             borderRadius: this.seriesBorderRadius
           });
