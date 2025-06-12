@@ -1764,7 +1764,7 @@ export class Select<T extends SelectOption> extends FormElement {
                                 </div>
                               `
                             : null}
-                          ${!this.input
+                          ${!this.input || this.multi
                             ? this.renderSelectedItem(selected)
                             : null}
                         </div>

@@ -802,6 +802,46 @@ export const hslToHex = (h, s, l) => {
   return `#${f(0)}${f(8)}${f(4)}`;
 };
 
+export const darkenColor = (color: string, factor: number): string => {
+  // If rgba or rgb
+  const rgbaMatch = color.match(
+    /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/
+  );
+  if (rgbaMatch) {
+    // eslint-disable-next-line prefer-const
+    let [r, g, b, a] = rgbaMatch
+      .slice(1)
+      .map((v, i) => (i < 3 ? parseInt(v) : parseFloat(v)));
+    r = Math.max(0, Math.floor(r * (1 - factor)));
+    g = Math.max(0, Math.floor(g * (1 - factor)));
+    b = Math.max(0, Math.floor(b * (1 - factor)));
+    if (rgbaMatch[4] !== undefined) {
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    return `rgb(${r},${g},${b})`;
+  }
+  // If hex
+  if (color.startsWith('#')) {
+    let hex = color.replace('#', '');
+    if (hex.length === 3) {
+      hex = hex
+        .split('')
+        .map((c) => c + c)
+        .join('');
+    }
+    const num = parseInt(hex, 16);
+    let r = (num >> 16) & 255;
+    let g = (num >> 8) & 255;
+    let b = num & 255;
+    r = Math.max(0, Math.floor(r * (1 - factor)));
+    g = Math.max(0, Math.floor(g * (1 - factor)));
+    b = Math.max(0, Math.floor(b * (1 - factor)));
+    return `rgb(${r},${g},${b})`;
+  }
+  // fallback
+  return color;
+};
+
 export const renderAvatar = (input: {
   name?: string;
   user?: User;
