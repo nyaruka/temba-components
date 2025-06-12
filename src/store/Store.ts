@@ -561,6 +561,7 @@ export class Store extends RapidElement {
                     const orginalUser = last[parts[parts.length - 1]];
                     orginalUser.avatar = user.avatar;
                     orginalUser.name = getFullName(user);
+                    orginalUser.uuid = user.uuid;
                     last[parts[parts.length - 1]].avatar = user.avatar;
                   }
                 });
