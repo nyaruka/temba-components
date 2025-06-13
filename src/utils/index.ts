@@ -44,14 +44,17 @@ export enum Color {
 
 export const log = (message: string | object, styling = '', details = []) => {
   if (styling === '') {
+    // eslint-disable-next-line no-console
     console.log(message);
     return;
   }
 
   if (typeof message === 'object') {
+    // eslint-disable-next-line no-console
     console.log('%c' + JSON.stringify(message, null, 2), styling);
     return;
   }
+  // eslint-disable-next-line no-console
   console.log('%c' + message, styling, ...details);
 };
 

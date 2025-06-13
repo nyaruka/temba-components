@@ -412,6 +412,7 @@ export class WebChat extends LitElement {
   private sendSockMessage(
     cmd: GetHistoryCmd | StartChatCmd | SendMsgCmd | Ack
   ) {
+    // eslint-disable-next-line no-console
     console.log('out', cmd);
     this.sock.send(JSON.stringify(cmd));
   }
@@ -447,6 +448,7 @@ export class WebChat extends LitElement {
     this.sock.onmessage = function (event: MessageEvent) {
       webChat.status = ChatStatus.CONNECTED;
       const msg = JSON.parse(event.data) as SockMsg;
+      // eslint-disable-next-line no-console
       console.log('in', msg);
       if (msg.type === 'chat_started') {
         const response = msg as StartChatResponse;

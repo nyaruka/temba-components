@@ -17,6 +17,8 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     'import/named': 'off',
-    'import/no-unresolved': 'off'
+    'import/no-unresolved': 'off',
+    // Block console.log statements unless explicitly disabled
+    'no-console': ['error', { allow: ['warn', 'error'] }]
   }
 };
