@@ -660,6 +660,21 @@ describe('temba-select', () => {
 
       await openSelect(clock, select);
 
+      // Wait for pagination to complete - keep checking until fetching is false
+      // and we have the expected number of results (15 = 3 pages * 5 items)
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (select.fetching || select.visibleOptions.length < 15) {
+        if (attempts >= maxAttempts) {
+          throw new Error(
+            `Pagination did not complete after ${maxAttempts} attempts. fetching: ${select.fetching}, visibleOptions: ${select.visibleOptions.length}`
+          );
+        }
+        await select.updateComplete;
+        clock.runAll();
+        attempts++;
+      }
+
       // should have all three pages visible right away
       assert.equal(select.visibleOptions.length, 15);
     });
