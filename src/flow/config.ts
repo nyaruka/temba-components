@@ -13,58 +13,89 @@ export interface UIConfig {
   render?: (node: any, action: any) => TemplateResult;
 }
 
+const COLORS = {
+  send: '#3498db',
+  update: '#01c1af',
+  broadcast: '#8e5ea7',
+  call: '#e68628',
+  create: '#df419f',
+  save: '#1a777c',
+  split: '#aaaaaa',
+  execute: '#666666',
+  wait: '#4d7dad',
+  add: '#309c42',
+  remove: '#e74c3c'
+};
+
 export const EDITOR_CONFIG: {
   [key: string]: UIConfig;
 } = {
   add_input_labels: {
     name: 'Add Labels',
-    color: '#01c1af'
+    color: COLORS.update
   },
   add_contact_urn: {
     name: 'Add Contact URN',
-    color: '#01c1af'
+    color: COLORS.update
   },
   set_contact_field: {
     name: 'Update Contact Field',
-    color: '#01c1af'
+    color: COLORS.update
+  },
+  set_contact_channel: {
+    name: 'Update Contact Channel',
+    color: COLORS.update
+  },
+  set_contact_language: {
+    name: 'Update Contact Language',
+    color: COLORS.update
   },
   send_broadcast: {
     name: 'Send Broadcast',
-    color: '#8e5ea7;'
+    color: COLORS.broadcast
   },
   set_run_result: {
     name: 'Save Flow Result',
-    color: '#1a777c',
+    color: COLORS.save,
     render: renderSetRunResult
   },
   send_msg: {
     name: 'Send Message',
-    color: '#3498db',
+    color: COLORS.send,
     render: renderSendMsg
   },
   send_email: {
     name: 'Send Email',
-    color: '#8e5ea7'
+    color: COLORS.broadcast
   },
-  start_session: { name: 'Start Somebody Else', color: '#df419f' },
+  start_session: {
+    name: 'Start Somebody Else',
+    color: COLORS.broadcast
+  },
+  open_ticket: {
+    name: 'Open Ticket',
+    color: COLORS.execute
+  },
   call_webhook: {
     name: 'Call Webhook',
-    color: '#e68628',
+    color: COLORS.call,
     render: renderCallWebhook
+  },
+  enter_flow: {
+    name: 'Enter Subflow',
+    color: COLORS.execute
   },
   call_llm: {
     name: 'Call AI',
-    color: '#e68628'
+    color: COLORS.call
   },
   transfer_airtime: {
     name: 'Send Airtime',
-    color: '#e68628'
+    color: COLORS.call
   },
-  wait_for_response: { name: 'Wait for Response', color: '#4d7dad' },
-  split_by_expression: { name: 'Split by Expression', color: '#aaaaaa' },
-  split_by_contact_field: {
-    name: 'Split by <Contact Field Name>',
-    color: '#aaaaaa'
+  wait_for_response: {
+    name: 'Wait for Response',
+    color: COLORS.wait
   },
   set_contact_name: {
     name: 'Update Contact',
@@ -73,19 +104,39 @@ export const EDITOR_CONFIG: {
   },
   add_contact_groups: {
     name: 'Add to Group',
-    color: '#309c42',
+    color: COLORS.add,
     render: renderAddToGroups
   },
   remove_contact_groups: {
     name: 'Remove from Group',
-    color: '#666'
+    color: COLORS.remove
   },
   request_optin: {
     name: 'Request Opt-in',
-    color: '#3498db'
+    color: COLORS.send
   },
   split_by_run_result: {
     name: 'Split by Flow Result',
-    color: '#aaaaaa'
+    color: COLORS.split
+  },
+  split_by_expression: {
+    name: 'Split by Expression',
+    color: COLORS.split
+  },
+  split_by_contact_field: {
+    name: 'Split by <Contact Field Name>',
+    color: COLORS.split
+  },
+  split_by_groups: {
+    name: 'Split by Group',
+    color: COLORS.split
+  },
+  split_by_scheme: {
+    name: 'Split by URN Type',
+    color: COLORS.split
+  },
+  split_by_random: {
+    name: 'Split by Random',
+    color: COLORS.split
   }
 };
