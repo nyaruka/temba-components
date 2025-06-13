@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>Temba Components Demo</title>
     <link
@@ -12,163 +12,174 @@
       href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
       rel="stylesheet"
     />
-    <link
-      href="styles.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-</head>
-<body>
+    <link href="styles.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
     <div class="header">temba-components</div>
-    
+
     <div class="nav">
-        <h2>Component Demos</h2>
-        <p>Interactive demos for all Temba web components. Each component has its own dedicated demo page.</p>
+      <h2>Component Demos</h2>
+      <p>
+        Interactive demos for all Temba web components. Each component has its
+        own dedicated demo page.
+      </p>
     </div>
 
     <div class="component-grid">
-        <!-- Form & Input Components -->
-        <div class="component-section">
-            <h2>Form & Input Components</h2>
-            
-            <div class="component-card">
-                <h3>Text Input</h3>
-                <p>Text input components including completion and date/time pickers</p>
-                <a href="textinput/example.html">Basic Examples</a> | 
-                <a href="textinput/completion.html">Completion</a>
-            </div>
+      <!-- Form & Input Components -->
+      <div class="component-section">
+        <h2>Form & Input Components</h2>
 
-            <div class="component-card">
-                <h3>Select</h3>
-                <p>Dropdown selection components with various configurations</p>
-                <a href="select/example.html">Basic Examples</a> | 
-                <a href="select/drag-and-drop.html">Drag & Drop</a> | 
-                <a href="select/multi.html">Multi-Select</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Checkbox</h3>
-                <p>Checkbox components with labels and help text</p>
-                <a href="checkbox/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Date Picker</h3>
-                <p>Date and time selection components</p>
-                <a href="datepicker/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Slider</h3>
-                <p>Range slider components</p>
-                <a href="slider/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Compose</h3>
-                <p>Text composition components with rich editing features</p>
-                <a href="compose/example.html">Examples</a>
-            </div>
+        <div class="component-card">
+          <h3>Text Input</h3>
+          <p>
+            Text input components including completion and date/time pickers
+          </p>
+          <a href="textinput/example.html">Basic Examples</a> |
+          <a href="textinput/completion.html">Completion</a>
         </div>
 
-        <!-- Interactive Components -->
-        <div class="component-section">
-            <h2>Interactive Components</h2>
-            
-            <div class="component-card">
-                <h3>Button</h3>
-                <p>Interactive button components with various styles</p>
-                <a href="button/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Dialog</h3>
-                <p>Modal dialog components for user interactions</p>
-                <a href="dialog/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Dropdown</h3>
-                <p>Generic dropdown menu components</p>
-                <a href="dropdown/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Tabs</h3>
-                <p>Tab navigation components with collapsible support</p>
-                <a href="tabs/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Sortable List</h3>
-                <p>Drag-and-drop sortable list components</p>
-                <a href="sortable-list/example.html">Examples</a>
-            </div>
+        <div class="component-card">
+          <h3>Select</h3>
+          <p>Dropdown selection components with various configurations</p>
+          <a href="select/example.html">Basic Examples</a> |
+          <a href="select/drag-and-drop.html">Drag & Drop</a> |
+          <a href="select/multi.html">Multi-Select</a>
         </div>
 
-        <!-- Feedback Components -->
-        <div class="component-section">
-            <h2>Feedback Components</h2>
-            
-            <div class="component-card">
-                <h3>Alert</h3>
-                <p>Alert and notification components with different levels</p>
-                <a href="alert/example.html">Examples</a>
-            </div>
-
-            <div class="component-card">
-                <h3>Progress</h3>
-                <p>Progress bar components</p>
-                <a href="progress/example.html">Examples</a>
-            </div>
+        <div class="component-card">
+          <h3>Checkbox</h3>
+          <p>Checkbox components with labels and help text</p>
+          <a href="checkbox/example.html">Examples</a>
         </div>
 
-        <!-- Data Visualization -->
-        <div class="component-section">
-            <h2>Data Visualization</h2>
-            
-            <div class="component-card">
-                <h3>Chart</h3>
-                <p>Chart and data visualization components</p>
-                <a href="chart/example.html">Examples</a>
-            </div>
+        <div class="component-card">
+          <h3>Date Picker</h3>
+          <p>Date and time selection components</p>
+          <a href="datepicker/example.html">Examples</a>
         </div>
 
-        <!-- Miscellaneous Components -->
-        <div class="component-section">
-            <h2>Miscellaneous Components</h2>
-            
-            <div class="component-card">
-                <h3>Loading, Thumbnail & Tip</h3>
-                <p>Small utility components: loading spinners, image thumbnails, and tooltips</p>
-                <a href="misc/example.html">Examples</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="example">
-        <h3>Quick Overview</h3>
-        <p>Here's a quick preview of some components working together:</p>
-        
-        <temba-select placeholder="Select a color" clearable>
-            <temba-option name="Red" value="0"></temba-option>
-            <temba-option name="Green" value="1"></temba-option>
-            <temba-option name="Blue" value="2"></temba-option>
-        </temba-select>
-
-        <div style="margin: 20px 0;">
-            <temba-checkbox label="Check this out" checked></temba-checkbox>
+        <div class="component-card">
+          <h3>Slider</h3>
+          <p>Range slider components</p>
+          <a href="slider/example.html">Examples</a>
         </div>
 
-        <temba-textinput value="plain text" placeholder="Enter some text"></temba-textinput>
-
-        <div style="margin: 20px 0;">
-            <temba-slider value="50" min="0" max="100" range></temba-slider>
+        <div class="component-card">
+          <h3>Compose</h3>
+          <p>Text composition components with rich editing features</p>
+          <a href="compose/example.html">Examples</a>
         </div>
+      </div>
+
+      <!-- Interactive Components -->
+      <div class="component-section">
+        <h2>Interactive Components</h2>
+
+        <div class="component-card">
+          <h3>Button</h3>
+          <p>Interactive button components with various styles</p>
+          <a href="button/example.html">Examples</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Dialog</h3>
+          <p>Modal dialog components for user interactions</p>
+          <a href="dialog/example.html">Examples</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Dropdown</h3>
+          <p>Generic dropdown menu components</p>
+          <a href="dropdown/example.html">Examples</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Tabs</h3>
+          <p>Tab navigation components with collapsible support</p>
+          <a href="tabs/example.html">Examples</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Sortable List</h3>
+          <p>Drag-and-drop sortable list components</p>
+          <a href="sortable-list/example.html">Examples</a>
+        </div>
+      </div>
+
+      <!-- Feedback Components -->
+      <div class="component-section">
+        <h2>Feedback Components</h2>
+
+        <div class="component-card">
+          <h3>Alert</h3>
+          <p>Alert and notification components with different levels</p>
+          <a href="alert/example.html">Examples</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Progress</h3>
+          <p>Progress bar components</p>
+          <a href="progress/example.html">Examples</a>
+        </div>
+      </div>
+
+      <!-- Data Visualization -->
+      <div class="component-section">
+        <h2>Data Visualization</h2>
+
+        <div class="component-card">
+          <h3>Chart</h3>
+          <p>Chart and data visualization components</p>
+          <a href="chart/example.html">Examples</a>
+        </div>
+      </div>
+
+      <!-- Miscellaneous Components -->
+      <div class="component-section">
+        <h2>Miscellaneous Components</h2>
+
+        <div class="component-card">
+          <h3>Loading, Thumbnail & Tip</h3>
+          <p>
+            Small utility components: loading spinners, image thumbnails, and
+            tooltips
+          </p>
+          <a href="misc/example.html">Examples</a>
+        </div>
+      </div>
+
+      <div class="component-section">
+        <h2>Miscellaneous Components</h2>
+
+        <div class="component-card">
+          <h3>Loading, Thumbnail & Tip</h3>
+          <p>
+            Small utility components: loading spinners, image thumbnails, and
+            tooltips
+          </p>
+          <a href="misc/example.html">Examples</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Flow Editor</h3>
+          <p>
+            A work in progress editor for RapidPro flows to replace existing
+            react editor.
+          </p>
+          <a href="flow/example.html">Example</a>
+        </div>
+
+        <div class="component-card">
+          <h3>Web Chat</h3>
+          <p>A work in progress web chat client for RapidPro</p>
+          <a href="webchat/example.html">Example</a>
+        </div>
+      </div>
     </div>
 
     <script type="module">
       import '../out-tsc/temba-modules.js';
     </script>
-</body>
+  </body>
 </html>
