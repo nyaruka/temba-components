@@ -30,8 +30,9 @@ export class EditorNode extends RapidElement {
         min-width: 200px;
         border-radius: calc(var(--curvature) * 1.5);
         overflow: hidden;
+        color: #333;
       }
-
+        
       .action {
         max-width: 200px;
       }
