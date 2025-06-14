@@ -445,16 +445,12 @@ export class TembaChart extends RapidElement {
       }
     }
 
-    // Toggle percentage labels at runtime
     if (changes.has('showPercent') && this.chart) {
       const yScale = (this.chart.options.scales as any).y;
-
-      // datalabels already handled
-      yScale.ticks.display = !this.showPercent; // hide labels
-      yScale.grid.display = !this.showPercent; // hide gridlines
-      yScale.border.display = !this.showPercent; // hide axis line
-      yScale.max = this.getInflatedMax();
-
+      yScale.ticks.display = !this.showPercent;
+      yScale.grid.display = !this.showPercent;
+      yScale.border.display = !this.showPercent;
+      yScale.max = this.showPercent ? this.getInflatedMax() : undefined;
       this.chart.update();
     }
   }
@@ -467,13 +463,13 @@ export class TembaChart extends RapidElement {
   get colors(): [string[], string[]] {
     const baseColors =
       COLOR_PALETTES[this.palette] || COLOR_PALETTES[DEFAULT_PALETTE];
-    // Clamp transparency between 0 and 1
+    // clamp transparency between 0 and 1
     const alpha = Math.max(0, Math.min(1, this.opacity));
-    // Borders: darken base color, no transparency
+    // borders darken base color, no transparency
     const borderColors = baseColors.map((color) => darkenColor(color, 0.25));
-    // Backgrounds: apply transparency to base color
+    // backgrounds apply transparency to base color
     const backgroundColors = baseColors.map((color) => {
-      // If already rgba, just replace the alpha
+      // if already rgba, just replace the alpha
       if (color.startsWith('rgba')) {
         return color.replace(
           /rgba\(([^,]+),([^,]+),([^,]+),([^)]+)\)/,
@@ -482,7 +478,7 @@ export class TembaChart extends RapidElement {
           }
         );
       }
-      // If already rgb, convert to rgba
+      // if already rgb, convert to rgba
       if (color.startsWith('rgb(')) {
         return color.replace(
           /rgb\(([^,]+),([^,]+),([^,]+)\)/,
@@ -491,7 +487,7 @@ export class TembaChart extends RapidElement {
           }
         );
       }
-      // If hex, convert to rgba
+      // if hex, convert to rgba
       if (color.startsWith('#')) {
         let hex = color.replace('#', '');
         if (hex.length === 3) {
@@ -512,15 +508,10 @@ export class TembaChart extends RapidElement {
     return [backgroundColors, borderColors];
   }
 
-  /**
-   * Utility to darken an rgba or hex color by a given factor (0-1).
-   */
-
   private calculateSplits() {
     if (this.data) {
       const datasets = [];
       const sums = [];
-      // Get color arrays
       const [backgroundColors, borderColors] = this.colors;
       for (const dataset of this.data.datasets) {
         if (
