@@ -9,6 +9,9 @@ import { getStore } from '../store/Store';
 // eslint-disable-next-line import/no-named-as-default
 import Chart, { ChartType } from 'chart.js/auto';
 import 'chartjs-adapter-luxon';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+Chart.register(ChartDataLabels);
 
 const DEFAULT_PALETTE: keyof typeof COLOR_PALETTES = 'qualitative-set1';
 const COLOR_PALETTES = {
@@ -286,6 +289,12 @@ export class TembaChart extends RapidElement {
   @property({ type: String, attribute: 'splits' })
   splitNames: string;
 
+  @property({ type: String })
+  xType: 'category' | 'time' = 'category';
+
+  @property({ type: String })
+  yType: 'count' | 'duration' = 'count';
+
   @property({ type: Boolean })
   hideOther: boolean = false;
 
@@ -303,9 +312,6 @@ export class TembaChart extends RapidElement {
 
   @property({ type: Boolean })
   config: boolean = false;
-
-  @property({ type: Boolean })
-  formatDuration: boolean = false;
 
   @property({ type: Boolean })
   showAll: boolean = false;
@@ -327,6 +333,22 @@ export class TembaChart extends RapidElement {
 
   @property({ type: Number })
   seriesBorderWidth: number = 1;
+
+  @property({ type: Boolean, attribute: 'percent' })
+  showPercent: boolean = false;
+
+  // head-room for labels when percentages are visible
+  private getInflatedMax(): number | undefined {
+    if (!this.showPercent || !this.data) return undefined;
+
+    // total stacked value for each x-index
+    const totals: number[] = Array(this.data.labels.length).fill(0);
+    for (const ds of this.datasets) {
+      ds.data.forEach((v, i) => (totals[i] += v));
+    }
+    const maxStack = Math.max(...totals);
+    return maxStack > 0 ? maxStack * 1.15 : undefined;
+  }
 
   chart: Chart;
   shadowRootDiv: HTMLDivElement;
@@ -421,6 +443,19 @@ export class TembaChart extends RapidElement {
       if (this.chartType === 'line') {
         this.seriesBorderWidth = Math.max(1, this.seriesBorderWidth);
       }
+    }
+
+    // Toggle percentage labels at runtime
+    if (changes.has('showPercent') && this.chart) {
+      const yScale = (this.chart.options.scales as any).y;
+
+      // datalabels already handled
+      yScale.ticks.display = !this.showPercent; // hide labels
+      yScale.grid.display = !this.showPercent; // hide gridlines
+      yScale.border.display = !this.showPercent; // hide axis line
+      yScale.max = this.getInflatedMax();
+
+      this.chart.update();
     }
   }
 
@@ -542,9 +577,40 @@ export class TembaChart extends RapidElement {
 
   public updateChart(): void {
     if (this.datasets?.length > 0) {
+      const grandTotal =
+        this.datasets.reduce(
+          (sum: number, ds: any) =>
+            sum +
+            (ds.data as number[]).reduce(
+              (dsSum: number, v: number) => dsSum + (v ?? 0),
+              0
+            ),
+          0
+        ) || undefined;
+
+      const percentFormatter = (value: number): string => {
+        const pct = grandTotal ? (value / grandTotal) * 100 : 0;
+        return `${Math.round(pct)}%`;
+      };
+
       if (this.chart) {
         this.chart.data.labels = this.data.labels;
         this.chart.data.datasets = this.datasets;
+
+        // update y-axis max dynamically
+        if (this.showPercent) {
+          (this.chart.options.scales as any).y.max = this.getInflatedMax();
+        }
+
+        const datalabels = this.chart.options.plugins.datalabels || {};
+        datalabels.display = this.showPercent;
+        if (this.showPercent) {
+          datalabels.formatter = percentFormatter;
+        } else {
+          delete datalabels.formatter;
+        }
+        this.chart.options.plugins.datalabels = datalabels;
+
         this.chart.update();
       } else {
         const chartData = {
@@ -554,59 +620,79 @@ export class TembaChart extends RapidElement {
             datasets: this.datasets
           },
           options: {
+            maxBarThickness: 80,
             plugins: {
-              legend: {
-                display: this.legend
-              },
-              ...(this.formatDuration && {
-                tooltip: {
-                  callbacks: {
-                    label: (context: any) => {
-                      const label = context.dataset.label || '';
-                      const value = context.parsed.y;
-                      const formattedValue = formatDurationFromSeconds(value);
-                      return `${label}: ${formattedValue}`;
+              legend: { display: this.legend },
+              tooltip: {
+                callbacks: {
+                  label: (context: any) => {
+                    const label = context.dataset.label || '';
+                    const value = context.parsed.y;
+                    if (this.yType === 'duration') {
+                      return `${label}: ${formatDurationFromSeconds(value)}`;
                     }
+                    return `${label}: ${value}`;
                   }
                 }
-              })
+              },
+              datalabels: {
+                display: this.showPercent,
+                anchor: 'end',
+                align: 'end',
+                offset: -3,
+                clamp: true,
+                ...(this.showPercent && { formatter: percentFormatter }),
+                color: '#666',
+                font: { weight: '600' }
+              }
             },
             responsive: true,
             maintainAspectRatio: false,
-            animation: {
-              x: { from: 500 },
-              y: { from: 500 }
+            animations: {
+              x: {
+                // no horizontal motion
+                duration: 0
+              },
+              y: {
+                duration: 200,
+                easing: 'easeOutCubic'
+              }
             },
             scales: {
               y: {
                 min: 0,
+                ...(this.showPercent && { max: this.getInflatedMax() }),
                 stacked: true,
-                ...(this.formatDuration && {
-                  ticks: {
-                    callback: (value: any) => {
-                      return formatDurationFromSeconds(value);
-                    }
-                  }
-                }),
-                grid: { color: 'rgba(0,0,0,0.04)' }
+                grid: {
+                  color: 'rgba(0,0,0,0.04)',
+                  display: !this.showPercent, // hide gridlines in percent mode
+                  drawBorder: !this.showPercent // hides axis line when false
+                },
+                border: {
+                  display: !this.showPercent // Chart.js >= 4
+                },
+                ticks: {
+                  display: !this.showPercent,
+                  ...(this.yType === 'duration' &&
+                    !this.showPercent && {
+                      callback: (value: any) => formatDurationFromSeconds(value)
+                    })
+                }
               },
               x: {
-                type: 'time',
+                type: this.xType,
+                grid: { display: false },
+                stacked: true,
                 time: {
                   unit: 'day',
-                  tooltipFormat: 'DDD', // Luxon for 'Feb 16, 2025'
-                  displayFormats: {
-                    day: 'MMM dd'
-                  }
-                },
-                grid: {
-                  display: false
-                },
-                stacked: true
+                  tooltipFormat: 'DDD',
+                  displayFormats: { day: 'MMM dd' }
+                }
               }
             }
           }
         };
+
         this.chart = new Chart(this.ctx, chartData as any);
       }
     }

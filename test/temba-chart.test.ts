@@ -61,11 +61,11 @@ describe('temba-chart', () => {
     const chart: TembaChart = await getChart();
 
     // Test that formatDuration property exists and defaults to false
-    expect(chart.formatDuration).to.equal(false);
+    expect(chart.yType).to.equal('count');
 
     // Test that we can set formatDuration to true
-    chart.formatDuration = true;
-    expect(chart.formatDuration).to.equal(true);
+    chart.yType = 'duration';
+    expect(chart.yType).to.equal('duration');
   });
 
   it('formats duration values correctly', async () => {
@@ -83,7 +83,7 @@ describe('temba-chart', () => {
       ]
     };
 
-    chart.formatDuration = true;
+    chart.yType = 'duration';
     chart.data = durationData;
     await chart.updateComplete;
 
@@ -91,7 +91,7 @@ describe('temba-chart', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Test that the chart was created and has the duration formatting enabled
-    expect(chart.formatDuration).to.equal(true);
+    expect(chart.yType).to.equal('duration');
     expect(chart.chart).to.exist;
 
     // Test that the chart configuration includes the duration formatting
@@ -115,6 +115,7 @@ describe('temba-chart', () => {
       dataset: { label: 'Process Time' },
       parsed: { y: 68787 }
     };
+
     expect(tooltipCallback.call({}, mockContext)).to.equal(
       'Process Time: 19h 6m'
     );
@@ -122,7 +123,7 @@ describe('temba-chart', () => {
 
   it('formats various duration edge cases correctly', async () => {
     const chart: TembaChart = await getChart();
-    chart.formatDuration = true;
+    chart.yType = 'duration';
     chart.data = sampleData;
     await chart.updateComplete;
 
@@ -144,23 +145,6 @@ describe('temba-chart', () => {
     expect(tickCallback.call({}, 90061, 8, [])).to.equal('1d 1h'); // 1 day, 1 hour, 1 minute, 1 second - should show only first two units
     expect(tickCallback.call({}, 604800, 9, [])).to.equal('7d'); // 1 week in seconds
     expect(tickCallback.call({}, 1209600, 10, [])).to.equal('14d'); // 2 weeks in seconds
-  });
-
-  it('respects formatDuration property state', async () => {
-    const chart: TembaChart = await getChart();
-
-    // Test default state
-    expect(chart.formatDuration).to.equal(false);
-
-    chart.data = sampleData;
-    await chart.updateComplete;
-
-    // Test that formatDuration property can be toggled
-    chart.formatDuration = true;
-    expect(chart.formatDuration).to.equal(true);
-
-    chart.formatDuration = false;
-    expect(chart.formatDuration).to.equal(false);
   });
 });
 
