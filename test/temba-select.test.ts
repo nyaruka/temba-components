@@ -5,6 +5,7 @@ import { Options } from '../src/options/Options';
 import { Select, SelectOption } from '../src/select/Select';
 import {
   assertScreenshot,
+  delay,
   getClip,
   getOptions,
   loadStore,
@@ -673,6 +674,7 @@ describe('temba-select', () => {
         await select.updateComplete;
         clock.runAll();
         attempts++;
+        await delay(100);
       }
 
       // should have all three pages visible right away
