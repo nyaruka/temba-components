@@ -227,13 +227,6 @@ export default class DateRangePicker extends FormElement {
     return dateStr;
   }
 
-  private handleDisplayClick() {
-    // Let the dropdown handle its own state - we just need to set up our temporary values
-    this.tempStartDate = this.startDate;
-    this.tempEndDate = this.endDate;
-    this.errorMessage = '';
-  }
-
   private handleCancel() {
     this.tempStartDate = '';
     this.tempEndDate = '';
@@ -314,11 +307,7 @@ export default class DateRangePicker extends FormElement {
         .disabled=${this.disabled}
       >
         <temba-dropdown @temba-opened=${this.handleDropdownOpened}>
-          <div
-            slot="toggle"
-            class="range-display"
-            @click=${this.handleDisplayClick}
-          >
+          <div slot="toggle" class="range-display">
             <div class="range-text ${getClasses({ placeholder: !hasValue })}">
               ${rangeText}
             </div>
