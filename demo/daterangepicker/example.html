@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <title>Date Range Picker Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link
+      href="../styles.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+</head>
+<body>
+    <h1>Date Range Picker Examples</h1>
+    <p><a href="../index.html">← Back to main demo</a></p>
+    
+    <div class="example">
+        <h3>Basic Date Range Picker</h3>
+        <p>A basic date range picker with no initial values</p>
+        <temba-daterangepicker
+            label="Select Date Range"
+            name="date_range"
+            help-text="Choose a start and end date"
+        ></temba-daterangepicker>
+        
+        <div class="code">
+            <pre><code>&lt;temba-daterangepicker
+    label="Select Date Range"
+    name="date_range"
+    help-text="Choose a start and end date"
+&gt;&lt;/temba-daterangepicker&gt;</code></pre>
+        </div>
+    </div>
+
+    <div class="example">
+        <h3>Pre-populated Date Range</h3>
+        <p>A date range picker with predefined start and end dates</p>
+        <temba-daterangepicker
+            label="Vacation Dates"
+            name="vacation_range"
+            start-date="2024-01-15"
+            end-date="2024-01-29"
+            help-text="Your selected vacation dates"
+        ></temba-daterangepicker>
+        
+        <div class="code">
+            <pre><code>&lt;temba-daterangepicker
+    label="Vacation Dates"
+    name="vacation_range"
+    start-date="2024-01-15"
+    end-date="2024-01-29"
+    help-text="Your selected vacation dates"
+&gt;&lt;/temba-daterangepicker&gt;</code></pre>
+        </div>
+    </div>
+
+    <div class="example">
+        <h3>Partial Date Range</h3>
+        <p>A date range picker with only a start date specified</p>
+        <temba-daterangepicker
+            label="Project Timeline"
+            name="project_range"
+            start-date="2024-02-01"
+            help-text="Project started on February 1st, end date TBD"
+        ></temba-daterangepicker>
+        
+        <div class="code">
+            <pre><code>&lt;temba-daterangepicker
+    label="Project Timeline"
+    name="project_range"
+    start-date="2024-02-01"
+    help-text="Project started on February 1st, end date TBD"
+&gt;&lt;/temba-daterangepicker&gt;</code></pre>
+        </div>
+    </div>
+
+    <div class="example">
+        <h3>Widget Only (No Label)</h3>
+        <p>A date range picker without field wrapper and label</p>
+        <temba-daterangepicker
+            name="inline_range"
+            widget-only
+        ></temba-daterangepicker>
+        
+        <div class="code">
+            <pre><code>&lt;temba-daterangepicker
+    name="inline_range"
+    widget-only
+&gt;&lt;/temba-daterangepicker&gt;</code></pre>
+        </div>
+    </div>
+
+    <div class="example">
+        <h3>Event Handling</h3>
+        <p>Demonstrating change event handling</p>
+        <temba-daterangepicker
+            id="event-picker"
+            label="Event Date Range"
+            name="event_range"
+            help-text="Select dates and see the console output"
+        ></temba-daterangepicker>
+        
+        <div id="output" style="margin-top: 1em; padding: 1em; background: #f5f5f5; border-radius: 4px; font-family: monospace; font-size: 14px;">
+            No date range selected yet.
+        </div>
+        
+        <div class="code">
+            <pre><code>&lt;temba-daterangepicker
+    id="event-picker"
+    label="Event Date Range"
+    name="event_range"
+&gt;&lt;/temba-daterangepicker&gt;
+
+&lt;script&gt;
+    const picker = document.getElementById('event-picker');
+    picker.addEventListener('change', (event) =&gt; {
+        console.log('Date range changed:', event.target.value);
+        document.getElementById('output').textContent = 
+            'Selected: ' + JSON.stringify(event.target.value, null, 2);
+    });
+&lt;/script&gt;</code></pre>
+        </div>
+    </div>
+
+    <div class="example">
+        <h3>Form Integration</h3>
+        <p>Date range picker within a form</p>
+        <form onsubmit="handleSubmit(event)" style="border: 1px solid #ddd; padding: 1em; border-radius: 4px;">
+            <temba-daterangepicker
+                label="Reporting Period"
+                name="reporting_period"
+                help-text="Select the date range for your report"
+                start-date="2024-01-01"
+                end-date="2024-03-31"
+            ></temba-daterangepicker>
+            
+            <div style="margin-top: 1em;">
+                <button type="submit" style="padding: 0.5em 1em; background: #007cba; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Generate Report
+                </button>
+            </div>
+        </form>
+        
+        <div id="form-output" style="margin-top: 1em; padding: 1em; background: #f0f8ff; border-radius: 4px; font-family: monospace; font-size: 14px; display: none;">
+        </div>
+        
+        <div class="code">
+            <pre><code>&lt;form onsubmit="handleSubmit(event)"&gt;
+    &lt;temba-daterangepicker
+        label="Reporting Period"
+        name="reporting_period"
+        start-date="2024-01-01"
+        end-date="2024-03-31"
+    &gt;&lt;/temba-daterangepicker&gt;
+    &lt;button type="submit"&gt;Generate Report&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Event handling example
+        const eventPicker = document.getElementById('event-picker');
+        eventPicker.addEventListener('change', (event) => {
+            console.log('Date range changed:', event.target.value);
+            const output = document.getElementById('output');
+            if (event.target.value) {
+                output.textContent = 'Selected: ' + JSON.stringify(event.target.value, null, 2);
+            } else {
+                output.textContent = 'No date range selected.';
+            }
+        });
+
+        // Form submission example
+        function handleSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const output = document.getElementById('form-output');
+            
+            let result = 'Form Data:\n';
+            for (let [key, value] of formData.entries()) {
+                result += `${key}: ${value}\n`;
+            }
+            
+            output.textContent = result;
+            output.style.display = 'block';
+        }
+
+        // Live demo of validation
+        function createValidationDemo() {
+            const container = document.createElement('div');
+            container.className = 'example';
+            container.innerHTML = `
+                <h3>Validation Demo</h3>
+                <p>Try setting an end date before the start date to see validation in action</p>
+                <temba-daterangepicker
+                    label="Demo Validation"
+                    name="validation_demo"
+                    help-text="The component will prevent invalid date ranges"
+                ></temba-daterangepicker>
+            `;
+            document.body.appendChild(container);
+        }
+
+        // Add validation demo after page loads
+        window.addEventListener('load', () => {
+            createValidationDemo();
+        });
+    </script>
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+</body>
+</html>

@@ -137,7 +137,7 @@ export default class DateRangePicker extends FormElement {
   @property({ type: String, attribute: 'start-date' })
   startDate = '';
 
-  @property({ type: String, attribute: 'end-date' }) 
+  @property({ type: String, attribute: 'end-date' })
   endDate = '';
 
   @property({ type: Boolean })
@@ -165,7 +165,9 @@ export default class DateRangePicker extends FormElement {
     this.updateValue();
   }
 
-  protected firstUpdated(changed: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+  protected firstUpdated(
+    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
     super.firstUpdated(changed);
     this.updateValue();
   }
@@ -189,10 +191,12 @@ export default class DateRangePicker extends FormElement {
     if (!this.startDate && !this.endDate) {
       return 'Select date range';
     }
-    
-    const start = this.startDate ? this.formatDate(this.startDate) : 'Start date';
+
+    const start = this.startDate
+      ? this.formatDate(this.startDate)
+      : 'Start date';
     const end = this.endDate ? this.formatDate(this.endDate) : 'End date';
-    
+
     return `${start} - ${end}`;
   }
 
@@ -206,20 +210,20 @@ export default class DateRangePicker extends FormElement {
     } catch (e) {
       // Fallback to basic parsing
     }
-    
+
     try {
       const date = new Date(dateStr);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
         });
       }
     } catch (e) {
       // Return original string if parsing fails
     }
-    
+
     return dateStr;
   }
 
@@ -242,7 +246,7 @@ export default class DateRangePicker extends FormElement {
     if (this.tempStartDate && this.tempEndDate) {
       const startDate = new Date(this.tempStartDate);
       const endDate = new Date(this.tempEndDate);
-      
+
       if (endDate < startDate) {
         this.errorMessage = 'End date must be after start date';
         return;
@@ -294,13 +298,21 @@ export default class DateRangePicker extends FormElement {
         .disabled=${this.disabled}
       >
         <temba-dropdown .open=${this.open}>
-          <div slot="toggle" class="range-display" @click=${this.handleDisplayClick}>
+          <div
+            slot="toggle"
+            class="range-display"
+            @click=${this.handleDisplayClick}
+          >
             <div class="range-text ${getClasses({ placeholder: !hasValue })}">
               ${rangeText}
             </div>
           </div>
-          
-          <div slot="dropdown" class="dropdown-content" @blur=${this.handleDropdownBlur}>
+
+          <div
+            slot="dropdown"
+            class="dropdown-content"
+            @blur=${this.handleDropdownBlur}
+          >
             <div class="date-inputs">
               <div class="date-input">
                 <label>Start Date</label>
@@ -319,15 +331,19 @@ export default class DateRangePicker extends FormElement {
                 />
               </div>
             </div>
-            
-            ${this.errorMessage ? html`<div class="error">${this.errorMessage}</div>` : ''}
-            
-            ${this.tempStartDate && this.tempEndDate ? html`
-              <div class="range-preview">
-                Preview: ${this.formatDate(this.tempStartDate)} - ${this.formatDate(this.tempEndDate)}
-              </div>
-            ` : ''}
-            
+
+            ${this.errorMessage
+              ? html`<div class="error">${this.errorMessage}</div>`
+              : ''}
+            ${this.tempStartDate && this.tempEndDate
+              ? html`
+                  <div class="range-preview">
+                    Preview: ${this.formatDate(this.tempStartDate)} -
+                    ${this.formatDate(this.tempEndDate)}
+                  </div>
+                `
+              : ''}
+
             <div class="actions">
               <button @click=${this.handleCancel}>Cancel</button>
               <button class="primary" @click=${this.handleApply}>Apply</button>
