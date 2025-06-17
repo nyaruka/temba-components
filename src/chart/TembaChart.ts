@@ -295,6 +295,9 @@ export class TembaChart extends RapidElement {
   @property({ type: String })
   yType: 'count' | 'duration' = 'count';
 
+  @property({ type: String })
+  xFormat: 'MMM dd' | 'DD' | 'EEE' = 'MMM dd';
+
   @property({ type: Boolean })
   hideOther: boolean = false;
 
@@ -674,11 +677,13 @@ export class TembaChart extends RapidElement {
                 type: this.xType,
                 grid: { display: false },
                 stacked: true,
-                time: {
-                  unit: 'day',
-                  tooltipFormat: 'DDD',
-                  displayFormats: { day: 'MMM dd' }
-                }
+                ...(this.xType === 'time' && {
+                  time: {
+                    unit: 'day',
+                    tooltipFormat: 'DDD',
+                    displayFormats: { day: this.xFormat }
+                  }
+                })
               }
             }
           }
