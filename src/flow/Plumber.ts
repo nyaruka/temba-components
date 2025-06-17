@@ -132,4 +132,10 @@ export class Plumber {
     this.pendingConnections.push({ fromId, toId });
     this.processPendingConnections();
   }
+
+  public repaintEverything() {
+    if (this.jsPlumb) {
+      this.jsPlumb.repaintEverything();
+    }
+  }
 }
