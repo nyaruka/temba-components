@@ -2,6 +2,11 @@ import { fixture, expect, assert } from '@open-wc/testing';
 import DateRangePicker from '../src/daterangepicker/DateRangePicker';
 import { assertScreenshot, getAttributes, getClip } from './utils.test';
 
+export const getDropdownState = (picker: DateRangePicker): boolean => {
+  const dropdown = picker.shadowRoot?.querySelector('temba-dropdown') as any;
+  return dropdown ? dropdown.open : false;
+};
+
 export const getRangePickerHTML = (attrs: any = {}) => {
   return `<temba-daterangepicker ${getAttributes(
     attrs
@@ -91,7 +96,7 @@ describe('temba-daterangepicker', () => {
       getRangePickerHTML()
     );
 
-    expect(picker.open).to.be.false;
+    expect(getDropdownState(picker)).to.be.false;
 
     const rangeDisplay = picker.shadowRoot?.querySelector(
       '.range-display'
@@ -99,7 +104,7 @@ describe('temba-daterangepicker', () => {
     rangeDisplay.click();
     await picker.updateComplete;
 
-    expect(picker.open).to.be.true;
+    expect(getDropdownState(picker)).to.be.true;
     await assertScreenshot('daterangepicker/dropdown-open', getClip(picker));
   });
 
@@ -139,7 +144,7 @@ describe('temba-daterangepicker', () => {
     await picker.updateComplete;
 
     // Should show error and not close dropdown
-    expect(picker.open).to.be.true;
+    expect(getDropdownState(picker)).to.be.true;
     const errorMessage = picker.shadowRoot?.querySelector('.error');
     expect(errorMessage).to.not.be.null;
     expect(errorMessage?.textContent).to.contain(
@@ -183,7 +188,7 @@ describe('temba-daterangepicker', () => {
     await picker.updateComplete;
 
     // Should update properties and close dropdown
-    expect(picker.open).to.be.false;
+    expect(getDropdownState(picker)).to.be.false;
     expect(picker.startDate).to.equal('2024-01-01');
     expect(picker.endDate).to.equal('2024-01-15');
   });
@@ -216,7 +221,7 @@ describe('temba-daterangepicker', () => {
     cancelButton.click();
 
     // Should revert to original values and close dropdown
-    expect(picker.open).to.be.false;
+    expect(getDropdownState(picker)).to.be.false;
     expect(picker.startDate).to.equal('2024-01-01');
     expect(picker.endDate).to.equal('2024-01-15');
   });

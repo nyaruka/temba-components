@@ -141,7 +141,7 @@ export default class DateRangePicker extends FormElement {
   endDate = '';
 
   @property({ type: Boolean })
-  open = false;
+  private dropdownOpen = false;
 
   @property({ type: String })
   private tempStartDate = '';
@@ -228,17 +228,21 @@ export default class DateRangePicker extends FormElement {
   }
 
   private handleDisplayClick() {
-    this.open = true;
+    // Let the dropdown handle its own state - we just need to set up our temporary values
     this.tempStartDate = this.startDate;
     this.tempEndDate = this.endDate;
     this.errorMessage = '';
   }
 
   private handleCancel() {
-    this.open = false;
     this.tempStartDate = '';
     this.tempEndDate = '';
     this.errorMessage = '';
+    // Close the dropdown by triggering a blur event
+    const dropdown = this.shadowRoot?.querySelector('temba-dropdown') as any;
+    if (dropdown) {
+      dropdown.blur();
+    }
   }
 
   private handleApply() {
@@ -255,9 +259,14 @@ export default class DateRangePicker extends FormElement {
 
     this.startDate = this.tempStartDate;
     this.endDate = this.tempEndDate;
-    this.open = false;
     this.errorMessage = '';
     this.fireEvent('change');
+
+    // Close the dropdown
+    const dropdown = this.shadowRoot?.querySelector('temba-dropdown') as any;
+    if (dropdown) {
+      dropdown.blur();
+    }
   }
 
   private handleStartDateChange(event: Event) {
@@ -283,6 +292,13 @@ export default class DateRangePicker extends FormElement {
     }, 100);
   }
 
+  private handleDropdownOpened() {
+    // When dropdown opens, initialize the temp values
+    this.tempStartDate = this.startDate;
+    this.tempEndDate = this.endDate;
+    this.errorMessage = '';
+  }
+
   public render(): TemplateResult {
     const rangeText = this.getRangeText();
     const hasValue = this.startDate || this.endDate;
@@ -297,7 +313,7 @@ export default class DateRangePicker extends FormElement {
         .hideLabel=${this.hideLabel}
         .disabled=${this.disabled}
       >
-        <temba-dropdown .open=${this.open}>
+        <temba-dropdown @temba-opened=${this.handleDropdownOpened}>
           <div
             slot="toggle"
             class="range-display"
