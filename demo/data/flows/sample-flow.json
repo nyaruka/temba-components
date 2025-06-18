@@ -10,10 +10,16 @@
         "uuid": "a229fa3c-16bb-440b-9ae8-b7ee7a723f44",
         "actions": [
           {
-            "attachments": ["image:http://google.com/logo.png"],
+            "attachments": [
+              "image:http://google.com/logo.png"
+            ],
             "text": "What is your favorite color?",
             "type": "send_msg",
-            "quick_replies": ["red", "green", "blue"],
+            "quick_replies": [
+              "red",
+              "green",
+              "blue"
+            ],
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5"
           }
         ],
@@ -32,19 +38,25 @@
           "default_category_uuid": "e6a9f714-6f2a-4884-b850-f79ff397ee63",
           "cases": [
             {
-              "arguments": ["red"],
+              "arguments": [
+                "red"
+              ],
               "type": "has_any_word",
               "uuid": "2040ff07-f509-416d-b150-15abc27a9dfd",
               "category_uuid": "4ceb8f3b-05a2-4d75-950e-fa4934ab24fb"
             },
             {
-              "arguments": ["green"],
+              "arguments": [
+                "green"
+              ],
               "type": "has_any_word",
               "uuid": "b7b142d8-2434-41d9-9e5c-4e0335841972",
               "category_uuid": "153aa4a6-553c-4adf-9773-1f44596c33fb"
             },
             {
-              "arguments": ["blue"],
+              "arguments": [
+                "blue"
+              ],
               "type": "has_any_word",
               "uuid": "e2ccc4e7-c379-43e3-8115-48e8fe7ef4de",
               "category_uuid": "ee972b45-3bfe-4e93-9d4e-e9c8f8ffc587"
@@ -131,7 +143,10 @@
             {
               "uuid": "024a8d66-be1e-4821-bec4-8c54fd7135c6",
               "type": "has_number_between",
-              "arguments": ["200", "299"],
+              "arguments": [
+                "200",
+                "299"
+              ],
               "category_uuid": "0bb08076-45e2-4ca1-b321-1506f1779198"
             }
           ],
@@ -268,7 +283,9 @@
             "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d"
           },
           {
-            "addresses": ["name@domain.com"],
+            "addresses": [
+              "name@domain.com"
+            ],
             "subject": "Did you get this?",
             "body": "I hope it arrived!",
             "type": "send_email",
@@ -297,7 +314,9 @@
           "default_category_uuid": "50ededa6-7dd3-4f4f-81d2-e3011ea1cc05",
           "cases": [
             {
-              "arguments": ["Archived"],
+              "arguments": [
+                "Archived"
+              ],
               "type": "has_any_word",
               "uuid": "bc2e884d-9740-4028-a6bb-72f0c263336c",
               "category_uuid": "8032da05-1778-4d0c-9b7d-d218a7fb561d"
@@ -347,7 +366,9 @@
           ],
           "cases": [
             {
-              "arguments": ["bleep"],
+              "arguments": [
+                "bleep"
+              ],
               "type": "has_any_word",
               "uuid": "5fcb78ba-245d-40e5-986a-a9cbafb3e527",
               "category_uuid": "5a9d7012-02c3-46ac-a926-7b6d9c503fde"
@@ -414,7 +435,9 @@
           ],
           "cases": [
             {
-              "arguments": ["red"],
+              "arguments": [
+                "red"
+              ],
               "type": "has_any_word",
               "uuid": "44f4d027-f904-4c38-8cad-e01aae9b4faf",
               "category_uuid": "c8ba0faf-cf72-447a-84fe-5dc63775c0f5"
@@ -441,13 +464,19 @@
             {
               "uuid": "e1c0d59e-1810-4677-ad3b-69c4d1d645e8",
               "type": "has_group",
-              "arguments": ["269e8abf-e81b-404c-82ce-45ff42d13769", "Empty"],
+              "arguments": [
+                "269e8abf-e81b-404c-82ce-45ff42d13769",
+                "Empty"
+              ],
               "category_uuid": "d7ae9a33-357f-445f-84f0-ac11da786602"
             },
             {
               "uuid": "90ab3ac3-bc46-402a-a569-5739aa8a590d",
               "type": "has_group",
-              "arguments": ["4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c", "Drivers"],
+              "arguments": [
+                "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c",
+                "Drivers"
+              ],
               "category_uuid": "92e8677a-8070-4a98-901d-8247ac8e1898"
             }
           ],
@@ -494,13 +523,17 @@
             {
               "uuid": "93312571-e686-4561-8bfd-5bc00c0cd442",
               "type": "has_only_phrase",
-              "arguments": ["tel"],
+              "arguments": [
+                "tel"
+              ],
               "category_uuid": "8334572c-c31d-422a-8a95-2cb3d55e733b"
             },
             {
               "uuid": "03ce9105-dd9f-41b7-adc3-56b0547e031b",
               "type": "has_only_phrase",
-              "arguments": ["facebook"],
+              "arguments": [
+                "facebook"
+              ],
               "category_uuid": "23e7a079-3f2c-406b-9acc-dbbf388b3b79"
             }
           ],
@@ -557,12 +590,16 @@
             {
               "uuid": "625daede-4c37-45d4-9af6-5607ad4b1ce0",
               "type": "has_only_text",
-              "arguments": ["completed"],
+              "arguments": [
+                "completed"
+              ],
               "category_uuid": "894652f9-cc6c-4192-827d-3c5543778478"
             },
             {
               "uuid": "1e5f9d1e-794d-4279-ad93-3c7541962388",
-              "arguments": ["expired"],
+              "arguments": [
+                "expired"
+              ],
               "type": "has_only_text",
               "category_uuid": "48e318f7-4153-471a-856a-be01ac2f18a0"
             }
@@ -614,7 +651,9 @@
             {
               "uuid": "ac40cb14-6886-4f4e-b309-bcf4ef92b26d",
               "type": "has_only_text",
-              "arguments": ["<ERROR>"],
+              "arguments": [
+                "<ERROR>"
+              ],
               "category_uuid": "00685353-2326-4150-a403-58f006e50885"
             }
           ],
@@ -737,8 +776,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 0,
-            "top": 200
+            "left": 6,
+            "top": 143
           },
           "config": {
             "cases": {}
@@ -747,31 +786,31 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 300,
-            "top": 340
+            "left": 383,
+            "top": 22
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
-            "left": 20,
-            "top": 400
+            "left": 25,
+            "top": 310
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 20,
-            "top": 1280
+            "left": 368,
+            "top": 265
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 300,
-            "top": 480
+            "left": 368,
+            "top": 164
           },
           "config": {
             "operand": {
@@ -785,8 +824,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 300,
-            "top": 580
+            "left": 665,
+            "top": 43
           },
           "config": {
             "cases": {}
@@ -795,16 +834,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 300,
-            "top": 680
+            "left": 663,
+            "top": 142
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 300,
-            "top": 800
+            "left": 662,
+            "top": 244
           },
           "config": {
             "operand": {
@@ -818,8 +857,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 300,
-            "top": 920
+            "left": 685,
+            "top": 403
           },
           "config": {
             "cases": {}
@@ -828,8 +867,8 @@
         "e780a7ef-9dad-45a3-abda-11200a9afbf4": {
           "type": "split_by_scheme",
           "position": {
-            "left": 300,
-            "top": 1040
+            "left": 684,
+            "top": 501
           },
           "config": {
             "cases": {}
@@ -838,23 +877,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 120,
-            "top": 1460
+            "left": 367,
+            "top": 444
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 120,
-            "top": 1600
+            "left": 367,
+            "top": 623
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 120,
-            "top": 1720
+            "left": 366,
+            "top": 763
           },
           "config": {}
         }
@@ -883,190 +922,5 @@
     "revision": 69,
     "expire_after_minutes": 4320,
     "localization": {}
-  },
-  "info": {
-    "counts": {
-      "nodes": 14,
-      "languages": 0
-    },
-    "issues": [],
-    "locals": ["_llm_output", "_new_ticket"],
-    "results": [
-      {
-        "key": "color",
-        "name": "Color",
-        "categories": ["Red", "Green", "Blue", "Other", "No Response"],
-        "node_uuids": [
-          "ef1a5b06-1331-4c0d-9f46-58b1e5baf671",
-          "4efc49e0-ebfe-454d-a1a0-900a911dd5ef"
-        ]
-      }
-    ],
-    "parent_refs": [],
-    "dependencies": [
-      {
-        "name": "Spam",
-        "type": "label",
-        "uuid": "61cae99b-56e1-4f3e-a2b9-07fb5cf2be9e"
-      },
-      {
-        "name": "WhatsApp",
-        "type": "channel",
-        "uuid": "9afd9156-a34a-43fa-91d4-914615ae2e72"
-      },
-      {
-        "key": "color",
-        "name": "Color",
-        "type": "field"
-      },
-      {
-        "name": "Empty",
-        "type": "group",
-        "uuid": "269e8abf-e81b-404c-82ce-45ff42d13769"
-      },
-      {
-        "name": "Farmers",
-        "type": "group",
-        "uuid": "58a6a3cd-20c0-4791-82da-ce9f319ab91b"
-      },
-      {
-        "name": "Testers",
-        "type": "group",
-        "uuid": "2f81d414-47b7-446d-b8c7-6662f611cb3d"
-      },
-      {
-        "name": "Teachers",
-        "type": "group",
-        "uuid": "90c0dc52-ddd8-466d-8333-a96fdd67195a"
-      },
-      {
-        "name": "Reporters",
-        "type": "group",
-        "uuid": "3b9caef9-e701-4475-a0c3-ef346704f71e"
-      },
-      {
-        "name": "Doctors",
-        "type": "group",
-        "uuid": "f4f46e03-3d7c-4840-8ed3-8c6c5677a2f2"
-      },
-      {
-        "name": "Drivers",
-        "type": "group",
-        "uuid": "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c"
-      },
-      {
-        "name": "Support",
-        "type": "flow",
-        "uuid": "78d2429c-8fdc-421c-bd37-b381ae99b7c7"
-      },
-      {
-        "name": "GPT 4o",
-        "type": "llm",
-        "uuid": "a5f05e3e-4f9c-4f24-96ff-13676b82ac95"
-      },
-      {
-        "name": "Favorites",
-        "type": "flow",
-        "uuid": "85bc02bd-4d3a-4dd1-b8af-4e57810e4af3"
-      },
-      {
-        "name": "General",
-        "type": "topic",
-        "uuid": "bf4b568d-97b8-4d20-aed5-ad8150270af8"
-      }
-    ]
-  },
-  "issues": [],
-  "metadata": {
-    "counts": {
-      "languages": 0,
-      "nodes": 14
-    },
-    "dependencies": [
-      {
-        "uuid": "61cae99b-56e1-4f3e-a2b9-07fb5cf2be9e",
-        "name": "Spam",
-        "type": "label"
-      },
-      {
-        "uuid": "9afd9156-a34a-43fa-91d4-914615ae2e72",
-        "name": "WhatsApp",
-        "type": "channel"
-      },
-      {
-        "key": "color",
-        "name": "Color",
-        "type": "field"
-      },
-      {
-        "uuid": "269e8abf-e81b-404c-82ce-45ff42d13769",
-        "name": "Empty",
-        "type": "group"
-      },
-      {
-        "uuid": "58a6a3cd-20c0-4791-82da-ce9f319ab91b",
-        "name": "Farmers",
-        "type": "group"
-      },
-      {
-        "uuid": "2f81d414-47b7-446d-b8c7-6662f611cb3d",
-        "name": "Testers",
-        "type": "group"
-      },
-      {
-        "uuid": "90c0dc52-ddd8-466d-8333-a96fdd67195a",
-        "name": "Teachers",
-        "type": "group"
-      },
-      {
-        "uuid": "3b9caef9-e701-4475-a0c3-ef346704f71e",
-        "name": "Reporters",
-        "type": "group"
-      },
-      {
-        "uuid": "f4f46e03-3d7c-4840-8ed3-8c6c5677a2f2",
-        "name": "Doctors",
-        "type": "group"
-      },
-      {
-        "uuid": "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c",
-        "name": "Drivers",
-        "type": "group"
-      },
-      {
-        "uuid": "78d2429c-8fdc-421c-bd37-b381ae99b7c7",
-        "name": "Support",
-        "type": "flow"
-      },
-      {
-        "uuid": "a5f05e3e-4f9c-4f24-96ff-13676b82ac95",
-        "name": "GPT 4o",
-        "type": "llm"
-      },
-      {
-        "uuid": "85bc02bd-4d3a-4dd1-b8af-4e57810e4af3",
-        "name": "Favorites",
-        "type": "flow"
-      },
-      {
-        "uuid": "bf4b568d-97b8-4d20-aed5-ad8150270af8",
-        "name": "General",
-        "type": "topic"
-      }
-    ],
-    "locals": ["_llm_output", "_new_ticket"],
-    "results": [
-      {
-        "key": "color",
-        "name": "Color",
-        "categories": ["Red", "Green", "Blue", "Other", "No Response"],
-        "node_uuids": [
-          "ef1a5b06-1331-4c0d-9f46-58b1e5baf671",
-          "4efc49e0-ebfe-454d-a1a0-900a911dd5ef"
-        ]
-      }
-    ],
-    "parent_refs": [],
-    "issues": []
   }
 }

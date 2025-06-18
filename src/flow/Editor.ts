@@ -9,14 +9,19 @@ import { RapidElement } from '../RapidElement';
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
 
+const SAVE_QUIET_TIME = 500;
+
 export class Editor extends RapidElement {
-  // Unfortunately, jsplumb requires that we be in light DOM
+  // unfortunately, jsplumb requires that we be in light DOM
   createRenderRoot() {
     return this;
   }
 
-  // This is the master plumber
+  // this is the master plumber
   private plumber: Plumber;
+
+  // timer for debounced saving
+  private saveTimer: number | null = null;
 
   @property({ type: String })
   public flow: string;
@@ -29,6 +34,9 @@ export class Editor extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.canvasSize)
   private canvasSize!: { width: number; height: number };
+
+  @fromStore(zustand, (state: AppState) => state.dirtyDate)
+  private dirtyDate!: Date;
 
   static get styles() {
     return css`
@@ -161,6 +169,45 @@ export class Editor extends RapidElement {
     super.updated(changes);
     if (changes.has('canvasSize')) {
       // console.log('Setting canvas size', this.canvasSize);
+    }
+
+    if (changes.has('dirtyDate')) {
+      if (this.dirtyDate) {
+        this.debouncedSave();
+      }
+    }
+  }
+
+  private debouncedSave(): void {
+    // Clear any existing timer
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+    }
+
+    this.saveTimer = window.setTimeout(() => {
+      const now = new Date();
+      const timeSinceLastChange = now.getTime() - this.dirtyDate.getTime();
+
+      if (timeSinceLastChange >= SAVE_QUIET_TIME) {
+        this.saveChanges();
+        this.saveTimer = null;
+      } else {
+        this.debouncedSave();
+      }
+    }, SAVE_QUIET_TIME);
+  }
+
+  private saveChanges(): void {
+    // post the flow definition to the server
+    getStore().postJSON(`/flow/revisions/${this.flow}`, this.definition);
+    getStore().getState().setDirtyDate(null);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
     }
   }
 
