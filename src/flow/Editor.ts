@@ -48,7 +48,7 @@ export class Editor extends RapidElement {
       #grid {
         position: relative;
         background-color: #f9f9f9;
-        background-position: 13px 13px;
+        background-position: 10px 10px;
         background-image: linear-gradient(
             0deg,
             transparent 24%,

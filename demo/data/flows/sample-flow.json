@@ -776,8 +776,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 6,
-            "top": 143
+            "left": 0,
+            "top": 140
           },
           "config": {
             "cases": {}
@@ -786,31 +786,31 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 383,
-            "top": 22
+            "left": 360,
+            "top": 20
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
-            "left": 25,
-            "top": 310
+            "left": 0,
+            "top": 300
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 368,
-            "top": 265
+            "left": 360,
+            "top": 300
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 368,
-            "top": 164
+            "left": 360,
+            "top": 200
           },
           "config": {
             "operand": {
@@ -824,8 +824,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 665,
-            "top": 43
+            "left": 680,
+            "top": 680
           },
           "config": {
             "cases": {}
@@ -834,16 +834,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 663,
-            "top": 142
+            "left": 680,
+            "top": 180
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 662,
-            "top": 244
+            "left": 680,
+            "top": 300
           },
           "config": {
             "operand": {
@@ -857,8 +857,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 685,
-            "top": 403
+            "left": 680,
+            "top": 420
           },
           "config": {
             "cases": {}
@@ -867,8 +867,8 @@
         "e780a7ef-9dad-45a3-abda-11200a9afbf4": {
           "type": "split_by_scheme",
           "position": {
-            "left": 684,
-            "top": 501
+            "left": 680,
+            "top": 560
           },
           "config": {
             "cases": {}
@@ -877,23 +877,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 367,
-            "top": 444
+            "left": 360,
+            "top": 480
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 367,
-            "top": 623
+            "left": 360,
+            "top": 680
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 366,
-            "top": 763
+            "left": 360,
+            "top": 820
           },
           "config": {}
         }
