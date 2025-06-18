@@ -30,6 +30,13 @@ export class EditorNode extends RapidElement {
   private boundMouseMove = this.handleMouseMove.bind(this);
   private boundMouseUp = this.handleMouseUp.bind(this);
 
+  /**
+   * Snaps a coordinate value to the nearest 20px grid position
+   */
+  private snapToGrid(value: number): number {
+    return Math.round(value / 20) * 20;
+  }
+
   static get styles() {
     return css`
       .node {
@@ -42,6 +49,7 @@ export class EditorNode extends RapidElement {
         color: #333;
         cursor: move;
         user-select: none;
+        z-index: 500;
       }
 
       .node:hover {
@@ -185,6 +193,11 @@ export class EditorNode extends RapidElement {
       nodeElement.classList.add('dragging');
     }
 
+    // Elevate connections for this node during dragging
+    if (this.plumber) {
+      this.plumber.elevateNodeConnections(this.node.uuid);
+    }
+
     event.preventDefault();
     event.stopPropagation();
   }
@@ -198,11 +211,15 @@ export class EditorNode extends RapidElement {
     const newLeft = this.nodeStartPos.left + deltaX;
     const newTop = this.nodeStartPos.top + deltaY;
 
+    // Snap to 20px grid
+    const snappedLeft = this.snapToGrid(newLeft);
+    const snappedTop = this.snapToGrid(newTop);
+
     // Update the UI position temporarily (for visual feedback)
     const nodeElement = this.querySelector('.node') as HTMLElement;
     if (nodeElement) {
-      nodeElement.style.left = `${newLeft}px`;
-      nodeElement.style.top = `${newTop}px`;
+      nodeElement.style.left = `${snappedLeft}px`;
+      nodeElement.style.top = `${snappedTop}px`;
     }
 
     // Repaint connections during dragging for smooth updates
@@ -222,14 +239,23 @@ export class EditorNode extends RapidElement {
       nodeElement.classList.remove('dragging');
     }
 
+    // Restore normal z-index for connections
+    if (this.plumber) {
+      this.plumber.restoreNodeConnections(this.node.uuid);
+    }
+
     const deltaX = event.clientX - this.dragStartPos.x;
     const deltaY = event.clientY - this.dragStartPos.y;
 
     const newLeft = this.nodeStartPos.left + deltaX;
     const newTop = this.nodeStartPos.top + deltaY;
 
-    // Update the store with the new position
-    const newPosition = { left: newLeft, top: newTop };
+    // Snap to 20px grid for final position
+    const snappedLeft = this.snapToGrid(newLeft);
+    const snappedTop = this.snapToGrid(newTop);
+
+    // Update the store with the new snapped position
+    const newPosition = { left: snappedLeft, top: snappedTop };
     getStore()
       .getState()
       .updateCanvasPositions({
