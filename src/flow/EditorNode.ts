@@ -49,6 +49,7 @@ export class EditorNode extends RapidElement {
         color: #333;
         cursor: move;
         user-select: none;
+        z-index: 500;
       }
 
       .node:hover {
@@ -192,6 +193,11 @@ export class EditorNode extends RapidElement {
       nodeElement.classList.add('dragging');
     }
 
+    // Elevate connections for this node during dragging
+    if (this.plumber) {
+      this.plumber.elevateNodeConnections(this.node.uuid);
+    }
+
     event.preventDefault();
     event.stopPropagation();
   }
@@ -231,6 +237,11 @@ export class EditorNode extends RapidElement {
     const nodeElement = this.querySelector('.node') as HTMLElement;
     if (nodeElement) {
       nodeElement.classList.remove('dragging');
+    }
+
+    // Restore normal z-index for connections
+    if (this.plumber) {
+      this.plumber.restoreNodeConnections(this.node.uuid);
     }
 
     const deltaX = event.clientX - this.dragStartPos.x;

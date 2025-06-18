@@ -92,11 +92,11 @@ export class Editor extends RapidElement {
       }
 
       .jtk-endpoint {
-        z-index: 1;
+        z-index: 600;
       }
 
       .plumb-source {
-        z-index: 300;
+        z-index: 600;
         border: 0px solid var(--color-connectors);
       }
 
@@ -120,7 +120,7 @@ export class Editor extends RapidElement {
 
       .plumb-target {
         margin-top: -6px;
-        z-index: 200;
+        z-index: 600;
         opacity: 0;
         cursor: pointer;
       }
@@ -128,6 +128,29 @@ export class Editor extends RapidElement {
       body .plumb-connector path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
+        z-index: 10;
+      }
+
+      body .plumb-connector {
+        z-index: 10;
+      }
+
+      body .plumb-connector.elevated {
+        z-index: 550;
+      }
+
+      body .plumb-connector.elevated path {
+        stroke: var(--color-connectors) !important;
+        stroke-width: 3px;
+        z-index: 550;
+      }
+
+      body .plumb-connector.elevated .plumb-arrow {
+        fill: var(--color-connectors);
+        stroke: var(--color-connectors);
+        stroke-width: 0px;
+        margin-top: 6px;
+        z-index: 550;
       }
 
       body .plumb-connector .plumb-arrow {
@@ -135,6 +158,7 @@ export class Editor extends RapidElement {
         stroke: var(--color-connectors);
         stroke-width: 0px;
         margin-top: 6px;
+        z-index: 10;
       }
 
       body svg.jtk-connector.jtk-hover path {
@@ -145,6 +169,7 @@ export class Editor extends RapidElement {
       body .plumb-connector.jtk-hover .plumb-arrow {
         fill: var(--color-success) !important;
         stroke-width: 0px;
+        z-index: 10;
       }
     `;
   }
