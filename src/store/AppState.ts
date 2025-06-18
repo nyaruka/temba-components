@@ -65,6 +65,8 @@ export interface AppState {
   workspace: Workspace;
   isTranslating: boolean;
 
+  dirtyDate: Date | null;
+
   canvasSize: { width: number; height: number };
 
   fetchRevision: (endpoint: string, id?: string) => void;
@@ -77,10 +79,11 @@ export interface AppState {
   setFlowContents: (flow: FlowContents) => void;
   setFlowInfo: (info: FlowInfo) => void;
   setLanguageCode: (languageCode: string) => void;
-  setTestUpdate: () => void;
+  setDirtyDate: (date: Date) => void;
   expandCanvas: (width: number, height: number) => void;
 
   updateCanvasPositions: (positions: CanvasPositions) => void;
+  updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) => void;
 }
 
@@ -94,6 +97,13 @@ export const zustand = createStore<AppState>()(
       flowDefinition: null,
       flowInfo: null,
       isTranslating: false,
+      dirtyDate: null,
+
+      setDirtyDate: (date: Date) => {
+        set((state: AppState) => {
+          state.dirtyDate = date;
+        });
+      },
 
       fetchRevision: async (endpoint: string, id: string = null) => {
         if (!id) {
@@ -178,12 +188,6 @@ export const zustand = createStore<AppState>()(
         });
       },
 
-      setTestUpdate: () => {
-        set((state: AppState) => {
-          state.flowDefinition.name = 'Bloop!';
-        });
-      },
-
       expandCanvas: (width: number, height: number) => {
         set((state: AppState) => {
           const minWidth = Math.max(
@@ -208,6 +212,23 @@ export const zustand = createStore<AppState>()(
               state.flowDefinition._ui.nodes[uuid].position = positions[uuid];
             }
           }
+        });
+      },
+
+      updateNodePosition: (uuid: string, newPosition: FlowPosition) => {
+        set((state: AppState) => {
+          if (state.flowDefinition._ui.nodes[uuid]) {
+            state.flowDefinition._ui.nodes[uuid].position = newPosition;
+          } else {
+            // If the node doesn't exist in _ui, we can add it
+            state.flowDefinition._ui.nodes[uuid] = {
+              position: newPosition,
+              type: null,
+              config: {}
+            };
+          }
+
+          state.dirtyDate = new Date();
         });
       },
 

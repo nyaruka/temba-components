@@ -241,20 +241,17 @@ export class EditorNode extends RapidElement {
       this.plumber.repaintEverything();
     }
 
+    getStore().getState().updateNodePosition(this.node.uuid, newPosition);
+
     // Fire a custom event with the new coordinates
-    this.dispatchEvent(
-      new CustomEvent('node-moved', {
-        detail: {
-          nodeId: this.node.uuid,
-          position: newPosition,
-          oldPosition: {
-            left: this.nodeStartPos.left,
-            top: this.nodeStartPos.top
-          }
-        },
-        bubbles: true
-      })
-    );
+    /*this.fireCustomEvent(CustomEventType.Moved, {
+      nodeId: this.node.uuid,
+      position: newPosition,
+      oldPosition: {
+        left: this.nodeStartPos.left,
+        top: this.nodeStartPos.top
+      }
+    });*/
   }
 
   disconnectedCallback(): void {
