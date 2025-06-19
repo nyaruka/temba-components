@@ -50,7 +50,19 @@
     <div class="example">
       <h3>Summation Chart</h3>
       <p>A basic chart, summing all datasets</p>
-      <temba-chart url="../data/server/opened-tickets.json"></temba-chart>
+      <temba-chart
+        url="../data/server/opened-tickets.json"
+        xtype="time"
+      ></temba-chart>
+    </div>
+
+    <div class="example">
+      <h3>Summation Chart</h3>
+      <p>Auto date format, spanning year</p>
+      <temba-chart
+        url="../data/server/opened-tickets-long.json"
+        xtype="time"
+      ></temba-chart>
     </div>
 
     <div class="example">
@@ -61,6 +73,7 @@
         dataname="Tickets"
         config
         legend
+        xtype="time"
       ></temba-chart>
     </div>
 
@@ -73,6 +86,7 @@
         splits="Tracking,Orders"
         hideother
         legend
+        xtype="time"
       ></temba-chart>
     </div>
     <div class="example">
@@ -83,6 +97,7 @@
         dataname="Tickets"
         showall
         legend
+        xtype="time"
       ></temba-chart>
     </div>
 
@@ -97,6 +112,7 @@
         dataname="Average Response"
         formatDuration
         header="Response Time"
+        xtype="time"
         url="../data/server/response-time.json"
       ></temba-chart>
       <p>Here is the same duration chart, but as a line chart</p>
@@ -106,6 +122,7 @@
         single
         dataName="Average Response"
         formatDuration
+        xtype="time"
         url="../data/server/response-time.json"
       ></temba-chart>
     </div>
