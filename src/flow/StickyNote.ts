@@ -135,6 +135,10 @@ export class StickyNote extends RapidElement {
       removeDragEventListeners(this.dragHandler);
     }
 
+    if (!this.data || !this.uuid) {
+      return;
+    }
+
     this.dragHandler = createDragHandler(
       this.uuid,
       () => this.data.position,
@@ -164,6 +168,10 @@ export class StickyNote extends RapidElement {
   }
 
   private updateCanvasSize(): void {
+    if (!this.data) {
+      return;
+    }
+
     const element = this.querySelector('.sticky-note');
     if (element) {
       const rect = element.getBoundingClientRect();
@@ -238,7 +246,7 @@ export class StickyNote extends RapidElement {
     const target = event.target as HTMLElement;
     const newTitle = target.textContent || '';
     
-    if (newTitle !== this.data.title) {
+    if (this.data && newTitle !== this.data.title) {
       getStore().getState().updateStickyNote(this.uuid, {
         ...this.data,
         title: newTitle
@@ -252,7 +260,7 @@ export class StickyNote extends RapidElement {
     const target = event.target as HTMLElement;
     const newBody = target.textContent || '';
     
-    if (newBody !== this.data.body) {
+    if (this.data && newBody !== this.data.body) {
       getStore().getState().updateStickyNote(this.uuid, {
         ...this.data,
         body: newBody
@@ -272,6 +280,10 @@ export class StickyNote extends RapidElement {
   }
 
   public render(): TemplateResult {
+    if (!this.data) {
+      return html`<div class="sticky-note" style="display: none;"></div>`;
+    }
+
     const style = `left: ${this.data.position.left}px; top: ${this.data.position.top}px;`;
 
     return html`
