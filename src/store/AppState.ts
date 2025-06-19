@@ -1,6 +1,6 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
 import { fetchResults } from '../utils';
-import { FlowDefinition, FlowPosition } from './flow-definition';
+import { FlowDefinition, FlowPosition, StickyNote } from './flow-definition';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { property } from 'lit/decorators.js';
@@ -85,6 +85,9 @@ export interface AppState {
   updateCanvasPositions: (positions: CanvasPositions) => void;
   updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) => void;
+
+  updateStickyPosition(uuid: string, newPosition: FlowPosition): void;
+  updateStickyNote(uuid: string, sticky: StickyNote): void;
 }
 
 export const zustand = createStore<AppState>()(
@@ -241,6 +244,28 @@ export const zustand = createStore<AppState>()(
           state.flowDefinition.nodes = state.flowDefinition.nodes.filter(
             (node) => !uuids.includes(node.uuid)
           );
+        });
+      },
+
+      updateStickyPosition: (uuid: string, newPosition: FlowPosition) => {
+        set((state: AppState) => {
+          if (!state.flowDefinition._ui.stickies) {
+            state.flowDefinition._ui.stickies = {};
+          }
+          if (state.flowDefinition._ui.stickies[uuid]) {
+            state.flowDefinition._ui.stickies[uuid].position = newPosition;
+            state.dirtyDate = new Date();
+          }
+        });
+      },
+
+      updateStickyNote: (uuid: string, sticky: StickyNote) => {
+        set((state: AppState) => {
+          if (!state.flowDefinition._ui.stickies) {
+            state.flowDefinition._ui.stickies = {};
+          }
+          state.flowDefinition._ui.stickies[uuid] = sticky;
+          state.dirtyDate = new Date();
         });
       }
     }))

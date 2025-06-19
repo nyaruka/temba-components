@@ -8,6 +8,7 @@ import { RapidElement } from '../RapidElement';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
+import { StickyNote } from './StickyNote';
 
 const SAVE_QUIET_TIME = 500;
 
@@ -241,7 +242,10 @@ export class Editor extends RapidElement {
     const style = html`<style>
       ${unsafeCSS(Editor.styles.cssText)}
       ${unsafeCSS(EditorNode.styles.cssText)}
+      ${unsafeCSS(StickyNote.styles.cssText)}
     </style>`;
+
+    const stickies = this.definition?._ui?.stickies || {};
 
     return html`${style}
       <div id="editor">
@@ -260,6 +264,12 @@ export class Editor extends RapidElement {
                   ></temba-flow-node>`;
                 })
               : html`<temba-loading></temba-loading>`}
+            ${Object.entries(stickies).map(([uuid, sticky]) => {
+              return html`<temba-sticky-note
+                .uuid=${uuid}
+                .data=${sticky}
+              ></temba-sticky-note>`;
+            })}
           </div>
         </div>
       </div>`;
