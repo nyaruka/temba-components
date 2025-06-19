@@ -292,11 +292,14 @@ export class TembaChart extends RapidElement {
   @property({ type: String })
   xType: 'category' | 'time' = 'category';
 
+  @property({ type: Number })
+  xMaxTicks: number = 10;
+
   @property({ type: String })
   yType: 'count' | 'duration' = 'count';
 
   @property({ type: String })
-  xFormat: 'MMM dd' | 'DD' | 'EEE' = 'MMM dd';
+  xFormat: 'MMM yy' | 'MMM yyyy' | 'MMM dd' | 'DD' | 'EEE' | 'auto' = 'auto';
 
   @property({ type: Boolean })
   hideOther: boolean = false;
@@ -584,6 +587,9 @@ export class TembaChart extends RapidElement {
 
       const percentFormatter = (value: number): string => {
         const pct = grandTotal ? (value / grandTotal) * 100 : 0;
+        if (pct === 0) {
+          return '';
+        }
         return `${Math.round(pct)}%`;
       };
 
@@ -607,6 +613,21 @@ export class TembaChart extends RapidElement {
 
         this.chart.update();
       } else {
+        let format = this.xFormat;
+        if (this.xType === 'time' && this.xFormat === 'auto') {
+          const firstDate = this.data.labels[0];
+          const lastDate = this.data.labels[this.data.labels.length - 1];
+
+          const first = Date.parse(firstDate);
+          const last = Date.parse(lastDate);
+
+          const dayDiff = Math.ceil((last - first) / (1000 * 60 * 60 * 24));
+          format = 'MMM dd';
+          if (dayDiff > 365) {
+            format = 'MMM yyyy';
+          }
+        }
+
         const chartData = {
           type: this.chartType,
           data: {
@@ -667,6 +688,7 @@ export class TembaChart extends RapidElement {
                 },
                 ticks: {
                   display: !this.showPercent,
+
                   ...(this.yType === 'duration' &&
                     !this.showPercent && {
                       callback: (value: any) => formatDurationFromSeconds(value)
@@ -677,11 +699,14 @@ export class TembaChart extends RapidElement {
                 type: this.xType,
                 grid: { display: false },
                 stacked: true,
+                ticks: {
+                  maxTicksLimit: this.xMaxTicks
+                },
                 ...(this.xType === 'time' && {
                   time: {
                     unit: 'day',
                     tooltipFormat: 'DDD',
-                    displayFormats: { day: this.xFormat }
+                    displayFormats: { day: format }
                   }
                 })
               }
