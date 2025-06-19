@@ -180,6 +180,26 @@ export const delay = (millis: number) => {
   });
 };
 
+// Enhanced wait utility for more robust testing
+export const waitForCondition = async (
+  predicate: () => boolean,
+  maxAttempts: number = 20,
+  delayMs: number = 50
+): Promise<void> => {
+  let attempts = 0;
+  while (!predicate() && attempts < maxAttempts) {
+    await delay(delayMs);
+    attempts++;
+  }
+  if (!predicate()) {
+    throw new Error(
+      `Condition not met after ${maxAttempts} attempts (${
+        maxAttempts * delayMs
+      }ms)`
+    );
+  }
+};
+
 export const assertScreenshot = async (
   filename: string,
   clip: Clip,
@@ -294,6 +314,31 @@ export const clickOption = async (
   index: number
 ) => {
   const options = getOptions(select);
+  if (!options) {
+    throw new Error('No options element found');
+  }
+
+  // Wait for the specific option to be available, but only if it's not already there
+  const existingOption = options.shadowRoot?.querySelector(
+    `[data-option-index="${index}"]`
+  );
+  if (!existingOption) {
+    try {
+      await waitForCondition(
+        () => {
+          const option = options.shadowRoot?.querySelector(
+            `[data-option-index="${index}"]`
+          );
+          return !!option;
+        },
+        10,
+        25
+      );
+    } catch (e) {
+      throw new Error(`Option at index ${index} not found after waiting`);
+    }
+  }
+
   const option = options.shadowRoot.querySelector(
     `[data-option-index="${index}"]`
   ) as HTMLDivElement;
@@ -318,6 +363,27 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
   // reduce wait time for options to become visible
   await waitFor(25);
   clock.runAll();
+
+  // For non-endpoint selects, options might be immediately available
+  // For endpoint selects, we need to wait for them to load
+  const hasEndpoint = select.getAttribute('endpoint');
+  if (hasEndpoint) {
+    try {
+      // Wait for options to be properly rendered and visible (but only for endpoint selects)
+      await waitForCondition(
+        () => {
+          const options = select.shadowRoot.querySelector(
+            'temba-options[visible]'
+          );
+          return options && options.isConnected;
+        },
+        10,
+        25
+      );
+    } catch (e) {
+      // If condition fails, continue - some tests might not need options to be visible immediately
+    }
+  }
 };
 
 export const openAndClick = async (
@@ -366,4 +432,36 @@ export const updateComponent = async (
 };
 export const getValidText = () => {
   return 'sà-wàd-dee!';
+};
+
+// Helper for waiting for select pagination to complete
+export const waitForSelectPagination = async (
+  select: Select<SelectOption>,
+  clock: any,
+  expectedCount: number,
+  maxAttempts: number = 30
+): Promise<void> => {
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    // Ensure we're not still fetching
+    if (!select.fetching && select.visibleOptions.length >= expectedCount) {
+      return;
+    }
+
+    await select.updateComplete;
+    clock.runAll();
+
+    // Give more time between attempts for slow CI environments
+    await delay(75);
+
+    attempts++;
+  }
+
+  throw new Error(
+    `Pagination did not complete after ${maxAttempts} attempts (${
+      maxAttempts * 75
+    }ms). ` +
+      `Expected ${expectedCount} options, got ${select.visibleOptions.length}. ` +
+      `Fetching: ${select.fetching}`
+  );
 };
