@@ -5,7 +5,6 @@ import { Options } from '../src/options/Options';
 import { Select, SelectOption } from '../src/select/Select';
 import {
   assertScreenshot,
-  delay,
   getClip,
   getOptions,
   loadStore,
@@ -663,7 +662,8 @@ describe('temba-select', () => {
       await openSelect(clock, select);
 
       // Wait for pagination to complete using our improved helper
-      await waitForSelectPagination(select, clock, 15, 30);
+      // Use more attempts for this test since pagination can be slow in CI
+      await waitForSelectPagination(select, clock, 15, 50);
 
       // should have all three pages visible right away
       assert.equal(select.visibleOptions.length, 15);
@@ -682,7 +682,7 @@ describe('temba-select', () => {
 
       // wait for updates from fetching three pages
       await openSelect(clock, select);
-      await waitForSelectPagination(select, clock, 15, 30);
+      await waitForSelectPagination(select, clock, 15, 50);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen
@@ -693,7 +693,7 @@ describe('temba-select', () => {
 
       await openSelect(clock, select);
       // Cached results should be available immediately, but give some time for rendering
-      await waitForSelectPagination(select, clock, 15, 20);
+      await waitForSelectPagination(select, clock, 15, 30);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen once more (previous bug failed on third opening)

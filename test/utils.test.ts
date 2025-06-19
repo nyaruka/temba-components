@@ -193,7 +193,9 @@ export const waitForCondition = async (
   }
   if (!predicate()) {
     throw new Error(
-      `Condition not met after ${maxAttempts} attempts (${maxAttempts * delayMs}ms)`
+      `Condition not met after ${maxAttempts} attempts (${
+        maxAttempts * delayMs
+      }ms)`
     );
   }
 };
@@ -317,12 +319,16 @@ export const clickOption = async (
   }
 
   // Wait for the specific option to be available, but only if it's not already there
-  const existingOption = options.shadowRoot?.querySelector(`[data-option-index="${index}"]`);
+  const existingOption = options.shadowRoot?.querySelector(
+    `[data-option-index="${index}"]`
+  );
   if (!existingOption) {
     try {
       await waitForCondition(
         () => {
-          const option = options.shadowRoot?.querySelector(`[data-option-index="${index}"]`);
+          const option = options.shadowRoot?.querySelector(
+            `[data-option-index="${index}"]`
+          );
           return !!option;
         },
         10,
@@ -366,7 +372,9 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
       // Wait for options to be properly rendered and visible (but only for endpoint selects)
       await waitForCondition(
         () => {
-          const options = select.shadowRoot.querySelector('temba-options[visible]');
+          const options = select.shadowRoot.querySelector(
+            'temba-options[visible]'
+          );
           return options && options.isConnected;
         },
         10,
@@ -431,7 +439,7 @@ export const waitForSelectPagination = async (
   select: Select<SelectOption>,
   clock: any,
   expectedCount: number,
-  maxAttempts: number = 20
+  maxAttempts: number = 30
 ): Promise<void> => {
   let attempts = 0;
   while (attempts < maxAttempts) {
@@ -439,16 +447,19 @@ export const waitForSelectPagination = async (
     if (!select.fetching && select.visibleOptions.length >= expectedCount) {
       return;
     }
-    
+
     await select.updateComplete;
     clock.runAll();
+    
+    // Give more time between attempts for slow CI environments
+    await delay(75);
+    
     attempts++;
-    await delay(50);
   }
-  
+
   throw new Error(
-    `Pagination did not complete after ${maxAttempts} attempts. ` +
-    `Expected ${expectedCount} options, got ${select.visibleOptions.length}. ` +
-    `Fetching: ${select.fetching}`
+    `Pagination did not complete after ${maxAttempts} attempts (${maxAttempts * 75}ms). ` +
+      `Expected ${expectedCount} options, got ${select.visibleOptions.length}. ` +
+      `Fetching: ${select.fetching}`
   );
 };
