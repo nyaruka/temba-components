@@ -768,16 +768,16 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 0,
-            "top": 0
+            "left": 880,
+            "top": 60
           },
           "type": "execute_actions"
         },
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 0,
-            "top": 140
+            "left": 920,
+            "top": 240
           },
           "config": {
             "cases": {}
@@ -786,31 +786,31 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 340,
-            "top": 20
+            "left": 840,
+            "top": 680
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
-            "left": 0,
-            "top": 300
+            "left": 200,
+            "top": -20
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 300,
-            "top": 300
+            "left": 420,
+            "top": 360
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 340,
-            "top": 180
+            "left": 440,
+            "top": 0
           },
           "config": {
             "operand": {
@@ -834,16 +834,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 640,
-            "top": 60
+            "left": 920,
+            "top": 420
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 640,
-            "top": 180
+            "left": 600,
+            "top": 100
           },
           "config": {
             "operand": {
@@ -857,8 +857,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 640,
-            "top": 300
+            "left": 620,
+            "top": 240
           },
           "config": {
             "cases": {}
@@ -877,23 +877,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 300,
-            "top": 480
+            "left": 420,
+            "top": 580
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 300,
-            "top": 660
+            "left": 460,
+            "top": 820
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 300,
-            "top": 800
+            "left": 420,
+            "top": 960
           },
           "config": {}
         }
@@ -901,8 +901,8 @@
       "stickies": {
         "1a32aff1-36b9-48e3-a51e-382efdcb9a83": {
           "position": {
-            "left": 400,
-            "top": 1300
+            "left": -20,
+            "top": -20
           },
           "title": "What the heck?",
           "body": "This flow makes no sense. That's because it's just for general testing.",
@@ -910,11 +910,11 @@
         },
         "598a87e4-f20b-48ba-aac5-bb365d8f1509": {
           "position": {
-            "left": 360,
-            "top": 1480
+            "left": -20,
+            "top": 100
           },
           "title": "Colors",
-          "body": "Did you know stickies can have different colors?",
+          "body": "Did you know stickies can have different colors? I just realized that and I'm pretty happy to report that this expands really nicely. It seems to be working okay I think. This.",
           "color": "blue"
         }
       }

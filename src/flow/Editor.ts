@@ -1,16 +1,28 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
-import { FlowDefinition } from '../store/flow-definition';
+import { FlowDefinition, FlowPosition } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
+
 import { StickyNote } from './StickyNote';
 
 const SAVE_QUIET_TIME = 500;
+
+export function snapToGrid(value: number): number {
+  return Math.round(value / 20) * 20;
+}
+
+export interface DraggableItem {
+  uuid: string;
+  position: FlowPosition;
+  element: HTMLElement;
+  type: 'node' | 'sticky';
+}
 
 export class Editor extends RapidElement {
   // unfortunately, jsplumb requires that we be in light DOM
@@ -38,6 +50,16 @@ export class Editor extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.dirtyDate)
   private dirtyDate!: Date;
+
+  // Drag state
+  private isDragging = false;
+  private dragStartPos = { x: 0, y: 0 };
+  private currentDragItem: DraggableItem | null = null;
+  private startPos = { left: 0, top: 0 };
+
+  // Bound event handlers to maintain proper 'this' context
+  private boundMouseMove = this.handleMouseMove.bind(this);
+  private boundMouseUp = this.handleMouseUp.bind(this);
 
   static get styles() {
     return css`
@@ -85,6 +107,15 @@ export class Editor extends RapidElement {
         position: relative;
         padding: 20px;
         margin: 20px;
+      }
+
+      #canvas > .draggable {
+        position: absolute;
+        z-index: 100;
+      }
+
+      #canvas > .dragging {
+        z-index: 1000;
       }
 
       body .jtk-endpoint {
@@ -184,6 +215,7 @@ export class Editor extends RapidElement {
   ): void {
     super.firstUpdated(changes);
     this.plumber = new Plumber(this.querySelector('#canvas'));
+    this.setupGlobalEventListeners();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
     }
@@ -195,6 +227,10 @@ export class Editor extends RapidElement {
     super.updated(changes);
     if (changes.has('canvasSize')) {
       // console.log('Setting canvas size', this.canvasSize);
+    }
+
+    if (changes.has('definition')) {
+      this.updateCanvasSize();
     }
 
     if (changes.has('dirtyDate')) {
@@ -235,6 +271,192 @@ export class Editor extends RapidElement {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
     }
+    document.removeEventListener('mousemove', this.boundMouseMove);
+    document.removeEventListener('mouseup', this.boundMouseUp);
+  }
+
+  private setupGlobalEventListeners(): void {
+    document.addEventListener('mousemove', this.boundMouseMove);
+    document.addEventListener('mouseup', this.boundMouseUp);
+  }
+
+  private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
+    // console.log('getPosition', uuid, type);
+    if (type === 'node') {
+      return this.definition._ui.nodes[uuid]?.position;
+    } else {
+      return this.definition._ui.stickies?.[uuid]?.position;
+    }
+  }
+
+  private updatePosition(
+    uuid: string,
+    type: 'node' | 'sticky',
+    position: FlowPosition
+  ): void {
+    if (type === 'node') {
+      getStore().getState().updateNodePosition(uuid, position);
+    } else {
+      const currentSticky = this.definition._ui.stickies?.[uuid];
+      if (currentSticky) {
+        getStore()
+          .getState()
+          .updateStickyNote(uuid, {
+            ...currentSticky,
+            position
+          });
+      }
+    }
+  }
+
+  private handleMouseDown(event: MouseEvent): void {
+    const element = event.currentTarget as HTMLElement;
+    // Only start dragging if clicking on the element itself, not on exits or other interactive elements
+    const target = event.target as HTMLElement;
+    if (target.classList.contains('exit') || target.closest('.exit')) {
+      return;
+    }
+
+    // For sticky notes, don't drag if clicking on editable content
+    if (
+      element.tagName === 'TEMBA-STICKY-NOTE' &&
+      (target.hasAttribute('contenteditable') ||
+        target.closest('[contenteditable]'))
+    ) {
+      return;
+    }
+
+    const uuid = element.getAttribute('uuid');
+    const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+
+    const position = this.getPosition(uuid, type);
+    if (!position) return;
+
+    this.isDragging = true;
+    this.dragStartPos = { x: event.clientX, y: event.clientY };
+    this.startPos = { left: position.left, top: position.top };
+    this.currentDragItem = {
+      uuid,
+      position,
+      element,
+      type
+    };
+
+    // Add dragging class for visual feedback
+    element.classList.add('dragging');
+
+    // If this is a node, elevate connections
+    if (type === 'node' && this.plumber) {
+      this.plumber.elevateNodeConnections(uuid);
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  private handleMouseMove(event: MouseEvent): void {
+    if (!this.isDragging || !this.currentDragItem) return;
+
+    const deltaX = event.clientX - this.dragStartPos.x;
+    const deltaY = event.clientY - this.dragStartPos.y;
+
+    const newLeft = this.startPos.left + deltaX;
+    const newTop = this.startPos.top + deltaY;
+
+    // Update the visual position during drag
+    this.currentDragItem.element.style.left = `${newLeft}px`;
+    this.currentDragItem.element.style.top = `${newTop}px`;
+
+    // Repaint connections if this is a node
+    if (this.currentDragItem.type === 'node' && this.plumber) {
+      this.plumber.repaintEverything();
+    }
+  }
+
+  private handleMouseUp(event: MouseEvent): void {
+    if (!this.isDragging || !this.currentDragItem) return;
+
+    this.isDragging = false;
+
+    // Remove dragging class
+    this.currentDragItem.element.classList.remove('dragging');
+
+    // Restore normal z-index for node connections
+    if (this.currentDragItem.type === 'node' && this.plumber) {
+      this.plumber.restoreNodeConnections(this.currentDragItem.uuid);
+    }
+
+    const deltaX = event.clientX - this.dragStartPos.x;
+    const deltaY = event.clientY - this.dragStartPos.y;
+
+    const newLeft = this.startPos.left + deltaX;
+    const newTop = this.startPos.top + deltaY;
+
+    // Snap to 20px grid for final position
+    const snappedLeft = snapToGrid(newLeft);
+    const snappedTop = snapToGrid(newTop);
+
+    const newPosition = { left: snappedLeft, top: snappedTop };
+
+    // Update the store with the new snapped position
+    this.updatePosition(
+      this.currentDragItem.uuid,
+      this.currentDragItem.type,
+      newPosition
+    );
+
+    // Update canvas positions for nodes
+    if (this.currentDragItem.type === 'node') {
+      getStore()
+        .getState()
+        .updateCanvasPositions({
+          [this.currentDragItem.uuid]: newPosition
+        });
+    }
+
+    // Repaint connections if this is a node
+    if (this.currentDragItem.type === 'node' && this.plumber) {
+      this.plumber.repaintEverything();
+    }
+
+    // Clear drag item
+    this.currentDragItem = null;
+  }
+
+  private updateCanvasSize(): void {
+    if (!this.definition) return;
+
+    const store = getStore();
+    if (!store) return;
+
+    // Calculate required canvas size based on all elements
+    let maxWidth = 0;
+    let maxHeight = 0;
+
+    // Check node positions
+    this.definition.nodes.forEach((node) => {
+      const ui = this.definition._ui.nodes[node.uuid];
+      if (ui && ui.position) {
+        const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
+        if (nodeElement) {
+          const rect = nodeElement.getBoundingClientRect();
+          maxWidth = Math.max(maxWidth, ui.position.left + rect.width);
+          maxHeight = Math.max(maxHeight, ui.position.top + rect.height);
+        }
+      }
+    });
+
+    // Check sticky note positions
+    const stickies = this.definition._ui?.stickies || {};
+    Object.values(stickies).forEach((sticky) => {
+      if (sticky.position) {
+        maxWidth = Math.max(maxWidth, sticky.position.left + 200); // Sticky note width
+        maxHeight = Math.max(maxHeight, sticky.position.top + 100); // Sticky note height
+      }
+    });
+
+    // Update canvas size in store
+    store.getState().expandCanvas(maxWidth, maxHeight);
   }
 
   public render(): TemplateResult {
@@ -257,7 +479,14 @@ export class Editor extends RapidElement {
           <div id="canvas">
             ${this.definition
               ? this.definition.nodes.map((node) => {
+                  const position =
+                    this.definition._ui.nodes[node.uuid].position;
+
                   return html`<temba-flow-node
+                    class="draggable"
+                    @mousedown=${this.handleMouseDown.bind(this)}
+                    uuid=${node.uuid}
+                    style="left:${position.left}px; top:${position.top}px"
                     .plumber=${this.plumber}
                     .node=${node}
                     .ui=${this.definition._ui.nodes[node.uuid]}
@@ -265,8 +494,12 @@ export class Editor extends RapidElement {
                 })
               : html`<temba-loading></temba-loading>`}
             ${Object.entries(stickies).map(([uuid, sticky]) => {
+              const position = sticky.position || { left: 0, top: 0 };
               return html`<temba-sticky-note
-                .uuid=${uuid}
+                class="draggable"
+                @mousedown=${this.handleMouseDown.bind(this)}
+                style="left:${position.left}px; top:${position.top}px"
+                uuid=${uuid}
                 .data=${sticky}
               ></temba-sticky-note>`;
             })}
