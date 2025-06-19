@@ -211,15 +211,11 @@ export class EditorNode extends RapidElement {
     const newLeft = this.nodeStartPos.left + deltaX;
     const newTop = this.nodeStartPos.top + deltaY;
 
-    // Snap to 20px grid
-    const snappedLeft = this.snapToGrid(newLeft);
-    const snappedTop = this.snapToGrid(newTop);
-
     // Update the UI position temporarily (for visual feedback)
     const nodeElement = this.querySelector('.node') as HTMLElement;
     if (nodeElement) {
-      nodeElement.style.left = `${snappedLeft}px`;
-      nodeElement.style.top = `${snappedTop}px`;
+      nodeElement.style.left = `${newLeft}px`;
+      nodeElement.style.top = `${newTop}px`;
     }
 
     // Repaint connections during dragging for smooth updates
