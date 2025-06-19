@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>StickyNote Demo</title>
+    <link href="/static/css/temba-components.css" rel="stylesheet" type="text/css" />
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .demo-container {
+            position: relative;
+            background-color: #f9f9f9;
+            height: 600px;
+            border: 1px solid #ddd;
+            margin: 20px 0;
+        }
+        .demo-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .instructions {
+            background-color: #e6f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>StickyNote Component Demo</h1>
+    
+    <div class="instructions">
+        <strong>How to use StickyNotes:</strong>
+        <ul>
+            <li>Click and drag the sticky notes to move them around</li>
+            <li>Click on the title or body text to edit it inline</li>
+            <li>Press Enter or Escape to finish editing</li>
+            <li>Notes snap to a 20px grid when you finish dragging</li>
+            <li>Each color has its own visual theme</li>
+        </ul>
+    </div>
+
+    <div class="demo-title">Interactive StickyNotes:</div>
+    <div class="demo-container">
+        <!-- Yellow sticky note -->
+        <temba-sticky-note id="yellow-note"></temba-sticky-note>
+        
+        <!-- Blue sticky note -->
+        <temba-sticky-note id="blue-note"></temba-sticky-note>
+        
+        <!-- Pink sticky note -->
+        <temba-sticky-note id="pink-note"></temba-sticky-note>
+        
+        <!-- Green sticky note -->
+        <temba-sticky-note id="green-note"></temba-sticky-note>
+        
+        <!-- Gray sticky note -->
+        <temba-sticky-note id="gray-note"></temba-sticky-note>
+    </div>
+
+    <script type="module">
+        import '/out-tsc/temba-modules.js';
+        
+        // Configure the sticky notes with sample data
+        document.addEventListener('DOMContentLoaded', () => {
+            const yellowNote = document.getElementById('yellow-note');
+            yellowNote.uuid = 'yellow-uuid';
+            yellowNote.data = {
+                position: { left: 50, top: 50 },
+                title: 'Yellow Note',
+                body: 'This is a yellow sticky note! Click to edit me.',
+                color: 'yellow'
+            };
+
+            const blueNote = document.getElementById('blue-note');
+            blueNote.uuid = 'blue-uuid';
+            blueNote.data = {
+                position: { left: 300, top: 120 },
+                title: 'Blue Note',
+                body: 'Blue notes are cool and calm. Drag me around!',
+                color: 'blue'
+            };
+
+            const pinkNote = document.getElementById('pink-note');
+            pinkNote.uuid = 'pink-uuid';
+            pinkNote.data = {
+                position: { left: 550, top: 80 },
+                title: 'Pink Note',
+                body: 'Pink is vibrant and fun. Try editing my text!',
+                color: 'pink'
+            };
+
+            const greenNote = document.getElementById('green-note');
+            greenNote.uuid = 'green-uuid';
+            greenNote.data = {
+                position: { left: 100, top: 250 },
+                title: 'Green Note', 
+                body: 'Green represents nature and growth. I can grow in height as you type more content in my body!',
+                color: 'green'
+            };
+
+            const grayNote = document.getElementById('gray-note');
+            grayNote.uuid = 'gray-uuid';
+            grayNote.data = {
+                position: { left: 400, top: 300 },
+                title: 'Gray Note',
+                body: 'Gray is neutral and professional.',
+                color: 'gray'
+            };
+        });
+    </script>
+</body>
+</html>
