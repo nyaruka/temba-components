@@ -1,7 +1,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { EDITOR_CONFIG, UIConfig } from './config';
 import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
-import { state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
@@ -12,14 +12,30 @@ export class EditorNode extends RapidElement {
     return this;
   }
 
-  @state()
+  @property({ type: Object })
   private plumber: Plumber;
 
-  @state()
+  @property({ type: Object })
   private node: Node;
 
-  @state()
+  @property({ type: Object })
   private ui: NodeUI;
+
+  // Drag state properties
+  private isDragging = false;
+  private dragStartPos = { x: 0, y: 0 };
+  private nodeStartPos = { left: 0, top: 0 };
+
+  // Bound event handlers to maintain proper 'this' context
+  private boundMouseMove = this.handleMouseMove.bind(this);
+  private boundMouseUp = this.handleMouseUp.bind(this);
+
+  /**
+   * Snaps a coordinate value to the nearest 20px grid position
+   */
+  private snapToGrid(value: number): number {
+    return Math.round(value / 20) * 20;
+  }
 
   static get styles() {
     return css`
@@ -31,6 +47,19 @@ export class EditorNode extends RapidElement {
         border-radius: calc(var(--curvature) * 1.5);
         overflow: hidden;
         color: #333;
+        cursor: move;
+        user-select: none;
+        z-index: 500;
+      }
+
+      .node:hover {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .node.dragging {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        transform: scale(1.02);
+        z-index: 1000;
       }
         
       .action {
@@ -129,7 +158,133 @@ export class EditorNode extends RapidElement {
           this.ui.position.left + rect.width,
           this.ui.position.top + rect.height
         );
+
+      // Add drag event listeners to the node
+      this.addDragEventListeners();
     }
+  }
+
+  private addDragEventListeners(): void {
+    const nodeElement = this.querySelector('.node') as HTMLElement;
+    if (!nodeElement) return;
+
+    nodeElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    document.addEventListener('mousemove', this.boundMouseMove);
+    document.addEventListener('mouseup', this.boundMouseUp);
+  }
+
+  private handleMouseDown(event: MouseEvent): void {
+    // Only start dragging if clicking on the node itself, not on exits or other interactive elements
+    const target = event.target as HTMLElement;
+    if (target.classList.contains('exit') || target.closest('.exit')) {
+      return;
+    }
+
+    this.isDragging = true;
+    this.dragStartPos = { x: event.clientX, y: event.clientY };
+    this.nodeStartPos = {
+      left: this.ui.position.left,
+      top: this.ui.position.top
+    };
+
+    // Add dragging class for visual feedback
+    const nodeElement = this.querySelector('.node') as HTMLElement;
+    if (nodeElement) {
+      nodeElement.classList.add('dragging');
+    }
+
+    // Elevate connections for this node during dragging
+    if (this.plumber) {
+      this.plumber.elevateNodeConnections(this.node.uuid);
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  private handleMouseMove(event: MouseEvent): void {
+    if (!this.isDragging) return;
+
+    const deltaX = event.clientX - this.dragStartPos.x;
+    const deltaY = event.clientY - this.dragStartPos.y;
+
+    const newLeft = this.nodeStartPos.left + deltaX;
+    const newTop = this.nodeStartPos.top + deltaY;
+
+    // Snap to 20px grid
+    const snappedLeft = this.snapToGrid(newLeft);
+    const snappedTop = this.snapToGrid(newTop);
+
+    // Update the UI position temporarily (for visual feedback)
+    const nodeElement = this.querySelector('.node') as HTMLElement;
+    if (nodeElement) {
+      nodeElement.style.left = `${snappedLeft}px`;
+      nodeElement.style.top = `${snappedTop}px`;
+    }
+
+    // Repaint connections during dragging for smooth updates
+    if (this.plumber) {
+      this.plumber.repaintEverything();
+    }
+  }
+
+  private handleMouseUp(event: MouseEvent): void {
+    if (!this.isDragging) return;
+
+    this.isDragging = false;
+
+    // Remove dragging class
+    const nodeElement = this.querySelector('.node') as HTMLElement;
+    if (nodeElement) {
+      nodeElement.classList.remove('dragging');
+    }
+
+    // Restore normal z-index for connections
+    if (this.plumber) {
+      this.plumber.restoreNodeConnections(this.node.uuid);
+    }
+
+    const deltaX = event.clientX - this.dragStartPos.x;
+    const deltaY = event.clientY - this.dragStartPos.y;
+
+    const newLeft = this.nodeStartPos.left + deltaX;
+    const newTop = this.nodeStartPos.top + deltaY;
+
+    // Snap to 20px grid for final position
+    const snappedLeft = this.snapToGrid(newLeft);
+    const snappedTop = this.snapToGrid(newTop);
+
+    // Update the store with the new snapped position
+    const newPosition = { left: snappedLeft, top: snappedTop };
+    getStore()
+      .getState()
+      .updateCanvasPositions({
+        [this.node.uuid]: newPosition
+      });
+
+    // Repaint connections if plumber is available
+    if (this.plumber) {
+      this.plumber.repaintEverything();
+    }
+
+    getStore().getState().updateNodePosition(this.node.uuid, newPosition);
+
+    // Fire a custom event with the new coordinates
+    /*this.fireCustomEvent(CustomEventType.Moved, {
+      nodeId: this.node.uuid,
+      position: newPosition,
+      oldPosition: {
+        left: this.nodeStartPos.left,
+        top: this.nodeStartPos.top
+      }
+    });*/
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    // Clean up event listeners
+    document.removeEventListener('mousemove', this.boundMouseMove);
+    document.removeEventListener('mouseup', this.boundMouseUp);
   }
 
   private renderTitle(config: UIConfig) {
@@ -198,6 +353,10 @@ export class EditorNode extends RapidElement {
   }
 
   public render() {
+    if (!this.node || !this.ui) {
+      return html`<div class="node">Loading...</div>`;
+    }
+
     return html`
       <div
         id="${this.node.uuid}"

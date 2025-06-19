@@ -12,21 +12,46 @@ export default {
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('development'),
     }),
-  ],
+    {
+      name: 'flow-files',
+      serve(context) {
+        if (context.request.method === 'POST') {
+          let body = '';
+          context.req.on('data', chunk => {
+            body += chunk.toString();
+          });
 
-  middlewares: [
-    async (ctx, next) => {
-      if (ctx.path.startsWith('/flow/revisions/')) {
-        const parts = ctx.path.split('/');
-        const uuid = parts[3];
-        ctx.set('Content-Type', 'application/json');
-        ctx.body = fs.readFileSync(
-          path.resolve(`./demo/data/flows/${uuid}.json`),
-          'utf-8',
-        );
-      } else {
-        await next();
+          context.req.on('end', () => {
+            const parts = context.path.split('/');
+            const uuid = parts[3];
+
+            // read in the body
+            context.contentType = 'application/json';
+            if (body) {
+              fs.writeFileSync(
+                path.resolve(`./demo/data/flows/${uuid}.json`), JSON.stringify({ definition: JSON.parse(body) }, null, 2)
+              );
+
+              context.body = {
+                status: 'success',
+                message: `Flow ${uuid} saved successfully.`,
+              };
+            } else {
+              console.log(`No body received for flow ${uuid}.`);
+            }
+          });
+        }
+
+        if (context.request.method === 'GET' && context.path.startsWith('/flow/revisions/')) {
+          const parts = context.path.split('/');
+          const uuid = parts[3];
+          context.contentType = 'application/json';
+          context.body = fs.readFileSync(
+            path.resolve(`./demo/data/flows/${uuid}.json`),
+            'utf-8',
+          );
+        }
       }
-    },
+    }
   ],
 };

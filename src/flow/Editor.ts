@@ -9,14 +9,19 @@ import { RapidElement } from '../RapidElement';
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
 
+const SAVE_QUIET_TIME = 500;
+
 export class Editor extends RapidElement {
-  // Unfortunately, jsplumb requires that we be in light DOM
+  // unfortunately, jsplumb requires that we be in light DOM
   createRenderRoot() {
     return this;
   }
 
-  // This is the master plumber
+  // this is the master plumber
   private plumber: Plumber;
+
+  // timer for debounced saving
+  private saveTimer: number | null = null;
 
   @property({ type: String })
   public flow: string;
@@ -30,6 +35,9 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.canvasSize)
   private canvasSize!: { width: number; height: number };
 
+  @fromStore(zustand, (state: AppState) => state.dirtyDate)
+  private dirtyDate!: Date;
+
   static get styles() {
     return css`
       #editor {
@@ -40,7 +48,7 @@ export class Editor extends RapidElement {
       #grid {
         position: relative;
         background-color: #f9f9f9;
-        background-position: 13px 13px;
+        background-position: 10px 10px;
         background-image: linear-gradient(
             0deg,
             transparent 24%,
@@ -84,11 +92,11 @@ export class Editor extends RapidElement {
       }
 
       .jtk-endpoint {
-        z-index: 1;
+        z-index: 600;
       }
 
       .plumb-source {
-        z-index: 300;
+        z-index: 600;
         border: 0px solid var(--color-connectors);
       }
 
@@ -112,7 +120,7 @@ export class Editor extends RapidElement {
 
       .plumb-target {
         margin-top: -6px;
-        z-index: 200;
+        z-index: 600;
         opacity: 0;
         cursor: pointer;
       }
@@ -120,6 +128,29 @@ export class Editor extends RapidElement {
       body .plumb-connector path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
+        z-index: 10;
+      }
+
+      body .plumb-connector {
+        z-index: 10;
+      }
+
+      body .plumb-connector.elevated {
+        z-index: 550;
+      }
+
+      body .plumb-connector.elevated path {
+        stroke: var(--color-connectors) !important;
+        stroke-width: 3px;
+        z-index: 550;
+      }
+
+      body .plumb-connector.elevated .plumb-arrow {
+        fill: var(--color-connectors);
+        stroke: var(--color-connectors);
+        stroke-width: 0px;
+        margin-top: 6px;
+        z-index: 550;
       }
 
       body .plumb-connector .plumb-arrow {
@@ -127,6 +158,7 @@ export class Editor extends RapidElement {
         stroke: var(--color-connectors);
         stroke-width: 0px;
         margin-top: 6px;
+        z-index: 10;
       }
 
       body svg.jtk-connector.jtk-hover path {
@@ -137,6 +169,7 @@ export class Editor extends RapidElement {
       body .plumb-connector.jtk-hover .plumb-arrow {
         fill: var(--color-success) !important;
         stroke-width: 0px;
+        z-index: 10;
       }
     `;
   }
@@ -161,6 +194,45 @@ export class Editor extends RapidElement {
     super.updated(changes);
     if (changes.has('canvasSize')) {
       // console.log('Setting canvas size', this.canvasSize);
+    }
+
+    if (changes.has('dirtyDate')) {
+      if (this.dirtyDate) {
+        this.debouncedSave();
+      }
+    }
+  }
+
+  private debouncedSave(): void {
+    // Clear any existing timer
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+    }
+
+    this.saveTimer = window.setTimeout(() => {
+      const now = new Date();
+      const timeSinceLastChange = now.getTime() - this.dirtyDate.getTime();
+
+      if (timeSinceLastChange >= SAVE_QUIET_TIME) {
+        this.saveChanges();
+        this.saveTimer = null;
+      } else {
+        this.debouncedSave();
+      }
+    }, SAVE_QUIET_TIME);
+  }
+
+  private saveChanges(): void {
+    // post the flow definition to the server
+    getStore().postJSON(`/flow/revisions/${this.flow}`, this.definition);
+    getStore().getState().setDirtyDate(null);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
     }
   }
 
