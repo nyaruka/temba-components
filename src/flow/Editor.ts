@@ -11,11 +11,11 @@ import { EditorNode } from './EditorNode';
 
 import { StickyNote } from './StickyNote';
 
-const SAVE_QUIET_TIME = 500;
-
 export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;
 }
+
+const SAVE_QUIET_TIME = 500;
 
 export interface DraggableItem {
   uuid: string;
@@ -280,8 +280,43 @@ export class Editor extends RapidElement {
     document.addEventListener('mouseup', this.boundMouseUp);
   }
 
+  /*private setupDragEventListeners(): void {
+    if (!this.definition) return;
+
+    // Set up drag listeners for nodes
+    this.definition.nodes.forEach((node) => {
+      const nodeElement = this.querySelector(
+        `[uuid="${node.uuid}"]`
+      ) as HTMLElement;
+      if (nodeElement) {
+        this.addDragListenerToElement(nodeElement, node.uuid, 'node');
+      }
+    });
+
+    // Set up drag listeners for sticky notes
+    const stickies = this.definition._ui?.stickies || {};
+    Object.keys(stickies).forEach((uuid) => {
+      const stickyElement = this.querySelector(
+        `[uuid="${uuid}"]`
+      ) as HTMLElement;
+      if (stickyElement) {
+        this.addDragListenerToElement(stickyElement, uuid, 'sticky');
+      }
+    });
+  }*./
+
+  /* private addDragListenerToElement(
+    element: HTMLElement,
+    uuid: string,
+    type: 'node' | 'sticky'
+  ): void {
+    console.log('type ', type, 'uuid', uuid);
+    element.addEventListener('mousedown', (event: MouseEvent) => {
+      this.handleMouseDown(event, element, uuid, type);
+    });
+  }*/
+
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
-    // console.log('getPosition', uuid, type);
     if (type === 'node') {
       return this.definition._ui.nodes[uuid]?.position;
     } else {

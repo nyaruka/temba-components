@@ -1,9 +1,17 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
-import { StickyNote as StickyNoteData, FlowPosition } from '../store/flow-definition';
+import {
+  StickyNote as StickyNoteData,
+  FlowPosition
+} from '../store/flow-definition';
 import { getStore } from '../store/Store';
-import { createDragHandler, addDragEventListeners, removeDragEventListeners, DragState } from './DragMixin';
+import {
+  createDragHandler,
+  addDragEventListeners,
+  removeDragEventListeners,
+  DragState
+} from './DragMixin';
 
 export class StickyNote extends RapidElement {
   createRenderRoot() {
@@ -16,7 +24,9 @@ export class StickyNote extends RapidElement {
   @property({ type: Object })
   public data: StickyNoteData;
 
-  private dragHandler: DragState & { handleMouseDown: (event: MouseEvent) => void } | null = null;
+  private dragHandler:
+    | (DragState & { handleMouseDown: (event: MouseEvent) => void })
+    | null = null;
   private isEditingTitle = false;
   private isEditingBody = false;
 
@@ -31,7 +41,8 @@ export class StickyNote extends RapidElement {
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         cursor: move;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
         font-size: 12px;
         overflow: hidden;
         transition: transform 0.1s ease;
@@ -99,21 +110,21 @@ export class StickyNote extends RapidElement {
         white-space: pre-wrap;
       }
 
-      .sticky-title[contenteditable="true"],
-      .sticky-body[contenteditable="true"] {
+      .sticky-title[contenteditable='true'],
+      .sticky-body[contenteditable='true'] {
         outline: 2px solid var(--sticky-border-color);
         outline-offset: -2px;
         background-color: rgba(255, 255, 255, 0.5);
       }
 
       .sticky-title:empty::before {
-        content: "Click to add title";
+        content: 'Click to add title';
         color: rgba(var(--sticky-text-color), 0.5);
         font-style: italic;
       }
 
       .sticky-body:empty::before {
-        content: "Click to add note";
+        content: 'Click to add note';
         color: rgba(var(--sticky-text-color), 0.5);
         font-style: italic;
       }
@@ -208,7 +219,7 @@ export class StickyNote extends RapidElement {
   private startEditingTitle(): void {
     this.isEditingTitle = true;
     this.requestUpdate();
-    
+
     setTimeout(() => {
       const titleElement = this.querySelector('.sticky-title') as HTMLElement;
       if (titleElement) {
@@ -226,7 +237,7 @@ export class StickyNote extends RapidElement {
   private startEditingBody(): void {
     this.isEditingBody = true;
     this.requestUpdate();
-    
+
     setTimeout(() => {
       const bodyElement = this.querySelector('.sticky-body') as HTMLElement;
       if (bodyElement) {
@@ -245,12 +256,14 @@ export class StickyNote extends RapidElement {
     this.isEditingTitle = false;
     const target = event.target as HTMLElement;
     const newTitle = target.textContent || '';
-    
+
     if (this.data && newTitle !== this.data.title) {
-      getStore().getState().updateStickyNote(this.uuid, {
-        ...this.data,
-        title: newTitle
-      });
+      getStore()
+        .getState()
+        .updateStickyNote(this.uuid, {
+          ...this.data,
+          title: newTitle
+        });
     }
     this.requestUpdate();
   }
@@ -259,12 +272,14 @@ export class StickyNote extends RapidElement {
     this.isEditingBody = false;
     const target = event.target as HTMLElement;
     const newBody = target.textContent || '';
-    
+
     if (this.data && newBody !== this.data.body) {
-      getStore().getState().updateStickyNote(this.uuid, {
-        ...this.data,
-        body: newBody
-      });
+      getStore()
+        .getState()
+        .updateStickyNote(this.uuid, {
+          ...this.data,
+          body: newBody
+        });
     }
     this.requestUpdate();
   }
@@ -287,12 +302,12 @@ export class StickyNote extends RapidElement {
     const style = `left: ${this.data.position.left}px; top: ${this.data.position.top}px;`;
 
     return html`
-      <div 
-        class="sticky-note ${this.data.color}" 
+      <div
+        class="sticky-note ${this.data.color}"
         style="${style}"
         data-uuid="${this.uuid}"
       >
-        <div 
+        <div
           class="sticky-title"
           contenteditable="${this.isEditingTitle}"
           @click="${this.handleTitleClick}"
@@ -300,7 +315,7 @@ export class StickyNote extends RapidElement {
           @keydown="${this.handleKeyDown}"
           .textContent="${this.data.title}"
         ></div>
-        <div 
+        <div
           class="sticky-body"
           contenteditable="${this.isEditingBody}"
           @click="${this.handleBodyClick}"
