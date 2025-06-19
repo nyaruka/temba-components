@@ -450,15 +450,17 @@ export const waitForSelectPagination = async (
 
     await select.updateComplete;
     clock.runAll();
-    
+
     // Give more time between attempts for slow CI environments
     await delay(75);
-    
+
     attempts++;
   }
 
   throw new Error(
-    `Pagination did not complete after ${maxAttempts} attempts (${maxAttempts * 75}ms). ` +
+    `Pagination did not complete after ${maxAttempts} attempts (${
+      maxAttempts * 75
+    }ms). ` +
       `Expected ${expectedCount} options, got ${select.visibleOptions.length}. ` +
       `Fetching: ${select.fetching}`
   );
