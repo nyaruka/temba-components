@@ -146,6 +146,42 @@ describe('temba-chart', () => {
     expect(tickCallback.call({}, 604800, 9, [])).to.equal('7d'); // 1 week in seconds
     expect(tickCallback.call({}, 1209600, 10, [])).to.equal('14d'); // 2 weeks in seconds
   });
+
+  it('applies xFormat when xType is time', async () => {
+    const chart: TembaChart = await getChart({
+      xType: 'time',
+      xFormat: 'DD'
+    });
+
+    chart.data = sampleData;
+    await chart.updateComplete;
+
+    // Wait for the chart to be created after data is set
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(chart.chart).to.exist;
+    expect(chart.chart.options.scales.x.type).to.equal('time');
+    expect(
+      (chart.chart.options.scales.x as any).time.displayFormats.day
+    ).to.equal('DD');
+  });
+
+  it('does not include time config when xType is category', async () => {
+    const chart: TembaChart = await getChart({
+      xType: 'category',
+      xFormat: 'DD'
+    });
+
+    chart.data = sampleData;
+    await chart.updateComplete;
+
+    // Wait for the chart to be created after data is set
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(chart.chart).to.exist;
+    expect(chart.chart.options.scales.x.type).to.equal('category');
+    expect((chart.chart.options.scales.x as any).time).to.be.undefined;
+  });
 });
 
 describe('formatDurationFromSeconds', () => {
