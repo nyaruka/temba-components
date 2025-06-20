@@ -1,6 +1,14 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
 import { fetchResults } from '../utils';
-import { FlowDefinition, FlowPosition, StickyNote } from './flow-definition';
+import {
+  Action,
+  Exit,
+  FlowDefinition,
+  FlowPosition,
+  Node,
+  Router,
+  StickyNote
+} from './flow-definition';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { property } from 'lit/decorators.js';
@@ -82,6 +90,10 @@ export interface AppState {
   setDirtyDate: (date: Date) => void;
   expandCanvas: (width: number, height: number) => void;
 
+  updateNode(
+    uuid: string,
+    node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
+  ): unknown;
   updateCanvasPositions: (positions: CanvasPositions) => void;
   updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) => void;
@@ -256,6 +268,19 @@ export const zustand = createStore<AppState>()(
             state.flowDefinition._ui.stickies[uuid].position = newPosition;
             state.dirtyDate = new Date();
           }
+        });
+      },
+
+      updateNode: (uuid: string, newNode: Node) => {
+        set((state: AppState) => {
+          const node = state.flowDefinition?.nodes.find((n) => n.uuid === uuid);
+          if (node) {
+            node.actions = newNode.actions;
+            node.uuid = newNode.uuid;
+            node.exits = newNode.exits;
+            node.router = newNode.router;
+          }
+          state.dirtyDate = new Date();
         });
       },
 
