@@ -5,12 +5,12 @@ import { Options } from '../src/options/Options';
 import { Select, SelectOption } from '../src/select/Select';
 import {
   assertScreenshot,
-  delay,
   getClip,
   getOptions,
   loadStore,
   openAndClick,
-  openSelect
+  openSelect,
+  waitForSelectPagination
 } from './utils.test';
 
 const colors = [
@@ -649,8 +649,7 @@ describe('temba-select', () => {
       // assert.equal(select.visibleOptions.length, 2);
     });
 
-    // this test is flaky on CI, skip it for now
-    xit('pages through cursor results', async () => {
+    it('pages through cursor results', async () => {
       const select = await createSelect(
         clock,
         getSelectHTML([], {
@@ -662,21 +661,9 @@ describe('temba-select', () => {
 
       await openSelect(clock, select);
 
-      // Wait for pagination to complete - keep checking until fetching is false
-      // and we have the expected number of results (15 = 3 pages * 5 items)
-      let attempts = 0;
-      const maxAttempts = 10;
-      while (select.fetching || select.visibleOptions.length < 15) {
-        if (attempts >= maxAttempts) {
-          throw new Error(
-            `Pagination did not complete after ${maxAttempts} attempts. fetching: ${select.fetching}, visibleOptions: ${select.visibleOptions.length}`
-          );
-        }
-        await select.updateComplete;
-        clock.runAll();
-        attempts++;
-        await delay(100);
-      }
+      // Wait for pagination to complete using our improved helper
+      // Use more attempts for this test since pagination can be slow in CI
+      await waitForSelectPagination(select, clock, 15, 50);
 
       // should have all three pages visible right away
       assert.equal(select.visibleOptions.length, 15);
@@ -695,13 +682,18 @@ describe('temba-select', () => {
 
       // wait for updates from fetching three pages
       await openSelect(clock, select);
+      await waitForSelectPagination(select, clock, 15, 50);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen
       select.blur();
       await clock.tick(250);
+      // Ensure the select is properly closed before reopening
+      await select.updateComplete;
 
       await openSelect(clock, select);
+      // Cached results should be available immediately, but give some time for rendering
+      await waitForSelectPagination(select, clock, 15, 30);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen once more (previous bug failed on third opening)
