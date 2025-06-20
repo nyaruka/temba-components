@@ -217,7 +217,8 @@ export class RunList extends TembaList {
                   placeholder="Result Preview"
                   valueKey="key"
                   @change=${this.handleColumnChanged}
-                />
+                  style="z-index: 10;"
+                ></temba-select>
               `
             : null}
         </div>
