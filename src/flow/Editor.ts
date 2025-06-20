@@ -1,6 +1,6 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap, unsafeCSS } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { FlowDefinition, FlowPosition } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
@@ -8,8 +8,6 @@ import { RapidElement } from '../RapidElement';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
-
-import { StickyNote } from './StickyNote';
 
 export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;
@@ -23,6 +21,8 @@ export interface DraggableItem {
   element: HTMLElement;
   type: 'node' | 'sticky';
 }
+
+const DRAG_THRESHOLD = 10;
 
 export class Editor extends RapidElement {
   // unfortunately, jsplumb requires that we be in light DOM
@@ -52,8 +52,12 @@ export class Editor extends RapidElement {
   private dirtyDate!: Date;
 
   // Drag state
+  @state()
   private isDragging = false;
+  private isMouseDown = false;
   private dragStartPos = { x: 0, y: 0 };
+
+  @state()
   private currentDragItem: DraggableItem | null = null;
   private startPos = { left: 0, top: 0 };
 
@@ -115,7 +119,7 @@ export class Editor extends RapidElement {
       }
 
       #canvas > .dragging {
-        z-index: 1000;
+        z-index: 10000 !important;
       }
 
       body .jtk-endpoint {
@@ -280,42 +284,6 @@ export class Editor extends RapidElement {
     document.addEventListener('mouseup', this.boundMouseUp);
   }
 
-  /*private setupDragEventListeners(): void {
-    if (!this.definition) return;
-
-    // Set up drag listeners for nodes
-    this.definition.nodes.forEach((node) => {
-      const nodeElement = this.querySelector(
-        `[uuid="${node.uuid}"]`
-      ) as HTMLElement;
-      if (nodeElement) {
-        this.addDragListenerToElement(nodeElement, node.uuid, 'node');
-      }
-    });
-
-    // Set up drag listeners for sticky notes
-    const stickies = this.definition._ui?.stickies || {};
-    Object.keys(stickies).forEach((uuid) => {
-      const stickyElement = this.querySelector(
-        `[uuid="${uuid}"]`
-      ) as HTMLElement;
-      if (stickyElement) {
-        this.addDragListenerToElement(stickyElement, uuid, 'sticky');
-      }
-    });
-  }*./
-
-  /* private addDragListenerToElement(
-    element: HTMLElement,
-    uuid: string,
-    type: 'node' | 'sticky'
-  ): void {
-    console.log('type ', type, 'uuid', uuid);
-    element.addEventListener('mousedown', (event: MouseEvent) => {
-      this.handleMouseDown(event, element, uuid, type);
-    });
-  }*/
-
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
     if (type === 'node') {
       return this.definition._ui.nodes[uuid]?.position;
@@ -352,22 +320,14 @@ export class Editor extends RapidElement {
       return;
     }
 
-    // For sticky notes, don't drag if clicking on editable content
-    if (
-      element.tagName === 'TEMBA-STICKY-NOTE' &&
-      (target.hasAttribute('contenteditable') ||
-        target.closest('[contenteditable]'))
-    ) {
-      return;
-    }
-
     const uuid = element.getAttribute('uuid');
     const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
 
     const position = this.getPosition(uuid, type);
     if (!position) return;
 
-    this.isDragging = true;
+    // Set up potential drag state, but don't start dragging yet
+    this.isMouseDown = true;
     this.dragStartPos = { x: event.clientX, y: event.clientY };
     this.startPos = { left: position.left, top: position.top };
     this.currentDragItem = {
@@ -377,84 +337,90 @@ export class Editor extends RapidElement {
       type
     };
 
-    // Add dragging class for visual feedback
-    element.classList.add('dragging');
-
-    // If this is a node, elevate connections
-    if (type === 'node' && this.plumber) {
-      this.plumber.elevateNodeConnections(uuid);
-    }
-
     event.preventDefault();
     event.stopPropagation();
   }
 
   private handleMouseMove(event: MouseEvent): void {
-    if (!this.isDragging || !this.currentDragItem) return;
+    if (!this.isMouseDown || !this.currentDragItem) return;
 
     const deltaX = event.clientX - this.dragStartPos.x;
     const deltaY = event.clientY - this.dragStartPos.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    const newLeft = this.startPos.left + deltaX;
-    const newTop = this.startPos.top + deltaY;
+    // Only start dragging if we've moved beyond the threshold
+    if (!this.isDragging && distance > DRAG_THRESHOLD) {
+      this.isDragging = true;
 
-    // Update the visual position during drag
-    this.currentDragItem.element.style.left = `${newLeft}px`;
-    this.currentDragItem.element.style.top = `${newTop}px`;
+      // If this is a node, elevate connections
+      if (this.currentDragItem.type === 'node' && this.plumber) {
+        this.plumber.elevateNodeConnections(this.currentDragItem.uuid);
+      }
+    }
 
-    // Repaint connections if this is a node
-    if (this.currentDragItem.type === 'node' && this.plumber) {
-      this.plumber.repaintEverything();
+    // If we're actually dragging, update positions
+    if (this.isDragging) {
+      const newLeft = this.startPos.left + deltaX;
+      const newTop = this.startPos.top + deltaY;
+
+      // Update the visual position during drag
+      this.currentDragItem.element.style.left = `${newLeft}px`;
+      this.currentDragItem.element.style.top = `${newTop}px`;
+
+      // Repaint connections if this is a node
+      if (this.currentDragItem.type === 'node' && this.plumber) {
+        this.plumber.repaintEverything();
+      }
     }
   }
 
   private handleMouseUp(event: MouseEvent): void {
-    if (!this.isDragging || !this.currentDragItem) return;
+    if (!this.isMouseDown || !this.currentDragItem) return;
 
+    // If we were actually dragging, handle the drag end
+    if (this.isDragging) {
+      // Restore normal z-index for node connections
+      if (this.currentDragItem.type === 'node' && this.plumber) {
+        this.plumber.restoreNodeConnections(this.currentDragItem.uuid);
+      }
+
+      const deltaX = event.clientX - this.dragStartPos.x;
+      const deltaY = event.clientY - this.dragStartPos.y;
+
+      const newLeft = this.startPos.left + deltaX;
+      const newTop = this.startPos.top + deltaY;
+
+      // Snap to 20px grid for final position
+      const snappedLeft = snapToGrid(newLeft);
+      const snappedTop = snapToGrid(newTop);
+
+      const newPosition = { left: snappedLeft, top: snappedTop };
+
+      // Update the store with the new snapped position
+      this.updatePosition(
+        this.currentDragItem.uuid,
+        this.currentDragItem.type,
+        newPosition
+      );
+
+      // Update canvas positions for nodes
+      if (this.currentDragItem.type === 'node') {
+        getStore()
+          .getState()
+          .updateCanvasPositions({
+            [this.currentDragItem.uuid]: newPosition
+          });
+      }
+
+      // Repaint connections if this is a node
+      if (this.currentDragItem.type === 'node' && this.plumber) {
+        this.plumber.repaintEverything();
+      }
+    }
+
+    // Reset all drag state
     this.isDragging = false;
-
-    // Remove dragging class
-    this.currentDragItem.element.classList.remove('dragging');
-
-    // Restore normal z-index for node connections
-    if (this.currentDragItem.type === 'node' && this.plumber) {
-      this.plumber.restoreNodeConnections(this.currentDragItem.uuid);
-    }
-
-    const deltaX = event.clientX - this.dragStartPos.x;
-    const deltaY = event.clientY - this.dragStartPos.y;
-
-    const newLeft = this.startPos.left + deltaX;
-    const newTop = this.startPos.top + deltaY;
-
-    // Snap to 20px grid for final position
-    const snappedLeft = snapToGrid(newLeft);
-    const snappedTop = snapToGrid(newTop);
-
-    const newPosition = { left: snappedLeft, top: snappedTop };
-
-    // Update the store with the new snapped position
-    this.updatePosition(
-      this.currentDragItem.uuid,
-      this.currentDragItem.type,
-      newPosition
-    );
-
-    // Update canvas positions for nodes
-    if (this.currentDragItem.type === 'node') {
-      getStore()
-        .getState()
-        .updateCanvasPositions({
-          [this.currentDragItem.uuid]: newPosition
-        });
-    }
-
-    // Repaint connections if this is a node
-    if (this.currentDragItem.type === 'node' && this.plumber) {
-      this.plumber.repaintEverything();
-    }
-
-    // Clear drag item
+    this.isMouseDown = false;
     this.currentDragItem = null;
   }
 
@@ -499,7 +465,6 @@ export class Editor extends RapidElement {
     const style = html`<style>
       ${unsafeCSS(Editor.styles.cssText)}
       ${unsafeCSS(EditorNode.styles.cssText)}
-      ${unsafeCSS(StickyNote.styles.cssText)}
     </style>`;
 
     const stickies = this.definition?._ui?.stickies || {};
@@ -517,8 +482,11 @@ export class Editor extends RapidElement {
                   const position =
                     this.definition._ui.nodes[node.uuid].position;
 
+                  const dragging =
+                    this.isDragging && this.currentDragItem?.uuid === node.uuid;
+
                   return html`<temba-flow-node
-                    class="draggable"
+                    class="draggable ${dragging ? 'dragging' : ''}"
                     @mousedown=${this.handleMouseDown.bind(this)}
                     uuid=${node.uuid}
                     style="left:${position.left}px; top:${position.top}px"
@@ -530,12 +498,16 @@ export class Editor extends RapidElement {
               : html`<temba-loading></temba-loading>`}
             ${Object.entries(stickies).map(([uuid, sticky]) => {
               const position = sticky.position || { left: 0, top: 0 };
+              const dragging =
+                this.isDragging && this.currentDragItem?.uuid === uuid;
               return html`<temba-sticky-note
-                class="draggable"
+                class="draggable ${dragging ? 'dragging' : ''}"
                 @mousedown=${this.handleMouseDown.bind(this)}
-                style="left:${position.left}px; top:${position.top}px"
+                style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
+                position.top}"
                 uuid=${uuid}
                 .data=${sticky}
+                .dragging=${dragging}
               ></temba-sticky-note>`;
             })}
           </div>

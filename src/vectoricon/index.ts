@@ -58,6 +58,7 @@ export enum Icon {
   delete_small = 'x',
   down = 'chevron-down',
   download = 'download-01',
+  drag = 'dots-grid',
   edit = 'edit-02',
   email = 'mail-01',
   error = 'alert-circle',
