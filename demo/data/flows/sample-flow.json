@@ -902,7 +902,7 @@
         "1a32aff1-36b9-48e3-a51e-382efdcb9a83": {
           "position": {
             "left": 0,
-            "top": 140
+            "top": 180
           },
           "title": "Yellow Note",
           "body": "This flow makes no sense. That's because it's just for general testing. We can keep typing in this div though and it is interesting how it just keeps expanding even if it isn't a textarea.",
@@ -911,7 +911,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1509": {
           "position": {
             "left": 0,
-            "top": 340
+            "top": 0
           },
           "title": "Blue Note",
           "body": "Did you know stickies can have different colors? I just realized that and I'm pretty happy to report that this expands really nicely. It seems to be working okay I think. This.",
@@ -920,7 +920,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1501": {
           "position": {
             "left": 0,
-            "top": 0
+            "top": 380
           },
           "title": "Green Note",
           "body": "They also come in green, do I like them better? Maybe I do. There is a standard height, they will have to get used to it.",
