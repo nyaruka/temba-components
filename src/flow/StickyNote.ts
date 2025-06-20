@@ -97,7 +97,7 @@ export class StickyNote extends RapidElement {
         transition: background 0.2s;
       }
       [contenteditable='true']:focus {
-        background-color: rgba(255, 255, 255, 0.6);
+        background-color: rgba(255, 255, 255, 0.8);
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         outline-color: var(--sticky-border-color);
       }
@@ -144,7 +144,7 @@ export class StickyNote extends RapidElement {
       }
 
       /* Drag icon */
-      .sticky-title-container > temba-icon[name='drag'] {
+      .sticky-title-container > .drag-handle {
         --icon-color: var(--sticky-border-color);
         cursor: move;
         max-width: 0px;
@@ -152,18 +152,25 @@ export class StickyNote extends RapidElement {
         transition: all 0.2s ease;
         padding-left: 0;
       }
-      .sticky-note:focus-within
-        .sticky-title-container
-        > temba-icon[name='drag'],
-      .sticky-note:hover .sticky-title-container > temba-icon[name='drag'] {
+
+      .sticky-note:hover .drag-handle {
         max-width: 20px;
         padding-left: 8px;
+      }
+
+      .sticky-note:focus-within .sticky-title-container > .drag-handle {
+        max-width: 0px;
+        padding-left: 0px;
       }
 
       /* Focus/active states */
       .sticky-note:focus-within {
         box-shadow: 0 0 0 1px var(--sticky-border-color),
           0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .sticky-note:focus-within .drag-handle {
+        max-width: 0px;
       }
     `;
   }
@@ -250,7 +257,7 @@ export class StickyNote extends RapidElement {
         data-uuid="${this.uuid}"
       >
         <div class="sticky-title-container">
-          <temba-icon name="drag"></temba-icon>
+          <temba-icon name="drag" class="drag-handle"></temba-icon>
           <div
             class="sticky-title"
             contenteditable="true"

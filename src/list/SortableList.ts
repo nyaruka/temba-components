@@ -108,6 +108,9 @@ export class SortableList extends RapidElement {
   @property({ type: String })
   dropTargetId: string;
 
+  @property({ type: String })
+  dragHandle: string;
+
   /**
    * Optional callback to allow parent components to customize the ghost node.
    * Called after the ghost node is cloned but before it is appended to the DOM.
@@ -260,6 +263,14 @@ export class SortableList extends RapidElement {
 
   private handleMouseDown(event: MouseEvent) {
     let ele = event.target as HTMLDivElement;
+
+    // if we have a drag handle, only allow dragging from that element
+    if (this.dragHandle) {
+      if (!ele.classList.contains(this.dragHandle)) {
+        return;
+      }
+    }
+
     ele = ele.closest('.sortable');
     if (ele) {
       event.preventDefault();

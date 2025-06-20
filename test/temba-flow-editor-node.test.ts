@@ -1,4 +1,5 @@
-import { html, fixture, expect, oneEvent } from '@open-wc/testing';
+import '../temba-modules';
+import { html, fixture, expect } from '@open-wc/testing';
 import { EditorNode } from '../src/flow/EditorNode';
 import {
   Node,
@@ -9,9 +10,6 @@ import {
 } from '../src/store/flow-definition.d';
 import { stub, restore } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
-
-// Register the component
-customElements.define('temba-editor-node', EditorNode);
 
 describe('EditorNode', () => {
   let editorNode: EditorNode;
@@ -355,30 +353,48 @@ describe('EditorNode', () => {
       const mockNode: Node = {
         uuid: 'sortable-test-node',
         actions: [
-          { type: 'send_msg', uuid: 'action-1', text: 'Hello', quick_replies: [] } as any,
-          { type: 'send_msg', uuid: 'action-2', text: 'World', quick_replies: [] } as any
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'World',
+            quick_replies: []
+          } as any
         ],
         exits: []
       };
 
       // Test that renderAction includes sortable class and proper ID
-      const result1 = (editorNode as any).renderAction(mockNode, mockNode.actions[0], 0);
-      const result2 = (editorNode as any).renderAction(mockNode, mockNode.actions[1], 1);
+      const result1 = (editorNode as any).renderAction(
+        mockNode,
+        mockNode.actions[0],
+        0
+      );
+      const result2 = (editorNode as any).renderAction(
+        mockNode,
+        mockNode.actions[1],
+        1
+      );
 
       expect(result1).to.exist;
       expect(result2).to.exist;
-      
+
       // Render the template to check the actual DOM
       const container1 = await fixture(html`<div>${result1}</div>`);
       const container2 = await fixture(html`<div>${result2}</div>`);
-      
+
       const actionElement1 = container1.querySelector('.action');
       const actionElement2 = container2.querySelector('.action');
-      
+
       expect(actionElement1).to.exist;
       expect(actionElement1?.classList.contains('sortable')).to.be.true;
       expect(actionElement1?.id).to.equal('action-0');
-      
+
       expect(actionElement2).to.exist;
       expect(actionElement2?.classList.contains('sortable')).to.be.true;
       expect(actionElement2?.id).to.equal('action-1');
@@ -388,29 +404,62 @@ describe('EditorNode', () => {
       const mockNode: Node = {
         uuid: 'drag-handle-test',
         actions: [
-          { type: 'send_msg', uuid: 'action-1', text: 'Hello', quick_replies: [] } as any
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
         ],
         exits: []
       };
 
-      const result = (editorNode as any).renderAction(mockNode, mockNode.actions[0], 0);
-      
-      // Render the template to check the actual DOM
-      const container = await fixture(html`<div>${result}</div>`);
-      
-      const dragHandle = container.querySelector('.drag-handle');
-      const icon = container.querySelector('temba-icon[name="drag"]');
-      
+      let editorNode: EditorNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${{ position: { left: 0, top: 0 } }}
+        ></temba-flow-node>`
+      );
+
+      // No drag handle should be present if only one action
+      let dragHandle = editorNode.querySelector('.drag-handle');
+      expect(dragHandle).to.not.exist;
+
+      // Now add a second action to verify drag handle appears
+      mockNode.actions.push({
+        type: 'send_msg',
+        uuid: 'action-2',
+        text: 'World',
+        quick_replies: []
+      } as any);
+
+      editorNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${{ position: { left: 0, top: 0 } }}
+        ></temba-flow-node>`
+      );
+
+      dragHandle = editorNode.querySelector('.drag-handle');
       expect(dragHandle).to.exist;
-      expect(icon).to.exist;
     });
 
     it('renders SortableList when actions are present', async () => {
       const mockNode: Node = {
         uuid: 'sortable-list-test',
         actions: [
-          { type: 'send_msg', uuid: 'action-1', text: 'Hello', quick_replies: [] } as any,
-          { type: 'send_msg', uuid: 'action-2', text: 'World', quick_replies: [] } as any
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'World',
+            quick_replies: []
+          } as any
         ],
         exits: []
       };
@@ -425,10 +474,10 @@ describe('EditorNode', () => {
       (editorNode as any).ui = mockUI;
 
       const renderResult = editorNode.render();
-      
+
       // Render the template to check the actual DOM
       const container = await fixture(html`<div>${renderResult}</div>`);
-      
+
       const sortableList = container.querySelector('temba-sortable-list');
       expect(sortableList).to.exist;
     });
@@ -450,18 +499,35 @@ describe('EditorNode', () => {
       (editorNode as any).ui = mockUI;
 
       const renderResult = editorNode.render();
-      
+
       // Check that template does not include temba-sortable-list
-      expect(renderResult.strings.join('')).to.not.contain('temba-sortable-list');
+      expect(renderResult.strings.join('')).to.not.contain(
+        'temba-sortable-list'
+      );
     });
 
-    it('handles order changed events correctly', () => {
+    it('handles order changed events correctly', async () => {
       const mockNode: Node = {
         uuid: 'order-test',
         actions: [
-          { type: 'send_msg', uuid: 'action-1', text: 'First', quick_replies: [] } as any,
-          { type: 'send_msg', uuid: 'action-2', text: 'Second', quick_replies: [] } as any,
-          { type: 'send_msg', uuid: 'action-3', text: 'Third', quick_replies: [] } as any
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'First',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'Second',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-3',
+            text: 'Third',
+            quick_replies: []
+          } as any
         ],
         exits: []
       };
@@ -478,17 +544,33 @@ describe('EditorNode', () => {
 
       // Verify the actions were reordered correctly
       expect((editorNode as any).node.actions).to.have.length(3);
-      expect(((editorNode as any).node.actions[0] as any).text).to.equal('Second');
-      expect(((editorNode as any).node.actions[1] as any).text).to.equal('Third');
-      expect(((editorNode as any).node.actions[2] as any).text).to.equal('First');
+      expect(((editorNode as any).node.actions[0] as any).text).to.equal(
+        'Second'
+      );
+      expect(((editorNode as any).node.actions[1] as any).text).to.equal(
+        'Third'
+      );
+      expect(((editorNode as any).node.actions[2] as any).text).to.equal(
+        'First'
+      );
     });
 
     it('preserves action data during reordering', () => {
       const mockNode: Node = {
         uuid: 'preserve-test',
         actions: [
-          { type: 'send_msg', uuid: 'action-1', text: 'Message 1', quick_replies: ['Yes', 'No'] } as any,
-          { type: 'send_msg', uuid: 'action-2', text: 'Message 2', quick_replies: [] } as any
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Message 1',
+            quick_replies: ['Yes', 'No']
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'Message 2',
+            quick_replies: []
+          } as any
         ],
         exits: []
       };
@@ -504,19 +586,42 @@ describe('EditorNode', () => {
 
       // Verify all action data is preserved
       expect((editorNode as any).node.actions).to.have.length(2);
-      expect(((editorNode as any).node.actions[0] as any).text).to.equal('Message 2');
-      expect(((editorNode as any).node.actions[0] as any).quick_replies).to.deep.equal([]);
-      expect(((editorNode as any).node.actions[1] as any).text).to.equal('Message 1');
-      expect(((editorNode as any).node.actions[1] as any).quick_replies).to.deep.equal(['Yes', 'No']);
+      expect(((editorNode as any).node.actions[0] as any).text).to.equal(
+        'Message 2'
+      );
+      expect(
+        ((editorNode as any).node.actions[0] as any).quick_replies
+      ).to.deep.equal([]);
+      expect(((editorNode as any).node.actions[1] as any).text).to.equal(
+        'Message 1'
+      );
+      expect(
+        ((editorNode as any).node.actions[1] as any).quick_replies
+      ).to.deep.equal(['Yes', 'No']);
     });
 
     it('integrates with SortableList for full drag functionality', async () => {
       const mockNode: Node = {
         uuid: 'integration-drag-test',
         actions: [
-          { type: 'send_msg', uuid: 'action-1', text: 'First Action', quick_replies: [] } as any,
-          { type: 'send_msg', uuid: 'action-2', text: 'Second Action', quick_replies: [] } as any,
-          { type: 'send_msg', uuid: 'action-3', text: 'Third Action', quick_replies: [] } as any
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'First Action',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'Second Action',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-3',
+            text: 'Third Action',
+            quick_replies: []
+          } as any
         ],
         exits: []
       };
@@ -533,20 +638,20 @@ describe('EditorNode', () => {
       // Render the full component
       const renderResult = editorNode.render();
       const container = await fixture(html`<div>${renderResult}</div>`);
-      
+
       // Find the sortable list
       const sortableList = container.querySelector('temba-sortable-list');
       expect(sortableList).to.exist;
-      
+
       // Verify all actions are rendered as sortable items
       const sortableItems = container.querySelectorAll('.sortable');
       expect(sortableItems).to.have.length(3);
-      
+
       // Verify each action has correct ID and structure
       expect(sortableItems[0].id).to.equal('action-0');
       expect(sortableItems[1].id).to.equal('action-1');
       expect(sortableItems[2].id).to.equal('action-2');
-      
+
       // Verify drag handles are present
       const dragHandles = container.querySelectorAll('.drag-handle');
       expect(dragHandles).to.have.length(3);

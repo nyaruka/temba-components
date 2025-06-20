@@ -6,7 +6,6 @@ import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
-import { CustomEventType } from '../interfaces';
 
 export class EditorNode extends RapidElement {
   createRenderRoot() {
@@ -68,32 +67,39 @@ export class EditorNode extends RapidElement {
       }
 
       .action .drag-handle {
-        display: flex;
-        align-items: center;
-        padding: 0.5em;
         opacity: 0;
-        transition: opacity 200ms ease-in-out;
+        transition: all 200ms ease-in-out;
         cursor: move;
-        border-right: 1px solid rgba(0, 0, 0, 0.1);
         background: rgba(0, 0, 0, 0.02);
+        max-width:0px;
+        position: absolute;
       }
 
       .action:hover .drag-handle {
         opacity: 0.5;
+        padding: 0.25em;
+        max-width: 20px;
       }
 
       .action .drag-handle:hover {
         opacity: 1;
+        
       }
 
       .action .title,
       .router .title {
+        display: flex;
         color: #fff;
         padding: 5px 1px;
         text-align: center;
         font-size: 1em;
         font-weight: normal;
+
       }
+
+      .title .name {
+        flex-grow: 1;
+        }
 
       .quick-replies {
         margin-top: 0.5em;
@@ -159,14 +165,15 @@ export class EditorNode extends RapidElement {
   ): void {
     super.updated(changes);
     if (changes.has('node')) {
-      this.plumber.makeTarget(this.node.uuid);
-
-      // our node was changed, see if we have new destinations
-      for (const exit of this.node.exits) {
-        if (!exit.destination_uuid) {
-          this.plumber.makeSource(exit.uuid);
-        } else {
-          this.plumber.connectIds(exit.uuid, exit.destination_uuid);
+      // make our initial connections
+      if (changes.get('node') === undefined) {
+        // this.plumber.makeTarget(this.node.uuid);
+        for (const exit of this.node.exits) {
+          if (!exit.destination_uuid) {
+            this.plumber.makeSource(exit.uuid);
+          } else {
+            this.plumber.connectIds(exit.uuid, exit.destination_uuid);
+          }
         }
       }
 
@@ -174,7 +181,7 @@ export class EditorNode extends RapidElement {
       const rect = ele.getBoundingClientRect();
 
       getStore()
-        .getState()
+        ?.getState()
         .expandCanvas(
           this.ui.position.left + rect.width,
           this.ui.position.top + rect.height
@@ -184,21 +191,29 @@ export class EditorNode extends RapidElement {
 
   private handleActionOrderChanged(event: CustomEvent) {
     const [fromIdx, toIdx] = event.detail.swap;
-    
-    // Create a new actions array with the reordered items
+
+    // swap our actions
     const newActions = [...this.node.actions];
     const movedAction = newActions.splice(fromIdx, 1)[0];
     newActions.splice(toIdx, 0, movedAction);
-    
-    // Update the node with new actions order
+
+    // udate our internal reprensentation, this isn't strictly necessary
+    // since the editor will update us from it's definition subscription
+    // but it makes testing a lot easier
     this.node = { ...this.node, actions: newActions };
-    
-    // No need to call requestUpdate manually since setting node property triggers it
+
+    getStore()
+      ?.getState()
+      .updateNode(this.node.uuid, { ...this.node, actions: newActions });
   }
 
   private renderTitle(config: UIConfig) {
     return html`<div class="title" style="background:${config.color}">
-      ${config.name}
+      ${this.node?.actions?.length > 1
+        ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
+        : null}
+
+      <div class="name">${config.name}</div>
     </div>`;
   }
 
@@ -206,10 +221,10 @@ export class EditorNode extends RapidElement {
     const config = EDITOR_CONFIG[action.type];
 
     if (config) {
-      return html`<div class="action sortable ${action.type}" id="action-${index}">
-        <div class="drag-handle">
-          <temba-icon name="drag"></temba-icon>
-        </div>
+      return html`<div
+        class="action sortable ${action.type}"
+        id="action-${index}"
+      >
         <div class="action-content">
           ${this.renderTitle(config)}
           <div class="body">
@@ -220,7 +235,9 @@ export class EditorNode extends RapidElement {
         </div>
       </div>`;
     }
-    return html`<div class="action sortable" id="action-${index}">${action.type}</div>`;
+    return html`<div class="action sortable" id="action-${index}">
+      ${action.type}
+    </div>`;
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
@@ -277,8 +294,11 @@ export class EditorNode extends RapidElement {
         class="node"
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
-        ${this.node.actions.length > 0 
-          ? html`<temba-sortable-list @temba-order-changed="${this.handleActionOrderChanged}">
+        ${this.node.actions.length > 0
+          ? html`<temba-sortable-list
+              dragHandle="drag-handle"
+              @temba-order-changed="${this.handleActionOrderChanged}"
+            >
               ${this.node.actions.map((actionSpec, index) => {
                 return this.renderAction(this.node, actionSpec, index);
               })}

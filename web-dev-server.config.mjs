@@ -15,30 +15,38 @@ export default {
     {
       name: 'flow-files',
       serve(context) {
-        if (context.request.method === 'POST') {
-          let body = '';
-          context.req.on('data', chunk => {
-            body += chunk.toString();
-          });
-
-          context.req.on('end', () => {
+        if (context.request.method === 'POST' && context.path.startsWith('/flow/revisions/')) {
+          return new Promise((resolve) => {
+            let body = '';
             const parts = context.path.split('/');
             const uuid = parts[3];
-
-            // read in the body
-            context.contentType = 'application/json';
-            if (body) {
-              fs.writeFileSync(
-                path.resolve(`./demo/data/flows/${uuid}.json`), JSON.stringify({ definition: JSON.parse(body) }, null, 2)
-              );
-
-              context.body = {
-                status: 'success',
-                message: `Flow ${uuid} saved successfully.`,
-              };
-            } else {
-              console.log(`No body received for flow ${uuid}.`);
-            }
+            context.req.on('data', chunk => {
+              body += chunk.toString();
+            });
+            context.req.on('end', () => {
+              context.contentType = 'application/json';
+              if (body) {
+                fs.writeFileSync(
+                  path.resolve(`./demo/data/flows/${uuid}.json`),
+                  JSON.stringify({ definition: JSON.parse(body) }, null, 2)
+                );
+                console.log(`Flow ${uuid} saved successfully.`);
+                context.body = {
+                  status: 'success',
+                  message: `Flow ${uuid} saved successfully.`,
+                  definition: JSON.parse(body),
+                };
+                context.status = 200;
+              } else {
+                console.log(`No body received for flow ${uuid}.`);
+                context.body = {
+                  status: 'error',
+                  message: `No body received for flow ${uuid}.`,
+                };
+                context.status = 400;
+              }
+              resolve();
+            });
           });
         }
 
