@@ -154,8 +154,16 @@ export interface NodeUI {
   config?: Record<string, any>;
 }
 
+export interface StickyNote {
+  position: FlowPosition;
+  title: string;
+  body: string;
+  color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray';
+}
+
 export interface FlowUI {
   nodes: Record<string, NodeUI>;
+  stickies?: Record<string, StickyNote>;
   languages: Record<string, string>[];
   translation_filters?: { categories: boolean };
   auto_translations?: Record<string, Record<string, string[]>>;

@@ -21,26 +21,10 @@ export class EditorNode extends RapidElement {
   @property({ type: Object })
   private ui: NodeUI;
 
-  // Drag state properties
-  private isDragging = false;
-  private dragStartPos = { x: 0, y: 0 };
-  private nodeStartPos = { left: 0, top: 0 };
-
-  // Bound event handlers to maintain proper 'this' context
-  private boundMouseMove = this.handleMouseMove.bind(this);
-  private boundMouseUp = this.handleMouseUp.bind(this);
-
-  /**
-   * Snaps a coordinate value to the nearest 20px grid position
-   */
-  private snapToGrid(value: number): number {
-    return Math.round(value / 20) * 20;
-  }
-
   static get styles() {
     return css`
+
       .node {
-        position: absolute;
         background-color: #fff;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         min-width: 200px;
@@ -49,7 +33,7 @@ export class EditorNode extends RapidElement {
         color: #333;
         cursor: move;
         user-select: none;
-        z-index: 500;
+
       }
 
       .node:hover {
@@ -149,7 +133,7 @@ export class EditorNode extends RapidElement {
         }
       }
 
-      const ele = this.querySelector('.node');
+      const ele = this.parentElement;
       const rect = ele.getBoundingClientRect();
 
       getStore()
@@ -158,129 +142,7 @@ export class EditorNode extends RapidElement {
           this.ui.position.left + rect.width,
           this.ui.position.top + rect.height
         );
-
-      // Add drag event listeners to the node
-      this.addDragEventListeners();
     }
-  }
-
-  private addDragEventListeners(): void {
-    const nodeElement = this.querySelector('.node') as HTMLElement;
-    if (!nodeElement) return;
-
-    nodeElement.addEventListener('mousedown', this.handleMouseDown.bind(this));
-    document.addEventListener('mousemove', this.boundMouseMove);
-    document.addEventListener('mouseup', this.boundMouseUp);
-  }
-
-  private handleMouseDown(event: MouseEvent): void {
-    // Only start dragging if clicking on the node itself, not on exits or other interactive elements
-    const target = event.target as HTMLElement;
-    if (target.classList.contains('exit') || target.closest('.exit')) {
-      return;
-    }
-
-    this.isDragging = true;
-    this.dragStartPos = { x: event.clientX, y: event.clientY };
-    this.nodeStartPos = {
-      left: this.ui.position.left,
-      top: this.ui.position.top
-    };
-
-    // Add dragging class for visual feedback
-    const nodeElement = this.querySelector('.node') as HTMLElement;
-    if (nodeElement) {
-      nodeElement.classList.add('dragging');
-    }
-
-    // Elevate connections for this node during dragging
-    if (this.plumber) {
-      this.plumber.elevateNodeConnections(this.node.uuid);
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  private handleMouseMove(event: MouseEvent): void {
-    if (!this.isDragging) return;
-
-    const deltaX = event.clientX - this.dragStartPos.x;
-    const deltaY = event.clientY - this.dragStartPos.y;
-
-    const newLeft = this.nodeStartPos.left + deltaX;
-    const newTop = this.nodeStartPos.top + deltaY;
-
-    // Update the UI position temporarily (for visual feedback)
-    const nodeElement = this.querySelector('.node') as HTMLElement;
-    if (nodeElement) {
-      nodeElement.style.left = `${newLeft}px`;
-      nodeElement.style.top = `${newTop}px`;
-    }
-
-    // Repaint connections during dragging for smooth updates
-    if (this.plumber) {
-      this.plumber.repaintEverything();
-    }
-  }
-
-  private handleMouseUp(event: MouseEvent): void {
-    if (!this.isDragging) return;
-
-    this.isDragging = false;
-
-    // Remove dragging class
-    const nodeElement = this.querySelector('.node') as HTMLElement;
-    if (nodeElement) {
-      nodeElement.classList.remove('dragging');
-    }
-
-    // Restore normal z-index for connections
-    if (this.plumber) {
-      this.plumber.restoreNodeConnections(this.node.uuid);
-    }
-
-    const deltaX = event.clientX - this.dragStartPos.x;
-    const deltaY = event.clientY - this.dragStartPos.y;
-
-    const newLeft = this.nodeStartPos.left + deltaX;
-    const newTop = this.nodeStartPos.top + deltaY;
-
-    // Snap to 20px grid for final position
-    const snappedLeft = this.snapToGrid(newLeft);
-    const snappedTop = this.snapToGrid(newTop);
-
-    // Update the store with the new snapped position
-    const newPosition = { left: snappedLeft, top: snappedTop };
-    getStore()
-      .getState()
-      .updateCanvasPositions({
-        [this.node.uuid]: newPosition
-      });
-
-    // Repaint connections if plumber is available
-    if (this.plumber) {
-      this.plumber.repaintEverything();
-    }
-
-    getStore().getState().updateNodePosition(this.node.uuid, newPosition);
-
-    // Fire a custom event with the new coordinates
-    /*this.fireCustomEvent(CustomEventType.Moved, {
-      nodeId: this.node.uuid,
-      position: newPosition,
-      oldPosition: {
-        left: this.nodeStartPos.left,
-        top: this.nodeStartPos.top
-      }
-    });*/
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-    // Clean up event listeners
-    document.removeEventListener('mousemove', this.boundMouseMove);
-    document.removeEventListener('mouseup', this.boundMouseUp);
   }
 
   private renderTitle(config: UIConfig) {
