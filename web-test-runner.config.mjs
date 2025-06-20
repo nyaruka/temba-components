@@ -152,6 +152,8 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
 
         // Only wait for network idle if explicitly requested
         if (wait) {
+          await page.waitForNetworkIdle();
+        } else {
           await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
         }
 

@@ -210,6 +210,13 @@ describe('temba-webchat', () => {
         status: 'connected'
       });
 
+      // the cursor is blinking, we need to account for it in our screenshot by making it transparent
+      const inputField = webChat.shadowRoot.querySelector(
+        '.input'
+      ) as HTMLInputElement;
+      expect(inputField).to.exist;
+      inputField.style.caretColor = 'transparent';
+
       await assertScreenshot('webchat/connected-state', getClip(webChat));
     });
   });
