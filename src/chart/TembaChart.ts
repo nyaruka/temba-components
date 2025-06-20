@@ -301,6 +301,9 @@ export class TembaChart extends RapidElement {
   @property({ type: String })
   xFormat: 'MMM yy' | 'MMM yyyy' | 'MMM dd' | 'DD' | 'EEE' | 'auto' = 'auto';
 
+  @property({ type: Number })
+  maxChartHeight: number = 250;
+
   @property({ type: Boolean })
   hideOther: boolean = false;
 
@@ -514,6 +517,19 @@ export class TembaChart extends RapidElement {
     return [backgroundColors, borderColors];
   }
 
+  private handleResize() {
+    if (this.chart) {
+      // recalculate canvas size based on parent container
+      const wrapper = this.shadowRoot.querySelector('#canvas-wrapper');
+      if (wrapper) {
+        if (wrapper.clientHeight > this.maxChartHeight) {
+          this.canvas.style.height = `${this.maxChartHeight}px`;
+          this.chart.resize();
+        }
+      }
+    }
+  }
+
   private calculateSplits() {
     if (this.data) {
       const datasets = [];
@@ -662,15 +678,16 @@ export class TembaChart extends RapidElement {
               }
             },
             responsive: true,
+            aspectRatio: 2,
+            onResize: this.handleResize.bind(this),
             maintainAspectRatio: false,
+            animation: false,
             animations: {
               x: {
-                // no horizontal motion
                 duration: 0
               },
               y: {
-                duration: 200,
-                easing: 'easeOutCubic'
+                duration: 0
               }
             },
             scales: {
