@@ -35,7 +35,6 @@ export class StickyNote extends RapidElement {
         overflow: hidden;
         transition: transform 0.1s ease, box-shadow 0.2s ease;
         color: var(--sticky-text-color);
-        position: absolute;
       }
 
       .sticky-note.dragging {
