@@ -6,6 +6,7 @@ import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
+import { CustomEventType } from '../interfaces';
 
 export class EditorNode extends RapidElement {
   createRenderRoot() {
@@ -48,10 +49,41 @@ export class EditorNode extends RapidElement {
         
       .action {
         max-width: 200px;
+        position: relative;
+      }
+
+      .action.sortable {
+        display: flex;
+        align-items: stretch;
+      }
+
+      .action .action-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
       }
 
       .action .body {
         padding: 1em;
+      }
+
+      .action .drag-handle {
+        display: flex;
+        align-items: center;
+        padding: 0.5em;
+        opacity: 0;
+        transition: opacity 200ms ease-in-out;
+        cursor: move;
+        border-right: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .action:hover .drag-handle {
+        opacity: 0.5;
+      }
+
+      .action .drag-handle:hover {
+        opacity: 1;
       }
 
       .action .title,
@@ -117,6 +149,11 @@ export class EditorNode extends RapidElement {
   }`;
   }
 
+  constructor() {
+    super();
+    this.handleActionOrderChanged = this.handleActionOrderChanged.bind(this);
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -145,26 +182,45 @@ export class EditorNode extends RapidElement {
     }
   }
 
+  private handleActionOrderChanged(event: CustomEvent) {
+    const [fromIdx, toIdx] = event.detail.swap;
+    
+    // Create a new actions array with the reordered items
+    const newActions = [...this.node.actions];
+    const movedAction = newActions.splice(fromIdx, 1)[0];
+    newActions.splice(toIdx, 0, movedAction);
+    
+    // Update the node with new actions order
+    this.node = { ...this.node, actions: newActions };
+    
+    // No need to call requestUpdate manually since setting node property triggers it
+  }
+
   private renderTitle(config: UIConfig) {
     return html`<div class="title" style="background:${config.color}">
       ${config.name}
     </div>`;
   }
 
-  private renderAction(node: Node, action: Action) {
+  private renderAction(node: Node, action: Action, index: number) {
     const config = EDITOR_CONFIG[action.type];
 
     if (config) {
-      return html`<div class="action ${action.type}">
-        ${this.renderTitle(config)}
-        <div class="body">
-          ${config.render
-            ? config.render(node, action)
-            : html`<pre>${action.type}</pre>`}
+      return html`<div class="action sortable ${action.type}" id="action-${index}">
+        <div class="drag-handle">
+          <temba-icon name="drag"></temba-icon>
+        </div>
+        <div class="action-content">
+          ${this.renderTitle(config)}
+          <div class="body">
+            ${config.render
+              ? config.render(node, action)
+              : html`<pre>${action.type}</pre>`}
+          </div>
         </div>
       </div>`;
     }
-    return html`<div>${action.type}</div>`;
+    return html`<div class="action sortable" id="action-${index}">${action.type}</div>`;
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
@@ -221,9 +277,13 @@ export class EditorNode extends RapidElement {
         class="node"
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
-        ${this.node.actions.map((actionSpec) => {
-          return this.renderAction(this.node, actionSpec);
-        })}
+        ${this.node.actions.length > 0 
+          ? html`<temba-sortable-list @temba-order-changed="${this.handleActionOrderChanged}">
+              ${this.node.actions.map((actionSpec, index) => {
+                return this.renderAction(this.node, actionSpec, index);
+              })}
+            </temba-sortable-list>`
+          : ''}
         ${this.node.router
           ? html` ${this.renderRouter(this.node.router, this.ui)}
             ${this.renderCategories(this.node)}`
