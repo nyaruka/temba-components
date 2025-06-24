@@ -285,5 +285,6 @@ export enum CustomEventType {
   Interrupt = 'temba-interrupt',
   Opened = 'temba-opened',
   TicketUpdated = 'temba-ticket-updated',
-  Moved = 'temba-moved'
+  Moved = 'temba-moved',
+  DateRangeChanged = 'temba-date-range-changed'
 }
