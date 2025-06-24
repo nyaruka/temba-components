@@ -106,6 +106,12 @@ export class RangePicker extends RapidElement {
     this.selectedRange = type;
     this.editingStart = false;
     this.editingEnd = false;
+
+    this.fireCustomEvent(CustomEventType.DateRangeChanged, {
+      start: this.startDate,
+      end: this.endDate,
+      range: this.selectedRange
+    });
   }
 
   private setValidRange(type: 'start' | 'end', value: string) {
