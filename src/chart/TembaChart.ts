@@ -268,8 +268,17 @@ export class TembaChart extends RapidElement {
   @property({ type: String })
   chartType: ChartType = 'bar';
 
+  @property({ type: Boolean })
+  horizontal: boolean = false;
+
   @property({ type: String })
   url: string;
+
+  @property({ type: String })
+  start: string;
+
+  @property({ type: String })
+  end: string;
 
   @property({ type: String })
   header: string = '';
@@ -441,11 +450,33 @@ export class TembaChart extends RapidElement {
       this.updateChart();
     }
 
-    if (changes.has('url')) {
-      const store = getStore();
-      store.getUrl(this.url, { skipCache: true }).then((response) => {
-        this.data = response.json.data;
-      });
+    if (changes.has('horizontal')) {
+      this.updateChart();
+    }
+
+    if (changes.has('url') || changes.has('start') || changes.has('end')) {
+      if (this.url) {
+        const store = getStore();
+        let fullUrl = this.url;
+
+        // Add query parameters for date range if provided
+        const params = new URLSearchParams();
+        if (this.start) {
+          params.append('since', this.start);
+        }
+        if (this.end) {
+          params.append('until', this.end);
+        }
+
+        if (params.toString()) {
+          const separator = this.url.includes('?') ? '&' : '?';
+          fullUrl = `${this.url}${separator}${params.toString()}`;
+        }
+
+        store.getUrl(fullUrl, { skipCache: true }).then((response) => {
+          this.data = response.json.data;
+        });
+      }
     }
 
     if (changes.has('chartType')) {
@@ -455,11 +486,14 @@ export class TembaChart extends RapidElement {
     }
 
     if (changes.has('showPercent') && this.chart) {
-      const yScale = (this.chart.options.scales as any).y;
-      yScale.ticks.display = !this.showPercent;
-      yScale.grid.display = !this.showPercent;
-      yScale.border.display = !this.showPercent;
-      yScale.max = this.showPercent ? this.getInflatedMax() : undefined;
+      // In horizontal charts, the value axis is X, in vertical charts it's Y
+      const valueScale = this.horizontal
+        ? (this.chart.options.scales as any).x
+        : (this.chart.options.scales as any).y;
+      valueScale.ticks.display = !this.showPercent;
+      valueScale.grid.display = !this.showPercent;
+      valueScale.border.display = !this.showPercent;
+      valueScale.max = this.showPercent ? this.getInflatedMax() : undefined;
       this.chart.update();
     }
   }
@@ -627,23 +661,17 @@ export class TembaChart extends RapidElement {
         }
         this.chart.options.plugins.datalabels = datalabels;
 
-        this.chart.update();
-      } else {
-        let format = this.xFormat;
-        if (this.xType === 'time' && this.xFormat === 'auto') {
-          const firstDate = this.data.labels[0];
-          const lastDate = this.data.labels[this.data.labels.length - 1];
-
-          const first = Date.parse(firstDate);
-          const last = Date.parse(lastDate);
-
-          const dayDiff = Math.ceil((last - first) / (1000 * 60 * 60 * 24));
-          format = 'MMM dd';
-          if (dayDiff > 365) {
-            format = 'MMM yyyy';
-          }
+        // the scale config could have changed, so we need to update it
+        if (this.horizontal) {
+          this.chart.options.scales.x = this.getValueAxisConfig();
+          this.chart.options.scales.y = this.getCategoryAxisConfig() as any;
+        } else {
+          this.chart.options.scales.x = this.getCategoryAxisConfig() as any;
+          this.chart.options.scales.y = this.getValueAxisConfig();
         }
 
+        this.chart.update();
+      } else {
         const chartData = {
           type: this.chartType,
           data: {
@@ -651,6 +679,7 @@ export class TembaChart extends RapidElement {
             datasets: this.datasets
           },
           options: {
+            ...(this.horizontal && { indexAxis: 'y' }),
             maxBarThickness: 80,
             plugins: {
               legend: { display: this.legend },
@@ -658,7 +687,10 @@ export class TembaChart extends RapidElement {
                 callbacks: {
                   label: (context: any) => {
                     const label = context.dataset.label || '';
-                    const value = context.parsed.y;
+                    // In horizontal charts, the value is on parsed.x, in vertical charts on parsed.y
+                    const value = this.horizontal
+                      ? context.parsed.x
+                      : context.parsed.y;
                     if (this.yType === 'duration') {
                       return `${label}: ${formatDurationFromSeconds(value)}`;
                     }
@@ -690,44 +722,15 @@ export class TembaChart extends RapidElement {
                 duration: 0
               }
             },
-            scales: {
-              y: {
-                min: 0,
-                ...(this.showPercent && { max: this.getInflatedMax() }),
-                stacked: true,
-                grid: {
-                  color: 'rgba(0,0,0,0.04)',
-                  display: !this.showPercent, // hide gridlines in percent mode
-                  drawBorder: !this.showPercent // hides axis line when false
-                },
-                border: {
-                  display: !this.showPercent // Chart.js >= 4
-                },
-                ticks: {
-                  display: !this.showPercent,
-
-                  ...(this.yType === 'duration' &&
-                    !this.showPercent && {
-                      callback: (value: any) => formatDurationFromSeconds(value)
-                    })
+            scales: this.horizontal
+              ? {
+                  x: this.getValueAxisConfig(),
+                  y: this.getCategoryAxisConfig()
                 }
-              },
-              x: {
-                type: this.xType,
-                grid: { display: false },
-                stacked: true,
-                ticks: {
-                  maxTicksLimit: this.xMaxTicks
-                },
-                ...(this.xType === 'time' && {
-                  time: {
-                    unit: 'day',
-                    tooltipFormat: 'DDD',
-                    displayFormats: { day: format }
-                  }
-                })
-              }
-            }
+              : {
+                  y: this.getValueAxisConfig(),
+                  x: this.getCategoryAxisConfig()
+                }
           }
         };
 
@@ -796,5 +799,62 @@ export class TembaChart extends RapidElement {
         <div></div>
       </div>
     </div>`;
+  }
+
+  private getValueAxisConfig() {
+    return {
+      min: 0,
+      ...(this.showPercent && { max: this.getInflatedMax() }),
+      stacked: true,
+      grid: {
+        color: 'rgba(0,0,0,0.04)',
+        display: !this.showPercent, // hide gridlines in percent mode
+        drawBorder: !this.showPercent // hides axis line when false
+      },
+      border: {
+        display: !this.showPercent // Chart.js >= 4
+      },
+      ticks: {
+        display: !this.showPercent,
+        ...(this.yType === 'duration' &&
+          !this.showPercent && {
+            callback: (value: any) => formatDurationFromSeconds(value)
+          })
+      }
+    };
+  }
+
+  private getCategoryAxisConfig() {
+    let format = this.xFormat;
+    if (this.xType === 'time' && this.xFormat === 'auto') {
+      const firstDate = this.data.labels[0];
+      const lastDate = this.data.labels[this.data.labels.length - 1];
+
+      const first = Date.parse(firstDate);
+      const last = Date.parse(lastDate);
+
+      const dayDiff = Math.ceil((last - first) / (1000 * 60 * 60 * 24));
+      format = 'MMM dd';
+      if (dayDiff > 365) {
+        format = 'MMM yyyy';
+      }
+    }
+
+    return {
+      max: this.xType === 'time' ? this.end : this.xMaxTicks,
+      type: this.xType,
+      grid: { display: false },
+      stacked: true,
+      ticks: {
+        maxTicksLimit: this.xMaxTicks
+      },
+      ...(this.xType === 'time' && {
+        time: {
+          unit: 'day',
+          tooltipFormat: 'DDD',
+          displayFormats: { day: format }
+        }
+      })
+    };
   }
 }
