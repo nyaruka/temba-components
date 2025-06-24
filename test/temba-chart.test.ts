@@ -182,6 +182,30 @@ describe('temba-chart', () => {
     expect(chart.chart.options.scales.x.type).to.equal('category');
     expect((chart.chart.options.scales.x as any).time).to.be.undefined;
   });
+
+  it('configures scales correctly for horizontal charts', async () => {
+    const chart: TembaChart = await getChart();
+
+    // Test vertical chart (default)
+    chart.data = sampleData;
+    await chart.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // In vertical charts: x-axis should be for categories, y-axis for values
+    expect((chart.chart.options.scales as any).x.type).to.equal('category');
+    expect((chart.chart.options.scales as any).y.min).to.equal(0);
+    expect((chart.chart.options.scales as any).y.stacked).to.equal(true);
+
+    // Test horizontal chart
+    chart.horizontal = true;
+    await chart.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // In horizontal charts: x-axis should be for values, y-axis for categories
+    expect((chart.chart.options.scales as any).x.min).to.equal(0);
+    expect((chart.chart.options.scales as any).x.stacked).to.equal(true);
+    expect((chart.chart.options.scales as any).y.type).to.equal('category');
+  });
 });
 
 describe('formatDurationFromSeconds', () => {
@@ -231,5 +255,28 @@ describe('formatDurationFromSeconds', () => {
     expect(formatDurationFromSeconds(604800)).to.equal('7d'); // 1 week
     expect(formatDurationFromSeconds(1209600)).to.equal('14d'); // 2 weeks
     expect(formatDurationFromSeconds(2678400)).to.equal('31d'); // ~1 month
+  });
+
+  it('supports horizontal bar charts', async () => {
+    const chart: TembaChart = await getChart();
+
+    // Test that horizontal property defaults to false
+    expect(chart.horizontal).to.equal(false);
+
+    // Set horizontal to true
+    chart.horizontal = true;
+    chart.data = sampleData;
+    await chart.updateComplete;
+
+    // Wait for the chart to be created after data is set
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Test that the chart was created with horizontal configuration
+    expect(chart.horizontal).to.equal(true);
+    expect(chart.chart).to.exist;
+
+    // Test that the chart configuration includes indexAxis: 'y' for horizontal bars
+    const chartConfig = chart.chart.options;
+    expect(chartConfig.indexAxis).to.equal('y');
   });
 });

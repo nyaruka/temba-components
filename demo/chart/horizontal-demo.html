@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horizontal Chart Demo</title>
+
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="demo-container">
+      <h1>Horizontal Bar Chart Demo</h1>
+
+      <div class="demo-section">
+        <h2>Regular Vertical Bar Chart</h2>
+        <temba-chart
+          type="bar"
+          header="Monthly Sales (Vertical)"
+          style="height: 300px; display: block"
+        ></temba-chart>
+      </div>
+
+      <div class="demo-section">
+        <h2>Horizontal Bar Chart</h2>
+        <temba-chart
+          type="bar"
+          horizontal
+          header="Monthly Sales (Horizontal)"
+          style="height: 300px; display: block"
+        ></temba-chart>
+      </div>
+
+      <div class="demo-section">
+        <h2>Horizontal Bar Chart with Percentages</h2>
+        <temba-chart
+          type="bar"
+          horizontal
+          percent
+          header="Monthly Sales with Percentages (Horizontal)"
+          style="height: 300px; display: block"
+        ></temba-chart>
+      </div>
+    </div>
+
+    <script>
+      // Sample data for the charts
+      const sampleData = {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+        datasets: [
+          {
+            label: 'Product A',
+            data: [65, 59, 80, 81, 56, 55],
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Product B',
+            data: [28, 48, 40, 19, 86, 27],
+            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }
+        ]
+      };
+
+      // Wait for the DOM to be ready and charts to be defined
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const charts = document.querySelectorAll('temba-chart');
+          charts.forEach((chart) => {
+            chart.data = sampleData;
+          });
+        }, 100);
+      });
+    </script>
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+  </body>
+</html>

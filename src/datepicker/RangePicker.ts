@@ -20,10 +20,12 @@ export class RangePicker extends RapidElement {
       border: 1px solid transparent;
       transition: border 0.2s;
     }
+
     .date-display:hover {
-      border: 1px solid #bbb;
-      background: #f7f7f7;
+      border: 1px solid var(--color-widget-border, #bbb);
+      background: var(--color-widget-hover, #f5f5f5);
     }
+
     input[type='date'] {
       font-size: 1em;
       padding: 0.2em 0.5em;
