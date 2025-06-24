@@ -32,6 +32,44 @@ export class RangePicker extends RapidElement {
       border-radius: 4px;
       border: 1px solid #bbb;
     }
+
+    .navigation-container {
+      display: flex;
+      align-items: center;
+      gap: 0.25em;
+    }
+
+    .nav-arrow {
+      background: #f5f5f5;
+      border: 1px solid #bbb;
+
+      border-radius: var(--curvature);
+      padding: 0em 0em;
+      cursor: pointer;
+      font-size: 0.6em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 23px;
+      height: 23px;
+      transition: background 0.2s, border 0.2s, opacity 0.2s;
+    }
+
+    .nav-arrow:hover:not(:disabled) {
+      background: #e0eaff;
+      border-color: #3399ff;
+    }
+
+    .nav-arrow:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f9f9f9;
+    }
+
+    .nav-arrow.hidden {
+      visibility: hidden;
+    }
+
     .button-group {
       display: flex;
       margin-left: 0em;
@@ -101,7 +139,7 @@ export class RangePicker extends RapidElement {
     } else if (type === 'Y') {
       start = DateTime.now().minus({ years: 1 }).plus({ days: 1 }).toISODate();
     } else if (type === 'ALL') {
-      start = '2012-01-01';
+      start = this.minDate || '2012-01-01';
     }
     this.startDate = start;
     this.endDate = today;
@@ -145,6 +183,281 @@ export class RangePicker extends RapidElement {
       end: this.endDate,
       range: this.selectedRange
     });
+  }
+
+  private canNavigatePrevious(): boolean {
+    if (this.selectedRange === 'ALL') return false;
+
+    const currentStart = DateTime.fromISO(this.startDate);
+    let previousStart: DateTime;
+
+    if (this.selectedRange === 'W') {
+      previousStart = currentStart.minus({ weeks: 1 });
+    } else if (this.selectedRange === 'M') {
+      previousStart = currentStart.minus({ months: 1 });
+    } else if (this.selectedRange === 'Y') {
+      previousStart = currentStart.minus({ years: 1 });
+    } else if (this.selectedRange === '') {
+      // Custom range - determine the interval and navigate by that amount
+      const interval = this.getCustomRangeInterval();
+      if (interval.type === 'days') {
+        previousStart = currentStart.minus({ days: interval.amount });
+      } else if (interval.type === 'months') {
+        previousStart = currentStart.minus({ months: interval.amount });
+      } else if (interval.type === 'years') {
+        previousStart = currentStart.minus({ years: interval.amount });
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    return previousStart.toISODate() >= this.minDate;
+  }
+
+  private canNavigateNext(): boolean {
+    if (this.selectedRange === 'ALL') return false;
+
+    const currentEnd = DateTime.fromISO(this.endDate);
+    let nextEnd: DateTime;
+
+    if (this.selectedRange === 'W') {
+      nextEnd = currentEnd.plus({ weeks: 1 });
+    } else if (this.selectedRange === 'M') {
+      nextEnd = currentEnd.plus({ months: 1 });
+    } else if (this.selectedRange === 'Y') {
+      nextEnd = currentEnd.plus({ years: 1 });
+    } else if (this.selectedRange === '') {
+      // Custom range - determine the interval and navigate by that amount
+      const interval = this.getCustomRangeInterval();
+      if (interval.type === 'days') {
+        nextEnd = currentEnd.plus({ days: interval.amount });
+      } else if (interval.type === 'months') {
+        nextEnd = currentEnd.plus({ months: interval.amount });
+      } else if (interval.type === 'years') {
+        nextEnd = currentEnd.plus({ years: interval.amount });
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    return nextEnd.toISODate() <= this.maxDate;
+  }
+
+  private getCustomRangeInterval(): {
+    type: 'days' | 'months' | 'years';
+    amount: number;
+  } {
+    const start = DateTime.fromISO(this.startDate);
+    const end = DateTime.fromISO(this.endDate);
+
+    if (!start.isValid || !end.isValid) {
+      return { type: 'days', amount: 1 };
+    }
+
+    // Check if it's a complete month (first day to last day of any month)
+    const isLastDayOfMonth = end.day === end.daysInMonth;
+    if (start.day === 1 && isLastDayOfMonth) {
+      // Single complete month
+      if (start.month === end.month && start.year === end.year) {
+        return { type: 'months', amount: 1 };
+      }
+
+      // Multiple complete months - check if we span complete months only
+      const startOfFirstMonth = start.startOf('month');
+      const endOfLastMonth = end.endOf('month');
+      const monthsDiff =
+        endOfLastMonth.diff(startOfFirstMonth, 'months').months + 1;
+
+      if (monthsDiff > 0 && Number.isInteger(monthsDiff)) {
+        return { type: 'months', amount: Math.round(monthsDiff) };
+      }
+    }
+
+    // Check if it's a full year
+    if (
+      start.month === 1 &&
+      start.day === 1 &&
+      end.month === 12 &&
+      end.day === 31
+    ) {
+      // Single complete year
+      if (start.year === end.year) {
+        return { type: 'years', amount: 1 };
+      }
+
+      // Multiple complete years
+      const yearsDiff = end.year - start.year + 1;
+      if (yearsDiff > 0) {
+        return { type: 'years', amount: yearsDiff };
+      }
+    }
+
+    // Default to days for any other custom range
+    const daysDiff = end.diff(start, 'days').days + 1; // +1 to include both start and end days
+    return { type: 'days', amount: Math.max(1, Math.round(daysDiff)) };
+  }
+
+  private navigatePrevious() {
+    if (!this.canNavigatePrevious()) return;
+
+    const currentStart = DateTime.fromISO(this.startDate);
+    const currentEnd = DateTime.fromISO(this.endDate);
+    let newStart: DateTime;
+    let newEnd: DateTime;
+
+    if (this.selectedRange === 'W') {
+      newStart = currentStart.minus({ weeks: 1 });
+      newEnd = currentEnd.minus({ weeks: 1 });
+    } else if (this.selectedRange === 'M') {
+      // Check if current M range is a complete month, if so maintain month boundaries
+      const interval = this.getCustomRangeInterval();
+      if (interval.type === 'months') {
+        newStart = currentStart.minus({ months: 1 }).startOf('month');
+        newEnd = newStart
+          .plus({ months: interval.amount })
+          .minus({ days: 1 })
+          .endOf('day');
+      } else {
+        newStart = currentStart.minus({ months: 1 });
+        newEnd = currentEnd.minus({ months: 1 });
+      }
+    } else if (this.selectedRange === 'Y') {
+      newStart = currentStart.minus({ years: 1 });
+      newEnd = currentEnd.minus({ years: 1 });
+    } else if (this.selectedRange === '') {
+      // Custom range - determine the interval and navigate by that amount
+      const interval = this.getCustomRangeInterval();
+      if (interval.type === 'days') {
+        newStart = currentStart.minus({ days: interval.amount });
+        newEnd = currentEnd.minus({ days: interval.amount });
+      } else if (interval.type === 'months') {
+        // For month navigation, maintain complete month boundaries
+        newStart = currentStart
+          .minus({ months: interval.amount })
+          .startOf('month');
+        newEnd = newStart
+          .plus({ months: interval.amount })
+          .minus({ days: 1 })
+          .endOf('day');
+      } else if (interval.type === 'years') {
+        newStart = currentStart.minus({ years: interval.amount });
+        newEnd = currentEnd.minus({ years: interval.amount });
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+
+    // Enforce min/max bounds
+    const minDateTime = DateTime.fromISO(this.minDate);
+    const maxDateTime = DateTime.fromISO(this.maxDate);
+    const startDate =
+      newStart < minDateTime ? this.minDate : newStart.toISODate();
+    const endDate = newEnd > maxDateTime ? this.maxDate : newEnd.toISODate();
+
+    this.startDate = startDate;
+    this.endDate = endDate;
+
+    this.fireCustomEvent(CustomEventType.DateRangeChanged, {
+      start: this.startDate,
+      end: this.endDate,
+      range: this.selectedRange
+    });
+  }
+
+  private navigateNext() {
+    if (!this.canNavigateNext()) return;
+
+    const currentStart = DateTime.fromISO(this.startDate);
+    const currentEnd = DateTime.fromISO(this.endDate);
+    let newStart: DateTime;
+    let newEnd: DateTime;
+
+    if (this.selectedRange === 'W') {
+      newStart = currentStart.plus({ weeks: 1 });
+      newEnd = currentEnd.plus({ weeks: 1 });
+    } else if (this.selectedRange === 'M') {
+      // Check if current M range is a complete month, if so maintain month boundaries
+      const interval = this.getCustomRangeInterval();
+      if (interval.type === 'months') {
+        newStart = currentStart.plus({ months: 1 }).startOf('month');
+        newEnd = newStart
+          .plus({ months: interval.amount })
+          .minus({ days: 1 })
+          .endOf('day');
+      } else {
+        newStart = currentStart.plus({ months: 1 });
+        newEnd = currentEnd.plus({ months: 1 });
+      }
+    } else if (this.selectedRange === 'Y') {
+      newStart = currentStart.plus({ years: 1 });
+      newEnd = currentEnd.plus({ years: 1 });
+    } else if (this.selectedRange === '') {
+      // Custom range - determine the interval and navigate by that amount
+      const interval = this.getCustomRangeInterval();
+      if (interval.type === 'days') {
+        newStart = currentStart.plus({ days: interval.amount });
+        newEnd = currentEnd.plus({ days: interval.amount });
+      } else if (interval.type === 'months') {
+        // For month navigation, maintain complete month boundaries
+        newStart = currentStart
+          .plus({ months: interval.amount })
+          .startOf('month');
+        newEnd = newStart
+          .plus({ months: interval.amount })
+          .minus({ days: 1 })
+          .endOf('day');
+      } else if (interval.type === 'years') {
+        newStart = currentStart.plus({ years: interval.amount });
+        newEnd = currentEnd.plus({ years: interval.amount });
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+
+    // Enforce min/max bounds
+    const minDateTime = DateTime.fromISO(this.minDate);
+    const maxDateTime = DateTime.fromISO(this.maxDate);
+    const startDate =
+      newStart < minDateTime ? this.minDate : newStart.toISODate();
+    const endDate = newEnd > maxDateTime ? this.maxDate : newEnd.toISODate();
+
+    this.startDate = startDate;
+    this.endDate = endDate;
+
+    this.fireCustomEvent(CustomEventType.DateRangeChanged, {
+      start: this.startDate,
+      end: this.endDate,
+      range: this.selectedRange
+    });
+  }
+
+  private getNavigationLabel(direction: 'previous' | 'next'): string {
+    const interval = this.getCustomRangeInterval();
+    const amount = interval.amount;
+    const unit =
+      interval.type === 'days'
+        ? amount === 1
+          ? 'day'
+          : 'days'
+        : interval.type === 'months'
+        ? amount === 1
+          ? 'month'
+          : 'months'
+        : amount === 1
+        ? 'year'
+        : 'years';
+
+    return `${
+      direction === 'previous' ? 'Previous' : 'Next'
+    } ${amount} ${unit}`;
   }
 
   updated(changed: Map<string, any>) {
@@ -219,30 +532,66 @@ export class RangePicker extends RapidElement {
           : html`<span class="date-display" @click=${this.handleEndClick}
               >${this.endDate || 'End date'}</span
             >`}
-        <div class="button-group">
+        <div class="navigation-container">
           <button
-            class="range-btn ${this.selectedRange === 'W' ? 'selected' : ''}"
-            @click=${() => this.setRange('W')}
+            class="nav-arrow ${this.selectedRange === 'ALL' ? 'hidden' : ''}"
+            ?disabled=${!this.canNavigatePrevious()}
+            @click=${this.navigatePrevious}
+            title="Previous ${this.selectedRange === 'W'
+              ? 'week'
+              : this.selectedRange === 'M'
+              ? 'month'
+              : this.selectedRange === 'Y'
+              ? 'year'
+              : this.selectedRange === ''
+              ? this.getNavigationLabel('previous')
+              : 'period'}"
           >
-            W
+            ◀
           </button>
+          <div class="button-group">
+            <button
+              class="range-btn ${this.selectedRange === 'W' ? 'selected' : ''}"
+              @click=${() => this.setRange('W')}
+            >
+              W
+            </button>
+            <button
+              class="range-btn ${this.selectedRange === 'M' ? 'selected' : ''}"
+              @click=${() => this.setRange('M')}
+            >
+              M
+            </button>
+            <button
+              class="range-btn ${this.selectedRange === 'Y' ? 'selected' : ''}"
+              @click=${() => this.setRange('Y')}
+            >
+              Y
+            </button>
+            <button
+              class="range-btn ${this.selectedRange === 'ALL'
+                ? 'selected'
+                : ''}"
+              @click=${() => this.setRange('ALL')}
+            >
+              All
+            </button>
+          </div>
           <button
-            class="range-btn ${this.selectedRange === 'M' ? 'selected' : ''}"
-            @click=${() => this.setRange('M')}
+            class="nav-arrow ${this.selectedRange === 'ALL' ? 'hidden' : ''}"
+            ?disabled=${!this.canNavigateNext()}
+            @click=${this.navigateNext}
+            title="Next ${this.selectedRange === 'W'
+              ? 'week'
+              : this.selectedRange === 'M'
+              ? 'month'
+              : this.selectedRange === 'Y'
+              ? 'year'
+              : this.selectedRange === ''
+              ? this.getNavigationLabel('next')
+              : 'period'}"
           >
-            M
-          </button>
-          <button
-            class="range-btn ${this.selectedRange === 'Y' ? 'selected' : ''}"
-            @click=${() => this.setRange('Y')}
-          >
-            Y
-          </button>
-          <button
-            class="range-btn ${this.selectedRange === 'ALL' ? 'selected' : ''}"
-            @click=${() => this.setRange('ALL')}
-          >
-            All
+            ▶
           </button>
         </div>
       </div>
