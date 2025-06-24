@@ -4,7 +4,7 @@ import { FormElement } from '../FormElement';
 import { getClasses } from '../utils';
 import { DateTime } from 'luxon';
 
-export default class DatePicker extends FormElement {
+export class DatePicker extends FormElement {
   static get styles() {
     return css`
       :host {
@@ -131,6 +131,12 @@ export default class DatePicker extends FormElement {
   @property({ type: Boolean })
   time = false;
 
+  @property({ type: String })
+  min = '';
+
+  @property({ type: String })
+  max = '';
+
   /** we just return the value since it should be a string */
   public serializeValue(value: any): string {
     return value;
@@ -229,6 +235,8 @@ export default class DatePicker extends FormElement {
               value=${dateWidgetValue}
               type="${this.time ? 'datetime-local' : 'date'}"
               @change=${this.handleChange}
+              min=${this.min || undefined}
+              max=${this.max || undefined}
             />
           </div>
           ${this.time

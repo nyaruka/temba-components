@@ -36,7 +36,7 @@ import { TembaSlider } from './src/slider/TembaSlider';
 import { RunList } from './src/list/RunList';
 import { FlowStoreElement } from './src/store/FlowStoreElement';
 import { ContactNameFetch } from './src/contacts/ContactNameFetch';
-import DatePicker from './src/datepicker/DatePicker';
+import { DatePicker } from './src/datepicker/DatePicker';
 import { FieldManager } from './src/fields/FieldManager';
 import { SortableList } from './src/list/SortableList';
 import { ContentMenu } from './src/list/ContentMenu';
@@ -66,6 +66,7 @@ import { PopupSelect } from './src/select/PopupSelect';
 import { UserSelect } from './src/select/UserSelect';
 import { WorkspaceSelect } from './src/select/WorkspaceSelect';
 import { TembaChart } from './src/chart/TembaChart';
+import { RangePicker } from './src/datepicker/RangePicker';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -78,6 +79,7 @@ addCustomElement('temba-alert', Alert);
 addCustomElement('temba-store', Store);
 addCustomElement('temba-textinput', TextInput);
 addCustomElement('temba-datepicker', DatePicker);
+addCustomElement('temba-range-picker', RangePicker);
 addCustomElement('temba-date', TembaDate);
 addCustomElement('temba-completion', Completion);
 addCustomElement('temba-checkbox', Checkbox);
