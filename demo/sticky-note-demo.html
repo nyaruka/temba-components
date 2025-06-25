@@ -1,100 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="utf-8" />
-    <title>StickyNote Drag vs Edit Demo</title>
+    <title>Sticky Note Example</title>
     <link
       href="/static/css/temba-components.css"
       rel="stylesheet"
       type="text/css"
     />
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          sans-serif;
-        padding: 20px;
-        max-width: 1200px;
-        margin: 0 auto;
-        background-color: #f5f5f5;
-      }
-
-      .instructions {
-        background: #e3f2fd;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border-left: 4px solid #1976d2;
-      }
-
-      .instructions h2 {
-        margin-top: 0;
-        color: #1976d2;
-      }
-
-      .instructions ul {
-        margin-bottom: 0;
-      }
-
-      .instructions li {
-        margin-bottom: 8px;
-      }
-
-      .demo-container {
-        position: relative;
-        background-color: #f9f9f9;
-        height: 600px;
-        border: 1px solid #ddd;
-        margin: 20px 0;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-      .demo-title {
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 10px;
-      }
-      .instructions {
-        background-color: #e6f3ff;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-      }
-      .instructions ul {
-        margin: 10px 0;
-        padding-left: 20px;
-      }
-    </style>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link href="../styles.css" rel="stylesheet" type="text/css" />
+    <script type="module" src="../src/flow/StickyNote.ts"></script>
+    <link href="/demo/static/css/prism.css" rel="stylesheet" />
+    <script type="module" src="/demo/static/js/prism-loader.js"></script>
   </head>
   <body>
-    <h1>StickyNote Component Demo</h1>
+    <h1>Sticky Note Example</h1>
+    <p><a href="../index.html">← Back to main demo</a></p>
 
-    <div class="instructions">
-      <strong>How to use StickyNotes:</strong>
-      <ul>
-        <li>Click and drag the sticky notes to move them around</li>
-        <li>Click on the title or body text to edit it inline</li>
-        <li>Press Enter or Escape to finish editing</li>
-        <li>Notes snap to a 20px grid when you finish dragging</li>
-        <li>Each color has its own visual theme</li>
-      </ul>
+    <table class="attr-table">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>uuid</td>
+          <td>Unique identifier for the sticky note</td>
+          <td>None (required)</td>
+        </tr>
+        <tr>
+          <td>data</td>
+          <td>
+            Object containing position, title, body, and color properties.
+            Position: {left: number, top: number}, color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray'
+          </td>
+          <td>None (required)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="doc-section">
+      <h2>Events</h2>
+      <p>
+        The sticky note component fires events when its content is updated through the flow store system.
+        Updates to title and body content are automatically synchronized with the flow state.
+      </p>
+    </section>
+
+    <div class="example">
+      <h3>Basic Sticky Note</h3>
+      <p>A simple yellow sticky note with default positioning</p>
+      <pre class="example-html"><code class="language-markup">&lt;temba-sticky-note uuid="basic-note"&gt;&lt;/temba-sticky-note&gt;</code></pre>
+      <div class="demo-container">
+        <temba-sticky-note id="basic-note"></temba-sticky-note>
+      </div>
     </div>
 
-    <div class="demo-title">Interactive StickyNotes:</div>
-    <div class="demo-container">
-      <!-- Yellow sticky note -->
-      <temba-sticky-note id="yellow-note"></temba-sticky-note>
-
-      <!-- Blue sticky note -->
-      <temba-sticky-note id="blue-note"></temba-sticky-note>
-
-      <!-- Pink sticky note -->
-      <temba-sticky-note id="pink-note"></temba-sticky-note>
-
-      <!-- Green sticky note -->
-      <temba-sticky-note id="green-note"></temba-sticky-note>
-
-      <!-- Gray sticky note -->
-      <temba-sticky-note id="gray-note"></temba-sticky-note>
+    <div class="example">
+      <h3>Colored Sticky Notes</h3>
+      <p>Sticky notes with different color themes - click to edit the text, drag to move them around</p>
+      <pre class="example-html"><code class="language-markup">&lt;!-- Multiple colored sticky notes --&gt;
+&lt;temba-sticky-note uuid="yellow-note"&gt;&lt;/temba-sticky-note&gt;
+&lt;temba-sticky-note uuid="blue-note"&gt;&lt;/temba-sticky-note&gt;
+&lt;temba-sticky-note uuid="pink-note"&gt;&lt;/temba-sticky-note&gt;
+&lt;temba-sticky-note uuid="green-note"&gt;&lt;/temba-sticky-note&gt;
+&lt;temba-sticky-note uuid="gray-note"&gt;&lt;/temba-sticky-note&gt;</code></pre>
+      <div class="demo-container">
+        <temba-sticky-note id="yellow-note"></temba-sticky-note>
+        <temba-sticky-note id="blue-note"></temba-sticky-note>
+        <temba-sticky-note id="pink-note"></temba-sticky-note>
+        <temba-sticky-note id="green-note"></temba-sticky-note>
+        <temba-sticky-note id="gray-note"></temba-sticky-note>
+      </div>
+      <div class="expected">
+        <strong>How to use:</strong>
+        <ul>
+          <li>Click and drag the sticky notes to move them around</li>
+          <li>Click on the title or body text to edit it inline</li>
+          <li>Press Enter or Escape to finish editing</li>
+          <li>Notes snap to a 20px grid when you finish dragging</li>
+          <li>Each color has its own visual theme</li>
+        </ul>
+      </div>
     </div>
 
     <script type="module">
@@ -102,6 +96,15 @@
 
       // Configure the sticky notes with sample data
       document.addEventListener('DOMContentLoaded', () => {
+        const basicNote = document.getElementById('basic-note');
+        basicNote.uuid = 'basic-uuid';
+        basicNote.data = {
+          position: { left: 50, top: 50 },
+          title: 'Basic Note',
+          body: 'This is a basic sticky note example.',
+          color: 'yellow'
+        };
+
         const yellowNote = document.getElementById('yellow-note');
         yellowNote.uuid = 'yellow-uuid';
         yellowNote.data = {
