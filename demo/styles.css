@@ -251,3 +251,14 @@ pre.language-javascript, pre.language-markup {
     background: #edfdff7e !important;
     border: 1px solid #ddd !important;
 }
+
+/* Demo container for sticky notes and interactive components */
+.demo-container {
+    position: relative;
+    background-color: #f9f9f9;
+    height: 600px;
+    border: 1px solid #ddd;
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
