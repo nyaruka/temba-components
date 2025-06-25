@@ -1,48 +1,155 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Horizontal Chart Demo</title>
-
-    <link rel="stylesheet" href="../styles.css" />
+    <meta charset="utf-8" />
+    <title>TembaChart Example</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link href="../styles.css" rel="stylesheet" type="text/css" />
+    <link href="/demo/static/css/prism.css" rel="stylesheet" />
+    <script type="module" src="/demo/static/js/prism-loader.js"></script>
+    <script type="module" src="../../src/chart/TembaChart.ts"></script>
   </head>
   <body>
-    <div class="demo-container">
-      <h1>Horizontal Bar Chart Demo</h1>
+    <h1>TembaChart Example</h1>
+    <p><a href="../index.html">← Back to main demo</a></p>
 
-      <div class="demo-section">
-        <h2>Regular Vertical Bar Chart</h2>
-        <temba-chart
-          type="bar"
-          header="Monthly Sales (Vertical)"
-          style="height: 300px; display: block"
-        ></temba-chart>
-      </div>
+    <table class="attr-table">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>type</td>
+          <td>Chart type: 'bar', 'line', 'pie', 'doughnut'</td>
+          <td>'bar'</td>
+        </tr>
+        <tr>
+          <td>horizontal</td>
+          <td>Boolean to render horizontal bar charts</td>
+          <td>false</td>
+        </tr>
+        <tr>
+          <td>header</td>
+          <td>Title text displayed above the chart</td>
+          <td>Empty string</td>
+        </tr>
+        <tr>
+          <td>data</td>
+          <td>Chart data object with labels and datasets arrays</td>
+          <td>Required</td>
+        </tr>
+        <tr>
+          <td>percent</td>
+          <td>Boolean to show percentage labels on the chart</td>
+          <td>false</td>
+        </tr>
+        <tr>
+          <td>url</td>
+          <td>URL endpoint to fetch chart data</td>
+          <td>undefined</td>
+        </tr>
+        <tr>
+          <td>palette</td>
+          <td>Color palette key for chart colors</td>
+          <td>'qualitative-set1'</td>
+        </tr>
+        <tr>
+          <td>legend</td>
+          <td>Boolean to show chart legend</td>
+          <td>false</td>
+        </tr>
+      </tbody>
+    </table>
 
-      <div class="demo-section">
-        <h2>Horizontal Bar Chart</h2>
-        <temba-chart
-          type="bar"
-          horizontal
-          header="Monthly Sales (Horizontal)"
-          style="height: 300px; display: block"
-        ></temba-chart>
-      </div>
-
-      <div class="demo-section">
-        <h2>Horizontal Bar Chart with Percentages</h2>
-        <temba-chart
-          type="bar"
-          horizontal
-          percent
-          header="Monthly Sales with Percentages (Horizontal)"
-          style="height: 300px; display: block"
-        ></temba-chart>
-      </div>
+    <div class="example">
+      <h3>Basic Vertical Bar Chart</h3>
+      <p>A standard vertical bar chart with multiple datasets</p>
+      <pre class="example-html"><code class="language-markup">&lt;temba-chart
+  type="bar"
+  header="Monthly Sales (Vertical)"
+  style="height: 300px; display: block"
+&gt;&lt;/temba-chart&gt;</code></pre>
+      <temba-chart
+        id="vertical-chart"
+        type="bar"
+        header="Monthly Sales (Vertical)"
+        style="height: 300px; display: block"
+      ></temba-chart>
     </div>
 
-    <script>
+    <div class="example">
+      <h3>Horizontal Bar Chart</h3>
+      <p>The same data displayed as a horizontal bar chart using the horizontal attribute</p>
+      <pre class="example-html"><code class="language-markup">&lt;temba-chart
+  type="bar"
+  horizontal
+  header="Monthly Sales (Horizontal)"
+  style="height: 300px; display: block"
+&gt;&lt;/temba-chart&gt;</code></pre>
+      <temba-chart
+        id="horizontal-chart"
+        type="bar"
+        horizontal
+        header="Monthly Sales (Horizontal)"
+        style="height: 300px; display: block"
+      ></temba-chart>
+    </div>
+
+    <div class="example">
+      <h3>Horizontal Chart with Percentages</h3>
+      <p>A horizontal bar chart that displays percentage labels on each bar</p>
+      <pre class="example-html"><code class="language-markup">&lt;temba-chart
+  type="bar"
+  horizontal
+  percent
+  header="Monthly Sales with Percentages"
+  style="height: 300px; display: block"
+&gt;&lt;/temba-chart&gt;</code></pre>
+      <temba-chart
+        id="percentage-chart"
+        type="bar"
+        horizontal
+        percent
+        header="Monthly Sales with Percentages"
+        style="height: 300px; display: block"
+      ></temba-chart>
+    </div>
+
+    <div class="example">
+      <h3>Chart with Legend</h3>
+      <p>A horizontal chart displaying a legend to identify different data series</p>
+      <pre class="example-html"><code class="language-markup">&lt;temba-chart
+  type="bar"
+  horizontal
+  legend
+  header="Monthly Sales with Legend"
+  style="height: 350px; display: block"
+&gt;&lt;/temba-chart&gt;</code></pre>
+      <temba-chart
+        id="legend-chart"
+        type="bar"
+        horizontal
+        legend
+        header="Monthly Sales with Legend"
+        style="height: 350px; display: block"
+      ></temba-chart>
+    </div>
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+
       // Sample data for the charts
       const sampleData = {
         labels: ['January', 'February', 'March', 'April', 'May', 'June'],
@@ -73,9 +180,6 @@
           });
         }, 100);
       });
-    </script>
-    <script type="module">
-      import '../../out-tsc/temba-modules.js';
     </script>
   </body>
 </html>
