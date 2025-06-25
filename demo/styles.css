@@ -262,3 +262,16 @@ pre.language-javascript, pre.language-markup {
     border-radius: 8px;
     overflow: hidden;
 }
+
+/* Button group layout for demo purposes */
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    max-width: 400px;
+}
+
+.button-group > div {
+    flex: 0 0 auto;
+    max-width: 100px;
+}
