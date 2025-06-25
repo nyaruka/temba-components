@@ -12,13 +12,13 @@
       href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
       rel="stylesheet"
     />
-    <link href="../../styles.css" rel="stylesheet" type="text/css" />
+    <link href="/demo/static/css/styles.css" rel="stylesheet" type="text/css" />
     <link href="/demo/static/css/prism.css" rel="stylesheet" />
     <script type="module" src="/demo/static/js/prism-loader.js"></script>
   </head>
   <body>
     <h1>Button Examples</h1>
-    <p><a href="../../index.html">← Back to main demo</a></p>
+    <p><a href="/demo/index.html">← Back to main demo</a></p>
 
     <table class="attr-table">
       <thead>
@@ -95,42 +95,54 @@
     <div class="example">
       <h3>Basic Button</h3>
       <p>A simple button component</p>
-      <pre class="example-html"><code class="language-markup">&lt;temba-button name="Click Me"&gt;&lt;/temba-button&gt;</code></pre>
+      <pre
+        class="example-html"
+      ><code class="language-markup">&lt;temba-button name="Click Me"&gt;&lt;/temba-button&gt;</code></pre>
       <temba-button name="Click Me"></temba-button>
     </div>
 
     <div class="example">
       <h3>Primary Button</h3>
       <p>A primary styled button</p>
-      <pre class="example-html"><code class="language-markup">&lt;temba-button primary name="Primary Action"&gt;&lt;/temba-button&gt;</code></pre>
+      <pre
+        class="example-html"
+      ><code class="language-markup">&lt;temba-button primary name="Primary Action"&gt;&lt;/temba-button&gt;</code></pre>
       <temba-button primary name="Primary Action"></temba-button>
     </div>
 
     <div class="example">
       <h3>Secondary Button</h3>
       <p>A secondary styled button</p>
-      <pre class="example-html"><code class="language-markup">&lt;temba-button secondary name="Secondary Action"&gt;&lt;/temba-button&gt;</code></pre>
+      <pre
+        class="example-html"
+      ><code class="language-markup">&lt;temba-button secondary name="Secondary Action"&gt;&lt;/temba-button&gt;</code></pre>
       <temba-button secondary name="Secondary Action"></temba-button>
     </div>
 
     <div class="example">
       <h3>Small Button</h3>
       <p>A smaller button variant</p>
-      <pre class="example-html"><code class="language-markup">&lt;temba-button small name="Small Button"&gt;&lt;/temba-button&gt;</code></pre>
+      <pre
+        class="example-html"
+      ><code class="language-markup">&lt;temba-button small name="Small Button"&gt;&lt;/temba-button&gt;</code></pre>
       <temba-button small name="Small Button"></temba-button>
     </div>
 
     <div class="example">
       <h3>Disabled Button</h3>
       <p>A button that cannot be clicked</p>
-      <pre class="example-html"><code class="language-markup">&lt;temba-button disabled name="Disabled Button"&gt;&lt;/temba-button&gt;</code></pre>
+      <pre
+        class="example-html"
+      ><code class="language-markup">&lt;temba-button disabled name="Disabled Button"&gt;&lt;/temba-button&gt;</code></pre>
       <temba-button disabled name="Disabled Button"></temba-button>
     </div>
 
     <div class="example">
       <h3>Multiple Buttons</h3>
       <p>Several buttons in a row with proper constraints</p>
-      <pre class="example-html"><code class="language-markup">&lt;div class="button-group"&gt;
+      <pre
+        class="example-html"
+      ><code class="language-markup">&lt;div class="button-group"&gt;
   &lt;div&gt;&lt;temba-button name="Save"&gt;&lt;/temba-button&gt;&lt;/div&gt;
   &lt;div&gt;&lt;temba-button secondary name="Cancel"&gt;&lt;/temba-button&gt;&lt;/div&gt;
   &lt;div&gt;&lt;temba-button primary name="Submit"&gt;&lt;/temba-button&gt;&lt;/div&gt;
@@ -149,7 +161,7 @@
     </div>
 
     <script type="module">
-      import '../../out-tsc/temba-modules.js';
+      import '/out-tsc/temba-modules.js';
     </script>
   </body>
 </html>
