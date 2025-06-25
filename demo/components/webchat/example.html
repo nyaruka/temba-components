@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <title>WebChat Example</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link href="../../styles.css" rel="stylesheet" type="text/css" />
+    <script>
+      function handleOpen() {
+        const webchat = document.querySelector('temba-webchat');
+        const input = document.querySelector('temba-textinput');
+
+        if (webchat.open) {
+          webchat.open = false;
+        }
+
+        webchat.setAttribute('channel', input.value);
+        webchat.open = true;
+      }
+      function handleKeyPress(event) {
+        const keyCode = event.keyCode || event.which;
+        if (keyCode !== 13) {
+          return; // Only handle Enter key
+        }
+
+        handleOpen();
+      }
+    </script>
+  </head>
+  <body>
+    <h1>WebChat example</h1>
+    <p><a href="../../index.html">← Back to main demo</a></p>
+
+    <div style="margin: 0.5em">Channel UUID</div>
+    <div
+      style="
+        display: flex;
+        flex-direction: row;
+        width: 500px;
+        margin-bottom: 1em;
+        align-items: center;
+      "
+    >
+      <div style="margin-right: 0.5em; flex-grow: 1">
+        <temba-textinput
+          onkeypress="handleKeyPress(event)"
+          placeholder="Channel UUID"
+          value="3ff64eee-a584-40e0-889c-351564fc0f30"
+        ></temba-textinput>
+      </div>
+      <temba-button
+        name="Start WebChat"
+        onclick="handleOpen(event)"
+      ></temba-button>
+    </div>
+
+    <temba-webchat></temba-webchat>
+
+    <script type="module">
+      import '../../out-tsc/temba-modules.js';
+    </script>
+  </body>
+</html>
