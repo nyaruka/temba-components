@@ -494,6 +494,16 @@ export class RangePicker extends RapidElement {
     }
   }
 
+  private formatDateForDisplay(dateString: string): string {
+    if (!dateString) return '';
+
+    const date = DateTime.fromISO(dateString);
+    if (!date.isValid) return dateString;
+
+    // Use the browser's locale for formatting
+    return date.toLocaleString();
+  }
+
   render() {
     return html`
       <div class="range-container">
@@ -512,7 +522,8 @@ export class RangePicker extends RapidElement {
               @blur=${() => (this.editingStart = false)}
             ></temba-datepicker>`
           : html`<span class="date-display" @click=${this.handleStartClick}
-              >${this.startDate || 'Start date'}</span
+              >${this.formatDateForDisplay(this.startDate) ||
+              'Start date'}</span
             >`}
         <span> - </span>
         ${this.editingEnd
@@ -530,7 +541,7 @@ export class RangePicker extends RapidElement {
               @blur=${() => (this.editingEnd = false)}
             ></temba-datepicker>`
           : html`<span class="date-display" @click=${this.handleEndClick}
-              >${this.endDate || 'End date'}</span
+              >${this.formatDateForDisplay(this.endDate) || 'End date'}</span
             >`}
         <div class="navigation-container">
           <button
