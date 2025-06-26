@@ -464,8 +464,9 @@ export class RangePicker extends RapidElement {
     super.updated(changed);
 
     if (
-      (changed.has('startDate') && changed.has('endDate') && !this.startDate) ||
-      !this.endDate
+      changed.has('startDate') &&
+      changed.has('endDate') &&
+      (!this.startDate || !this.endDate)
     ) {
       this.setRange('M');
     }

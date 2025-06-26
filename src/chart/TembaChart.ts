@@ -334,6 +334,9 @@ export class TembaChart extends RapidElement {
   @property({ type: Boolean })
   showAll: boolean = false;
 
+  @property({ type: Boolean })
+  requireWindow: boolean = false;
+
   @property({ type: Number })
   colorIndex: number = 0;
 
@@ -455,7 +458,7 @@ export class TembaChart extends RapidElement {
     }
 
     if (changes.has('url') || changes.has('start') || changes.has('end')) {
-      if (this.url) {
+      if (this.url && (!this.requireWindow || (this.start && this.end))) {
         const store = getStore();
         let fullUrl = this.url;
 
