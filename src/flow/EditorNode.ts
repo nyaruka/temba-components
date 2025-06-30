@@ -1,11 +1,11 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { EDITOR_CONFIG, UIConfig } from './config';
-import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
+import { EDITOR_CONFIG, UIConfig } from 'flow/config';
+import { Action, Exit, Node, NodeUI, Router } from 'store/flow-definition';
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
-import { Plumber } from './Plumber';
-import { getStore } from '../store/Store';
+import { RapidElement } from 'RapidElement';
+import { getClasses } from 'utils';
+import { Plumber } from 'flow/Plumber';
+import { getStore } from 'store/Store';
 
 export class EditorNode extends RapidElement {
   createRenderRoot() {

@@ -1,10 +1,10 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { ContactField, CustomEventType } from '../interfaces';
+import { ContactField, CustomEventType } from 'interfaces';
 
-import { SortableList } from '../list/SortableList';
-import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
-import { postJSON } from '../utils';
+import { SortableList } from 'list/SortableList';
+import { EndpointMonitorElement } from 'store/EndpointMonitorElement';
+import { postJSON } from 'utils';
 
 const TYPE_NAMES = {
   text: 'Text',

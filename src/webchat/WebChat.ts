@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { getCookie, setCookie } from '../utils';
-import { DEFAULT_AVATAR } from './assets';
-import { Chat, ChatEvent, Message, MessageType } from '../chat/Chat';
+import { getCookie, setCookie } from 'utils';
+import { DEFAULT_AVATAR } from 'webchat/assets';
+import { Chat, ChatEvent, Message, MessageType } from 'chat/Chat';
 
 interface User {
   avatar?: string;

@@ -1,15 +1,15 @@
 import { html, TemplateResult } from 'lit';
 
-import ExcellentParser, { Expression } from './ExcellentParser';
+import ExcellentParser, { Expression } from 'completion/ExcellentParser';
 import {
   CompletionOption,
   CompletionProperty,
   CompletionResult,
   CompletionSchema,
   CompletionType
-} from '../interfaces';
-import { getStore, Store } from '../store/Store';
-import { renderMarkdown } from '../markdown';
+} from 'interfaces';
+import { getStore, Store } from 'store/Store';
+import { renderMarkdown } from 'markdown';
 
 const messageParser = new ExcellentParser('@', [
   'contact',

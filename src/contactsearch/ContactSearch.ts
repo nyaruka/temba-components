@@ -1,15 +1,15 @@
 import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { property } from 'lit/decorators.js';
-import { getClasses, postJSON, stopEvent, WebResponse } from '../utils';
-import { TextInput } from '../textinput/TextInput';
+import { getClasses, postJSON, stopEvent, WebResponse } from 'utils';
+import { TextInput } from 'textinput/TextInput';
 import '../alert/Alert';
-import { Contact, CustomEventType } from '../interfaces';
-import { FormElement } from '../FormElement';
-import { Checkbox } from '../checkbox/Checkbox';
+import { Contact, CustomEventType } from 'interfaces';
+import { FormElement } from 'FormElement';
+import { Checkbox } from 'checkbox/Checkbox';
 import { msg } from '@lit/localize';
-import { OmniOption } from '../omnibox/Omnibox';
-import { Select } from '../select/Select';
+import { OmniOption } from 'omnibox/Omnibox';
+import { Select } from 'select/Select';
 
 const QUEIT_MILLIS = 2000;
 

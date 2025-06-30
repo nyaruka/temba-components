@@ -9,7 +9,7 @@ import {
   SendMsg,
   SetContactName,
   SetRunResult
-} from '../store/flow-definition';
+} from 'store/flow-definition';
 
 const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
   return assets.map((asset) => {

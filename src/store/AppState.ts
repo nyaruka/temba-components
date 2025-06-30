@@ -1,5 +1,5 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
-import { fetchResults } from '../utils';
+import { fetchResults } from 'utils';
 import {
   Action,
   Exit,
@@ -8,7 +8,7 @@ import {
   Node,
   Router,
   StickyNote
-} from './flow-definition';
+} from 'store/flow-definition';
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { property } from 'lit/decorators.js';

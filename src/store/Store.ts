@@ -9,7 +9,7 @@ import {
   postJSON,
   postForm,
   getCookie
-} from '../utils';
+} from 'utils';
 import {
   ContactField,
   ContactGroup,
@@ -19,16 +19,16 @@ import {
   CustomEventType,
   Workspace,
   Shortcut
-} from '../interfaces';
-import { RapidElement } from '../RapidElement';
+} from 'interfaces';
+import { RapidElement } from 'RapidElement';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
-import { sourceLocale, targetLocales } from '../locales/locale-codes';
-import { StoreMonitorElement } from './StoreMonitorElement';
-import { getFullName } from '../user/TembaUser';
-import { AppState, zustand } from './AppState';
+import { sourceLocale, targetLocales } from 'locales/locale-codes';
+import { StoreMonitorElement } from 'store/StoreMonitorElement';
+import { getFullName } from 'user/TembaUser';
+import { AppState, zustand } from 'store/AppState';
 import { StoreApi } from 'zustand/vanilla';
 
 const { setLocale } = configureLocalization({

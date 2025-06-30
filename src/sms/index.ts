@@ -4,9 +4,9 @@
  * See https://github.com/Codesleuth/split-sms
  */
 
-import { gsmSplit } from './gsmsplitter';
-import { validateMessage } from './gsmvalidator';
-import { unicodeSplit } from './unicodesplitter';
+import { gsmSplit } from 'sms/gsmsplitter';
+import { validateMessage } from 'sms/gsmvalidator';
+import { unicodeSplit } from 'sms/unicodesplitter';
 
 export const UNICODE = 'Unicode';
 export const GSM = 'GSM';

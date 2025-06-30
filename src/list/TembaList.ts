@@ -1,9 +1,9 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
-import { Store } from '../store/Store';
-import { fetchResultsPage, ResultsPage } from '../utils';
+import { CustomEventType } from 'interfaces';
+import { RapidElement } from 'RapidElement';
+import { Store } from 'store/Store';
+import { fetchResultsPage, ResultsPage } from 'utils';
 
 const DEFAULT_REFRESH = 10000;
 

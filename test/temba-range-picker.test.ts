@@ -2,6 +2,10 @@ import { fixture, expect, assert } from '@open-wc/testing';
 import { RangePicker } from '../src/datepicker/RangePicker';
 import { assertScreenshot, getAttributes, getClip } from './utils.test';
 import { DateTime } from 'luxon';
+import { stub } from 'sinon';
+
+// Mock date for deterministic tests
+const MOCK_DATE = DateTime.fromISO('2024-01-15T12:00:00.000Z');
 
 export const getRangePickerHTML = (attrs: any = {}) => {
   return `<temba-range-picker ${getAttributes(attrs)}></temba-range-picker>`;
@@ -16,6 +20,18 @@ export const createRangePicker = async (def: string) => {
 };
 
 describe('temba-range-picker', () => {
+  let dateTimeStub;
+
+  beforeEach(() => {
+    // Stub DateTime.now() to return our mock date
+    dateTimeStub = stub(DateTime, 'now').returns(MOCK_DATE);
+  });
+
+  afterEach(() => {
+    // Restore the original DateTime.now() method
+    dateTimeStub.restore();
+  });
+
   it('can create a range picker', async () => {
     const picker: RangePicker = await createRangePicker(getRangePickerHTML());
     assert.instanceOf(picker, RangePicker);
@@ -70,10 +86,8 @@ describe('temba-range-picker', () => {
     await picker.updateComplete;
 
     expect(picker.selectedRange).to.equal('W');
-    expect(picker.startDate).to.equal(
-      DateTime.now().minus({ days: 6 }).toISODate()
-    );
-    expect(picker.endDate).to.equal(DateTime.now().toISODate());
+    expect(picker.startDate).to.equal('2024-01-09');
+    expect(picker.endDate).to.equal('2024-01-15');
 
     await assertScreenshot('datepicker/range-picker-week', getClip(picker));
   });
@@ -89,10 +103,8 @@ describe('temba-range-picker', () => {
     await picker.updateComplete;
 
     expect(picker.selectedRange).to.equal('Y');
-    expect(picker.startDate).to.equal(
-      DateTime.now().minus({ years: 1 }).plus({ days: 1 }).toISODate()
-    );
-    expect(picker.endDate).to.equal(DateTime.now().toISODate());
+    expect(picker.startDate).to.equal('2023-01-16');
+    expect(picker.endDate).to.equal('2024-01-15');
 
     await assertScreenshot('datepicker/range-picker-year', getClip(picker));
   });
@@ -109,7 +121,7 @@ describe('temba-range-picker', () => {
 
     expect(picker.selectedRange).to.equal('ALL');
     expect(picker.startDate).to.equal('2012-01-01');
-    expect(picker.endDate).to.equal(DateTime.now().toISODate());
+    expect(picker.endDate).to.equal('2024-01-15');
 
     await assertScreenshot('datepicker/range-picker-all', getClip(picker));
   });

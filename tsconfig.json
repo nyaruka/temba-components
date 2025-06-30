@@ -16,6 +16,7 @@
     "sourceMap": true,
     "inlineSources": true,
     "rootDir": "./",
+    "baseUrl": "src",
     "declaration": false,
     "noEmit": false,
   },

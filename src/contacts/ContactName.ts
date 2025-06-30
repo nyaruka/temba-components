@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from 'RapidElement';
 
 export class ContactName extends RapidElement {
   @property({ type: String })

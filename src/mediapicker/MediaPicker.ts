@@ -1,14 +1,14 @@
 import { TemplateResult, css, html } from 'lit';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from 'RapidElement';
 import { property } from 'lit/decorators.js';
-import { Attachment, CustomEventType } from '../interfaces';
-import { Icon } from '../vectoricon';
+import { Attachment, CustomEventType } from 'interfaces';
+import { Icon } from 'vectoricon';
 import {
   DEFAULT_MEDIA_ENDPOINT,
   WebResponse,
   getClasses,
   postFormData
-} from '../utils';
+} from 'utils';
 
 const verifyAccept = (type: string, accept: string): boolean => {
   if (accept) {

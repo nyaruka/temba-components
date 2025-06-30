@@ -1,8 +1,8 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
-import { StickyNote as StickyNoteData } from '../store/flow-definition';
-import { getStore } from '../store/Store';
+import { RapidElement } from 'RapidElement';
+import { StickyNote as StickyNoteData } from 'store/flow-definition';
+import { getStore } from 'store/Store';
 
 export class StickyNote extends RapidElement {
   @property({ type: String })

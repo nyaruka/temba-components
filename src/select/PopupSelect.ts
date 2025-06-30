@@ -1,5 +1,5 @@
 import { css, html } from 'lit';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from 'RapidElement';
 import { property } from 'lit/decorators.js';
 
 export class PopupSelect extends RapidElement {

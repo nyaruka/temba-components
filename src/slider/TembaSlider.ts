@@ -1,8 +1,8 @@
 import { css, html, TemplateResult } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property } from 'lit/decorators.js';
-import { FormElement } from '../FormElement';
-import { getClasses } from '../utils';
+import { FormElement } from 'FormElement';
+import { getClasses } from 'utils';
 
 export class TembaSlider extends FormElement {
   static get styles() {

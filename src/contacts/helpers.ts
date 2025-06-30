@@ -1,7 +1,7 @@
-import { Contact, NamedUser, User } from '../interfaces';
-import { Store } from '../store/Store';
-import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
-import { ContactHistoryPage } from './events';
+import { Contact, NamedUser, User } from 'interfaces';
+import { Store } from 'store/Store';
+import { fetchResults, getUrl, postUrl, WebResponse } from 'utils';
+import { ContactHistoryPage } from 'contacts/events';
 
 export const SCROLL_THRESHOLD = 100;
 export const SIMULATED_WEB_SLOWNESS = 0;

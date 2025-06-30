@@ -1,7 +1,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
+import { CustomEventType } from 'interfaces';
+import { RapidElement } from 'RapidElement';
 
 /**
  * A simple list that can be sorted by dragging

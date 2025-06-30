@@ -5,7 +5,7 @@ import {
   renderSendMsg,
   renderSetContactName,
   renderSetRunResult
-} from './render';
+} from 'flow/render';
 
 export interface UIConfig {
   name: string;

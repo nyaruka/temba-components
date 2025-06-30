@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, css, PropertyValueMap } from 'lit';
-import { CroppieCSS } from './CroppieCSS';
+import { CroppieCSS } from 'imagepicker/CroppieCSS';
 import { property } from 'lit/decorators.js';
-import { Icon } from '../vectoricon';
-import { FormElement } from '../FormElement';
+import { Icon } from 'vectoricon';
+import { FormElement } from 'FormElement';
 
 export class ImagePicker extends FormElement {
   static styles = css`

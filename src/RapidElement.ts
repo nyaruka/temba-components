@@ -1,6 +1,6 @@
 import { LitElement, PropertyValueMap } from 'lit';
-import { CustomEventType } from './interfaces';
-import { Color, log } from './utils';
+import { CustomEventType } from 'interfaces';
+import { Color, log } from 'utils';
 import { property } from 'lit/decorators.js';
 
 const showUpdates = (

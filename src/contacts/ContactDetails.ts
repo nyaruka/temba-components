@@ -1,7 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
-import { ContactStoreElement } from './ContactStoreElement';
-import { Icon } from '../vectoricon';
-import { capitalize } from '../utils';
+import { ContactStoreElement } from 'contacts/ContactStoreElement';
+import { Icon } from 'vectoricon';
+import { capitalize } from 'utils';
 
 const STATUS = {
   active: 'Active',

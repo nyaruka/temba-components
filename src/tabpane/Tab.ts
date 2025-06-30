@@ -1,7 +1,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
+import { RapidElement } from 'RapidElement';
+import { getClasses } from 'utils';
 
 export class Tab extends RapidElement {
   static get styles() {

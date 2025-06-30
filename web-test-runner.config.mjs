@@ -303,7 +303,12 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
 export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
-  nodeResolve: true,
+  nodeResolve: {
+    // Use the web dev server's built-in node resolution with custom path mapping
+    rootDir: './src',
+    preferBuiltins: false,
+    browser: true,
+  },
   setupFiles: ['./test-setup.js'],
   concurrency: 4,
   testFramework: {
@@ -318,6 +323,31 @@ export default {
       'process.env.NODE_ENV': JSON.stringify('test'),
     }),
     {
+      name: 'typescript-baseurl-resolver',
+      resolveImport({ source }) {
+        // Only handle bare imports (no ./, ../, http, @, or known packages)
+        if (!source.startsWith('.') && !source.startsWith('/') && 
+            !source.startsWith('http') && !source.startsWith('@') &&
+            // Exclude npm packages
+            !source.includes('node_modules') &&
+            // Exclude known third-party packages
+            !['lit', 'luxon', 'zustand', 'immer', 'remarkable', 'croppie', 
+              'leaflet', 'geojson', 'tiny-lru', 'serialize-javascript', 
+              'chart.js', 'chartjs-adapter-luxon', 'chartjs-plugin-datalabels',
+              'sinon', 'chai', 'mocha', 'jest', 'color-hash'].some(pkg => source.startsWith(pkg))) {
+          
+          // Special handling for known directory imports with index files
+          const directoryImports = ['utils', 'vectoricon', 'sms', 'webchat'];
+          if (directoryImports.includes(source)) {
+            return `/src/${source}/index.ts`;
+          }
+          
+          // Resolve using TypeScript baseUrl pattern: src/{import}
+          return `/src/${source}${source.includes('/') ? '.ts' : '.ts'}`;
+        }
+      },
+    },
+    {
       name: 'add-style',
       transform(context) {
         if (context.response.is('html')) {
@@ -330,19 +360,15 @@ export default {
         }
       },
     },
-    esbuildPlugin({ ts: true }),
-
-    /* importMapsPlugin({
-      inject: {
-        importMap: {
-          imports: {
-            // mock a module in your own code
-            // './out-tsc/src/utils/index.js': 'out-tsc/test/server.js',
-            // './src/utils': './test/server'
-          },
-        },
-      },
-    }),*/
+    esbuildPlugin({ 
+      ts: true,
+      tsconfig: './tsconfig.json',
+      target: 'es2020',
+      loader: { '.ts': 'ts' },
+      resolveExtensions: ['.ts', '.js'],
+      // Tell esbuild to use our baseUrl from tsconfig
+      absWorkingDir: process.cwd(),
+    }),
   ],
   browsers: [
     puppeteerLauncher({

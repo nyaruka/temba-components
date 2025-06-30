@@ -1,8 +1,8 @@
 import { PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType } from 'interfaces';
 
-import { StoreMonitorElement } from './StoreMonitorElement';
+import { StoreMonitorElement } from 'store/StoreMonitorElement';
 
 /**
  * StoreElement is a listener for a given endpoint that re-renders

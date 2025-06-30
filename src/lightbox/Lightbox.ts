@@ -1,7 +1,7 @@
 import { css, html, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
+import { RapidElement } from 'RapidElement';
+import { getClasses } from 'utils';
 import { styleMap } from 'lit-html/directives/style-map.js';
 
 /**

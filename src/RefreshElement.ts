@@ -1,8 +1,8 @@
 import { PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from './interfaces';
-import { RapidElement } from './RapidElement';
-import { Store } from './store/Store';
+import { CustomEventType } from 'interfaces';
+import { RapidElement } from 'RapidElement';
+import { Store } from 'store/Store';
 
 export class RefreshElement extends RapidElement {
   @property({ type: String })

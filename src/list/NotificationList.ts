@@ -1,7 +1,7 @@
 import { css, html, TemplateResult } from 'lit';
-import { TembaList } from './TembaList';
-import { Options } from '../options/Options';
-import { Icon } from '../vectoricon';
+import { TembaList } from 'list/TembaList';
+import { Options } from 'options/Options';
+import { Icon } from 'vectoricon';
 
 interface Notification {
   created_on: string;

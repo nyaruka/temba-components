@@ -1,16 +1,10 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
-import { Button } from '../button/Button';
-import { Dialog } from '../dialog/Dialog';
-import {
-  Attachment,
-  ContactField,
-  Shortcut,
-  Ticket,
-  User
-} from '../interfaces';
+import { Button } from 'button/Button';
+import { Dialog } from 'dialog/Dialog';
+import { Attachment, ContactField, Shortcut, Ticket, User } from 'interfaces';
 import ColorHash from 'color-hash';
-import { Toast } from '../toast/Toast';
+import { Toast } from 'toast/Toast';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 

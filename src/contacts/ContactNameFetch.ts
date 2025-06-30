@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { ContactStoreElement } from './ContactStoreElement';
+import { ContactStoreElement } from 'contacts/ContactStoreElement';
 
 export class ContactNameFetch extends ContactStoreElement {
   @property({ type: Number, attribute: 'icon-size' })

@@ -11,9 +11,13 @@ import {
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { FeatureProperties } from '../interfaces';
-import { getUrl, WebResponse } from '../utils';
-import { highlightedFeature, normalFeature, visibleStyle } from './helpers';
+import { FeatureProperties } from 'interfaces';
+import { getUrl, WebResponse } from 'utils';
+import {
+  highlightedFeature,
+  normalFeature,
+  visibleStyle
+} from 'leafletmap/helpers';
 
 export class LeafletMap extends LitElement {
   static get styles() {

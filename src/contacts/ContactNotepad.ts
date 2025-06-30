@@ -1,8 +1,8 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { ContactStoreElement } from './ContactStoreElement';
-import { getDisplayName } from './helpers';
-import { ContactNote, CustomEventType } from '../interfaces';
+import { ContactStoreElement } from 'contacts/ContactStoreElement';
+import { getDisplayName } from 'contacts/helpers';
+import { ContactNote, CustomEventType } from 'interfaces';
 
 export class ContactNotepad extends ContactStoreElement {
   @property({ type: Object, attribute: false })

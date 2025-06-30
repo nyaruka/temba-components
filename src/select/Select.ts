@@ -1,28 +1,22 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css, CSSResult, CSSResultArray } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import {
-  getUrl,
-  getClasses,
-  fetchResults,
-  WebResponse,
-  postJSON
-} from '../utils';
-import '../options/Options';
-import '../list/SortableList';
-import { EventHandler } from '../RapidElement';
-import { FormElement } from '../FormElement';
+import { getUrl, getClasses, fetchResults, WebResponse, postJSON } from 'utils';
+import 'options/Options';
+import 'list/SortableList';
+import { EventHandler } from 'RapidElement';
+import { FormElement } from 'FormElement';
 
 import { lru } from 'tiny-lru';
-import { CompletionOption, CustomEventType, Position } from '../interfaces';
+import { CompletionOption, CustomEventType, Position } from 'interfaces';
 import {
   renderCompletionOption,
   updateInputElementWithCompletion,
   executeCompletionQuery
-} from '../completion/helpers';
-import { Store } from '../store/Store';
+} from 'completion/helpers';
+import { Store } from 'store/Store';
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
-import { Icon } from '../vectoricon';
+import { Icon } from 'vectoricon';
 import { msg } from '@lit/localize';
 
 const LOOK_AHEAD = 20;

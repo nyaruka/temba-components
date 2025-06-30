@@ -1,6 +1,6 @@
 import { TemplateResult, html, css, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
-import { renderMarkdown } from '../markdown';
+import { renderMarkdown } from 'markdown';
 
 /**
  * A small wrapper to display labels and help text in a smartmin style.

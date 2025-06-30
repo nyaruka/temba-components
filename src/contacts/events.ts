@@ -1,6 +1,6 @@
 import { html, TemplateResult } from 'lit';
-import { Msg, ObjectReference, User } from '../interfaces';
-import { Icon } from '../vectoricon';
+import { Msg, ObjectReference, User } from 'interfaces';
+import { Icon } from 'vectoricon';
 
 export interface EventGroup {
   type: string;

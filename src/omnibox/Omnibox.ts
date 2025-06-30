@@ -1,8 +1,8 @@
 import { TemplateResult, html, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { Select, SelectOption } from '../select/Select';
-import { Icon } from '../vectoricon';
+import { Select, SelectOption } from 'select/Select';
+import { Icon } from 'vectoricon';
 
 enum OmniType {
   Group = 'group',

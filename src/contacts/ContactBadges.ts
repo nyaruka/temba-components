@@ -1,9 +1,9 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Group } from '../interfaces';
-import { debounce, getClasses } from '../utils';
-import { Icon } from '../vectoricon';
-import { ContactStoreElement } from './ContactStoreElement';
+import { Group } from 'interfaces';
+import { debounce, getClasses } from 'utils';
+import { Icon } from 'vectoricon';
+import { ContactStoreElement } from 'contacts/ContactStoreElement';
 
 const STATUS = {
   stopped: { name: 'Stopped' },

@@ -1,9 +1,9 @@
 import { property } from 'lit/decorators.js';
-import { FormElement } from '../FormElement';
+import { FormElement } from 'FormElement';
 import { TemplateResult, html, css, LitElement } from 'lit';
-import { CustomEventType } from '../interfaces';
-import { MediaPicker } from '../mediapicker/MediaPicker';
-import { getClasses } from '../utils';
+import { CustomEventType } from 'interfaces';
+import { MediaPicker } from 'mediapicker/MediaPicker';
+import { getClasses } from 'utils';
 
 interface Component {
   name: string;

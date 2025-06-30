@@ -1,8 +1,8 @@
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
-import { Store } from './Store';
+import { CustomEventType } from 'interfaces';
+import { RapidElement } from 'RapidElement';
+import { Store } from 'store/Store';
 
 /**
  * StoreMonitorElement notifies when the store is updated and with what url

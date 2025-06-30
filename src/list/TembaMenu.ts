@@ -1,13 +1,13 @@
 import { css, html, TemplateResult } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { debounce, fetchResults, getClasses, renderAvatar } from '../utils';
-import { Icon } from '../vectoricon';
-import { Dropdown } from '../dropdown/Dropdown';
-import { NotificationList } from './NotificationList';
-import { ResizeElement } from '../ResizeElement';
-import { Store } from '../store/Store';
+import { CustomEventType } from 'interfaces';
+import { debounce, fetchResults, getClasses, renderAvatar } from 'utils';
+import { Icon } from 'vectoricon';
+import { Dropdown } from 'dropdown/Dropdown';
+import { NotificationList } from 'list/NotificationList';
+import { ResizeElement } from 'ResizeElement';
+import { Store } from 'store/Store';
 
 export interface MenuItem {
   id?: string;

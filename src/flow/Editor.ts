@@ -1,13 +1,13 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { FlowDefinition, FlowPosition } from '../store/flow-definition';
-import { getStore } from '../store/Store';
-import { AppState, fromStore, zustand } from '../store/AppState';
-import { RapidElement } from '../RapidElement';
+import { FlowDefinition, FlowPosition } from 'store/flow-definition';
+import { getStore } from 'store/Store';
+import { AppState, fromStore, zustand } from 'store/AppState';
+import { RapidElement } from 'RapidElement';
 
-import { Plumber } from './Plumber';
-import { EditorNode } from './EditorNode';
+import { Plumber } from 'flow/Plumber';
+import { EditorNode } from 'flow/EditorNode';
 
 export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;

@@ -1,4 +1,4 @@
-import { User } from '../interfaces';
+import { User } from 'interfaces';
 
 export const SVG_FINGERPRINT = 'febafb41c2fd60efa2bdaead993c7087';
 
