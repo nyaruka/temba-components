@@ -1,5 +1,5 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
-import { fetchResults } from '../utils';
+import { fetchResults } from '../../shared/utils/index';
 import {
   Action,
   Exit,

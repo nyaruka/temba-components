@@ -1,6 +1,6 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Shortcut } from '../interfaces';
+import { Shortcut } from '../../../shared/interfaces';
 import { StoreMonitorElement } from '../store/StoreMonitorElement';
 import { Options } from '../options/Options';
 

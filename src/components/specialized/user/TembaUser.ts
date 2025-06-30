@@ -1,10 +1,10 @@
 import { PropertyValueMap, TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { colorHash, extractInitials } from '../utils';
+import { colorHash, extractInitials } from '../../../shared/utils/index';
 
-import { DEFAULT_AVATAR } from '../webchat/assets';
-import { RapidElement } from '../RapidElement';
+import { DEFAULT_AVATAR } from '../../communication/webchat/assets';
+import { RapidElement } from '../../../components/base/RapidElement';
 
 export const getFullName = (user: {
   name?: string;

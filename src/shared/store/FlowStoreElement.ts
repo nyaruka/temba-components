@@ -1,6 +1,6 @@
 import { html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { FlowDetails } from '../interfaces';
+import { FlowDetails } from '../../shared/interfaces';
 import { EndpointMonitorElement } from './EndpointMonitorElement';
 
 export class FlowStoreElement extends EndpointMonitorElement {

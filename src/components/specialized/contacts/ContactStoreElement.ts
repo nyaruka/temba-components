@@ -1,7 +1,7 @@
 import { PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Contact, Group } from '../interfaces';
-import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
+import { Contact, Group } from '../../../shared/interfaces';
+import { EndpointMonitorElement } from '../../../shared/store/EndpointMonitorElement';
 
 export class ContactStoreElement extends EndpointMonitorElement {
   @property({ type: String })

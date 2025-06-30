@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import Label from '../src/label/Label';
+import Label from '../src/components/label/Label';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-label';

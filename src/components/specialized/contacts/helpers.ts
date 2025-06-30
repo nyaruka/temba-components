@@ -1,6 +1,6 @@
-import { Contact, NamedUser, User } from '../interfaces';
-import { Store } from '../store/Store';
-import { fetchResults, getUrl, postUrl, WebResponse } from '../utils';
+import { Contact, NamedUser, User } from '../../../shared/interfaces';
+import { Store } from '../../../shared/store/Store';
+import { fetchResults, getUrl, postUrl, WebResponse } from '../../../shared/utils/index';
 import { ContactHistoryPage } from './events';
 
 export const SCROLL_THRESHOLD = 100;

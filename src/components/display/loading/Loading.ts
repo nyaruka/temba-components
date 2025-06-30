@@ -1,7 +1,7 @@
 import { html, TemplateResult, css, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { range } from '../utils';
+import { range } from '../../../shared/utils/index';
 
 export class Loading extends LitElement {
   static get styles() {

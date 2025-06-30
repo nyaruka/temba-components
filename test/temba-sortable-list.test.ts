@@ -1,7 +1,7 @@
 import { expect, fixture, oneEvent } from '@open-wc/testing';
 import { html, TemplateResult } from 'lit';
-import { CustomEventType } from '../src/interfaces';
-import { SortableList } from '../src/list/SortableList';
+import { CustomEventType } from '../src/components/interfaces';
+import { SortableList } from '../src/components/list/SortableList';
 import { assertScreenshot, getClip } from './utils.test';
 import Sinon, { useFakeTimers } from 'sinon';
 

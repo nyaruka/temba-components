@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
-import { RapidElement } from '../RapidElement';
-import { splitSMS } from '../sms';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { splitSMS } from '../../communication/sms';
 import { getExtendedCharacters } from './helpers';
 import { property } from 'lit/decorators.js';
 

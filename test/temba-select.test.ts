@@ -1,8 +1,8 @@
 import Sinon, * as sinon from 'sinon';
 import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
-import { Options } from '../src/options/Options';
-import { Select, SelectOption } from '../src/select/Select';
+import { Options } from '../src/components/options/Options';
+import { Select, SelectOption } from '../src/components/select/Select';
 import {
   assertScreenshot,
   getClip,

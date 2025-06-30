@@ -1,5 +1,5 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from '../../../components/base/RapidElement';
 import { property } from 'lit/decorators.js';
 
 export class ProgressBar extends RapidElement {

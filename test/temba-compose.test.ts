@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { Compose } from '../src/compose/Compose';
+import { Compose } from '../src/components/compose/Compose';
 import {
   assertScreenshot,
   getClip,
@@ -8,8 +8,8 @@ import {
   getValidText,
   updateComponent
 } from './utils.test';
-import { DEFAULT_MEDIA_ENDPOINT } from '../src/utils';
-import { Attachment } from '../src/interfaces';
+import { DEFAULT_MEDIA_ENDPOINT } from '../src/components/utils';
+import { Attachment } from '../src/components/interfaces';
 
 const TAG = 'temba-compose';
 const getCompose = async (attrs: any = {}, width = 500, height = 500) => {

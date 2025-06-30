@@ -1,6 +1,6 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { TemplateResult } from 'lit';
-import { TembaSlider } from '../src/slider/TembaSlider';
+import { TembaSlider } from '../src/components/slider/TembaSlider';
 import { assertScreenshot, getClip, showMouse } from './utils.test';
 
 const createSlider = async (def: TemplateResult) => {

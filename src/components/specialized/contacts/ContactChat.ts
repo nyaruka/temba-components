@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Contact, CustomEventType, Ticket } from '../interfaces';
-import { fetchResults, oxford, oxfordFn, postJSON } from '../utils';
+import { Contact, CustomEventType, Ticket } from '../../../shared/interfaces';
+import { fetchResults, oxford, oxfordFn, postJSON } from '../../../shared/utils/index';
 import { ContactStoreElement } from './ContactStoreElement';
-import { Compose, ComposeValue } from '../compose/Compose';
+import { Compose, ComposeValue } from '../../communication/compose/Compose';
 import { fetchContactHistory, getDisplayName } from './helpers';
 import {
   AirtimeTransferredEvent,
@@ -27,11 +27,11 @@ import {
   URNsChangedEvent,
   WebhookEvent
 } from './events';
-import { Chat, ChatEvent, MessageType } from '../chat/Chat';
-import { getUserDisplay } from '../webchat';
-import { DEFAULT_AVATAR } from '../webchat/assets';
-import { UserSelect } from '../select/UserSelect';
-import { Select } from '../select/Select';
+import { Chat, ChatEvent, MessageType } from '../../communication/chat/Chat';
+import { getUserDisplay } from '../../communication/webchat';
+import { DEFAULT_AVATAR } from '../../communication/webchat/assets';
+import { UserSelect } from '../../form/select/UserSelect';
+import { Select } from '../../form/select/Select';
 
 export enum Events {
   MESSAGE_CREATED = 'msg_created',

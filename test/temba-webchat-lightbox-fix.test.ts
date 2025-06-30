@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { WebChat } from '../src/webchat/WebChat';
+import { WebChat } from '../src/components/webchat/WebChat';
 import { getComponent } from './utils.test';
 
 const getWebChat = async (attrs: any = {}) => {

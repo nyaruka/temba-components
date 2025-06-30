@@ -1,8 +1,8 @@
 import { assert, expect } from '@open-wc/testing';
 
-import { TembaMenu } from '../src/list/TembaMenu';
+import { TembaMenu } from '../src/components/list/TembaMenu';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
-import { extractInitials } from '../src/utils/index';
+import { extractInitials } from '../src/components/utils/index';
 
 const TAG = 'temba-menu';
 const getMenu = async (attrs: any = {}, width = 0) => {

@@ -1,9 +1,9 @@
 import { PropertyValueMap, css, html } from 'lit';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from '../../../components/base/RapidElement';
 import { property } from 'lit/decorators.js';
-import { getClasses } from '../utils';
-import { Lightbox } from '../lightbox/Lightbox';
-import { WebChatIcon } from '../webchat';
+import { getClasses } from '../../../shared/utils/index';
+import { Lightbox } from '../../interaction/lightbox/Lightbox';
+import { WebChatIcon } from '../../communication/webchat';
 
 enum ThumbnailContentType {
   IMAGE = 'image',

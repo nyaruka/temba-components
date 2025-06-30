@@ -1,8 +1,8 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Group } from '../interfaces';
-import { debounce, getClasses } from '../utils';
-import { Icon } from '../vectoricon';
+import { Group } from '../../../shared/interfaces';
+import { debounce, getClasses } from '../../../shared/utils/index';
+import { Icon } from '../../../shared/vectoricon';
 import { ContactStoreElement } from './ContactStoreElement';
 
 const STATUS = {

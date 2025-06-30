@@ -1,5 +1,5 @@
 import { fixture, assert } from '@open-wc/testing';
-import { TicketList } from '../src/list/TicketList';
+import { TicketList } from '../src/components/list/TicketList';
 import './utils.test';
 
 export const getHTML = () => {

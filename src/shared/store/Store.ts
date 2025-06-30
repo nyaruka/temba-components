@@ -9,7 +9,7 @@ import {
   postJSON,
   postForm,
   getCookie
-} from '../utils';
+} from '../../shared/utils/index';
 import {
   ContactField,
   ContactGroup,
@@ -19,8 +19,8 @@ import {
   CustomEventType,
   Workspace,
   Shortcut
-} from '../interfaces';
-import { RapidElement } from '../RapidElement';
+} from '../../shared/interfaces';
+import { RapidElement } from '../../components/base/RapidElement';
 import { lru } from 'tiny-lru';
 import { DateTime } from 'luxon';
 import { css, html } from 'lit';

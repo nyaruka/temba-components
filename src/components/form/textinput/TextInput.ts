@@ -2,10 +2,10 @@ import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { FormElement } from '../FormElement';
-import { Modax } from '../dialog/Modax';
+import { FormElement } from '../../../components/base/FormElement';
+import { Modax } from '../../interaction/dialog/Modax';
 import { sanitize } from './helpers';
-import { CharCount } from '../charcount/CharCount';
+import { CharCount } from '../../form/charcount/CharCount';
 
 export enum InputType {
   Text = 'text',

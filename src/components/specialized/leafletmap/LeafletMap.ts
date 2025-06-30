@@ -11,8 +11,8 @@ import {
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { FeatureProperties } from '../interfaces';
-import { getUrl, WebResponse } from '../utils';
+import { FeatureProperties } from '../../../shared/interfaces';
+import { getUrl, WebResponse } from '../../../shared/utils/index';
 import { highlightedFeature, normalFeature, visibleStyle } from './helpers';
 
 export class LeafletMap extends LitElement {

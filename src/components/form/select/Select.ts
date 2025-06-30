@@ -7,22 +7,22 @@ import {
   fetchResults,
   WebResponse,
   postJSON
-} from '../utils';
+} from '../../../shared/utils/index';
 import '../options/Options';
 import '../list/SortableList';
-import { EventHandler } from '../RapidElement';
-import { FormElement } from '../FormElement';
+import { EventHandler } from '../../../components/base/RapidElement';
+import { FormElement } from '../../../components/base/FormElement';
 
 import { lru } from 'tiny-lru';
-import { CompletionOption, CustomEventType, Position } from '../interfaces';
+import { CompletionOption, CustomEventType, Position } from '../../../shared/interfaces';
 import {
   renderCompletionOption,
   updateInputElementWithCompletion,
   executeCompletionQuery
 } from '../completion/helpers';
-import { Store } from '../store/Store';
+import { Store } from '../../../shared/store/Store';
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
-import { Icon } from '../vectoricon';
+import { Icon } from '../../../shared/vectoricon';
 import { msg } from '@lit/localize';
 
 const LOOK_AHEAD = 20;

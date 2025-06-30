@@ -1,5 +1,5 @@
 import { fixture } from '@open-wc/testing';
-import { CharCount } from '../src/charcount/CharCount';
+import { CharCount } from '../src/components/charcount/CharCount';
 import { assertScreenshot, getClip } from './utils.test';
 
 const parentNode = document.createElement('div');

@@ -1,9 +1,9 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType } from '../../../shared/interfaces';
 
-import { RapidElement } from '../RapidElement';
-import { getUrl, WebResponse } from '../utils';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { getUrl, WebResponse } from '../../../shared/utils/index';
 
 const HEADERS = {
   'X-Temba-Content-Menu': '1',

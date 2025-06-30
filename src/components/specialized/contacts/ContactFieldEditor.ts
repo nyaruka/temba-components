@@ -1,12 +1,12 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { FormElement } from '../FormElement';
-import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
-import { InputType, TextInput } from '../textinput/TextInput';
-import { Icon } from '../vectoricon';
-import { getClasses, WebResponse } from '../utils';
-import { Select } from '../select/Select';
+import { FormElement } from '../../../components/base/FormElement';
+import { CustomEventType } from '../../../shared/interfaces';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { InputType, TextInput } from '../../form/textinput/TextInput';
+import { Icon } from '../../../shared/vectoricon';
+import { getClasses, WebResponse } from '../../../shared/utils/index';
+import { Select } from '../../form/select/Select';
 
 enum Status {
   Success = 'success',

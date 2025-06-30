@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { RapidElement } from '../src/RapidElement';
+import { RapidElement } from '../src/components/RapidElement';
 
 @customElement('mouse-helper')
 export default class MouseHelper extends RapidElement {

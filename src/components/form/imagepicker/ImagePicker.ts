@@ -2,8 +2,8 @@
 import { html, css, PropertyValueMap } from 'lit';
 import { CroppieCSS } from './CroppieCSS';
 import { property } from 'lit/decorators.js';
-import { Icon } from '../vectoricon';
-import { FormElement } from '../FormElement';
+import { Icon } from '../../../shared/vectoricon';
+import { FormElement } from '../../../components/base/FormElement';
 
 export class ImagePicker extends FormElement {
   static styles = css`

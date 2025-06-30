@@ -1,7 +1,7 @@
 import { TemplateResult, html, css } from 'lit';
-import { FormElement } from '../FormElement';
+import { FormElement } from '../../../components/base/FormElement';
 import { property } from 'lit/decorators.js';
-import { Icon } from '../vectoricon';
+import { Icon } from '../../../shared/vectoricon';
 
 export class Checkbox extends FormElement {
   static get styles() {

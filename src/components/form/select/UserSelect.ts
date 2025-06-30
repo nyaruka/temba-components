@@ -1,7 +1,7 @@
 import { css, CSSResultArray, html, TemplateResult } from 'lit';
 import { Select, SelectOption } from './Select';
 import { property } from 'lit/decorators.js';
-import { getFullName } from '../user/TembaUser';
+import { getFullName } from '../../specialized/user/TembaUser';
 
 export interface UserOption extends SelectOption {
   email: string;

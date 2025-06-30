@@ -1,5 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { TembaDate } from '../src/date/TembaDate';
+import { TembaDate } from '../src/components/date/TembaDate';
 import {
   assertScreenshot,
   getClip,

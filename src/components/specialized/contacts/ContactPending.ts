@@ -4,9 +4,9 @@ import {
   CustomEventType,
   ScheduledEvent,
   ScheduledEventType
-} from '../interfaces';
-import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
-import { Icon } from '../vectoricon';
+} from '../../../shared/interfaces';
+import { EndpointMonitorElement } from '../../../shared/store/EndpointMonitorElement';
+import { Icon } from '../../../shared/vectoricon';
 
 const ICONS = {
   [ScheduledEventType.CampaignEvent]: Icon.campaign,

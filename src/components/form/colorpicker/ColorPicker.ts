@@ -1,8 +1,8 @@
 import { html, css, PropertyValueMap } from 'lit';
-import { FormElement } from '../FormElement';
+import { FormElement } from '../../../components/base/FormElement';
 import { property } from 'lit/decorators.js';
-import { getClasses, hslToHex } from '../utils';
-import { TextInput } from '../textinput/TextInput';
+import { getClasses, hslToHex } from '../../../shared/utils/index';
+import { TextInput } from '../../form/textinput/TextInput';
 
 export class ColorPicker extends FormElement {
   @property({ type: Boolean })

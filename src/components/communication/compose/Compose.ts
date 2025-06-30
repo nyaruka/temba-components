@@ -1,15 +1,15 @@
 import { TemplateResult, html, css } from 'lit';
-import { FormElement } from '../FormElement';
+import { FormElement } from '../../../components/base/FormElement';
 import { property } from 'lit/decorators.js';
-import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
-import { DEFAULT_MEDIA_ENDPOINT, getClasses } from '../utils';
-import { Completion } from '../completion/Completion';
-import { Select } from '../select/Select';
-import { TabPane } from '../tabpane/TabPane';
-import { MediaPicker } from '../mediapicker/MediaPicker';
-import { Tab } from '../tabpane/Tab';
-import { TextInput } from '../textinput/TextInput';
-import { ShortcutList } from '../list/ShortcutList';
+import { Attachment, CustomEventType, Language, Shortcut } from '../../../shared/interfaces';
+import { DEFAULT_MEDIA_ENDPOINT, getClasses } from '../../../shared/utils/index';
+import { Completion } from '../../form/completion/Completion';
+import { Select } from '../../form/select/Select';
+import { TabPane } from '../../layout/tabpane/TabPane';
+import { MediaPicker } from '../../form/mediapicker/MediaPicker';
+import { Tab } from '../../layout/tabpane/Tab';
+import { TextInput } from '../../form/textinput/TextInput';
+import { ShortcutList } from '../../specialized/list/ShortcutList';
 
 export interface ComposeValue {
   text: string;

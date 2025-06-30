@@ -1,10 +1,10 @@
 import { property } from 'lit/decorators.js';
 import { TemplateResult, html, css } from 'lit';
 import { Button } from '../button/Button';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType } from '../../../shared/interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { getClasses } from '../utils';
-import { ResizeElement } from '../ResizeElement';
+import { getClasses } from '../../../shared/utils/index';
+import { ResizeElement } from '../../../components/base/ResizeElement';
 
 export enum ButtonType {
   PRIMARY = 'primary',

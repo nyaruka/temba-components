@@ -1,8 +1,8 @@
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { TembaList } from './TembaList';
-import { Contact } from '../interfaces';
-import { Icon } from '../vectoricon';
+import { Contact } from '../../../shared/interfaces';
+import { Icon } from '../../../shared/vectoricon';
 
 export class TicketList extends TembaList {
   @property({ type: String })

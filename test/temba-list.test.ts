@@ -1,8 +1,8 @@
 import { assert, expect } from '@open-wc/testing';
 import * as sinon from 'sinon';
 import { useFakeTimers } from 'sinon';
-import { CustomEventType } from '../src/interfaces';
-import { TembaList } from '../src/list/TembaList';
+import { CustomEventType } from '../src/components/interfaces';
+import { TembaList } from '../src/components/list/TembaList';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 let clock: any;

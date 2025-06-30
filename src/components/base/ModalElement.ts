@@ -1,6 +1,7 @@
 import { property } from 'lit/decorators.js';
 import { css } from 'lit';
 import { ResizeElement } from './ResizeElement';
+import { CustomEventType } from '../../shared/interfaces';
 
 /**
  * ModalElement is a base class for components that display modal overlays
@@ -67,12 +68,12 @@ export class ModalElement extends ResizeElement {
 
   public close() {
     this.open = false;
-    this.fireCustomEvent('close');
+    this.fireCustomEvent(CustomEventType.Closed);
   }
 
   public show() {
     this.open = true;
-    this.fireCustomEvent('open');
+    this.fireCustomEvent(CustomEventType.Opened);
   }
 
   protected getModalWidth(): string {

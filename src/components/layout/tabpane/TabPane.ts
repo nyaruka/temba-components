@@ -1,8 +1,8 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
+import { CustomEventType } from '../../../shared/interfaces';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { getClasses } from '../../../shared/utils/index';
 import { Tab } from './Tab';
 
 export class TabPane extends RapidElement {

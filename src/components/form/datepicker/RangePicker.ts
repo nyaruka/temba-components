@@ -1,9 +1,9 @@
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from '../../../components/base/RapidElement';
 import { DateTime } from 'luxon';
 import { html, css } from 'lit';
 import { DatePicker } from './DatePicker';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType } from '../../../shared/interfaces';
 
 export class RangePicker extends RapidElement {
   static styles = css`

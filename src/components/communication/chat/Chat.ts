@@ -1,10 +1,10 @@
 import { TemplateResult, html, PropertyValueMap, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { RapidElement } from '../RapidElement';
-import { CustomEventType } from '../interfaces';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { CustomEventType } from '../../../shared/interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { hashCode } from '../utils';
-import { renderMarkdown } from '../markdown';
+import { hashCode } from '../../../shared/utils/index';
+import { renderMarkdown } from '../../../shared/markdown';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 0.05;

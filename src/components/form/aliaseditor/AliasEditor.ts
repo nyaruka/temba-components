@@ -1,12 +1,12 @@
 import { css, html, LitElement, TemplateResult } from 'lit';
-import { FeatureProperties } from '../interfaces';
-import { getUrl, postJSON, WebResponse } from '../utils';
-import { TextInput } from '../textinput/TextInput';
+import { FeatureProperties } from '../../../shared/interfaces';
+import { getUrl, postJSON, WebResponse } from '../../../shared/utils/index';
+import { TextInput } from '../../form/textinput/TextInput';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { Icon } from '../vectoricon';
+import { Icon } from '../../../shared/vectoricon';
 
 import { property } from 'lit/decorators.js';
-import { Select } from '../select/Select';
+import { Select } from '../../form/select/Select';
 
 export class AliasEditor extends LitElement {
   static get styles() {

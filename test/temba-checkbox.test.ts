@@ -1,5 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { Checkbox } from '../src/checkbox/Checkbox';
+import { Checkbox } from '../src/components/checkbox/Checkbox';
 import { assertScreenshot, getClip } from './utils.test';
 
 describe('temba-checkbox', () => {

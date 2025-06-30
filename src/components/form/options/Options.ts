@@ -1,9 +1,9 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { RapidElement, EventHandler } from '../RapidElement';
+import { CustomEventType } from '../../../shared/interfaces';
+import { RapidElement, EventHandler } from '../../../components/base/RapidElement';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { getClasses, getScrollParent, throttle } from '../utils';
+import { getClasses, getScrollParent, throttle } from '../../../shared/utils/index';
 import { msg } from '@lit/localize';
 
 export class Options extends RapidElement {

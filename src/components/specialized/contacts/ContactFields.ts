@@ -1,10 +1,10 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { getClasses, postJSON } from '../utils';
+import { getClasses, postJSON } from '../../../shared/utils/index';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Checkbox } from '../checkbox/Checkbox';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType } from '../../../shared/interfaces';
 
 const MIN_FOR_FILTER = 10;
 

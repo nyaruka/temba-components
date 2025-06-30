@@ -1,8 +1,8 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { getClasses } from '../../../shared/utils/index';
 import { getCenter, getMiddle } from './helpers';
 
 export class Tip extends RapidElement {

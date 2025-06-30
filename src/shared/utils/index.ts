@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
-import { Button } from '../button/Button';
-import { Dialog } from '../dialog/Dialog';
+import { Button } from '../../components/interaction/button/Button';
+import { Dialog } from '../../components/interaction/dialog/Dialog';
 import {
   Attachment,
   ContactField,
   Shortcut,
   Ticket,
   User
-} from '../interfaces';
+} from '../../shared/interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from '../toast/Toast';
 

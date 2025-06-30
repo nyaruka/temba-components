@@ -7,9 +7,9 @@ import {
   CompletionResult,
   CompletionSchema,
   CompletionType
-} from '../interfaces';
-import { getStore, Store } from '../store/Store';
-import { renderMarkdown } from '../markdown';
+} from '../../../shared/interfaces';
+import { getStore, Store } from '../../../shared/store/Store';
+import { renderMarkdown } from '../../../shared/markdown';
 
 const messageParser = new ExcellentParser('@', [
   'contact',

@@ -1,5 +1,5 @@
 import { assert, fixture } from '@open-wc/testing';
-import { Store } from '../src/store/Store';
+import { Store } from '../src/components/store/Store';
 import './utils.test';
 
 const createStore = async (def: string): Promise<Store> => {

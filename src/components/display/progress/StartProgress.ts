@@ -1,7 +1,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from '../../../components/base/RapidElement';
 import { property } from 'lit/decorators.js';
-import { fetchResults, showModax } from '../utils';
+import { fetchResults, showModax } from '../../../shared/utils/index';
 
 export class StartProgress extends RapidElement {
   static styles = css`

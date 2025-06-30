@@ -1,10 +1,10 @@
-import { RapidElement } from '../RapidElement';
+import { RapidElement } from '../../../components/base/RapidElement';
 import { property, state } from 'lit/decorators.js';
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 
-import { Select, SelectOption } from '../select/Select';
-import { darkenColor, getClasses } from '../utils';
-import { getStore } from '../store/Store';
+import { Select, SelectOption } from '../../form/select/Select';
+import { darkenColor, getClasses } from '../../../shared/utils/index';
+import { getStore } from '../../../shared/store/Store';
 
 // eslint-disable-next-line import/no-named-as-default
 import Chart, { ChartType } from 'chart.js/auto';

@@ -1,7 +1,7 @@
 import { css, CSSResultArray, html, TemplateResult } from 'lit';
 import { Select, SelectOption } from './Select';
 import { property } from 'lit/decorators.js';
-import { getScrollParent } from '../utils';
+import { getScrollParent } from '../../../shared/utils/index';
 
 export interface WorkspaceOption extends SelectOption {
   name: string;

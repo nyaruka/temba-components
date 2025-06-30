@@ -1,8 +1,8 @@
 import { fixture, expect, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
-import { Button } from '../src/button/Button';
-import { Modax } from '../src/dialog/Modax';
-import { CustomEventType } from '../src/interfaces';
+import { Button } from '../src/components/button/Button';
+import { Modax } from '../src/components/dialog/Modax';
+import { CustomEventType } from '../src/components/interfaces';
 import { assertScreenshot, getClip, mockPOST } from './utils.test';
 
 let clock: any;

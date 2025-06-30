@@ -9,12 +9,12 @@ interface Clip {
 
 import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
-import { Store } from '../src/store/Store';
+import { Store } from '../src/components/store/Store';
 import { replace, stub } from 'sinon';
-import { Select, SelectOption } from '../src/select/Select';
-import { Options } from '../src/options/Options';
-import { Attachment } from '../src/interfaces';
-import { Compose } from '../src/compose/Compose';
+import { Select, SelectOption } from '../src/components/select/Select';
+import { Options } from '../src/components/options/Options';
+import { Attachment } from '../src/components/interfaces';
+import { Compose } from '../src/components/compose/Compose';
 
 export interface CodeMock {
   endpoint: RegExp;

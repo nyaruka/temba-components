@@ -1,5 +1,5 @@
 import { useFakeTimers, stub, SinonStub } from 'sinon';
-import { WebChat } from '../src/webchat/WebChat';
+import { WebChat } from '../src/components/webchat/WebChat';
 import {
   assertScreenshot,
   getClip,

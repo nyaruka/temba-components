@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { getCookie, setCookie } from '../utils';
+import { getCookie, setCookie } from '../../../shared/utils/index';
 import { DEFAULT_AVATAR } from './assets';
 import { Chat, ChatEvent, Message, MessageType } from '../chat/Chat';
 

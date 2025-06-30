@@ -1,8 +1,8 @@
 import { PropertyValueMap, css, html } from 'lit';
-import { getClasses } from '../utils';
+import { getClasses } from '../../../shared/utils/index';
 import { property } from 'lit/decorators.js';
-import { CustomEventType } from '../interfaces';
-import { ResizeElement } from '../ResizeElement';
+import { CustomEventType } from '../../../shared/interfaces';
+import { ResizeElement } from '../../../components/base/ResizeElement';
 
 export class Resizer extends ResizeElement {
   static styles = css`

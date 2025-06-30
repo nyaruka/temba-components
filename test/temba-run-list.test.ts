@@ -1,8 +1,8 @@
 import { assert, expect } from '@open-wc/testing';
 import * as sinon from 'sinon';
 import { useFakeTimers } from 'sinon';
-import { CustomEventType } from '../src/interfaces';
-import { RunList } from '../src/list/RunList';
+import { CustomEventType } from '../src/components/interfaces';
+import { RunList } from '../src/components/list/RunList';
 import {
   assertScreenshot,
   getClip,

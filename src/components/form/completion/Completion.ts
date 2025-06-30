@@ -1,15 +1,15 @@
 import { TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
-import { TextInput } from '../textinput/TextInput';
+import { TextInput } from '../../form/textinput/TextInput';
 import {
   renderCompletionOption,
   updateInputElementWithCompletion,
   executeCompletionQuery
 } from './helpers';
 
-import { FormElement } from '../FormElement';
-import { CompletionOption, Position } from '../interfaces';
+import { FormElement } from '../../../components/base/FormElement';
+import { CompletionOption, Position } from '../../../shared/interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { msg } from '@lit/localize';
 

@@ -2,9 +2,9 @@ import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
-import { RapidElement } from '../RapidElement';
-import { getUrl, serialize, postUrl, WebResponse, getClasses } from '../utils';
-import { CustomEventType } from '../interfaces';
+import { RapidElement } from '../../../components/base/RapidElement';
+import { getUrl, serialize, postUrl, WebResponse, getClasses } from '../../../shared/utils/index';
+import { CustomEventType } from '../../../shared/interfaces';
 import { ButtonType, Dialog, DialogButton } from './Dialog';
 
 export class Modax extends RapidElement {
