@@ -1,7 +1,7 @@
 import { useFakeTimers } from 'sinon';
-import { Compose } from '../src/components/compose/Compose';
-import { ContactChat } from '../src/components/contacts/ContactChat';
-import { Attachment, CustomEventType } from '../src/components/interfaces';
+import { Compose } from '../src/components/communication/compose/Compose';
+import { ContactChat } from '../src/components/specialized/contacts/ContactChat';
+import { Attachment, CustomEventType } from '../src/shared/interfaces';
 import {
   assertScreenshot,
   clearMockPosts,

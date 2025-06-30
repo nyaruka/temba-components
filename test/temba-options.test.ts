@@ -1,5 +1,5 @@
 import { fixture } from '@open-wc/testing';
-import { Options } from '../src/components/options/Options';
+import { Options } from '../src/components/form/options/Options';
 import { assertScreenshot, getClip, getHTML } from './utils.test';
 
 const colors = [

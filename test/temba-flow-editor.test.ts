@@ -1,6 +1,6 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { Editor } from '../src/components/flow/Editor';
-import { Plumber } from '../src/components/flow/Plumber';
+import { Editor } from '../src/components/specialized/flow/Editor';
+import { Plumber } from '../src/components/specialized/flow/Plumber';
 import { stub, restore } from 'sinon';
 
 // Register the component

@@ -1,6 +1,6 @@
-import { Chat } from './src/chat/Chat';
-import { VectorIcon } from './src/vectoricon/VectorIcon';
-import { WebChat } from './src/webchat/WebChat';
+import { Chat } from './src/components/communication/chat/Chat';
+import { VectorIcon } from './src/shared/vectoricon/VectorIcon';
+import { WebChat } from './src/components/communication/webchat/WebChat';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {

@@ -1,9 +1,9 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { FlowDefinition, FlowPosition } from '../store/flow-definition';
+import { FlowDefinition, FlowPosition } from '../../../shared/store/flow-definition';
 import { getStore } from '../../../shared/store/Store';
-import { AppState, fromStore, zustand } from '../store/AppState';
+import { AppState, fromStore, zustand } from '../../../shared/store/AppState';
 import { RapidElement } from '../../../components/base/RapidElement';
 
 import { Plumber } from './Plumber';

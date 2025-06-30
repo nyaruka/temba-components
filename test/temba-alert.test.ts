@@ -1,5 +1,5 @@
 import { fixture, assert } from '@open-wc/testing';
-import { Alert } from '../src/components/alert/Alert';
+import { Alert } from '../src/components/display/alert/Alert';
 
 import { assertScreenshot, getClip } from './utils.test';
 

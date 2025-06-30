@@ -1,15 +1,15 @@
 import '../temba-modules';
 import { html, fixture, expect } from '@open-wc/testing';
-import { EditorNode } from '../src/components/flow/EditorNode';
+import { EditorNode } from '../src/components/specialized/flow/EditorNode';
 import {
   Node,
   NodeUI,
   Action,
   Exit,
   Router
-} from '../src/components/store/flow-definition.d';
+} from '../src/shared/store/flow-definition.d';
 import { stub, restore } from 'sinon';
-import { CustomEventType } from '../src/components/interfaces';
+import { CustomEventType } from '../src/shared/interfaces';
 
 describe('EditorNode', () => {
   let editorNode: EditorNode;

@@ -1,5 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { Plumber, SOURCE_DEFAULTS, TARGET_DEFAULTS } from '../src/components/flow/Plumber';
+import { Plumber, SOURCE_DEFAULTS, TARGET_DEFAULTS } from '../src/components/specialized/flow/Plumber';
 import { stub, restore } from 'sinon';
 
 describe('Plumber', () => {

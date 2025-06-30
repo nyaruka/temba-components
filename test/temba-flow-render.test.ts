@@ -5,7 +5,7 @@ import {
   renderSetRunResult,
   renderCallWebhook,
   renderAddToGroups
-} from '../src/components/flow/render';
+} from '../src/components/specialized/flow/render';
 import {
   Node,
   SendMsg,
@@ -13,7 +13,7 @@ import {
   SetRunResult,
   CallWebhook,
   AddToGroup
-} from '../src/components/store/flow-definition.d';
+} from '../src/shared/store/flow-definition.d';
 
 describe('Flow Render Functions', () => {
   const mockNode: Node = {

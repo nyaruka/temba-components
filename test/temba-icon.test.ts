@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { VectorIcon } from '../src/components/vectoricon/VectorIcon';
+import { VectorIcon } from '../src/shared/vectoricon/VectorIcon';
 import { getComponent } from './utils.test';
 
 const TAG = 'temba-icon';

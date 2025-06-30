@@ -1,9 +1,9 @@
 import { fixture, assert, expect } from '@open-wc/testing';
-import { ContactSearch } from '../src/components/contactsearch/ContactSearch';
+import { ContactSearch } from '../src/components/specialized/contactsearch/ContactSearch';
 import { assertScreenshot, getClip, getHTML, mockPOST } from './utils.test';
 import { useFakeTimers } from 'sinon';
-import { CustomEventType } from '../src/components/interfaces';
-import { Omnibox } from '../src/components/omnibox/Omnibox';
+import { CustomEventType } from '../src/shared/interfaces';
+import { Omnibox } from '../src/components/form/omnibox/Omnibox';
 
 let clock: any;
 

@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Checkbox } from '../checkbox/Checkbox';
+import { Checkbox } from '../../form/checkbox/Checkbox';
 import { Select } from '../../form/select/Select';
 import { capitalize } from '../../../shared/utils/index';
 import { Icon } from '../../../shared/vectoricon';

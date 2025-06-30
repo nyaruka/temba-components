@@ -1,5 +1,5 @@
 import { fixture, assert } from '@open-wc/testing';
-import { Omnibox } from '../src/components/omnibox/Omnibox';
+import { Omnibox } from '../src/components/form/omnibox/Omnibox';
 import { assertScreenshot, getClip, openAndClick } from './utils.test';
 import { useFakeTimers, spy } from 'sinon';
 

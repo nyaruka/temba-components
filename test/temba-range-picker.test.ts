@@ -1,5 +1,5 @@
 import { fixture, expect, assert } from '@open-wc/testing';
-import { RangePicker } from '../src/components/datepicker/RangePicker';
+import { RangePicker } from '../src/components/form/datepicker/RangePicker';
 import { assertScreenshot, getAttributes, getClip } from './utils.test';
 import { DateTime } from 'luxon';
 

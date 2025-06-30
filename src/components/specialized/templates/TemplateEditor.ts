@@ -2,7 +2,7 @@ import { property } from 'lit/decorators.js';
 import { FormElement } from '../../../components/base/FormElement';
 import { TemplateResult, html, css, LitElement } from 'lit';
 import { CustomEventType } from '../../../shared/interfaces';
-import { MediaPicker } from '../mediapicker/MediaPicker';
+import { MediaPicker } from '../../form/mediapicker/MediaPicker';
 import { getClasses } from '../../../shared/utils/index';
 
 interface Component {

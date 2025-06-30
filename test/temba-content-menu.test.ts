@@ -1,6 +1,6 @@
 import { assert, expect } from '@open-wc/testing';
-import { CustomEventType } from '../src/components/interfaces';
-import { ContentMenu } from '../src/components/list/ContentMenu';
+import { CustomEventType } from '../src/shared/interfaces';
+import { ContentMenu } from '../src/components/specialized/list/ContentMenu';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-content-menu';

@@ -49,7 +49,7 @@ import {
   DEFAULT_MEDIA_ENDPOINT,
   Color,
   COOKIE_KEYS
-} from '../src/components/utils/index';
+} from '../src/shared/utils/index';
 import { mockGET, mockPOST, clearMockPosts } from './utils.test';
 
 describe('utils/index', () => {

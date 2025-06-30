@@ -4,7 +4,7 @@ import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../../../shared/interfaces';
 import { debounce, fetchResults, getClasses, renderAvatar } from '../../../shared/utils/index';
 import { Icon } from '../../../shared/vectoricon';
-import { Dropdown } from '../dropdown/Dropdown';
+import { Dropdown } from '../../interaction/dropdown/Dropdown';
 import { NotificationList } from './NotificationList';
 import { ResizeElement } from '../../../components/base/ResizeElement';
 import { Store } from '../../../shared/store/Store';

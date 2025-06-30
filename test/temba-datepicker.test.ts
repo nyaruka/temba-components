@@ -1,5 +1,5 @@
 import { fixture, expect, assert } from '@open-wc/testing';
-import { DatePicker } from '../src/components/datepicker/DatePicker';
+import { DatePicker } from '../src/components/form/datepicker/DatePicker';
 import { assertScreenshot, getAttributes, getClip } from './utils.test';
 
 export const getPickerHTML = (attrs: any = {}) => {

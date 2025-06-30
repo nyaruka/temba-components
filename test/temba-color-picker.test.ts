@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { ColorPicker } from '../src/components/colorpicker/ColorPicker';
+import { ColorPicker } from '../src/components/form/colorpicker/ColorPicker';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-color-picker';

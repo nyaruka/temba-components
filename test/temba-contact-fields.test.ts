@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { ContactFields } from '../src/components/contacts/ContactFields';
+import { ContactFields } from '../src/components/specialized/contacts/ContactFields';
 import { delay, getComponent, loadStore, mockPOST } from './utils.test';
 
 const TAG = 'temba-contact-fields';

@@ -27,7 +27,7 @@ import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
 import { StoreMonitorElement } from './StoreMonitorElement';
-import { getFullName } from '../user/TembaUser';
+import { getFullName } from '../../components/specialized/user/TembaUser';
 import { AppState, zustand } from './AppState';
 import { StoreApi } from 'zustand/vanilla';
 

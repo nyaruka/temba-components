@@ -10,7 +10,7 @@ import {
   User
 } from '../../shared/interfaces';
 import ColorHash from 'color-hash';
-import { Toast } from '../toast/Toast';
+import { Toast } from '../../components/display/toast/Toast';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 

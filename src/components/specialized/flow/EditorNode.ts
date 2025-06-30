@@ -1,6 +1,6 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { EDITOR_CONFIG, UIConfig } from './config';
-import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
+import { Action, Exit, Node, NodeUI, Router } from '../../../shared/store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../../../components/base/RapidElement';
 import { getClasses } from '../../../shared/utils/index';

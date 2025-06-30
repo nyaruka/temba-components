@@ -1,6 +1,6 @@
 import { assert, expect, fixture } from '@open-wc/testing';
 import * as sinon from 'sinon';
-import { Dialog } from '../src/components/dialog/Dialog';
+import { Dialog } from '../src/components/interaction/dialog/Dialog';
 import { assertScreenshot, getClip } from './utils.test';
 
 const getDialogClip = (dialog: Dialog) => {

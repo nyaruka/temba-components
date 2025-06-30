@@ -9,7 +9,7 @@ import {
   postJSON
 } from '../../../shared/utils/index';
 import '../options/Options';
-import '../list/SortableList';
+import '../../specialized/list/SortableList';
 import { EventHandler } from '../../../components/base/RapidElement';
 import { FormElement } from '../../../components/base/FormElement';
 

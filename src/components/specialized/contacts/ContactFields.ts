@@ -3,7 +3,7 @@ import { property } from 'lit/decorators.js';
 import { getClasses, postJSON } from '../../../shared/utils/index';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement } from './ContactStoreElement';
-import { Checkbox } from '../checkbox/Checkbox';
+import { Checkbox } from '../../form/checkbox/Checkbox';
 import { CustomEventType } from '../../../shared/interfaces';
 
 const MIN_FOR_FILTER = 10;

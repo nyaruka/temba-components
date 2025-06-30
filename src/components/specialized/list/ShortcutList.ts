@@ -1,8 +1,8 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Shortcut } from '../../../shared/interfaces';
-import { StoreMonitorElement } from '../store/StoreMonitorElement';
-import { Options } from '../options/Options';
+import { StoreMonitorElement } from '../../../shared/store/StoreMonitorElement';
+import { Options } from '../../form/options/Options';
 
 export class ShortcutList extends StoreMonitorElement {
   static get styles() {

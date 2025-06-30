@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { zustand } from '../src/components/store/AppState';
+import { zustand } from '../src/shared/store/AppState';
 
 describe('AppState Language Reset', () => {
   beforeEach(() => {

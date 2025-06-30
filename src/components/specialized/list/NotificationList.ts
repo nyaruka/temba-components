@@ -1,6 +1,6 @@
 import { css, html, TemplateResult } from 'lit';
 import { TembaList } from './TembaList';
-import { Options } from '../options/Options';
+import { Options } from '../../form/options/Options';
 import { Icon } from '../../../shared/vectoricon';
 
 interface Notification {

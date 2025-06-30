@@ -1,5 +1,5 @@
 import { expect, fixture } from '@open-wc/testing';
-import { FieldManager } from '../src/components/fields/FieldManager';
+import { FieldManager } from '../src/components/form/fields/FieldManager';
 import { TextInput } from '../src/components/form/textinput/TextInput';
 import {
   assertScreenshot,
