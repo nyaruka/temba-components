@@ -1,5 +1,5 @@
 import { RapidElement } from './RapidElement';
-import { throttle } from './utils';
+import { throttle } from '../../shared/utils/index';
 
 export class ResizeElement extends RapidElement {
   public handleResize() {
