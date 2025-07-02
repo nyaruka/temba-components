@@ -10,7 +10,6 @@ import {
 import { expect, assert } from '@open-wc/testing';
 
 let clock: any;
-mockNow('2021-03-31T00:31:00.000-00:00');
 
 const TAG = 'temba-webchat';
 
@@ -85,8 +84,11 @@ describe('temba-webchat', () => {
   let mockWebSocket: MockWebSocket;
   let webSocketStub: SinonStub;
   let cookieStub: SinonStub;
+  let mockedNow: SinonStub;
 
   beforeEach(() => {
+    mockedNow = mockNow('2021-03-31T00:31:00.000-00:00');
+
     // Mock WebSocket
     originalWebSocket = window.WebSocket;
     webSocketStub = stub(window, 'WebSocket').callsFake((url: string) => {
@@ -105,6 +107,7 @@ describe('temba-webchat', () => {
     clock.restore();
     webSocketStub.restore();
     cookieStub.restore();
+    mockedNow.restore();
     window.WebSocket = originalWebSocket;
   });
 

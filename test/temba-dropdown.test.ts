@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { Dropdown } from '../src/dropdown/Dropdown';
+import { Dropdown } from '../src/display/Dropdown';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-dropdown';

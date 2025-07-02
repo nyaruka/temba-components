@@ -1,5 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { TembaDate } from '../src/date/TembaDate';
+import { TembaDate } from '../src/display/TembaDate';
 import {
   assertScreenshot,
   getClip,
@@ -7,6 +7,7 @@ import {
   loadStore,
   mockNow
 } from './utils.test';
+import { SinonStub } from 'sinon';
 
 const TAG = 'temba-date';
 
@@ -15,11 +16,15 @@ export const getDate = async (attrs: any = {}) => {
   return (await getComponent(TAG, attrs)) as TembaDate;
 };
 
-mockNow('2022-12-02T21:00:00.000000');
-
 describe('temba-date', () => {
+  let mockedNow: SinonStub;
   beforeEach(() => {
+    mockedNow = mockNow('2022-12-02T21:00:00.000000');
     loadStore();
+  });
+
+  afterEach(() => {
+    mockedNow.restore();
   });
 
   it('renders default', async () => {

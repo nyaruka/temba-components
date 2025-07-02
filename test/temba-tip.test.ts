@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { Tip } from '../src/tip/Tip';
+import { Tip } from '../src/display/Tip';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 const TAG = 'temba-tip';

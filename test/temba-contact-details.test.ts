@@ -1,5 +1,5 @@
 import { assert, waitUntil } from '@open-wc/testing';
-import { ContactDetails } from '../src/contacts/ContactDetails';
+import { ContactDetails } from '../src/live/ContactDetails';
 import { getComponent, loadStore, mockGET } from './utils.test';
 
 const TAG = 'temba-contact-details';

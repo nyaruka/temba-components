@@ -1,5 +1,5 @@
 import { assert, expect } from '@open-wc/testing';
-import { Compose } from '../src/compose/Compose';
+import { Compose } from '../src/form/Compose';
 import {
   assertScreenshot,
   getClip,

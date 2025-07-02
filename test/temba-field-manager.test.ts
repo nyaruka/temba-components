@@ -1,6 +1,6 @@
 import { expect, fixture } from '@open-wc/testing';
-import { FieldManager } from '../src/fields/FieldManager';
-import { TextInput } from '../src/textinput/TextInput';
+import { FieldManager } from '../src/live/FieldManager';
+import { TextInput } from '../src/form/TextInput';
 import {
   assertScreenshot,
   getAttributes,

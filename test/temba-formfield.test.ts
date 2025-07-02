@@ -1,5 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { FormField } from '../src/formfield/FormField';
+import { FormField } from '../src/form/FormField';
 import { assertScreenshot, getClip } from './utils.test';
 
 describe('temba-field', () => {

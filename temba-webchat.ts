@@ -1,5 +1,5 @@
-import { Chat } from './src/chat/Chat';
-import { VectorIcon } from './src/vectoricon/VectorIcon';
+import { Chat } from './src/display/Chat';
+import { VectorIcon } from './src/display/Icon';
 import { WebChat } from './src/webchat/WebChat';
 
 export function addCustomElement(name: string, comp: any) {

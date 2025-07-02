@@ -1,9 +1,9 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Checkbox } from '../checkbox/Checkbox';
-import { Select } from '../select/Select';
+import { Checkbox } from '../form/Checkbox';
+import { Select } from '../form/select/Select';
 import { capitalize } from '../utils';
-import { Icon } from '../vectoricon';
+import { Icon } from '../Icons';
 import { TembaList } from './TembaList';
 
 const FLOW_COLOR = 'rgb(223, 65, 159)';

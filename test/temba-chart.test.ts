@@ -3,7 +3,7 @@ import {
   RapidChartData,
   TembaChart,
   formatDurationFromSeconds
-} from '../src/chart/TembaChart';
+} from '../src/live/TembaChart';
 import { getComponent } from './utils.test';
 
 const sampleData: RapidChartData = {

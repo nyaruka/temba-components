@@ -90,11 +90,9 @@ function modifyFileContent(filePath, regexPattern, groupNumber, replacement) {
 }
 
 async function main() {
-  // const OUTPUT_FILE_NAME = cwd + "/static/svg/index.svg";
-  //const USAGE_FILE = './src/vectoricon/index.ts';
 
   const OUTPUT_FILE_NAME = argv.output || cwd + '/static/svg/index.svg';
-  const USAGE_FILE = argv.usage || './src/vectoricon/index.ts';
+  const USAGE_FILE = argv.usage || './src/Icons.ts';
 
   let packs = sh.ls(PACK_DIR);
   packs.sort();

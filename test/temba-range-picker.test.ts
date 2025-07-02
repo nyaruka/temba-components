@@ -1,7 +1,13 @@
 import { fixture, expect, assert } from '@open-wc/testing';
-import { RangePicker } from '../src/datepicker/RangePicker';
-import { assertScreenshot, getAttributes, getClip } from './utils.test';
+import { RangePicker } from '../src/form/RangePicker';
+import {
+  assertScreenshot,
+  getAttributes,
+  getClip,
+  mockNow
+} from './utils.test';
 import { DateTime } from 'luxon';
+import { SinonStub } from 'sinon';
 
 export const getRangePickerHTML = (attrs: any = {}) => {
   return `<temba-range-picker ${getAttributes(attrs)}></temba-range-picker>`;
@@ -16,6 +22,15 @@ export const createRangePicker = async (def: string) => {
 };
 
 describe('temba-range-picker', () => {
+  let mockedNow: SinonStub;
+  beforeEach(() => {
+    mockedNow = mockNow('2022-12-02T21:00:00.000000');
+  });
+
+  afterEach(() => {
+    mockedNow.restore();
+  });
+
   it('can create a range picker', async () => {
     const picker: RangePicker = await createRangePicker(getRangePickerHTML());
     assert.instanceOf(picker, RangePicker);

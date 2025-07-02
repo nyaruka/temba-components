@@ -1,6 +1,6 @@
-import { useFakeTimers } from 'sinon';
-import { Compose } from '../src/compose/Compose';
-import { ContactChat } from '../src/contacts/ContactChat';
+import { SinonStub, useFakeTimers } from 'sinon';
+import { Compose } from '../src/form/Compose';
+import { ContactChat } from '../src/live/ContactChat';
 import { Attachment, CustomEventType } from '../src/interfaces';
 import {
   assertScreenshot,
@@ -20,7 +20,6 @@ import {
 import { expect, oneEvent } from '@open-wc/testing';
 
 let clock: any;
-mockNow('2021-03-31T00:31:00.000-00:00');
 
 const TAG = 'temba-contact-chat';
 const getContactChat = async (attrs: any = {}) => {
@@ -49,9 +48,11 @@ const getResponseSuccessFiles = (attachments: Attachment[]) => {
 };
 
 describe('temba-contact-chat', () => {
+  let mockedNow: SinonStub;
   // map requests for contact history to our static files
   // we'll just us the same historylist for everybody for now
   beforeEach(() => {
+    mockedNow = mockNow('2021-03-31T00:31:00.000-00:00');
     clearMockPosts();
     mockGET(
       /\/contact\/history\/contact-.*/,
@@ -69,6 +70,7 @@ describe('temba-contact-chat', () => {
 
   afterEach(function () {
     clock.restore();
+    mockedNow.restore();
   });
 
   it('show history and show chatbox if contact is active', async () => {

@@ -1,5 +1,5 @@
 import { fixture, assert } from '@open-wc/testing';
-import { Completion } from '../src/completion/Completion';
+import { Completion } from '../src/form/Completion';
 import './utils.test';
 
 export const getHTML = () => {
