@@ -1,5 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import { TemplateEditor } from '../src/templates/TemplateEditor';
+import { TemplateEditor } from '../src/form/TemplateEditor';
 import { TemplateResult } from 'lit';
 import { assertScreenshot, getClip } from './utils.test';
 

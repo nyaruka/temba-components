@@ -10,11 +10,11 @@ interface Clip {
 import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
-import { replace, stub } from 'sinon';
-import { Select, SelectOption } from '../src/select/Select';
-import { Options } from '../src/options/Options';
+import { stub } from 'sinon';
+import { Select, SelectOption } from '../src/form/select/Select';
+import { Options } from '../src/display/Options';
 import { Attachment } from '../src/interfaces';
-import { Compose } from '../src/compose/Compose';
+import { Compose } from '../src/form/Compose';
 
 export interface CodeMock {
   endpoint: RegExp;
@@ -297,11 +297,7 @@ export const loadStore = async () => {
 };
 
 export const mockNow = (isodate: string) => {
-  const now = DateTime.fromISO(isodate);
-  // mock the current time
-  replace(DateTime, 'now', () => {
-    return now;
-  });
+  return stub(DateTime, 'now').returns(DateTime.fromISO(isodate));
 };
 
 export const getOptions = (select: Select<SelectOption>): Options => {

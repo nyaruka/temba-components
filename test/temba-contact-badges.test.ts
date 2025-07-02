@@ -1,5 +1,5 @@
 import { assert } from '@open-wc/testing';
-import { ContactBadges } from '../src/contacts/ContactBadges';
+import { ContactBadges } from '../src/live/ContactBadges';
 import {
   assertScreenshot,
   delay,

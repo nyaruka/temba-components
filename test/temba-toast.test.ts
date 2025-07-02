@@ -1,5 +1,5 @@
 import { fixture, assert, expect } from '@open-wc/testing';
-import { Toast } from '../src/toast/Toast';
+import { Toast } from '../src/display/Toast';
 
 // Register the component if it's not already registered
 if (!customElements.get('temba-toast')) {

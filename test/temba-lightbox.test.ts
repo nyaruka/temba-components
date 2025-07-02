@@ -1,5 +1,5 @@
 import { fixture, assert } from '@open-wc/testing';
-import { Lightbox } from '../src/lightbox/Lightbox';
+import { Lightbox } from '../src/display/Lightbox';
 import { assertScreenshot } from './utils.test';
 
 export const getHTML = () => {
