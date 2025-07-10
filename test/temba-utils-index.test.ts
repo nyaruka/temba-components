@@ -46,6 +46,11 @@ import {
   getAssetPage,
   getAssets,
   getDialog,
+  extractInitials,
+  darkenColor,
+  sanitizeUnintendedUnicode,
+  getCenter,
+  getMiddle,
   DEFAULT_MEDIA_ENDPOINT,
   Color,
   COOKIE_KEYS
@@ -1541,7 +1546,192 @@ describe('utils/index', () => {
       it('returns empty array for empty URL', async () => {
         const assets = await getAssets('');
         expect(assets).to.deep.equal([]);
-      });
+    });
+  });
+
+  describe('extractInitials', () => {
+    it('extracts initials from full name', () => {
+      expect(extractInitials('John Doe')).to.equal('JD');
+    });
+
+    it('extracts initials from single word', () => {
+      expect(extractInitials('Alice')).to.equal('AL');
+    });
+
+    it('returns question mark for empty string', () => {
+      expect(extractInitials('')).to.equal('?');
+    });
+
+    it('returns question mark for whitespace only', () => {
+      expect(extractInitials('   ')).to.equal('?');
+    });
+
+    it('handles special characters', () => {
+      expect(extractInitials('José María')).to.equal('JM');
+    });
+
+    it('handles hyphenated names', () => {
+      expect(extractInitials('Mary-Jane Smith')).to.equal('MS');
+    });
+
+    it('handles three words', () => {
+      expect(extractInitials('John Michael Doe')).to.equal('JM');
+    });
+
+    it('prefers capital letters', () => {
+      expect(extractInitials('john McDonnell')).to.equal('JM');
+    });
+
+    it('handles single character', () => {
+      expect(extractInitials('J')).to.equal('J');
+    });
+
+    it('handles numbers and letters', () => {
+      expect(extractInitials('User123 Test456')).to.equal('UT');
+    });
+
+    it('handles Unicode characters', () => {
+      expect(extractInitials('张三 李四')).to.equal('张李');
+    });
+
+    it('handles symbols and punctuation', () => {
+      expect(extractInitials('@@@ ### $$$')).to.equal('?');
+    });
+  });
+
+  describe('darkenColor', () => {
+    it('darkens RGB color', () => {
+      const result = darkenColor('rgb(255,255,255)', 0.2);
+      expect(result).to.equal('rgb(204,204,204)');
+    });
+
+    it('darkens RGBA color', () => {
+      const result = darkenColor('rgba(255,255,255,0.8)', 0.2);
+      expect(result).to.equal('rgba(204,204,204,0.8)');
+    });
+
+    it('darkens hex color', () => {
+      const result = darkenColor('#ffffff', 0.2);
+      expect(result).to.equal('rgb(204,204,204)');
+    });
+
+    it('darkens short hex color', () => {
+      const result = darkenColor('#fff', 0.2);
+      expect(result).to.equal('rgb(204,204,204)');
+    });
+
+    it('handles invalid color format', () => {
+      const result = darkenColor('invalid-color', 0.2);
+      expect(result).to.equal('invalid-color');
+    });
+
+    it('handles zero factor', () => {
+      const result = darkenColor('rgb(255,255,255)', 0);
+      expect(result).to.equal('rgb(255,255,255)');
+    });
+
+    it('handles factor of 1', () => {
+      const result = darkenColor('rgb(255,255,255)', 1);
+      expect(result).to.equal('rgb(0,0,0)');
+    });
+
+    it('prevents negative values', () => {
+      const result = darkenColor('rgb(100,100,100)', 0.9);
+      expect(result).to.equal('rgb(10,10,10)');
+    });
+  });
+
+  describe('sanitizeUnintendedUnicode', () => {
+    it('replaces smart quotes with regular quotes', () => {
+      const result = sanitizeUnintendedUnicode('"Hello" and \u2018world\u2019');
+      expect(result).to.equal('"Hello" and \'world\'');
+    });
+
+    it('replaces em and en dashes with hyphens', () => {
+      const result = sanitizeUnintendedUnicode('2020\u20132021 and 2021\u20142022');
+      expect(result).to.equal('2020-2021 and 2021-2022');
+    });
+
+    it('replaces horizontal ellipsis', () => {
+      const result = sanitizeUnintendedUnicode('Wait\u2026');
+      expect(result).to.equal('Wait...');
+    });
+
+    it('replaces en space', () => {
+      const result = sanitizeUnintendedUnicode('Hello\u2002world');
+      expect(result).to.equal('Hello world');
+    });
+
+    it('handles null input', () => {
+      const result = sanitizeUnintendedUnicode(null);
+      expect(result).to.be.null;
+    });
+
+    it('handles undefined input', () => {
+      const result = sanitizeUnintendedUnicode(undefined);
+      expect(result).to.be.undefined;
+    });
+
+    it('handles empty string', () => {
+      const result = sanitizeUnintendedUnicode('');
+      expect(result).to.equal('');
+    });
+
+    it('handles mixed unicode characters', () => {
+      const result = sanitizeUnintendedUnicode('\u201CHello\u201D\u2014world\u2019s \u201Ctest\u201D\u2026');
+      expect(result).to.equal('"Hello"-world\'s "test"...');
+    });
+  });
+
+  describe('getCenter', () => {
+    it('calculates horizontal center position', () => {
+      const rectA = { left: 100, width: 200 } as DOMRect;
+      const rectB = { width: 50 } as DOMRect;
+      
+      const result = getCenter(rectA, rectB);
+      expect(result).to.equal(175); // 100 + 200/2 - 50/2 = 175
+    });
+
+    it('handles zero widths', () => {
+      const rectA = { left: 100, width: 0 } as DOMRect;
+      const rectB = { width: 0 } as DOMRect;
+      
+      const result = getCenter(rectA, rectB);
+      expect(result).to.equal(100);
+    });
+
+    it('handles negative positions', () => {
+      const rectA = { left: -50, width: 100 } as DOMRect;
+      const rectB = { width: 20 } as DOMRect;
+      
+      const result = getCenter(rectA, rectB);
+      expect(result).to.equal(-10); // -50 + 100/2 - 20/2 = -10
+    });
+  });
+
+  describe('getMiddle', () => {
+    it('calculates vertical middle position', () => {
+      const rectA = { top: 100, height: 200 } as DOMRect;
+      const rectB = { height: 50 } as DOMRect;
+      
+      const result = getMiddle(rectA, rectB);
+      expect(result).to.equal(175); // 100 + 200/2 - 50/2 = 175
+    });
+
+    it('handles zero heights', () => {
+      const rectA = { top: 100, height: 0 } as DOMRect;
+      const rectB = { height: 0 } as DOMRect;
+      
+      const result = getMiddle(rectA, rectB);
+      expect(result).to.equal(100);
+    });
+
+    it('handles negative positions', () => {
+      const rectA = { top: -50, height: 100 } as DOMRect;
+      const rectB = { height: 20 } as DOMRect;
+      
+      const result = getMiddle(rectA, rectB);
+      expect(result).to.equal(-10); // -50 + 100/2 - 20/2 = -10
     });
   });
 });

@@ -1,3 +1,7 @@
+# temba-components
+
+[![Coverage](./coverage/coverage-badge.svg)](./coverage/lcov-report/index.html)
+
 temba-components is a suite of ui widgets used by various RapidPro projects.
 
 Some of the components:

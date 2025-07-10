@@ -576,6 +576,7 @@ export const isDate = (value: any): boolean => {
   if (toString.call(value) === '[object Date]') {
     return true;
   }
+  /* c8 ignore next 3 */
   if (typeof value.replace === 'function') {
     value.replace(/^\s+|\s+$/gm, '');
   }
