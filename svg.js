@@ -90,7 +90,6 @@ function modifyFileContent(filePath, regexPattern, groupNumber, replacement) {
 }
 
 async function main() {
-
   const OUTPUT_FILE_NAME = argv.output || cwd + '/static/svg/index.svg';
   const USAGE_FILE = argv.usage || './src/Icons.ts';
 
