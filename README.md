@@ -1,3 +1,6 @@
+[![Build Status](https://github.com/nyaruka/temba-components/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/nyaruka/temba-components/actions?query=workflow%3Abuild)
+[![codecov](https://codecov.io/gh/nyaruka/temba-components/graph/badge.svg?token=8V1ZJS2M6Q)](https://codecov.io/gh/nyaruka/temba-components)
+
 temba-components is a suite of ui widgets used by various RapidPro projects.
 
 Some of the components:
