@@ -10,7 +10,7 @@
 /npm-debug.log
 
 ## testing
-/coverage/
+/coverage/lcov.info
 /screenshots/test
 
 ## temp folders

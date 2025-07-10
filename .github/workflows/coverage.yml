@@ -1,0 +1,57 @@
+name: 'Update Coverage Reports'
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: 'UTC'
+      
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - run: docker network create --driver bridge textit_default
+
+      - name: Build and run tests with coverage
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: yarn validate && ./generate-coverage-badge.sh
+          push: never
+          env: |
+            CI=true
+
+      - name: Commit Coverage Reports
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add coverage/ || true
+          if ! git diff --staged --quiet; then
+            git commit -m "Update coverage reports [skip ci]"
+            git push
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload coverage report to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: coverage/lcov-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
