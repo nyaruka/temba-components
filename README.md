@@ -2,6 +2,8 @@
 
 [![Coverage](./coverage/coverage-badge.svg)](./coverage/lcov-report/index.html)
 
+Coverage reports are automatically generated and deployed to [GitHub Pages](https://nyaruka.github.io/temba-components/) after each merge to main.
+
 temba-components is a suite of ui widgets used by various RapidPro projects.
 
 Some of the components:
