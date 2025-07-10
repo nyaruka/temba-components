@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   coverage:
@@ -34,24 +32,33 @@ jobs:
           env: |
             CI=true
 
-      - name: Commit Coverage Reports
+      - name: Deploy coverage to coverage branch
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add coverage/ || true
-          if ! git diff --staged --quiet; then
-            git commit -m "Update coverage reports [skip ci]"
-            git push
+          
+          # Create or checkout coverage branch
+          if git show-ref --verify --quiet refs/remotes/origin/coverage; then
+            git fetch origin coverage
+            git checkout coverage
+          else
+            git checkout --orphan coverage
+            git rm -rf . || true
           fi
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload coverage report to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: coverage/lcov-report
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          # Copy coverage files from main branch
+          git checkout main -- coverage/
+          
+          # Create .nojekyll for GitHub Pages and move coverage to root
+          touch .nojekyll
+          mv coverage/lcov-report/* .
+          rm -rf coverage/
+          
+          # Add all files
+          git add .
+          
+          # Commit if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Update coverage reports [skip ci] - $(date)"
+            git push origin coverage
+          fi
