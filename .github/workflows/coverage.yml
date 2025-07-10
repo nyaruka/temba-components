@@ -57,6 +57,17 @@ jobs:
           # Create .nojekyll for GitHub Pages
           touch .nojekyll
 
+          # Create .gitignore to exclude build byproducts from coverage branch
+          cat <<EOT > .gitignore
+# Ignore build artifacts and local byproducts in coverage branch
+dist/
+node_modules/
+out-tsc/
+screenshots/test/
+static/svg/work/
+# Add more patterns as needed
+EOT
+
           # Add all files
           git add .
 
