@@ -20,11 +20,11 @@ END {
 # Use bc for floating point comparison if available, otherwise use basic comparison
 if command -v bc >/dev/null 2>&1; then
     if (( $(echo "$COVERAGE >= 95" | bc -l) )); then
-        COLOR="brightgreen"
+        COLOR="limegreen"
     elif (( $(echo "$COVERAGE >= 80" | bc -l) )); then
-        COLOR="yellow"
-    elif (( $(echo "$COVERAGE >= 60" | bc -l) )); then
         COLOR="orange"
+    elif (( $(echo "$COVERAGE >= 60" | bc -l) )); then
+        COLOR="tomato"
     else
         COLOR="red"
     fi
@@ -32,11 +32,11 @@ else
     # Fallback without bc
     COVERAGE_INT=${COVERAGE%.*}
     if [ "$COVERAGE_INT" -ge 95 ]; then
-        COLOR="brightgreen"
+        COLOR="limegreen"
     elif [ "$COVERAGE_INT" -ge 80 ]; then
-        COLOR="yellow"
-    elif [ "$COVERAGE_INT" -ge 60 ]; then
         COLOR="orange"
+    elif [ "$COVERAGE_INT" -ge 60 ]; then
+        COLOR="tomato"
     else
         COLOR="red"
     fi
