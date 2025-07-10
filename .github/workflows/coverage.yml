@@ -15,7 +15,7 @@ jobs:
         uses: szenius/set-timezone@v2.0
         with:
           timezoneLinux: 'UTC'
-      
+
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
         with:
@@ -32,11 +32,16 @@ jobs:
           env: |
             CI=true
 
+      - name: Copy coverage to temp
+        run: |
+          mkdir -p /tmp/coverage-copy
+          cp -r coverage /tmp/coverage-copy/
+
       - name: Deploy coverage to coverage branch
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Create or checkout coverage branch
           if git show-ref --verify --quiet refs/remotes/origin/coverage; then
             git fetch origin coverage
@@ -46,17 +51,17 @@ jobs:
             git rm -rf . || true
           fi
 
-          # Copy coverage files from main branch
-          git checkout main -- coverage/
-          
+          # Copy coverage files from temp
+          cp -r /tmp/coverage-copy/coverage ./
+
           # Create .nojekyll for GitHub Pages and move coverage to root
           touch .nojekyll
           mv coverage/lcov-report/* .
           rm -rf coverage/
-          
+
           # Add all files
           git add .
-          
+
           # Commit if there are changes
           if ! git diff --staged --quiet; then
             git commit -m "Update coverage reports [skip ci] - $(date)"
