@@ -1,0 +1,575 @@
+import * as sinon from 'sinon';
+import { fixture, expect, assert } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
+import { Options } from '../src/display/Options';
+import { Select } from '../src/form/select/Select';
+import { assertScreenshot, getClip, getOptions, loadStore, openAndClick, openSelect, waitForSelectPagination } from './utils.test';
+const colors = [
+    { name: 'Red', value: '0' },
+    { name: 'Green', value: '1' },
+    { name: 'Blue', value: '2' }
+];
+export const createSelect = async (clock, def) => {
+    const parentNode = document.createElement('div');
+    parentNode.setAttribute('style', 'width: 400px;');
+    const select = await fixture(def, { parentNode });
+    clock.runAll();
+    await select.updateComplete;
+    return select;
+};
+export const clear = (select) => {
+    select.shadowRoot.querySelector('.clear-button').click();
+};
+export const getSelectHTML = (options = colors, attrs = { placeholder: 'Select a color', name: 'color' }, selected = null) => {
+    const selectHTML = `
+  <temba-select${Object.keys(attrs)
+        .map((name) => {
+        // check if it's a string attribute
+        if (typeof attrs[name] === 'string') {
+            return ` ${name}="${attrs[name].replace(/"/g, '&quot;')}"`;
+        }
+        if (typeof attrs[name] === 'boolean') {
+            return ` ${name}`;
+        }
+        return ` ${name}="${attrs[name]}"`;
+    })
+        .join(' ')}>
+    ${options
+        .map((option) => `<temba-option name="${option.name}" value="${option.value}"${option.selected || option.value === selected ? ' selected' : ''}></temba-option>`)
+        .join('')}
+  </temba-select>`;
+    return selectHTML;
+};
+const getClipWithOptions = (select) => {
+    const selectClip = getClip(select);
+    const options = select.shadowRoot.querySelector('temba-options[visible]');
+    if (options) {
+        const optionsClip = getClip(options);
+        const y = Math.min(selectClip.y, optionsClip.y);
+        const x = Math.min(selectClip.x, optionsClip.x);
+        const combinedClip = {
+            y,
+            x,
+            width: Math.max(selectClip.right, optionsClip.right) - x,
+            height: Math.max(selectClip.bottom, optionsClip.bottom) - y
+        };
+        return combinedClip;
+    }
+    return selectClip;
+};
+describe('temba-select', () => {
+    let clock;
+    beforeEach(function () {
+        clock = useFakeTimers();
+        clock.tick(400);
+        setViewport({ width: 500, height: 1000, deviceScaleFactor: 2 });
+    });
+    afterEach(function () {
+        clock.restore();
+    });
+    it('can be created', async () => {
+        const select = await createSelect(clock, '<temba-select></temba-select>');
+        assert.instanceOf(select, Select);
+    });
+    it('can be disabled', async () => {
+        const select = await createSelect(clock, getSelectHTML(colors, { disabled: true }));
+        expect(select.disabled).to.equal(true);
+        await assertScreenshot('select/disabled', getClip(select));
+    });
+    it('can be disabled with selection', async () => {
+        const select = await createSelect(clock, getSelectHTML(colors, { disabled: true, value: '0' }));
+        expect(select.disabled).to.equal(true);
+        await assertScreenshot('select/disabled-selection', getClip(select));
+    });
+    it('can be disabled with multi selection', async () => {
+        const select = await createSelect(clock, getSelectHTML(colors, { placeholder: 'Select a color', multi: true }));
+        await openAndClick(clock, select, 0);
+        select.disabled = true;
+        expect(select.disabled).to.equal(true);
+        // make sure we can't select anymore
+        await openSelect(clock, select);
+        expect(select.isOpen()).to.equal(false);
+        await assertScreenshot('select/disabled-multi-selection', getClip(select));
+    });
+    it('can be created with temba-option tags', async () => {
+        const select = await createSelect(clock, getSelectHTML());
+        assert.equal(select.getStaticOptions().length, 3);
+        expect(select.values.length).to.equal(0);
+        await assertScreenshot('select/with-placeholder', getClip(select));
+    });
+    it('picks the first option without a placeholder', async () => {
+        const select = await createSelect(clock, getSelectHTML(colors, {}));
+        assert.equal(select.getStaticOptions().length, 3);
+        expect(select.values[0].name).to.equal('Red');
+        await assertScreenshot('select/without-placeholder', getClip(select));
+    });
+    it('shows options when opened', async () => {
+        const select = await createSelect(clock, getSelectHTML());
+        await openSelect(clock, select);
+        const options = getOptions(select);
+        assert.instanceOf(options, Options);
+        // our options should be visible
+        assert.isTrue(options.shadowRoot
+            .querySelector('.options-container')
+            .classList.contains('show'));
+        await assertScreenshot('select/local-options', getClipWithOptions(select));
+    });
+    it('can be created with attribute options', async () => {
+        const options = JSON.stringify([{ name: 'Embedded Option', value: '0' }]);
+        const select = await createSelect(clock, getSelectHTML([], { options }));
+        // select the first option
+        await openAndClick(clock, select, 0);
+        expect(select.values[0].name).to.equal('Embedded Option');
+        await assertScreenshot('select/embedded', getClipWithOptions(select));
+    });
+    it('shows no options message when opening with empty options', async () => {
+        const select = await createSelect(clock, getSelectHTML([], { placeholder: 'Select an option' }));
+        // attempt to open the select with no options
+        await openSelect(clock, select);
+        // should show options dropdown even though there are no options
+        const options = getOptions(select);
+        assert.instanceOf(options, Options);
+        // the options dropdown should be visible
+        assert.isTrue(options.shadowRoot
+            .querySelector('.options-container')
+            .classList.contains('show'));
+        // should contain a "No options" message
+        const noOptionsText = options.shadowRoot.textContent;
+        assert.include(noOptionsText.toLowerCase(), 'no options');
+        await assertScreenshot('select/empty-options', getClipWithOptions(select));
+    });
+    describe('single selection', () => {
+        it('can select a single option', async () => {
+            const select = await createSelect(clock, getSelectHTML());
+            // nothing is selected to start
+            expect(select.values.length).to.equal(0);
+            expect(select.value).to.equal(null);
+            // select the first option
+            const changeEvent = sinon.spy();
+            select.addEventListener('change', changeEvent);
+            await openAndClick(clock, select, 0);
+            assert(changeEvent.called, 'change event not fired');
+            expect(select.values.length).to.equal(1);
+            expect(select.values[0].name).to.equal('Red');
+            expect(select.shadowRoot.innerHTML).to.contain('Red');
+            await assertScreenshot('select/selected-single', getClipWithOptions(select));
+        });
+        it('can search with existing selection', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, { searchable: true }));
+            // select the second option
+            await openAndClick(clock, select, 1);
+            expect(select.values.length).to.equal(1);
+            expect(select.values[0].name).to.equal('Green');
+            // for single selection our current selection should be in the list and focused
+            await openSelect(clock, select);
+            assert.equal(select.cursorIndex, 1);
+            assert.equal(select.visibleOptions.length, 3);
+            // now lets do a search, we should see our selection (green) and one other (red)
+            await typeInto('temba-select', 're', false);
+            await openSelect(clock, select);
+            assert.equal(select.visibleOptions.length, 2);
+            await assertScreenshot('select/search-with-selected', getClipWithOptions(select));
+            // but our cursor should be on the first match
+            assert.equal(select.cursorIndex, 0);
+        });
+    });
+    describe('multiple selection', () => {
+        it('can select multiple options', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, { placeholder: 'Select a color', multi: true }));
+            expect(select.values.length).to.equal(0);
+            const changeEvent = sinon.spy();
+            select.addEventListener('change', changeEvent);
+            // select the first option twice
+            await openAndClick(clock, select, 0);
+            assert(changeEvent.called, 'change event not fired');
+            changeEvent.resetHistory();
+            await openAndClick(clock, select, 0);
+            assert(changeEvent.called, 'change event not fired');
+            // now we should have red and green selected
+            expect(select.values.length).to.equal(2);
+            expect(select.shadowRoot.innerHTML).to.contain('Red');
+            expect(select.shadowRoot.innerHTML).to.contain('Green');
+            await assertScreenshot('select/selected-multi', getClipWithOptions(select));
+        });
+        it('can select multiple options until maxitems', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, {
+                placeholder: 'Select a color',
+                multi: true,
+                maxItems: 2
+            }));
+            expect(select.values.length).to.equal(0);
+            const changeEvent = sinon.spy();
+            select.addEventListener('change', changeEvent);
+            // select the first option 3 times, only 2 (maxitems) options are handled and added
+            await openAndClick(clock, select, 0);
+            assert(changeEvent.called, 'change event not fired');
+            changeEvent.resetHistory();
+            await openAndClick(clock, select, 0);
+            assert(changeEvent.called, 'change event not fired');
+            changeEvent.resetHistory();
+            await openSelect(clock, select);
+            assert.equal(select.visibleOptions.length, 0);
+            assert(!changeEvent.called, 'change event should not be fired');
+            // but we should have red and green selected only, no blue
+            expect(select.values.length).to.equal(2);
+            expect(select.shadowRoot.innerHTML).to.contain('Red');
+            expect(select.shadowRoot.innerHTML).to.contain('Green');
+            await assertScreenshot('select/selected-multi-maxitems-reached', getClipWithOptions(select));
+        });
+        it('shows multiple values on initialization', async () => {
+            const select = await createSelect(clock, getSelectHTML([
+                { name: 'Red', value: '0' },
+                { name: 'Green', value: '1', selected: true },
+                { name: 'Blue', value: '2', selected: true }
+            ], {
+                placeholder: 'Select a color',
+                multi: true
+            }));
+            await assertScreenshot('select/multiple-initial-values', getClip(select));
+            expect(select.values.length).to.equal(2);
+        });
+    });
+    describe('drag and drop reordering', () => {
+        it('handles drag and drop with swap-based logic', async () => {
+            const select = await createSelect(clock, getSelectHTML([
+                { name: 'Red', value: '0', selected: true },
+                { name: 'Green', value: '1', selected: true },
+                { name: 'Blue', value: '2', selected: true }
+            ], {
+                placeholder: 'Select colors',
+                multi: true
+            }));
+            // Verify initial order: Red, Green, Blue
+            expect(select.values.length).to.equal(3);
+            expect(select.values[0].name).to.equal('Red');
+            expect(select.values[1].name).to.equal('Green');
+            expect(select.values[2].name).to.equal('Blue');
+            const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+            expect(sortableList).to.not.be.null;
+            // Example 1: Pick up Blue (index 2), drop between Red and Green
+            // Expected result: Red, Blue, Green (swap [1,2])
+            const blueItem = sortableList.querySelector('#selected-2');
+            const greenItem = sortableList.querySelector('#selected-1');
+            expect(blueItem).to.not.be.null;
+            expect(greenItem).to.not.be.null;
+            const blueBounds = blueItem.getBoundingClientRect();
+            const greenBounds = greenItem.getBoundingClientRect();
+            // Start drag from Blue item
+            await moveMouse(blueBounds.left + 10, blueBounds.top + 10);
+            await mouseDown();
+            // Drag to position between Red and Green (left side of Green)
+            await moveMouse(greenBounds.left - 5, greenBounds.top + 10);
+            await waitFor(100);
+            await mouseUp();
+            clock.runAll();
+            // Verify result: Red, Blue, Green (Green and Blue swapped)
+            expect(select.values.length).to.equal(3);
+            expect(select.values[0].name).to.equal('Red');
+            expect(select.values[1].name).to.equal('Blue');
+            expect(select.values[2].name).to.equal('Green');
+            // Reset for next test
+            select.values = [
+                { name: 'Red', value: '0', selected: true },
+                { name: 'Green', value: '1', selected: true },
+                { name: 'Blue', value: '2', selected: true }
+            ];
+            await select.updateComplete;
+            // Example 2: Pick up Red (index 0), drop at end
+            // Expected result: Green, Blue, Red (swap [0,2])
+            const redItem = sortableList.querySelector('#selected-0');
+            const redBounds = redItem.getBoundingClientRect();
+            const blueItemBounds = sortableList
+                .querySelector('#selected-2')
+                .getBoundingClientRect();
+            // Start drag from Red item
+            await moveMouse(redBounds.left + 10, redBounds.top + 10);
+            await mouseDown();
+            // Drag to end position (right side of Blue)
+            await moveMouse(blueItemBounds.right + 5, blueItemBounds.top + 10);
+            await waitFor(100);
+            await mouseUp();
+            clock.runAll();
+            // Verify result: Green, Blue, Red (Red and Blue swapped)
+            expect(select.values.length).to.equal(3);
+            expect(select.values[0].name).to.equal('Green');
+            expect(select.values[1].name).to.equal('Blue');
+            expect(select.values[2].name).to.equal('Red');
+            // Reset for next test
+            select.values = [
+                { name: 'Red', value: '0', selected: true },
+                { name: 'Green', value: '1', selected: true },
+                { name: 'Blue', value: '2', selected: true }
+            ];
+            await select.updateComplete;
+            // Example 3: Pick up Green (index 1), drop at same position
+            // Expected result: No change, no event
+            const greenItemNew = sortableList.querySelector('#selected-1');
+            const greenBoundsNew = greenItemNew.getBoundingClientRect();
+            // Start drag from Green item
+            await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
+            await mouseDown();
+            // Drag slightly but return to same position
+            await moveMouse(greenBoundsNew.left + 15, greenBoundsNew.top + 10);
+            await moveMouse(greenBoundsNew.left + 10, greenBoundsNew.top + 10);
+            await waitFor(100);
+            await mouseUp();
+            clock.runAll();
+            // Verify result: No change
+            expect(select.values.length).to.equal(3);
+            expect(select.values[0].name).to.equal('Red');
+            expect(select.values[1].name).to.equal('Green');
+            expect(select.values[2].name).to.equal('Blue');
+        });
+        it('does not show sortable list for single item', async () => {
+            const select = await createSelect(clock, getSelectHTML([{ name: 'Red', value: '0', selected: true }], {
+                placeholder: 'Select a color',
+                multi: true
+            }));
+            // Should not have a sortable list with only one item
+            const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+            expect(sortableList).to.be.null;
+            // Should still show the selected item normally
+            expect(select.values.length).to.equal(1);
+            expect(select.values[0].name).to.equal('Red');
+        });
+        it('does not show sortable list for non-multi select', async () => {
+            const select = await createSelect(clock, getSelectHTML([{ name: 'Red', value: '0', selected: true }], {
+                placeholder: 'Select a color',
+                multi: false
+            }));
+            // Should not have a sortable list for single select
+            const sortableList = select.shadowRoot.querySelector('temba-sortable-list');
+            expect(sortableList).to.be.null;
+            expect(select.values.length).to.equal(1);
+            expect(select.values[0].name).to.equal('Red');
+        });
+    });
+    describe('tags functionality', () => {
+        it('shows selected item text when typing second tag', async () => {
+            const select = await createSelect(clock, getSelectHTML([], {
+                placeholder: 'Enter tags',
+                multi: true,
+                searchable: true,
+                tags: true
+            }));
+            // Add first tag programmatically (simulating user adding first tag)
+            select.addValue({ name: 'Yes', value: 'Yes' });
+            await select.updateComplete;
+            expect(select.values.length).to.equal(1);
+            expect(select.values[0].name).to.equal('Yes');
+            // Check that the first tag is displayed with text
+            let selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+            expect(selectedItems.length).to.equal(1);
+            expect(selectedItems[0].textContent).to.contain('Yes');
+            // Start typing second tag (this should not hide the first tag's text)
+            await typeInto('temba-select', 'No', false, false);
+            // Check that first tag text is still visible while typing second tag
+            selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+            expect(selectedItems.length).to.equal(1);
+            // The selected item should still contain the text "Yes"
+            const firstItemText = selectedItems[0].textContent;
+            expect(firstItemText).to.contain('Yes');
+        });
+        it('hides selected item text when typing in single-select mode', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, {
+                placeholder: 'Select a color',
+                searchable: true
+            }));
+            // Select an option first
+            await openAndClick(clock, select, 0); // Select Red
+            expect(select.values.length).to.equal(1);
+            expect(select.values[0].name).to.equal('Red');
+            // Check that the selected item is displayed with text when not typing
+            let selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+            expect(selectedItems.length).to.equal(1);
+            expect(selectedItems[0].textContent).to.contain('Red');
+            // Start typing in the search box
+            await typeInto('temba-select', 'gr', false, false);
+            // Check that selected item text is hidden while typing (preserving single-select behavior)
+            selectedItems = select.shadowRoot.querySelectorAll('.selected-item');
+            expect(selectedItems.length).to.equal(1);
+            // The selected item should NOT contain the text "Red" when typing
+            const itemText = selectedItems[0].textContent.trim();
+            expect(itemText).to.not.contain('Red');
+        });
+    });
+    describe('static options', () => {
+        it('accepts an initial value', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, { value: '1' }));
+            expect(select.values[0].name).to.equal('Green');
+            await assertScreenshot('select/static-initial-value', getClip(select));
+        });
+        it('honors temba-option selected attribute', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, {}, '1'));
+            expect(select.values[0].name).to.equal('Green');
+            await assertScreenshot('select/static-initial-via-selected', getClip(select));
+        });
+    });
+    describe('endpoints', () => {
+        it('can load from an endpoint', async () => {
+            const select = await createSelect(clock, getSelectHTML([], {
+                placeholder: 'Select a color',
+                endpoint: '/test-assets/select/colors.json'
+            }));
+            await openSelect(clock, select);
+            await assertScreenshot('select/remote-options', getClipWithOptions(select));
+            assert.equal(select.visibleOptions.length, 3);
+        });
+        it('can search an endpoint', async () => {
+            const select = await createSelect(clock, getSelectHTML([], {
+                placeholder: 'Select a color',
+                endpoint: '/test-assets/select/colors.json',
+                searchable: true
+            }));
+            await typeInto('temba-select', 're', false);
+            await openSelect(clock, select);
+            assert.equal(select.visibleOptions.length, 2);
+            await assertScreenshot('select/searching', getClipWithOptions(select));
+        });
+        it('can use an endpoint and allow multiple', async () => {
+            const select = await createSelect(clock, getSelectHTML([], {
+                placeholder: 'Select a color',
+                endpoint: '/test-assets/select/colors.json',
+                searchable: true,
+                multi: true
+            }));
+            await assertScreenshot('select/multi-with-endpoint', getClipWithOptions(select));
+            // await typeInto('temba-select', 're', false);
+            // await open(select);
+            // assert.equal(select.visibleOptions.length, 2);
+        });
+        xit('pages through cursor results', async () => {
+            const select = await createSelect(clock, getSelectHTML([], {
+                placeholder: 'Select a group',
+                endpoint: '/test-assets/select/groups.json',
+                valueKey: 'uuid'
+            }));
+            await openSelect(clock, select);
+            // Wait for pagination to complete using our improved helper
+            // Use more attempts for this test since pagination can be slow in CI
+            await waitForSelectPagination(select, clock, 15, 50);
+            // should have all three pages visible right away
+            assert.equal(select.visibleOptions.length, 15);
+        });
+        it('shows cached results', async () => {
+            const select = await createSelect(clock, getSelectHTML([], {
+                placeholder: 'Select a group',
+                endpoint: '/test-assets/select/groups.json',
+                valueKey: 'uuid',
+                searchable: true
+            }));
+            // wait for updates from fetching three pages
+            await openSelect(clock, select);
+            await waitForSelectPagination(select, clock, 15, 50);
+            assert.equal(select.visibleOptions.length, 15);
+            // close and reopen
+            select.blur();
+            await clock.tick(250);
+            // Ensure the select is properly closed before reopening
+            await select.updateComplete;
+            await openSelect(clock, select);
+            // Cached results should be available immediately, but give some time for rendering
+            await waitForSelectPagination(select, clock, 15, 30);
+            assert.equal(select.visibleOptions.length, 15);
+            // close and reopen once more (previous bug failed on third opening)
+            // select.blur();
+            // await open(select);
+            // assert.equal(select.visibleOptions.length, 15);
+        });
+        it('can enter expressions', async () => {
+            await loadStore();
+            const select = await createSelect(clock, getSelectHTML([], {
+                endpoint: '/colors.json',
+                searchable: true,
+                expressions: 'session'
+            }));
+            await typeInto('temba-select', 'Hi there @contact', false);
+            await openSelect(clock, select);
+            assert.equal(select.completionOptions.length, 14);
+            await assertScreenshot('select/expressions', getClipWithOptions(select));
+        });
+        it('clears single selection', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, { clearable: true }));
+            assert.equal(select.getStaticOptions().length, 3);
+            await openAndClick(clock, select, 0);
+            expect(select.values[0].name).to.equal('Red');
+            await assertScreenshot('select/selection-clearable', getClip(select));
+            clear(select);
+            expect(select.values.length).to.equal(0);
+        });
+        it('should look the same with search enabled', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, {
+                placeholder: 'Select a color',
+                searchable: true
+            }));
+            await assertScreenshot('select/search-enabled', getClipWithOptions(select));
+        });
+        it('should look the same with search enabled and selection made', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, { searchable: true }));
+            // select the first option
+            await openAndClick(clock, select, 1);
+            await assertScreenshot('select/search-selected', getClipWithOptions(select));
+        });
+        it('should show focus for the selected option', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, { searchable: true }));
+            // select the first option
+            await openAndClick(clock, select, 1);
+            // now open and look at focus
+            await openSelect(clock, select);
+            await assertScreenshot('select/search-selected-focus', getClipWithOptions(select));
+        });
+        it('should show search with existing multiple selection', async () => {
+            const select = await createSelect(clock, getSelectHTML(colors, {
+                placeholder: 'Select a color',
+                searchable: true,
+                multi: true
+            }));
+            // select the first option
+            await openAndClick(clock, select, 0);
+            await openAndClick(clock, select, 0);
+            await openSelect(clock, select);
+            // now lets do a search, we should see our selection (green) and one other (red)
+            await typeInto('temba-select', 're', false);
+            await openSelect(clock, select);
+            // should have two things selected and active query and no matching options
+            await assertScreenshot('select/search-multi-no-matches', getClipWithOptions(select));
+        });
+        it('should show functions', async () => {
+            await loadStore();
+            const select = await createSelect(clock, getSelectHTML(colors, {
+                placeholder: 'Select a color',
+                searchable: true,
+                expressions: 'session'
+            }));
+            await typeInto('temba-select', 'look at @(max(m', false);
+            await openSelect(clock, select);
+            await assertScreenshot('select/functions', getClipWithOptions(select));
+        });
+        it('should truncate selection if necessesary', async () => {
+            const options = [
+                {
+                    name: 'this_is_a_long_selection_to_make_sure_it_truncates_but_it_needs_to_be_longer',
+                    value: '0'
+                }
+            ];
+            const select = await createSelect(clock, getSelectHTML(options, {
+                value: '0'
+            }));
+            await assertScreenshot('select/truncated-selection', getClipWithOptions(select));
+        });
+        it('can select expression completion as value', async () => {
+            await loadStore();
+            const select = await createSelect(clock, getSelectHTML(colors, {
+                multi: true,
+                placeholder: 'Select a color',
+                searchable: true,
+                expressions: 'session'
+            }));
+            await typeInto('temba-select', '@con', false);
+            await openAndClick(clock, select, 0);
+            expect(select.values[0].name).to.equal('@contact');
+            await assertScreenshot('select/expression-selected', getClipWithOptions(select));
+        });
+    });
+});
+//# sourceMappingURL=temba-select.test.js.map

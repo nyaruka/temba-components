@@ -1,0 +1,7 @@
+/**
+ * @fileoverview Disallows properties shadowed as class fields
+ * @author Michel Langeveld <https://github.com/michellangeveld>
+ */
+import { Rule } from 'eslint';
+declare const rule: Rule.RuleModule;
+export = rule;

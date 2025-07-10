@@ -1,0 +1,35 @@
+{
+    "name": "@types/remarkable",
+    "version": "2.0.8",
+    "description": "TypeScript definitions for remarkable",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/remarkable",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "makepost",
+            "githubUsername": "makepost",
+            "url": "https://github.com/makepost"
+        },
+        {
+            "name": "Richard Lea",
+            "githubUsername": "chigix",
+            "url": "https://github.com/chigix"
+        },
+        {
+            "name": "Lilian Saget-Lethias",
+            "githubUsername": "bios21",
+            "url": "https://github.com/bios21"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/remarkable"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "548439b6987cec199425b0593c836b8a3e86770c56cbda044a20dc2c175aabac",
+    "typeScriptVersion": "4.5"
+}

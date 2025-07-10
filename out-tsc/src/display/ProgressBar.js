@@ -1,0 +1,211 @@
+import { __decorate } from "tslib";
+import { css, html } from 'lit';
+import { RapidElement } from '../RapidElement';
+import { property } from 'lit/decorators.js';
+export class ProgressBar extends RapidElement {
+    constructor() {
+        super(...arguments);
+        this.total = 100;
+        this.current = 0;
+        this.pct = 0;
+        this.done = false;
+        this.showEstimatedCompletion = false;
+        this.showPercentage = false;
+    }
+    updated(changes) {
+        if (changes.has('eta') && this.eta) {
+            this.estimatedCompletionDate = new Date(this.eta);
+            this.showEstimatedCompletion = this.estimatedCompletionDate > new Date();
+        }
+        if (changes.has('current')) {
+            const pct = Math.floor(Math.min((this.current / this.total) * 100, 100));
+            if (Number.isNaN(pct)) {
+                this.showPercentage = false;
+            }
+            else {
+                this.pct = pct;
+                this.showPercentage = true;
+            }
+            this.done = this.pct >= 100;
+        }
+    }
+    render() {
+        return html `<div class="wrapper ${this.done ? 'complete' : ''}">
+      <div class="meter ${this.done ? 'done' : ''}">
+        ${this.message
+            ? html `<div class="message">${this.message}</div>`
+            : null}
+        <span class="complete" style="flex-basis: ${this.pct}%"></span>
+        <div class="incomplete"></div>
+      </div>
+
+      ${this.showPercentage || this.showEstimatedCompletion
+            ? html `<div class="etc">
+            <div>
+              ${this.estimatedCompletionDate &&
+                this.showEstimatedCompletion &&
+                !this.done
+                ? html `<temba-date
+                    value="${this.estimatedCompletionDate.toISOString()}"
+                    display="countdown"
+                  ></temba-date>`
+                : html `${this.pct}%`}
+            </div>
+          </div>`
+            : null}
+
+      <slot></slot>
+    </div>`;
+    }
+}
+ProgressBar.styles = css `
+    .wrapper {
+      display: flex;
+      box-sizing: content-box;
+      background: #f1f1f1;
+      border-radius: var(--curvature);
+      box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      min-height: 1.5rem;
+    }
+
+    .message {
+      padding: 0 0.5rem;
+      color: rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
+    }
+
+    .meter {
+      flex-grow: 1;
+      display: flex;
+      box-sizing: content-box;
+      position: relative;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      padding: 4px;
+      min-height: 6px;
+    }
+    .meter > span {
+      display: block;
+      height: 100%;
+      border-radius: calc(var(--curvature) * 0.8);
+      background-color: var(--color-primary-dark);
+      background-image: linear-gradient(
+        center bottom,
+        rgb(43, 194, 83) 37%,
+        rgb(84, 240, 83) 69%
+      );
+
+      position: relative;
+      overflow: hidden;
+    }
+
+    .meter > span:after,
+    .animate > span > span {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+      );
+      z-index: 1;
+      background-size: 50px 50px;
+      animation: move 8s linear infinite;
+      border-top-right-radius: var(--curvature);
+      border-bottom-right-radius: var(--curvature);
+      border-top-left-radius: var(--curvature);
+      border-bottom-left-radius: var(--curvature);
+      overflow: hidden;
+    }
+
+    .animate > span:after {
+      display: none;
+    }
+
+    @keyframes move {
+      0% {
+        background-position: 0 0;
+      }
+      100% {
+        background-position: 50px 50px;
+      }
+    }
+
+    .meter .complete {
+      transition: flex-basis 2s;
+    }
+
+    .meter .incomplete {
+      flex-grow: 1;
+    }
+
+    .etc {
+      display: flex;
+      flex-direction: row;
+      background: rgba(0, 0, 0, 0.07);
+      font-weight: bold;
+      white-space: nowrap;
+      color: rgba(0, 0, 0, 0.5);
+      align-self: center;
+      padding: 0px 6px;
+      align-self: stretch;
+      align-items: center;
+    }
+
+    .etc > div {
+      font-size: 0.7em;
+    }
+
+    .wrapper *::last-child {
+      border-top-right-radius: var(--curvature);
+      border-bottom-right-radius: var(--curvature);
+      overflow: hidden;
+    }
+
+    .meter.done > span:after,
+    .done .animate > span > span {
+      display: none;
+    }
+
+    .meter.done > span {
+      background: rgb(var(--success-rgb));
+    }
+  `;
+__decorate([
+    property({ type: Number })
+], ProgressBar.prototype, "total", void 0);
+__decorate([
+    property({ type: Number })
+], ProgressBar.prototype, "current", void 0);
+__decorate([
+    property({ type: Number })
+], ProgressBar.prototype, "pct", void 0);
+__decorate([
+    property({ type: Boolean })
+], ProgressBar.prototype, "done", void 0);
+__decorate([
+    property({ type: String })
+], ProgressBar.prototype, "eta", void 0);
+__decorate([
+    property({ type: String, attribute: false })
+], ProgressBar.prototype, "estimatedCompletionDate", void 0);
+__decorate([
+    property({ type: Boolean })
+], ProgressBar.prototype, "showEstimatedCompletion", void 0);
+__decorate([
+    property({ type: Boolean })
+], ProgressBar.prototype, "showPercentage", void 0);
+__decorate([
+    property({ type: String })
+], ProgressBar.prototype, "message", void 0);
+//# sourceMappingURL=ProgressBar.js.map

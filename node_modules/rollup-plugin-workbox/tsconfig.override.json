@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    "lib": ["webworker"]
+  },
+  "exclude": ["dist", "demo"]
+}

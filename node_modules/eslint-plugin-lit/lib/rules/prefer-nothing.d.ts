@@ -1,0 +1,7 @@
+/**
+ * @fileoverview Enforces use of `nothing` constant over empty templates
+ * @author James Garbutt <https://github.com/43081j>
+ */
+import { Rule } from 'eslint';
+declare const rule: Rule.RuleModule;
+export = rule;
