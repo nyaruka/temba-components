@@ -2,6 +2,9 @@ name: 'build'
 
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,14 +15,28 @@ jobs:
           timezoneLinux: 'UTC'
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
       - run: docker network create --driver bridge textit_default
       - name: Build and run dev container task
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: yarn validate
+          runCmd: yarn validate && ./generate-coverage-badge.sh
           push: never
           env: |
             CI=true
+
+      - name: Commit Coverage Badge
+        if: github.ref != 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add coverage/coverage-badge.svg || true
+          if ! git diff --staged --quiet; then
+            git commit -m "Update coverage badge [skip ci]"
+            git push
+          fi
 
       - name: Upload artifacts
         if: failure()
