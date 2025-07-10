@@ -77,51 +77,46 @@ function displayCoverageReport(coverage) {
   );
   console.log('==================');
 
-  // Calculate overall coverage as average of lines, functions, and branches
-  // This matches the calculation method used by web-test-runner
-  const overallPercentage =
-    (coverage.lines.percentage +
-      coverage.functions.percentage +
-      coverage.branches.percentage) /
-    3;
+  // Use statement coverage (lines) as the metric for build success/failure
+  const statementCoverage = coverage.lines.percentage;
 
-  if (overallPercentage >= COVERAGE_THRESHOLD) {
+  if (statementCoverage >= COVERAGE_THRESHOLD) {
     console.log(
-      `✅ Overall Coverage: ${overallPercentage.toFixed(
+      `✅ Statement Coverage: ${statementCoverage.toFixed(
         2
       )}% (above ${COVERAGE_THRESHOLD}% threshold)`
     );
   } else {
     console.log(
-      `❌ Overall Coverage: ${overallPercentage.toFixed(
+      `❌ Statement Coverage: ${statementCoverage.toFixed(
         2
       )}% (below ${COVERAGE_THRESHOLD}% threshold)`
     );
   }
 
-  return overallPercentage;
+  return statementCoverage;
 }
 
 function main() {
   try {
     const coverage = parseLcovInfo(LCOV_FILE);
-    const overallPercentage = displayCoverageReport(coverage);
+    const statementCoverage = displayCoverageReport(coverage);
 
-    if (overallPercentage < COVERAGE_THRESHOLD) {
+    if (statementCoverage < COVERAGE_THRESHOLD) {
       console.log(
-        `\n💥 Build failed: Coverage ${overallPercentage.toFixed(
+        `\n💥 Build failed: Statement coverage ${statementCoverage.toFixed(
           2
         )}% is below the required ${COVERAGE_THRESHOLD}% threshold.`
       );
       console.log(
         `📈 Increase coverage by ${(
-          COVERAGE_THRESHOLD - overallPercentage
+          COVERAGE_THRESHOLD - statementCoverage
         ).toFixed(2)}% to pass the build.`
       );
       process.exit(1);
     } else {
       console.log(
-        `\n🎉 Build passed: Coverage meets the ${COVERAGE_THRESHOLD}% threshold!`
+        `\n🎉 Build passed: Statement coverage meets the ${COVERAGE_THRESHOLD}% threshold!`
       );
       process.exit(0);
     }
