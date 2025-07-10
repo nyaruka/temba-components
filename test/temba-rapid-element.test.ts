@@ -1,5 +1,5 @@
 import { expect, fixture, html } from '@open-wc/testing';
-import { stub, SinonStub } from 'sinon';
+import { stub } from 'sinon';
 import { RapidElement } from '../src/RapidElement';
 import { CustomEventType } from '../src/interfaces';
 
@@ -14,7 +14,7 @@ customElements.define('test-rapid-element', TestRapidElement);
 
 describe('RapidElement', () => {
   let element: TestRapidElement;
-  
+
   beforeEach(async () => {
     element = await fixture(html`<test-rapid-element></test-rapid-element>`);
   });
@@ -190,13 +190,13 @@ describe('RapidElement', () => {
       const targetElement = document.createElement('div');
       const handlerStub = stub().returns(true);
       (targetElement as any)['-custom-event'] = handlerStub;
-      
+
       // Mock the target element being the event target
       const customEvent = new CustomEvent('custom-event', {
         bubbles: true,
         composed: true
       });
-      
+
       // Set the target to our test element
       Object.defineProperty(customEvent, 'target', {
         value: targetElement,
@@ -205,7 +205,7 @@ describe('RapidElement', () => {
 
       // This should call the handler
       element.dispatchEvent(customEvent);
-      
+
       expect(handlerStub.calledOnce).to.be.true;
       expect(handlerStub.calledWith(customEvent)).to.be.true;
     });
@@ -214,19 +214,19 @@ describe('RapidElement', () => {
       const targetElement = document.createElement('div');
       const handlerStub = stub();
       (targetElement as any)['-test-event'] = handlerStub;
-      
+
       const customEvent = new CustomEvent('test-event', {
         bubbles: true,
         composed: true
       });
-      
+
       Object.defineProperty(customEvent, 'target', {
         value: targetElement,
         writable: false
       });
 
       element.dispatchEvent(customEvent);
-      
+
       expect(handlerStub.calledOnce).to.be.true;
       expect(handlerStub.calledWith(customEvent)).to.be.true;
     });
@@ -234,12 +234,12 @@ describe('RapidElement', () => {
     it('handles events with inline handler attributes via Function constructor', () => {
       const targetElement = document.createElement('div');
       targetElement.setAttribute('data-custom-event', 'console.log("test")'); // Use data- instead of dash-prefix
-      
+
       const customEvent = new CustomEvent('custom-event', {
         bubbles: true,
         composed: true
       });
-      
+
       Object.defineProperty(customEvent, 'target', {
         value: targetElement,
         writable: false
@@ -254,33 +254,33 @@ describe('RapidElement', () => {
     it('logs updates when DEBUG_UPDATES is enabled', () => {
       const consoleStub = stub(console, 'log');
       element.DEBUG_UPDATES = true;
-      
+
       // Trigger an update
       element.requestUpdate();
-      
+
       // We can't easily test the exact log content, but we can verify
       // that the debug functionality is accessible
       element.DEBUG_UPDATES = false;
-      
+
       consoleStub.restore();
     });
 
     it('logs events when DEBUG_EVENTS is enabled', () => {
       element.DEBUG_EVENTS = true;
-      
+
       // Fire a custom event
       element.fireCustomEvent(CustomEventType.Loading);
-      
+
       // Reset debug flag
       element.DEBUG_EVENTS = false;
     });
 
     it('logs events when DEBUG is enabled', () => {
       element.DEBUG = true;
-      
-      // Fire a regular event  
+
+      // Fire a regular event
       element.fireEvent('test-event');
-      
+
       // Reset debug flag
       element.DEBUG = false;
     });
@@ -291,11 +291,11 @@ describe('RapidElement', () => {
       // Create a test element with event handlers
       class TestElementWithHandlers extends RapidElement {
         testMethodCalled = false;
-        
+
         testMethod() {
           this.testMethodCalled = true;
         }
-        
+
         getEventHandlers() {
           return [
             {
@@ -308,30 +308,33 @@ describe('RapidElement', () => {
               isDocument: true
             },
             {
-              event: 'window-event', 
+              event: 'window-event',
               method: this.testMethod.bind(this),
               isWindow: true
             }
           ];
         }
-        
+
         render() {
           return html`<div>test with handlers</div>`;
         }
       }
-      
-      customElements.define('test-element-with-handlers', TestElementWithHandlers);
-      
+
+      customElements.define(
+        'test-element-with-handlers',
+        TestElementWithHandlers
+      );
+
       // Test that the element can be created without errors
       const elementWithHandlers = new TestElementWithHandlers();
       document.body.appendChild(elementWithHandlers);
-      
+
       // Test that handlers are properly registered/unregistered
       expect(() => {
         elementWithHandlers.connectedCallback();
         elementWithHandlers.disconnectedCallback();
       }).to.not.throw;
-      
+
       document.body.removeChild(elementWithHandlers);
     });
   });

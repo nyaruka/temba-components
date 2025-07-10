@@ -60,7 +60,7 @@ describe('markdown', () => {
 
       const directive = new RenderMarkdown(validPartInfo as any);
       const result = directive.render('# Test Header');
-      
+
       // The result should be a TemplateResult
       expect(result).to.exist;
       expect(result.strings).to.exist;
@@ -73,9 +73,9 @@ describe('markdown', () => {
 
       const directive = new RenderMarkdown(validPartInfo as any);
       const mockPart = {} as any;
-      
+
       const result = directive.update(mockPart, ['# Updated Content']);
-      
+
       // Should return the same as render
       expect(result).to.exist;
       expect(result.strings).to.exist;
@@ -85,7 +85,7 @@ describe('markdown', () => {
   describe('renderMarkdown function', () => {
     it('creates a directive that can be used in templates', () => {
       const template = html`${renderMarkdown('# Test')}`;
-      
+
       // Should create a valid template
       expect(template).to.exist;
       expect(template.strings).to.exist;
@@ -94,9 +94,9 @@ describe('markdown', () => {
     it('renders markdown when used in a template', () => {
       const container = document.createElement('div');
       const template = html`${renderMarkdown('# Hello World')}`;
-      
+
       render(template, container);
-      
+
       // Check that the markdown was rendered to HTML
       expect(container.innerHTML).to.include('<h1>Hello World</h1>');
     });
@@ -104,20 +104,21 @@ describe('markdown', () => {
     it('handles empty markdown', () => {
       const container = document.createElement('div');
       const template = html`${renderMarkdown('')}`;
-      
+
       render(template, container);
-      
+
       // Should not throw - Lit may add HTML comments for template placeholders
       expect(() => render(template, container)).to.not.throw;
     });
 
     it('handles markdown with special characters', () => {
       const container = document.createElement('div');
-      const markdownWithSpecialChars = '**Bold** text with <script>alert("xss")</script>';
+      const markdownWithSpecialChars =
+        '**Bold** text with <script>alert("xss")</script>';
       const template = html`${renderMarkdown(markdownWithSpecialChars)}`;
-      
+
       render(template, container);
-      
+
       // Should render the markdown but the script tag should be escaped/handled
       expect(container.innerHTML).to.include('<strong>Bold</strong>');
       // The script tag should be rendered as text or escaped
@@ -145,15 +146,17 @@ code block
 
       const container = document.createElement('div');
       const template = html`${renderMarkdown(complexMarkdown)}`;
-      
+
       render(template, container);
-      
+
       expect(container.innerHTML).to.include('<h1>Main Header</h1>');
       expect(container.innerHTML).to.include('<h2>Sub Header</h2>');
       expect(container.innerHTML).to.include('<strong>bold</strong>');
       expect(container.innerHTML).to.include('<em>italic</em>');
       expect(container.innerHTML).to.include('<ul>');
-      expect(container.innerHTML).to.include('<a href="https://example.com">A link</a>');
+      expect(container.innerHTML).to.include(
+        '<a href="https://example.com">A link</a>'
+      );
     });
   });
 });

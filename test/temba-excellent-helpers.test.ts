@@ -1,5 +1,4 @@
 import { expect } from '@open-wc/testing';
-import { html } from 'lit';
 import {
   renderCompletionOption,
   getFunctions,
@@ -184,24 +183,42 @@ describe('excellent/helpers', () => {
       const result = getCompletions(mockSchema, 'contact', true, mockStore);
       expect(result).to.have.length(3);
       // Check that the result contains completion options with proper names
-      expect(result.map(r => r.name)).to.include.members(['contact.first_name', 'contact.last_name', 'contact.age']);
+      expect(result.map((r) => r.name)).to.include.members([
+        'contact.first_name',
+        'contact.last_name',
+        'contact.age'
+      ]);
     });
 
     it('filters contact properties by partial match', () => {
-      const result = getCompletions(mockSchema, 'contact.first', true, mockStore);
+      const result = getCompletions(
+        mockSchema,
+        'contact.first',
+        true,
+        mockStore
+      );
       expect(result).to.have.length(1);
       expect(result[0].name).to.equal('contact.first_name');
     });
 
     it('returns empty array for invalid path', () => {
-      const result = getCompletions(mockSchema, 'invalid.path', true, mockStore);
+      const result = getCompletions(
+        mockSchema,
+        'invalid.path',
+        true,
+        mockStore
+      );
       expect(result).to.have.length(0);
     });
 
     it('handles template-based types with store completions', () => {
       const result = getCompletions(mockSchema, 'fields', true, mockStore);
       expect(result).to.have.length(3);
-      expect(result.map(r => r.name)).to.include.members(['fields.email', 'fields.phone', 'fields.city']);
+      expect(result.map((r) => r.name)).to.include.members([
+        'fields.email',
+        'fields.phone',
+        'fields.city'
+      ]);
     });
 
     it('handles template-based types without store completions', () => {
@@ -209,7 +226,12 @@ describe('excellent/helpers', () => {
         getCompletions: () => null
       } as any;
 
-      const result = getCompletions(mockSchema, 'fields', true, noCompletionsStore);
+      const result = getCompletions(
+        mockSchema,
+        'fields',
+        true,
+        noCompletionsStore
+      );
       expect(result).to.have.length(0);
     });
 
@@ -231,13 +253,23 @@ describe('excellent/helpers', () => {
     });
 
     it('handles nested property access', () => {
-      const result = getCompletions(mockSchema, 'contact.last_name', true, mockStore);
+      const result = getCompletions(
+        mockSchema,
+        'contact.last_name',
+        true,
+        mockStore
+      );
       expect(result).to.have.length(1);
       expect(result[0].name).to.equal('contact.last_name');
     });
 
     it('handles case-insensitive filtering', () => {
-      const result = getCompletions(mockSchema, 'contact.FIRST', true, mockStore);
+      const result = getCompletions(
+        mockSchema,
+        'contact.FIRST',
+        true,
+        mockStore
+      );
       expect(result).to.have.length(1);
       expect(result[0].name).to.equal('contact.first_name');
     });
@@ -254,7 +286,7 @@ describe('excellent/helpers', () => {
       document.body.appendChild(element);
 
       const offset = getOffset(element);
-      
+
       expect(offset).to.have.property('top');
       expect(offset).to.have.property('left');
       expect(typeof offset.top).to.equal('number');
@@ -269,7 +301,7 @@ describe('excellent/helpers', () => {
       document.body.appendChild(element);
 
       const offset = getOffset(element);
-      
+
       expect(offset).to.have.property('top');
       expect(offset).to.have.property('left');
 
@@ -283,7 +315,7 @@ describe('excellent/helpers', () => {
       document.body.appendChild(element);
 
       const scroll = getVerticalScroll(element);
-      
+
       // Function returns 0 as implemented (seems like stub implementation)
       expect(typeof scroll).to.equal('number');
       expect(scroll).to.equal(0);
@@ -293,7 +325,7 @@ describe('excellent/helpers', () => {
 
     it('handles element without parent', () => {
       const element = document.createElement('div');
-      
+
       const scroll = getVerticalScroll(element);
       expect(scroll).to.equal(0);
     });
