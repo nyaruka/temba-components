@@ -51,13 +51,11 @@ jobs:
             git rm -rf . || true
           fi
 
-          # Copy coverage files from temp
-          cp -r /tmp/coverage-copy/coverage ./
+          # Copy coverage report files from temp directly to root
+          cp -r /tmp/coverage-copy/coverage/lcov-report/* ./
 
-          # Create .nojekyll for GitHub Pages and move coverage to root
+          # Create .nojekyll for GitHub Pages
           touch .nojekyll
-          mv coverage/lcov-report/* .
-          rm -rf coverage/
 
           # Add all files
           git add .
