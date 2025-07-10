@@ -22,21 +22,10 @@ jobs:
       - name: Build and run dev container task
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: yarn validate && ./generate-coverage-badge.sh
+          runCmd: yarn validate
           push: never
           env: |
             CI=true
-
-      - name: Commit Coverage Badge
-        if: github.ref != 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add coverage/coverage-badge.svg || true
-          if ! git diff --staged --quiet; then
-            git commit -m "Update coverage badge [skip ci]"
-            git push
-          fi
 
       - name: Upload artifacts
         if: failure()

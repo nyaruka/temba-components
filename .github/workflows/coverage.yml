@@ -1,0 +1,64 @@
+name: 'Update Coverage Reports'
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: 'UTC'
+      
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - run: docker network create --driver bridge textit_default
+
+      - name: Build and run tests with coverage
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: yarn validate && ./generate-coverage-badge.sh
+          push: never
+          env: |
+            CI=true
+
+      - name: Deploy coverage to coverage branch
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Create or checkout coverage branch
+          if git show-ref --verify --quiet refs/remotes/origin/coverage; then
+            git fetch origin coverage
+            git checkout coverage
+          else
+            git checkout --orphan coverage
+            git rm -rf . || true
+          fi
+
+          # Copy coverage files from main branch
+          git checkout main -- coverage/
+          
+          # Create .nojekyll for GitHub Pages and move coverage to root
+          touch .nojekyll
+          mv coverage/lcov-report/* .
+          rm -rf coverage/
+          
+          # Add all files
+          git add .
+          
+          # Commit if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "Update coverage reports [skip ci] - $(date)"
+            git push origin coverage
+          fi
