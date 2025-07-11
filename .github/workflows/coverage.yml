@@ -42,6 +42,9 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
+          # Remove any coverage directory to avoid ambiguity with branch name
+          rm -rf coverage
+
           # Create or checkout coverage branch
           if git show-ref --verify --quiet refs/remotes/origin/coverage; then
             git fetch origin coverage
@@ -53,9 +56,6 @@ jobs:
 
           # Copy coverage report files from temp directly to root
           cp -r /tmp/coverage-copy/coverage/lcov-report/* ./
-
-          # Remove any coverage directory to avoid ambiguity with branch name
-          rm -rf coverage
           rm -rf /tmp/coverage-copy
 
           # Create .nojekyll for GitHub Pages
