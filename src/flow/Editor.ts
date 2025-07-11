@@ -71,13 +71,13 @@ export class Editor extends RapidElement {
   // Selection state
   @state()
   private selectedItems: Set<string> = new Set();
-  
+
   @state()
   private isSelecting = false;
-  
+
   @state()
   private selectionBox: SelectionBox | null = null;
-  
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -124,13 +124,14 @@ export class Editor extends RapidElement {
         background-size: 40px 40px;
         box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
         border-top: 1px solid #e0e0e0;
-        display: inline-block;
         width: 100%;
+        display: flex;
       }
 
       #canvas {
         position: relative;
-        padding: 20px;
+        padding: 0px;
+        flex-grow: 1;
         margin: 20px;
       }
 
@@ -232,7 +233,7 @@ export class Editor extends RapidElement {
       /* Selection box styles */
       .selection-box {
         position: absolute;
-        border: 2px dashed #3b82f6;
+        border: 2px dashed #6298f0ff;
         background-color: rgba(59, 130, 246, 0.1);
         z-index: 9999;
         pointer-events: none;
@@ -240,8 +241,9 @@ export class Editor extends RapidElement {
 
       /* Selected item styles */
       .draggable.selected {
-        outline: 3px solid #3b82f6;
-        outline-offset: 2px;
+        outline: 3px solid #6298f0ff;
+        outline-offset: 0px;
+        border-radius: var(--curvature);
       }
     `;
   }
@@ -393,23 +395,22 @@ export class Editor extends RapidElement {
 
   private handleGlobalMouseDown(event: MouseEvent): void {
     // Check if the click is within our canvas
-    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-    
+    const canvasRect = this.querySelector('#grid')?.getBoundingClientRect();
+
     if (!canvasRect) return;
 
-    const isWithinCanvas = (
+    const isWithinCanvas =
       event.clientX >= canvasRect.left &&
       event.clientX <= canvasRect.right &&
       event.clientY >= canvasRect.top &&
-      event.clientY <= canvasRect.bottom
-    );
+      event.clientY <= canvasRect.bottom;
 
     if (!isWithinCanvas) return;
 
     // Check if we clicked on a draggable item (node or sticky)
     const target = event.target as HTMLElement;
     const clickedOnDraggable = target.closest('.draggable');
-    
+
     if (clickedOnDraggable) {
       // This is handled by the individual item mousedown handlers
       return;
@@ -426,12 +427,12 @@ export class Editor extends RapidElement {
     // Start selection box
     this.canvasMouseDown = true;
     this.dragStartPos = { x: event.clientX, y: event.clientY };
-    
+
     const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
     if (canvasRect) {
       const relativeX = event.clientX - canvasRect.left;
       const relativeY = event.clientY - canvasRect.top;
-      
+
       this.selectionBox = {
         startX: relativeX,
         startY: relativeY,
@@ -458,7 +459,7 @@ export class Editor extends RapidElement {
   private showDeleteConfirmation(): void {
     const itemCount = this.selectedItems.size;
     const itemType = itemCount === 1 ? 'item' : 'items';
-    
+
     if (confirm(`Are you sure you want to delete ${itemCount} ${itemType}?`)) {
       this.deleteSelectedItems();
     }
@@ -466,14 +467,14 @@ export class Editor extends RapidElement {
 
   private deleteSelectedItems(): void {
     const store = getStore();
-    
+
     // Separate nodes and stickies
     const nodeUuids: string[] = [];
     const stickyUuids: string[] = [];
-    
-    this.selectedItems.forEach(uuid => {
+
+    this.selectedItems.forEach((uuid) => {
       // Check if it's a node or sticky by looking at the definition
-      if (this.definition.nodes.find(node => node.uuid === uuid)) {
+      if (this.definition.nodes.find((node) => node.uuid === uuid)) {
         nodeUuids.push(uuid);
       } else if (this.definition._ui?.stickies?.[uuid]) {
         stickyUuids.push(uuid);
@@ -487,7 +488,7 @@ export class Editor extends RapidElement {
 
     // Remove sticky notes by updating the definition directly
     if (stickyUuids.length > 0) {
-      stickyUuids.forEach(uuid => {
+      stickyUuids.forEach((uuid) => {
         const newDefinition = { ...this.definition };
         if (newDefinition._ui?.stickies) {
           delete newDefinition._ui.stickies[uuid];
@@ -527,21 +528,25 @@ export class Editor extends RapidElement {
     if (!this.selectionBox) return;
 
     const newSelection = new Set<string>();
-    
+
     const boxLeft = Math.min(this.selectionBox.startX, this.selectionBox.endX);
     const boxTop = Math.min(this.selectionBox.startY, this.selectionBox.endY);
     const boxRight = Math.max(this.selectionBox.startX, this.selectionBox.endX);
-    const boxBottom = Math.max(this.selectionBox.startY, this.selectionBox.endY);
+    const boxBottom = Math.max(
+      this.selectionBox.startY,
+      this.selectionBox.endY
+    );
 
     // Check nodes
-    this.definition?.nodes.forEach(node => {
+    this.definition?.nodes.forEach((node) => {
       const nodeElement = this.querySelector(`[uuid="${node.uuid}"]`);
       if (nodeElement) {
         const position = this.definition._ui.nodes[node.uuid]?.position;
         if (position) {
           const rect = nodeElement.getBoundingClientRect();
-          const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-          
+          const canvasRect =
+            this.querySelector('#canvas')?.getBoundingClientRect();
+
           if (canvasRect) {
             const nodeLeft = position.left;
             const nodeTop = position.top;
@@ -549,8 +554,12 @@ export class Editor extends RapidElement {
             const nodeBottom = nodeTop + rect.height;
 
             // Check if selection box intersects with node
-            if (boxLeft < nodeRight && boxRight > nodeLeft && 
-                boxTop < nodeBottom && boxBottom > nodeTop) {
+            if (
+              boxLeft < nodeRight &&
+              boxRight > nodeLeft &&
+              boxTop < nodeBottom &&
+              boxBottom > nodeTop
+            ) {
               newSelection.add(node.uuid);
             }
           }
@@ -568,8 +577,12 @@ export class Editor extends RapidElement {
         const stickyBottom = stickyTop + 100; // Sticky note height
 
         // Check if selection box intersects with sticky
-        if (boxLeft < stickyRight && boxRight > stickyLeft && 
-            boxTop < stickyBottom && boxBottom > stickyTop) {
+        if (
+          boxLeft < stickyRight &&
+          boxRight > stickyLeft &&
+          boxTop < stickyBottom &&
+          boxBottom > stickyTop
+        ) {
           newSelection.add(uuid);
         }
       }
@@ -613,8 +626,11 @@ export class Editor extends RapidElement {
       this.isDragging = true;
 
       // If this is a node, elevate connections for all selected nodes
-      this.selectedItems.forEach(uuid => {
-        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+      this.selectedItems.forEach((uuid) => {
+        if (
+          this.definition.nodes.find((node) => node.uuid === uuid) &&
+          this.plumber
+        ) {
           this.plumber.elevateNodeConnections(uuid);
         }
       });
@@ -622,12 +638,13 @@ export class Editor extends RapidElement {
 
     // If we're actually dragging, update positions for all selected items
     if (this.isDragging) {
-      this.selectedItems.forEach(uuid => {
+      this.selectedItems.forEach((uuid) => {
         const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
         if (element) {
-          const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+          const type =
+            element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
           const position = this.getPosition(uuid, type);
-          
+
           if (position) {
             const newLeft = position.left + deltaX;
             const newTop = position.top + deltaY;
@@ -640,8 +657,11 @@ export class Editor extends RapidElement {
       });
 
       // Repaint connections for all selected nodes
-      this.selectedItems.forEach(uuid => {
-        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+      this.selectedItems.forEach((uuid) => {
+        if (
+          this.definition.nodes.find((node) => node.uuid === uuid) &&
+          this.plumber
+        ) {
           this.plumber.repaintEverything();
         }
       });
@@ -670,8 +690,11 @@ export class Editor extends RapidElement {
     // If we were actually dragging, handle the drag end for all selected items
     if (this.isDragging) {
       // Restore normal z-index for node connections
-      this.selectedItems.forEach(uuid => {
-        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+      this.selectedItems.forEach((uuid) => {
+        if (
+          this.definition.nodes.find((node) => node.uuid === uuid) &&
+          this.plumber
+        ) {
           this.plumber.restoreNodeConnections(uuid);
         }
       });
@@ -681,11 +704,13 @@ export class Editor extends RapidElement {
 
       // Update positions for all selected items
       const newPositions: { [uuid: string]: FlowPosition } = {};
-      
-      this.selectedItems.forEach(uuid => {
-        const type = this.definition.nodes.find(node => node.uuid === uuid) ? 'node' : 'sticky';
+
+      this.selectedItems.forEach((uuid) => {
+        const type = this.definition.nodes.find((node) => node.uuid === uuid)
+          ? 'node'
+          : 'sticky';
         const position = this.getPosition(uuid, type);
-        
+
         if (position) {
           const newLeft = position.left + deltaX;
           const newTop = position.top + deltaY;
@@ -704,19 +729,22 @@ export class Editor extends RapidElement {
 
       // Update canvas positions for nodes
       const nodePositions: { [uuid: string]: FlowPosition } = {};
-      this.selectedItems.forEach(uuid => {
-        if (this.definition.nodes.find(node => node.uuid === uuid)) {
+      this.selectedItems.forEach((uuid) => {
+        if (this.definition.nodes.find((node) => node.uuid === uuid)) {
           nodePositions[uuid] = newPositions[uuid];
         }
       });
-      
+
       if (Object.keys(nodePositions).length > 0) {
         getStore().getState().updateCanvasPositions(nodePositions);
       }
 
       // Repaint connections for all selected nodes
-      this.selectedItems.forEach(uuid => {
-        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+      this.selectedItems.forEach((uuid) => {
+        if (
+          this.definition.nodes.find((node) => node.uuid === uuid) &&
+          this.plumber
+        ) {
           this.plumber.repaintEverything();
         }
       });
@@ -784,9 +812,7 @@ export class Editor extends RapidElement {
           style="min-width:100%;width:${this.canvasSize.width}px; height:${this
             .canvasSize.height}px"
         >
-          <div 
-            id="canvas"
-          >
+          <div id="canvas">
             ${this.definition
               ? this.definition.nodes.map((node) => {
                   const position =
@@ -794,11 +820,13 @@ export class Editor extends RapidElement {
 
                   const dragging =
                     this.isDragging && this.currentDragItem?.uuid === node.uuid;
-                  
+
                   const selected = this.selectedItems.has(node.uuid);
 
                   return html`<temba-flow-node
-                    class="draggable ${dragging ? 'dragging' : ''} ${selected ? 'selected' : ''}"
+                    class="draggable ${dragging ? 'dragging' : ''} ${selected
+                      ? 'selected'
+                      : ''}"
                     @mousedown=${this.handleMouseDown.bind(this)}
                     uuid=${node.uuid}
                     style="left:${position.left}px; top:${position.top}px"
@@ -814,7 +842,9 @@ export class Editor extends RapidElement {
                 this.isDragging && this.currentDragItem?.uuid === uuid;
               const selected = this.selectedItems.has(uuid);
               return html`<temba-sticky-note
-                class="draggable ${dragging ? 'dragging' : ''} ${selected ? 'selected' : ''}"
+                class="draggable ${dragging ? 'dragging' : ''} ${selected
+                  ? 'selected'
+                  : ''}"
                 @mousedown=${this.handleMouseDown.bind(this)}
                 style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
                 position.top}"
