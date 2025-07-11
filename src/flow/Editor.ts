@@ -22,6 +22,13 @@ export interface DraggableItem {
   type: 'node' | 'sticky';
 }
 
+export interface SelectionBox {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}
+
 const DRAG_THRESHOLD = 10;
 
 export class Editor extends RapidElement {
@@ -60,6 +67,18 @@ export class Editor extends RapidElement {
   @state()
   private currentDragItem: DraggableItem | null = null;
   private startPos = { left: 0, top: 0 };
+
+  // Selection state
+  @state()
+  private selectedItems: Set<string> = new Set();
+  
+  @state()
+  private isSelecting = false;
+  
+  @state()
+  private selectionBox: SelectionBox | null = null;
+  
+  private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
   private boundMouseMove = this.handleMouseMove.bind(this);
@@ -207,6 +226,21 @@ export class Editor extends RapidElement {
         stroke-width: 0px;
         z-index: 10;
       }
+
+      /* Selection box styles */
+      .selection-box {
+        position: absolute;
+        border: 2px dashed #3b82f6;
+        background-color: rgba(59, 130, 246, 0.1);
+        z-index: 9999;
+        pointer-events: none;
+      }
+
+      /* Selected item styles */
+      .draggable.selected {
+        outline: 3px solid #3b82f6;
+        outline-offset: 2px;
+      }
     `;
   }
 
@@ -277,11 +311,13 @@ export class Editor extends RapidElement {
     }
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
+    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
   private setupGlobalEventListeners(): void {
     document.addEventListener('mousemove', this.boundMouseMove);
     document.addEventListener('mouseup', this.boundMouseUp);
+    document.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -326,6 +362,16 @@ export class Editor extends RapidElement {
     const position = this.getPosition(uuid, type);
     if (!position) return;
 
+    // If clicking on a non-selected item, clear selection unless Ctrl/Cmd is held
+    if (!this.selectedItems.has(uuid) && !event.ctrlKey && !event.metaKey) {
+      this.selectedItems.clear();
+    }
+
+    // Add this item to selection if not already selected
+    if (!this.selectedItems.has(uuid)) {
+      this.selectedItems.add(uuid);
+    }
+
     // Set up potential drag state, but don't start dragging yet
     this.isMouseDown = true;
     this.dragStartPos = { x: event.clientX, y: event.clientY };
@@ -341,7 +387,194 @@ export class Editor extends RapidElement {
     event.stopPropagation();
   }
 
+  private handleCanvasMouseDown(event: MouseEvent): void {
+    // Only start selection if clicking directly on the canvas
+    const target = event.target as HTMLElement;
+    if (target.id !== 'canvas' && target.id !== 'grid') {
+      return;
+    }
+
+    // Clear current selection
+    this.selectedItems.clear();
+
+    // Start selection box
+    this.canvasMouseDown = true;
+    this.dragStartPos = { x: event.clientX, y: event.clientY };
+    
+    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+    if (canvasRect) {
+      const relativeX = event.clientX - canvasRect.left;
+      const relativeY = event.clientY - canvasRect.top;
+      
+      this.selectionBox = {
+        startX: relativeX,
+        startY: relativeY,
+        endX: relativeX,
+        endY: relativeY
+      };
+    }
+
+    event.preventDefault();
+  }
+
+  private handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      if (this.selectedItems.size > 0) {
+        this.showDeleteConfirmation();
+      }
+    }
+    if (event.key === 'Escape') {
+      this.selectedItems.clear();
+      this.requestUpdate();
+    }
+  }
+
+  private showDeleteConfirmation(): void {
+    const itemCount = this.selectedItems.size;
+    const itemType = itemCount === 1 ? 'item' : 'items';
+    
+    if (confirm(`Are you sure you want to delete ${itemCount} ${itemType}?`)) {
+      this.deleteSelectedItems();
+    }
+  }
+
+  private deleteSelectedItems(): void {
+    const store = getStore();
+    
+    // Separate nodes and stickies
+    const nodeUuids: string[] = [];
+    const stickyUuids: string[] = [];
+    
+    this.selectedItems.forEach(uuid => {
+      // Check if it's a node or sticky by looking at the definition
+      if (this.definition.nodes.find(node => node.uuid === uuid)) {
+        nodeUuids.push(uuid);
+      } else if (this.definition._ui?.stickies?.[uuid]) {
+        stickyUuids.push(uuid);
+      }
+    });
+
+    // Remove nodes using the existing method
+    if (nodeUuids.length > 0) {
+      store.getState().removeNodes(nodeUuids);
+    }
+
+    // Remove sticky notes by updating the definition directly
+    if (stickyUuids.length > 0) {
+      stickyUuids.forEach(uuid => {
+        const newDefinition = { ...this.definition };
+        if (newDefinition._ui?.stickies) {
+          delete newDefinition._ui.stickies[uuid];
+        }
+        store.getState().setFlowContents({
+          definition: newDefinition,
+          info: store.getState().flowInfo
+        });
+      });
+    }
+
+    // Clear selection
+    this.selectedItems.clear();
+    this.requestUpdate();
+  }
+
+  private updateSelectionBox(event: MouseEvent): void {
+    if (!this.selectionBox || !this.canvasMouseDown) return;
+
+    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+    if (!canvasRect) return;
+
+    const relativeX = event.clientX - canvasRect.left;
+    const relativeY = event.clientY - canvasRect.top;
+
+    this.selectionBox = {
+      ...this.selectionBox,
+      endX: relativeX,
+      endY: relativeY
+    };
+
+    // Update selected items based on selection box
+    this.updateSelectedItemsFromBox();
+  }
+
+  private updateSelectedItemsFromBox(): void {
+    if (!this.selectionBox) return;
+
+    const newSelection = new Set<string>();
+    
+    const boxLeft = Math.min(this.selectionBox.startX, this.selectionBox.endX);
+    const boxTop = Math.min(this.selectionBox.startY, this.selectionBox.endY);
+    const boxRight = Math.max(this.selectionBox.startX, this.selectionBox.endX);
+    const boxBottom = Math.max(this.selectionBox.startY, this.selectionBox.endY);
+
+    // Check nodes
+    this.definition?.nodes.forEach(node => {
+      const nodeElement = this.querySelector(`[uuid="${node.uuid}"]`);
+      if (nodeElement) {
+        const position = this.definition._ui.nodes[node.uuid]?.position;
+        if (position) {
+          const rect = nodeElement.getBoundingClientRect();
+          const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+          
+          if (canvasRect) {
+            const nodeLeft = position.left;
+            const nodeTop = position.top;
+            const nodeRight = nodeLeft + rect.width;
+            const nodeBottom = nodeTop + rect.height;
+
+            // Check if selection box intersects with node
+            if (boxLeft < nodeRight && boxRight > nodeLeft && 
+                boxTop < nodeBottom && boxBottom > nodeTop) {
+              newSelection.add(node.uuid);
+            }
+          }
+        }
+      }
+    });
+
+    // Check sticky notes
+    const stickies = this.definition?._ui?.stickies || {};
+    Object.entries(stickies).forEach(([uuid, sticky]) => {
+      if (sticky.position) {
+        const stickyLeft = sticky.position.left;
+        const stickyTop = sticky.position.top;
+        const stickyRight = stickyLeft + 200; // Sticky note width
+        const stickyBottom = stickyTop + 100; // Sticky note height
+
+        // Check if selection box intersects with sticky
+        if (boxLeft < stickyRight && boxRight > stickyLeft && 
+            boxTop < stickyBottom && boxBottom > stickyTop) {
+          newSelection.add(uuid);
+        }
+      }
+    });
+
+    this.selectedItems = newSelection;
+  }
+
+  private renderSelectionBox(): TemplateResult | string {
+    if (!this.selectionBox || !this.isSelecting) return '';
+
+    const left = Math.min(this.selectionBox.startX, this.selectionBox.endX);
+    const top = Math.min(this.selectionBox.startY, this.selectionBox.endY);
+    const width = Math.abs(this.selectionBox.endX - this.selectionBox.startX);
+    const height = Math.abs(this.selectionBox.endY - this.selectionBox.startY);
+
+    return html`<div
+      class="selection-box"
+      style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;"
+    ></div>`;
+  }
+
   private handleMouseMove(event: MouseEvent): void {
+    // Handle selection box drawing
+    if (this.canvasMouseDown && !this.isMouseDown) {
+      this.isSelecting = true;
+      this.updateSelectionBox(event);
+      return;
+    }
+
+    // Handle item dragging
     if (!this.isMouseDown || !this.currentDragItem) return;
 
     const deltaX = event.clientX - this.dragStartPos.x;
@@ -352,76 +585,124 @@ export class Editor extends RapidElement {
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
 
-      // If this is a node, elevate connections
-      if (this.currentDragItem.type === 'node' && this.plumber) {
-        this.plumber.elevateNodeConnections(this.currentDragItem.uuid);
-      }
+      // If this is a node, elevate connections for all selected nodes
+      this.selectedItems.forEach(uuid => {
+        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+          this.plumber.elevateNodeConnections(uuid);
+        }
+      });
     }
 
-    // If we're actually dragging, update positions
+    // If we're actually dragging, update positions for all selected items
     if (this.isDragging) {
-      const newLeft = this.startPos.left + deltaX;
-      const newTop = this.startPos.top + deltaY;
+      this.selectedItems.forEach(uuid => {
+        const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+        if (element) {
+          const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+          const position = this.getPosition(uuid, type);
+          
+          if (position) {
+            const newLeft = position.left + deltaX;
+            const newTop = position.top + deltaY;
 
-      // Update the visual position during drag
-      this.currentDragItem.element.style.left = `${newLeft}px`;
-      this.currentDragItem.element.style.top = `${newTop}px`;
+            // Update the visual position during drag
+            element.style.left = `${newLeft}px`;
+            element.style.top = `${newTop}px`;
+          }
+        }
+      });
 
-      // Repaint connections if this is a node
-      if (this.currentDragItem.type === 'node' && this.plumber) {
-        this.plumber.repaintEverything();
-      }
+      // Repaint connections for all selected nodes
+      this.selectedItems.forEach(uuid => {
+        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+          this.plumber.repaintEverything();
+        }
+      });
     }
   }
 
   private handleMouseUp(event: MouseEvent): void {
+    // Handle selection box completion
+    if (this.canvasMouseDown && this.isSelecting) {
+      this.isSelecting = false;
+      this.selectionBox = null;
+      this.canvasMouseDown = false;
+      this.requestUpdate();
+      return;
+    }
+
+    // Handle canvas click (clear selection)
+    if (this.canvasMouseDown && !this.isSelecting) {
+      this.canvasMouseDown = false;
+      return;
+    }
+
+    // Handle item drag completion
     if (!this.isMouseDown || !this.currentDragItem) return;
 
-    // If we were actually dragging, handle the drag end
+    // If we were actually dragging, handle the drag end for all selected items
     if (this.isDragging) {
       // Restore normal z-index for node connections
-      if (this.currentDragItem.type === 'node' && this.plumber) {
-        this.plumber.restoreNodeConnections(this.currentDragItem.uuid);
-      }
+      this.selectedItems.forEach(uuid => {
+        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+          this.plumber.restoreNodeConnections(uuid);
+        }
+      });
 
       const deltaX = event.clientX - this.dragStartPos.x;
       const deltaY = event.clientY - this.dragStartPos.y;
 
-      const newLeft = this.startPos.left + deltaX;
-      const newTop = this.startPos.top + deltaY;
+      // Update positions for all selected items
+      const newPositions: { [uuid: string]: FlowPosition } = {};
+      
+      this.selectedItems.forEach(uuid => {
+        const type = this.definition.nodes.find(node => node.uuid === uuid) ? 'node' : 'sticky';
+        const position = this.getPosition(uuid, type);
+        
+        if (position) {
+          const newLeft = position.left + deltaX;
+          const newTop = position.top + deltaY;
 
-      // Snap to 20px grid for final position
-      const snappedLeft = snapToGrid(newLeft);
-      const snappedTop = snapToGrid(newTop);
+          // Snap to 20px grid for final position
+          const snappedLeft = snapToGrid(newLeft);
+          const snappedTop = snapToGrid(newTop);
 
-      const newPosition = { left: snappedLeft, top: snappedTop };
+          const newPosition = { left: snappedLeft, top: snappedTop };
+          newPositions[uuid] = newPosition;
 
-      // Update the store with the new snapped position
-      this.updatePosition(
-        this.currentDragItem.uuid,
-        this.currentDragItem.type,
-        newPosition
-      );
+          // Update the store with the new snapped position
+          this.updatePosition(uuid, type, newPosition);
+        }
+      });
 
       // Update canvas positions for nodes
-      if (this.currentDragItem.type === 'node') {
-        getStore()
-          .getState()
-          .updateCanvasPositions({
-            [this.currentDragItem.uuid]: newPosition
-          });
+      const nodePositions: { [uuid: string]: FlowPosition } = {};
+      this.selectedItems.forEach(uuid => {
+        if (this.definition.nodes.find(node => node.uuid === uuid)) {
+          nodePositions[uuid] = newPositions[uuid];
+        }
+      });
+      
+      if (Object.keys(nodePositions).length > 0) {
+        getStore().getState().updateCanvasPositions(nodePositions);
       }
 
-      // Repaint connections if this is a node
-      if (this.currentDragItem.type === 'node' && this.plumber) {
-        this.plumber.repaintEverything();
-      }
+      // Repaint connections for all selected nodes
+      this.selectedItems.forEach(uuid => {
+        if (this.definition.nodes.find(node => node.uuid === uuid) && this.plumber) {
+          this.plumber.repaintEverything();
+        }
+      });
+
+      // Clear selection after dragging
+      this.selectedItems.clear();
     }
 
     // Reset all drag state
     this.isDragging = false;
     this.isMouseDown = false;
     this.currentDragItem = null;
+    this.canvasMouseDown = false;
   }
 
   private updateCanvasSize(): void {
@@ -476,7 +757,10 @@ export class Editor extends RapidElement {
           style="min-width:100%;width:${this.canvasSize.width}px; height:${this
             .canvasSize.height}px"
         >
-          <div id="canvas">
+          <div 
+            id="canvas"
+            @mousedown=${this.handleCanvasMouseDown.bind(this)}
+          >
             ${this.definition
               ? this.definition.nodes.map((node) => {
                   const position =
@@ -484,9 +768,11 @@ export class Editor extends RapidElement {
 
                   const dragging =
                     this.isDragging && this.currentDragItem?.uuid === node.uuid;
+                  
+                  const selected = this.selectedItems.has(node.uuid);
 
                   return html`<temba-flow-node
-                    class="draggable ${dragging ? 'dragging' : ''}"
+                    class="draggable ${dragging ? 'dragging' : ''} ${selected ? 'selected' : ''}"
                     @mousedown=${this.handleMouseDown.bind(this)}
                     uuid=${node.uuid}
                     style="left:${position.left}px; top:${position.top}px"
@@ -500,8 +786,9 @@ export class Editor extends RapidElement {
               const position = sticky.position || { left: 0, top: 0 };
               const dragging =
                 this.isDragging && this.currentDragItem?.uuid === uuid;
+              const selected = this.selectedItems.has(uuid);
               return html`<temba-sticky-note
-                class="draggable ${dragging ? 'dragging' : ''}"
+                class="draggable ${dragging ? 'dragging' : ''} ${selected ? 'selected' : ''}"
                 @mousedown=${this.handleMouseDown.bind(this)}
                 style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
                 position.top}"
@@ -510,6 +797,7 @@ export class Editor extends RapidElement {
                 .dragging=${dragging}
               ></temba-sticky-note>`;
             })}
+            ${this.renderSelectionBox()}
           </div>
         </div>
       </div>`;
