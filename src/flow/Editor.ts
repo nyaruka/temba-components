@@ -13,6 +13,22 @@ export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;
 }
 
+interface BoundingBox {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+interface ItemLayout {
+  uuid: string;
+  type: 'node' | 'sticky';
+  position: FlowPosition;
+  boundingBox: BoundingBox;
+}
+
 const SAVE_QUIET_TIME = 500;
 
 export interface DraggableItem {
@@ -312,6 +328,222 @@ export class Editor extends RapidElement {
     }
   }
 
+  private getBoundingBox(uuid: string, type: 'node' | 'sticky', position?: FlowPosition): BoundingBox {
+    const pos = position || this.getPosition(uuid, type);
+    if (!pos) {
+      return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
+    }
+
+    let width = 200; // Default width for both nodes and stickies
+    let height = 100; // Default height
+
+    // Try to get actual dimensions from DOM element
+    const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+    } else {
+      // Use estimated dimensions if element not found
+      if (type === 'sticky') {
+        width = 200;
+        height = 100; // Estimated minimum height for sticky notes
+      } else {
+        width = 200;
+        height = 80; // Estimated minimum height for nodes
+      }
+    }
+
+    return {
+      left: pos.left,
+      top: pos.top,
+      right: pos.left + width,
+      bottom: pos.top + height,
+      width,
+      height
+    };
+  }
+
+  private hasCollision(box1: BoundingBox, box2: BoundingBox): boolean {
+    return !(
+      box1.right <= box2.left ||
+      box1.left >= box2.right ||
+      box1.bottom <= box2.top ||
+      box1.top >= box2.bottom
+    );
+  }
+
+  private getAllItems(): ItemLayout[] {
+    const items: ItemLayout[] = [];
+
+    // Add all nodes
+    if (this.definition?.nodes) {
+      this.definition.nodes.forEach((node) => {
+        const position = this.definition._ui.nodes[node.uuid]?.position;
+        if (position) {
+          items.push({
+            uuid: node.uuid,
+            type: 'node',
+            position,
+            boundingBox: this.getBoundingBox(node.uuid, 'node', position)
+          });
+        }
+      });
+    }
+
+    // Add all sticky notes
+    const stickies = this.definition?._ui?.stickies || {};
+    Object.entries(stickies).forEach(([uuid, sticky]) => {
+      if (sticky.position) {
+        items.push({
+          uuid,
+          type: 'sticky',
+          position: sticky.position,
+          boundingBox: this.getBoundingBox(uuid, 'sticky', sticky.position)
+        });
+      }
+    });
+
+    return items;
+  }
+
+  private findCollisions(targetItem: ItemLayout, allItems: ItemLayout[]): ItemLayout[] {
+    return allItems.filter(
+      (item) =>
+        item.uuid !== targetItem.uuid &&
+        this.hasCollision(targetItem.boundingBox, item.boundingBox)
+    );
+  }
+
+  private autoLayoutResolveCollisions(droppedItem: ItemLayout): Map<string, FlowPosition> {
+    const allItems = this.getAllItems();
+    const moves = new Map<string, FlowPosition>();
+    
+    // Update the dropped item in the items list
+    const droppedIndex = allItems.findIndex(item => item.uuid === droppedItem.uuid);
+    if (droppedIndex >= 0) {
+      allItems[droppedIndex] = droppedItem;
+    } else {
+      allItems.push(droppedItem);
+    }
+
+    // Find initial collisions
+    const collisions = this.findCollisions(droppedItem, allItems);
+    if (collisions.length === 0) {
+      return moves; // No collisions, nothing to do
+    }
+
+    // Process collisions in order (left to right, top to bottom)
+    const sortedCollisions = collisions.sort((a, b) => {
+      if (Math.abs(a.position.top - b.position.top) < 20) {
+        return a.position.left - b.position.left;
+      }
+      return a.position.top - b.position.top;
+    });
+
+    // Resolve each collision
+    for (const collidingItem of sortedCollisions) {
+      const resolvedPosition = this.findBestPosition(collidingItem, droppedItem, allItems);
+      if (resolvedPosition) {
+        moves.set(collidingItem.uuid, resolvedPosition);
+        
+        // Update the item's position in our tracking
+        const itemIndex = allItems.findIndex(item => item.uuid === collidingItem.uuid);
+        if (itemIndex >= 0) {
+          allItems[itemIndex].position = resolvedPosition;
+          allItems[itemIndex].boundingBox = this.getBoundingBox(
+            collidingItem.uuid,
+            collidingItem.type,
+            resolvedPosition
+          );
+        }
+
+        // Check for new collisions created by this move
+        const newCollisions = this.findCollisions(allItems[itemIndex], allItems);
+        for (const newCollision of newCollisions) {
+          if (!moves.has(newCollision.uuid) && newCollision.uuid !== droppedItem.uuid) {
+            const cascadePosition = this.findBestPosition(newCollision, allItems[itemIndex], allItems);
+            if (cascadePosition) {
+              moves.set(newCollision.uuid, cascadePosition);
+              
+              // Update position in tracking
+              const cascadeIndex = allItems.findIndex(item => item.uuid === newCollision.uuid);
+              if (cascadeIndex >= 0) {
+                allItems[cascadeIndex].position = cascadePosition;
+                allItems[cascadeIndex].boundingBox = this.getBoundingBox(
+                  newCollision.uuid,
+                  newCollision.type,
+                  cascadePosition
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return moves;
+  }
+
+  private findBestPosition(
+    itemToMove: ItemLayout,
+    blockingItem: ItemLayout,
+    allItems: ItemLayout[]
+  ): FlowPosition | null {
+    const itemBox = itemToMove.boundingBox;
+    const blockingBox = blockingItem.boundingBox;
+
+    // Calculate potential positions (right and down only)
+    const candidatePositions: FlowPosition[] = [];
+
+    // Position to the right of blocking item
+    const rightPosition = {
+      left: snapToGrid(blockingBox.right + 20), // 20px spacing
+      top: snapToGrid(itemToMove.position.top)
+    };
+    candidatePositions.push(rightPosition);
+
+    // Position below blocking item
+    const belowPosition = {
+      left: snapToGrid(itemToMove.position.left),
+      top: snapToGrid(blockingBox.bottom + 20) // 20px spacing
+    };
+    candidatePositions.push(belowPosition);
+
+    // Position diagonally (right and down)
+    const diagonalPosition = {
+      left: snapToGrid(blockingBox.right + 20),
+      top: snapToGrid(blockingBox.bottom + 20)
+    };
+    candidatePositions.push(diagonalPosition);
+
+    // Test each candidate position
+    for (const candidate of candidatePositions) {
+      const candidateBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, candidate);
+      
+      // Check if this position creates any new collisions (excluding the item being moved)
+      const hasNewCollision = allItems.some(item => 
+        item.uuid !== itemToMove.uuid && 
+        this.hasCollision(candidateBox, item.boundingBox)
+      );
+
+      if (!hasNewCollision) {
+        return candidate;
+      }
+    }
+
+    // If no clean position found, use the one that moves the least distance
+    // Calculate distances and prefer right over down to preserve layout flow
+    const rightDistance = Math.abs(rightPosition.left - itemToMove.position.left);
+    const belowDistance = Math.abs(belowPosition.top - itemToMove.position.top);
+    
+    if (rightDistance <= belowDistance) {
+      return rightPosition;
+    } else {
+      return belowPosition;
+    }
+  }
+
   private handleMouseDown(event: MouseEvent): void {
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
@@ -396,23 +628,66 @@ export class Editor extends RapidElement {
 
       const newPosition = { left: snappedLeft, top: snappedTop };
 
-      // Update the store with the new snapped position
+      // Create the dropped item layout for collision detection
+      const droppedItem: ItemLayout = {
+        uuid: this.currentDragItem.uuid,
+        type: this.currentDragItem.type,
+        position: newPosition,
+        boundingBox: this.getBoundingBox(
+          this.currentDragItem.uuid,
+          this.currentDragItem.type,
+          newPosition
+        )
+      };
+
+      // Check for collisions and auto-layout if needed
+      const autoLayoutMoves = this.autoLayoutResolveCollisions(droppedItem);
+
+      // Apply the dropped item's new position
       this.updatePosition(
         this.currentDragItem.uuid,
         this.currentDragItem.type,
         newPosition
       );
 
-      // Update canvas positions for nodes
-      if (this.currentDragItem.type === 'node') {
-        getStore()
-          .getState()
-          .updateCanvasPositions({
-            [this.currentDragItem.uuid]: newPosition
-          });
+      // Apply auto-layout moves for colliding items
+      autoLayoutMoves.forEach((position, uuid) => {
+        // Determine the type of the item being moved
+        let itemType: 'node' | 'sticky' = 'node';
+        
+        // Check if it's a sticky note
+        const stickies = this.definition?._ui?.stickies || {};
+        if (stickies[uuid]) {
+          itemType = 'sticky';
+        }
+        
+        this.updatePosition(uuid, itemType, position);
+      });
+
+      // Update canvas positions for all moved items
+      const allMovedPositions: { [uuid: string]: FlowPosition } = {
+        [this.currentDragItem.uuid]: newPosition
+      };
+      
+      autoLayoutMoves.forEach((position, uuid) => {
+        allMovedPositions[uuid] = position;
+      });
+
+      // Update canvas positions for nodes only
+      const nodePositions: { [uuid: string]: FlowPosition } = {};
+      Object.entries(allMovedPositions).forEach(([uuid, position]) => {
+        // Check if this is a node (not a sticky)
+        const isNode = this.definition?.nodes?.some(node => node.uuid === uuid);
+        if (isNode) {
+          nodePositions[uuid] = position;
+        }
+      });
+
+      if (Object.keys(nodePositions).length > 0) {
+        getStore().getState().updateCanvasPositions(nodePositions);
       }
 
-      // Repaint connections if this is a node
+      // Repaint connections if any nodes were moved
       if (this.currentDragItem.type === 'node' && this.plumber) {
         this.plumber.repaintEverything();
       }
