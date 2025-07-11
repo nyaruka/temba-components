@@ -83,6 +83,8 @@ export class Editor extends RapidElement {
   // Bound event handlers to maintain proper 'this' context
   private boundMouseMove = this.handleMouseMove.bind(this);
   private boundMouseUp = this.handleMouseUp.bind(this);
+  private boundGlobalMouseDown = this.handleGlobalMouseDown.bind(this);
+  private boundKeyDown = this.handleKeyDown.bind(this);
 
   static get styles() {
     return css`
@@ -311,13 +313,15 @@ export class Editor extends RapidElement {
     }
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
-    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    document.removeEventListener('mousedown', this.boundGlobalMouseDown);
+    document.removeEventListener('keydown', this.boundKeyDown);
   }
 
   private setupGlobalEventListeners(): void {
     document.addEventListener('mousemove', this.boundMouseMove);
     document.addEventListener('mouseup', this.boundMouseUp);
-    document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    document.addEventListener('mousedown', this.boundGlobalMouseDown);
+    document.addEventListener('keydown', this.boundKeyDown);
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -387,13 +391,35 @@ export class Editor extends RapidElement {
     event.stopPropagation();
   }
 
-  private handleCanvasMouseDown(event: MouseEvent): void {
-    // Only start selection if clicking directly on the canvas
+  private handleGlobalMouseDown(event: MouseEvent): void {
+    // Check if the click is within our canvas
+    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+    
+    if (!canvasRect) return;
+
+    const isWithinCanvas = (
+      event.clientX >= canvasRect.left &&
+      event.clientX <= canvasRect.right &&
+      event.clientY >= canvasRect.top &&
+      event.clientY <= canvasRect.bottom
+    );
+
+    if (!isWithinCanvas) return;
+
+    // Check if we clicked on a draggable item (node or sticky)
     const target = event.target as HTMLElement;
-    if (target.id !== 'canvas' && target.id !== 'grid') {
+    const clickedOnDraggable = target.closest('.draggable');
+    
+    if (clickedOnDraggable) {
+      // This is handled by the individual item mousedown handlers
       return;
     }
 
+    // We clicked on empty canvas space, start selection
+    this.handleCanvasMouseDown(event);
+  }
+
+  private handleCanvasMouseDown(event: MouseEvent): void {
     // Clear current selection
     this.selectedItems.clear();
 
@@ -571,6 +597,7 @@ export class Editor extends RapidElement {
     if (this.canvasMouseDown && !this.isMouseDown) {
       this.isSelecting = true;
       this.updateSelectionBox(event);
+      this.requestUpdate(); // Force re-render
       return;
     }
 
@@ -759,7 +786,6 @@ export class Editor extends RapidElement {
         >
           <div 
             id="canvas"
-            @mousedown=${this.handleCanvasMouseDown.bind(this)}
           >
             ${this.definition
               ? this.definition.nodes.map((node) => {
