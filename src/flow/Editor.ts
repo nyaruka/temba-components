@@ -341,8 +341,19 @@ export class Editor extends RapidElement {
     const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
     if (element) {
       const rect = element.getBoundingClientRect();
-      width = rect.width;
-      height = rect.height;
+      if (rect.width > 0 && rect.height > 0) {
+        width = rect.width;
+        height = rect.height;
+      } else {
+        // Fall back to estimated dimensions if element has no size
+        if (type === 'sticky') {
+          width = 200;
+          height = 100;
+        } else {
+          width = 200;
+          height = 80;
+        }
+      }
     } else {
       // Use estimated dimensions if element not found
       if (type === 'sticky') {
