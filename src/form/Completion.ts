@@ -7,11 +7,37 @@ import {
   updateInputElementWithCompletion,
   executeCompletionQuery
 } from '../excellent/helpers';
+import ExcellentParser from '../excellent/ExcellentParser';
 
 import { FormElement } from './FormElement';
 import { CompletionOption, Position } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { msg } from '@lit/localize';
+
+const messageParser = new ExcellentParser('@', [
+  'contact',
+  'fields',
+  'globals',
+  'urns'
+]);
+
+const sessionParser = new ExcellentParser('@', [
+  'contact',
+  'fields',
+  'globals',
+  'locals',
+  'urns',
+  'results',
+  'input',
+  'run',
+  'child',
+  'parent',
+  'node',
+  'webhook',
+  'ticket',
+  'trigger',
+  'resume'
+]);
 
 /**
  * Completion is a text input that handles excellent completion options in a popup
@@ -31,6 +57,27 @@ export class Completion extends FormElement {
       .comp-container {
         position: relative;
         height: 100%;
+      }
+
+      .highlight-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 1;
+      }
+
+      .expression-highlight {
+        position: absolute;
+        background: rgba(132, 40, 158, 0.1);
+        border-radius: 2px;
+        font-weight: 500;
+        color: rgba(132, 40, 158, 0.8);
+        pointer-events: none;
+        box-sizing: border-box;
       }
 
       #anchor {
@@ -124,14 +171,19 @@ export class Completion extends FormElement {
   @property({ type: Boolean })
   autogrow = false;
 
+  @property({ attribute: false })
+  expressions: any[] = [];
+
   private hiddenElement: HTMLInputElement;
   private query: string;
+  private highlightOverlay: HTMLDivElement;
 
   public firstUpdated() {
     this.textInputElement = this.shadowRoot.querySelector(
       'temba-textinput'
     ) as TextInput;
     this.anchorElement = this.shadowRoot.querySelector('#anchor');
+    this.highlightOverlay = this.shadowRoot.querySelector('.highlight-overlay');
 
     // create our hidden container so it gets included in our host element's form
     this.hiddenElement = document.createElement('input');
@@ -139,6 +191,13 @@ export class Completion extends FormElement {
     this.hiddenElement.setAttribute('name', this.getAttribute('name'));
     this.hiddenElement.setAttribute('value', this.getAttribute('value') || '');
     this.appendChild(this.hiddenElement);
+
+    // Update highlights when the input is scrolled
+    if (this.textInputElement && this.textInputElement.inputElement) {
+      this.textInputElement.inputElement.addEventListener('scroll', () => {
+        this.updateHighlights();
+      });
+    }
   }
 
   private handleKeyUp(evt: KeyboardEvent) {
@@ -201,6 +260,8 @@ export class Completion extends FormElement {
     // if our cursor changed, lets make sure our scrollbox is showing it
     if (changedProperties.has('value')) {
       this.hiddenElement.setAttribute('value', this.value);
+      // Update highlights when value changes
+      setTimeout(() => this.updateHighlights(), 0);
     }
   }
 
@@ -208,6 +269,7 @@ export class Completion extends FormElement {
     const ele = evt.currentTarget as TextInput;
     this.executeQuery(ele);
     this.value = ele.inputElement.value;
+    this.updateHighlights();
     this.fireEvent('change');
   }
 
@@ -256,6 +318,132 @@ export class Completion extends FormElement {
     }
   }
 
+  private updateHighlights() {
+    if (!this.highlightOverlay || !this.textInputElement?.inputElement) {
+      return;
+    }
+
+    // Clear existing highlights
+    this.highlightOverlay.innerHTML = '';
+
+    if (!this.value || this.disableCompletion) {
+      return;
+    }
+
+    // Parse expressions in the current value
+    const parser = this.session ? sessionParser : messageParser;
+    this.expressions = parser.findExpressions(this.value);
+
+    // Create highlight elements for each expression
+    this.expressions.forEach((expression) => {
+      this.createHighlightElement(expression);
+    });
+  }
+
+  private createHighlightElement(expression: any) {
+    if (!this.textInputElement?.inputElement || !this.highlightOverlay) {
+      return;
+    }
+
+    const inputElement = this.textInputElement.inputElement;
+    const highlightSpan = document.createElement('span');
+    highlightSpan.className = 'expression-highlight';
+
+    // Calculate the position of the expression text
+    const startPos = this.getTextPosition(inputElement, expression.start);
+    const endPos = this.getTextPosition(inputElement, expression.end);
+
+    if (startPos && endPos) {
+      highlightSpan.style.left = `${startPos.left}px`;
+      highlightSpan.style.top = `${startPos.top}px`;
+      highlightSpan.style.width = `${endPos.left - startPos.left}px`;
+      highlightSpan.style.height = `${
+        endPos.top - startPos.top + startPos.height
+      }px`;
+
+      // For single line expressions, use line height
+      if (startPos.top === endPos.top) {
+        highlightSpan.style.height = `${startPos.height}px`;
+      }
+
+      this.highlightOverlay.appendChild(highlightSpan);
+    }
+  }
+
+  private getTextPosition(
+    element: HTMLInputElement | HTMLTextAreaElement,
+    position: number
+  ) {
+    // Create a temporary element to measure text
+    const div = document.createElement('div');
+    const computedStyle = getComputedStyle(element);
+
+    // Copy relevant styles from the input element
+    [
+      'font-family',
+      'font-size',
+      'font-weight',
+      'line-height',
+      'letter-spacing',
+      'text-transform',
+      'word-spacing',
+      'text-indent',
+      'white-space',
+      'word-wrap',
+      'padding-left',
+      'padding-top',
+      'padding-right',
+      'padding-bottom',
+      'border-left-width',
+      'border-top-width',
+      'border-right-width',
+      'border-bottom-width'
+    ].forEach((prop) => {
+      div.style[prop] = computedStyle[prop];
+    });
+
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace =
+      element.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
+    div.style.width =
+      element.tagName === 'INPUT' ? 'auto' : `${element.clientWidth}px`;
+
+    // Set text up to the position
+    const textBeforePosition = element.value.substring(0, position);
+    div.textContent = textBeforePosition;
+
+    // Add a span for the character at position to measure
+    const span = document.createElement('span');
+    span.textContent = element.value.charAt(position) || ' ';
+    div.appendChild(span);
+
+    // Add to DOM temporarily to measure
+    document.body.appendChild(div);
+
+    const rect = span.getBoundingClientRect();
+    const divRect = div.getBoundingClientRect();
+
+    const result = {
+      left:
+        rect.left -
+        divRect.left +
+        parseInt(computedStyle.paddingLeft) -
+        element.scrollLeft,
+      top:
+        rect.top -
+        divRect.top +
+        parseInt(computedStyle.paddingTop) -
+        element.scrollTop,
+      height: rect.height
+    };
+
+    // Clean up
+    document.body.removeChild(div);
+
+    return result;
+  }
+
   public render(): TemplateResult {
     const anchorStyles = this.anchorPosition
       ? {
@@ -276,6 +464,7 @@ export class Completion extends FormElement {
       >
         <div class="comp-container">
           <div id="anchor" style=${styleMap(anchorStyles)}></div>
+          <div class="highlight-overlay"></div>
           <temba-textinput
             name=${this.name}
             placeholder=${this.placeholder}
