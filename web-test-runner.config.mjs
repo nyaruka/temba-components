@@ -304,29 +304,35 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-  setupFiles: ['./test-setup.js'],
   concurrency: 4,
   testFramework: {
     config: {
       timeout: '5000',
     },
   },
-  
-  // Configure coverage to better handle source files
+
+  // Configure coverage with better handling of template literals
+  coverage: true,
   coverageConfig: {
     include: ['src/**/*.ts'],
     exclude: [
       'src/**/*.test.ts',
-      'src/**/*.spec.ts',
+      'src/**/*.spec.ts', 
       'node_modules/**',
       'test/**',
       'dist/**',
       'coverage/**'
     ],
-    // Generate reports in lcov format
     report: true,
     reportDir: 'coverage',
-    reporters: ['lcov', 'text-summary']
+    reporters: ['lcov', 'text-summary'],
+    // Additional options to help with template literal coverage
+    watermarks: {
+      statements: [50, 80],
+      functions: [50, 80], 
+      branches: [50, 80],
+      lines: [50, 80]
+    }
   },
 
   plugins: [

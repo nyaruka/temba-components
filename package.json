@@ -22,7 +22,7 @@
     "format": "yarn format:eslint && yarn format:prettier",
     "test": "wtr --node-resolve",
     "test:fast": "wtr --node-resolve --fast",
-    "test:coverage": "wtr --node-resolve --coverage && node fix-coverage.js",
+    "test:coverage": "wtr --node-resolve --coverage",
     "check-coverage": "node check-coverage.js",
     "validate": "yarn format && yarn build && (yarn test:coverage; yarn check-coverage)",
     "test:watch": "wtr --node-resolve --watch",
