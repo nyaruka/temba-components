@@ -510,45 +510,121 @@ export class Editor extends RapidElement {
   ): FlowPosition | null {
     const itemBox = itemToMove.boundingBox;
     const blockingBox = blockingItem.boundingBox;
-
-    // Try multiple positions with increasing distances to avoid overlaps
     const spacing = 20; // Grid spacing
-    const maxAttempts = 5; // Try up to 5 different distances
+    const maxAttempts = 3; // Reduced attempts for performance
 
-    // Try right positions with increasing distance
+    // Calculate all possible positions in all directions with potential cascading impact
+    const candidatePositions: Array<{ position: FlowPosition; distance: number; direction: string; cascadingMoves: number }> = [];
+
+    // Try all four directions with increasing distances
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Right position
       const rightPosition = {
         left: snapToGrid(blockingBox.right + spacing + (attempt * 220)), // 220 = 200 width + 20 spacing
         top: snapToGrid(itemToMove.position.top)
       };
-
       const rightBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, rightPosition);
-      const rightHasCollision = allItems.some(item => 
-        item.uuid !== itemToMove.uuid && 
-        this.hasCollision(rightBox, item.boundingBox)
-      );
-
-      if (!rightHasCollision) {
-        return rightPosition;
+      const rightCollisions = this.countCascadingCollisions(rightBox, itemToMove.uuid, allItems);
+      if (rightCollisions.hasDirectCollision === false) {
+        const distance = Math.abs(rightPosition.left - itemToMove.position.left) + 
+                        Math.abs(rightPosition.top - itemToMove.position.top);
+        candidatePositions.push({ 
+          position: rightPosition, 
+          distance, 
+          direction: 'right',
+          cascadingMoves: rightCollisions.cascadingCount
+        });
       }
-    }
 
-    // Try below positions with increasing distance  
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Left position (only if it doesn't go negative and results in valid position)
+      const leftPosition = {
+        left: snapToGrid(Math.max(0, blockingBox.left - spacing - 200 - (attempt * 220))), // 200 = item width
+        top: snapToGrid(itemToMove.position.top)
+      };
+      if (leftPosition.left >= 0) {
+        const leftBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, leftPosition);
+      const leftCollisions = this.countCascadingCollisions(leftBox, itemToMove.uuid, allItems);
+      if (leftCollisions.hasDirectCollision === false) {
+          const distance = Math.abs(leftPosition.left - itemToMove.position.left) + 
+                          Math.abs(leftPosition.top - itemToMove.position.top);
+          candidatePositions.push({ 
+            position: leftPosition, 
+            distance, 
+            direction: 'left',
+            cascadingMoves: leftCollisions.cascadingCount
+          });
+        }
+      }
+
+      // Below position
       const belowPosition = {
         left: snapToGrid(itemToMove.position.left),
         top: snapToGrid(blockingBox.bottom + spacing + (attempt * 100)) // 100 = 80 height + 20 spacing
       };
-
       const belowBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, belowPosition);
-      const belowHasCollision = allItems.some(item => 
-        item.uuid !== itemToMove.uuid && 
-        this.hasCollision(belowBox, item.boundingBox)
-      );
-
-      if (!belowHasCollision) {
-        return belowPosition;
+      const belowCollisions = this.countCascadingCollisions(belowBox, itemToMove.uuid, allItems);
+      if (belowCollisions.hasDirectCollision === false) {
+        const distance = Math.abs(belowPosition.left - itemToMove.position.left) + 
+                        Math.abs(belowPosition.top - itemToMove.position.top);
+        candidatePositions.push({ 
+          position: belowPosition, 
+          distance, 
+          direction: 'down',
+          cascadingMoves: belowCollisions.cascadingCount
+        });
       }
+
+      // Above position (only if it doesn't go negative)
+      const abovePosition = {
+        left: snapToGrid(itemToMove.position.left),
+        top: snapToGrid(Math.max(0, blockingBox.top - spacing - 80 - (attempt * 100))) // 80 = item height
+      };
+      if (abovePosition.top >= 0) {
+        const aboveBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, abovePosition);
+        const aboveCollisions = this.countCascadingCollisions(aboveBox, itemToMove.uuid, allItems);
+        if (aboveCollisions.hasDirectCollision === false) {
+          const distance = Math.abs(abovePosition.left - itemToMove.position.left) + 
+                          Math.abs(abovePosition.top - itemToMove.position.top);
+          candidatePositions.push({ 
+            position: abovePosition, 
+            distance, 
+            direction: 'up',
+            cascadingMoves: aboveCollisions.cascadingCount
+          });
+        }
+      }
+    }
+
+    // If we have candidates, choose the one with minimum total impact
+    if (candidatePositions.length > 0) {
+      // Sort by cascading moves first, then by a balanced scoring system
+      candidatePositions.sort((a, b) => {
+        // First priority: minimize cascading moves
+        if (a.cascadingMoves !== b.cascadingMoves) {
+          return a.cascadingMoves - b.cascadingMoves;
+        }
+        
+        // Second priority: balanced scoring that considers both distance and flow direction
+        // Be more conservative about upward/leftward movement - prefer it only when there's a significant benefit
+        const directionPriority = { right: 1, down: 2, left: 3, up: 4 };
+        const distanceDiff = Math.abs(a.distance - b.distance);
+        
+        // Strong preference for maintaining flow direction (right/down) unless there's a very large distance difference
+        if (distanceDiff > 400) {
+          // Very large distance difference - prioritize shorter distance
+          return a.distance - b.distance;
+        } else if (distanceDiff <= 150) {
+          // Small to medium distance difference - prioritize flow direction  
+          return directionPriority[a.direction] - directionPriority[b.direction];
+        } else {
+          // Medium-large distance difference - balance both factors, but still favor flow direction
+          const aScore = a.distance * 0.3 + (directionPriority[a.direction] * 100);
+          const bScore = b.distance * 0.3 + (directionPriority[b.direction] * 100);
+          return aScore - bScore;
+        }
+      });
+
+      return candidatePositions[0].position;
     }
 
     // Try diagonal positions as fallback
@@ -575,6 +651,41 @@ export class Editor extends RapidElement {
       left: snapToGrid(blockingBox.right + spacing),
       top: snapToGrid(itemToMove.position.top)
     };
+  }
+
+  private countCascadingCollisions(newBox: BoundingBox, movingItemUuid: string, allItems: ItemLayout[]): { hasDirectCollision: boolean; cascadingCount: number } {
+    let cascadingCount = 0;
+    
+    // Check for direct collisions with the new position
+    for (const item of allItems) {
+      if (item.uuid === movingItemUuid) continue;
+      
+      if (this.hasCollision(newBox, item.boundingBox)) {
+        return { hasDirectCollision: true, cascadingCount: 0 }; // Direct collision means this position is invalid
+      }
+    }
+    
+    // If no direct collision, estimate potential cascading moves
+    // This is a simplified heuristic - in reality, we'd need to simulate the full cascade
+    for (const item of allItems) {
+      if (item.uuid === movingItemUuid) continue;
+      
+      // Check if this item would be "pushed" by the new position
+      // Items are considered "pushable" if they're in the movement path
+      const isInRightPath = newBox.right > item.boundingBox.left && 
+                           newBox.right < item.boundingBox.right &&
+                           Math.abs(newBox.top - item.boundingBox.top) < 100;
+      
+      const isInDownPath = newBox.bottom > item.boundingBox.top && 
+                          newBox.bottom < item.boundingBox.bottom &&
+                          Math.abs(newBox.left - item.boundingBox.left) < 220;
+      
+      if (isInRightPath || isInDownPath) {
+        cascadingCount++;
+      }
+    }
+    
+    return { hasDirectCollision: false, cascadingCount };
   }
 
   private handleMouseDown(event: MouseEvent): void {

@@ -165,7 +165,7 @@
             <li><strong>Create Collisions:</strong> Drop a node on top of another node or sticky note</li>
             <li><strong>Watch Auto Layout:</strong> Observe how overlapping items automatically move to make room</li>
             <li><strong>Grid Snapping:</strong> All final positions snap to a 20px grid</li>
-            <li><strong>Movement Rules:</strong> Items only move right or down, never up or left</li>
+            <li><strong>Movement Rules:</strong> Items can move in any direction (right, down, left, up) to find the best position</li>
         </ul>
     </div>
     
@@ -173,7 +173,7 @@
         <div class="demo-title">Auto Layout Demo Canvas</div>
         <div class="demo-description">
             Try dragging the blue nodes or yellow sticky notes to create overlapping situations. 
-            The auto-layout algorithm will automatically resolve collisions by moving items to the right or down.
+            The auto-layout algorithm will automatically resolve collisions by moving items in the optimal direction with cascading collision handling.
         </div>
         
         <div class="flow-canvas" id="canvas">
@@ -203,7 +203,7 @@
         <h3>Auto Layout Features Demonstrated</h3>
         <ul>
             <li>✅ <strong>Collision Detection:</strong> Automatically detects when dragged items overlap with existing items</li>
-            <li>✅ <strong>Smart Movement:</strong> Only moves items horizontally (right) or vertically (down), preserving layout flow</li>
+            <li>✅ <strong>Smart Movement:</strong> Moves items in optimal directions (right, down, left, up) considering distance and flow layout</li>
             <li>✅ <strong>Cascading Moves:</strong> When moving one item creates a new collision, the algorithm handles it recursively</li>
             <li>✅ <strong>Grid Snapping:</strong> All final positions are snapped to a 20px grid for clean alignment</li>
             <li>✅ <strong>Minimal Changes:</strong> Uses the smallest possible movements to resolve collisions</li>
@@ -294,27 +294,197 @@
                 const canvas = document.getElementById('canvas');
                 const allItems = Array.from(canvas.querySelectorAll('.flow-node, .sticky-note'));
                 
-                const droppedRect = {
-                    left: droppedX,
-                    top: droppedY,
-                    right: droppedX + droppedElement.offsetWidth,
-                    bottom: droppedY + droppedElement.offsetHeight
-                };
-                
-                allItems.forEach(item => {
-                    if (item === droppedElement) return;
-                    
-                    const itemRect = {
+                // Create initial layout of all items with their current positions
+                const itemLayouts = allItems.map(item => ({
+                    element: item,
+                    uuid: item.getAttribute('data-uuid'),
+                    position: {
+                        left: parseInt(item.style.left),
+                        top: parseInt(item.style.top)
+                    },
+                    boundingBox: {
                         left: parseInt(item.style.left),
                         top: parseInt(item.style.top),
                         right: parseInt(item.style.left) + item.offsetWidth,
                         bottom: parseInt(item.style.top) + item.offsetHeight
+                    }
+                }));
+
+                // Update the dropped element's position
+                const droppedLayout = itemLayouts.find(layout => layout.element === droppedElement);
+                if (droppedLayout) {
+                    droppedLayout.position = { left: droppedX, top: droppedY };
+                    droppedLayout.boundingBox = {
+                        left: droppedX,
+                        top: droppedY,
+                        right: droppedX + droppedElement.offsetWidth,
+                        bottom: droppedY + droppedElement.offsetHeight
                     };
+                }
+
+                const moves = new Map();
+                
+                // Iterative collision resolution to handle cascading collisions
+                let hasChanges = true;
+                let maxIterations = 10;
+                let iteration = 0;
+                
+                while (hasChanges && iteration < maxIterations) {
+                    hasChanges = false;
+                    iteration++;
                     
-                    if (this.hasCollision(droppedRect, itemRect)) {
-                        this.moveToResolveCollision(item, droppedRect);
+                    // Check all items for collisions
+                    for (let i = 0; i < itemLayouts.length; i++) {
+                        const currentItem = itemLayouts[i];
+                        
+                        // Find collisions with this item
+                        const collisions = itemLayouts.filter((item, index) => 
+                            index !== i && 
+                            this.hasCollision(currentItem.boundingBox, item.boundingBox)
+                        );
+                        
+                        if (collisions.length > 0) {
+                            // Sort collisions by position to handle them consistently
+                            const sortedCollisions = collisions.sort((a, b) => {
+                                if (Math.abs(a.position.top - b.position.top) < 20) {
+                                    return a.position.left - b.position.left;
+                                }
+                                return a.position.top - b.position.top;
+                            });
+                            
+                            // Resolve collisions - prioritize moving items that haven't been moved yet
+                            for (const collidingItem of sortedCollisions) {
+                                // Skip if this is the dropped item (it shouldn't be moved)
+                                if (collidingItem.element === droppedElement) {
+                                    continue;
+                                }
+                                
+                                // Skip if this item has already been moved in this iteration
+                                if (moves.has(collidingItem.uuid)) {
+                                    continue;
+                                }
+                                
+                                const newPosition = this.findBestPosition(collidingItem, currentItem, itemLayouts);
+                                if (newPosition) {
+                                    // Record the move
+                                    moves.set(collidingItem.uuid, newPosition);
+                                    
+                                    // Update the item's position in our tracking array
+                                    collidingItem.position = newPosition;
+                                    collidingItem.boundingBox = {
+                                        left: newPosition.left,
+                                        top: newPosition.top,
+                                        right: newPosition.left + collidingItem.element.offsetWidth,
+                                        bottom: newPosition.top + collidingItem.element.offsetHeight
+                                    };
+                                    hasChanges = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Apply all moves to the DOM
+                moves.forEach((position, uuid) => {
+                    const item = canvas.querySelector(`[data-uuid="${uuid}"]`);
+                    if (item) {
+                        this.animateMove(item, position.left, position.top);
                     }
                 });
+            }
+            
+            findBestPosition(itemToMove, blockingItem, allItems) {
+                const blockingBox = blockingItem.boundingBox;
+                const spacing = 20;
+                
+                const candidates = [];
+                
+                // Try right position
+                const rightPosition = {
+                    left: this.snapToGrid(blockingBox.right + spacing),
+                    top: this.snapToGrid(itemToMove.position.top)
+                };
+                if (!this.wouldCollide(rightPosition, itemToMove.element, allItems)) {
+                    const distance = Math.abs(rightPosition.left - itemToMove.position.left) + 
+                                   Math.abs(rightPosition.top - itemToMove.position.top);
+                    candidates.push({ position: rightPosition, distance, direction: 'right' });
+                }
+                
+                // Try down position
+                const belowPosition = {
+                    left: this.snapToGrid(itemToMove.position.left),
+                    top: this.snapToGrid(blockingBox.bottom + spacing)
+                };
+                if (!this.wouldCollide(belowPosition, itemToMove.element, allItems)) {
+                    const distance = Math.abs(belowPosition.left - itemToMove.position.left) + 
+                                   Math.abs(belowPosition.top - itemToMove.position.top);
+                    candidates.push({ position: belowPosition, distance, direction: 'down' });
+                }
+                
+                // Try left position (only if it doesn't go negative)
+                const leftPosition = {
+                    left: this.snapToGrid(Math.max(0, blockingBox.left - spacing - itemToMove.element.offsetWidth)),
+                    top: this.snapToGrid(itemToMove.position.top)
+                };
+                if (leftPosition.left >= 0 && !this.wouldCollide(leftPosition, itemToMove.element, allItems)) {
+                    const distance = Math.abs(leftPosition.left - itemToMove.position.left) + 
+                                   Math.abs(leftPosition.top - itemToMove.position.top);
+                    candidates.push({ position: leftPosition, distance, direction: 'left' });
+                }
+                
+                // Try up position (only if it doesn't go negative)
+                const abovePosition = {
+                    left: this.snapToGrid(itemToMove.position.left),
+                    top: this.snapToGrid(Math.max(0, blockingBox.top - spacing - itemToMove.element.offsetHeight))
+                };
+                if (abovePosition.top >= 0 && !this.wouldCollide(abovePosition, itemToMove.element, allItems)) {
+                    const distance = Math.abs(abovePosition.left - itemToMove.position.left) + 
+                                   Math.abs(abovePosition.top - itemToMove.position.top);
+                    candidates.push({ position: abovePosition, distance, direction: 'up' });
+                }
+                
+                if (candidates.length === 0) {
+                    // Fallback to right position
+                    return {
+                        left: this.snapToGrid(blockingBox.right + spacing),
+                        top: this.snapToGrid(itemToMove.position.top)
+                    };
+                }
+                
+                // Sort by distance, then by direction preference (right > down > left > up)
+                candidates.sort((a, b) => {
+                    const distanceDiff = Math.abs(a.distance - b.distance);
+                    if (distanceDiff <= 100) {
+                        const directionPriority = { right: 1, down: 2, left: 3, up: 4 };
+                        return directionPriority[a.direction] - directionPriority[b.direction];
+                    }
+                    return a.distance - b.distance;
+                });
+                
+                return candidates[0].position;
+            }
+            
+            wouldCollide(position, element, allItems) {
+                const testBox = {
+                    left: position.left,
+                    top: position.top,
+                    right: position.left + element.offsetWidth,
+                    bottom: position.top + element.offsetHeight
+                };
+                
+                return allItems.some(item => 
+                    item.element !== element && 
+                    this.hasCollision(testBox, item.boundingBox)
+                );
+            }
+            
+            animateMove(item, left, top) {
+                item.style.transition = 'all 0.3s ease';
+                item.style.left = left + 'px';
+                item.style.top = top + 'px';
+                setTimeout(() => {
+                    item.style.transition = '';
+                }, 300);
             }
             
             hasCollision(rect1, rect2) {
@@ -322,35 +492,6 @@
                         rect1.left >= rect2.right || 
                         rect1.bottom <= rect2.top || 
                         rect1.top >= rect2.bottom);
-            }
-            
-            moveToResolveCollision(item, blockingRect) {
-                const currentX = parseInt(item.style.left);
-                const currentY = parseInt(item.style.top);
-                
-                // Try moving right first
-                const rightX = this.snapToGrid(blockingRect.right + 20);
-                const belowY = this.snapToGrid(blockingRect.bottom + 20);
-                
-                // Choose the direction that moves the least distance
-                const rightDistance = Math.abs(rightX - currentX);
-                const downDistance = Math.abs(belowY - currentY);
-                
-                if (rightDistance <= downDistance) {
-                    item.style.left = rightX + 'px';
-                    // Animate the move
-                    item.style.transition = 'all 0.3s ease';
-                    setTimeout(() => {
-                        item.style.transition = '';
-                    }, 300);
-                } else {
-                    item.style.top = belowY + 'px';
-                    // Animate the move
-                    item.style.transition = 'all 0.3s ease';
-                    setTimeout(() => {
-                        item.style.transition = '';
-                    }, 300);
-                }
             }
         }
         
