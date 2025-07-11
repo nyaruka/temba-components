@@ -438,54 +438,61 @@ export class Editor extends RapidElement {
       allItems.push(droppedItem);
     }
 
-    // Find initial collisions
-    const collisions = this.findCollisions(droppedItem, allItems);
-    if (collisions.length === 0) {
-      return moves; // No collisions, nothing to do
-    }
-
-    // Process collisions in order (left to right, top to bottom)
-    const sortedCollisions = collisions.sort((a, b) => {
-      if (Math.abs(a.position.top - b.position.top) < 20) {
-        return a.position.left - b.position.left;
-      }
-      return a.position.top - b.position.top;
-    });
-
-    // Resolve each collision
-    for (const collidingItem of sortedCollisions) {
-      const resolvedPosition = this.findBestPosition(collidingItem, droppedItem, allItems);
-      if (resolvedPosition) {
-        moves.set(collidingItem.uuid, resolvedPosition);
+    // Keep iterating until no new collisions are found
+    let hasChanges = true;
+    let maxIterations = 20; // Increased to handle more complex scenarios
+    let iteration = 0;
+    
+    while (hasChanges && iteration < maxIterations) {
+      hasChanges = false;
+      iteration++;
+      
+      // Check all items for collisions
+      for (let i = 0; i < allItems.length; i++) {
+        const currentItem = allItems[i];
         
-        // Update the item's position in our tracking
-        const itemIndex = allItems.findIndex(item => item.uuid === collidingItem.uuid);
-        if (itemIndex >= 0) {
-          allItems[itemIndex].position = resolvedPosition;
-          allItems[itemIndex].boundingBox = this.getBoundingBox(
-            collidingItem.uuid,
-            collidingItem.type,
-            resolvedPosition
-          );
-        }
-
-        // Check for new collisions created by this move
-        const newCollisions = this.findCollisions(allItems[itemIndex], allItems);
-        for (const newCollision of newCollisions) {
-          if (!moves.has(newCollision.uuid) && newCollision.uuid !== droppedItem.uuid) {
-            const cascadePosition = this.findBestPosition(newCollision, allItems[itemIndex], allItems);
-            if (cascadePosition) {
-              moves.set(newCollision.uuid, cascadePosition);
+        // Find collisions with this item
+        const collisions = allItems.filter((item, index) => 
+          index !== i && 
+          this.hasCollision(currentItem.boundingBox, item.boundingBox)
+        );
+        
+        if (collisions.length > 0) {
+          // Sort collisions by position to handle them consistently
+          const sortedCollisions = collisions.sort((a, b) => {
+            if (Math.abs(a.position.top - b.position.top) < 20) {
+              return a.position.left - b.position.left;
+            }
+            return a.position.top - b.position.top;
+          });
+          
+          // Resolve collisions - prioritize moving items that haven't been moved yet
+          for (const collidingItem of sortedCollisions) {
+            // Skip if this is the dropped item (it shouldn't be moved)
+            if (collidingItem.uuid === droppedItem.uuid) {
+              continue;
+            }
+            
+            // Skip if this item has already been moved in this iteration
+            if (moves.has(collidingItem.uuid)) {
+              continue;
+            }
+            
+            const resolvedPosition = this.findBestPosition(collidingItem, currentItem, allItems);
+            if (resolvedPosition) {
+              // Record the move
+              moves.set(collidingItem.uuid, resolvedPosition);
               
-              // Update position in tracking
-              const cascadeIndex = allItems.findIndex(item => item.uuid === newCollision.uuid);
-              if (cascadeIndex >= 0) {
-                allItems[cascadeIndex].position = cascadePosition;
-                allItems[cascadeIndex].boundingBox = this.getBoundingBox(
-                  newCollision.uuid,
-                  newCollision.type,
-                  cascadePosition
+              // Update the item's position in our tracking array
+              const itemIndex = allItems.findIndex(item => item.uuid === collidingItem.uuid);
+              if (itemIndex >= 0) {
+                allItems[itemIndex].position = resolvedPosition;
+                allItems[itemIndex].boundingBox = this.getBoundingBox(
+                  collidingItem.uuid,
+                  collidingItem.type,
+                  resolvedPosition
                 );
+                hasChanges = true;
               }
             }
           }
@@ -504,55 +511,70 @@ export class Editor extends RapidElement {
     const itemBox = itemToMove.boundingBox;
     const blockingBox = blockingItem.boundingBox;
 
-    // Calculate potential positions (right and down only)
-    const candidatePositions: FlowPosition[] = [];
+    // Try multiple positions with increasing distances to avoid overlaps
+    const spacing = 20; // Grid spacing
+    const maxAttempts = 5; // Try up to 5 different distances
 
-    // Position to the right of blocking item
-    const rightPosition = {
-      left: snapToGrid(blockingBox.right + 20), // 20px spacing
-      top: snapToGrid(itemToMove.position.top)
-    };
-    candidatePositions.push(rightPosition);
+    // Try right positions with increasing distance
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const rightPosition = {
+        left: snapToGrid(blockingBox.right + spacing + (attempt * 220)), // 220 = 200 width + 20 spacing
+        top: snapToGrid(itemToMove.position.top)
+      };
 
-    // Position below blocking item
-    const belowPosition = {
-      left: snapToGrid(itemToMove.position.left),
-      top: snapToGrid(blockingBox.bottom + 20) // 20px spacing
-    };
-    candidatePositions.push(belowPosition);
-
-    // Position diagonally (right and down)
-    const diagonalPosition = {
-      left: snapToGrid(blockingBox.right + 20),
-      top: snapToGrid(blockingBox.bottom + 20)
-    };
-    candidatePositions.push(diagonalPosition);
-
-    // Test each candidate position
-    for (const candidate of candidatePositions) {
-      const candidateBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, candidate);
-      
-      // Check if this position creates any new collisions (excluding the item being moved)
-      const hasNewCollision = allItems.some(item => 
+      const rightBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, rightPosition);
+      const rightHasCollision = allItems.some(item => 
         item.uuid !== itemToMove.uuid && 
-        this.hasCollision(candidateBox, item.boundingBox)
+        this.hasCollision(rightBox, item.boundingBox)
       );
 
-      if (!hasNewCollision) {
-        return candidate;
+      if (!rightHasCollision) {
+        return rightPosition;
       }
     }
 
-    // If no clean position found, use the one that moves the least distance
-    // Calculate distances and prefer right over down to preserve layout flow
-    const rightDistance = Math.abs(rightPosition.left - itemToMove.position.left);
-    const belowDistance = Math.abs(belowPosition.top - itemToMove.position.top);
-    
-    if (rightDistance <= belowDistance) {
-      return rightPosition;
-    } else {
-      return belowPosition;
+    // Try below positions with increasing distance  
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const belowPosition = {
+        left: snapToGrid(itemToMove.position.left),
+        top: snapToGrid(blockingBox.bottom + spacing + (attempt * 100)) // 100 = 80 height + 20 spacing
+      };
+
+      const belowBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, belowPosition);
+      const belowHasCollision = allItems.some(item => 
+        item.uuid !== itemToMove.uuid && 
+        this.hasCollision(belowBox, item.boundingBox)
+      );
+
+      if (!belowHasCollision) {
+        return belowPosition;
+      }
     }
+
+    // Try diagonal positions as fallback
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const diagonalPosition = {
+        left: snapToGrid(blockingBox.right + spacing + (attempt * 220)),
+        top: snapToGrid(blockingBox.bottom + spacing + (attempt * 100))
+      };
+
+      const diagonalBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, diagonalPosition);
+      const diagonalHasCollision = allItems.some(item => 
+        item.uuid !== itemToMove.uuid && 
+        this.hasCollision(diagonalBox, item.boundingBox)
+      );
+
+      if (!diagonalHasCollision) {
+        return diagonalPosition;
+      }
+    }
+
+    // If all positions have collisions, return the first right position
+    // This will trigger another iteration of the collision resolution loop
+    return {
+      left: snapToGrid(blockingBox.right + spacing),
+      top: snapToGrid(itemToMove.position.top)
+    };
   }
 
   private handleMouseDown(event: MouseEvent): void {

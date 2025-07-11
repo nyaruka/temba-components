@@ -497,4 +497,264 @@ describe('Flow Editor Auto Layout', () => {
       expect(moves.size).to.be.at.least(0); // May or may not move depending on implementation
     });
   });
+
+  describe('comprehensive collision resolution', () => {
+    it('should resolve cascading collisions completely', () => {
+      // Create a scenario with tightly packed nodes that will create cascading collisions
+      const mockDefinition: FlowDefinition = {
+        uuid: 'test-flow',
+        name: 'Test Flow',
+        spec_version: '13.1.0',
+        language: 'eng',
+        type: 'messaging',
+        revision: 1,
+        expire_after_minutes: 10080,
+        metadata: {},
+        nodes: [
+          { uuid: 'node1', actions: [], exits: [] },
+          { uuid: 'node2', actions: [], exits: [] },
+          { uuid: 'node3', actions: [], exits: [] },
+          { uuid: 'node4', actions: [], exits: [] }
+        ],
+        _ui: {
+          nodes: {
+            'node1': { position: { left: 100, top: 100 } },
+            'node2': { position: { left: 320, top: 100 } }, // Right of node1
+            'node3': { position: { left: 540, top: 100 } }, // Right of node2  
+            'node4': { position: { left: 320, top: 180 } }  // Below node2
+          },
+          stickies: {}
+        }
+      };
+
+      // Set the mock definition
+      (editor as any).definition = mockDefinition;
+
+      // Simulate dragging node1 to collide with node2 (position 300, 100)
+      const droppedItem = {
+        uuid: 'node1',
+        type: 'node' as const,
+        position: { left: 300, top: 100 },
+        boundingBox: {
+          left: 300,
+          top: 100,
+          right: 500, // 200px width
+          bottom: 180, // 80px height
+          width: 200,
+          height: 80
+        }
+      };
+
+      // Call the auto-layout algorithm
+      const moves = (editor as any).autoLayoutResolveCollisions(droppedItem);
+
+      // Verify that node2 was moved (should be pushed to the right)
+      expect(moves.has('node2')).to.be.true;
+      const node2Position = moves.get('node2');
+      expect(node2Position.left).to.be.greaterThan(320); // Should be moved right
+
+      // Check if node2's final position would collide with node3's original position
+      const node2FinalBox = {
+        left: node2Position.left,
+        top: node2Position.top,
+        right: node2Position.left + 200,
+        bottom: node2Position.top + 80
+      };
+
+      const node3OriginalBox = {
+        left: 540,
+        top: 100,
+        right: 740, // 540 + 200
+        bottom: 180 // 100 + 80
+      };
+
+      const node2CollidesWithNode3 = !(
+        node2FinalBox.right <= node3OriginalBox.left ||
+        node2FinalBox.left >= node3OriginalBox.right ||
+        node2FinalBox.bottom <= node3OriginalBox.top ||
+        node2FinalBox.top >= node3OriginalBox.bottom
+      );
+
+      // If node2's new position would collide with node3, then node3 should also be moved
+      if (node2CollidesWithNode3) {
+        expect(moves.has('node3')).to.be.true;
+        const node3Position = moves.get('node3');
+        expect(node3Position.left).to.be.greaterThan(540); // Should be moved further right
+      }
+
+      // Most importantly: verify NO collisions remain after all moves
+      const allFinalPositions = new Map<string, { left: number; top: number }>();
+      allFinalPositions.set('node1', droppedItem.position);
+      allFinalPositions.set('node2', moves.get('node2') || { left: 320, top: 100 });
+      allFinalPositions.set('node3', moves.get('node3') || { left: 540, top: 100 });
+      allFinalPositions.set('node4', moves.get('node4') || { left: 320, top: 180 });
+
+      // Check all pairs for collisions
+      const nodeIds = ['node1', 'node2', 'node3', 'node4'];
+      for (let i = 0; i < nodeIds.length; i++) {
+        for (let j = i + 1; j < nodeIds.length; j++) {
+          const pos1 = allFinalPositions.get(nodeIds[i])!;
+          const pos2 = allFinalPositions.get(nodeIds[j])!;
+          
+          const box1 = {
+            left: pos1.left,
+            top: pos1.top,
+            right: pos1.left + 200,
+            bottom: pos1.top + 80
+          };
+          
+          const box2 = {
+            left: pos2.left,
+            top: pos2.top,
+            right: pos2.left + 200,
+            bottom: pos2.top + 80
+          };
+          
+          const hasCollision = !(
+            box1.right <= box2.left ||
+            box1.left >= box2.right ||
+            box1.bottom <= box2.top ||
+            box1.top >= box2.bottom
+          );
+          
+          expect(hasCollision).to.be.false;;
+        }
+      }
+    });
+
+    it('should minimize the number of node movements', () => {
+      // Test that the algorithm uses the minimal number of moves necessary
+      const mockDefinition: FlowDefinition = {
+        uuid: 'test-flow',
+        name: 'Test Flow',
+        spec_version: '13.1.0',
+        language: 'eng',
+        type: 'messaging',
+        revision: 1,
+        expire_after_minutes: 10080,
+        metadata: {},
+        nodes: [
+          { uuid: 'node1', actions: [], exits: [] },
+          { uuid: 'node2', actions: [], exits: [] },
+          { uuid: 'node3', actions: [], exits: [] }
+        ],
+        _ui: {
+          nodes: {
+            'node1': { position: { left: 100, top: 100 } },
+            'node2': { position: { left: 320, top: 100 } },
+            'node3': { position: { left: 100, top: 220 } } // Far away, shouldn't need to move
+          },
+          stickies: {}
+        }
+      };
+
+      (editor as any).definition = mockDefinition;
+
+      // Drop node1 on node2 - only node2 should need to move
+      const droppedItem = {
+        uuid: 'node1',
+        type: 'node' as const,
+        position: { left: 320, top: 100 },
+        boundingBox: { left: 320, top: 100, right: 520, bottom: 180, width: 200, height: 80 }
+      };
+
+      const moves = (editor as any).autoLayoutResolveCollisions(droppedItem);
+
+      // Only node2 should be moved, node3 should not be affected
+      expect(moves.has('node2')).to.be.true;
+      expect(moves.has('node3')).to.be.false;
+      expect(moves.size).to.equal(1);
+    });
+
+    it('should ensure no collisions remain after complex cascading moves', () => {
+      // Create a dense layout that will require multiple cascading moves
+      const mockDefinition: FlowDefinition = {
+        uuid: 'test-flow',
+        name: 'Test Flow',
+        spec_version: '13.1.0',
+        language: 'eng',
+        type: 'messaging',
+        revision: 1,
+        expire_after_minutes: 10080,
+        metadata: {},
+        nodes: [
+          { uuid: 'nodeA', actions: [], exits: [] },
+          { uuid: 'nodeB', actions: [], exits: [] },
+          { uuid: 'nodeC', actions: [], exits: [] },
+          { uuid: 'nodeD', actions: [], exits: [] },
+          { uuid: 'nodeE', actions: [], exits: [] }
+        ],
+        _ui: {
+          nodes: {
+            'nodeA': { position: { left: 100, top: 100 } },
+            'nodeB': { position: { left: 320, top: 100 } },
+            'nodeC': { position: { left: 540, top: 100 } },
+            'nodeD': { position: { left: 320, top: 180 } },
+            'nodeE': { position: { left: 540, top: 180 } }
+          },
+          stickies: {}
+        }
+      };
+
+      (editor as any).definition = mockDefinition;
+
+      // Drop nodeA into the middle of the cluster
+      const droppedItem = {
+        uuid: 'nodeA',
+        type: 'node' as const,
+        position: { left: 400, top: 140 }, // Middle of the cluster
+        boundingBox: { left: 400, top: 140, right: 600, bottom: 220, width: 200, height: 80 }
+      };
+
+      const moves = (editor as any).autoLayoutResolveCollisions(droppedItem);
+
+      // Collect all final positions
+      const allFinalPositions = new Map<string, { left: number; top: number }>();
+      allFinalPositions.set('nodeA', droppedItem.position);
+      
+      // Original positions for nodes not moved
+      const originalPositions = {
+        'nodeB': { left: 320, top: 100 },
+        'nodeC': { left: 540, top: 100 },
+        'nodeD': { left: 320, top: 180 },
+        'nodeE': { left: 540, top: 180 }
+      };
+      
+      Object.entries(originalPositions).forEach(([uuid, pos]) => {
+        allFinalPositions.set(uuid, moves.get(uuid) || pos);
+      });
+
+      // Verify NO collisions remain between any pair of nodes
+      const nodeIds = ['nodeA', 'nodeB', 'nodeC', 'nodeD', 'nodeE'];
+      for (let i = 0; i < nodeIds.length; i++) {
+        for (let j = i + 1; j < nodeIds.length; j++) {
+          const pos1 = allFinalPositions.get(nodeIds[i])!;
+          const pos2 = allFinalPositions.get(nodeIds[j])!;
+          
+          const box1 = {
+            left: pos1.left,
+            top: pos1.top,
+            right: pos1.left + 200,
+            bottom: pos1.top + 80
+          };
+          
+          const box2 = {
+            left: pos2.left,
+            top: pos2.top,
+            right: pos2.left + 200,
+            bottom: pos2.top + 80
+          };
+          
+          const hasCollision = !(
+            box1.right <= box2.left ||
+            box1.left >= box2.right ||
+            box1.bottom <= box2.top ||
+            box1.top >= box2.bottom
+          );
+          
+          expect(hasCollision).to.be.false;;
+        }
+      }
+    });
+  });
 });
