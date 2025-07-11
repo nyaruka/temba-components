@@ -58,15 +58,13 @@ jobs:
           touch .nojekyll
 
           # Create .gitignore to exclude build byproducts from coverage branch
-          cat <<EOT > .gitignore
-# Ignore build artifacts and local byproducts in coverage branch
-dist/
-node_modules/
-out-tsc/
-screenshots/test/
-static/svg/work/
-# Add more patterns as needed
-EOT
+          echo "# Ignore build artifacts and local byproducts in coverage branch" > .gitignore
+          echo "dist/" >> .gitignore
+          echo "node_modules/" >> .gitignore
+          echo "out-tsc/" >> .gitignore
+          echo "screenshots/test/" >> .gitignore
+          echo "static/svg/work/" >> .gitignore
+          echo "# Add more patterns as needed" >> .gitignore
 
           # Add all files
           git add .
