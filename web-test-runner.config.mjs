@@ -311,6 +311,23 @@ export default {
       timeout: '5000',
     },
   },
+  
+  // Configure coverage to better handle source files
+  coverageConfig: {
+    include: ['src/**/*.ts'],
+    exclude: [
+      'src/**/*.test.ts',
+      'src/**/*.spec.ts',
+      'node_modules/**',
+      'test/**',
+      'dist/**',
+      'coverage/**'
+    ],
+    // Generate reports in lcov format
+    report: true,
+    reportDir: 'coverage',
+    reporters: ['lcov', 'text-summary']
+  },
 
   plugins: [
     replacePlugin({
