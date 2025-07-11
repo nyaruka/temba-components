@@ -351,56 +351,144 @@ export class Completion extends FormElement {
     const inputElement = this.textInputElement.inputElement;
     const highlightSpan = document.createElement('span');
     highlightSpan.className = 'expression-highlight';
-    
-    // Set the text content to make it visible for debugging
-    highlightSpan.textContent = this.value.substring(expression.start, expression.end);
-    
-    // For now, use a simple positioning approach that positions highlights
-    // as inline elements that flow with the text
+
+    // Don't set text content - we only want the background highlight
+    // highlightSpan.textContent should remain empty
+
     const computedStyle = getComputedStyle(inputElement);
-    
-    // Copy font properties to ensure text matches
-    highlightSpan.style.fontFamily = computedStyle.fontFamily;
-    highlightSpan.style.fontSize = computedStyle.fontSize;
-    highlightSpan.style.fontWeight = computedStyle.fontWeight;
-    highlightSpan.style.lineHeight = computedStyle.lineHeight;
-    highlightSpan.style.letterSpacing = computedStyle.letterSpacing;
-    
-    // Position the highlight relatively within the overlay
+
+    // Get input padding and other measurements
+    const paddingLeft = parseInt(computedStyle.paddingLeft) || 0;
+    const paddingTop = parseInt(computedStyle.paddingTop) || 0;
+
+    // Calculate position based on text layout
+    const position = this.calculateTextPosition(
+      expression.start,
+      expression.end,
+      inputElement,
+      computedStyle
+    );
+
+    // Position the highlight
     highlightSpan.style.position = 'absolute';
-    highlightSpan.style.left = '0px';
-    highlightSpan.style.top = '0px';
-    highlightSpan.style.padding = computedStyle.padding;
-    highlightSpan.style.margin = '0';
-    highlightSpan.style.whiteSpace = inputElement.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
-    highlightSpan.style.overflow = 'hidden';
+    highlightSpan.style.left = `${paddingLeft + position.left}px`;
+    highlightSpan.style.top = `${paddingTop + position.top}px`;
+    highlightSpan.style.width = `${position.width}px`;
+    highlightSpan.style.height = `${position.height}px`;
     highlightSpan.style.pointerEvents = 'none';
-    
-    // Calculate position using a simplified approach
-    const textBefore = this.value.substring(0, expression.start);
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    
-    if (context) {
-      // Set font on canvas context
-      context.font = `${computedStyle.fontSize} ${computedStyle.fontFamily}`;
-      
-      // Measure text width
-      const textWidth = context.measureText(textBefore).width;
-      const expressionWidth = context.measureText(highlightSpan.textContent).width;
-      
-      // Get input padding
-      const paddingLeft = parseInt(computedStyle.paddingLeft) || 0;
-      const paddingTop = parseInt(computedStyle.paddingTop) || 0;
-      
-      // Position the highlight
-      highlightSpan.style.left = `${paddingLeft + textWidth}px`;
-      highlightSpan.style.top = `${paddingTop}px`;
-      highlightSpan.style.width = `${expressionWidth}px`;
-      highlightSpan.style.height = computedStyle.fontSize;
-    }
-    
+
     this.highlightOverlay.appendChild(highlightSpan);
+  }
+
+  private calculateTextPosition(
+    start: number,
+    end: number,
+    inputElement: HTMLInputElement | HTMLTextAreaElement,
+    computedStyle: CSSStyleDeclaration
+  ) {
+    const isTextarea = inputElement.tagName === 'TEXTAREA';
+    const text = this.value;
+    const textBefore = text.substring(0, start);
+    const expressionText = text.substring(start, end);
+
+    // Create a temporary element to measure text accurately
+    const measuringDiv = document.createElement('div');
+    measuringDiv.style.position = 'absolute';
+    measuringDiv.style.visibility = 'hidden';
+    measuringDiv.style.whiteSpace = isTextarea ? 'pre-wrap' : 'nowrap';
+    measuringDiv.style.wordWrap = isTextarea ? 'break-word' : 'normal';
+    measuringDiv.style.fontFamily = computedStyle.fontFamily;
+    measuringDiv.style.fontSize = computedStyle.fontSize;
+    measuringDiv.style.fontWeight = computedStyle.fontWeight;
+    measuringDiv.style.lineHeight = computedStyle.lineHeight;
+    measuringDiv.style.letterSpacing = computedStyle.letterSpacing;
+    measuringDiv.style.width = isTextarea ? computedStyle.width : 'auto';
+    measuringDiv.style.padding = '0';
+    measuringDiv.style.margin = '0';
+    measuringDiv.style.border = 'none';
+
+    document.body.appendChild(measuringDiv);
+
+    try {
+      if (isTextarea) {
+        // For textarea, we need to handle multiple lines
+        return this.calculateTextareaPosition(
+          textBefore,
+          expressionText,
+          measuringDiv,
+          computedStyle
+        );
+      } else {
+        // For single-line input, calculate horizontal position only
+        return this.calculateInputPosition(
+          textBefore,
+          expressionText,
+          measuringDiv,
+          computedStyle
+        );
+      }
+    } finally {
+      document.body.removeChild(measuringDiv);
+    }
+  }
+
+  private calculateInputPosition(
+    textBefore: string,
+    expressionText: string,
+    measuringDiv: HTMLDivElement,
+    computedStyle: CSSStyleDeclaration
+  ) {
+    // Measure text before the expression
+    measuringDiv.textContent = textBefore;
+    const leftOffset = measuringDiv.offsetWidth;
+
+    // Measure the expression text
+    measuringDiv.textContent = expressionText;
+    const width = measuringDiv.offsetWidth;
+
+    const height = parseInt(computedStyle.fontSize) || 16;
+
+    return {
+      left: leftOffset,
+      top: 0,
+      width: width,
+      height: height
+    };
+  }
+
+  private calculateTextareaPosition(
+    textBefore: string,
+    expressionText: string,
+    measuringDiv: HTMLDivElement,
+    computedStyle: CSSStyleDeclaration
+  ) {
+    const lineHeight =
+      parseInt(computedStyle.lineHeight) ||
+      parseInt(computedStyle.fontSize) ||
+      16;
+
+    // Split text by lines to find which line the expression is on
+    const lines = textBefore.split('\n');
+    const lineNumber = lines.length - 1;
+    const textInCurrentLine = lines[lineNumber] || '';
+
+    // Measure horizontal position within the current line
+    measuringDiv.textContent = textInCurrentLine;
+    const leftOffset = measuringDiv.offsetWidth;
+
+    // Measure the expression width
+    measuringDiv.textContent = expressionText;
+    const width = measuringDiv.offsetWidth;
+
+    // Calculate vertical position
+    const topOffset = lineNumber * lineHeight;
+
+    return {
+      left: leftOffset,
+      top: topOffset,
+      width: width,
+      height: lineHeight
+    };
   }
 
   public render(): TemplateResult {

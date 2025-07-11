@@ -158,4 +158,43 @@ describe('temba-completion', () => {
       getClip(completion)
     );
   });
+
+  it('highlights expressions in textarea on multiple lines', async () => {
+    const completion = (await getComponent('temba-completion', {
+      value:
+        'Hello @contact.name!\nYour age is @contact.age years old.\nWelcome @contact.first_name!',
+      session: true,
+      textarea: true
+    })) as Completion;
+
+    // Wait for component to initialize
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const highlightOverlay = completion.shadowRoot.querySelector(
+      '.highlight-overlay'
+    ) as HTMLDivElement;
+    const highlights = highlightOverlay.querySelectorAll(
+      '.expression-highlight'
+    );
+    expect(highlights.length).to.equal(
+      3,
+      'Should highlight three expressions across multiple lines'
+    );
+
+    // Verify that highlights are positioned correctly for different lines
+    const highlightElements = Array.from(highlights) as HTMLElement[];
+
+    // Check that highlights have different vertical positions
+    const topPositions = highlightElements.map((el) => parseInt(el.style.top));
+    const uniqueTopPositions = [...new Set(topPositions)];
+    expect(uniqueTopPositions.length).to.be.greaterThan(
+      1,
+      'Should have highlights on different vertical positions'
+    );
+
+    await assertScreenshot(
+      'completion/textarea-multiline-expressions',
+      getClip(completion)
+    );
+  });
 });
