@@ -54,6 +54,10 @@ jobs:
           # Copy coverage report files from temp directly to root
           cp -r /tmp/coverage-copy/coverage/lcov-report/* ./
 
+          # Remove any coverage directory to avoid ambiguity with branch name
+          rm -rf coverage
+          rm -rf /tmp/coverage-copy
+
           # Create .nojekyll for GitHub Pages
           touch .nojekyll
 
