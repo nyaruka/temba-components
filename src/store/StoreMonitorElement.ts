@@ -42,7 +42,6 @@ export class StoreMonitorElement extends RapidElement {
     this.storeUpdated(event);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
   protected storeUpdated(event: CustomEvent) {}
 
   connectedCallback(): void {

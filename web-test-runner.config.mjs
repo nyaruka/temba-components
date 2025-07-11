@@ -347,7 +347,7 @@ export default {
   browsers: [
     puppeteerLauncher({
       launchOptions: {
-        executablePath: '/usr/bin/google-chrome',
+        // executablePath: '/usr/bin/google-chrome',
         args: [
           '--font-render-hinting=medium',
           '--force-color-profile=srgb',

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { TemplateResult, html, css, CSSResult, CSSResultArray } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {

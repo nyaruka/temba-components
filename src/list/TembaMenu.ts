@@ -782,7 +782,6 @@ export class TembaMenu extends ResizeElement {
 
   public refresh = debounce(this.doRefresh, 200);
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private loadItems(item: MenuItem, event: MouseEvent = null) {
     if (item && item.endpoint) {
       item.loading = true;

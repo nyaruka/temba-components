@@ -112,12 +112,10 @@ export const getCompletions = (
   while (parts.length > 0) {
     part = parts.shift();
     if (part) {
-      // eslint-disable-next-line
       const nextProp = currentProps.find(
         (prop: CompletionProperty) => prop.key === part
       );
       if (nextProp) {
-        // eslint-disable-next-line
         const nextType = schema.types.find(
           (type: CompletionType) => type.name === nextProp.type
         );
@@ -139,14 +137,12 @@ export const getCompletions = (
             currentProps = [];
           }
         } else {
-          // eslint-disable-next-line
           currentProps = currentProps.filter((prop: CompletionProperty) =>
             prop.key.startsWith(part.toLowerCase())
           );
           break;
         }
       } else {
-        // eslint-disable-next-line
         currentProps = currentProps.filter((prop: CompletionProperty) =>
           prop.key.startsWith(part.toLowerCase())
         );

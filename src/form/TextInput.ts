@@ -388,7 +388,6 @@ export class TextInput extends FormElement {
         @blur=${this.blur}
         @keydown=${(e: KeyboardEvent) => {
           if (e.key === 'Enter') {
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
             const input = this;
 
             if (this.submitOnEnter) {
