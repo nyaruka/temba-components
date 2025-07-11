@@ -198,6 +198,9 @@ export class Completion extends FormElement {
         this.updateHighlights();
       });
     }
+
+    // Initial highlight update
+    setTimeout(() => this.updateHighlights(), 0);
   }
 
   private handleKeyUp(evt: KeyboardEvent) {
@@ -348,87 +351,56 @@ export class Completion extends FormElement {
     const inputElement = this.textInputElement.inputElement;
     const highlightSpan = document.createElement('span');
     highlightSpan.className = 'expression-highlight';
-
-    // Calculate the position of the expression text
-    const startPos = this.getTextPosition(inputElement, expression.start);
-    const endPos = this.getTextPosition(inputElement, expression.end);
-
-    if (startPos && endPos) {
-      // Position relative to the input element's content area
-      const computedStyle = getComputedStyle(inputElement);
+    
+    // Set the text content to make it visible for debugging
+    highlightSpan.textContent = this.value.substring(expression.start, expression.end);
+    
+    // For now, use a simple positioning approach that positions highlights
+    // as inline elements that flow with the text
+    const computedStyle = getComputedStyle(inputElement);
+    
+    // Copy font properties to ensure text matches
+    highlightSpan.style.fontFamily = computedStyle.fontFamily;
+    highlightSpan.style.fontSize = computedStyle.fontSize;
+    highlightSpan.style.fontWeight = computedStyle.fontWeight;
+    highlightSpan.style.lineHeight = computedStyle.lineHeight;
+    highlightSpan.style.letterSpacing = computedStyle.letterSpacing;
+    
+    // Position the highlight relatively within the overlay
+    highlightSpan.style.position = 'absolute';
+    highlightSpan.style.left = '0px';
+    highlightSpan.style.top = '0px';
+    highlightSpan.style.padding = computedStyle.padding;
+    highlightSpan.style.margin = '0';
+    highlightSpan.style.whiteSpace = inputElement.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
+    highlightSpan.style.overflow = 'hidden';
+    highlightSpan.style.pointerEvents = 'none';
+    
+    // Calculate position using a simplified approach
+    const textBefore = this.value.substring(0, expression.start);
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (context) {
+      // Set font on canvas context
+      context.font = `${computedStyle.fontSize} ${computedStyle.fontFamily}`;
+      
+      // Measure text width
+      const textWidth = context.measureText(textBefore).width;
+      const expressionWidth = context.measureText(highlightSpan.textContent).width;
+      
+      // Get input padding
       const paddingLeft = parseInt(computedStyle.paddingLeft) || 0;
       const paddingTop = parseInt(computedStyle.paddingTop) || 0;
-
-      highlightSpan.style.left = `${paddingLeft + startPos.left}px`;
-      highlightSpan.style.top = `${paddingTop + startPos.top}px`;
-      highlightSpan.style.width = `${endPos.left - startPos.left}px`;
-      highlightSpan.style.height = `${startPos.height}px`;
-
-      this.highlightOverlay.appendChild(highlightSpan);
+      
+      // Position the highlight
+      highlightSpan.style.left = `${paddingLeft + textWidth}px`;
+      highlightSpan.style.top = `${paddingTop}px`;
+      highlightSpan.style.width = `${expressionWidth}px`;
+      highlightSpan.style.height = computedStyle.fontSize;
     }
-  }
-
-  private getTextPosition(
-    element: HTMLInputElement | HTMLTextAreaElement,
-    position: number
-  ) {
-    // Create a temporary element to measure text
-    const div = document.createElement('div');
-    const computedStyle = getComputedStyle(element);
-
-    // Copy relevant styles from the input element
-    [
-      'font-family',
-      'font-size',
-      'font-weight',
-      'line-height',
-      'letter-spacing',
-      'text-transform',
-      'word-spacing',
-      'text-indent',
-      'white-space',
-      'word-wrap',
-      'box-sizing'
-    ].forEach((prop) => {
-      div.style[prop] = computedStyle[prop];
-    });
-
-    div.style.position = 'absolute';
-    div.style.visibility = 'hidden';
-    div.style.whiteSpace =
-      element.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
-    div.style.width =
-      element.tagName === 'INPUT' ? 'auto' : `${element.clientWidth}px`;
-    div.style.padding = '0';
-    div.style.margin = '0';
-    div.style.border = 'none';
-
-    // Set text up to the position
-    const textBeforePosition = element.value.substring(0, position);
-    div.textContent = textBeforePosition;
-
-    // Add a span for the character at position to measure
-    const span = document.createElement('span');
-    span.textContent = element.value.charAt(position) || ' ';
-    div.appendChild(span);
-
-    // Add to DOM temporarily to measure
-    document.body.appendChild(div);
-
-    const spanRect = span.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
-
-    // Calculate position relative to the input element's content area
-    const result = {
-      left: spanRect.left - elementRect.left - element.scrollLeft,
-      top: spanRect.top - elementRect.top - element.scrollTop,
-      height: spanRect.height
-    };
-
-    // Clean up
-    document.body.removeChild(div);
-
-    return result;
+    
+    this.highlightOverlay.appendChild(highlightSpan);
   }
 
   public render(): TemplateResult {

@@ -24,7 +24,7 @@ describe('temba-completion', () => {
     assert.instanceOf(completion, Completion);
 
     // Wait for the component to initialize and update highlights
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Check that the highlight overlay exists
     const highlightOverlay = completion.shadowRoot.querySelector(
