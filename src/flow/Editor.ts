@@ -8,6 +8,7 @@ import { RapidElement } from '../RapidElement';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
+import { Dialog } from '../layout/Dialog';
 
 export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;
@@ -421,27 +422,32 @@ export class Editor extends RapidElement {
   }
 
   private handleCanvasMouseDown(event: MouseEvent): void {
-    // Clear current selection
-    this.selectedItems.clear();
+    const target = event.target as HTMLElement;
+    if (target.id === 'canvas' || target.id === 'grid') {
+      // Ignore clicks on exits
 
-    // Start selection box
-    this.canvasMouseDown = true;
-    this.dragStartPos = { x: event.clientX, y: event.clientY };
+      // Start selection box
+      this.canvasMouseDown = true;
+      this.dragStartPos = { x: event.clientX, y: event.clientY };
 
-    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
-    if (canvasRect) {
-      const relativeX = event.clientX - canvasRect.left;
-      const relativeY = event.clientY - canvasRect.top;
+      const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+      if (canvasRect) {
+        // Clear current selection
+        this.selectedItems.clear();
 
-      this.selectionBox = {
-        startX: relativeX,
-        startY: relativeY,
-        endX: relativeX,
-        endY: relativeY
-      };
+        const relativeX = event.clientX - canvasRect.left;
+        const relativeY = event.clientY - canvasRect.top;
+
+        this.selectionBox = {
+          startX: relativeX,
+          startY: relativeY,
+          endX: relativeX,
+          endY: relativeY
+        };
+      }
+
+      event.preventDefault();
     }
-
-    event.preventDefault();
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
@@ -461,23 +467,24 @@ export class Editor extends RapidElement {
     const itemType = itemCount === 1 ? 'item' : 'items';
 
     // Create and show confirmation dialog
-    const dialog = document.createElement('temba-dialog');
+    const dialog = document.createElement('temba-dialog') as Dialog;
     dialog.header = 'Delete Items';
     dialog.primaryButtonName = 'Delete';
     dialog.cancelButtonName = 'Cancel';
     dialog.destructive = true;
     dialog.innerHTML = `<div style="padding: 20px;">Are you sure you want to delete ${itemCount} ${itemType}?</div>`;
-    
+
     dialog.addEventListener('temba-button-clicked', (event: any) => {
       if (event.detail.button.name === 'Delete') {
         this.deleteSelectedItems();
+        dialog.open = false;
       }
     });
 
     // Add to document and show
     document.body.appendChild(dialog);
     dialog.open = true;
-    
+
     // Clean up dialog when closed
     dialog.addEventListener('temba-dialog-hidden', () => {
       document.body.removeChild(dialog);
@@ -505,7 +512,7 @@ export class Editor extends RapidElement {
       nodeUuids.forEach((uuid) => {
         this.plumber.removeNodeConnections(uuid);
       });
-      
+
       // Remove nodes using the existing method
       store.getState().removeNodes(nodeUuids);
     }
@@ -517,7 +524,7 @@ export class Editor extends RapidElement {
         stickyUuids.forEach((uuid) => {
           delete newDefinition._ui.stickies[uuid];
         });
-        
+
         store.getState().setFlowContents({
           definition: newDefinition,
           info: store.getState().flowInfo
