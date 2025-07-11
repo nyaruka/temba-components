@@ -197,4 +197,38 @@ export class Plumber {
       }
     });
   }
+
+  public removeNodeConnections(nodeId: string) {
+    if (!this.jsPlumb) return;
+
+    // Get the node element to find its exit elements
+    const nodeElement = document.getElementById(nodeId);
+    if (!nodeElement) return;
+
+    const exitElements = nodeElement.querySelectorAll('.exit');
+    const exitIds = Array.from(exitElements).map((exit) => exit.id);
+
+    // Get all connections and identify ones to remove
+    const connections = this.jsPlumb.getConnections();
+    const connectionsToRemove = connections.filter((connection) => {
+      const sourceId = connection.source.id;
+      const targetId = connection.target.id;
+
+      // Remove connections where:
+      // - Target is the node itself (incoming connections)
+      // - Source is one of the node's exits (outgoing connections)
+      return targetId === nodeId || exitIds.includes(sourceId);
+    });
+
+    // Remove the connections
+    connectionsToRemove.forEach((connection) => {
+      this.jsPlumb.deleteConnection(connection);
+    });
+
+    // Remove all endpoints from the node and its exits
+    this.jsPlumb.removeAllEndpoints(nodeElement);
+    exitElements.forEach((exitElement) => {
+      this.jsPlumb.removeAllEndpoints(exitElement);
+    });
+  }
 }

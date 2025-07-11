@@ -460,9 +460,28 @@ export class Editor extends RapidElement {
     const itemCount = this.selectedItems.size;
     const itemType = itemCount === 1 ? 'item' : 'items';
 
-    if (confirm(`Are you sure you want to delete ${itemCount} ${itemType}?`)) {
-      this.deleteSelectedItems();
-    }
+    // Create and show confirmation dialog
+    const dialog = document.createElement('temba-dialog');
+    dialog.header = 'Delete Items';
+    dialog.primaryButtonName = 'Delete';
+    dialog.cancelButtonName = 'Cancel';
+    dialog.destructive = true;
+    dialog.innerHTML = `<div style="padding: 20px;">Are you sure you want to delete ${itemCount} ${itemType}?</div>`;
+    
+    dialog.addEventListener('temba-button-clicked', (event: any) => {
+      if (event.detail.button.name === 'Delete') {
+        this.deleteSelectedItems();
+      }
+    });
+
+    // Add to document and show
+    document.body.appendChild(dialog);
+    dialog.open = true;
+    
+    // Clean up dialog when closed
+    dialog.addEventListener('temba-dialog-hidden', () => {
+      document.body.removeChild(dialog);
+    });
   }
 
   private deleteSelectedItems(): void {
@@ -481,23 +500,29 @@ export class Editor extends RapidElement {
       }
     });
 
-    // Remove nodes using the existing method
-    if (nodeUuids.length > 0) {
+    // Clean up jsPlumb connections for nodes before removing them
+    if (nodeUuids.length > 0 && this.plumber) {
+      nodeUuids.forEach((uuid) => {
+        this.plumber.removeNodeConnections(uuid);
+      });
+      
+      // Remove nodes using the existing method
       store.getState().removeNodes(nodeUuids);
     }
 
-    // Remove sticky notes by updating the definition directly
+    // Remove sticky notes more efficiently by doing a single update
     if (stickyUuids.length > 0) {
-      stickyUuids.forEach((uuid) => {
-        const newDefinition = { ...this.definition };
-        if (newDefinition._ui?.stickies) {
+      const newDefinition = { ...this.definition };
+      if (newDefinition._ui?.stickies) {
+        stickyUuids.forEach((uuid) => {
           delete newDefinition._ui.stickies[uuid];
-        }
+        });
+        
         store.getState().setFlowContents({
           definition: newDefinition,
           info: store.getState().flowInfo
         });
-      });
+      }
     }
 
     // Clear selection
@@ -851,6 +876,7 @@ export class Editor extends RapidElement {
                 uuid=${uuid}
                 .data=${sticky}
                 .dragging=${dragging}
+                .selected=${selected}
               ></temba-sticky-note>`;
             })}
             ${this.renderSelectionBox()}
