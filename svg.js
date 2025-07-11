@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
-const argv = require('yargs').usage('Usage: $0 [options]').argv;
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import svgstore from 'svgstore';
+import htmlclean from 'htmlclean';
+import sh from 'shelljs';
+import fs from 'fs';
+import path from 'path';
+import SVGFixer from 'oslllo-svg-fixer';
+import { digestSync } from 'fprint';
 
-const svgstore = require('svgstore');
-const htmlclean = require('htmlclean');
-const sh = require('shelljs');
-const fs = require('fs');
-const path = require('path');
-const SVGFixer = require('oslllo-svg-fixer');
-const { digestSync } = require('fprint');
-
+const argv = yargs(hideBin(process.argv)).usage('Usage: $0 [options]').argv;
 const cwd = process.cwd();
 
 const PACK_DIR = cwd + '/static/svg/packs';

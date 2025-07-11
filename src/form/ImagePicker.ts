@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-this-alias */
 import { html, css, PropertyValueMap } from 'lit';
 import { CroppieCSS } from './CroppieCSS';
 import { property } from 'lit/decorators.js';

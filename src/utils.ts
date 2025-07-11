@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
 import { Button } from './display/Button';
 import { Dialog } from './layout/Dialog';
@@ -806,7 +805,6 @@ export const darkenColor = (color: string, factor: number): string => {
     /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/
   );
   if (rgbaMatch) {
-    // eslint-disable-next-line prefer-const
     let [r, g, b, a] = rgbaMatch
       .slice(1)
       .map((v, i) => (i < 3 ? parseInt(v) : parseFloat(v)));

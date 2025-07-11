@@ -242,7 +242,7 @@ export class Modax extends RapidElement {
         script.async = true;
 
         // TODO: track and fire event once all scripts are loaded
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
+
         script.onload = function () {};
         toAdd.push(script);
       } else if (code) {

@@ -157,7 +157,6 @@ export class TembaList extends RapidElement {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public handleSelected(selected: any) {
     const evt = new Event('change', { bubbles: true });
     this.dispatchEvent(evt);

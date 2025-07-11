@@ -16,7 +16,6 @@ export class RefreshElement extends RapidElement {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected refreshComplete(results: any) {
     // noop
   }
