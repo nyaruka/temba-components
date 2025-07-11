@@ -354,8 +354,19 @@ export class Completion extends FormElement {
     const endPos = this.getTextPosition(inputElement, expression.end);
 
     if (startPos && endPos) {
-      highlightSpan.style.left = `${startPos.left}px`;
-      highlightSpan.style.top = `${startPos.top}px`;
+      // Get the input element's position relative to the comp-container
+      const containerElement = this.shadowRoot.querySelector(
+        '.comp-container'
+      ) as HTMLElement;
+      const inputRect = inputElement.getBoundingClientRect();
+      const containerRect = containerElement.getBoundingClientRect();
+
+      // Calculate offset from container to input element
+      const inputOffsetLeft = inputRect.left - containerRect.left;
+      const inputOffsetTop = inputRect.top - containerRect.top;
+
+      highlightSpan.style.left = `${inputOffsetLeft + startPos.left}px`;
+      highlightSpan.style.top = `${inputOffsetTop + startPos.top}px`;
       highlightSpan.style.width = `${endPos.left - startPos.left}px`;
       highlightSpan.style.height = `${
         endPos.top - startPos.top + startPos.height
@@ -390,14 +401,7 @@ export class Completion extends FormElement {
       'text-indent',
       'white-space',
       'word-wrap',
-      'padding-left',
-      'padding-top',
-      'padding-right',
-      'padding-bottom',
-      'border-left-width',
-      'border-top-width',
-      'border-right-width',
-      'border-bottom-width'
+      'box-sizing'
     ].forEach((prop) => {
       div.style[prop] = computedStyle[prop];
     });
@@ -408,6 +412,9 @@ export class Completion extends FormElement {
       element.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
     div.style.width =
       element.tagName === 'INPUT' ? 'auto' : `${element.clientWidth}px`;
+    div.style.padding = '0';
+    div.style.margin = '0';
+    div.style.border = 'none';
 
     // Set text up to the position
     const textBeforePosition = element.value.substring(0, position);
@@ -421,21 +428,22 @@ export class Completion extends FormElement {
     // Add to DOM temporarily to measure
     document.body.appendChild(div);
 
-    const rect = span.getBoundingClientRect();
-    const divRect = div.getBoundingClientRect();
+    const spanRect = span.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
 
+    // Calculate position relative to the input element
     const result = {
       left:
-        rect.left -
-        divRect.left +
+        spanRect.left -
+        elementRect.left +
         parseInt(computedStyle.paddingLeft) -
         element.scrollLeft,
       top:
-        rect.top -
-        divRect.top +
+        spanRect.top -
+        elementRect.top +
         parseInt(computedStyle.paddingTop) -
         element.scrollTop,
-      height: rect.height
+      height: spanRect.height
     };
 
     // Clean up
