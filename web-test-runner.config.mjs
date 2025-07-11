@@ -218,7 +218,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   });
 
   await page.exposeFunction('waitFor', millis => {
-    return page.waitForTimeout(millis);
+    return new Promise(resolve => setTimeout(resolve, millis));
   });
 
   await page.exposeFunction('moveMouse', (x, y) => {
@@ -347,6 +347,7 @@ export default {
   browsers: [
     puppeteerLauncher({
       launchOptions: {
+        executablePath: '/usr/bin/google-chrome',
         args: [
           '--font-render-hinting=medium',
           '--force-color-profile=srgb',
