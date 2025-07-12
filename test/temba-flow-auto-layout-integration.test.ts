@@ -1,8 +1,8 @@
-import { fixture, assert, expect } from '@open-wc/testing';
+import { fixture, expect } from '@open-wc/testing';
 import { html } from 'lit';
 import { Editor } from '../src/flow/Editor';
 import { FlowDefinition } from '../src/store/flow-definition';
-import { stub, restore } from 'sinon';
+import { restore } from 'sinon';
 
 // Register the component
 customElements.define('temba-flow-editor-integration', Editor);
@@ -13,13 +13,13 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
   beforeEach(async () => {
     // Reset any stubs
     restore();
-    
+
     editor = await fixture(html`
       <temba-flow-editor-integration>
         <div id="canvas"></div>
       </temba-flow-editor-integration>
     `);
-    
+
     // Set canvas size
     (editor as any).canvasSize = { width: 1200, height: 800 };
   });
@@ -77,18 +77,20 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // Should detect collision and provide resolution
       expect(moves.size).to.be.greaterThan(0);
-      
+
       // All moves should be to the right or down
       moves.forEach((position, uuid) => {
         const originalPosition = mockDefinition._ui.nodes[uuid].position;
         expect(position.left).to.be.at.least(originalPosition.left);
         expect(position.top).to.be.at.least(originalPosition.top);
-        
+
         // All positions should be grid-snapped
         expect(position.left % 20).to.equal(0);
         expect(position.top % 20).to.equal(0);
@@ -154,18 +156,20 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // Should handle the complex scenario
       expect(moves.size).to.be.at.least(1);
-      
+
       // Check that node ordering is preserved (node-b should move further right if moved)
       const nodeBMove = moves.get('node-b');
       if (nodeBMove) {
         expect(nodeBMove.left).to.be.greaterThan(420); // Should move further right
       }
-      
+
       // All moves should follow the constraints
       moves.forEach((position, uuid) => {
         const originalPosition = mockDefinition._ui.nodes[uuid].position;
@@ -193,10 +197,10 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
         ],
         _ui: {
           nodes: {
-            'node1': { position: { left: 200, top: 200 } }
+            node1: { position: { left: 200, top: 200 } }
           },
           stickies: {
-            'sticky1': {
+            sticky1: {
               position: { left: 180, top: 180 },
               title: 'Test Sticky',
               body: 'Content',
@@ -226,17 +230,19 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       const getAllItems = (editor as any).getAllItems.bind(editor);
       const findCollisions = (editor as any).findCollisions.bind(editor);
-      
+
       const allItems = getAllItems();
       const collisions = findCollisions(droppedItem, allItems);
 
       // Should detect collisions with both node and sticky
       expect(collisions.length).to.be.greaterThan(0);
-      
+
       // Should include both types of items
-      const hasNodeCollision = collisions.some(item => item.type === 'node');
-      const hasStickyCollision = collisions.some(item => item.type === 'sticky');
-      
+      const hasNodeCollision = collisions.some((item) => item.type === 'node');
+      const hasStickyCollision = collisions.some(
+        (item) => item.type === 'sticky'
+      );
+
       expect(hasNodeCollision || hasStickyCollision).to.be.true;
     });
   });
@@ -266,8 +272,8 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
         ],
         _ui: {
           nodes: {
-            'node1': { position: { left: 100, top: 100 } },
-            'node2': { position: { left: 150, top: 120 } } // Overlapping within default 200x80 size
+            node1: { position: { left: 100, top: 100 } },
+            node2: { position: { left: 150, top: 120 } } // Overlapping within default 200x80 size
           }
         }
       };
@@ -277,20 +283,20 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       const getAllItems = (editor as any).getAllItems.bind(editor);
       const findCollisions = (editor as any).findCollisions.bind(editor);
-      
+
       const allItems = getAllItems();
       expect(allItems.length).to.equal(2);
-      
-      const node1Item = allItems.find(item => item.uuid === 'node1');
-      
+
+      const node1Item = allItems.find((item) => item.uuid === 'node1');
+
       // node1 at (100,100) with size 200x80 = (100,100) to (300,180)
       // node2 at (150,120) with size 200x80 = (150,120) to (350,200)
       // These should overlap: x overlap (150-300), y overlap (120-180)
       expect(node1Item.boundingBox.right).to.be.greaterThan(150); // Should overlap
       expect(node1Item.boundingBox.bottom).to.be.greaterThan(120); // Should overlap
-      
+
       const collisions = findCollisions(node1Item, allItems);
-      
+
       // Should detect collision with node2
       expect(collisions.length).to.equal(1);
       expect(collisions[0].uuid).to.equal('node2');
@@ -320,8 +326,8 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
         ],
         _ui: {
           nodes: {
-            'node1': { position: { left: 100, top: 100 } },
-            'node2': { position: { left: 500, top: 500 } } // Far apart
+            node1: { position: { left: 100, top: 100 } },
+            node2: { position: { left: 500, top: 500 } } // Far apart
           }
         }
       };
@@ -331,18 +337,18 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       const getAllItems = (editor as any).getAllItems.bind(editor);
       const findCollisions = (editor as any).findCollisions.bind(editor);
-      
+
       const allItems = getAllItems();
-      const node1Item = allItems.find(item => item.uuid === 'node1');
+      const node1Item = allItems.find((item) => item.uuid === 'node1');
       const collisions = findCollisions(node1Item, allItems);
-      
+
       // Should detect no collisions
       expect(collisions.length).to.equal(0);
     });
   });
 
   describe('position calculation', () => {
-    it('should calculate optimal positions for collision resolution', async () => {
+    it('should calculate optimal positions for collision resolution using pushing strategy', async () => {
       const mockDefinition: FlowDefinition = {
         uuid: 'test-flow',
         name: 'Test Flow',
@@ -376,21 +382,62 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       await editor.updateComplete;
 
       const getAllItems = (editor as any).getAllItems.bind(editor);
-      const findBestPosition = (editor as any).findBestPosition.bind(editor);
-      
+      const determinePushDirection = (
+        editor as any
+      ).determinePushDirection.bind(editor);
+      const pushItemInDirection = (editor as any).pushItemInDirection.bind(
+        editor
+      );
+
       const allItems = getAllItems();
-      const movingItem = allItems.find(item => item.uuid === 'moving-node');
-      const blockingItem = allItems.find(item => item.uuid === 'blocking-node');
-      
-      const bestPosition = findBestPosition(movingItem, blockingItem, allItems);
-      
-      expect(bestPosition).to.exist;
-      expect(bestPosition.left).to.be.at.least(movingItem.position.left);
-      expect(bestPosition.top).to.be.at.least(movingItem.position.top);
-      
+      const movingItem = allItems.find((item) => item.uuid === 'moving-node');
+      const blockingItem = allItems.find(
+        (item) => item.uuid === 'blocking-node'
+      );
+
+      // Test push direction determination
+      const pushDirection = determinePushDirection(blockingItem, movingItem);
+      expect(pushDirection).to.be.oneOf(['right', 'down', 'left', 'up']);
+
+      // Test pushing strategy
+      const pushMoves = pushItemInDirection(
+        movingItem,
+        pushDirection,
+        allItems,
+        new Map()
+      );
+
+      expect(pushMoves).to.exist;
+      expect(pushMoves.size).to.be.at.least(1);
+
+      const newPosition = pushMoves.get('moving-node');
+      expect(newPosition).to.exist;
+
       // Should be grid-snapped
-      expect(bestPosition.left % 20).to.equal(0);
-      expect(bestPosition.top % 20).to.equal(0);
+      expect(newPosition.left % 20).to.equal(0);
+      expect(newPosition.top % 20).to.equal(0);
+
+      // Should maintain order - the pushed item should be moved away from the blocking item
+      // unless boundary conditions prevent it
+      if (pushDirection === 'right') {
+        expect(newPosition.left).to.be.greaterThan(movingItem.position.left);
+      } else if (pushDirection === 'down') {
+        expect(newPosition.top).to.be.greaterThan(movingItem.position.top);
+      } else if (pushDirection === 'left') {
+        // Only check if not hitting the left boundary
+        if (newPosition.left > 0) {
+          expect(newPosition.left).to.be.lessThan(movingItem.position.left);
+        } else {
+          expect(newPosition.left).to.equal(0); // Should be at boundary
+        }
+      } else if (pushDirection === 'up') {
+        // Only check if not hitting the top boundary
+        if (newPosition.top > 0) {
+          expect(newPosition.top).to.be.lessThan(movingItem.position.top);
+        } else {
+          expect(newPosition.top).to.equal(0); // Should be at boundary
+        }
+      }
     });
   });
 
@@ -416,12 +463,14 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       const getAllItems = (editor as any).getAllItems.bind(editor);
       const allItems = getAllItems();
-      
+
       expect(allItems.length).to.equal(0);
-      
+
       // Should not crash when processing empty flow
       expect(() => {
-        const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+        const autoLayoutResolveCollisions = (
+          editor as any
+        ).autoLayoutResolveCollisions.bind(editor);
         const droppedItem = {
           uuid: 'new-node',
           type: 'node' as const,
@@ -481,9 +530,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
-      
+
       // Should not find any collisions with itself
       expect(moves.size).to.equal(0);
     });

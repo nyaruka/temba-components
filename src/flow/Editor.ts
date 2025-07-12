@@ -311,7 +311,8 @@ export class Editor extends RapidElement {
   private updatePosition(
     uuid: string,
     type: 'node' | 'sticky',
-    position: FlowPosition
+    position: FlowPosition,
+    animate: boolean = false
   ): void {
     if (type === 'node') {
       getStore().getState().updateNodePosition(uuid, position);
@@ -326,9 +327,28 @@ export class Editor extends RapidElement {
           });
       }
     }
+
+    // If animation is requested, apply CSS transition to the DOM element
+    if (animate) {
+      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      if (element) {
+        element.style.transition = 'left 0.3s ease, top 0.3s ease';
+        element.style.left = `${position.left}px`;
+        element.style.top = `${position.top}px`;
+
+        // Remove transition after animation completes
+        setTimeout(() => {
+          element.style.transition = '';
+        }, 300);
+      }
+    }
   }
 
-  private getBoundingBox(uuid: string, type: 'node' | 'sticky', position?: FlowPosition): BoundingBox {
+  private getBoundingBox(
+    uuid: string,
+    type: 'node' | 'sticky',
+    position?: FlowPosition
+  ): BoundingBox {
     const pos = position || this.getPosition(uuid, type);
     if (!pos) {
       return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
@@ -418,7 +438,10 @@ export class Editor extends RapidElement {
     return items;
   }
 
-  private findCollisions(targetItem: ItemLayout, allItems: ItemLayout[]): ItemLayout[] {
+  private findCollisions(
+    targetItem: ItemLayout,
+    allItems: ItemLayout[]
+  ): ItemLayout[] {
     return allItems.filter(
       (item) =>
         item.uuid !== targetItem.uuid &&
@@ -426,266 +449,183 @@ export class Editor extends RapidElement {
     );
   }
 
-  private autoLayoutResolveCollisions(droppedItem: ItemLayout): Map<string, FlowPosition> {
+  private autoLayoutResolveCollisions(
+    droppedItem: ItemLayout
+  ): Map<string, FlowPosition> {
     const allItems = this.getAllItems();
     const moves = new Map<string, FlowPosition>();
-    
+
     // Update the dropped item in the items list
-    const droppedIndex = allItems.findIndex(item => item.uuid === droppedItem.uuid);
+    const droppedIndex = allItems.findIndex(
+      (item) => item.uuid === droppedItem.uuid
+    );
     if (droppedIndex >= 0) {
       allItems[droppedIndex] = droppedItem;
     } else {
       allItems.push(droppedItem);
     }
 
-    // Keep iterating until no new collisions are found
-    let hasChanges = true;
-    let maxIterations = 20; // Increased to handle more complex scenarios
-    let iteration = 0;
-    
-    while (hasChanges && iteration < maxIterations) {
-      hasChanges = false;
-      iteration++;
-      
-      // Check all items for collisions
-      for (let i = 0; i < allItems.length; i++) {
-        const currentItem = allItems[i];
-        
-        // Find collisions with this item
-        const collisions = allItems.filter((item, index) => 
-          index !== i && 
-          this.hasCollision(currentItem.boundingBox, item.boundingBox)
+    // Use a pushing strategy instead of hopping
+    const collisions = this.findCollisions(droppedItem, allItems);
+
+    if (collisions.length > 0) {
+      // For each collision, push the colliding item in the most appropriate direction
+      // This maintains order and prevents hopping
+      for (const collidingItem of collisions) {
+        if (collidingItem.uuid === droppedItem.uuid) continue;
+
+        const pushDirection = this.determinePushDirection(
+          droppedItem,
+          collidingItem
         );
-        
-        if (collisions.length > 0) {
-          // Sort collisions by position to handle them consistently
-          const sortedCollisions = collisions.sort((a, b) => {
-            if (Math.abs(a.position.top - b.position.top) < 20) {
-              return a.position.left - b.position.left;
-            }
-            return a.position.top - b.position.top;
-          });
-          
-          // Resolve collisions - prioritize moving items that haven't been moved yet
-          for (const collidingItem of sortedCollisions) {
-            // Skip if this is the dropped item (it shouldn't be moved)
-            if (collidingItem.uuid === droppedItem.uuid) {
-              continue;
-            }
-            
-            // Skip if this item has already been moved in this iteration
-            if (moves.has(collidingItem.uuid)) {
-              continue;
-            }
-            
-            const resolvedPosition = this.findBestPosition(collidingItem, currentItem, allItems);
-            if (resolvedPosition) {
-              // Record the move
-              moves.set(collidingItem.uuid, resolvedPosition);
-              
-              // Update the item's position in our tracking array
-              const itemIndex = allItems.findIndex(item => item.uuid === collidingItem.uuid);
-              if (itemIndex >= 0) {
-                allItems[itemIndex].position = resolvedPosition;
-                allItems[itemIndex].boundingBox = this.getBoundingBox(
-                  collidingItem.uuid,
-                  collidingItem.type,
-                  resolvedPosition
-                );
-                hasChanges = true;
-              }
-            }
-          }
-        }
+        const pushedMoves = this.pushItemInDirection(
+          collidingItem,
+          pushDirection,
+          allItems,
+          moves
+        );
+
+        // Merge the pushed moves
+        pushedMoves.forEach((position, uuid) => {
+          moves.set(uuid, position);
+        });
       }
     }
 
     return moves;
   }
 
-  private findBestPosition(
-    itemToMove: ItemLayout,
-    blockingItem: ItemLayout,
-    allItems: ItemLayout[]
-  ): FlowPosition | null {
-    const itemBox = itemToMove.boundingBox;
-    const blockingBox = blockingItem.boundingBox;
-    const spacing = 20; // Grid spacing
-    const maxAttempts = 3; // Reduced attempts for performance
+  private determinePushDirection(
+    droppedItem: ItemLayout,
+    collidingItem: ItemLayout
+  ): 'right' | 'down' | 'left' | 'up' {
+    const droppedBox = droppedItem.boundingBox;
+    const collidingBox = collidingItem.boundingBox;
 
-    // Calculate all possible positions in all directions with potential cascading impact
-    const candidatePositions: Array<{ position: FlowPosition; distance: number; direction: string; cascadingMoves: number }> = [];
+    // Calculate the center points
+    const droppedCenterX = droppedBox.left + droppedBox.width / 2;
+    const droppedCenterY = droppedBox.top + droppedBox.height / 2;
+    const collidingCenterX = collidingBox.left + collidingBox.width / 2;
+    const collidingCenterY = collidingBox.top + collidingBox.height / 2;
 
-    // Try all four directions with increasing distances
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      // Right position
-      const rightPosition = {
-        left: snapToGrid(blockingBox.right + spacing + (attempt * 220)), // 220 = 200 width + 20 spacing
-        top: snapToGrid(itemToMove.position.top)
-      };
-      const rightBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, rightPosition);
-      const rightCollisions = this.countCascadingCollisions(rightBox, itemToMove.uuid, allItems);
-      if (rightCollisions.hasDirectCollision === false) {
-        const distance = Math.abs(rightPosition.left - itemToMove.position.left) + 
-                        Math.abs(rightPosition.top - itemToMove.position.top);
-        candidatePositions.push({ 
-          position: rightPosition, 
-          distance, 
-          direction: 'right',
-          cascadingMoves: rightCollisions.cascadingCount
-        });
-      }
+    // Calculate the displacement needed
+    const deltaX = collidingCenterX - droppedCenterX;
+    const deltaY = collidingCenterY - droppedCenterY;
 
-      // Left position (only if it doesn't go negative and results in valid position)
-      const leftPosition = {
-        left: snapToGrid(Math.max(0, blockingBox.left - spacing - 200 - (attempt * 220))), // 200 = item width
-        top: snapToGrid(itemToMove.position.top)
-      };
-      if (leftPosition.left >= 0) {
-        const leftBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, leftPosition);
-      const leftCollisions = this.countCascadingCollisions(leftBox, itemToMove.uuid, allItems);
-      if (leftCollisions.hasDirectCollision === false) {
-          const distance = Math.abs(leftPosition.left - itemToMove.position.left) + 
-                          Math.abs(leftPosition.top - itemToMove.position.top);
-          candidatePositions.push({ 
-            position: leftPosition, 
-            distance, 
-            direction: 'left',
-            cascadingMoves: leftCollisions.cascadingCount
-          });
-        }
-      }
+    // Determine primary direction based on the larger displacement
+    // Prefer horizontal movement for flow layouts
+    const horizontalBias = 1.2; // Slightly prefer horizontal movement
 
-      // Below position
-      const belowPosition = {
-        left: snapToGrid(itemToMove.position.left),
-        top: snapToGrid(blockingBox.bottom + spacing + (attempt * 100)) // 100 = 80 height + 20 spacing
-      };
-      const belowBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, belowPosition);
-      const belowCollisions = this.countCascadingCollisions(belowBox, itemToMove.uuid, allItems);
-      if (belowCollisions.hasDirectCollision === false) {
-        const distance = Math.abs(belowPosition.left - itemToMove.position.left) + 
-                        Math.abs(belowPosition.top - itemToMove.position.top);
-        candidatePositions.push({ 
-          position: belowPosition, 
-          distance, 
-          direction: 'down',
-          cascadingMoves: belowCollisions.cascadingCount
-        });
-      }
-
-      // Above position (only if it doesn't go negative)
-      const abovePosition = {
-        left: snapToGrid(itemToMove.position.left),
-        top: snapToGrid(Math.max(0, blockingBox.top - spacing - 80 - (attempt * 100))) // 80 = item height
-      };
-      if (abovePosition.top >= 0) {
-        const aboveBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, abovePosition);
-        const aboveCollisions = this.countCascadingCollisions(aboveBox, itemToMove.uuid, allItems);
-        if (aboveCollisions.hasDirectCollision === false) {
-          const distance = Math.abs(abovePosition.left - itemToMove.position.left) + 
-                          Math.abs(abovePosition.top - itemToMove.position.top);
-          candidatePositions.push({ 
-            position: abovePosition, 
-            distance, 
-            direction: 'up',
-            cascadingMoves: aboveCollisions.cascadingCount
-          });
-        }
-      }
+    if (Math.abs(deltaX) * horizontalBias > Math.abs(deltaY)) {
+      // Horizontal movement
+      return deltaX > 0 ? 'right' : 'left';
+    } else {
+      // Vertical movement
+      return deltaY > 0 ? 'down' : 'up';
     }
-
-    // If we have candidates, choose the one with minimum total impact
-    if (candidatePositions.length > 0) {
-      // Sort by cascading moves first, then by a balanced scoring system
-      candidatePositions.sort((a, b) => {
-        // First priority: minimize cascading moves
-        if (a.cascadingMoves !== b.cascadingMoves) {
-          return a.cascadingMoves - b.cascadingMoves;
-        }
-        
-        // Second priority: balanced scoring that considers both distance and flow direction
-        // Be more conservative about upward/leftward movement - prefer it only when there's a significant benefit
-        const directionPriority = { right: 1, down: 2, left: 3, up: 4 };
-        const distanceDiff = Math.abs(a.distance - b.distance);
-        
-        // Strong preference for maintaining flow direction (right/down) unless there's a very large distance difference
-        if (distanceDiff > 400) {
-          // Very large distance difference - prioritize shorter distance
-          return a.distance - b.distance;
-        } else if (distanceDiff <= 150) {
-          // Small to medium distance difference - prioritize flow direction  
-          return directionPriority[a.direction] - directionPriority[b.direction];
-        } else {
-          // Medium-large distance difference - balance both factors, but still favor flow direction
-          const aScore = a.distance * 0.3 + (directionPriority[a.direction] * 100);
-          const bScore = b.distance * 0.3 + (directionPriority[b.direction] * 100);
-          return aScore - bScore;
-        }
-      });
-
-      return candidatePositions[0].position;
-    }
-
-    // Try diagonal positions as fallback
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const diagonalPosition = {
-        left: snapToGrid(blockingBox.right + spacing + (attempt * 220)),
-        top: snapToGrid(blockingBox.bottom + spacing + (attempt * 100))
-      };
-
-      const diagonalBox = this.getBoundingBox(itemToMove.uuid, itemToMove.type, diagonalPosition);
-      const diagonalHasCollision = allItems.some(item => 
-        item.uuid !== itemToMove.uuid && 
-        this.hasCollision(diagonalBox, item.boundingBox)
-      );
-
-      if (!diagonalHasCollision) {
-        return diagonalPosition;
-      }
-    }
-
-    // If all positions have collisions, return the first right position
-    // This will trigger another iteration of the collision resolution loop
-    return {
-      left: snapToGrid(blockingBox.right + spacing),
-      top: snapToGrid(itemToMove.position.top)
-    };
   }
 
-  private countCascadingCollisions(newBox: BoundingBox, movingItemUuid: string, allItems: ItemLayout[]): { hasDirectCollision: boolean; cascadingCount: number } {
-    let cascadingCount = 0;
-    
-    // Check for direct collisions with the new position
-    for (const item of allItems) {
-      if (item.uuid === movingItemUuid) continue;
-      
-      if (this.hasCollision(newBox, item.boundingBox)) {
-        return { hasDirectCollision: true, cascadingCount: 0 }; // Direct collision means this position is invalid
+  private pushItemInDirection(
+    itemToPush: ItemLayout,
+    direction: 'right' | 'down' | 'left' | 'up',
+    allItems: ItemLayout[],
+    existingMoves: Map<string, FlowPosition>
+  ): Map<string, FlowPosition> {
+    const moves = new Map<string, FlowPosition>();
+    const spacing = 20;
+
+    // Calculate the new position based on direction
+    let newPosition: FlowPosition;
+
+    switch (direction) {
+      case 'right':
+        newPosition = {
+          left: snapToGrid(itemToPush.boundingBox.right + spacing),
+          top: snapToGrid(itemToPush.position.top)
+        };
+        break;
+      case 'left':
+        newPosition = {
+          left: snapToGrid(
+            Math.max(
+              0,
+              itemToPush.boundingBox.left -
+                itemToPush.boundingBox.width -
+                spacing
+            )
+          ),
+          top: snapToGrid(itemToPush.position.top)
+        };
+        break;
+      case 'down':
+        newPosition = {
+          left: snapToGrid(itemToPush.position.left),
+          top: snapToGrid(itemToPush.boundingBox.bottom + spacing)
+        };
+        break;
+      case 'up':
+        newPosition = {
+          left: snapToGrid(itemToPush.position.left),
+          top: snapToGrid(
+            Math.max(
+              0,
+              itemToPush.boundingBox.top -
+                itemToPush.boundingBox.height -
+                spacing
+            )
+          )
+        };
+        break;
+    }
+
+    // Ensure the new position is within canvas bounds
+    if (newPosition.left < 0) newPosition.left = 0;
+    if (newPosition.top < 0) newPosition.top = 0;
+
+    // Create the new bounding box for the pushed item
+    const newBoundingBox = this.getBoundingBox(
+      itemToPush.uuid,
+      itemToPush.type,
+      newPosition
+    );
+
+    // Check if this new position would create collisions with other items
+    const newCollisions = allItems.filter(
+      (item) =>
+        item.uuid !== itemToPush.uuid &&
+        !existingMoves.has(item.uuid) && // Don't check against items that are already being moved
+        this.hasCollision(newBoundingBox, item.boundingBox)
+    );
+
+    // Record this move
+    moves.set(itemToPush.uuid, newPosition);
+
+    // If there are new collisions, recursively push those items too
+    if (newCollisions.length > 0) {
+      for (const newCollision of newCollisions) {
+        // Push in the same direction to maintain order
+        const cascadeMoves = this.pushItemInDirection(
+          newCollision,
+          direction,
+          allItems,
+          new Map([...existingMoves, ...moves])
+        );
+        cascadeMoves.forEach((position, uuid) => {
+          moves.set(uuid, position);
+        });
       }
     }
-    
-    // If no direct collision, estimate potential cascading moves
-    // This is a simplified heuristic - in reality, we'd need to simulate the full cascade
-    for (const item of allItems) {
-      if (item.uuid === movingItemUuid) continue;
-      
-      // Check if this item would be "pushed" by the new position
-      // Items are considered "pushable" if they're in the movement path
-      const isInRightPath = newBox.right > item.boundingBox.left && 
-                           newBox.right < item.boundingBox.right &&
-                           Math.abs(newBox.top - item.boundingBox.top) < 100;
-      
-      const isInDownPath = newBox.bottom > item.boundingBox.top && 
-                          newBox.bottom < item.boundingBox.bottom &&
-                          Math.abs(newBox.left - item.boundingBox.left) < 220;
-      
-      if (isInRightPath || isInDownPath) {
-        cascadingCount++;
-      }
+
+    // Update the allItems array to reflect the new position for further calculations
+    const itemIndex = allItems.findIndex(
+      (item) => item.uuid === itemToPush.uuid
+    );
+    if (itemIndex >= 0) {
+      allItems[itemIndex].position = newPosition;
+      allItems[itemIndex].boundingBox = newBoundingBox;
     }
-    
-    return { hasDirectCollision: false, cascadingCount };
+
+    return moves;
   }
 
   private handleMouseDown(event: MouseEvent): void {
@@ -794,25 +734,25 @@ export class Editor extends RapidElement {
         newPosition
       );
 
-      // Apply auto-layout moves for colliding items
+      // Apply auto-layout moves for colliding items with animation
       autoLayoutMoves.forEach((position, uuid) => {
         // Determine the type of the item being moved
         let itemType: 'node' | 'sticky' = 'node';
-        
+
         // Check if it's a sticky note
         const stickies = this.definition?._ui?.stickies || {};
         if (stickies[uuid]) {
           itemType = 'sticky';
         }
-        
-        this.updatePosition(uuid, itemType, position);
+
+        this.updatePosition(uuid, itemType, position, true); // Animate auto-layout moves
       });
 
       // Update canvas positions for all moved items
       const allMovedPositions: { [uuid: string]: FlowPosition } = {
         [this.currentDragItem.uuid]: newPosition
       };
-      
+
       autoLayoutMoves.forEach((position, uuid) => {
         allMovedPositions[uuid] = position;
       });
@@ -821,7 +761,9 @@ export class Editor extends RapidElement {
       const nodePositions: { [uuid: string]: FlowPosition } = {};
       Object.entries(allMovedPositions).forEach(([uuid, position]) => {
         // Check if this is a node (not a sticky)
-        const isNode = this.definition?.nodes?.some(node => node.uuid === uuid);
+        const isNode = this.definition?.nodes?.some(
+          (node) => node.uuid === uuid
+        );
         if (isNode) {
           nodePositions[uuid] = position;
         }

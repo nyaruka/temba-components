@@ -1,4 +1,4 @@
-import { fixture, assert, expect } from '@open-wc/testing';
+import { fixture, expect } from '@open-wc/testing';
 import { html } from 'lit';
 import { Editor } from '../src/flow/Editor';
 import { FlowDefinition } from '../src/store/flow-definition';
@@ -15,7 +15,7 @@ describe('Flow Editor Auto Layout', () => {
         <div id="canvas"></div>
       </temba-flow-editor-auto-layout>
     `);
-    
+
     // Set canvas size
     (editor as any).canvasSize = { width: 1200, height: 800 };
   });
@@ -51,7 +51,7 @@ describe('Flow Editor Auto Layout', () => {
 
       // Test collision detection method
       const hasCollision = (editor as any).hasCollision.bind(editor);
-      
+
       expect(hasCollision(box1, box2)).to.be.true; // These overlap
       expect(hasCollision(box1, box3)).to.be.false; // These don't overlap
       expect(hasCollision(box2, box3)).to.be.false; // These don't overlap
@@ -61,16 +61,44 @@ describe('Flow Editor Auto Layout', () => {
       const hasCollision = (editor as any).hasCollision.bind(editor);
 
       // Test touching edges (should not be collision)
-      const box1 = { left: 100, top: 100, right: 200, bottom: 200, width: 100, height: 100 };
-      const box2 = { left: 200, top: 100, right: 300, bottom: 200, width: 100, height: 100 };
+      const box1 = {
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 200,
+        width: 100,
+        height: 100
+      };
+      const box2 = {
+        left: 200,
+        top: 100,
+        right: 300,
+        bottom: 200,
+        width: 100,
+        height: 100
+      };
       expect(hasCollision(box1, box2)).to.be.false;
 
       // Test overlapping by 1 pixel (should be collision)
-      const box3 = { left: 199, top: 100, right: 299, bottom: 200, width: 100, height: 100 };
+      const box3 = {
+        left: 199,
+        top: 100,
+        right: 299,
+        bottom: 200,
+        width: 100,
+        height: 100
+      };
       expect(hasCollision(box1, box3)).to.be.true;
 
       // Test complete overlap (should be collision)
-      const box4 = { left: 100, top: 100, right: 200, bottom: 200, width: 100, height: 100 };
+      const box4 = {
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 200,
+        width: 100,
+        height: 100
+      };
       expect(hasCollision(box1, box4)).to.be.true;
     });
   });
@@ -103,7 +131,10 @@ describe('Flow Editor Auto Layout', () => {
       (editor as any).definition = mockDefinition;
 
       const getBoundingBox = (editor as any).getBoundingBox.bind(editor);
-      const boundingBox = getBoundingBox('node-1', 'node', { left: 100, top: 200 });
+      const boundingBox = getBoundingBox('node-1', 'node', {
+        left: 100,
+        top: 200
+      });
 
       expect(boundingBox.left).to.equal(100);
       expect(boundingBox.top).to.equal(200);
@@ -115,7 +146,10 @@ describe('Flow Editor Auto Layout', () => {
 
     it('should handle sticky note dimensions', () => {
       const getBoundingBox = (editor as any).getBoundingBox.bind(editor);
-      const boundingBox = getBoundingBox('sticky-1', 'sticky', { left: 300, top: 400 });
+      const boundingBox = getBoundingBox('sticky-1', 'sticky', {
+        left: 300,
+        top: 400
+      });
 
       expect(boundingBox.left).to.equal(300);
       expect(boundingBox.top).to.equal(400);
@@ -172,15 +206,17 @@ describe('Flow Editor Auto Layout', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       expect(moves.size).to.be.greaterThan(0);
-      
+
       // The existing node should be moved
       const existingNodeMove = moves.get('existing-node');
       expect(existingNodeMove).to.exist;
-      
+
       // The move should be to the right or down (never up or left)
       expect(existingNodeMove.left).to.be.at.least(200);
       expect(existingNodeMove.top).to.be.at.least(200);
@@ -238,12 +274,14 @@ describe('Flow Editor Auto Layout', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // Should move multiple nodes
       expect(moves.size).to.be.at.least(1);
-      
+
       // All moves should be right or down
       moves.forEach((position, uuid) => {
         const originalPosition = mockDefinition._ui.nodes[uuid].position;
@@ -269,7 +307,7 @@ describe('Flow Editor Auto Layout', () => {
             exits: []
           },
           {
-            uuid: 'node-2', 
+            uuid: 'node-2',
             actions: [],
             exits: []
           },
@@ -304,12 +342,14 @@ describe('Flow Editor Auto Layout', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // Should handle the cascade properly
       expect(moves.size).to.be.at.least(1);
-      
+
       // Verify no moves go up or left
       moves.forEach((position, uuid) => {
         const originalPosition = mockDefinition._ui.nodes[uuid].position;
@@ -370,7 +410,9 @@ describe('Flow Editor Auto Layout', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // The algorithm should move nodes in a way that preserves relative order
@@ -429,7 +471,9 @@ describe('Flow Editor Auto Layout', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // All positions should be snapped to 20px grid
@@ -490,7 +534,9 @@ describe('Flow Editor Auto Layout', () => {
         }
       };
 
-      const autoLayoutResolveCollisions = (editor as any).autoLayoutResolveCollisions.bind(editor);
+      const autoLayoutResolveCollisions = (
+        editor as any
+      ).autoLayoutResolveCollisions.bind(editor);
       const moves = autoLayoutResolveCollisions(droppedItem);
 
       // Should detect and resolve the collision with the sticky note
@@ -518,10 +564,10 @@ describe('Flow Editor Auto Layout', () => {
         ],
         _ui: {
           nodes: {
-            'node1': { position: { left: 100, top: 100 } },
-            'node2': { position: { left: 320, top: 100 } }, // Right of node1
-            'node3': { position: { left: 540, top: 100 } }, // Right of node2  
-            'node4': { position: { left: 320, top: 180 } }  // Below node2
+            node1: { position: { left: 100, top: 100 } },
+            node2: { position: { left: 320, top: 100 } }, // Right of node1
+            node3: { position: { left: 540, top: 100 } }, // Right of node2
+            node4: { position: { left: 320, top: 180 } } // Below node2
           },
           stickies: {}
         }
@@ -583,11 +629,23 @@ describe('Flow Editor Auto Layout', () => {
       }
 
       // Most importantly: verify NO collisions remain after all moves
-      const allFinalPositions = new Map<string, { left: number; top: number }>();
+      const allFinalPositions = new Map<
+        string,
+        { left: number; top: number }
+      >();
       allFinalPositions.set('node1', droppedItem.position);
-      allFinalPositions.set('node2', moves.get('node2') || { left: 320, top: 100 });
-      allFinalPositions.set('node3', moves.get('node3') || { left: 540, top: 100 });
-      allFinalPositions.set('node4', moves.get('node4') || { left: 320, top: 180 });
+      allFinalPositions.set(
+        'node2',
+        moves.get('node2') || { left: 320, top: 100 }
+      );
+      allFinalPositions.set(
+        'node3',
+        moves.get('node3') || { left: 540, top: 100 }
+      );
+      allFinalPositions.set(
+        'node4',
+        moves.get('node4') || { left: 320, top: 180 }
+      );
 
       // Check all pairs for collisions
       const nodeIds = ['node1', 'node2', 'node3', 'node4'];
@@ -595,29 +653,29 @@ describe('Flow Editor Auto Layout', () => {
         for (let j = i + 1; j < nodeIds.length; j++) {
           const pos1 = allFinalPositions.get(nodeIds[i])!;
           const pos2 = allFinalPositions.get(nodeIds[j])!;
-          
+
           const box1 = {
             left: pos1.left,
             top: pos1.top,
             right: pos1.left + 200,
             bottom: pos1.top + 80
           };
-          
+
           const box2 = {
             left: pos2.left,
             top: pos2.top,
             right: pos2.left + 200,
             bottom: pos2.top + 80
           };
-          
+
           const hasCollision = !(
             box1.right <= box2.left ||
             box1.left >= box2.right ||
             box1.bottom <= box2.top ||
             box1.top >= box2.bottom
           );
-          
-          expect(hasCollision).to.be.false;;
+
+          expect(hasCollision).to.be.false;
         }
       }
     });
@@ -640,9 +698,9 @@ describe('Flow Editor Auto Layout', () => {
         ],
         _ui: {
           nodes: {
-            'node1': { position: { left: 100, top: 100 } },
-            'node2': { position: { left: 320, top: 100 } },
-            'node3': { position: { left: 100, top: 220 } } // Far away, shouldn't need to move
+            node1: { position: { left: 100, top: 100 } },
+            node2: { position: { left: 320, top: 100 } },
+            node3: { position: { left: 100, top: 220 } } // Far away, shouldn't need to move
           },
           stickies: {}
         }
@@ -655,7 +713,14 @@ describe('Flow Editor Auto Layout', () => {
         uuid: 'node1',
         type: 'node' as const,
         position: { left: 320, top: 100 },
-        boundingBox: { left: 320, top: 100, right: 520, bottom: 180, width: 200, height: 80 }
+        boundingBox: {
+          left: 320,
+          top: 100,
+          right: 520,
+          bottom: 180,
+          width: 200,
+          height: 80
+        }
       };
 
       const moves = (editor as any).autoLayoutResolveCollisions(droppedItem);
@@ -686,11 +751,11 @@ describe('Flow Editor Auto Layout', () => {
         ],
         _ui: {
           nodes: {
-            'nodeA': { position: { left: 100, top: 100 } },
-            'nodeB': { position: { left: 320, top: 100 } },
-            'nodeC': { position: { left: 540, top: 100 } },
-            'nodeD': { position: { left: 320, top: 180 } },
-            'nodeE': { position: { left: 540, top: 180 } }
+            nodeA: { position: { left: 100, top: 100 } },
+            nodeB: { position: { left: 320, top: 100 } },
+            nodeC: { position: { left: 540, top: 100 } },
+            nodeD: { position: { left: 320, top: 180 } },
+            nodeE: { position: { left: 540, top: 180 } }
           },
           stickies: {}
         }
@@ -703,23 +768,33 @@ describe('Flow Editor Auto Layout', () => {
         uuid: 'nodeA',
         type: 'node' as const,
         position: { left: 400, top: 140 }, // Middle of the cluster
-        boundingBox: { left: 400, top: 140, right: 600, bottom: 220, width: 200, height: 80 }
+        boundingBox: {
+          left: 400,
+          top: 140,
+          right: 600,
+          bottom: 220,
+          width: 200,
+          height: 80
+        }
       };
 
       const moves = (editor as any).autoLayoutResolveCollisions(droppedItem);
 
       // Collect all final positions
-      const allFinalPositions = new Map<string, { left: number; top: number }>();
+      const allFinalPositions = new Map<
+        string,
+        { left: number; top: number }
+      >();
       allFinalPositions.set('nodeA', droppedItem.position);
-      
+
       // Original positions for nodes not moved
       const originalPositions = {
-        'nodeB': { left: 320, top: 100 },
-        'nodeC': { left: 540, top: 100 },
-        'nodeD': { left: 320, top: 180 },
-        'nodeE': { left: 540, top: 180 }
+        nodeB: { left: 320, top: 100 },
+        nodeC: { left: 540, top: 100 },
+        nodeD: { left: 320, top: 180 },
+        nodeE: { left: 540, top: 180 }
       };
-      
+
       Object.entries(originalPositions).forEach(([uuid, pos]) => {
         allFinalPositions.set(uuid, moves.get(uuid) || pos);
       });
@@ -730,29 +805,29 @@ describe('Flow Editor Auto Layout', () => {
         for (let j = i + 1; j < nodeIds.length; j++) {
           const pos1 = allFinalPositions.get(nodeIds[i])!;
           const pos2 = allFinalPositions.get(nodeIds[j])!;
-          
+
           const box1 = {
             left: pos1.left,
             top: pos1.top,
             right: pos1.left + 200,
             bottom: pos1.top + 80
           };
-          
+
           const box2 = {
             left: pos2.left,
             top: pos2.top,
             right: pos2.left + 200,
             bottom: pos2.top + 80
           };
-          
+
           const hasCollision = !(
             box1.right <= box2.left ||
             box1.left >= box2.right ||
             box1.bottom <= box2.top ||
             box1.top >= box2.bottom
           );
-          
-          expect(hasCollision).to.be.false;;
+
+          expect(hasCollision).to.be.false;
         }
       }
     });
