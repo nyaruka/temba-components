@@ -97,6 +97,7 @@ export interface AppState {
   updateCanvasPositions: (positions: CanvasPositions) => void;
   updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) => void;
+  removeStickyNotes: (uuids: string[]) => void;
 
   updateStickyPosition(uuid: string, newPosition: FlowPosition): void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
@@ -256,6 +257,16 @@ export const zustand = createStore<AppState>()(
           state.flowDefinition.nodes = state.flowDefinition.nodes.filter(
             (node) => !uuids.includes(node.uuid)
           );
+        });
+      },
+
+      removeStickyNotes: (uuids: string[]) => {
+        set((state: AppState) => {
+          if (state.flowDefinition._ui?.stickies) {
+            for (const uuid of uuids) {
+              delete state.flowDefinition._ui.stickies[uuid];
+            }
+          }
         });
       },
 

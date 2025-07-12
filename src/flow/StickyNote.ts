@@ -14,6 +14,9 @@ export class StickyNote extends RapidElement {
   @property({ type: Boolean })
   private dragging = false;
 
+  @property({ type: Boolean })
+  public selected = false;
+
   static get styles() {
     return css`
       :host {
@@ -231,6 +234,16 @@ export class StickyNote extends RapidElement {
     this.requestUpdate();
   }
 
+  private handleContentMouseDown(event: MouseEvent): void {
+    // If this sticky note is selected, don't stop propagation
+    // so that group dragging can work
+    if (this.selected) {
+      return;
+    }
+    // Otherwise, stop propagation to enable editing
+    event.stopPropagation();
+  }
+
   private handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -263,7 +276,7 @@ export class StickyNote extends RapidElement {
             contenteditable="true"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleKeyDown}"
-            @mousedown="${(e: MouseEvent) => e.stopPropagation()}"
+            @mousedown="${this.handleContentMouseDown}"
             .textContent="${this.data.title}"
           ></div>
         </div>
@@ -273,7 +286,7 @@ export class StickyNote extends RapidElement {
             contenteditable="true"
             @blur="${this.handleBodyBlur}"
             @keydown="${this.handleKeyDown}"
-            @mousedown="${(e: MouseEvent) => e.stopPropagation()}"
+            @mousedown="${this.handleContentMouseDown}"
             .textContent="${this.data.body}"
           ></div>
           <div class="edit-icon" title="Edit note"></div>

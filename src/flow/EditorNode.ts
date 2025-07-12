@@ -28,7 +28,7 @@ export class EditorNode extends RapidElement {
         background-color: #fff;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         min-width: 200px;
-        border-radius: calc(var(--curvature) * 1.5);
+        border-radius: var(--curvature);
         overflow: hidden;
         color: #333;
         cursor: move;
