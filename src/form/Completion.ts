@@ -352,14 +352,13 @@ export class Completion extends FormElement {
     const highlightSpan = document.createElement('span');
     highlightSpan.className = 'expression-highlight';
 
-    // Don't set text content - we only want the background highlight
-    // highlightSpan.textContent should remain empty
-
     const computedStyle = getComputedStyle(inputElement);
 
-    // Get input padding and other measurements
+    // Get input padding and scroll offsets
     const paddingLeft = parseInt(computedStyle.paddingLeft) || 0;
     const paddingTop = parseInt(computedStyle.paddingTop) || 0;
+    const scrollLeft = inputElement.scrollLeft || 0;
+    const scrollTop = inputElement.scrollTop || 0;
 
     // Calculate position based on text layout
     const position = this.calculateTextPosition(
@@ -369,10 +368,10 @@ export class Completion extends FormElement {
       computedStyle
     );
 
-    // Position the highlight
+    // Position the highlight accounting for padding and scroll
     highlightSpan.style.position = 'absolute';
-    highlightSpan.style.left = `${paddingLeft + position.left}px`;
-    highlightSpan.style.top = `${paddingTop + position.top}px`;
+    highlightSpan.style.left = `${paddingLeft + position.left - scrollLeft}px`;
+    highlightSpan.style.top = `${paddingTop + position.top - scrollTop}px`;
     highlightSpan.style.width = `${position.width}px`;
     highlightSpan.style.height = `${position.height}px`;
     highlightSpan.style.pointerEvents = 'none';
@@ -391,104 +390,126 @@ export class Completion extends FormElement {
     const textBefore = text.substring(0, start);
     const expressionText = text.substring(start, end);
 
-    // Create a temporary element to measure text accurately
-    const measuringDiv = document.createElement('div');
-    measuringDiv.style.position = 'absolute';
-    measuringDiv.style.visibility = 'hidden';
-    measuringDiv.style.whiteSpace = isTextarea ? 'pre-wrap' : 'nowrap';
-    measuringDiv.style.wordWrap = isTextarea ? 'break-word' : 'normal';
-    measuringDiv.style.fontFamily = computedStyle.fontFamily;
-    measuringDiv.style.fontSize = computedStyle.fontSize;
-    measuringDiv.style.fontWeight = computedStyle.fontWeight;
-    measuringDiv.style.lineHeight = computedStyle.lineHeight;
-    measuringDiv.style.letterSpacing = computedStyle.letterSpacing;
-    measuringDiv.style.width = isTextarea ? computedStyle.width : 'auto';
-    measuringDiv.style.padding = '0';
-    measuringDiv.style.margin = '0';
-    measuringDiv.style.border = 'none';
-
-    document.body.appendChild(measuringDiv);
-
-    try {
-      if (isTextarea) {
-        // For textarea, we need to handle multiple lines
-        return this.calculateTextareaPosition(
-          textBefore,
-          expressionText,
-          measuringDiv,
-          computedStyle
-        );
-      } else {
-        // For single-line input, calculate horizontal position only
-        return this.calculateInputPosition(
-          textBefore,
-          expressionText,
-          measuringDiv,
-          computedStyle
-        );
-      }
-    } finally {
-      document.body.removeChild(measuringDiv);
+    if (isTextarea) {
+      return this.calculateTextareaPositionWithRanges(
+        start,
+        end,
+        inputElement as HTMLTextAreaElement,
+        computedStyle
+      );
+    } else {
+      return this.calculateInputPositionWithCanvas(
+        textBefore,
+        expressionText,
+        computedStyle
+      );
     }
   }
 
-  private calculateInputPosition(
+  private calculateInputPositionWithCanvas(
     textBefore: string,
     expressionText: string,
-    measuringDiv: HTMLDivElement,
     computedStyle: CSSStyleDeclaration
   ) {
+    // Use canvas for more accurate text measurement
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return { left: 0, top: 0, width: 0, height: 16 };
+    }
+
+    // Set font properties to match the input
+    const fontSize = parseInt(computedStyle.fontSize) || 16;
+    const fontWeight = computedStyle.fontWeight || 'normal';
+    const fontFamily = computedStyle.fontFamily || 'monospace';
+    context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+
     // Measure text before the expression
-    measuringDiv.textContent = textBefore;
-    const leftOffset = measuringDiv.offsetWidth;
+    const leftOffset = context.measureText(textBefore).width;
 
-    // Measure the expression text
-    measuringDiv.textContent = expressionText;
-    const width = measuringDiv.offsetWidth;
-
-    const height = parseInt(computedStyle.fontSize) || 16;
+    // Measure the expression text width
+    const width = context.measureText(expressionText).width;
 
     return {
       left: leftOffset,
       top: 0,
       width: width,
-      height: height
+      height: fontSize
     };
   }
 
-  private calculateTextareaPosition(
-    textBefore: string,
-    expressionText: string,
-    measuringDiv: HTMLDivElement,
+  private calculateTextareaPositionWithRanges(
+    start: number,
+    end: number,
+    textarea: HTMLTextAreaElement,
     computedStyle: CSSStyleDeclaration
   ) {
-    const lineHeight =
-      parseInt(computedStyle.lineHeight) ||
-      parseInt(computedStyle.fontSize) ||
-      16;
+    // Create a mirror div to accurately measure text layout in textarea
+    const mirror = document.createElement('div');
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+    mirror.style.fontFamily = computedStyle.fontFamily;
+    mirror.style.fontSize = computedStyle.fontSize;
+    mirror.style.fontWeight = computedStyle.fontWeight;
+    mirror.style.lineHeight = computedStyle.lineHeight;
+    mirror.style.letterSpacing = computedStyle.letterSpacing;
+    mirror.style.padding = computedStyle.padding;
+    mirror.style.border = computedStyle.border;
+    mirror.style.width = computedStyle.width;
+    mirror.style.height = 'auto';
+    mirror.style.overflow = 'hidden';
 
-    // Split text by lines to find which line the expression is on
-    const lines = textBefore.split('\n');
-    const lineNumber = lines.length - 1;
-    const textInCurrentLine = lines[lineNumber] || '';
+    document.body.appendChild(mirror);
 
-    // Measure horizontal position within the current line
-    measuringDiv.textContent = textInCurrentLine;
-    const leftOffset = measuringDiv.offsetWidth;
+    try {
+      const text = this.value;
+      const textBefore = text.substring(0, start);
+      const expressionText = text.substring(start, end);
 
-    // Measure the expression width
-    measuringDiv.textContent = expressionText;
-    const width = measuringDiv.offsetWidth;
+      // Set text content up to the start position
+      mirror.textContent = textBefore;
 
-    // Calculate vertical position
-    const topOffset = lineNumber * lineHeight;
+      // Create a temporary span to measure the end position
+      const endSpan = document.createElement('span');
+      endSpan.textContent = '|'; // Use a marker character
+      mirror.appendChild(endSpan);
 
-    return {
-      left: leftOffset,
-      top: topOffset,
-      width: width,
-      height: lineHeight
-    };
+      // Get the position of the end marker
+      const endRect = endSpan.getBoundingClientRect();
+      const mirrorRect = mirror.getBoundingClientRect();
+
+      // Calculate relative position within the mirror element
+      const left = endRect.left - mirrorRect.left;
+      const top = endRect.top - mirrorRect.top;
+
+      // Remove the marker and measure the expression width
+      mirror.removeChild(endSpan);
+      mirror.textContent = textBefore + expressionText;
+
+      // Add marker again to get end position
+      const endSpan2 = document.createElement('span');
+      endSpan2.textContent = '|';
+      mirror.appendChild(endSpan2);
+
+      const endRect2 = endSpan2.getBoundingClientRect();
+      const width = endRect2.left - endRect.left;
+
+      const lineHeight =
+        parseInt(computedStyle.lineHeight) ||
+        parseInt(computedStyle.fontSize) ||
+        16;
+
+      return {
+        left: left,
+        top: top,
+        width: Math.max(width, 10), // Minimum width for visibility
+        height: lineHeight
+      };
+    } finally {
+      document.body.removeChild(mirror);
+    }
   }
 
   public render(): TemplateResult {
