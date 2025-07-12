@@ -235,7 +235,7 @@ export class StickyNote extends RapidElement {
   }
 
   private handleContentMouseDown(event: MouseEvent): void {
-    // If this sticky note is selected, don't stop propagation 
+    // If this sticky note is selected, don't stop propagation
     // so that group dragging can work
     if (this.selected) {
       return;

@@ -291,7 +291,7 @@ describe('Editor', () => {
             exits: []
           },
           {
-            uuid: 'node-2', 
+            uuid: 'node-2',
             actions: [],
             exits: []
           }
@@ -302,7 +302,7 @@ describe('Editor', () => {
             'node-2': { position: { left: 300, top: 400 } }
           },
           stickies: {
-            'sticky-1': { 
+            'sticky-1': {
               position: { left: 200, top: 100 },
               title: 'Test Sticky',
               body: 'Test content',
@@ -338,7 +338,9 @@ describe('Editor', () => {
       (editor as any).selectedItems = new Set(['node-1']);
       await editor.updateComplete;
 
-      const selectedNode = editor.querySelector('temba-flow-node[uuid="node-1"]');
+      const selectedNode = editor.querySelector(
+        'temba-flow-node[uuid="node-1"]'
+      );
       expect(selectedNode).to.exist;
       expect(selectedNode.classList.contains('selected')).to.be.true;
     });
@@ -364,7 +366,7 @@ describe('Editor', () => {
 
       const selectionBox = editor.querySelector('.selection-box');
       expect(selectionBox).to.exist;
-      
+
       const style = selectionBox.getAttribute('style');
       expect(style).to.contain('left: 50px');
       expect(style).to.contain('top: 50px');

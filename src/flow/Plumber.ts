@@ -198,6 +198,66 @@ export class Plumber {
     });
   }
 
+  public dimNodeConnections(nodeId: string) {
+    if (!this.jsPlumb) return;
+
+    // Get all connections
+    const connections = this.jsPlumb.getConnections();
+
+    // Get the node element to find its exit elements
+    const nodeElement = document.getElementById(nodeId);
+    const exitElements = nodeElement
+      ? nodeElement.querySelectorAll('.exit')
+      : [];
+    const exitIds = Array.from(exitElements).map((exit) => exit.id);
+
+    connections.forEach((connection) => {
+      const sourceId = connection.source.id;
+      const targetId = connection.target.id;
+
+      // Check if this connection involves the dragged node:
+      // - Incoming: target is the node itself
+      // - Outgoing: source is one of the node's exits
+      if (targetId === nodeId || exitIds.includes(sourceId)) {
+        // Add dimmed class to the connector element
+        const connectorElement = connection.connector.canvas;
+        if (connectorElement) {
+          connectorElement.classList.add('dimmed');
+        }
+      }
+    });
+  }
+
+  public restoreDimmedConnections(nodeId: string) {
+    if (!this.jsPlumb) return;
+
+    // Get all connections
+    const connections = this.jsPlumb.getConnections();
+
+    // Get the node element to find its exit elements
+    const nodeElement = document.getElementById(nodeId);
+    const exitElements = nodeElement
+      ? nodeElement.querySelectorAll('.exit')
+      : [];
+    const exitIds = Array.from(exitElements).map((exit) => exit.id);
+
+    connections.forEach((connection) => {
+      const sourceId = connection.source.id;
+      const targetId = connection.target.id;
+
+      // Check if this connection involves the node:
+      // - Incoming: target is the node itself
+      // - Outgoing: source is one of the node's exits
+      if (targetId === nodeId || exitIds.includes(sourceId)) {
+        // Remove dimmed class from the connector element
+        const connectorElement = connection.connector.canvas;
+        if (connectorElement) {
+          connectorElement.classList.remove('dimmed');
+        }
+      }
+    });
+  }
+
   public removeNodeConnections(nodeId: string) {
     if (!this.jsPlumb) return;
 

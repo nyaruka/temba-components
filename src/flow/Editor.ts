@@ -204,12 +204,28 @@ export class Editor extends RapidElement {
         z-index: 550;
       }
 
+      body .plumb-connector.dimmed path {
+        stroke: var(--color-connectors) !important;
+        stroke-width: 3px;
+        opacity: 0.3;
+        z-index: 10;
+      }
+
       body .plumb-connector.elevated .plumb-arrow {
         fill: var(--color-connectors);
         stroke: var(--color-connectors);
         stroke-width: 0px;
         margin-top: 6px;
         z-index: 550;
+      }
+
+      body .plumb-connector.dimmed .plumb-arrow {
+        fill: var(--color-connectors);
+        stroke: var(--color-connectors);
+        stroke-width: 0px;
+        margin-top: 6px;
+        opacity: 0.3;
+        z-index: 10;
       }
 
       body .plumb-connector .plumb-arrow {
@@ -372,23 +388,25 @@ export class Editor extends RapidElement {
     // If clicking on a non-selected item, clear selection unless Ctrl/Cmd is held
     if (!this.selectedItems.has(uuid) && !event.ctrlKey && !event.metaKey) {
       this.selectedItems.clear();
-    }
-
-    // Add this item to selection if not already selected
-    if (!this.selectedItems.has(uuid)) {
+      // Don't add single items to selection - single clicks just clear existing selection
+    } else if (!this.selectedItems.has(uuid)) {
+      // Add this item to selection only if Ctrl/Cmd is held
       this.selectedItems.add(uuid);
     }
 
-    // Set up potential drag state, but don't start dragging yet
-    this.isMouseDown = true;
-    this.dragStartPos = { x: event.clientX, y: event.clientY };
-    this.startPos = { left: position.left, top: position.top };
-    this.currentDragItem = {
-      uuid,
-      position,
-      element,
-      type
-    };
+    // Only set up drag if we have selected items
+    if (this.selectedItems.size > 0) {
+      // Set up potential drag state, but don't start dragging yet
+      this.isMouseDown = true;
+      this.dragStartPos = { x: event.clientX, y: event.clientY };
+      this.startPos = { left: position.left, top: position.top };
+      this.currentDragItem = {
+        uuid,
+        position,
+        element,
+        type
+      };
+    }
 
     event.preventDefault();
     event.stopPropagation();
@@ -517,19 +535,9 @@ export class Editor extends RapidElement {
       store.getState().removeNodes(nodeUuids);
     }
 
-    // Remove sticky notes more efficiently by doing a single update
+    // Remove sticky notes using the new AppState method
     if (stickyUuids.length > 0) {
-      const newDefinition = { ...this.definition };
-      if (newDefinition._ui?.stickies) {
-        stickyUuids.forEach((uuid) => {
-          delete newDefinition._ui.stickies[uuid];
-        });
-
-        store.getState().setFlowContents({
-          definition: newDefinition,
-          info: store.getState().flowInfo
-        });
-      }
+      store.getState().removeStickyNotes(stickyUuids);
     }
 
     // Clear selection
@@ -657,15 +665,17 @@ export class Editor extends RapidElement {
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
 
-      // If this is a node, elevate connections for all selected nodes
-      this.selectedItems.forEach((uuid) => {
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
-          this.plumber.elevateNodeConnections(uuid);
-        }
-      });
+      // For multi-node drags, dim the connections
+      if (this.selectedItems.size > 1) {
+        this.selectedItems.forEach((uuid) => {
+          if (
+            this.definition.nodes.find((node) => node.uuid === uuid) &&
+            this.plumber
+          ) {
+            this.plumber.dimNodeConnections(uuid);
+          }
+        });
+      }
     }
 
     // If we're actually dragging, update positions for all selected items
@@ -688,15 +698,17 @@ export class Editor extends RapidElement {
         }
       });
 
-      // Repaint connections for all selected nodes
-      this.selectedItems.forEach((uuid) => {
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
-          this.plumber.repaintEverything();
-        }
-      });
+      // Only repaint connections in real time for single node drags
+      if (this.selectedItems.size === 1) {
+        this.selectedItems.forEach((uuid) => {
+          if (
+            this.definition.nodes.find((node) => node.uuid === uuid) &&
+            this.plumber
+          ) {
+            this.plumber.repaintEverything();
+          }
+        });
+      }
     }
   }
 
@@ -721,16 +733,6 @@ export class Editor extends RapidElement {
 
     // If we were actually dragging, handle the drag end for all selected items
     if (this.isDragging) {
-      // Restore normal z-index for node connections
-      this.selectedItems.forEach((uuid) => {
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
-          this.plumber.restoreNodeConnections(uuid);
-        }
-      });
-
       const deltaX = event.clientX - this.dragStartPos.x;
       const deltaY = event.clientY - this.dragStartPos.y;
 
@@ -771,7 +773,19 @@ export class Editor extends RapidElement {
         getStore().getState().updateCanvasPositions(nodePositions);
       }
 
-      // Repaint connections for all selected nodes
+      // Restore dimmed connections and repaint everything for multi-node drags
+      if (this.selectedItems.size > 1) {
+        this.selectedItems.forEach((uuid) => {
+          if (
+            this.definition.nodes.find((node) => node.uuid === uuid) &&
+            this.plumber
+          ) {
+            this.plumber.restoreDimmedConnections(uuid);
+          }
+        });
+      }
+
+      // Repaint connections for all selected nodes at the end
       this.selectedItems.forEach((uuid) => {
         if (
           this.definition.nodes.find((node) => node.uuid === uuid) &&
