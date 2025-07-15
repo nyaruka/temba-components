@@ -78,10 +78,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Should return the dropped position (A stays where dropped)
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Dropped item should stay at target position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
 
       // Node B should be moved to resolve collision
       assert.isTrue(
@@ -176,10 +177,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       );
 
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Dropped item should stay at target position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
       assert.isTrue(
         positionUpdates.length > 0,
         'Colliding item should be moved'
@@ -258,10 +260,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       );
 
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Dropped sticky should stay at target position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
       assert.isTrue(
         positionUpdates.length > 0,
         'Colliding node should be moved'
@@ -336,10 +339,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       );
 
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Dropped item should stay at target position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
 
       // Verify that resolution doesn't create new collisions
       // This is a complex test that would require checking all item positions after resolution
@@ -400,10 +404,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       );
 
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Dropped item should stay at target position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
 
       // If node-1 was moved, it should not be in negative space
       if (positionUpdates.length > 0) {

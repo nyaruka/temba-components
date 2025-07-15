@@ -242,13 +242,13 @@ export class Editor extends RapidElement {
       }
 
       body .plumb-connector.elevated {
-        z-index: 550;
+        z-index: 50;
       }
 
       body .plumb-connector.elevated path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
-        z-index: 550;
+        z-index: 50;
       }
 
       body .plumb-connector.elevated .plumb-arrow {
@@ -256,7 +256,7 @@ export class Editor extends RapidElement {
         stroke: var(--color-connectors);
         stroke-width: 0px;
         margin-top: 6px;
-        z-index: 550;
+        z-index: 50;
       }
 
       body .plumb-connector .plumb-arrow {
@@ -467,25 +467,31 @@ export class Editor extends RapidElement {
       const newPosition = { left: snappedLeft, top: snappedTop };
 
       // Resolve any collisions and get the final position
-      const finalPosition = this.resolveCollisions(
+      const collisionResult = this.resolveCollisions(
         this.currentDragItem,
         newPosition
       );
 
-      // Update the store with the final position
-      this.updatePosition(
-        this.currentDragItem.uuid,
-        this.currentDragItem.type,
-        finalPosition
-      );
+      if (collisionResult.success) {
+        // Update the store with the final position
+        this.updatePosition(
+          this.currentDragItem.uuid,
+          this.currentDragItem.type,
+          collisionResult.position
+        );
 
-      // Update canvas positions for nodes
-      if (this.currentDragItem.type === 'node') {
-        getStore()
-          .getState()
-          .updateCanvasPositions({
-            [this.currentDragItem.uuid]: finalPosition
-          });
+        // Update canvas positions for nodes
+        if (this.currentDragItem.type === 'node') {
+          getStore()
+            .getState()
+            .updateCanvasPositions({
+              [this.currentDragItem.uuid]: collisionResult.position
+            });
+        }
+      } else {
+        // Collision resolution failed, revert to original position
+        this.currentDragItem.element.style.left = `${this.currentDragItem.position.left}px`;
+        this.currentDragItem.element.style.top = `${this.currentDragItem.position.top}px`;
       }
 
       // Repaint connections if this is a node
@@ -541,7 +547,7 @@ export class Editor extends RapidElement {
   private resolveCollisions(
     droppedItem: DraggableItem,
     newPosition: FlowPosition
-  ): FlowPosition {
+  ): { position: FlowPosition; success: boolean } {
     const allItems = this.getAllLayoutItems();
     const droppedBounds = getItemBounds(droppedItem);
 
@@ -560,7 +566,7 @@ export class Editor extends RapidElement {
     );
 
     if (collidingItems.length === 0) {
-      return newPosition; // No collisions, return original position
+      return { position: newPosition, success: true }; // No collisions, return original position
     }
 
     // Create a map to track item movements to prevent infinite recursion
@@ -585,30 +591,33 @@ export class Editor extends RapidElement {
         finalPositions
       );
 
-      if (bestMovement) {
-        finalPositions.set(currentUuid, bestMovement);
-
-        // Check if this movement creates new collisions
-        const newItemBounds = getBoundsFromPosition(
-          bestMovement,
-          currentItem.bounds.width,
-          currentItem.bounds.height
-        );
-
-        // Find any items that would now collide with this moved item
-        allItems.forEach((otherItem) => {
-          if (
-            otherItem.uuid !== currentUuid &&
-            otherItem.uuid !== droppedItem.uuid &&
-            !finalPositions.has(otherItem.uuid) &&
-            !itemsToMove.has(otherItem.uuid) &&
-            doRectsOverlap(newItemBounds, otherItem.bounds)
-          ) {
-            // Add this newly colliding item to the movement queue
-            itemsToMove.set(otherItem.uuid, otherItem);
-          }
-        });
+      if (!bestMovement) {
+        // If we can't find a valid movement for any item, collision resolution failed
+        return { position: droppedItem.position, success: false };
       }
+
+      finalPositions.set(currentUuid, bestMovement);
+
+      // Check if this movement creates new collisions
+      const newItemBounds = getBoundsFromPosition(
+        bestMovement,
+        currentItem.bounds.width,
+        currentItem.bounds.height
+      );
+
+      // Find any items that would now collide with this moved item
+      allItems.forEach((otherItem) => {
+        if (
+          otherItem.uuid !== currentUuid &&
+          otherItem.uuid !== droppedItem.uuid &&
+          !finalPositions.has(otherItem.uuid) &&
+          !itemsToMove.has(otherItem.uuid) &&
+          doRectsOverlap(newItemBounds, otherItem.bounds)
+        ) {
+          // Add this newly colliding item to the movement queue
+          itemsToMove.set(otherItem.uuid, otherItem);
+        }
+      });
     }
 
     // Apply all the calculated position updates
@@ -619,7 +628,7 @@ export class Editor extends RapidElement {
       }
     });
 
-    return newPosition;
+    return { position: newPosition, success: true };
   }
 
   private calculateBestMovement(
@@ -741,8 +750,8 @@ export class Editor extends RapidElement {
       }
     }
 
-    // As a last resort, return the original position if no valid movement is found
-    return item.position;
+    // If no movement works, return null to indicate failure
+    return null;
   }
 
   private updateCanvasSize(): void {
@@ -801,7 +810,9 @@ export class Editor extends RapidElement {
             ${this.definition
               ? this.definition.nodes.map((node) => {
                   const position =
-                    this.definition._ui.nodes[node.uuid].position;
+                    this.definition._ui.nodes[node.uuid]?.position;
+                  
+                  if (!position) return '';
 
                   const dragging =
                     this.isDragging && this.currentDragItem?.uuid === node.uuid;

@@ -240,10 +240,11 @@ describe('Flow Editor Auto Layout', () => {
       );
 
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Should return original position when no collisions'
       );
+      assert.equal(result.success, true, 'Should indicate success');
     });
 
     it('should resolve collision by moving overlapping item', async () => {
@@ -305,10 +306,11 @@ describe('Flow Editor Auto Layout', () => {
 
       // The collision should be resolved
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Should return the dropped item position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
       assert.isTrue(
         positionUpdates.length > 0,
         'Should update position of colliding items'
@@ -341,7 +343,7 @@ describe('Flow Editor Auto Layout', () => {
 
       // Mock the resolveCollisions method to return a known position
       (editor as any).resolveCollisions = () => {
-        return { left: 240, top: 240 }; // Return a test position
+        return { position: { left: 240, top: 240 }, success: true }; // Return a test position
       };
 
       // Mock drag state
@@ -446,10 +448,11 @@ describe('Flow Editor Auto Layout', () => {
 
       // The collision should be resolved
       assert.deepEqual(
-        result,
+        result.position,
         newPosition,
         'Should return the dropped sticky position'
       );
+      assert.equal(result.success, true, 'Should indicate success');
       assert.isTrue(
         positionUpdates.length > 0,
         'Should update position of colliding items'
@@ -545,6 +548,86 @@ describe('Flow Editor Auto Layout', () => {
         0,
         'Should handle sticky notes without position gracefully'
       );
+    });
+  });
+
+  describe('Collision Resolution Failure Handling', () => {
+    it('should revert drag when collision resolution fails', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor-auto-layout>
+          <div id="canvas">
+            <div id="node-1"></div>
+            <div id="node-2"></div>
+            <div id="node-3"></div>
+          </div>
+        </temba-flow-editor-auto-layout>
+      `);
+
+      // Mock definition with tightly packed nodes that can't be moved
+      editor.definition = {
+        nodes: [
+          { uuid: 'node-1', actions: [], exits: [] },
+          { uuid: 'node-2', actions: [], exits: [] },
+          { uuid: 'node-3', actions: [], exits: [] }
+        ],
+        _ui: {
+          nodes: {
+            'node-1': { position: { left: 0, top: 0 } },
+            'node-2': { position: { left: 220, top: 0 } },
+            'node-3': { position: { left: 110, top: 120 } }
+          }
+        }
+      };
+
+      // Mock getBoundingClientRect for existing nodes
+      const node1 = editor.querySelector('#node-1');
+      const node2 = editor.querySelector('#node-2');
+      const node3 = editor.querySelector('#node-3');
+      Object.defineProperty(node1, 'getBoundingClientRect', {
+        value: () => ({ width: 200, height: 100 })
+      });
+      Object.defineProperty(node2, 'getBoundingClientRect', {
+        value: () => ({ width: 200, height: 100 })
+      });
+      Object.defineProperty(node3, 'getBoundingClientRect', {
+        value: () => ({ width: 200, height: 100 })
+      });
+
+      // Create a mock draggable item
+      const mockElement = document.createElement('div');
+      mockElement.id = 'node-new';
+      Object.defineProperty(mockElement, 'getBoundingClientRect', {
+        value: () => ({ width: 200, height: 100 })
+      });
+
+      const droppedItem = {
+        uuid: 'node-new',
+        position: { left: 100, top: 100 }, // Original position
+        element: mockElement,
+        type: 'node' as const
+      };
+
+      // Mock calculateBestMovement to always return null (failure)
+      const originalCalculateBestMovement = (editor as any).calculateBestMovement;
+      (editor as any).calculateBestMovement = () => null;
+
+      // Try to place the item in a position that would collide
+      const newPosition = { left: 0, top: 0 }; // This will collide with node-1
+      const result = (editor as any).resolveCollisions(
+        droppedItem,
+        newPosition
+      );
+
+      // Should return failure and revert to original position
+      assert.equal(result.success, false, 'Should indicate failure');
+      assert.deepEqual(
+        result.position,
+        droppedItem.position,
+        'Should revert to original position'
+      );
+
+      // Restore original method
+      (editor as any).calculateBestMovement = originalCalculateBestMovement;
     });
   });
 });
