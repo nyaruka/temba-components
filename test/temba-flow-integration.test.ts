@@ -1,7 +1,7 @@
-import { fixture, assert, expect } from '@open-wc/testing';
+import { fixture, assert } from '@open-wc/testing';
 import { html } from 'lit';
-import { Editor, snapToGrid } from '../src/flow/Editor';
-import { stub, restore } from 'sinon';
+import { Editor } from '../src/flow/Editor';
+import { restore } from 'sinon';
 
 // Register the component
 customElements.define('temba-flow-editor-integration', Editor);
@@ -19,9 +19,9 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
   describe('Real-world Collision Scenarios', () => {
     it('should handle overlapping nodes scenario from issue description', async () => {
-      // Scenario: "The top right of dragged node (A) overlaps with bottom left of a node (B), 
+      // Scenario: "The top right of dragged node (A) overlaps with bottom left of a node (B),
       // node B should be slid up or right (whichever is the smallest movement or has enough space)"
-      
+
       editor = await fixture(html`
         <temba-flow-editor-integration>
           <div id="canvas">
@@ -48,7 +48,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Track position updates
       const positionUpdates: any[] = [];
-      (editor as any).updatePosition = (uuid: string, type: string, position: any) => {
+      (editor as any).updatePosition = (
+        uuid: string,
+        type: string,
+        position: any
+      ) => {
         positionUpdates.push({ uuid, type, position });
       };
 
@@ -67,32 +71,56 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       // Node A at (180,120) to (380,220) would overlap with Node B at (250,150) to (450,250)
       // Overlap region: (250,150) to (380,220) = 130x70 pixels
       const newPosition = { left: 180, top: 120 };
-      const result = (editor as any).resolveCollisions(droppedItem, newPosition);
+      const result = (editor as any).resolveCollisions(
+        droppedItem,
+        newPosition
+      );
 
       // Should return the dropped position (A stays where dropped)
-      assert.deepEqual(result, newPosition, 'Dropped item should stay at target position');
-      
+      assert.deepEqual(
+        result,
+        newPosition,
+        'Dropped item should stay at target position'
+      );
+
       // Node B should be moved to resolve collision
-      assert.isTrue(positionUpdates.length > 0, 'Colliding item should be moved');
-      
+      assert.isTrue(
+        positionUpdates.length > 0,
+        'Colliding item should be moved'
+      );
+
       if (positionUpdates.length > 0) {
-        const movedItem = positionUpdates.find(update => update.uuid === 'node-B');
+        const movedItem = positionUpdates.find(
+          (update) => update.uuid === 'node-B'
+        );
         assert.exists(movedItem, 'Node B should be moved');
-        
+
         // Verify node B was moved to a position that doesn't overlap
         // Could be moved right, left, up, or down - just verify it's been repositioned
-        assert.notDeepEqual(movedItem.position, { left: 250, top: 150 }, 'Node B should be moved from original position');
-        
+        assert.notDeepEqual(
+          movedItem.position,
+          { left: 250, top: 150 },
+          'Node B should be moved from original position'
+        );
+
         // Verify the new position is grid-snapped
-        assert.equal(movedItem.position.left % 20, 0, 'New position should be grid-snapped (left)');
-        assert.equal(movedItem.position.top % 20, 0, 'New position should be grid-snapped (top)');
+        assert.equal(
+          movedItem.position.left % 20,
+          0,
+          'New position should be grid-snapped (left)'
+        );
+        assert.equal(
+          movedItem.position.top % 20,
+          0,
+          'New position should be grid-snapped (top)'
+        );
       }
     });
 
     it('should handle left overlap scenario', async () => {
-      // Scenario: "The left of the dragged node (A) overlaps to the right of the left side of node (B), 
+      // Scenario: "The left of the dragged node (A) overlaps to the right of the left side of node (B),
       // then node B should slide to the left to make room"
-      
+
       editor = await fixture(html`
         <temba-flow-editor-integration>
           <div id="canvas">
@@ -119,7 +147,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Track position updates
       const positionUpdates: any[] = [];
-      (editor as any).updatePosition = (uuid: string, type: string, position: any) => {
+      (editor as any).updatePosition = (
+        uuid: string,
+        type: string,
+        position: any
+      ) => {
         positionUpdates.push({ uuid, type, position });
       };
 
@@ -138,17 +170,33 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       // Node A at (180,100) to (380,200) would overlap with Node B at (200,100) to (400,200)
       // Overlap region: (200,100) to (380,200) = 180x100 pixels - significant overlap
       const newPosition = { left: 180, top: 100 };
-      const result = (editor as any).resolveCollisions(droppedItem, newPosition);
+      const result = (editor as any).resolveCollisions(
+        droppedItem,
+        newPosition
+      );
 
-      assert.deepEqual(result, newPosition, 'Dropped item should stay at target position');
-      assert.isTrue(positionUpdates.length > 0, 'Colliding item should be moved');
-      
+      assert.deepEqual(
+        result,
+        newPosition,
+        'Dropped item should stay at target position'
+      );
+      assert.isTrue(
+        positionUpdates.length > 0,
+        'Colliding item should be moved'
+      );
+
       if (positionUpdates.length > 0) {
-        const movedItem = positionUpdates.find(update => update.uuid === 'node-B');
+        const movedItem = positionUpdates.find(
+          (update) => update.uuid === 'node-B'
+        );
         assert.exists(movedItem, 'Node B should be moved');
-        
+
         // B should be moved left (negative x) or down/up to avoid collision
-        assert.notDeepEqual(movedItem.position, { left: 200, top: 100 }, 'Node B should be moved from original position');
+        assert.notDeepEqual(
+          movedItem.position,
+          { left: 200, top: 100 },
+          'Node B should be moved from original position'
+        );
       }
     });
 
@@ -162,9 +210,7 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       `);
 
       const mockDefinition = {
-        nodes: [
-          { uuid: 'node-1', actions: [], exits: [] }
-        ],
+        nodes: [{ uuid: 'node-1', actions: [], exits: [] }],
         _ui: {
           nodes: {
             'node-1': { position: { left: 100, top: 100 } }
@@ -184,7 +230,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Track position updates
       const positionUpdates: any[] = [];
-      (editor as any).updatePosition = (uuid: string, type: string, position: any) => {
+      (editor as any).updatePosition = (
+        uuid: string,
+        type: string,
+        position: any
+      ) => {
         positionUpdates.push({ uuid, type, position });
       };
 
@@ -202,14 +252,29 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Sticky at (120,120) to (320,220) overlaps with node at (100,100) to (300,200)
       const newPosition = { left: 120, top: 120 };
-      const result = (editor as any).resolveCollisions(droppedSticky, newPosition);
+      const result = (editor as any).resolveCollisions(
+        droppedSticky,
+        newPosition
+      );
 
-      assert.deepEqual(result, newPosition, 'Dropped sticky should stay at target position');
-      assert.isTrue(positionUpdates.length > 0, 'Colliding node should be moved');
-      
+      assert.deepEqual(
+        result,
+        newPosition,
+        'Dropped sticky should stay at target position'
+      );
+      assert.isTrue(
+        positionUpdates.length > 0,
+        'Colliding node should be moved'
+      );
+
       if (positionUpdates.length > 0) {
-        const movedItem = positionUpdates.find(update => update.uuid === 'node-1');
-        assert.exists(movedItem, 'Node should be moved to make room for sticky');
+        const movedItem = positionUpdates.find(
+          (update) => update.uuid === 'node-1'
+        );
+        assert.exists(
+          movedItem,
+          'Node should be moved to make room for sticky'
+        );
       }
     });
 
@@ -235,7 +300,7 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
           nodes: {
             'node-1': { position: { left: 100, top: 100 } },
             'node-2': { position: { left: 340, top: 100 } }, // Right of node-1
-            'node-3': { position: { left: 100, top: 240 } }  // Below node-1
+            'node-3': { position: { left: 100, top: 240 } } // Below node-1
           }
         }
       };
@@ -244,7 +309,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Track position updates
       const positionUpdates: any[] = [];
-      (editor as any).updatePosition = (uuid: string, type: string, position: any) => {
+      (editor as any).updatePosition = (
+        uuid: string,
+        type: string,
+        position: any
+      ) => {
         positionUpdates.push({ uuid, type, position });
       };
 
@@ -261,14 +330,24 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       });
 
       const newPosition = { left: 150, top: 150 };
-      const result = (editor as any).resolveCollisions(droppedItem, newPosition);
+      const result = (editor as any).resolveCollisions(
+        droppedItem,
+        newPosition
+      );
 
-      assert.deepEqual(result, newPosition, 'Dropped item should stay at target position');
-      
+      assert.deepEqual(
+        result,
+        newPosition,
+        'Dropped item should stay at target position'
+      );
+
       // Verify that resolution doesn't create new collisions
       // This is a complex test that would require checking all item positions after resolution
       // For now, we'll just verify that the algorithm attempts to resolve the collision
-      assert.isTrue(positionUpdates.length >= 0, 'Collision resolution should be attempted');
+      assert.isTrue(
+        positionUpdates.length >= 0,
+        'Collision resolution should be attempted'
+      );
     });
 
     it('should respect canvas boundaries when moving items', async () => {
@@ -281,9 +360,7 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       `);
 
       const mockDefinition = {
-        nodes: [
-          { uuid: 'node-1', actions: [], exits: [] }
-        ],
+        nodes: [{ uuid: 'node-1', actions: [], exits: [] }],
         _ui: {
           nodes: {
             // Node positioned near the left edge
@@ -296,7 +373,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Track position updates
       const positionUpdates: any[] = [];
-      (editor as any).updatePosition = (uuid: string, type: string, position: any) => {
+      (editor as any).updatePosition = (
+        uuid: string,
+        type: string,
+        position: any
+      ) => {
         positionUpdates.push({ uuid, type, position });
       };
 
@@ -313,15 +394,28 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       });
 
       const newPosition = { left: 50, top: 100 };
-      const result = (editor as any).resolveCollisions(droppedItem, newPosition);
+      const result = (editor as any).resolveCollisions(
+        droppedItem,
+        newPosition
+      );
 
-      assert.deepEqual(result, newPosition, 'Dropped item should stay at target position');
-      
+      assert.deepEqual(
+        result,
+        newPosition,
+        'Dropped item should stay at target position'
+      );
+
       // If node-1 was moved, it should not be in negative space
       if (positionUpdates.length > 0) {
-        positionUpdates.forEach(update => {
-          assert.isTrue(update.position.left >= 0, 'Moved items should not have negative left position');
-          assert.isTrue(update.position.top >= 0, 'Moved items should not have negative top position');
+        positionUpdates.forEach((update) => {
+          assert.isTrue(
+            update.position.left >= 0,
+            'Moved items should not have negative left position'
+          );
+          assert.isTrue(
+            update.position.top >= 0,
+            'Moved items should not have negative top position'
+          );
         });
       }
     });
@@ -338,9 +432,7 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       `);
 
       const mockDefinition = {
-        nodes: [
-          { uuid: 'node-1', actions: [], exits: [] }
-        ],
+        nodes: [{ uuid: 'node-1', actions: [], exits: [] }],
         _ui: {
           nodes: {
             'node-1': { position: { left: 100, top: 100 } }
@@ -352,7 +444,11 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
 
       // Track position updates
       const positionUpdates: any[] = [];
-      (editor as any).updatePosition = (uuid: string, type: string, position: any) => {
+      (editor as any).updatePosition = (
+        uuid: string,
+        type: string,
+        position: any
+      ) => {
         positionUpdates.push({ uuid, type, position });
       };
 
@@ -371,9 +467,17 @@ describe('Flow Editor Auto Layout Integration Tests', () => {
       (editor as any).resolveCollisions(droppedItem, newPosition);
 
       // All position updates should be grid-snapped
-      positionUpdates.forEach(update => {
-        assert.equal(update.position.left % 20, 0, `Position left ${update.position.left} should be grid-snapped`);
-        assert.equal(update.position.top % 20, 0, `Position top ${update.position.top} should be grid-snapped`);
+      positionUpdates.forEach((update) => {
+        assert.equal(
+          update.position.left % 20,
+          0,
+          `Position left ${update.position.left} should be grid-snapped`
+        );
+        assert.equal(
+          update.position.top % 20,
+          0,
+          `Position top ${update.position.top} should be grid-snapped`
+        );
       });
     });
   });
