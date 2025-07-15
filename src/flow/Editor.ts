@@ -13,6 +13,63 @@ export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;
 }
 
+// Collision detection and resolution utilities
+interface ItemBounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+interface LayoutItem {
+  uuid: string;
+  type: 'node' | 'sticky';
+  position: FlowPosition;
+  bounds: ItemBounds;
+}
+
+function getItemBounds(item: DraggableItem): ItemBounds {
+  const rect = item.element.getBoundingClientRect();
+  const position = item.position;
+  
+  return {
+    left: position.left,
+    top: position.top,
+    right: position.left + rect.width,
+    bottom: position.top + rect.height,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+function getBoundsFromPosition(position: FlowPosition, width: number, height: number): ItemBounds {
+  return {
+    left: position.left,
+    top: position.top,
+    right: position.left + width,
+    bottom: position.top + height,
+    width,
+    height
+  };
+}
+
+function doRectsOverlap(rect1: ItemBounds, rect2: ItemBounds): boolean {
+  return !(
+    rect1.right <= rect2.left ||
+    rect2.right <= rect1.left ||
+    rect1.bottom <= rect2.top ||
+    rect2.bottom <= rect1.top
+  );
+}
+
+function getOverlapAmount(rect1: ItemBounds, rect2: ItemBounds): { x: number; y: number } {
+  const overlapX = Math.max(0, Math.min(rect1.right, rect2.right) - Math.max(rect1.left, rect2.left));
+  const overlapY = Math.max(0, Math.min(rect1.bottom, rect2.bottom) - Math.max(rect1.top, rect2.top));
+  return { x: overlapX, y: overlapY };
+}
+
 const SAVE_QUIET_TIME = 500;
 
 export interface DraggableItem {
@@ -396,11 +453,14 @@ export class Editor extends RapidElement {
 
       const newPosition = { left: snappedLeft, top: snappedTop };
 
-      // Update the store with the new snapped position
+      // Resolve any collisions and get the final position
+      const finalPosition = this.resolveCollisions(this.currentDragItem, newPosition);
+
+      // Update the store with the final position
       this.updatePosition(
         this.currentDragItem.uuid,
         this.currentDragItem.type,
-        newPosition
+        finalPosition
       );
 
       // Update canvas positions for nodes
@@ -408,7 +468,7 @@ export class Editor extends RapidElement {
         getStore()
           .getState()
           .updateCanvasPositions({
-            [this.currentDragItem.uuid]: newPosition
+            [this.currentDragItem.uuid]: finalPosition
           });
       }
 
@@ -422,6 +482,112 @@ export class Editor extends RapidElement {
     this.isDragging = false;
     this.isMouseDown = false;
     this.currentDragItem = null;
+  }
+
+  private getAllLayoutItems(): LayoutItem[] {
+    const items: LayoutItem[] = [];
+    
+    if (!this.definition) return items;
+
+    // Add all nodes
+    this.definition.nodes.forEach((node) => {
+      const ui = this.definition._ui.nodes[node.uuid];
+      if (ui && ui.position) {
+        const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
+        if (nodeElement) {
+          const rect = nodeElement.getBoundingClientRect();
+          items.push({
+            uuid: node.uuid,
+            type: 'node',
+            position: ui.position,
+            bounds: getBoundsFromPosition(ui.position, rect.width, rect.height)
+          });
+        }
+      }
+    });
+
+    // Add all sticky notes
+    const stickies = this.definition._ui?.stickies || {};
+    Object.entries(stickies).forEach(([uuid, sticky]) => {
+      if (sticky.position) {
+        items.push({
+          uuid,
+          type: 'sticky',
+          position: sticky.position,
+          bounds: getBoundsFromPosition(sticky.position, 200, 100) // Sticky note dimensions
+        });
+      }
+    });
+
+    return items;
+  }
+
+  private resolveCollisions(droppedItem: DraggableItem, newPosition: FlowPosition): FlowPosition {
+    const allItems = this.getAllLayoutItems();
+    const droppedBounds = getItemBounds(droppedItem);
+    
+    // Update dropped item bounds with new position
+    const newDroppedBounds = getBoundsFromPosition(newPosition, droppedBounds.width, droppedBounds.height);
+    
+    // Find all items that collide with the dropped item at its new position
+    const collidingItems = allItems.filter(item => 
+      item.uuid !== droppedItem.uuid && doRectsOverlap(newDroppedBounds, item.bounds)
+    );
+
+    if (collidingItems.length === 0) {
+      return newPosition; // No collisions, return original position
+    }
+
+    // For each colliding item, find the minimal movement to resolve collision
+    const itemUpdates: { uuid: string; type: 'node' | 'sticky'; position: FlowPosition }[] = [];
+    
+    collidingItems.forEach(collidingItem => {
+      const overlap = getOverlapAmount(newDroppedBounds, collidingItem.bounds);
+      
+      // Determine best direction to move the colliding item
+      // Prefer smaller movements and try to maintain relative positions
+      const movements = [
+        { dir: 'right', dx: overlap.x + 20, dy: 0 },
+        { dir: 'left', dx: -(overlap.x + 20), dy: 0 },
+        { dir: 'down', dx: 0, dy: overlap.y + 20 },
+        { dir: 'up', dx: 0, dy: -(overlap.y + 20) }
+      ];
+
+      // Try each movement direction, preferring the smallest displacement
+      for (const movement of movements) {
+        const newItemPosition = {
+          left: snapToGrid(collidingItem.position.left + movement.dx),
+          top: snapToGrid(collidingItem.position.top + movement.dy)
+        };
+
+        // Check if this position would create new collisions
+        const newItemBounds = getBoundsFromPosition(newItemPosition, collidingItem.bounds.width, collidingItem.bounds.height);
+        const wouldCreateNewCollision = allItems.some(otherItem => 
+          otherItem.uuid !== collidingItem.uuid && 
+          otherItem.uuid !== droppedItem.uuid &&
+          doRectsOverlap(newItemBounds, otherItem.bounds)
+        );
+
+        // Also check collision with the dropped item at its final position
+        const wouldCollideWithDropped = doRectsOverlap(newItemBounds, newDroppedBounds);
+
+        if (!wouldCreateNewCollision && !wouldCollideWithDropped && newItemPosition.left >= 0 && newItemPosition.top >= 0) {
+          itemUpdates.push({
+            uuid: collidingItem.uuid,
+            type: collidingItem.type,
+            position: newItemPosition
+          });
+          break;
+        }
+      }
+    });
+
+    // Apply the position updates
+    itemUpdates.forEach(update => {
+      this.updatePosition(update.uuid, update.type, update.position);
+    });
+
+    return newPosition;
   }
 
   private updateCanvasSize(): void {
