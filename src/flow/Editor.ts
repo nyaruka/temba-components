@@ -13,6 +13,76 @@ export function snapToGrid(value: number): number {
   return Math.round(value / 20) * 20;
 }
 
+// Collision detection and resolution utilities
+interface ItemBounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+interface LayoutItem {
+  uuid: string;
+  type: 'node' | 'sticky';
+  position: FlowPosition;
+  bounds: ItemBounds;
+}
+
+function getItemBounds(item: DraggableItem): ItemBounds {
+  const rect = item.element.getBoundingClientRect();
+  const position = item.position;
+
+  return {
+    left: position.left,
+    top: position.top,
+    right: position.left + rect.width,
+    bottom: position.top + rect.height,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+function getBoundsFromPosition(
+  position: FlowPosition,
+  width: number,
+  height: number
+): ItemBounds {
+  return {
+    left: position.left,
+    top: position.top,
+    right: position.left + width,
+    bottom: position.top + height,
+    width,
+    height
+  };
+}
+
+function doRectsOverlap(rect1: ItemBounds, rect2: ItemBounds): boolean {
+  return !(
+    rect1.right <= rect2.left ||
+    rect2.right <= rect1.left ||
+    rect1.bottom <= rect2.top ||
+    rect2.bottom <= rect1.top
+  );
+}
+
+function getOverlapAmount(
+  rect1: ItemBounds,
+  rect2: ItemBounds
+): { x: number; y: number } {
+  const overlapX = Math.max(
+    0,
+    Math.min(rect1.right, rect2.right) - Math.max(rect1.left, rect2.left)
+  );
+  const overlapY = Math.max(
+    0,
+    Math.min(rect1.bottom, rect2.bottom) - Math.max(rect1.top, rect2.top)
+  );
+  return { x: overlapX, y: overlapY };
+}
+
 const SAVE_QUIET_TIME = 500;
 
 export interface DraggableItem {
@@ -172,13 +242,13 @@ export class Editor extends RapidElement {
       }
 
       body .plumb-connector.elevated {
-        z-index: 550;
+        z-index: 50;
       }
 
       body .plumb-connector.elevated path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
-        z-index: 550;
+        z-index: 50;
       }
 
       body .plumb-connector.elevated .plumb-arrow {
@@ -186,7 +256,7 @@ export class Editor extends RapidElement {
         stroke: var(--color-connectors);
         stroke-width: 0px;
         margin-top: 6px;
-        z-index: 550;
+        z-index: 50;
       }
 
       body .plumb-connector .plumb-arrow {
@@ -396,20 +466,32 @@ export class Editor extends RapidElement {
 
       const newPosition = { left: snappedLeft, top: snappedTop };
 
-      // Update the store with the new snapped position
-      this.updatePosition(
-        this.currentDragItem.uuid,
-        this.currentDragItem.type,
+      // Resolve any collisions and get the final position
+      const collisionResult = this.resolveCollisions(
+        this.currentDragItem,
         newPosition
       );
 
-      // Update canvas positions for nodes
-      if (this.currentDragItem.type === 'node') {
-        getStore()
-          .getState()
-          .updateCanvasPositions({
-            [this.currentDragItem.uuid]: newPosition
-          });
+      if (collisionResult.success) {
+        // Update the store with the final position
+        this.updatePosition(
+          this.currentDragItem.uuid,
+          this.currentDragItem.type,
+          collisionResult.position
+        );
+
+        // Update canvas positions for nodes
+        if (this.currentDragItem.type === 'node') {
+          getStore()
+            .getState()
+            .updateCanvasPositions({
+              [this.currentDragItem.uuid]: collisionResult.position
+            });
+        }
+      } else {
+        // Collision resolution failed, revert to original position
+        this.currentDragItem.element.style.left = `${this.currentDragItem.position.left}px`;
+        this.currentDragItem.element.style.top = `${this.currentDragItem.position.top}px`;
       }
 
       // Repaint connections if this is a node
@@ -422,6 +504,254 @@ export class Editor extends RapidElement {
     this.isDragging = false;
     this.isMouseDown = false;
     this.currentDragItem = null;
+  }
+
+  private getAllLayoutItems(): LayoutItem[] {
+    const items: LayoutItem[] = [];
+
+    if (!this.definition) return items;
+
+    // Add all nodes
+    this.definition.nodes.forEach((node) => {
+      const ui = this.definition._ui.nodes[node.uuid];
+      if (ui && ui.position) {
+        const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
+        if (nodeElement) {
+          const rect = nodeElement.getBoundingClientRect();
+          items.push({
+            uuid: node.uuid,
+            type: 'node',
+            position: ui.position,
+            bounds: getBoundsFromPosition(ui.position, rect.width, rect.height)
+          });
+        }
+      }
+    });
+
+    // Add all sticky notes
+    const stickies = this.definition._ui?.stickies || {};
+    Object.entries(stickies).forEach(([uuid, sticky]) => {
+      if (sticky.position) {
+        items.push({
+          uuid,
+          type: 'sticky',
+          position: sticky.position,
+          bounds: getBoundsFromPosition(sticky.position, 200, 100) // Sticky note dimensions
+        });
+      }
+    });
+
+    return items;
+  }
+
+  private resolveCollisions(
+    droppedItem: DraggableItem,
+    newPosition: FlowPosition
+  ): { position: FlowPosition; success: boolean } {
+    const allItems = this.getAllLayoutItems();
+    const droppedBounds = getItemBounds(droppedItem);
+
+    // Update dropped item bounds with new position
+    const newDroppedBounds = getBoundsFromPosition(
+      newPosition,
+      droppedBounds.width,
+      droppedBounds.height
+    );
+
+    // Find all items that collide with the dropped item at its new position
+    const collidingItems = allItems.filter(
+      (item) =>
+        item.uuid !== droppedItem.uuid &&
+        doRectsOverlap(newDroppedBounds, item.bounds)
+    );
+
+    if (collidingItems.length === 0) {
+      return { position: newPosition, success: true }; // No collisions, return original position
+    }
+
+    // Create a map to track item movements to prevent infinite recursion
+    const itemsToMove = new Map<string, LayoutItem>();
+    const finalPositions = new Map<string, FlowPosition>();
+
+    // Add all colliding items to the movement queue
+    collidingItems.forEach((item) => {
+      itemsToMove.set(item.uuid, item);
+    });
+
+    // Process each colliding item
+    while (itemsToMove.size > 0) {
+      const [currentUuid, currentItem] = itemsToMove.entries().next().value;
+      itemsToMove.delete(currentUuid);
+
+      // Calculate the best movement direction for this item
+      const bestMovement = this.calculateBestMovement(
+        currentItem,
+        newDroppedBounds,
+        allItems,
+        finalPositions
+      );
+
+      if (!bestMovement) {
+        // If we can't find a valid movement for any item, collision resolution failed
+        return { position: droppedItem.position, success: false };
+      }
+
+      finalPositions.set(currentUuid, bestMovement);
+
+      // Check if this movement creates new collisions
+      const newItemBounds = getBoundsFromPosition(
+        bestMovement,
+        currentItem.bounds.width,
+        currentItem.bounds.height
+      );
+
+      // Find any items that would now collide with this moved item
+      allItems.forEach((otherItem) => {
+        if (
+          otherItem.uuid !== currentUuid &&
+          otherItem.uuid !== droppedItem.uuid &&
+          !finalPositions.has(otherItem.uuid) &&
+          !itemsToMove.has(otherItem.uuid) &&
+          doRectsOverlap(newItemBounds, otherItem.bounds)
+        ) {
+          // Add this newly colliding item to the movement queue
+          itemsToMove.set(otherItem.uuid, otherItem);
+        }
+      });
+    }
+
+    // Apply all the calculated position updates
+    finalPositions.forEach((position, uuid) => {
+      const item = allItems.find((item) => item.uuid === uuid);
+      if (item) {
+        this.updatePosition(uuid, item.type, position);
+      }
+    });
+
+    return { position: newPosition, success: true };
+  }
+
+  private calculateBestMovement(
+    item: LayoutItem,
+    droppedBounds: ItemBounds,
+    allItems: LayoutItem[],
+    plannedMoves: Map<string, FlowPosition>
+  ): FlowPosition | null {
+    const overlap = getOverlapAmount(droppedBounds, item.bounds);
+
+    // Calculate possible movements in order of preference (smallest movement first)
+    const movements = [
+      { dir: 'right', dx: overlap.x + 20, dy: 0 },
+      { dir: 'left', dx: -(overlap.x + 20), dy: 0 },
+      { dir: 'down', dx: 0, dy: overlap.y + 20 },
+      { dir: 'up', dx: 0, dy: -(overlap.y + 20) }
+    ];
+
+    // Sort movements by distance (prefer smaller movements)
+    movements.sort((a, b) => {
+      const distA = Math.sqrt(a.dx * a.dx + a.dy * a.dy);
+      const distB = Math.sqrt(b.dx * b.dx + b.dy * b.dy);
+      return distA - distB;
+    });
+
+    // Try each movement direction
+    for (const movement of movements) {
+      const newItemPosition = {
+        left: snapToGrid(item.position.left + movement.dx),
+        top: snapToGrid(item.position.top + movement.dy)
+      };
+
+      // Check if this position is valid (not negative)
+      if (newItemPosition.left < 0 || newItemPosition.top < 0) {
+        continue;
+      }
+
+      // Check if this position would create new collisions
+      const newItemBounds = getBoundsFromPosition(
+        newItemPosition,
+        item.bounds.width,
+        item.bounds.height
+      );
+
+      let wouldCreateCollision = false;
+
+      // Check against all existing items
+      for (const otherItem of allItems) {
+        if (otherItem.uuid === item.uuid) continue;
+
+        // Check against current positions or planned moves
+        const otherPosition =
+          plannedMoves.get(otherItem.uuid) || otherItem.position;
+        const otherBounds = getBoundsFromPosition(
+          otherPosition,
+          otherItem.bounds.width,
+          otherItem.bounds.height
+        );
+
+        if (doRectsOverlap(newItemBounds, otherBounds)) {
+          wouldCreateCollision = true;
+          break;
+        }
+      }
+
+      // Also check collision with the dropped item
+      if (
+        !wouldCreateCollision &&
+        doRectsOverlap(newItemBounds, droppedBounds)
+      ) {
+        wouldCreateCollision = true;
+      }
+
+      if (!wouldCreateCollision) {
+        return newItemPosition;
+      }
+    }
+
+    // If no simple movement works, try moving further away
+    for (const movement of movements) {
+      const newItemPosition = {
+        left: snapToGrid(item.position.left + movement.dx * 2),
+        top: snapToGrid(item.position.top + movement.dy * 2)
+      };
+
+      if (newItemPosition.left < 0 || newItemPosition.top < 0) {
+        continue;
+      }
+
+      const newItemBounds = getBoundsFromPosition(
+        newItemPosition,
+        item.bounds.width,
+        item.bounds.height
+      );
+
+      let wouldCreateCollision = false;
+      for (const otherItem of allItems) {
+        if (otherItem.uuid === item.uuid) continue;
+
+        const otherPosition =
+          plannedMoves.get(otherItem.uuid) || otherItem.position;
+        const otherBounds = getBoundsFromPosition(
+          otherPosition,
+          otherItem.bounds.width,
+          otherItem.bounds.height
+        );
+
+        if (
+          doRectsOverlap(newItemBounds, otherBounds) ||
+          doRectsOverlap(newItemBounds, droppedBounds)
+        ) {
+          wouldCreateCollision = true;
+          break;
+        }
+      }
+
+      if (!wouldCreateCollision) {
+        return newItemPosition;
+      }
+    }
+
+    // If no movement works, return null to indicate failure
+    return null;
   }
 
   private updateCanvasSize(): void {
@@ -480,7 +810,9 @@ export class Editor extends RapidElement {
             ${this.definition
               ? this.definition.nodes.map((node) => {
                   const position =
-                    this.definition._ui.nodes[node.uuid].position;
+                    this.definition._ui.nodes[node.uuid]?.position;
+                  
+                  if (!position) return '';
 
                   const dragging =
                     this.isDragging && this.currentDragItem?.uuid === node.uuid;

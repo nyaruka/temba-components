@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Editor Auto Layout Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .demo-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2196F3;
+            margin-bottom: 20px;
+        }
+        
+        .flow-editor-demo {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            height: 500px;
+            overflow: hidden;
+            position: relative;
+            background: #f9f9f9;
+        }
+        
+        /* Mock flow editor styles for demo */
+        .mock-node {
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            user-select: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: box-shadow 0.2s ease;
+        }
+        
+        .mock-node:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        
+        .mock-sticky {
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            background: #fef08a;
+            border: 1px solid #facc15;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            user-select: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 12px;
+            color: #451a03;
+        }
+        
+        .mock-sticky:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        
+        .demo-status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .collision-indicator {
+            position: absolute;
+            border: 2px dashed red;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(61, 177, 255, 0.15) 25%, rgba(61, 177, 255, 0.15) 26%, transparent 27%, transparent 74%, rgba(61, 177, 255, 0.15) 75%, rgba(61, 177, 255, 0.15) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(61, 177, 255, 0.15) 25%, rgba(61, 177, 255, 0.15) 26%, transparent 27%, transparent 74%, rgba(61, 177, 255, 0.15) 75%, rgba(61, 177, 255, 0.15) 76%, transparent 77%, transparent);
+            background-size: 40px 40px;
+            background-position: 10px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>Flow Editor Auto Layout Demo</h1>
+        
+        <div class="instructions">
+            <h3>How to Test Auto Layout:</h3>
+            <ol>
+                <li>Drag one of the nodes or sticky notes</li>
+                <li>Drop it on top of another item to create a collision</li>
+                <li>Watch as the colliding item automatically moves to make room</li>
+                <li>Notice how items snap to the 20px grid</li>
+                <li>Try complex scenarios with multiple overlapping items</li>
+            </ol>
+            <p><strong>Note:</strong> This is a visual demonstration of the collision detection logic. The actual implementation is in the Flow Editor component.</p>
+        </div>
+        
+        <div class="flow-editor-demo" id="demoArea">
+            <div class="grid-overlay"></div>
+            
+            <div class="mock-node" style="left: 100px; top: 100px;" data-id="node-1">
+                Node A
+            </div>
+            
+            <div class="mock-node" style="left: 350px; top: 100px;" data-id="node-2">
+                Node B  
+            </div>
+            
+            <div class="mock-node" style="left: 100px; top: 250px;" data-id="node-3">
+                Node C
+            </div>
+            
+            <div class="mock-sticky" style="left: 350px; top: 250px;" data-id="sticky-1">
+                Sticky Note
+            </div>
+        </div>
+        
+        <div class="demo-status" id="status">
+            Ready to demo. Drag items to test collision resolution.
+        </div>
+    </div>
+
+    <script>
+        // Mock implementation of the collision detection and resolution logic
+        
+        function snapToGrid(value) {
+            return Math.round(value / 20) * 20;
+        }
+        
+        function doRectsOverlap(rect1, rect2) {
+            return !(
+                rect1.right <= rect2.left ||
+                rect2.right <= rect1.left ||
+                rect1.bottom <= rect2.top ||
+                rect2.bottom <= rect1.top
+            );
+        }
+        
+        function getItemBounds(element) {
+            const rect = element.getBoundingClientRect();
+            const demoArea = document.getElementById('demoArea').getBoundingClientRect();
+            const style = element.style;
+            
+            const left = parseInt(style.left) || 0;
+            const top = parseInt(style.top) || 0;
+            const width = parseInt(getComputedStyle(element).width);
+            const height = parseInt(getComputedStyle(element).height);
+            
+            return {
+                left,
+                top,
+                right: left + width,
+                bottom: top + height,
+                width,
+                height
+            };
+        }
+        
+        function resolveCollisions(droppedElement, newLeft, newTop) {
+            const allElements = Array.from(document.querySelectorAll('.mock-node, .mock-sticky'));
+            const droppedBounds = {
+                left: newLeft,
+                top: newTop,
+                right: newLeft + parseInt(getComputedStyle(droppedElement).width),
+                bottom: newTop + parseInt(getComputedStyle(droppedElement).height),
+                width: parseInt(getComputedStyle(droppedElement).width),
+                height: parseInt(getComputedStyle(droppedElement).height)
+            };
+            
+            const collisions = [];
+            
+            allElements.forEach(element => {
+                if (element === droppedElement) return;
+                
+                const bounds = getItemBounds(element);
+                if (doRectsOverlap(droppedBounds, bounds)) {
+                    collisions.push({ element, bounds });
+                }
+            });
+            
+            if (collisions.length === 0) {
+                updateStatus('No collisions detected');
+                return;
+            }
+            
+            updateStatus(`Resolving ${collisions.length} collision(s)...`);
+            
+            collisions.forEach(collision => {
+                const { element, bounds } = collision;
+                
+                // Calculate movement options
+                const overlapX = Math.min(droppedBounds.right, bounds.right) - Math.max(droppedBounds.left, bounds.left);
+                const overlapY = Math.min(droppedBounds.bottom, bounds.bottom) - Math.max(droppedBounds.top, bounds.top);
+                
+                const movements = [
+                    { dx: overlapX + 20, dy: 0, dir: 'right' },
+                    { dx: -(overlapX + 20), dy: 0, dir: 'left' },
+                    { dx: 0, dy: overlapY + 20, dir: 'down' },
+                    { dx: 0, dy: -(overlapY + 20), dir: 'up' }
+                ];
+                
+                // Try movements in order
+                for (const movement of movements) {
+                    const newLeft = snapToGrid(bounds.left + movement.dx);
+                    const newTop = snapToGrid(bounds.top + movement.dy);
+                    
+                    if (newLeft >= 0 && newTop >= 0) {
+                        element.style.left = newLeft + 'px';
+                        element.style.top = newTop + 'px';
+                        
+                        updateStatus(`Moved ${element.dataset.id} ${movement.dir} to (${newLeft}, ${newTop})`);
+                        break;
+                    }
+                }
+            });
+        }
+        
+        function updateStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent = new Date().toLocaleTimeString() + ': ' + message;
+        }
+        
+        // Drag and drop implementation
+        let draggedElement = null;
+        let startPos = { x: 0, y: 0 };
+        let elementStartPos = { left: 0, top: 0 };
+        
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('mock-node') || e.target.classList.contains('mock-sticky')) {
+                draggedElement = e.target;
+                startPos = { x: e.clientX, y: e.clientY };
+                elementStartPos = {
+                    left: parseInt(draggedElement.style.left) || 0,
+                    top: parseInt(draggedElement.style.top) || 0
+                };
+                
+                draggedElement.style.zIndex = '1000';
+                draggedElement.style.opacity = '0.8';
+                
+                updateStatus(`Started dragging ${draggedElement.dataset.id}`);
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (draggedElement) {
+                const deltaX = e.clientX - startPos.x;
+                const deltaY = e.clientY - startPos.y;
+                
+                const newLeft = elementStartPos.left + deltaX;
+                const newTop = elementStartPos.top + deltaY;
+                
+                draggedElement.style.left = newLeft + 'px';
+                draggedElement.style.top = newTop + 'px';
+            }
+        });
+        
+        document.addEventListener('mouseup', (e) => {
+            if (draggedElement) {
+                const deltaX = e.clientX - startPos.x;
+                const deltaY = e.clientY - startPos.y;
+                
+                const newLeft = snapToGrid(elementStartPos.left + deltaX);
+                const newTop = snapToGrid(elementStartPos.top + deltaY);
+                
+                // Apply grid snapping
+                draggedElement.style.left = newLeft + 'px';
+                draggedElement.style.top = newTop + 'px';
+                
+                // Reset visual state
+                draggedElement.style.zIndex = '';
+                draggedElement.style.opacity = '';
+                
+                // Resolve collisions
+                resolveCollisions(draggedElement, newLeft, newTop);
+                
+                updateStatus(`Dropped ${draggedElement.dataset.id} at (${newLeft}, ${newTop})`);
+                
+                draggedElement = null;
+            }
+        });
+        
+        // Initial status
+        updateStatus('Demo loaded. Try dragging items to create collisions!');
+    </script>
+</body>
+</html>
