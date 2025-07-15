@@ -142,7 +142,7 @@ export class Editor extends RapidElement {
       }
 
       #canvas > .dragging {
-        z-index: 10000 !important;
+        z-index: 99999 !important;
       }
 
       body .jtk-endpoint {
@@ -394,19 +394,17 @@ export class Editor extends RapidElement {
       this.selectedItems.add(uuid);
     }
 
-    // Only set up drag if we have selected items
-    if (this.selectedItems.size > 0) {
-      // Set up potential drag state, but don't start dragging yet
-      this.isMouseDown = true;
-      this.dragStartPos = { x: event.clientX, y: event.clientY };
-      this.startPos = { left: position.left, top: position.top };
-      this.currentDragItem = {
-        uuid,
-        position,
-        element,
-        type
-      };
-    }
+    // Always set up drag state regardless of selection status
+    // This allows single nodes to be dragged without being selected
+    this.isMouseDown = true;
+    this.dragStartPos = { x: event.clientX, y: event.clientY };
+    this.startPos = { left: position.left, top: position.top };
+    this.currentDragItem = {
+      uuid,
+      position,
+      element,
+      type
+    };
 
     event.preventDefault();
     event.stopPropagation();
@@ -665,9 +663,16 @@ export class Editor extends RapidElement {
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
 
+      // Determine what we're dragging: selection group or single item
+      const draggedItems =
+        this.selectedItems.has(this.currentDragItem.uuid) &&
+        this.selectedItems.size > 1
+          ? Array.from(this.selectedItems)
+          : [this.currentDragItem.uuid];
+
       // For multi-node drags, dim the connections
-      if (this.selectedItems.size > 1) {
-        this.selectedItems.forEach((uuid) => {
+      if (draggedItems.length > 1) {
+        draggedItems.forEach((uuid) => {
           if (
             this.definition.nodes.find((node) => node.uuid === uuid) &&
             this.plumber
@@ -678,9 +683,16 @@ export class Editor extends RapidElement {
       }
     }
 
-    // If we're actually dragging, update positions for all selected items
+    // If we're actually dragging, update positions
     if (this.isDragging) {
-      this.selectedItems.forEach((uuid) => {
+      // Determine what items to move
+      const itemsToMove =
+        this.selectedItems.has(this.currentDragItem.uuid) &&
+        this.selectedItems.size > 1
+          ? Array.from(this.selectedItems)
+          : [this.currentDragItem.uuid];
+
+      itemsToMove.forEach((uuid) => {
         const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
         if (element) {
           const type =
@@ -694,20 +706,22 @@ export class Editor extends RapidElement {
             // Update the visual position during drag
             element.style.left = `${newLeft}px`;
             element.style.top = `${newTop}px`;
+
+            // Add dragging class to ensure highest z-index
+            element.classList.add('dragging');
           }
         }
       });
 
       // Only repaint connections in real time for single node drags
-      if (this.selectedItems.size === 1) {
-        this.selectedItems.forEach((uuid) => {
-          if (
-            this.definition.nodes.find((node) => node.uuid === uuid) &&
-            this.plumber
-          ) {
-            this.plumber.repaintEverything();
-          }
-        });
+      if (itemsToMove.length === 1) {
+        const uuid = itemsToMove[0];
+        if (
+          this.definition.nodes.find((node) => node.uuid === uuid) &&
+          this.plumber
+        ) {
+          this.plumber.repaintEverything();
+        }
       }
     }
   }
@@ -731,15 +745,22 @@ export class Editor extends RapidElement {
     // Handle item drag completion
     if (!this.isMouseDown || !this.currentDragItem) return;
 
-    // If we were actually dragging, handle the drag end for all selected items
+    // If we were actually dragging, handle the drag end
     if (this.isDragging) {
       const deltaX = event.clientX - this.dragStartPos.x;
       const deltaY = event.clientY - this.dragStartPos.y;
 
-      // Update positions for all selected items
+      // Determine what items were moved
+      const itemsToMove =
+        this.selectedItems.has(this.currentDragItem.uuid) &&
+        this.selectedItems.size > 1
+          ? Array.from(this.selectedItems)
+          : [this.currentDragItem.uuid];
+
+      // Update positions for all moved items
       const newPositions: { [uuid: string]: FlowPosition } = {};
 
-      this.selectedItems.forEach((uuid) => {
+      itemsToMove.forEach((uuid) => {
         const type = this.definition.nodes.find((node) => node.uuid === uuid)
           ? 'node'
           : 'sticky';
@@ -758,12 +779,18 @@ export class Editor extends RapidElement {
 
           // Update the store with the new snapped position
           this.updatePosition(uuid, type, newPosition);
+
+          // Remove dragging class
+          const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+          if (element) {
+            element.classList.remove('dragging');
+          }
         }
       });
 
       // Update canvas positions for nodes
       const nodePositions: { [uuid: string]: FlowPosition } = {};
-      this.selectedItems.forEach((uuid) => {
+      itemsToMove.forEach((uuid) => {
         if (this.definition.nodes.find((node) => node.uuid === uuid)) {
           nodePositions[uuid] = newPositions[uuid];
         }
@@ -774,8 +801,8 @@ export class Editor extends RapidElement {
       }
 
       // Restore dimmed connections and repaint everything for multi-node drags
-      if (this.selectedItems.size > 1) {
-        this.selectedItems.forEach((uuid) => {
+      if (itemsToMove.length > 1) {
+        itemsToMove.forEach((uuid) => {
           if (
             this.definition.nodes.find((node) => node.uuid === uuid) &&
             this.plumber
@@ -785,8 +812,8 @@ export class Editor extends RapidElement {
         });
       }
 
-      // Repaint connections for all selected nodes at the end
-      this.selectedItems.forEach((uuid) => {
+      // Repaint connections for all moved nodes at the end
+      itemsToMove.forEach((uuid) => {
         if (
           this.definition.nodes.find((node) => node.uuid === uuid) &&
           this.plumber
@@ -795,8 +822,10 @@ export class Editor extends RapidElement {
         }
       });
 
-      // Clear selection after dragging
-      this.selectedItems.clear();
+      // Only clear selection after dragging if it was a multi-selection drag
+      if (this.selectedItems.size > 1) {
+        this.selectedItems.clear();
+      }
     }
 
     // Reset all drag state

@@ -224,6 +224,18 @@ export class Plumber {
         if (connectorElement) {
           connectorElement.classList.add('dimmed');
         }
+
+        // Hide source endpoint (exit circle)
+        const sourceEndpoint = connection.endpoints[0];
+        if (sourceEndpoint && sourceEndpoint.element) {
+          sourceEndpoint.element.style.display = 'none';
+        }
+
+        // Hide target endpoint if it exists
+        const targetEndpoint = connection.endpoints[1];
+        if (targetEndpoint && targetEndpoint.element) {
+          targetEndpoint.element.style.display = 'none';
+        }
       }
     });
   }
@@ -253,6 +265,18 @@ export class Plumber {
         const connectorElement = connection.connector.canvas;
         if (connectorElement) {
           connectorElement.classList.remove('dimmed');
+        }
+
+        // Restore source endpoint (exit circle)
+        const sourceEndpoint = connection.endpoints[0];
+        if (sourceEndpoint && sourceEndpoint.element) {
+          sourceEndpoint.element.style.display = '';
+        }
+
+        // Restore target endpoint if it exists
+        const targetEndpoint = connection.endpoints[1];
+        if (targetEndpoint && targetEndpoint.element) {
+          targetEndpoint.element.style.display = '';
         }
       }
     });
