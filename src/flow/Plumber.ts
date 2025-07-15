@@ -225,10 +225,13 @@ export class Plumber {
           connectorElement.classList.add('dimmed');
         }
 
-        // Hide source endpoint (exit circle) only
-        const sourceEndpoint = connection.endpoints[0];
-        if (sourceEndpoint && sourceEndpoint.element) {
-          sourceEndpoint.element.style.display = 'none';
+        // Hide source endpoint (exit circle) only for outgoing connections
+        // (only when the source is one of the dragged node's exits)
+        if (exitIds.includes(sourceId)) {
+          const sourceEndpoint = connection.endpoints[0];
+          if (sourceEndpoint && sourceEndpoint.element) {
+            sourceEndpoint.element.style.display = 'none';
+          }
         }
 
         // Do not hide target endpoint - leave nodes visible
@@ -263,10 +266,13 @@ export class Plumber {
           connectorElement.classList.remove('dimmed');
         }
 
-        // Restore source endpoint (exit circle) only
-        const sourceEndpoint = connection.endpoints[0];
-        if (sourceEndpoint && sourceEndpoint.element) {
-          sourceEndpoint.element.style.display = '';
+        // Restore source endpoint (exit circle) only for outgoing connections
+        // (only when the source is one of the dragged node's exits)
+        if (exitIds.includes(sourceId)) {
+          const sourceEndpoint = connection.endpoints[0];
+          if (sourceEndpoint && sourceEndpoint.element) {
+            sourceEndpoint.element.style.display = '';
+          }
         }
 
         // Do not restore target endpoint - it was never hidden
