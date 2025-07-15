@@ -418,6 +418,7 @@ describe('EditorNode', () => {
         html`<temba-flow-node
           .node=${mockNode}
           .ui=${{ position: { left: 0, top: 0 } }}
+          .plumber=${mockPlumber}
         ></temba-flow-node>`
       );
 
@@ -437,6 +438,7 @@ describe('EditorNode', () => {
         html`<temba-flow-node
           .node=${mockNode}
           .ui=${{ position: { left: 0, top: 0 } }}
+          .plumber=${mockPlumber}
         ></temba-flow-node>`
       );
 

@@ -167,7 +167,7 @@ export class EditorNode extends RapidElement {
     if (changes.has('node')) {
       // make our initial connections
       if (changes.get('node') === undefined) {
-        // this.plumber.makeTarget(this.node.uuid);
+        this.plumber.makeTarget(this.node.uuid);
         for (const exit of this.node.exits) {
           if (!exit.destination_uuid) {
             this.plumber.makeSource(exit.uuid);

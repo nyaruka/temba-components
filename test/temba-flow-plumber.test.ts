@@ -186,4 +186,125 @@ describe('Plumber', () => {
       );
     });
   });
+
+  describe('connection validation', () => {
+    let mockFlowDefinition: any;
+
+    beforeEach(() => {
+      // Create a mock flow definition with various node types
+      mockFlowDefinition = {
+        nodes: [
+          {
+            uuid: 'node1',
+            actions: [{ type: 'send_msg', uuid: 'action1' }],
+            exits: [{ uuid: 'exit1', destination_uuid: null }]
+          },
+          {
+            uuid: 'node2', 
+            actions: [{ type: 'wait_for_response', uuid: 'action2' }],
+            exits: [{ uuid: 'exit2', destination_uuid: null }]
+          },
+          {
+            uuid: 'node3',
+            actions: [{ type: 'send_msg', uuid: 'action3' }],
+            exits: [{ uuid: 'exit3', destination_uuid: 'node1' }]
+          },
+          {
+            uuid: 'node4',
+            actions: [{ type: 'send_msg', uuid: 'action4' }],
+            exits: [{ uuid: 'exit4', destination_uuid: null }]
+          }
+        ]
+      };
+    });
+
+    describe('helper methods', () => {
+      it('findNodeIdForExit returns correct node ID for a given exit', () => {
+        const nodeId = (plumber as any).findNodeIdForExit('exit1', mockFlowDefinition);
+        expect(nodeId).to.equal('node1');
+      });
+
+      it('findNodeIdForExit returns null for non-existent exit', () => {
+        const nodeId = (plumber as any).findNodeIdForExit('nonexistent', mockFlowDefinition);
+        expect(nodeId).to.be.null;
+      });
+
+      it('isWaitForResponseNode returns true for wait_for_response node', () => {
+        const isWait = (plumber as any).isWaitForResponseNode('node2', mockFlowDefinition);
+        expect(isWait).to.be.true;
+      });
+
+      it('isWaitForResponseNode returns false for non-wait_for_response node', () => {
+        const isWait = (plumber as any).isWaitForResponseNode('node1', mockFlowDefinition);
+        expect(isWait).to.be.false;
+      });
+
+      it('isWaitForResponseNode returns false for non-existent node', () => {
+        const isWait = (plumber as any).isWaitForResponseNode('nonexistent', mockFlowDefinition);
+        expect(isWait).to.be.false;
+      });
+
+      it('findPathToNode finds direct path between nodes', () => {
+        mockFlowDefinition.nodes[0].exits[0].destination_uuid = 'node2';
+        
+        const path = (plumber as any).findPathToNode('node1', 'node2', mockFlowDefinition, new Set());
+        expect(path).to.deep.equal(['node2']);
+      });
+
+      it('findPathToNode finds indirect path between nodes', () => {
+        // node1 -> node3 -> node4
+        mockFlowDefinition.nodes[0].exits[0].destination_uuid = 'node3';
+        mockFlowDefinition.nodes[2].exits[0].destination_uuid = 'node4';
+        
+        const path = (plumber as any).findPathToNode('node1', 'node4', mockFlowDefinition, new Set());
+        expect(path).to.deep.equal(['node3', 'node4']);
+      });
+
+      it('findPathToNode returns empty array when no path exists', () => {
+        const path = (plumber as any).findPathToNode('node1', 'node4', mockFlowDefinition, new Set());
+        expect(path).to.deep.equal([]);
+      });
+
+      it('findPathToNode avoids infinite loops with visited set', () => {
+        // Create a cycle: node1 -> node3 -> node1
+        mockFlowDefinition.nodes[0].exits[0].destination_uuid = 'node3';
+        mockFlowDefinition.nodes[2].exits[0].destination_uuid = 'node1';
+        
+        const visited = new Set(['node1']);
+        const path = (plumber as any).findPathToNode('node1', 'node2', mockFlowDefinition, visited);
+        expect(path).to.deep.equal([]);
+      });
+
+      it('wouldCreateInvalidCycle rejects direct self-loop for non-wait node', () => {
+        const wouldCreate = (plumber as any).wouldCreateInvalidCycle('node1', 'node1', mockFlowDefinition);
+        expect(wouldCreate).to.be.true;
+      });
+
+      it('wouldCreateInvalidCycle allows direct self-loop for wait_for_response node', () => {
+        const wouldCreate = (plumber as any).wouldCreateInvalidCycle('node2', 'node2', mockFlowDefinition);
+        expect(wouldCreate).to.be.false;
+      });
+
+      it('wouldCreateInvalidCycle detects cycle without wait_for_response', () => {
+        // Set up a cycle: node1 -> node3 -> node1 (without wait_for_response)
+        mockFlowDefinition.nodes[2].exits[0].destination_uuid = 'node1';
+
+        const wouldCreate = (plumber as any).wouldCreateInvalidCycle('node1', 'node3', mockFlowDefinition);
+        expect(wouldCreate).to.be.true;
+      });
+
+      it('wouldCreateInvalidCycle allows cycle with wait_for_response', () => {
+        // Set up a cycle: node1 -> node2 -> node1 (with wait_for_response in node2)
+        mockFlowDefinition.nodes[1].exits[0].destination_uuid = 'node1';
+
+        const wouldCreate = (plumber as any).wouldCreateInvalidCycle('node1', 'node2', mockFlowDefinition);
+        expect(wouldCreate).to.be.false;
+      });
+
+      it('wouldCreateInvalidCycle allows connection when no cycle exists', () => {
+        const wouldCreate = (plumber as any).wouldCreateInvalidCycle('node1', 'node4', mockFlowDefinition);
+        expect(wouldCreate).to.be.false;
+      });
+    });
+  });
 });

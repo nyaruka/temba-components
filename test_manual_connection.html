@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #test-container {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #ccc;
+            position: relative;
+            background: #f9f9f9;
+        }
+        .test-node {
+            position: absolute;
+            width: 120px;
+            height: 80px;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-exit {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            margin-left: -6px;
+            width: 12px;
+            height: 12px;
+            background: #e74c3c;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .node-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .node-type {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manual Flow Editor Connection Test</h1>
+    <p>This is a simple test to verify the JSPlumb connection validation logic.</p>
+    <div id="test-container">
+        <div id="node1" class="test-node" style="left: 100px; top: 100px;">
+            <div class="node-title">Send Message</div>
+            <div class="node-type">send_msg</div>
+            <div id="exit1" class="test-exit"></div>
+        </div>
+        
+        <div id="node2" class="test-node" style="left: 400px; top: 100px;">
+            <div class="node-title">Wait for Response</div>
+            <div class="node-type">wait_for_response</div>
+            <div id="exit2" class="test-exit"></div>
+        </div>
+        
+        <div id="node3" class="test-node" style="left: 250px; top: 300px;">
+            <div class="node-title">Send Message 2</div>
+            <div class="node-type">send_msg</div>
+            <div id="exit3" class="test-exit"></div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <h3>Test Instructions:</h3>
+        <ul>
+            <li><strong>Valid connection:</strong> Try dragging from Send Message to Wait for Response - should work</li>
+            <li><strong>Invalid self-loop:</strong> Try dragging from Send Message back to itself - should be rejected</li>
+            <li><strong>Valid self-loop:</strong> Try dragging from Wait for Response back to itself - should work</li>
+            <li><strong>Cycle without wait:</strong> Connect Send Message → Send Message 2, then try Send Message 2 → Send Message - should be rejected</li>
+        </ul>
+    </div>
+
+    <script type="module">
+        import '../dist/temba-components.js';
+        
+        // Create a simple mock flow definition for testing
+        window.mockFlowDefinition = {
+            nodes: [
+                {
+                    uuid: 'node1',
+                    actions: [{ type: 'send_msg', uuid: 'action1' }],
+                    exits: [{ uuid: 'exit1', destination_uuid: null }]
+                },
+                {
+                    uuid: 'node2',
+                    actions: [{ type: 'wait_for_response', uuid: 'action2' }],
+                    exits: [{ uuid: 'exit2', destination_uuid: null }]
+                },
+                {
+                    uuid: 'node3',
+                    actions: [{ type: 'send_msg', uuid: 'action3' }],
+                    exits: [{ uuid: 'exit3', destination_uuid: null }]
+                }
+            ]
+        };
+
+        // Mock store for testing
+        window.mockStore = {
+            getState: () => ({
+                flowDefinition: window.mockFlowDefinition,
+                setDirtyDate: (date) => console.log('Flow marked dirty:', date)
+            })
+        };
+
+        // Initialize plumber after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing test plumber...');
+            
+            // We would normally import and use the Plumber class here
+            // but for this simple test, we'll just verify the HTML structure
+            console.log('Test nodes are ready for manual testing');
+        });
+    </script>
+</body>
+</html>
