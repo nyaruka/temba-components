@@ -225,17 +225,13 @@ export class Plumber {
           connectorElement.classList.add('dimmed');
         }
 
-        // Hide source endpoint (exit circle)
+        // Hide source endpoint (exit circle) only
         const sourceEndpoint = connection.endpoints[0];
         if (sourceEndpoint && sourceEndpoint.element) {
           sourceEndpoint.element.style.display = 'none';
         }
 
-        // Hide target endpoint if it exists
-        const targetEndpoint = connection.endpoints[1];
-        if (targetEndpoint && targetEndpoint.element) {
-          targetEndpoint.element.style.display = 'none';
-        }
+        // Do not hide target endpoint - leave nodes visible
       }
     });
   }
@@ -267,17 +263,13 @@ export class Plumber {
           connectorElement.classList.remove('dimmed');
         }
 
-        // Restore source endpoint (exit circle)
+        // Restore source endpoint (exit circle) only
         const sourceEndpoint = connection.endpoints[0];
         if (sourceEndpoint && sourceEndpoint.element) {
           sourceEndpoint.element.style.display = '';
         }
 
-        // Restore target endpoint if it exists
-        const targetEndpoint = connection.endpoints[1];
-        if (targetEndpoint && targetEndpoint.element) {
-          targetEndpoint.element.style.display = '';
-        }
+        // Do not restore target endpoint - it was never hidden
       }
     });
   }
