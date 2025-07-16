@@ -199,20 +199,282 @@ describe('Editor', () => {
         </temba-flow-editor>
       `);
 
-      (editor as any).canvasSize = { width: 1200, height: 800 };
+      // Set canvas size to specific dimensions
+      (editor as any).canvasSize = { width: 1200, height: 900 };
       await editor.updateComplete;
 
       const gridElement = editor.querySelector('#grid');
       expect(gridElement).to.exist;
 
-      const style = gridElement?.getAttribute('style');
-      expect(style).to.contain('width:1200px');
-      expect(style).to.contain('height:800px');
+      // Check that grid has correct dimensions
+      const gridStyle = gridElement.getAttribute('style');
+      expect(gridStyle).to.contain('width:1200px');
+      expect(gridStyle).to.contain('height:900px');
+    });
+  });
+
+  describe('multi-selection functionality', () => {
+    let mockDefinition: any;
+
+    beforeEach(() => {
+      mockDefinition = {
+        nodes: [
+          {
+            uuid: 'node-1',
+            actions: [],
+            exits: []
+          },
+          {
+            uuid: 'node-2', 
+            actions: [],
+            exits: []
+          }
+        ],
+        _ui: {
+          nodes: {
+            'node-1': { position: { left: 100, top: 200 } },
+            'node-2': { position: { left: 300, top: 400 } }
+          },
+          stickies: {
+            'sticky-1': { 
+              position: { left: 200, top: 100 },
+              title: 'Test Sticky',
+              body: 'Test content',
+              color: 'yellow'
+            }
+          }
+        }
+      };
     });
 
-    it('renders editor structure', async () => {
+    it('initializes with empty selection', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      expect((editor as any).selectedItems.size).to.equal(0);
+      expect((editor as any).isSelecting).to.be.false;
+      expect((editor as any).selectionBox).to.be.null;
+    });
+
+    it('adds visual selection styling to selected items', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      // Set up mock definition and selection
+      (editor as any).definition = mockDefinition;
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).selectedItems = new Set(['node-1']);
+      await editor.updateComplete;
+
+      const selectedNode = editor.querySelector('temba-flow-node[uuid="node-1"]');
+      expect(selectedNode).to.exist;
+      expect(selectedNode.classList.contains('selected')).to.be.true;
+    });
+
+    it('renders selection box when selecting', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      // Set up selection state
+      (editor as any).definition = mockDefinition;
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).isSelecting = true;
+      (editor as any).selectionBox = {
+        startX: 50,
+        startY: 50,
+        endX: 150,
+        endY: 150
+      };
+      await editor.updateComplete;
+
+      const selectionBox = editor.querySelector('.selection-box');
+      expect(selectionBox).to.exist;
+      
+      const style = selectionBox.getAttribute('style');
+      expect(style).to.contain('left: 50px');
+      expect(style).to.contain('top: 50px');
+      expect(style).to.contain('width: 100px');
+      expect(style).to.contain('height: 100px');
+    });
+
+    it('does not render selection box when not selecting', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).definition = mockDefinition;
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).isSelecting = false;
+      await editor.updateComplete;
+
+      const selectionBox = editor.querySelector('.selection-box');
+      expect(selectionBox).to.not.exist;
+    });
+
+    it('handles canvas mouse down for selection start', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).definition = mockDefinition;
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      
+      // Pre-select an item
+      (editor as any).selectedItems.add('node-1');
+      await editor.updateComplete;
+
+      const canvas = editor.querySelector('#canvas');
+      const mockEvent = new MouseEvent('mousedown', {
+        clientX: 100,
+        clientY: 100,
+        bubbles: true
+      });
+
+      // Mock getBoundingClientRect for canvas
+      stub(canvas, 'getBoundingClientRect').returns({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 600
+      } as DOMRect);
+
+      // Set event target to canvas
+      Object.defineProperty(mockEvent, 'target', {
+        value: canvas,
+        writable: false
+      });
+
+      (editor as any).handleCanvasMouseDown(mockEvent);
+
+      // Should clear selection and start selection box
+      expect((editor as any).selectedItems.size).to.equal(0);
+      expect((editor as any).canvasMouseDown).to.be.true;
+      expect((editor as any).selectionBox).to.not.be.null;
+    });
+
+    it('handles keyboard delete key with confirmation', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      // Mock window.confirm
+      const confirmStub = stub(window, 'confirm');
+      confirmStub.returns(true);
+
+      // Set up selection
+      (editor as any).selectedItems.add('node-1');
+      
+      const mockEvent = new KeyboardEvent('keydown', { key: 'Delete' });
+      (editor as any).handleKeyDown(mockEvent);
+
+      expect(confirmStub).to.have.been.calledWith('Are you sure you want to delete 1 item?');
+      
+      confirmStub.restore();
+    });
+
+    it('handles escape key to clear selection', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      // Set up selection
+      (editor as any).selectedItems.add('node-1');
+      (editor as any).selectedItems.add('node-2');
+
+      const mockEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+      (editor as any).handleKeyDown(mockEvent);
+
+      expect((editor as any).selectedItems.size).to.equal(0);
+    });
+
+    it('updates selection box coordinates during mouse move', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      const canvas = editor.querySelector('#canvas');
+      
+      // Mock getBoundingClientRect
+      stub(canvas, 'getBoundingClientRect').returns({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 600
+      } as DOMRect);
+
+      // Set up initial selection state
+      (editor as any).canvasMouseDown = true;
+      (editor as any).selectionBox = {
+        startX: 50,
+        startY: 50,
+        endX: 50,
+        endY: 50
+      };
+      (editor as any).definition = mockDefinition;
+
+      const mockEvent = new MouseEvent('mousemove', {
+        clientX: 150,
+        clientY: 150
+      });
+
+      (editor as any).updateSelectionBox(mockEvent);
+
+      expect((editor as any).selectionBox.endX).to.equal(150);
+      expect((editor as any).selectionBox.endY).to.equal(150);
+    });
+
+    it('calculates intersections correctly for node selection', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).definition = mockDefinition;
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      await editor.updateComplete;
+
+      // Mock node element and its bounding rect
+      const nodeElement = editor.querySelector('temba-flow-node[uuid="node-1"]');
+      stub(nodeElement, 'getBoundingClientRect').returns({
+        width: 200,
+        height: 100
+      } as DOMRect);
+
+      // Set selection box that intersects with node-1 (position: left: 100, top: 200)
+      (editor as any).selectionBox = {
+        startX: 50,   // Selection box from 50,150 to 250,250
+        startY: 150,  // This should intersect node-1 at 100,200 with size 200x100
+        endX: 250,
+        endY: 250
+      };
+
+      (editor as any).updateSelectedItemsFromBox();
+
+      expect((editor as any).selectedItems.has('node-1')).to.be.true;
+    });
+  });
+
+  describe('canvas initialization', () => {
           <div id="canvas"></div>
         </temba-flow-editor>
       `);
@@ -276,119 +538,6 @@ describe('Editor', () => {
       expect(() => {
         new Editor();
       }).to.not.throw();
-    });
-  });
-
-  describe('multi-selection functionality', () => {
-    let mockDefinition: any;
-
-    beforeEach(() => {
-      mockDefinition = {
-        nodes: [
-          {
-            uuid: 'node-1',
-            actions: [],
-            exits: []
-          },
-          {
-            uuid: 'node-2',
-            actions: [],
-            exits: []
-          }
-        ],
-        _ui: {
-          nodes: {
-            'node-1': { position: { left: 100, top: 200 } },
-            'node-2': { position: { left: 300, top: 400 } }
-          },
-          stickies: {
-            'sticky-1': {
-              position: { left: 200, top: 100 },
-              title: 'Test Sticky',
-              body: 'Test content',
-              color: 'yellow'
-            }
-          }
-        }
-      };
-    });
-
-    it('initializes with empty selection', async () => {
-      editor = await fixture(html`
-        <temba-flow-editor>
-          <div id="canvas"></div>
-        </temba-flow-editor>
-      `);
-
-      expect((editor as any).selectedItems.size).to.equal(0);
-      expect((editor as any).isSelecting).to.be.false;
-      expect((editor as any).selectionBox).to.be.null;
-    });
-
-    it('adds visual selection styling to selected items', async () => {
-      editor = await fixture(html`
-        <temba-flow-editor>
-          <div id="canvas"></div>
-        </temba-flow-editor>
-      `);
-
-      // Set up mock definition and selection
-      (editor as any).definition = mockDefinition;
-      (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).selectedItems = new Set(['node-1']);
-      await editor.updateComplete;
-
-      const selectedNode = editor.querySelector(
-        'temba-flow-node[uuid="node-1"]'
-      );
-      expect(selectedNode).to.exist;
-      expect(selectedNode.classList.contains('selected')).to.be.true;
-    });
-
-    it('renders selection box when selecting', async () => {
-      editor = await fixture(html`
-        <temba-flow-editor>
-          <div id="canvas"></div>
-        </temba-flow-editor>
-      `);
-
-      // Set up selection state
-      (editor as any).definition = mockDefinition;
-      (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).isSelecting = true;
-      (editor as any).selectionBox = {
-        startX: 50,
-        startY: 50,
-        endX: 150,
-        endY: 150
-      };
-      await editor.updateComplete;
-
-      const selectionBox = editor.querySelector('.selection-box');
-      expect(selectionBox).to.exist;
-
-      const style = selectionBox.getAttribute('style');
-      expect(style).to.contain('left: 50px');
-      expect(style).to.contain('top: 50px');
-      expect(style).to.contain('width: 100px');
-      expect(style).to.contain('height: 100px');
-    });
-
-    it('handles escape key to clear selection', async () => {
-      editor = await fixture(html`
-        <temba-flow-editor>
-          <div id="canvas"></div>
-        </temba-flow-editor>
-      `);
-
-      // Set up selection
-      (editor as any).selectedItems.add('node-1');
-      (editor as any).selectedItems.add('node-2');
-
-      const mockEvent = new KeyboardEvent('keydown', { key: 'Escape' });
-      (editor as any).handleKeyDown(mockEvent);
-
-      expect((editor as any).selectedItems.size).to.equal(0);
     });
   });
 

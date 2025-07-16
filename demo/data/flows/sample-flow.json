@@ -180,6 +180,13 @@
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
           {
+            "attachments": [],
+            "text": "Excellent choice!",
+            "type": "send_msg",
+            "quick_replies": [],
+            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
+          },
+          {
             "type": "set_run_result",
             "name": "Color",
             "value": "Black",
@@ -193,13 +200,6 @@
               "uuid": "9afd9156-a34a-43fa-91d4-914615ae2e72",
               "name": "WhatsApp"
             }
-          },
-          {
-            "attachments": [],
-            "text": "Excellent choice!",
-            "type": "send_msg",
-            "quick_replies": [],
-            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
           },
           {
             "addresses": [
@@ -768,16 +768,16 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 980,
-            "top": 20
+            "left": 520,
+            "top": 0
           },
           "type": "execute_actions"
         },
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 780,
-            "top": 180
+            "left": 520,
+            "top": 160
           },
           "config": {
             "cases": {}
@@ -786,31 +786,31 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 760,
-            "top": 440
+            "left": 740,
+            "top": 340
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 240,
-            "top": 0
+            "top": 40
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 840,
-            "top": 600
+            "left": 480,
+            "top": 920
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 480,
-            "top": 40
+            "left": 740,
+            "top": 480
           },
           "config": {
             "operand": {
@@ -824,8 +824,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 480,
-            "top": 440
+            "left": 740,
+            "top": 560
           },
           "config": {
             "cases": {}
@@ -834,16 +834,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 780,
-            "top": 300
+            "left": 740,
+            "top": 680
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 480,
-            "top": 140
+            "left": 740,
+            "top": 780
           },
           "config": {
             "operand": {
@@ -857,8 +857,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 480,
-            "top": 240
+            "left": 740,
+            "top": 880
           },
           "config": {
             "cases": {}
@@ -868,7 +868,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 480,
-            "top": 340
+            "top": 800
           },
           "config": {
             "cases": {}
@@ -877,23 +877,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 480,
-            "top": 560
+            "left": 740,
+            "top": 1020
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 480,
-            "top": 760
+            "left": 100,
+            "top": 1000
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 500,
-            "top": 1000
+            "left": 100,
+            "top": 1160
           },
           "config": {}
         }

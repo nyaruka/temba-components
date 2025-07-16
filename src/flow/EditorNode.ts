@@ -28,8 +28,8 @@ export class EditorNode extends RapidElement {
         background-color: #fff;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         min-width: 200px;
-        border-radius: calc(var(--curvature) * 1.5);
-        overflow: hidden;
+        border-radius: var(--curvature);
+        
         color: #333;
         cursor: move;
         user-select: none;
@@ -127,6 +127,8 @@ export class EditorNode extends RapidElement {
         padding: 0.75em;
         flex-grow:1;
         text-align: center;
+        display: flex;
+        flex-direction: column;
       }
 
       .action-exits {
@@ -148,9 +150,50 @@ export class EditorNode extends RapidElement {
         display: inline-block;
       }
       
+      .exit-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        margin-bottom: -16px;
+        padding-top:1px;
+      }
+
       .exit {
-        padding-top: 10px;
-        margin-bottom: -10px;
+        self-align: center;
+        justify-content: center;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: tomato;
+        position: relative;
+        box-shadow: 0 2px 2px rgba(0, 0, 0, .1);
+      }
+
+      .exit.connected {
+        background-color: #fff;
+      }
+
+      .category:first-child {
+        border-bottom-left-radius: var(--curvature);
+      }
+
+      .category:last-child {
+        border-bottom-right-radius: var(--curvature);
+      }
+
+      .router .title {
+        border-top-left-radius: var(--curvature);
+        border-top-right-radius: var(--curvature);
+      }
+
+      .action{
+        overflow: hidden;
+      }
+
+      .action:first-child .title {
+        border-top-left-radius: var(--curvature);
+        border-top-right-radius: var(--curvature);
       }
   }`;
   }
@@ -274,13 +317,15 @@ export class EditorNode extends RapidElement {
   }
 
   private renderExit(exit: Exit): TemplateResult {
-    return html`<div
-      id="${exit.uuid}"
-      class=${getClasses({
-        exit: true,
-        connected: !!exit.destination_uuid
-      })}
-    ></div>`;
+    return html`<div class="exit-wrapper">
+      <div
+        id="${exit.uuid}"
+        class=${getClasses({
+          exit: true,
+          connected: !!exit.destination_uuid
+        })}
+      ></div>
+    </div>`;
   }
 
   public render() {
