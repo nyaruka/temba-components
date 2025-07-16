@@ -30,7 +30,7 @@ export interface SelectionBox {
   endY: number;
 }
 
-const DRAG_THRESHOLD = 10;
+const DRAG_THRESHOLD = 5;
 
 export class Editor extends RapidElement {
   // unfortunately, jsplumb requires that we be in light DOM
@@ -156,25 +156,19 @@ export class Editor extends RapidElement {
 
       .plumb-source {
         z-index: 600;
-        border: 0px solid var(--color-connectors);
       }
 
       .plumb-source.connected {
-        box-shadow: 0 3px 3px 0px rgba(0, 0, 0, 0.1);
         border-radius: 50%;
       }
 
       .plumb-source circle {
-        fill: tomato;
-      }
-
-      .plumb-source.connected circle {
-        fill: #fff;
+        fill: transparent;
       }
 
       .plumb-source svg {
-        fill: var(--color-connectors) !important;
-        stroke: var(--color-connectors);
+        fill: transparent;
+        stroke: transparent;
       }
 
       .plumb-target {
@@ -664,7 +658,7 @@ export class Editor extends RapidElement {
       this.isDragging = true;
 
       // Determine what we're dragging: selection group or single item
-      const draggedItems =
+      /*const draggedItems =
         this.selectedItems.has(this.currentDragItem.uuid) &&
         this.selectedItems.size > 1
           ? Array.from(this.selectedItems)
@@ -680,7 +674,7 @@ export class Editor extends RapidElement {
             this.plumber.dimNodeConnections(uuid);
           }
         });
-      }
+      }*/
     }
 
     // If we're actually dragging, update positions

@@ -30,7 +30,7 @@ export default {
                   path.resolve(`./demo/data/flows/${uuid}.json`),
                   JSON.stringify({ definition: JSON.parse(body) }, null, 2)
                 );
-                console.log(`Flow ${uuid} saved successfully.`);
+                // console.log(`Flow ${uuid} saved successfully.`);
                 context.body = {
                   status: 'success',
                   message: `Flow ${uuid} saved successfully.`,
