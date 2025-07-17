@@ -6,7 +6,31 @@ import {
   RectangleEndpoint
 } from '@jsplumb/browser-ui';
 
-export const SOURCE_DEFAULTS = {
+const CONNECTOR_DEFAULTS = {
+  type: FlowchartConnector.type,
+  options: {
+    stub: 12,
+    midpoint: 0.75,
+    alwaysRespectStubs: false,
+    gap: 0,
+    cornerRadius: 3,
+    cssClass: 'plumb-connector'
+  }
+};
+
+const OVERLAYS_DEFAULTS = [
+  {
+    type: 'PlainArrow',
+    options: {
+      width: 13,
+      length: 13,
+      location: 0.999,
+      cssClass: 'plumb-arrow'
+    }
+  }
+];
+
+const SOURCE_DEFAULTS = {
   endpoint: {
     type: DotEndpoint.type,
     options: {
@@ -20,10 +44,10 @@ export const SOURCE_DEFAULTS = {
   maxConnections: 1,
   dragAllowedWhenFull: false,
   deleteEndpointsOnEmpty: true,
-  isSource: true
+  source: true
 };
 
-export const TARGET_DEFAULTS = {
+const TARGET_DEFAULTS = {
   endpoint: {
     type: RectangleEndpoint.type,
     options: {
@@ -42,7 +66,7 @@ export const TARGET_DEFAULTS = {
   },
   dragAllowedWhenFull: false,
   deleteEndpointsOnEmpty: true,
-  isTarget: true
+  target: true
 };
 
 export class Plumber {
@@ -52,7 +76,13 @@ export class Plumber {
   constructor(canvas: HTMLElement) {
     ready(() => {
       this.jsPlumb = newInstance({
-        container: canvas
+        container: canvas,
+        connectionsDetachable: false,
+        endpointStyle: {
+          fill: 'transparent'
+        },
+        connector: CONNECTOR_DEFAULTS,
+        connectionOverlays: OVERLAYS_DEFAULTS
       });
     });
   }
@@ -99,28 +129,8 @@ export class Plumber {
           this.jsPlumb.connect({
             source,
             target,
-            connector: {
-              type: FlowchartConnector.type,
-              options: {
-                stub: 12,
-                midpoint: 0.75,
-                alwaysRespectStubs: false,
-                gap: [0, 5],
-                cornerRadius: 3,
-                cssClass: 'plumb-connector'
-              }
-            },
-            overlays: [
-              {
-                type: 'PlainArrow',
-                options: {
-                  width: 13,
-                  length: 13,
-                  location: 0.999,
-                  cssClass: 'plumb-arrow'
-                }
-              }
-            ]
+            connector: CONNECTOR_DEFAULTS,
+            overlays: OVERLAYS_DEFAULTS
           });
         });
         this.pendingConnections = [];

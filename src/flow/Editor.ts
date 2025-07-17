@@ -138,6 +138,8 @@ export class Editor extends RapidElement {
 
       .plumb-source {
         z-index: 600;
+        cursor: pointer;
+        border: 1px solid green;
       }
 
       .plumb-source.connected {
