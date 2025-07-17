@@ -236,17 +236,17 @@
             "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90"
           },
           {
-            "uuid": "730ae625-6535-467b-98af-ea83e9d27884",
-            "type": "set_contact_language",
-            "language": "eng"
-          },
-          {
             "uuid": "28c288f3-fb46-4c32-8a47-563132a2e8db",
             "type": "set_contact_channel",
             "channel": {
               "uuid": "9afd9156-a34a-43fa-91d4-914615ae2e72",
               "name": "WhatsApp"
             }
+          },
+          {
+            "uuid": "730ae625-6535-467b-98af-ea83e9d27884",
+            "type": "set_contact_language",
+            "language": "eng"
           },
           {
             "type": "remove_contact_groups",
@@ -786,7 +786,7 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 1000,
+            "left": 980,
             "top": 120
           },
           "config": {}

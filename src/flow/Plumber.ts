@@ -12,7 +12,6 @@ const CONNECTOR_DEFAULTS = {
     stub: 12,
     midpoint: 0.75,
     alwaysRespectStubs: false,
-    gap: 0,
     cornerRadius: 3,
     cssClass: 'plumb-connector'
   }
@@ -30,7 +29,7 @@ const OVERLAYS_DEFAULTS = [
   }
 ];
 
-const SOURCE_DEFAULTS = {
+export const SOURCE_DEFAULTS = {
   endpoint: {
     type: DotEndpoint.type,
     options: {
@@ -47,7 +46,7 @@ const SOURCE_DEFAULTS = {
   source: true
 };
 
-const TARGET_DEFAULTS = {
+export const TARGET_DEFAULTS = {
   endpoint: {
     type: RectangleEndpoint.type,
     options: {
@@ -129,8 +128,10 @@ export class Plumber {
           this.jsPlumb.connect({
             source,
             target,
-            connector: CONNECTOR_DEFAULTS,
-            overlays: OVERLAYS_DEFAULTS
+            connector: {
+              ...CONNECTOR_DEFAULTS,
+              options: { ...CONNECTOR_DEFAULTS.options, gap: [0, 5] }
+            }
           });
         });
         this.pendingConnections = [];
