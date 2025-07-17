@@ -11,7 +11,8 @@ import { EditorNode } from './EditorNode';
 import { Dialog } from '../layout/Dialog';
 
 export function snapToGrid(value: number): number {
-  return Math.round(value / 20) * 20;
+  const snapped = Math.round(value / 20) * 20;
+  return Math.max(snapped, 0);
 }
 
 const SAVE_QUIET_TIME = 500;
@@ -97,32 +98,13 @@ export class Editor extends RapidElement {
       #grid {
         position: relative;
         background-color: #f9f9f9;
+        background-image: radial-gradient(
+          circle,
+          rgba(61, 177, 255, 0.3) 1px,
+          transparent 1px
+        );
+        background-size: 20px 20px;
         background-position: 10px 10px;
-        background-image: linear-gradient(
-            0deg,
-            transparent 24%,
-            rgba(61, 177, 255, 0.15) 25%,
-            rgba(61, 177, 255, 0.15) 26%,
-            transparent 27%,
-            transparent 74%,
-            rgba(61, 177, 255, 0.15) 75%,
-            rgba(61, 177, 255, 0.15) 76%,
-            transparent 77%,
-            transparent
-          ),
-          linear-gradient(
-            90deg,
-            transparent 24%,
-            rgba(61, 177, 255, 0.15) 25%,
-            rgba(61, 177, 255, 0.15) 26%,
-            transparent 27%,
-            transparent 74%,
-            rgba(61, 177, 255, 0.15) 75%,
-            rgba(61, 177, 255, 0.15) 76%,
-            transparent 77%,
-            transparent
-          );
-        background-size: 40px 40px;
         box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
         border-top: 1px solid #e0e0e0;
         width: 100%;
@@ -164,11 +146,6 @@ export class Editor extends RapidElement {
 
       .plumb-source circle {
         fill: transparent;
-      }
-
-      .plumb-source svg {
-        fill: transparent;
-        stroke: transparent;
       }
 
       .plumb-target {
@@ -345,27 +322,10 @@ export class Editor extends RapidElement {
     }
   }
 
-  private updatePosition(
-    uuid: string,
-    type: 'node' | 'sticky',
-    position: FlowPosition
-  ): void {
-    if (type === 'node') {
-      getStore().getState().updateNodePosition(uuid, position);
-    } else {
-      const currentSticky = this.definition._ui.stickies?.[uuid];
-      if (currentSticky) {
-        getStore()
-          .getState()
-          .updateStickyNote(uuid, {
-            ...currentSticky,
-            position
-          });
-      }
-    }
-  }
-
   private handleMouseDown(event: MouseEvent): void {
+    // ignore right clicks
+    if (event.button !== 0) return;
+
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
     const target = event.target as HTMLElement;
@@ -405,6 +365,9 @@ export class Editor extends RapidElement {
   }
 
   private handleGlobalMouseDown(event: MouseEvent): void {
+    // ignore right clicks
+    if (event.button !== 0) return;
+
     // Check if the click is within our canvas
     const canvasRect = this.querySelector('#grid')?.getBoundingClientRect();
 
@@ -656,25 +619,6 @@ export class Editor extends RapidElement {
     // Only start dragging if we've moved beyond the threshold
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
-
-      // Determine what we're dragging: selection group or single item
-      /*const draggedItems =
-        this.selectedItems.has(this.currentDragItem.uuid) &&
-        this.selectedItems.size > 1
-          ? Array.from(this.selectedItems)
-          : [this.currentDragItem.uuid];
-
-      // For multi-node drags, dim the connections
-      if (draggedItems.length > 1) {
-        draggedItems.forEach((uuid) => {
-          if (
-            this.definition.nodes.find((node) => node.uuid === uuid) &&
-            this.plumber
-          ) {
-            this.plumber.dimNodeConnections(uuid);
-          }
-        });
-      }*/
     }
 
     // If we're actually dragging, update positions
@@ -707,16 +651,7 @@ export class Editor extends RapidElement {
         }
       });
 
-      // Only repaint connections in real time for single node drags
-      if (itemsToMove.length === 1) {
-        const uuid = itemsToMove[0];
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
-          this.plumber.repaintEverything();
-        }
-      }
+      this.plumber.revalidate(itemsToMove);
     }
   }
 
@@ -771,55 +706,25 @@ export class Editor extends RapidElement {
           const newPosition = { left: snappedLeft, top: snappedTop };
           newPositions[uuid] = newPosition;
 
-          // Update the store with the new snapped position
-          this.updatePosition(uuid, type, newPosition);
-
           // Remove dragging class
           const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
           if (element) {
             element.classList.remove('dragging');
+            element.style.left = `${snappedLeft}px`;
+            element.style.top = `${snappedTop}px`;
           }
         }
       });
 
-      // Update canvas positions for nodes
-      const nodePositions: { [uuid: string]: FlowPosition } = {};
-      itemsToMove.forEach((uuid) => {
-        if (this.definition.nodes.find((node) => node.uuid === uuid)) {
-          nodePositions[uuid] = newPositions[uuid];
-        }
-      });
+      if (Object.keys(newPositions).length > 0) {
+        getStore().getState().updateCanvasPositions(newPositions);
 
-      if (Object.keys(nodePositions).length > 0) {
-        getStore().getState().updateCanvasPositions(nodePositions);
-      }
-
-      // Restore dimmed connections and repaint everything for multi-node drags
-      if (itemsToMove.length > 1) {
-        itemsToMove.forEach((uuid) => {
-          if (
-            this.definition.nodes.find((node) => node.uuid === uuid) &&
-            this.plumber
-          ) {
-            this.plumber.restoreDimmedConnections(uuid);
-          }
-        });
-      }
-
-      // Repaint connections for all moved nodes at the end
-      itemsToMove.forEach((uuid) => {
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
+        setTimeout(() => {
           this.plumber.repaintEverything();
-        }
-      });
-
-      // Only clear selection after dragging if it was a multi-selection drag
-      if (this.selectedItems.size > 1) {
-        this.selectedItems.clear();
+        }, 0);
       }
+
+      this.selectedItems.clear();
     }
 
     // Reset all drag state

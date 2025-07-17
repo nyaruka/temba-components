@@ -138,145 +138,16 @@ export class Plumber {
       this.jsPlumb.repaintEverything();
     }
   }
-  public elevateNodeConnections(nodeId: string) {
+
+  public revalidate(ids: string[]) {
     if (!this.jsPlumb) return;
-
-    // Get all connections
-    const connections = this.jsPlumb.getConnections();
-
-    // Get the node element to find its exit elements
-    const nodeElement = document.getElementById(nodeId);
-    const exitElements = nodeElement
-      ? nodeElement.querySelectorAll('.exit')
-      : [];
-    const exitIds = Array.from(exitElements).map((exit) => exit.id);
-
-    connections.forEach((connection) => {
-      const sourceId = connection.source.id;
-      const targetId = connection.target.id;
-
-      // Check if this connection involves the dragged node:
-      // - Incoming: target is the node itself
-      // - Outgoing: source is one of the node's exits
-      if (targetId === nodeId || exitIds.includes(sourceId)) {
-        // Add elevated class to the connector element
-        const connectorElement = connection.connector.canvas;
-        if (connectorElement) {
-          connectorElement.classList.add('elevated');
+    this.jsPlumb.batch(() => {
+      ids.forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) {
+          this.jsPlumb.revalidate(element);
         }
-      }
-    });
-  }
-
-  public restoreNodeConnections(nodeId: string) {
-    if (!this.jsPlumb) return;
-
-    // Get all connections
-    const connections = this.jsPlumb.getConnections();
-
-    // Get the node element to find its exit elements
-    const nodeElement = document.getElementById(nodeId);
-    const exitElements = nodeElement
-      ? nodeElement.querySelectorAll('.exit')
-      : [];
-    const exitIds = Array.from(exitElements).map((exit) => exit.id);
-
-    connections.forEach((connection) => {
-      const sourceId = connection.source.id;
-      const targetId = connection.target.id;
-
-      // Check if this connection involves the node:
-      // - Incoming: target is the node itself
-      // - Outgoing: source is one of the node's exits
-      if (targetId === nodeId || exitIds.includes(sourceId)) {
-        // Remove elevated class from the connector element
-        const connectorElement = connection.connector.canvas;
-        if (connectorElement) {
-          connectorElement.classList.remove('elevated');
-        }
-      }
-    });
-  }
-
-  public dimNodeConnections(nodeId: string) {
-    if (!this.jsPlumb) return;
-
-    // Get all connections
-    const connections = this.jsPlumb.getConnections();
-
-    // Get the node element to find its exit elements
-    const nodeElement = document.getElementById(nodeId);
-    const exitElements = nodeElement
-      ? nodeElement.querySelectorAll('.exit')
-      : [];
-    const exitIds = Array.from(exitElements).map((exit) => exit.id);
-
-    connections.forEach((connection) => {
-      const sourceId = connection.source.id;
-      const targetId = connection.target.id;
-
-      // Check if this connection involves the dragged node:
-      // - Incoming: target is the node itself
-      // - Outgoing: source is one of the node's exits
-      if (targetId === nodeId || exitIds.includes(sourceId)) {
-        // Add dimmed class to the connector element
-        const connectorElement = connection.connector.canvas;
-        if (connectorElement) {
-          connectorElement.classList.add('dimmed');
-        }
-
-        // Hide source endpoint (exit circle) only for outgoing connections
-        // (only when the source is one of the dragged node's exits)
-        if (exitIds.includes(sourceId)) {
-          const sourceEndpoint = connection.endpoints[0];
-          if (sourceEndpoint && sourceEndpoint.element) {
-            sourceEndpoint.element.style.display = 'none';
-          }
-        }
-
-        // Do not hide target endpoint - leave nodes visible
-      }
-    });
-  }
-
-  public restoreDimmedConnections(nodeId: string) {
-    if (!this.jsPlumb) return;
-
-    // Get all connections
-    const connections = this.jsPlumb.getConnections();
-
-    // Get the node element to find its exit elements
-    const nodeElement = document.getElementById(nodeId);
-    const exitElements = nodeElement
-      ? nodeElement.querySelectorAll('.exit')
-      : [];
-    const exitIds = Array.from(exitElements).map((exit) => exit.id);
-
-    connections.forEach((connection) => {
-      const sourceId = connection.source.id;
-      const targetId = connection.target.id;
-
-      // Check if this connection involves the node:
-      // - Incoming: target is the node itself
-      // - Outgoing: source is one of the node's exits
-      if (targetId === nodeId || exitIds.includes(sourceId)) {
-        // Remove dimmed class from the connector element
-        const connectorElement = connection.connector.canvas;
-        if (connectorElement) {
-          connectorElement.classList.remove('dimmed');
-        }
-
-        // Restore source endpoint (exit circle) only for outgoing connections
-        // (only when the source is one of the dragged node's exits)
-        if (exitIds.includes(sourceId)) {
-          const sourceEndpoint = connection.endpoints[0];
-          if (sourceEndpoint && sourceEndpoint.element) {
-            sourceEndpoint.element.style.display = '';
-          }
-        }
-
-        // Do not restore target endpoint - it was never hidden
-      }
+      });
     });
   }
 

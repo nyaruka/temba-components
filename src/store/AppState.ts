@@ -95,11 +95,8 @@ export interface AppState {
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
   ): unknown;
   updateCanvasPositions: (positions: CanvasPositions) => void;
-  updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) => void;
   removeStickyNotes: (uuids: string[]) => void;
-
-  updateStickyPosition(uuid: string, newPosition: FlowPosition): void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
 }
 
@@ -227,23 +224,13 @@ export const zustand = createStore<AppState>()(
             if (state.flowDefinition._ui.nodes[uuid]) {
               state.flowDefinition._ui.nodes[uuid].position = positions[uuid];
             }
-          }
-        });
-      },
 
-      updateNodePosition: (uuid: string, newPosition: FlowPosition) => {
-        set((state: AppState) => {
-          if (state.flowDefinition._ui.nodes[uuid]) {
-            state.flowDefinition._ui.nodes[uuid].position = newPosition;
-          } else {
-            // If the node doesn't exist in _ui, we can add it
-            state.flowDefinition._ui.nodes[uuid] = {
-              position: newPosition,
-              type: null,
-              config: {}
-            };
+            // otherwise, it might be a sticky
+            else if (state.flowDefinition._ui.stickies[uuid]) {
+              state.flowDefinition._ui.stickies[uuid].position =
+                positions[uuid];
+            }
           }
-
           state.dirtyDate = new Date();
         });
       },
@@ -276,18 +263,6 @@ export const zustand = createStore<AppState>()(
             for (const uuid of uuids) {
               delete state.flowDefinition._ui.stickies[uuid];
             }
-          }
-        });
-      },
-
-      updateStickyPosition: (uuid: string, newPosition: FlowPosition) => {
-        set((state: AppState) => {
-          if (!state.flowDefinition._ui.stickies) {
-            state.flowDefinition._ui.stickies = {};
-          }
-          if (state.flowDefinition._ui.stickies[uuid]) {
-            state.flowDefinition._ui.stickies[uuid].position = newPosition;
-            state.dirtyDate = new Date();
           }
         });
       },
