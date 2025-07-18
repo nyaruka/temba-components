@@ -33,6 +33,7 @@
     /* primary colors, should be dark */
     --color-selection: #f0f6ff;
 
+    --color-success: #3ca96a;
 
     --widget-box-shadow: rgba(-1, -1, 0, .15) 0px 1px 7px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
     --widget-box-shadow-focused: 0 0 0 3px rgba(164, 202, 254, .45);

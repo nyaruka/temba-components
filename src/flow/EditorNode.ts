@@ -45,7 +45,7 @@ export class EditorNode extends RapidElement {
         transform: scale(1.02);
         z-index: 1000;
       }
-        
+
       .action {
         max-width: 200px;
         position: relative;
@@ -210,7 +210,6 @@ export class EditorNode extends RapidElement {
     if (changes.has('node')) {
       // make our initial connections
       if (changes.get('node') === undefined) {
-        // this.plumber.makeTarget(this.node.uuid);
         for (const exit of this.node.exits) {
           if (!exit.destination_uuid) {
             this.plumber.makeSource(exit.uuid);
@@ -230,6 +229,11 @@ export class EditorNode extends RapidElement {
           this.ui.position.top + rect.height
         );
     }
+  }
+
+  disconnectedCallback() {
+    // Remove the event listener when the component is removed
+    super.disconnectedCallback();
   }
 
   private handleActionOrderChanged(event: CustomEvent) {

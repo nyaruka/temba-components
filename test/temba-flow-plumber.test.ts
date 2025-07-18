@@ -142,7 +142,7 @@ describe('Plumber', () => {
       expect(SOURCE_DEFAULTS.endpoint).to.have.property('options');
       expect(SOURCE_DEFAULTS).to.have.property('anchors');
       expect(SOURCE_DEFAULTS).to.have.property('maxConnections', 1);
-      expect(SOURCE_DEFAULTS).to.have.property('isSource', true);
+      expect(SOURCE_DEFAULTS).to.have.property('source', true);
       expect(SOURCE_DEFAULTS).to.have.property('dragAllowedWhenFull', false);
       expect(SOURCE_DEFAULTS).to.have.property('deleteEndpointsOnEmpty', true);
     });
@@ -152,7 +152,7 @@ describe('Plumber', () => {
       expect(TARGET_DEFAULTS.endpoint).to.have.property('type');
       expect(TARGET_DEFAULTS.endpoint).to.have.property('options');
       expect(TARGET_DEFAULTS).to.have.property('anchor');
-      expect(TARGET_DEFAULTS).to.have.property('isTarget', true);
+      expect(TARGET_DEFAULTS).to.have.property('target', true);
       expect(TARGET_DEFAULTS).to.have.property('dragAllowedWhenFull', false);
       expect(TARGET_DEFAULTS).to.have.property('deleteEndpointsOnEmpty', true);
     });
