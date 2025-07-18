@@ -9,6 +9,7 @@ import { RapidElement } from '../RapidElement';
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
 import { Dialog } from '../layout/Dialog';
+import { Connection } from '@jsplumb/browser-ui';
 
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
@@ -80,6 +81,12 @@ export class Editor extends RapidElement {
   @state()
   private selectionBox: SelectionBox | null = null;
 
+  @state()
+  private targetId: string | null = null;
+
+  @state()
+  private sourceId: string | null = null;
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -139,7 +146,6 @@ export class Editor extends RapidElement {
       .plumb-source {
         z-index: 600;
         cursor: pointer;
-        border: 1px solid green;
       }
 
       .plumb-source.connected {
@@ -151,10 +157,17 @@ export class Editor extends RapidElement {
       }
 
       .plumb-target {
-        margin-top: -6px;
         z-index: 600;
-        opacity: 0;
+        opacity: 1;
         cursor: pointer;
+        fill: transparent;
+      }
+
+      .plumb-target.plumb-target-hover {
+        opacity: 0.3;
+      }
+
+      .jtk-target-hover {
       }
 
       body .plumb-connector path {
@@ -164,40 +177,6 @@ export class Editor extends RapidElement {
       }
 
       body .plumb-connector {
-        z-index: 10;
-      }
-
-      body .plumb-connector.elevated {
-        z-index: 550;
-      }
-
-      body .plumb-connector.elevated path {
-        stroke: var(--color-connectors) !important;
-        stroke-width: 3px;
-        z-index: 550;
-      }
-
-      body .plumb-connector.dimmed path {
-        stroke: var(--color-connectors) !important;
-        stroke-width: 3px;
-        opacity: 0.3;
-        z-index: 10;
-      }
-
-      body .plumb-connector.elevated .plumb-arrow {
-        fill: var(--color-connectors);
-        stroke: var(--color-connectors);
-        stroke-width: 0px;
-        margin-top: 6px;
-        z-index: 550;
-      }
-
-      body .plumb-connector.dimmed .plumb-arrow {
-        fill: var(--color-connectors);
-        stroke: var(--color-connectors);
-        stroke-width: 0px;
-        margin-top: 6px;
-        opacity: 0.3;
         z-index: 10;
       }
 
@@ -235,6 +214,10 @@ export class Editor extends RapidElement {
         outline-offset: 0px;
         border-radius: var(--curvature);
       }
+
+      .jtk-floating-endpoint {
+        pointer-events: none;
+      }
     `;
   }
 
@@ -251,6 +234,32 @@ export class Editor extends RapidElement {
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
     }
+
+    this.plumber.on('connection:drag', (info: Connection) => {
+      this.sourceId = info.sourceId;
+    });
+
+    this.plumber.on('connection:abort', () => {
+      this.makeConnection();
+    });
+
+    this.plumber.on('connection:detach', () => {
+      this.makeConnection();
+    });
+  }
+
+  private makeConnection() {
+    if (this.sourceId && this.targetId) {
+      this.plumber.connectIds(this.sourceId, this.targetId);
+      getStore().getState().updateConnection(this.sourceId, this.targetId);
+
+      setTimeout(() => {
+        this.plumber.repaintEverything();
+      }, 100);
+    }
+
+    this.sourceId = null;
+    this.targetId = null;
   }
 
   protected updated(
@@ -536,7 +545,7 @@ export class Editor extends RapidElement {
 
     // Check nodes
     this.definition?.nodes.forEach((node) => {
-      const nodeElement = this.querySelector(`[uuid="${node.uuid}"]`);
+      const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
       if (nodeElement) {
         const position = this.definition._ui.nodes[node.uuid]?.position;
         if (position) {
@@ -609,6 +618,15 @@ export class Editor extends RapidElement {
       this.updateSelectionBox(event);
       this.requestUpdate(); // Force re-render
       return;
+    }
+
+    if (this.plumber.connectionDragging) {
+      const targetNode = document.querySelector('temba-flow-node:hover');
+      if (targetNode) {
+        this.targetId = targetNode.getAttribute('uuid');
+      } else {
+        this.targetId = null;
+      }
     }
 
     // Handle item dragging

@@ -94,6 +94,7 @@ export interface AppState {
     uuid: string,
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
   ): unknown;
+  updateConnection(exitUuid: string, destinationNodeUuid: string): unknown;
   updateCanvasPositions: (positions: CanvasPositions) => void;
   removeNodes: (uuids: string[]) => void;
   removeStickyNotes: (uuids: string[]) => void;
@@ -277,6 +278,21 @@ export const zustand = createStore<AppState>()(
             node.router = newNode.router;
           }
           state.dirtyDate = new Date();
+        });
+      },
+
+      updateConnection: (exitUuid: string, destinationNodeUuid: string) => {
+        set((state: AppState) => {
+          // Find the exit with this UUID
+          for (const node of state.flowDefinition.nodes) {
+            const exit = node.exits.find((e) => e.uuid === exitUuid);
+            if (exit) {
+              // Update the destination
+              exit.destination_uuid = destinationNodeUuid;
+              state.dirtyDate = new Date();
+              break;
+            }
+          }
         });
       },
 

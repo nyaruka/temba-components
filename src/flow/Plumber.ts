@@ -3,16 +3,23 @@ import {
   FlowchartConnector,
   newInstance,
   ready,
-  RectangleEndpoint
+  RectangleEndpoint,
+  EVENT_CONNECTION_DRAG,
+  EVENT_CONNECTION_ABORT,
+  INTERCEPT_BEFORE_DROP,
+  EVENT_CONNECTION,
+  EVENT_REVERT,
+  INTERCEPT_BEFORE_DETACH,
+  EVENT_CONNECTION_DETACHED
 } from '@jsplumb/browser-ui';
 
 const CONNECTOR_DEFAULTS = {
   type: FlowchartConnector.type,
   options: {
-    stub: 12,
-    midpoint: 0.75,
-    alwaysRespectStubs: false,
-    cornerRadius: 3,
+    stub: [20, 10],
+    midpoint: 0.5,
+    alwaysRespectStubs: true,
+    cornerRadius: 5,
     cssClass: 'plumb-connector'
   }
 };
@@ -40,9 +47,9 @@ export const SOURCE_DEFAULTS = {
     }
   },
   anchors: ['Bottom', 'Continuous'],
-  maxConnections: 1,
   dragAllowedWhenFull: false,
   deleteEndpointsOnEmpty: true,
+  maxConnections: 1,
   source: true
 };
 
@@ -63,27 +70,81 @@ export const TARGET_DEFAULTS = {
       cssClass: 'continuos plumb-target-anchor'
     }
   },
-  dragAllowedWhenFull: false,
-  deleteEndpointsOnEmpty: true,
+  deleteOnEmpty: true,
+  maxConnections: 1,
   target: true
 };
 
 export class Plumber {
   private jsPlumb = null;
   private pendingConnections = [];
+  private connectionListeners = new Map();
+
+  public connectionDragging = false;
 
   constructor(canvas: HTMLElement) {
     ready(() => {
       this.jsPlumb = newInstance({
         container: canvas,
-        connectionsDetachable: false,
+        connectionsDetachable: true,
         endpointStyle: {
           fill: 'transparent'
         },
         connector: CONNECTOR_DEFAULTS,
         connectionOverlays: OVERLAYS_DEFAULTS
       });
+
+      // Bind to connection events
+      this.jsPlumb.bind(EVENT_CONNECTION, (info) => {
+        this.connectionDragging = false;
+        this.notifyListeners(EVENT_CONNECTION, info);
+      });
+
+      // Bind to connection drag events
+      this.jsPlumb.bind(EVENT_CONNECTION_DRAG, (info) => {
+        this.connectionDragging = true;
+        this.notifyListeners(EVENT_CONNECTION_DRAG, info);
+      });
+
+      this.jsPlumb.bind(EVENT_CONNECTION_ABORT, (info) => {
+        this.connectionDragging = false;
+        this.notifyListeners(EVENT_CONNECTION_ABORT, info);
+      });
+
+      this.jsPlumb.bind(EVENT_CONNECTION_DETACHED, (info) => {
+        this.connectionDragging = false;
+        this.notifyListeners(EVENT_CONNECTION_DETACHED, info);
+      });
+
+      this.jsPlumb.bind(EVENT_REVERT, (info) => {
+        this.notifyListeners(EVENT_REVERT, info);
+      });
+
+      // don't allow jsplumb to automatically connect
+      this.jsPlumb.bind(INTERCEPT_BEFORE_DROP, () => {});
+      this.jsPlumb.bind(INTERCEPT_BEFORE_DETACH, () => {});
     });
+  }
+
+  private notifyListeners(eventName: string, info: any) {
+    const listeners = this.connectionListeners.get(eventName) || [];
+    listeners.forEach((listener) => listener(info));
+  }
+
+  public on(eventName: string, callback: (info: any) => void) {
+    if (!this.connectionListeners.has(eventName)) {
+      this.connectionListeners.set(eventName, []);
+    }
+    this.connectionListeners.get(eventName).push(callback);
+  }
+
+  public off(eventName: string, callback: (info: any) => void) {
+    if (!this.connectionListeners.has(eventName)) return;
+    const listeners = this.connectionListeners.get(eventName);
+    const index = listeners.indexOf(callback);
+    if (index !== -1) {
+      listeners.splice(index, 1);
+    }
   }
 
   public makeTarget(uuid: string) {
