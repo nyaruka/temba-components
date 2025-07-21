@@ -340,9 +340,12 @@ export class StickyNote extends RapidElement {
     this.colorPickerExpanded = false;
   }
 
-  private handleColorOptionClick(event: MouseEvent, color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray'): void {
+  private handleColorOptionClick(
+    event: MouseEvent,
+    color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray'
+  ): void {
     event.stopPropagation();
-    
+
     if (this.data && color !== this.data.color) {
       getStore()
         .getState()
@@ -351,7 +354,7 @@ export class StickyNote extends RapidElement {
           color: color
         });
     }
-    
+
     this.colorPickerExpanded = false;
     this.requestUpdate();
   }
@@ -392,33 +395,42 @@ export class StickyNote extends RapidElement {
             .textContent="${this.data.body}"
           ></div>
           <div class="edit-icon" title="Edit note"></div>
-          
+
           <!-- Color picker -->
-          <div 
+          <div
             class="color-picker"
             @mouseenter="${this.handleColorPickerMouseEnter}"
             @mouseleave="${this.handleColorPickerMouseLeave}"
           >
-            <div class="color-options ${this.colorPickerExpanded ? 'expanded' : ''}">
-              <div 
+            <div
+              class="color-options ${this.colorPickerExpanded
+                ? 'expanded'
+                : ''}"
+            >
+              <div
                 class="color-option yellow"
-                @click="${(e: MouseEvent) => this.handleColorOptionClick(e, 'yellow')}"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'yellow')}"
               ></div>
-              <div 
+              <div
                 class="color-option blue"
-                @click="${(e: MouseEvent) => this.handleColorOptionClick(e, 'blue')}"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'blue')}"
               ></div>
-              <div 
+              <div
                 class="color-option pink"
-                @click="${(e: MouseEvent) => this.handleColorOptionClick(e, 'pink')}"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'pink')}"
               ></div>
-              <div 
+              <div
                 class="color-option green"
-                @click="${(e: MouseEvent) => this.handleColorOptionClick(e, 'green')}"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'green')}"
               ></div>
-              <div 
+              <div
                 class="color-option gray"
-                @click="${(e: MouseEvent) => this.handleColorOptionClick(e, 'gray')}"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'gray')}"
               ></div>
             </div>
           </div>
