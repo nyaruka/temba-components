@@ -8,7 +8,7 @@ import {
   Exit,
   Router
 } from '../src/store/flow-definition.d';
-import { stub, restore } from 'sinon';
+import { stub, restore, useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 
 describe('EditorNode', () => {
@@ -708,10 +708,6 @@ describe('EditorNode', () => {
       (editorNode as any).node = mockNode;
       (editorNode as any).ui = mockUI;
 
-      // Render the component
-      const renderResult = editorNode.render();
-      await fixture(html`<div>${renderResult}</div>`);
-
       // Mock querySelector to return the exit element
       const exitElement = document.createElement('div');
       exitElement.id = 'exit-1';
@@ -738,7 +734,7 @@ describe('EditorNode', () => {
         });
       };
 
-      // Call the click handler directly
+      // Call the click handler directly to initiate removal
       (editorNode as any).handleExitClick(mockEvent, mockNode.exits[0]);
 
       // Verify the exit is marked for removal in the component state
@@ -763,53 +759,57 @@ describe('EditorNode', () => {
     });
 
     it('cancels disconnection after timeout', async () => {
-      // Create a node with a connected exit
-      const mockNode: Node = {
-        uuid: 'test-node',
-        actions: [],
-        exits: [{ uuid: 'exit-1', destination_uuid: 'target-node' }]
-      };
+      // Create a fake timer for this test
+      const clock = useFakeTimers();
 
-      const mockUI: NodeUI = {
-        position: { left: 100, top: 200 },
-        type: 'execute_actions'
-      };
+      try {
+        // Create a node with a connected exit
+        const mockNode: Node = {
+          uuid: 'test-node',
+          actions: [],
+          exits: [{ uuid: 'exit-1', destination_uuid: 'target-node' }]
+        };
 
-      (editorNode as any).node = mockNode;
-      (editorNode as any).ui = mockUI;
+        const mockUI: NodeUI = {
+          position: { left: 100, top: 200 },
+          type: 'execute_actions'
+        };
 
-      // Render the component
-      const renderResult = editorNode.render();
-      await fixture(html`<div>${renderResult}</div>`);
+        (editorNode as any).node = mockNode;
+        (editorNode as any).ui = mockUI;
 
-      // Mock querySelector to return the exit element
-      const exitElement = document.createElement('div');
-      exitElement.id = 'exit-1';
-      exitElement.classList.add('exit', 'connected');
-      (editorNode as any).querySelector = stub().returns(exitElement);
+        // Mock querySelector to return the exit element
+        const exitElement = document.createElement('div');
+        exitElement.id = 'exit-1';
+        exitElement.classList.add('exit', 'connected');
+        (editorNode as any).querySelector = stub().returns(exitElement);
 
-      // Create a mock event
-      const mockEvent = {
-        preventDefault: stub(),
-        stopPropagation: stub(),
-        currentTarget: exitElement
-      } as any;
+        // Create a mock event
+        const mockEvent = {
+          preventDefault: stub(),
+          stopPropagation: stub(),
+          currentTarget: exitElement
+        } as any;
 
-      // Replace setTimeout with a stub that executes immediately
-      const originalSetTimeout = window.setTimeout;
-      (window as any).setTimeout = function (callback: any) {
-        callback();
-        return 0;
-      };
+        // Call the click handler to initiate disconnection
+        (editorNode as any).handleExitClick(mockEvent, mockNode.exits[0]);
 
-      // Call the click handler
-      (editorNode as any).handleExitClick(mockEvent, mockNode.exits[0]);
+        // Verify the exit is marked for removal
+        expect((editorNode as any).exitRemovingState.has('exit-1')).to.be.true;
 
-      // Verify the removing state is cleared (since our timeout executed immediately)
-      expect((editorNode as any).exitRemovingState.has('exit-1')).to.be.false;
+        // Advance the clock past the timeout (1500ms is the default timeout)
+        clock.tick(1501);
 
-      // Restore setTimeout
-      (window as any).setTimeout = originalSetTimeout;
+        // Verify the removing state is cleared after the timeout
+        expect((editorNode as any).exitRemovingState.has('exit-1')).to.be.false;
+        expect(mockPlumber.setConnectionRemovingState).to.have.been.calledWith(
+          'exit-1',
+          false
+        );
+      } finally {
+        // Always restore the clock
+        clock.restore();
+      }
     });
   });
 });
