@@ -9,9 +9,11 @@ import { RapidElement } from '../RapidElement';
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
 import { Dialog } from '../layout/Dialog';
+import { Connection } from '@jsplumb/browser-ui';
 
 export function snapToGrid(value: number): number {
-  return Math.round(value / 20) * 20;
+  const snapped = Math.round(value / 20) * 20;
+  return Math.max(snapped, 0);
 }
 
 const SAVE_QUIET_TIME = 500;
@@ -79,6 +81,12 @@ export class Editor extends RapidElement {
   @state()
   private selectionBox: SelectionBox | null = null;
 
+  @state()
+  private targetId: string | null = null;
+
+  @state()
+  private sourceId: string | null = null;
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -97,32 +105,13 @@ export class Editor extends RapidElement {
       #grid {
         position: relative;
         background-color: #f9f9f9;
+        background-image: radial-gradient(
+          circle,
+          rgba(61, 177, 255, 0.3) 1px,
+          transparent 1px
+        );
+        background-size: 20px 20px;
         background-position: 10px 10px;
-        background-image: linear-gradient(
-            0deg,
-            transparent 24%,
-            rgba(61, 177, 255, 0.15) 25%,
-            rgba(61, 177, 255, 0.15) 26%,
-            transparent 27%,
-            transparent 74%,
-            rgba(61, 177, 255, 0.15) 75%,
-            rgba(61, 177, 255, 0.15) 76%,
-            transparent 77%,
-            transparent
-          ),
-          linear-gradient(
-            90deg,
-            transparent 24%,
-            rgba(61, 177, 255, 0.15) 25%,
-            rgba(61, 177, 255, 0.15) 26%,
-            transparent 27%,
-            transparent 74%,
-            rgba(61, 177, 255, 0.15) 75%,
-            rgba(61, 177, 255, 0.15) 76%,
-            transparent 77%,
-            transparent
-          );
-        background-size: 40px 40px;
         box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
         border-top: 1px solid #e0e0e0;
         width: 100%;
@@ -152,30 +141,29 @@ export class Editor extends RapidElement {
 
       .jtk-endpoint {
         z-index: 600;
+        opacity: 0;
       }
 
       .plumb-source {
         z-index: 600;
+        cursor: pointer;
+        opacity: 0;
       }
 
       .plumb-source.connected {
         border-radius: 50%;
+        pointer-events: none;
       }
 
       .plumb-source circle {
-        fill: transparent;
-      }
-
-      .plumb-source svg {
-        fill: transparent;
-        stroke: transparent;
+        fill: purple;
       }
 
       .plumb-target {
-        margin-top: -6px;
         z-index: 600;
         opacity: 0;
         cursor: pointer;
+        fill: transparent;
       }
 
       body .plumb-connector path {
@@ -185,40 +173,6 @@ export class Editor extends RapidElement {
       }
 
       body .plumb-connector {
-        z-index: 10;
-      }
-
-      body .plumb-connector.elevated {
-        z-index: 550;
-      }
-
-      body .plumb-connector.elevated path {
-        stroke: var(--color-connectors) !important;
-        stroke-width: 3px;
-        z-index: 550;
-      }
-
-      body .plumb-connector.dimmed path {
-        stroke: var(--color-connectors) !important;
-        stroke-width: 3px;
-        opacity: 0.3;
-        z-index: 10;
-      }
-
-      body .plumb-connector.elevated .plumb-arrow {
-        fill: var(--color-connectors);
-        stroke: var(--color-connectors);
-        stroke-width: 0px;
-        margin-top: 6px;
-        z-index: 550;
-      }
-
-      body .plumb-connector.dimmed .plumb-arrow {
-        fill: var(--color-connectors);
-        stroke: var(--color-connectors);
-        stroke-width: 0px;
-        margin-top: 6px;
-        opacity: 0.3;
         z-index: 10;
       }
 
@@ -256,6 +210,10 @@ export class Editor extends RapidElement {
         outline-offset: 0px;
         border-radius: var(--curvature);
       }
+
+      .jtk-floating-endpoint {
+        pointer-events: none;
+      }
     `;
   }
 
@@ -272,6 +230,32 @@ export class Editor extends RapidElement {
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
     }
+
+    this.plumber.on('connection:drag', (info: Connection) => {
+      this.sourceId = info.sourceId;
+    });
+
+    this.plumber.on('connection:abort', () => {
+      this.makeConnection();
+    });
+
+    this.plumber.on('connection:detach', () => {
+      this.makeConnection();
+    });
+  }
+
+  private makeConnection() {
+    if (this.sourceId && this.targetId) {
+      this.plumber.connectIds(this.sourceId, this.targetId);
+      getStore().getState().updateConnection(this.sourceId, this.targetId);
+
+      setTimeout(() => {
+        this.plumber.repaintEverything();
+      }, 100);
+    }
+
+    this.sourceId = null;
+    this.targetId = null;
   }
 
   protected updated(
@@ -345,27 +329,10 @@ export class Editor extends RapidElement {
     }
   }
 
-  private updatePosition(
-    uuid: string,
-    type: 'node' | 'sticky',
-    position: FlowPosition
-  ): void {
-    if (type === 'node') {
-      getStore().getState().updateNodePosition(uuid, position);
-    } else {
-      const currentSticky = this.definition._ui.stickies?.[uuid];
-      if (currentSticky) {
-        getStore()
-          .getState()
-          .updateStickyNote(uuid, {
-            ...currentSticky,
-            position
-          });
-      }
-    }
-  }
-
   private handleMouseDown(event: MouseEvent): void {
+    // ignore right clicks
+    if (event.button !== 0) return;
+
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
     const target = event.target as HTMLElement;
@@ -405,6 +372,9 @@ export class Editor extends RapidElement {
   }
 
   private handleGlobalMouseDown(event: MouseEvent): void {
+    // ignore right clicks
+    if (event.button !== 0) return;
+
     // Check if the click is within our canvas
     const canvasRect = this.querySelector('#grid')?.getBoundingClientRect();
 
@@ -571,7 +541,7 @@ export class Editor extends RapidElement {
 
     // Check nodes
     this.definition?.nodes.forEach((node) => {
-      const nodeElement = this.querySelector(`[uuid="${node.uuid}"]`);
+      const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
       if (nodeElement) {
         const position = this.definition._ui.nodes[node.uuid]?.position;
         if (position) {
@@ -646,6 +616,15 @@ export class Editor extends RapidElement {
       return;
     }
 
+    if (this.plumber.connectionDragging) {
+      const targetNode = document.querySelector('temba-flow-node:hover');
+      if (targetNode) {
+        this.targetId = targetNode.getAttribute('uuid');
+      } else {
+        this.targetId = null;
+      }
+    }
+
     // Handle item dragging
     if (!this.isMouseDown || !this.currentDragItem) return;
 
@@ -656,25 +635,6 @@ export class Editor extends RapidElement {
     // Only start dragging if we've moved beyond the threshold
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
-
-      // Determine what we're dragging: selection group or single item
-      /*const draggedItems =
-        this.selectedItems.has(this.currentDragItem.uuid) &&
-        this.selectedItems.size > 1
-          ? Array.from(this.selectedItems)
-          : [this.currentDragItem.uuid];
-
-      // For multi-node drags, dim the connections
-      if (draggedItems.length > 1) {
-        draggedItems.forEach((uuid) => {
-          if (
-            this.definition.nodes.find((node) => node.uuid === uuid) &&
-            this.plumber
-          ) {
-            this.plumber.dimNodeConnections(uuid);
-          }
-        });
-      }*/
     }
 
     // If we're actually dragging, update positions
@@ -707,16 +667,7 @@ export class Editor extends RapidElement {
         }
       });
 
-      // Only repaint connections in real time for single node drags
-      if (itemsToMove.length === 1) {
-        const uuid = itemsToMove[0];
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
-          this.plumber.repaintEverything();
-        }
-      }
+      this.plumber.revalidate(itemsToMove);
     }
   }
 
@@ -771,55 +722,25 @@ export class Editor extends RapidElement {
           const newPosition = { left: snappedLeft, top: snappedTop };
           newPositions[uuid] = newPosition;
 
-          // Update the store with the new snapped position
-          this.updatePosition(uuid, type, newPosition);
-
           // Remove dragging class
           const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
           if (element) {
             element.classList.remove('dragging');
+            element.style.left = `${snappedLeft}px`;
+            element.style.top = `${snappedTop}px`;
           }
         }
       });
 
-      // Update canvas positions for nodes
-      const nodePositions: { [uuid: string]: FlowPosition } = {};
-      itemsToMove.forEach((uuid) => {
-        if (this.definition.nodes.find((node) => node.uuid === uuid)) {
-          nodePositions[uuid] = newPositions[uuid];
-        }
-      });
+      if (Object.keys(newPositions).length > 0) {
+        getStore().getState().updateCanvasPositions(newPositions);
 
-      if (Object.keys(nodePositions).length > 0) {
-        getStore().getState().updateCanvasPositions(nodePositions);
-      }
-
-      // Restore dimmed connections and repaint everything for multi-node drags
-      if (itemsToMove.length > 1) {
-        itemsToMove.forEach((uuid) => {
-          if (
-            this.definition.nodes.find((node) => node.uuid === uuid) &&
-            this.plumber
-          ) {
-            this.plumber.restoreDimmedConnections(uuid);
-          }
-        });
-      }
-
-      // Repaint connections for all moved nodes at the end
-      itemsToMove.forEach((uuid) => {
-        if (
-          this.definition.nodes.find((node) => node.uuid === uuid) &&
-          this.plumber
-        ) {
+        setTimeout(() => {
           this.plumber.repaintEverything();
-        }
-      });
-
-      // Only clear selection after dragging if it was a multi-selection drag
-      if (this.selectedItems.size > 1) {
-        this.selectedItems.clear();
+        }, 0);
       }
+
+      this.selectedItems.clear();
     }
 
     // Reset all drag state

@@ -21,6 +21,12 @@ export class EditorNode extends RapidElement {
   @property({ type: Object })
   private ui: NodeUI;
 
+  // Track exits that are in "removing" state
+  private exitRemovalTimeouts: Map<string, number> = new Map();
+
+  // Set of exit UUIDs that are in the removing state
+  private exitRemovingState: Set<string> = new Set();
+
   static get styles() {
     return css`
 
@@ -45,7 +51,7 @@ export class EditorNode extends RapidElement {
         transform: scale(1.02);
         z-index: 1000;
       }
-        
+
       .action {
         max-width: 200px;
         position: relative;
@@ -168,10 +174,52 @@ export class EditorNode extends RapidElement {
         background-color: tomato;
         position: relative;
         box-shadow: 0 2px 2px rgba(0, 0, 0, .1);
+        cursor: pointer;
+        pointer-events: none;
+      }
+
+      .exit.jtk-connected {
+        background: var(--color-connectors, #e6e6e6);
       }
 
       .exit.connected {
         background-color: #fff;
+        pointer-events: all;
+      }
+
+      .exit.connected:hover {
+        background-color: var(--color-connectors, #e6e6e6);
+      }
+      
+      .exit.removing, .exit.removing:hover {
+        background-color: var(--color-error);
+        pointer-events: all;
+      }
+      
+      .exit.removing::before {
+        content: '✕';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 8px;
+        color: white;
+        line-height: 1;
+      }
+      
+      /* Connector in removing state */
+      :host {
+        --color-connector-removing: var(--color-error);
+      }
+      
+      body .plumb-connector.removing path {
+        stroke: var(--color-connector-removing, tomato) !important;
+        stroke-width: 3px;
+      }
+      
+      body .plumb-connector.removing .plumb-arrow {
+        fill: var(--color-connector-removing, tomato) !important;
+        stroke: var(--color-connector-removing, transparent) !important;
       }
 
       .category:first-child {
@@ -210,7 +258,6 @@ export class EditorNode extends RapidElement {
     if (changes.has('node')) {
       // make our initial connections
       if (changes.get('node') === undefined) {
-        // this.plumber.makeTarget(this.node.uuid);
         for (const exit of this.node.exits) {
           if (!exit.destination_uuid) {
             this.plumber.makeSource(exit.uuid);
@@ -230,6 +277,94 @@ export class EditorNode extends RapidElement {
           this.ui.position.top + rect.height
         );
     }
+  }
+
+  disconnectedCallback() {
+    // Remove the event listener when the component is removed
+    super.disconnectedCallback();
+
+    // Clear any pending exit removal timeouts
+    this.exitRemovalTimeouts.forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+    this.exitRemovalTimeouts.clear();
+
+    // Clear the removing state
+    this.exitRemovingState.clear();
+  }
+
+  private handleExitClick(event: MouseEvent, exit: Exit) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const exitId = exit.uuid;
+
+    // If exit is not connected, do nothing
+    if (!exit.destination_uuid) return;
+
+    // If the exit is already in removing state, perform the disconnect
+    if (this.exitRemovingState.has(exitId)) {
+      this.disconnectExit(exit);
+      return;
+    }
+
+    // Start removal UI state
+    this.exitRemovingState.add(exitId);
+    this.requestUpdate();
+
+    // Set the connection to removing state
+    this.plumber.setConnectionRemovingState(exitId, true);
+
+    // Clear any existing timeout for this exit
+    if (this.exitRemovalTimeouts.has(exitId)) {
+      clearTimeout(this.exitRemovalTimeouts.get(exitId));
+    }
+
+    // Set timeout to reset UI if user doesn't click
+    const timeoutId = window.setTimeout(() => {
+      this.exitRemovingState.delete(exitId);
+      this.exitRemovalTimeouts.delete(exitId);
+
+      // Reset the connection to normal state
+      this.plumber.setConnectionRemovingState(exitId, false);
+
+      this.requestUpdate();
+    }, 1500);
+
+    this.exitRemovalTimeouts.set(exitId, timeoutId);
+  }
+
+  private disconnectExit(exit: Exit) {
+    const exitId = exit.uuid;
+
+    // Clear the UI state
+    this.exitRemovingState.delete(exitId);
+
+    // Reset the connection to normal state (this will be redundant as we're about to remove it,
+    // but it's safer to do this in case there's any timing issue)
+    this.plumber.setConnectionRemovingState(exitId, false);
+
+    // Clear any timeout
+    if (this.exitRemovalTimeouts.has(exitId)) {
+      clearTimeout(this.exitRemovalTimeouts.get(exitId));
+      this.exitRemovalTimeouts.delete(exitId);
+    }
+
+    // Remove the JSPlumb connection
+    this.plumber.removeExitConnection(exitId);
+
+    // Update the flow definition
+    const updatedExit = { ...exit, destination_uuid: null };
+    const updatedExits = this.node.exits.map((e) =>
+      e.uuid === exitId ? updatedExit : e
+    );
+
+    // Update the node
+    const updatedNode = { ...this.node, exits: updatedExits };
+    getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+    // Request update to reflect changes
+    this.requestUpdate();
   }
 
   private handleActionOrderChanged(event: CustomEvent) {
@@ -322,8 +457,10 @@ export class EditorNode extends RapidElement {
         id="${exit.uuid}"
         class=${getClasses({
           exit: true,
-          connected: !!exit.destination_uuid
+          connected: !!exit.destination_uuid,
+          removing: this.exitRemovingState.has(exit.uuid)
         })}
+        @click=${(e: MouseEvent) => this.handleExitClick(e, exit)}
       ></div>
     </div>`;
   }

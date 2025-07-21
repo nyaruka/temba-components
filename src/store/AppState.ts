@@ -94,12 +94,10 @@ export interface AppState {
     uuid: string,
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
   ): unknown;
+  updateConnection(exitUuid: string, destinationNodeUuid: string): unknown;
   updateCanvasPositions: (positions: CanvasPositions) => void;
-  updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) => void;
   removeStickyNotes: (uuids: string[]) => void;
-
-  updateStickyPosition(uuid: string, newPosition: FlowPosition): void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
 }
 
@@ -227,23 +225,13 @@ export const zustand = createStore<AppState>()(
             if (state.flowDefinition._ui.nodes[uuid]) {
               state.flowDefinition._ui.nodes[uuid].position = positions[uuid];
             }
-          }
-        });
-      },
 
-      updateNodePosition: (uuid: string, newPosition: FlowPosition) => {
-        set((state: AppState) => {
-          if (state.flowDefinition._ui.nodes[uuid]) {
-            state.flowDefinition._ui.nodes[uuid].position = newPosition;
-          } else {
-            // If the node doesn't exist in _ui, we can add it
-            state.flowDefinition._ui.nodes[uuid] = {
-              position: newPosition,
-              type: null,
-              config: {}
-            };
+            // otherwise, it might be a sticky
+            else if (state.flowDefinition._ui.stickies[uuid]) {
+              state.flowDefinition._ui.stickies[uuid].position =
+                positions[uuid];
+            }
           }
-
           state.dirtyDate = new Date();
         });
       },
@@ -280,18 +268,6 @@ export const zustand = createStore<AppState>()(
         });
       },
 
-      updateStickyPosition: (uuid: string, newPosition: FlowPosition) => {
-        set((state: AppState) => {
-          if (!state.flowDefinition._ui.stickies) {
-            state.flowDefinition._ui.stickies = {};
-          }
-          if (state.flowDefinition._ui.stickies[uuid]) {
-            state.flowDefinition._ui.stickies[uuid].position = newPosition;
-            state.dirtyDate = new Date();
-          }
-        });
-      },
-
       updateNode: (uuid: string, newNode: Node) => {
         set((state: AppState) => {
           const node = state.flowDefinition?.nodes.find((n) => n.uuid === uuid);
@@ -302,6 +278,21 @@ export const zustand = createStore<AppState>()(
             node.router = newNode.router;
           }
           state.dirtyDate = new Date();
+        });
+      },
+
+      updateConnection: (exitUuid: string, destinationNodeUuid: string) => {
+        set((state: AppState) => {
+          // Find the exit with this UUID
+          for (const node of state.flowDefinition.nodes) {
+            const exit = node.exits.find((e) => e.uuid === exitUuid);
+            if (exit) {
+              // Update the destination
+              exit.destination_uuid = destinationNodeUuid;
+              state.dirtyDate = new Date();
+              break;
+            }
+          }
         });
       },
 

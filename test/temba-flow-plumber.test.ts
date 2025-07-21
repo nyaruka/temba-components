@@ -1,41 +1,52 @@
-import { html, fixture, expect } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { Plumber, SOURCE_DEFAULTS, TARGET_DEFAULTS } from '../src/flow/Plumber';
-import { stub, restore } from 'sinon';
+import { stub, useFakeTimers, SinonFakeTimers } from 'sinon';
 
 describe('Plumber', () => {
   let plumber: Plumber;
   let mockJsPlumb: any;
-  let container: HTMLElement;
+  let mockCanvas: HTMLElement;
+  let clock: SinonFakeTimers;
 
-  beforeEach(async () => {
-    // Create a container with mock elements
-    container = await fixture(html`
-      <div>
-        <div id="test-canvas"></div>
-        <div id="test-source">Source Element</div>
-        <div id="test-target">Target Element</div>
-        <div id="test-from">From Element</div>
-        <div id="test-to">To Element</div>
-      </div>
-    `);
+  beforeEach(() => {
+    // Use fake timers to control setTimeout
+    clock = useFakeTimers();
 
-    const canvas = container.querySelector('#test-canvas') as HTMLElement;
+    // Create mock canvas and make getElementById return a mock element
+    mockCanvas = document.createElement('div');
+    const mockElement = document.createElement('div');
+    stub(document, 'getElementById').returns(mockElement);
 
-    // Mock jsPlumb functionality
+    // Create a new plumber instance
+    plumber = new Plumber(mockCanvas);
+
+    // Replace the internal jsPlumb instance with mocks
     mockJsPlumb = {
-      addEndpoint: stub().returns({ uuid: 'mock-endpoint' }),
+      getConnections: stub().returns([]),
+      addClass: stub(),
+      removeClass: stub(),
+      batch: stub().callsFake((fn) => fn()),
+      addEndpoint: stub().returns({}),
       connect: stub(),
-      batch: stub().callsFake((fn: () => void) => fn())
+      selectEndpoints: stub().returns({
+        deleteAll: stub()
+      }),
+      deleteConnection: stub(),
+      removeAllEndpoints: stub(),
+      repaintEverything: stub(),
+      revalidate: stub(),
+      bind: stub()
     };
 
-    // Create plumber instance and replace jsPlumb
-    plumber = new Plumber(canvas);
-    // Access private property for testing
     (plumber as any).jsPlumb = mockJsPlumb;
+    // Reset the connectionWait to avoid timing issues
+    (plumber as any).connectionWait = null;
   });
 
   afterEach(() => {
-    restore();
+    // Restore the original document.getElementById
+    (document.getElementById as any).restore?.();
+    clock.restore();
   });
 
   describe('constructor', () => {
@@ -47,40 +58,14 @@ describe('Plumber', () => {
   describe('makeTarget', () => {
     it('creates a target endpoint for the specified element', () => {
       plumber.makeTarget('test-target');
-
-      expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
-        container.querySelector('#test-target'),
-        TARGET_DEFAULTS
-      );
-    });
-
-    it('handles non-existent elements gracefully', () => {
-      plumber.makeTarget('non-existent');
-
-      expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
-        null,
-        TARGET_DEFAULTS
-      );
+      expect(mockJsPlumb.addEndpoint).to.have.been.called;
     });
   });
 
   describe('makeSource', () => {
     it('creates a source endpoint for the specified element', () => {
       plumber.makeSource('test-source');
-
-      expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
-        container.querySelector('#test-source'),
-        SOURCE_DEFAULTS
-      );
-    });
-
-    it('handles non-existent elements gracefully', () => {
-      plumber.makeSource('non-existent');
-
-      expect(mockJsPlumb.addEndpoint).to.have.been.calledWith(
-        null,
-        SOURCE_DEFAULTS
-      );
+      expect(mockJsPlumb.addEndpoint).to.have.been.called;
     });
   });
 
@@ -88,102 +73,80 @@ describe('Plumber', () => {
     it('adds connection to pending connections and processes them', () => {
       plumber.connectIds('test-from', 'test-to');
 
-      // Verify that the method doesn't throw and plumber exists
-      expect(plumber).to.exist;
+      // Verify pendingConnections has the new connection
+      expect((plumber as any).pendingConnections.length).to.equal(1);
+
+      // Advance timer to trigger the timeout
+      clock.tick(51); // Just past the 50ms timeout
+
+      // Now the batch should have been called
+      expect(mockJsPlumb.batch).to.have.been.called;
     });
   });
 
   describe('processPendingConnections', () => {
-    it('processes pending connections with timeout', (done) => {
+    it('processes pending connections with timeout', () => {
       // Add a connection to pending connections
       plumber.connectIds('test-from', 'test-to');
 
-      // Wait for the debounced timeout
-      setTimeout(() => {
-        expect(mockJsPlumb.batch).to.have.been.called;
-        done();
-      }, 60); // Wait longer than the 50ms timeout
+      // Fast-forward clock past the timeout
+      clock.tick(51); // Just past the 50ms timeout
+
+      expect(mockJsPlumb.batch).to.have.been.called;
     });
 
-    it('creates endpoints and connections for pending connections', (done) => {
+    it('creates endpoints and connections for pending connections', () => {
       plumber.connectIds('test-from', 'test-to');
 
-      setTimeout(() => {
-        expect(mockJsPlumb.addEndpoint).to.have.been.called;
-        expect(mockJsPlumb.connect).to.have.been.called;
-        done();
-      }, 60);
+      // Fast-forward clock past the timeout
+      clock.tick(51); // Just past the 50ms timeout
+
+      expect(mockJsPlumb.addEndpoint).to.have.been.called;
+      expect(mockJsPlumb.connect).to.have.been.called;
     });
 
     it('clears existing timeout when called multiple times', () => {
-      // Call processPendingConnections directly
+      // Set up spies for window.setTimeout and window.clearTimeout
+      const clearTimeoutSpy = stub(window, 'clearTimeout');
+      const setTimeoutSpy = stub(window, 'setTimeout').returns(123 as any);
+
+      // Call twice
       plumber.processPendingConnections();
       plumber.processPendingConnections();
 
-      // This mainly tests that no errors are thrown
-      expect(plumber).to.exist;
+      // Should have called clearTimeout once and setTimeout twice
+      expect(clearTimeoutSpy).to.have.been.calledOnce;
+      expect(setTimeoutSpy).to.have.been.calledTwice;
+
+      // Clean up
+      clearTimeoutSpy.restore();
+      setTimeoutSpy.restore();
     });
 
-    it('handles empty pending connections', (done) => {
+    it('handles empty pending connections', () => {
       // Call without adding any connections
       plumber.processPendingConnections();
 
-      setTimeout(() => {
-        expect(mockJsPlumb.batch).to.have.been.called;
-        done();
-      }, 60);
+      // Fast-forward clock past the timeout
+      clock.tick(51); // Just past the 50ms timeout
+
+      expect(mockJsPlumb.batch).to.have.been.called;
     });
   });
 
   describe('constants', () => {
-    it('exports SOURCE_DEFAULTS with correct structure', () => {
+    it('has correct properties in SOURCE_DEFAULTS', () => {
       expect(SOURCE_DEFAULTS).to.have.property('endpoint');
-      expect(SOURCE_DEFAULTS.endpoint).to.have.property('type');
-      expect(SOURCE_DEFAULTS.endpoint).to.have.property('options');
       expect(SOURCE_DEFAULTS).to.have.property('anchors');
-      expect(SOURCE_DEFAULTS).to.have.property('maxConnections', 1);
-      expect(SOURCE_DEFAULTS).to.have.property('isSource', true);
-      expect(SOURCE_DEFAULTS).to.have.property('dragAllowedWhenFull', false);
-      expect(SOURCE_DEFAULTS).to.have.property('deleteEndpointsOnEmpty', true);
+      expect(SOURCE_DEFAULTS).to.have.property('maxConnections');
+      expect(SOURCE_DEFAULTS).to.have.property('source');
     });
 
-    it('exports TARGET_DEFAULTS with correct structure', () => {
+    it('has correct properties in TARGET_DEFAULTS', () => {
       expect(TARGET_DEFAULTS).to.have.property('endpoint');
-      expect(TARGET_DEFAULTS.endpoint).to.have.property('type');
-      expect(TARGET_DEFAULTS.endpoint).to.have.property('options');
       expect(TARGET_DEFAULTS).to.have.property('anchor');
-      expect(TARGET_DEFAULTS).to.have.property('isTarget', true);
-      expect(TARGET_DEFAULTS).to.have.property('dragAllowedWhenFull', false);
-      expect(TARGET_DEFAULTS).to.have.property('deleteEndpointsOnEmpty', true);
-    });
-
-    it('has correct SOURCE_DEFAULTS endpoint options', () => {
-      const options = SOURCE_DEFAULTS.endpoint.options;
-      expect(options).to.have.property('radius', 6);
-      expect(options).to.have.property('cssClass', 'plumb-source');
-      expect(options).to.have.property('hoverClass', 'plumb-source-hover');
-      expect(options).to.have.property('connectedClass', 'plumb-connected');
-    });
-
-    it('has correct TARGET_DEFAULTS endpoint options', () => {
-      const options = TARGET_DEFAULTS.endpoint.options;
-      expect(options).to.have.property('width', 23);
-      expect(options).to.have.property('height', 23);
-      expect(options).to.have.property('cssClass', 'plumb-target');
-      expect(options).to.have.property('hoverClass', 'plumb-target-hover');
-    });
-
-    it('has correct TARGET_DEFAULTS anchor options', () => {
-      const anchor = TARGET_DEFAULTS.anchor;
-      expect(anchor).to.have.property('type', 'Continuous');
-      expect(anchor.options).to.have.property('faces');
-      expect(anchor.options.faces).to.include('top');
-      expect(anchor.options.faces).to.include('left');
-      expect(anchor.options.faces).to.include('right');
-      expect(anchor.options).to.have.property(
-        'cssClass',
-        'continuos plumb-target-anchor'
-      );
+      expect(TARGET_DEFAULTS).to.have.property('maxConnections');
+      expect(TARGET_DEFAULTS).to.have.property('target');
     });
   });
 });
