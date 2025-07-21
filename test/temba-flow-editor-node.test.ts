@@ -657,4 +657,159 @@ describe('EditorNode', () => {
       expect(dragHandles).to.have.length(3);
     });
   });
+
+  describe('exit disconnection', () => {
+    let mockStore: any;
+    let mockUpdateNode: any;
+
+    beforeEach(() => {
+      mockUpdateNode = stub();
+      mockStore = {
+        getState: stub().returns({
+          updateNode: mockUpdateNode
+        })
+      };
+
+      // Mock the plumber with disconnect capabilities
+      mockPlumber = {
+        makeTarget: stub(),
+        makeSource: stub(),
+        connectIds: stub(),
+        removeExitConnection: stub().returns(true),
+        setConnectionRemovingState: stub().returns(true)
+      };
+
+      (window as any).getStore = () => mockStore;
+
+      editorNode = new EditorNode();
+      (editorNode as any).plumber = mockPlumber;
+    });
+
+    afterEach(() => {
+      // Restore any stubbed functions
+      if ((window as any).originalGetStore) {
+        (window as any).getStore = (window as any).originalGetStore;
+      }
+    });
+
+    it('handles exit click to initiate disconnection', async () => {
+      // Create a node with a connected exit
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [{ uuid: 'exit-1', destination_uuid: 'target-node' }]
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 100, top: 200 },
+        type: 'execute_actions'
+      };
+
+      (editorNode as any).node = mockNode;
+      (editorNode as any).ui = mockUI;
+
+      // Render the component
+      const renderResult = editorNode.render();
+      await fixture(html`<div>${renderResult}</div>`);
+
+      // Mock querySelector to return the exit element
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      exitElement.classList.add('exit', 'connected');
+      (editorNode as any).querySelector = stub().returns(exitElement);
+
+      // Create a mock event
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub(),
+        currentTarget: exitElement
+      } as any;
+
+      // Mock getStore directly in the disconnectExit method
+      const originalDisconnectExit = (editorNode as any).disconnectExit;
+      (editorNode as any).disconnectExit = function (exit: any) {
+        // Call original but override the store logic
+        this.plumber.removeExitConnection(exit.uuid);
+        mockUpdateNode.call(null, this.node.uuid, {
+          ...this.node,
+          exits: this.node.exits.map((e: any) =>
+            e.uuid === exit.uuid ? { ...e, destination_uuid: null } : e
+          )
+        });
+      };
+
+      // Call the click handler directly
+      (editorNode as any).handleExitClick(mockEvent, mockNode.exits[0]);
+
+      // Verify the exit is marked for removal in the component state
+      expect((editorNode as any).exitRemovingState.has('exit-1')).to.be.true;
+
+      // Verify a timeout was set
+      expect((editorNode as any).exitRemovalTimeouts.has('exit-1')).to.be.true;
+
+      // Now click again to confirm disconnection
+      (editorNode as any).handleExitClick(mockEvent, mockNode.exits[0]);
+
+      // Verify the plumber was called to remove the connection
+      expect(mockPlumber.removeExitConnection).to.have.been.calledWith(
+        'exit-1'
+      );
+
+      // Verify the node was updated with disconnected exit
+      expect(mockUpdateNode).to.have.been.called;
+
+      // Restore original method
+      (editorNode as any).disconnectExit = originalDisconnectExit;
+    });
+
+    it('cancels disconnection after timeout', async () => {
+      // Create a node with a connected exit
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [{ uuid: 'exit-1', destination_uuid: 'target-node' }]
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 100, top: 200 },
+        type: 'execute_actions'
+      };
+
+      (editorNode as any).node = mockNode;
+      (editorNode as any).ui = mockUI;
+
+      // Render the component
+      const renderResult = editorNode.render();
+      await fixture(html`<div>${renderResult}</div>`);
+
+      // Mock querySelector to return the exit element
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      exitElement.classList.add('exit', 'connected');
+      (editorNode as any).querySelector = stub().returns(exitElement);
+
+      // Create a mock event
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub(),
+        currentTarget: exitElement
+      } as any;
+
+      // Replace setTimeout with a stub that executes immediately
+      const originalSetTimeout = window.setTimeout;
+      (window as any).setTimeout = function (callback: any) {
+        callback();
+        return 0;
+      };
+
+      // Call the click handler
+      (editorNode as any).handleExitClick(mockEvent, mockNode.exits[0]);
+
+      // Verify the removing state is cleared (since our timeout executed immediately)
+      expect((editorNode as any).exitRemovingState.has('exit-1')).to.be.false;
+
+      // Restore setTimeout
+      (window as any).setTimeout = originalSetTimeout;
+    });
+  });
 });

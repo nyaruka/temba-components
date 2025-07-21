@@ -141,33 +141,29 @@ export class Editor extends RapidElement {
 
       .jtk-endpoint {
         z-index: 600;
+        opacity: 0;
       }
 
       .plumb-source {
         z-index: 600;
         cursor: pointer;
+        opacity: 0;
       }
 
       .plumb-source.connected {
         border-radius: 50%;
+        pointer-events: none;
       }
 
       .plumb-source circle {
-        fill: transparent;
+        fill: purple;
       }
 
       .plumb-target {
         z-index: 600;
-        opacity: 1;
+        opacity: 0;
         cursor: pointer;
         fill: transparent;
-      }
-
-      .plumb-target.plumb-target-hover {
-        opacity: 0.3;
-      }
-
-      .jtk-target-hover {
       }
 
       body .plumb-connector path {

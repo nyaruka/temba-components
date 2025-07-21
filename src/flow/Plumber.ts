@@ -40,17 +40,15 @@ export const SOURCE_DEFAULTS = {
   endpoint: {
     type: DotEndpoint.type,
     options: {
-      radius: 6,
-      connectedClass: 'plumb-connected',
+      radius: 12,
       cssClass: 'plumb-source',
       hoverClass: 'plumb-source-hover'
     }
   },
   anchors: ['Bottom', 'Continuous'],
-  dragAllowedWhenFull: false,
-  deleteEndpointsOnEmpty: true,
   maxConnections: 1,
-  source: true
+  source: true,
+  dragAllowedWhenFull: false
 };
 
 export const TARGET_DEFAULTS = {
@@ -88,7 +86,7 @@ export class Plumber {
         container: canvas,
         connectionsDetachable: true,
         endpointStyle: {
-          fill: 'transparent'
+          fill: 'green'
         },
         connector: CONNECTOR_DEFAULTS,
         connectionOverlays: OVERLAYS_DEFAULTS
@@ -120,8 +118,10 @@ export class Plumber {
         this.notifyListeners(EVENT_REVERT, info);
       });
 
-      // don't allow jsplumb to automatically connect
-      this.jsPlumb.bind(INTERCEPT_BEFORE_DROP, () => {});
+      this.jsPlumb.bind(INTERCEPT_BEFORE_DROP, () => {
+        // we always deny automatic connections
+        return false;
+      });
       this.jsPlumb.bind(INTERCEPT_BEFORE_DETACH, () => {});
     });
   }
@@ -175,6 +175,9 @@ export class Plumber {
           const fromElement = document.getElementById(fromId);
           const toElement = document.getElementById(toId);
 
+          // delete any existing endpoints
+          this.jsPlumb.selectEndpoints({ source: fromId }).deleteAll();
+
           const source = this.jsPlumb.addEndpoint(fromElement, {
             ...SOURCE_DEFAULTS,
             endpoint: {
@@ -185,6 +188,7 @@ export class Plumber {
               }
             }
           });
+
           const target = this.jsPlumb.addEndpoint(toElement, TARGET_DEFAULTS);
           this.jsPlumb.connect({
             source,
@@ -255,5 +259,57 @@ export class Plumber {
     exitElements.forEach((exitElement) => {
       this.jsPlumb.removeAllEndpoints(exitElement);
     });
+  }
+
+  public removeExitConnection(exitId: string) {
+    if (!this.jsPlumb) return;
+
+    const exitElement = document.getElementById(exitId);
+    if (!exitElement) return;
+
+    // Get all connections from this exit
+    const connections = this.jsPlumb.getConnections({ source: exitElement });
+
+    // Remove the connections
+    connections.forEach((connection) => {
+      this.jsPlumb.deleteConnection(connection);
+    });
+
+    // Re-create the source endpoint (now without connection)
+    this.jsPlumb.removeAllEndpoints(exitElement);
+    this.makeSource(exitId);
+
+    return connections.length > 0;
+  }
+
+  /**
+   * Set the removing state for an exit's connection
+   * @param exitId The ID of the exit whose connections should be marked as removing
+   * @returns true if connections were found and updated, false otherwise
+   */
+  public setConnectionRemovingState(
+    exitId: string,
+    isRemoving: boolean
+  ): boolean {
+    if (!this.jsPlumb) return false;
+
+    const exitElement = document.getElementById(exitId);
+    if (!exitElement) return false;
+
+    // Get all connections from this exit
+    const connections = this.jsPlumb.getConnections({ source: exitElement });
+
+    if (connections.length === 0) return false;
+
+    // Update the connections' CSS classes
+    connections.forEach((connection) => {
+      if (isRemoving) {
+        connection.addClass('removing');
+      } else {
+        connection.removeClass('removing');
+      }
+    });
+
+    return true;
   }
 }
