@@ -1,9 +1,9 @@
 import { assert } from '@open-wc/testing';
-import { generateUuid } from '../src/utils';
+import { generateUUID } from '../src/utils';
 
 describe('UUID Generation', () => {
   it('generates a valid UUID v4 format', () => {
-    const uuid = generateUuid();
+    const uuid = generateUUID();
 
     // Check that it's a string
     assert.isString(uuid);
@@ -24,9 +24,9 @@ describe('UUID Generation', () => {
   });
 
   it('generates unique UUIDs', () => {
-    const uuid1 = generateUuid();
-    const uuid2 = generateUuid();
-    const uuid3 = generateUuid();
+    const uuid1 = generateUUID();
+    const uuid2 = generateUUID();
+    const uuid3 = generateUUID();
 
     // All should be different
     assert.notEqual(uuid1, uuid2);
@@ -39,7 +39,7 @@ describe('UUID Generation', () => {
     const count = 1000;
 
     for (let i = 0; i < count; i++) {
-      uuids.add(generateUuid());
+      uuids.add(generateUUID());
     }
 
     // All should be unique

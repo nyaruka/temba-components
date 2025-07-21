@@ -51,6 +51,7 @@
     "remarkable": "^2.0.1",
     "serialize-javascript": "^6.0.2",
     "tiny-lru": "^11.2.5",
+    "uuid": "^11.1.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
@@ -67,6 +68,7 @@
     "@types/leaflet": "1.4.4",
     "@types/node": "20.12.4",
     "@types/remarkable": "^2.0.1",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
     "@web/dev-server-esbuild": "^0.3.3",

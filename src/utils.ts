@@ -5,6 +5,7 @@ import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from './display/Toast';
+import { v4 as generateUUID } from 'uuid';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -929,14 +930,5 @@ export const getMiddle = (a: DOMRect, b: DOMRect) => {
   return a.top + a.height / 2 - b.height / 2;
 };
 
-/**
- * Generates a simple UUID v4 string
- * @returns A UUID v4 string
- */
-export const generateUuid = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
+// Export the UUID function from the uuid package
+export { generateUUID };

@@ -1,5 +1,5 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
-import { fetchResults, generateUuid } from '../utils';
+import { fetchResults, generateUUID } from '../utils';
 import {
   Action,
   Exit,
@@ -308,7 +308,7 @@ export const zustand = createStore<AppState>()(
       },
 
       createStickyNote: (position: FlowPosition): string => {
-        const uuid = generateUuid();
+        const uuid = generateUUID();
         set((state: AppState) => {
           if (!state.flowDefinition._ui.stickies) {
             state.flowDefinition._ui.stickies = {};
