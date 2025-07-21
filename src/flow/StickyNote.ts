@@ -182,11 +182,12 @@ export class StickyNote extends RapidElement {
       /* Color picker */
       .color-picker {
         position: absolute;
-        bottom: 8px;
-        right: 8px;
-        width: 16px;
-        height: 16px;
-        border: 1px solid var(--sticky-border-color);
+        bottom: 4px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+
         border-radius: 3px;
         background-color: var(--sticky-color);
         cursor: pointer;
@@ -203,10 +204,10 @@ export class StickyNote extends RapidElement {
         right: 0;
         display: flex;
         gap: 4px;
-        background-color: rgba(255, 255, 255, 0.95);
+        background-color: rgba(255, 255, 255, 0.9);
         border: 1px solid #ccc;
         border-radius: 6px;
-        padding: 6px;
+        padding: 3px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         transform-origin: bottom right;
         transform: scale(0);
@@ -221,9 +222,9 @@ export class StickyNote extends RapidElement {
       }
 
       .color-option {
-        width: 16px;
-        height: 16px;
-        border: 1px solid #ddd;
+        width: 12px;
+        height: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 3px;
         cursor: pointer;
         transition: transform 0.15s ease, border-color 0.15s ease;
@@ -231,7 +232,7 @@ export class StickyNote extends RapidElement {
 
       .color-option:hover {
         transform: scale(1.1);
-        border-color: #999;
+        border-color: rgba(0, 0, 0, 0.4);
       }
 
       .color-option.yellow {
