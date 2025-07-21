@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.85% </span>
+                <span class="strong">57.9% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>210/363</span>
+                <span class='fraction'>205/354</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">26.31% </span>
+                <span class="strong">27.77% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/19</span>
+                <span class='fraction'>5/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.85% </span>
+                <span class="strong">57.9% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>210/363</span>
+                <span class='fraction'>205/354</span>
             </div>
         
             
@@ -417,18 +417,7 @@
 <a name='L352'></a><a href='#L352'>352</a>
 <a name='L353'></a><a href='#L353'>353</a>
 <a name='L354'></a><a href='#L354'>354</a>
-<a name='L355'></a><a href='#L355'>355</a>
-<a name='L356'></a><a href='#L356'>356</a>
-<a name='L357'></a><a href='#L357'>357</a>
-<a name='L358'></a><a href='#L358'>358</a>
-<a name='L359'></a><a href='#L359'>359</a>
-<a name='L360'></a><a href='#L360'>360</a>
-<a name='L361'></a><a href='#L361'>361</a>
-<a name='L362'></a><a href='#L362'>362</a>
-<a name='L363'></a><a href='#L363'>363</a>
-<a name='L364'></a><a href='#L364'>364</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">47x</span>
-<span class="cline-any cline-yes">47x</span>
-<span class="cline-any cline-yes">47x</span>
+<a name='L355'></a><a href='#L355'>355</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">47x</span>
 <span class="cline-any cline-yes">47x</span>
 <span class="cline-any cline-yes">47x</span>
 <span class="cline-any cline-yes">47x</span>
@@ -658,16 +647,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">47x</span>
-<span class="cline-any cline-yes">47x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -708,21 +687,24 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">47x</span>
-<span class="cline-any cline-yes">47x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">47x</span>
 <span class="cline-any cline-yes">47x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">47x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -885,12 +867,10 @@ export interface AppState {
     uuid: string,
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
   ): unknown;
+  updateConnection(exitUuid: string, destinationNodeUuid: string): unknown;
   updateCanvasPositions: (positions: CanvasPositions) =&gt; void;
-  updateNodePosition(uuid: string, newPosition: FlowPosition): void;
   removeNodes: (uuids: string[]) =&gt; void;
   removeStickyNotes: (uuids: string[]) =&gt; void;
-&nbsp;
-  updateStickyPosition(uuid: string, newPosition: FlowPosition): void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
 }
 &nbsp;
@@ -1018,23 +998,13 @@ export const zustand = createStore&lt;AppState&gt;()(
 <span class="cstat-no" title="statement not covered" >            if (state.flowDefinition._ui.nodes[uuid]) {</span>
 <span class="cstat-no" title="statement not covered" >              state.flowDefinition._ui.nodes[uuid].position = positions[uuid];</span>
 <span class="cstat-no" title="statement not covered" >            }</span>
-<span class="cstat-no" title="statement not covered" >          }</span>
-<span class="cstat-no" title="statement not covered" >        });</span>
-<span class="cstat-no" title="statement not covered" >      },</span>
-&nbsp;
-      updateNodePosition: <span class="fstat-no" title="function not covered" >(uuid: string, newPosition: FlowPosition) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        set((state: AppState) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >          if (state.flowDefinition._ui.nodes[uuid]) {</span>
-<span class="cstat-no" title="statement not covered" >            state.flowDefinition._ui.nodes[uuid].position = newPosition;</span>
-<span class="cstat-no" title="statement not covered" >          } else {</span>
-<span class="cstat-no" title="statement not covered" >            // If the node doesn't exist in _ui, we can add it</span>
-<span class="cstat-no" title="statement not covered" >            state.flowDefinition._ui.nodes[uuid] = {</span>
-<span class="cstat-no" title="statement not covered" >              position: newPosition,</span>
-<span class="cstat-no" title="statement not covered" >              type: null,</span>
-<span class="cstat-no" title="statement not covered" >              config: {}</span>
-<span class="cstat-no" title="statement not covered" >            };</span>
-<span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >            // otherwise, it might be a sticky</span>
+<span class="cstat-no" title="statement not covered" >            else if (state.flowDefinition._ui.stickies[uuid]) {</span>
+<span class="cstat-no" title="statement not covered" >              state.flowDefinition._ui.stickies[uuid].position =</span>
+<span class="cstat-no" title="statement not covered" >                positions[uuid];</span>
+<span class="cstat-no" title="statement not covered" >            }</span>
+<span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" >          state.dirtyDate = new Date();</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
@@ -1071,18 +1041,6 @@ export const zustand = createStore&lt;AppState&gt;()(
 <span class="cstat-no" title="statement not covered" >        });</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" ></span>
-      updateStickyPosition: (uuid: string, newPosition: FlowPosition) =&gt; {
-        set((<span class="fstat-no" title="function not covered" >state: AppState) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >          if (!state.flowDefinition._ui.stickies) {</span>
-<span class="cstat-no" title="statement not covered" >            state.flowDefinition._ui.stickies = {};</span>
-<span class="cstat-no" title="statement not covered" >          }</span>
-<span class="cstat-no" title="statement not covered" >          if (state.flowDefinition._ui.stickies[uuid]) {</span>
-<span class="cstat-no" title="statement not covered" >            state.flowDefinition._ui.stickies[uuid].position = newPosition;</span>
-<span class="cstat-no" title="statement not covered" >            state.dirtyDate = new Date();</span>
-<span class="cstat-no" title="statement not covered" >          }</span>
-<span class="cstat-no" title="statement not covered" >        });</span>
-<span class="cstat-no" title="statement not covered" >      },</span>
-<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      updateNode: (uuid: string, newNode: Node) =&gt; {</span>
         set((state: AppState) =&gt; {
 <span class="fstat-no" title="function not covered" >          const node = state.flowDefinition?.nodes.find((n) =&gt; n.uuid === uuid);</span>
@@ -1093,6 +1051,21 @@ export const zustand = createStore&lt;AppState&gt;()(
 <span class="cstat-no" title="statement not covered" >            node.router = newNode.router;</span>
 <span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" >          state.dirtyDate = new Date();</span>
+<span class="cstat-no" title="statement not covered" >        });</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      updateConnection: (exitUuid: string, destinationNodeUuid: string) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        set((state: AppState) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >          // Find the exit with this UUID</span>
+          for (const node of <span class="fstat-no" title="function not covered" >state.flowDefinition.nodes) {</span>
+<span class="cstat-no" title="statement not covered" >            const exit = node.exits.find((e) =&gt; e.uuid === exitUuid);</span>
+<span class="cstat-no" title="statement not covered" >            if (exit) {</span>
+<span class="cstat-no" title="statement not covered" >              // Update the destination</span>
+<span class="cstat-no" title="statement not covered" >              exit.destination_uuid = destinationNodeUuid;</span>
+<span class="cstat-no" title="statement not covered" >              state.dirtyDate = new Date();</span>
+<span class="cstat-no" title="statement not covered" >              break;</span>
+<span class="cstat-no" title="statement not covered" >            }</span>
+<span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1159,7 +1132,7 @@ export const zustand = createStore&lt;AppState&gt;()(
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-16T19:04:33.196Z
+                at 2025-07-21T22:03:48.240Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
