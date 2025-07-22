@@ -16,7 +16,10 @@ export function snapToGrid(value: number): number {
   return Math.max(snapped, 0);
 }
 
-export function findNodeForExit(definition: FlowDefinition, exitUuid: string): string | null {
+export function findNodeForExit(
+  definition: FlowDefinition,
+  exitUuid: string
+): string | null {
   for (const node of definition.nodes) {
     const exit = node.exits.find((e) => e.uuid === exitUuid);
     if (exit) {
@@ -213,12 +216,14 @@ export class Editor extends RapidElement {
       }
 
       /* Connection dragging feedback */
-      body svg.jtk-connector.jtk-drag {
+      body svg.jtk-connector.jtk-dragging {
         z-index: 99999 !important;
       }
 
-      body svg.jtk-connector.jtk-drag path {
-        z-index: 99999 !important;
+      .katavorio-drag-no-select svg.jtk-connector path,
+      .katavorio-drag-no-select svg.jtk-endpoint path {
+        pointer-events: none !important;
+        border: 1px solid purple;
       }
 
       /* Connection target feedback */
@@ -296,8 +301,11 @@ export class Editor extends RapidElement {
     }
 
     // Clean up visual feedback
-    document.querySelectorAll('temba-flow-node').forEach(node => {
-      node.classList.remove('connection-target-valid', 'connection-target-invalid');
+    document.querySelectorAll('temba-flow-node').forEach((node) => {
+      node.classList.remove(
+        'connection-target-valid',
+        'connection-target-invalid'
+      );
     });
 
     this.sourceId = null;
@@ -676,17 +684,20 @@ export class Editor extends RapidElement {
 
     if (this.plumber.connectionDragging) {
       const targetNode = document.querySelector('temba-flow-node:hover');
-      
+
       // Clear previous target styles
-      document.querySelectorAll('temba-flow-node').forEach(node => {
-        node.classList.remove('connection-target-valid', 'connection-target-invalid');
+      document.querySelectorAll('temba-flow-node').forEach((node) => {
+        node.classList.remove(
+          'connection-target-valid',
+          'connection-target-invalid'
+        );
       });
-      
+
       if (targetNode) {
         this.targetId = targetNode.getAttribute('uuid');
         // Check if target is different from source node (prevent self-targeting)
         this.isValidTarget = this.targetId !== this.sourceNodeId;
-        
+
         // Apply visual feedback based on validity
         if (this.isValidTarget) {
           targetNode.classList.add('connection-target-valid');
