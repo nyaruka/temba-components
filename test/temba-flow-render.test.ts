@@ -1,18 +1,54 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import {
-  renderSendMsg,
-  renderSetContactName,
-  renderSetRunResult,
+  renderAddContactUrn,
+  renderAddInputLabels,
+  renderAddToGroups,
+  renderCallClassifier,
+  renderCallLLM,
+  renderCallResthook,
   renderCallWebhook,
-  renderAddToGroups
+  renderEnterFlow,
+  renderOpenTicket,
+  renderPlayAudio,
+  renderRemoveFromGroups,
+  renderRequestOptin,
+  renderSayMsg,
+  renderSendBroadcast,
+  renderSendEmail,
+  renderSendMsg,
+  renderSetContactField,
+  renderSetContactLanguage,
+  renderSetContactName,
+  renderSetContactStatus,
+  renderSetRunResult,
+  renderStartSession,
+  renderTransferAirtime
 } from '../src/flow/render';
 import {
-  Node,
-  SendMsg,
-  SetContactName,
-  SetRunResult,
+  AddContactUrn,
+  AddInputLabels,
+  AddToGroup,
+  CallClassifier,
+  CallLLM,
+  CallResthook,
   CallWebhook,
-  AddToGroup
+  EnterFlow,
+  Node,
+  OpenTicket,
+  PlayAudio,
+  RemoveFromGroup,
+  RequestOptin,
+  SayMsg,
+  SendBroadcast,
+  SendEmail,
+  SendMsg,
+  SetContactField,
+  SetContactLanguage,
+  SetContactName,
+  SetContactStatus,
+  SetRunResult,
+  StartSession,
+  TransferAirtime
 } from '../src/store/flow-definition.d';
 
 describe('Flow Render Functions', () => {
@@ -215,6 +251,444 @@ describe('Flow Render Functions', () => {
 
       expect(container.innerHTML).to.contain('Test Group');
       expect(container.querySelectorAll('temba-icon')).to.have.length(0);
+    });
+  });
+
+  describe('renderRemoveFromGroups', () => {
+    it('renders groups with icons for removal', async () => {
+      const action: RemoveFromGroup = {
+        type: 'remove_contact_groups',
+        uuid: 'action-uuid-10',
+        groups: [
+          {
+            uuid: 'group1',
+            name: 'VIP Customers',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 10
+          }
+        ]
+      };
+
+      const result = renderRemoveFromGroups(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.innerHTML).to.contain('VIP Customers');
+      expect(container.querySelectorAll('temba-icon')).to.have.length(1);
+      const icon = container.querySelector('temba-icon');
+      expect(icon?.getAttribute('name')).to.equal('group');
+    });
+  });
+
+  describe('renderSetContactField', () => {
+    it('renders contact field setting', async () => {
+      const action: SetContactField = {
+        type: 'set_contact_field',
+        uuid: 'action-uuid-11',
+        field: { uuid: 'field1', name: 'Favorite Color' },
+        value: 'Blue'
+      };
+
+      const result = renderSetContactField(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Set');
+      expect(container.textContent).to.contain('Favorite Color');
+      expect(container.textContent).to.contain('to');
+      expect(container.textContent).to.contain('Blue');
+      expect(container.querySelectorAll('b')).to.have.length(2);
+    });
+  });
+
+  describe('renderSetContactLanguage', () => {
+    it('renders contact language setting', async () => {
+      const action: SetContactLanguage = {
+        type: 'set_contact_language',
+        uuid: 'action-uuid-12',
+        language: 'Spanish'
+      };
+
+      const result = renderSetContactLanguage(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Set contact language to');
+      expect(container.textContent).to.contain('Spanish');
+      expect(container.querySelector('b')).to.exist;
+    });
+  });
+
+  describe('renderSetContactStatus', () => {
+    it('renders contact status setting', async () => {
+      const action: SetContactStatus = {
+        type: 'set_contact_status',
+        uuid: 'action-uuid-13',
+        status: 'blocked'
+      };
+
+      const result = renderSetContactStatus(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Set contact status to');
+      expect(container.textContent).to.contain('blocked');
+      expect(container.querySelector('b')).to.exist;
+    });
+  });
+
+  describe('renderAddContactUrn', () => {
+    it('renders URN addition', async () => {
+      const action: AddContactUrn = {
+        type: 'add_contact_urn',
+        uuid: 'action-uuid-14',
+        scheme: 'tel',
+        path: '+1234567890'
+      };
+
+      const result = renderAddContactUrn(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Add');
+      expect(container.textContent).to.contain('tel');
+      expect(container.textContent).to.contain('URN');
+      expect(container.textContent).to.contain('+1234567890');
+      expect(container.querySelectorAll('b')).to.have.length(2);
+    });
+  });
+
+  describe('renderSendEmail', () => {
+    it('renders email with subject and body', async () => {
+      const action: SendEmail = {
+        type: 'send_email',
+        uuid: 'action-uuid-15',
+        subject: 'Welcome!',
+        body: 'Thanks for signing up',
+        addresses: ['user@example.com', 'admin@example.com']
+      };
+
+      const result = renderSendEmail(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Send email to');
+      expect(container.textContent).to.contain(
+        'user@example.com, admin@example.com'
+      );
+      expect(container.textContent).to.contain('Subject:');
+      expect(container.textContent).to.contain('Welcome!');
+      expect(container.textContent).to.contain('Thanks for signing up');
+    });
+  });
+
+  describe('renderSendBroadcast', () => {
+    it('renders broadcast with groups and contacts', async () => {
+      const action: SendBroadcast = {
+        type: 'send_broadcast',
+        uuid: 'action-uuid-16',
+        text: 'Important announcement',
+        groups: [
+          {
+            uuid: 'group1',
+            name: 'VIP Customers',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 10
+          }
+        ],
+        contacts: [{ uuid: 'contact1', name: 'John Doe' }]
+      };
+
+      const result = renderSendBroadcast(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Important announcement');
+      expect(container.textContent).to.contain('Groups:');
+      expect(container.textContent).to.contain('VIP Customers');
+      expect(container.textContent).to.contain('Contacts:');
+      expect(container.textContent).to.contain('John Doe');
+    });
+
+    it('renders broadcast with text only', async () => {
+      const action: SendBroadcast = {
+        type: 'send_broadcast',
+        uuid: 'action-uuid-17',
+        text: 'Simple broadcast',
+        groups: [],
+        contacts: []
+      };
+
+      const result = renderSendBroadcast(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Simple broadcast');
+      expect(container.textContent).to.not.contain('Groups:');
+      expect(container.textContent).to.not.contain('Contacts:');
+    });
+  });
+
+  describe('renderEnterFlow', () => {
+    it('renders flow entry', async () => {
+      const action: EnterFlow = {
+        type: 'enter_flow',
+        uuid: 'action-uuid-18',
+        flow: { uuid: 'flow1', name: 'Registration Flow' }
+      };
+
+      const result = renderEnterFlow(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Enter flow');
+      expect(container.textContent).to.contain('Registration Flow');
+      expect(container.querySelector('b')).to.exist;
+    });
+  });
+
+  describe('renderStartSession', () => {
+    it('renders session start with groups and contacts', async () => {
+      const action: StartSession = {
+        type: 'start_session',
+        uuid: 'action-uuid-19',
+        flow: { uuid: 'flow1', name: 'Survey Flow' },
+        groups: [
+          {
+            uuid: 'group1',
+            name: 'Subscribers',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 50
+          }
+        ],
+        contacts: [{ uuid: 'contact1', name: 'Jane Smith' }]
+      };
+
+      const result = renderStartSession(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Start');
+      expect(container.textContent).to.contain('Survey Flow');
+      expect(container.textContent).to.contain('for:');
+      expect(container.textContent).to.contain('Groups:');
+      expect(container.textContent).to.contain('Subscribers');
+      expect(container.textContent).to.contain('Contacts:');
+      expect(container.textContent).to.contain('Jane Smith');
+    });
+  });
+
+  describe('renderTransferAirtime', () => {
+    it('renders airtime transfer', async () => {
+      const action: TransferAirtime = {
+        type: 'transfer_airtime',
+        uuid: 'action-uuid-20',
+        amounts: [100, 200, 500],
+        result_name: 'airtime_result'
+      };
+
+      const result = renderTransferAirtime(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Transfer airtime amounts:');
+      expect(container.textContent).to.contain('100, 200, 500');
+      expect(container.textContent).to.contain('Save result as');
+      expect(container.textContent).to.contain('airtime_result');
+    });
+  });
+
+  describe('renderCallClassifier', () => {
+    it('renders classifier call', async () => {
+      const action: CallClassifier = {
+        type: 'call_classifier',
+        uuid: 'action-uuid-21',
+        classifier: { uuid: 'classifier1', name: 'Intent Classifier' },
+        input: 'User message text',
+        result_name: 'intent_result'
+      };
+
+      const result = renderCallClassifier(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Call classifier');
+      expect(container.textContent).to.contain('Intent Classifier');
+      expect(container.textContent).to.contain('Input:');
+      expect(container.textContent).to.contain('User message text');
+      expect(container.textContent).to.contain('Save result as');
+      expect(container.textContent).to.contain('intent_result');
+    });
+  });
+
+  describe('renderCallResthook', () => {
+    it('renders resthook call', async () => {
+      const action: CallResthook = {
+        type: 'call_resthook',
+        uuid: 'action-uuid-22',
+        resthook: 'survey-complete',
+        result_name: 'webhook_result'
+      };
+
+      const result = renderCallResthook(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Call resthook');
+      expect(container.textContent).to.contain('survey-complete');
+      expect(container.textContent).to.contain('Save result as');
+      expect(container.textContent).to.contain('webhook_result');
+    });
+  });
+
+  describe('renderCallLLM', () => {
+    it('renders LLM call', async () => {
+      const action: CallLLM = {
+        type: 'call_llm',
+        uuid: 'action-uuid-23',
+        llm: { uuid: 'llm1', name: 'GPT-4' },
+        prompt: 'Analyze this text',
+        result_name: 'ai_result'
+      };
+
+      const result = renderCallLLM(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Call AI');
+      expect(container.textContent).to.contain('GPT-4');
+      expect(container.textContent).to.contain('Prompt:');
+      expect(container.textContent).to.contain('Analyze this text');
+      expect(container.textContent).to.contain('Save result as');
+      expect(container.textContent).to.contain('ai_result');
+    });
+  });
+
+  describe('renderOpenTicket', () => {
+    it('renders ticket with assignee and topic', async () => {
+      const action: OpenTicket = {
+        type: 'open_ticket',
+        uuid: 'action-uuid-24',
+        subject: 'Support Request',
+        body: 'Customer needs help',
+        assignee: { uuid: 'user1', name: 'Support Agent' },
+        topic: { uuid: 'topic1', name: 'Technical Support' }
+      };
+
+      const result = renderOpenTicket(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Subject:');
+      expect(container.textContent).to.contain('Support Request');
+      expect(container.textContent).to.contain('Customer needs help');
+      expect(container.textContent).to.contain('Assign to');
+      expect(container.textContent).to.contain('Support Agent');
+      expect(container.textContent).to.contain('Topic:');
+      expect(container.textContent).to.contain('Technical Support');
+      expect(container.querySelectorAll('temba-icon')).to.have.length(2);
+    });
+
+    it('renders ticket without assignee or topic', async () => {
+      const action: OpenTicket = {
+        type: 'open_ticket',
+        uuid: 'action-uuid-25',
+        subject: 'Basic Ticket',
+        body: 'Simple ticket content'
+      };
+
+      const result = renderOpenTicket(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Subject:');
+      expect(container.textContent).to.contain('Basic Ticket');
+      expect(container.textContent).to.contain('Simple ticket content');
+      expect(container.textContent).to.not.contain('Assign to');
+      expect(container.textContent).to.not.contain('Topic:');
+      expect(container.querySelectorAll('temba-icon')).to.have.length(0);
+    });
+  });
+
+  describe('renderRequestOptin', () => {
+    it('renders optin request', async () => {
+      const action: RequestOptin = {
+        type: 'request_optin',
+        uuid: 'action-uuid-26',
+        optin: { uuid: 'optin1', name: 'Newsletter Subscription' }
+      };
+
+      const result = renderRequestOptin(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Request opt-in for');
+      expect(container.textContent).to.contain('Newsletter Subscription');
+      expect(container.querySelector('b')).to.exist;
+    });
+  });
+
+  describe('renderAddInputLabels', () => {
+    it('renders input labels', async () => {
+      const action: AddInputLabels = {
+        type: 'add_input_labels',
+        uuid: 'action-uuid-27',
+        labels: [
+          { uuid: 'label1', name: 'Important' },
+          { uuid: 'label2', name: 'Customer Service' }
+        ]
+      };
+
+      const result = renderAddInputLabels(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Add labels to input:');
+      expect(container.textContent).to.contain('Important');
+      expect(container.textContent).to.contain('Customer Service');
+      expect(container.querySelectorAll('temba-icon')).to.have.length(2);
+    });
+  });
+
+  describe('renderSayMsg', () => {
+    it('renders voice message with audio URL', async () => {
+      const action: SayMsg = {
+        type: 'say_msg',
+        uuid: 'action-uuid-28',
+        text: 'Welcome to our service',
+        audio_url: 'https://example.com/audio.mp3'
+      };
+
+      const result = renderSayMsg(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Welcome to our service');
+      expect(container.innerHTML).to.contain('https://example.com/audio.mp3');
+      expect(container.querySelector('temba-icon')).to.exist;
+      expect(
+        container.querySelector('temba-icon')?.getAttribute('name')
+      ).to.equal('audio');
+    });
+
+    it('renders voice message without audio URL', async () => {
+      const action: SayMsg = {
+        type: 'say_msg',
+        uuid: 'action-uuid-29',
+        text: 'Text only message'
+      };
+
+      const result = renderSayMsg(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Text only message');
+      expect(container.querySelector('temba-icon')).to.not.exist;
+    });
+  });
+
+  describe('renderPlayAudio', () => {
+    it('renders audio playback', async () => {
+      const action: PlayAudio = {
+        type: 'play_audio',
+        uuid: 'action-uuid-30',
+        audio_url: 'https://example.com/music.mp3'
+      };
+
+      const result = renderPlayAudio(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.innerHTML).to.contain('https://example.com/music.mp3');
+      expect(container.querySelector('temba-icon')).to.exist;
+      expect(
+        container.querySelector('temba-icon')?.getAttribute('name')
+      ).to.equal('audio');
     });
   });
 });

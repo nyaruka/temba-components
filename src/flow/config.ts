@@ -1,10 +1,28 @@
 import { TemplateResult } from 'lit-html';
 import {
+  renderAddContactUrn,
+  renderAddInputLabels,
   renderAddToGroups,
+  renderCallClassifier,
+  renderCallLLM,
+  renderCallResthook,
   renderCallWebhook,
+  renderEnterFlow,
+  renderOpenTicket,
+  renderPlayAudio,
+  renderRemoveFromGroups,
+  renderRequestOptin,
+  renderSayMsg,
+  renderSendBroadcast,
+  renderSendEmail,
   renderSendMsg,
+  renderSetContactField,
+  renderSetContactLanguage,
   renderSetContactName,
-  renderSetRunResult
+  renderSetContactStatus,
+  renderSetRunResult,
+  renderStartSession,
+  renderTransferAirtime
 } from './render';
 
 export interface UIConfig {
@@ -32,15 +50,18 @@ export const EDITOR_CONFIG: {
 } = {
   add_input_labels: {
     name: 'Add Labels',
-    color: COLORS.update
+    color: COLORS.update,
+    render: renderAddInputLabels
   },
   add_contact_urn: {
     name: 'Add Contact URN',
-    color: COLORS.update
+    color: COLORS.update,
+    render: renderAddContactUrn
   },
   set_contact_field: {
     name: 'Update Contact Field',
-    color: COLORS.update
+    color: COLORS.update,
+    render: renderSetContactField
   },
   set_contact_channel: {
     name: 'Update Contact Channel',
@@ -48,11 +69,18 @@ export const EDITOR_CONFIG: {
   },
   set_contact_language: {
     name: 'Update Contact Language',
-    color: COLORS.update
+    color: COLORS.update,
+    render: renderSetContactLanguage
+  },
+  set_contact_status: {
+    name: 'Update Contact Status',
+    color: COLORS.update,
+    render: renderSetContactStatus
   },
   send_broadcast: {
     name: 'Send Broadcast',
-    color: COLORS.broadcast
+    color: COLORS.broadcast,
+    render: renderSendBroadcast
   },
   set_run_result: {
     name: 'Save Flow Result',
@@ -66,32 +94,48 @@ export const EDITOR_CONFIG: {
   },
   send_email: {
     name: 'Send Email',
-    color: COLORS.broadcast
+    color: COLORS.broadcast,
+    render: renderSendEmail
   },
   start_session: {
     name: 'Start Somebody Else',
-    color: COLORS.broadcast
+    color: COLORS.broadcast,
+    render: renderStartSession
   },
   open_ticket: {
     name: 'Open Ticket',
-    color: COLORS.execute
+    color: COLORS.execute,
+    render: renderOpenTicket
   },
   call_webhook: {
     name: 'Call Webhook',
     color: COLORS.call,
     render: renderCallWebhook
   },
-  enter_flow: {
-    name: 'Enter Subflow',
-    color: COLORS.execute
+  call_classifier: {
+    name: 'Call Classifier',
+    color: COLORS.call,
+    render: renderCallClassifier
+  },
+  call_resthook: {
+    name: 'Call Resthook',
+    color: COLORS.call,
+    render: renderCallResthook
   },
   call_llm: {
     name: 'Call AI',
-    color: COLORS.call
+    color: COLORS.call,
+    render: renderCallLLM
+  },
+  enter_flow: {
+    name: 'Enter Subflow',
+    color: COLORS.execute,
+    render: renderEnterFlow
   },
   transfer_airtime: {
     name: 'Send Airtime',
-    color: COLORS.call
+    color: COLORS.call,
+    render: renderTransferAirtime
   },
   wait_for_response: {
     name: 'Wait for Response',
@@ -109,11 +153,23 @@ export const EDITOR_CONFIG: {
   },
   remove_contact_groups: {
     name: 'Remove from Group',
-    color: COLORS.remove
+    color: COLORS.remove,
+    render: renderRemoveFromGroups
   },
   request_optin: {
     name: 'Request Opt-in',
-    color: COLORS.send
+    color: COLORS.send,
+    render: renderRequestOptin
+  },
+  say_msg: {
+    name: 'Say Message',
+    color: COLORS.send,
+    render: renderSayMsg
+  },
+  play_audio: {
+    name: 'Play Audio',
+    color: COLORS.send,
+    render: renderPlayAudio
   },
   split_by_run_result: {
     name: 'Split by Flow Result',
