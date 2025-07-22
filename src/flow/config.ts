@@ -16,13 +16,21 @@ import {
   renderSendBroadcast,
   renderSendEmail,
   renderSendMsg,
+  renderSetContactChannel,
   renderSetContactField,
   renderSetContactLanguage,
   renderSetContactName,
   renderSetContactStatus,
   renderSetRunResult,
   renderStartSession,
-  renderTransferAirtime
+  renderTransferAirtime,
+  renderWaitForAudio,
+  renderWaitForDigits,
+  renderWaitForImage,
+  renderWaitForLocation,
+  renderWaitForMenu,
+  renderWaitForResponse,
+  renderWaitForVideo
 } from './render';
 
 export interface UIConfig {
@@ -65,7 +73,8 @@ export const EDITOR_CONFIG: {
   },
   set_contact_channel: {
     name: 'Update Contact Channel',
-    color: COLORS.update
+    color: COLORS.update,
+    render: renderSetContactChannel
   },
   set_contact_language: {
     name: 'Update Contact Language',
@@ -139,7 +148,38 @@ export const EDITOR_CONFIG: {
   },
   wait_for_response: {
     name: 'Wait for Response',
-    color: COLORS.wait
+    color: COLORS.wait,
+    render: renderWaitForResponse
+  },
+  wait_for_menu: {
+    name: 'Wait for Menu Selection',
+    color: COLORS.wait,
+    render: renderWaitForMenu
+  },
+  wait_for_digits: {
+    name: 'Wait for Digits',
+    color: COLORS.wait,
+    render: renderWaitForDigits
+  },
+  wait_for_audio: {
+    name: 'Wait for Audio',
+    color: COLORS.wait,
+    render: renderWaitForAudio
+  },
+  wait_for_video: {
+    name: 'Wait for Video',
+    color: COLORS.wait,
+    render: renderWaitForVideo
+  },
+  wait_for_image: {
+    name: 'Wait for Image',
+    color: COLORS.wait,
+    render: renderWaitForImage
+  },
+  wait_for_location: {
+    name: 'Wait for Location',
+    color: COLORS.wait,
+    render: renderWaitForLocation
   },
   set_contact_name: {
     name: 'Update Contact',

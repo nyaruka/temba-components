@@ -20,13 +20,21 @@ import {
   SendBroadcast,
   SendEmail,
   SendMsg,
+  SetContactChannel,
   SetContactField,
   SetContactLanguage,
   SetContactName,
   SetContactStatus,
   SetRunResult,
   StartSession,
-  TransferAirtime
+  TransferAirtime,
+  WaitForAudio,
+  WaitForDigits,
+  WaitForImage,
+  WaitForLocation,
+  WaitForMenu,
+  WaitForResponse,
+  WaitForVideo
 } from '../store/flow-definition';
 
 const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
@@ -95,6 +103,13 @@ export const renderSetContactStatus = (
   action: SetContactStatus
 ) => {
   return html`<div>Set contact status to <b>${action.status}</b></div>`;
+};
+
+export const renderSetContactChannel = (
+  node: Node,
+  action: SetContactChannel
+) => {
+  return html`<div>Set contact channel to <b>${action.channel.name}</b></div>`;
 };
 
 export const renderAddContactUrn = (node: Node, action: AddContactUrn) => {
@@ -249,5 +264,86 @@ export const renderPlayAudio = (node: Node, action: PlayAudio) => {
   return html`<div>
     <temba-icon name="audio" style="margin-right: 0.25em"></temba-icon>
     <span style="word-break: break-all">${action.audio_url}</span>
+  </div>`;
+};
+
+export const renderWaitForResponse = (node: Node, action: WaitForResponse) => {
+  return html`<div>
+    Wait for message response
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
+  </div>`;
+};
+
+export const renderWaitForMenu = (node: Node, action: WaitForMenu) => {
+  return html`<div>
+    Wait for menu selection: <b>${action.menu.name}</b>
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
+  </div>`;
+};
+
+export const renderWaitForDigits = (node: Node, action: WaitForDigits) => {
+  return html`<div>
+    Wait for <b>${action.count}</b> digit${action.count !== 1 ? 's' : ''}
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
+  </div>`;
+};
+
+export const renderWaitForAudio = (node: Node, action: WaitForAudio) => {
+  return html`<div>
+    <temba-icon name="audio" style="margin-right: 0.25em"></temba-icon>
+    Wait for audio recording
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
+  </div>`;
+};
+
+export const renderWaitForVideo = (node: Node, action: WaitForVideo) => {
+  return html`<div>
+    <temba-icon name="video" style="margin-right: 0.25em"></temba-icon>
+    Wait for video recording
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
+  </div>`;
+};
+
+export const renderWaitForImage = (node: Node, action: WaitForImage) => {
+  return html`<div>
+    <temba-icon name="image" style="margin-right: 0.25em"></temba-icon>
+    Wait for image
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
+  </div>`;
+};
+
+export const renderWaitForLocation = (node: Node, action: WaitForLocation) => {
+  return html`<div>
+    <temba-icon name="location" style="margin-right: 0.25em"></temba-icon>
+    Wait for location
+    ${action.timeout
+      ? html`<div style="margin-top: 0.25em">
+          Timeout after <b>${action.timeout}</b> seconds
+        </div>`
+      : null}
   </div>`;
 };

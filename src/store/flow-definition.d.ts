@@ -114,6 +114,10 @@ export interface SetContactStatus extends Action {
   status: 'active' | 'blocked' | 'stopped' | 'archived';
 }
 
+export interface SetContactChannel extends Action {
+  channel: NamedObject;
+}
+
 export interface AddContactUrn extends Action {
   scheme: string;
   path: string;
@@ -185,6 +189,36 @@ export interface SayMsg extends Action {
 
 export interface PlayAudio extends Action {
   audio_url: string;
+}
+
+export interface WaitForResponse extends Action {
+  timeout?: number;
+}
+
+export interface WaitForMenu extends Action {
+  menu: NamedObject;
+  timeout?: number;
+}
+
+export interface WaitForDigits extends Action {
+  count: number;
+  timeout?: number;
+}
+
+export interface WaitForAudio extends Action {
+  timeout?: number;
+}
+
+export interface WaitForVideo extends Action {
+  timeout?: number;
+}
+
+export interface WaitForImage extends Action {
+  timeout?: number;
+}
+
+export interface WaitForLocation extends Action {
+  timeout?: number;
 }
 
 export interface Exit {

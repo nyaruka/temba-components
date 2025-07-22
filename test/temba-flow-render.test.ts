@@ -16,13 +16,21 @@ import {
   renderSendBroadcast,
   renderSendEmail,
   renderSendMsg,
+  renderSetContactChannel,
   renderSetContactField,
   renderSetContactLanguage,
   renderSetContactName,
   renderSetContactStatus,
   renderSetRunResult,
   renderStartSession,
-  renderTransferAirtime
+  renderTransferAirtime,
+  renderWaitForAudio,
+  renderWaitForDigits,
+  renderWaitForImage,
+  renderWaitForLocation,
+  renderWaitForMenu,
+  renderWaitForResponse,
+  renderWaitForVideo
 } from '../src/flow/render';
 import {
   AddContactUrn,
@@ -42,13 +50,21 @@ import {
   SendBroadcast,
   SendEmail,
   SendMsg,
+  SetContactChannel,
   SetContactField,
   SetContactLanguage,
   SetContactName,
   SetContactStatus,
   SetRunResult,
   StartSession,
-  TransferAirtime
+  TransferAirtime,
+  WaitForAudio,
+  WaitForDigits,
+  WaitForImage,
+  WaitForLocation,
+  WaitForMenu,
+  WaitForResponse,
+  WaitForVideo
 } from '../src/store/flow-definition.d';
 
 describe('Flow Render Functions', () => {
@@ -689,6 +705,185 @@ describe('Flow Render Functions', () => {
       expect(
         container.querySelector('temba-icon')?.getAttribute('name')
       ).to.equal('audio');
+    });
+  });
+
+  describe('renderSetContactChannel', () => {
+    it('renders contact channel setting', async () => {
+      const action: SetContactChannel = {
+        type: 'set_contact_channel',
+        uuid: 'action-uuid-31',
+        channel: { uuid: 'channel1', name: 'WhatsApp Channel' }
+      };
+
+      const result = renderSetContactChannel(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Set contact channel to');
+      expect(container.textContent).to.contain('WhatsApp Channel');
+      expect(container.querySelector('b')).to.exist;
+    });
+  });
+
+  describe('renderWaitForResponse', () => {
+    it('renders wait for response with timeout', async () => {
+      const action: WaitForResponse = {
+        type: 'wait_for_response',
+        uuid: 'action-uuid-32',
+        timeout: 300
+      };
+
+      const result = renderWaitForResponse(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for message response');
+      expect(container.textContent).to.contain('Timeout after');
+      expect(container.textContent).to.contain('300');
+      expect(container.textContent).to.contain('seconds');
+    });
+
+    it('renders wait for response without timeout', async () => {
+      const action: WaitForResponse = {
+        type: 'wait_for_response',
+        uuid: 'action-uuid-33'
+      };
+
+      const result = renderWaitForResponse(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for message response');
+      expect(container.textContent).to.not.contain('Timeout');
+    });
+  });
+
+  describe('renderWaitForMenu', () => {
+    it('renders wait for menu with timeout', async () => {
+      const action: WaitForMenu = {
+        type: 'wait_for_menu',
+        uuid: 'action-uuid-34',
+        menu: { uuid: 'menu1', name: 'Main Menu' },
+        timeout: 120
+      };
+
+      const result = renderWaitForMenu(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for menu selection:');
+      expect(container.textContent).to.contain('Main Menu');
+      expect(container.textContent).to.contain('Timeout after');
+      expect(container.textContent).to.contain('120');
+    });
+  });
+
+  describe('renderWaitForDigits', () => {
+    it('renders wait for single digit', async () => {
+      const action: WaitForDigits = {
+        type: 'wait_for_digits',
+        uuid: 'action-uuid-35',
+        count: 1,
+        timeout: 60
+      };
+
+      const result = renderWaitForDigits(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for');
+      expect(container.textContent).to.contain('1');
+      expect(container.textContent).to.contain('digit');
+      expect(container.textContent).to.not.contain('digits');
+      expect(container.textContent).to.contain('Timeout after 60');
+    });
+
+    it('renders wait for multiple digits', async () => {
+      const action: WaitForDigits = {
+        type: 'wait_for_digits',
+        uuid: 'action-uuid-36',
+        count: 4
+      };
+
+      const result = renderWaitForDigits(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for');
+      expect(container.textContent).to.contain('4');
+      expect(container.textContent).to.contain('digits');
+      expect(container.textContent).to.not.contain('Timeout');
+    });
+  });
+
+  describe('renderWaitForAudio', () => {
+    it('renders wait for audio with icon', async () => {
+      const action: WaitForAudio = {
+        type: 'wait_for_audio',
+        uuid: 'action-uuid-37',
+        timeout: 180
+      };
+
+      const result = renderWaitForAudio(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for audio recording');
+      expect(container.textContent).to.contain('Timeout after 180');
+      expect(container.querySelector('temba-icon')).to.exist;
+      expect(
+        container.querySelector('temba-icon')?.getAttribute('name')
+      ).to.equal('audio');
+    });
+  });
+
+  describe('renderWaitForVideo', () => {
+    it('renders wait for video with icon', async () => {
+      const action: WaitForVideo = {
+        type: 'wait_for_video',
+        uuid: 'action-uuid-38'
+      };
+
+      const result = renderWaitForVideo(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for video recording');
+      expect(container.querySelector('temba-icon')).to.exist;
+      expect(
+        container.querySelector('temba-icon')?.getAttribute('name')
+      ).to.equal('video');
+    });
+  });
+
+  describe('renderWaitForImage', () => {
+    it('renders wait for image with icon', async () => {
+      const action: WaitForImage = {
+        type: 'wait_for_image',
+        uuid: 'action-uuid-39',
+        timeout: 240
+      };
+
+      const result = renderWaitForImage(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for image');
+      expect(container.textContent).to.contain('Timeout after 240');
+      expect(container.querySelector('temba-icon')).to.exist;
+      expect(
+        container.querySelector('temba-icon')?.getAttribute('name')
+      ).to.equal('image');
+    });
+  });
+
+  describe('renderWaitForLocation', () => {
+    it('renders wait for location with icon', async () => {
+      const action: WaitForLocation = {
+        type: 'wait_for_location',
+        uuid: 'action-uuid-40'
+      };
+
+      const result = renderWaitForLocation(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Wait for location');
+      expect(container.querySelector('temba-icon')).to.exist;
+      expect(
+        container.querySelector('temba-icon')?.getAttribute('name')
+      ).to.equal('location');
     });
   });
 });
