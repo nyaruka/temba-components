@@ -411,7 +411,11 @@ export class EditorNode extends RapidElement {
     this.requestUpdate();
   }
 
-  private handleActionRemoveClick(event: MouseEvent, action: Action, index: number) {
+  private handleActionRemoveClick(
+    event: MouseEvent,
+    action: Action,
+    index: number
+  ) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -442,7 +446,8 @@ export class EditorNode extends RapidElement {
     this.actionRemovalTimeouts.set(actionId, timeoutId);
   }
 
-  private removeAction(action: Action, index: number) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private removeAction(action: Action, _index: number) {
     const actionId = action.uuid;
 
     // Clear the UI state
@@ -473,11 +478,14 @@ export class EditorNode extends RapidElement {
 
   private removeNodeWithConnections() {
     const nodeUuid = this.node.uuid;
-    
+
     // Find all connections coming into this node and going out of this node
-    const incomingConnections: { exitUuid: string; sourceNodeUuid: string }[] = [];
-    const outgoingExits = this.node.exits.filter(exit => exit.destination_uuid);
-    
+    const incomingConnections: { exitUuid: string; sourceNodeUuid: string }[] =
+      [];
+    const outgoingExits = this.node.exits.filter(
+      (exit) => exit.destination_uuid
+    );
+
     // Find incoming connections by checking all other nodes' exits
     const flowDefinition = getStore()?.getState().flowDefinition;
     if (flowDefinition) {
@@ -500,7 +508,9 @@ export class EditorNode extends RapidElement {
       // Connect each incoming connection to the first outgoing destination
       const firstDestination = outgoingExits[0].destination_uuid;
       for (const incoming of incomingConnections) {
-        getStore()?.getState().updateConnection(incoming.exitUuid, firstDestination);
+        getStore()
+          ?.getState()
+          .updateConnection(incoming.exitUuid, firstDestination);
       }
     }
 
@@ -552,7 +562,8 @@ export class EditorNode extends RapidElement {
       >
         <button
           class="remove-button"
-          @click=${(e: MouseEvent) => this.handleActionRemoveClick(e, action, index)}
+          @click=${(e: MouseEvent) =>
+            this.handleActionRemoveClick(e, action, index)}
           title="Remove action"
         >
           ✕
@@ -567,10 +578,14 @@ export class EditorNode extends RapidElement {
         </div>
       </div>`;
     }
-    return html`<div class="action sortable ${isRemoving ? 'removing' : ''}" id="action-${index}">
+    return html`<div
+      class="action sortable ${isRemoving ? 'removing' : ''}"
+      id="action-${index}"
+    >
       <button
         class="remove-button"
-        @click=${(e: MouseEvent) => this.handleActionRemoveClick(e, action, index)}
+        @click=${(e: MouseEvent) =>
+          this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
       >
         ✕

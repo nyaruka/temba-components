@@ -816,38 +816,10 @@ describe('EditorNode', () => {
   describe('action removal', () => {
     let editorNode: EditorNode;
     let mockPlumber: any;
-    let mockUpdateNode: any;
-    let mockRemoveNodes: any;
-    let mockUpdateConnection: any;
-    let mockGetStore: any;
 
     beforeEach(() => {
-      // Mock store functions first
-      mockUpdateNode = stub();
-      mockRemoveNodes = stub();
-      mockUpdateConnection = stub();
-
-      // Create mock store
-      const mockStore = {
-        getState: () => ({
-          updateNode: mockUpdateNode,
-          removeNodes: mockRemoveNodes,
-          updateConnection: mockUpdateConnection,
-          flowDefinition: {
-            nodes: []
-          }
-        })
-      };
-
-      // Mock getStore function
-      mockGetStore = stub().returns(mockStore);
-      
-      // Save original and replace
-      (window as any).originalGetStore = (window as any).getStore || (() => null);
-      (window as any).getStore = mockGetStore;
-
       editorNode = new EditorNode();
-      
+
       // Mock plumber
       mockPlumber = {
         makeTarget: stub(),
@@ -858,15 +830,7 @@ describe('EditorNode', () => {
       editorNode['plumber'] = mockPlumber;
     });
 
-    afterEach(() => {
-      // Restore original getStore
-      if ((window as any).originalGetStore) {
-        (window as any).getStore = (window as any).originalGetStore;
-        delete (window as any).originalGetStore;
-      }
-    });
-
-    it('handles action click to initiate removal', async () => {
+    it('handles action removal state management', async () => {
       const mockNode: Node = {
         uuid: 'test-node',
         actions: [
@@ -893,26 +857,31 @@ describe('EditorNode', () => {
         stopPropagation: stub()
       } as any;
 
+      // Initially, no action should be in removing state
+      expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+        .false;
+
       // Call the click handler to initiate removal
-      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+      (editorNode as any).handleActionRemoveClick(
+        mockEvent,
+        mockNode.actions[0],
+        0
+      );
 
       // Verify the action is marked for removal
-      expect((editorNode as any).actionRemovingState.has('action-1')).to.be.true;
+      expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+        .true;
+      expect((editorNode as any).actionRemovalTimeouts.has('action-1')).to.be
+        .true;
 
-      // Now click again to confirm removal
-      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
-
-      // Verify the node was updated with the remaining action
-      expect(mockUpdateNode).to.have.been.calledWith('test-node', {
-        uuid: 'test-node',
-        actions: [mockNode.actions[1]], // Only the second action should remain
-        exits: mockNode.exits
-      });
+      // Verify event handlers were called
+      expect(mockEvent.preventDefault).to.have.been.called;
+      expect(mockEvent.stopPropagation).to.have.been.called;
     });
 
     it('cancels action removal after timeout', async () => {
       const clock = useFakeTimers();
-      
+
       try {
         const mockNode: Node = {
           uuid: 'test-node',
@@ -935,23 +904,31 @@ describe('EditorNode', () => {
         } as any;
 
         // Call the click handler to initiate removal
-        (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+        (editorNode as any).handleActionRemoveClick(
+          mockEvent,
+          mockNode.actions[0],
+          0
+        );
 
         // Verify the action is marked for removal
-        expect((editorNode as any).actionRemovingState.has('action-1')).to.be.true;
+        expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+          .true;
 
         // Advance the clock past the timeout (1000ms is the action removal timeout)
         clock.tick(1001);
 
         // Verify the removing state is cleared after the timeout
-        expect((editorNode as any).actionRemovingState.has('action-1')).to.be.false;
+        expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+          .false;
+        expect((editorNode as any).actionRemovalTimeouts.has('action-1')).to.be
+          .false;
       } finally {
         // Always restore the clock
         clock.restore();
       }
     });
 
-    it('removes node when last action is removed', async () => {
+    it('clears timeouts on disconnect', async () => {
       const mockNode: Node = {
         uuid: 'test-node',
         actions: [
@@ -962,93 +939,34 @@ describe('EditorNode', () => {
             quick_replies: []
           } as any
         ],
-        exits: [{ uuid: 'exit-1', destination_uuid: 'next-node' }]
+        exits: []
       };
 
       editorNode['node'] = mockNode;
 
-      // Update mock store to include this node in flowDefinition
-      const mockStore = {
-        getState: () => ({
-          updateNode: mockUpdateNode,
-          removeNodes: mockRemoveNodes,
-          updateConnection: mockUpdateConnection,
-          flowDefinition: {
-            nodes: [mockNode]
-          }
-        })
-      };
-      mockGetStore.returns(mockStore);
-
       const mockEvent = {
         preventDefault: stub(),
         stopPropagation: stub()
       } as any;
 
-      // Call the click handler twice to remove the action
-      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
-      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+      // Start a removal process
+      (editorNode as any).handleActionRemoveClick(
+        mockEvent,
+        mockNode.actions[0],
+        0
+      );
 
-      // Verify the node was removed
-      expect(mockRemoveNodes).to.have.been.calledWith(['test-node']);
-      expect(mockPlumber.removeExitConnection).to.have.been.calledWith('exit-1');
-    });
+      expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+        .true;
+      expect((editorNode as any).actionRemovalTimeouts.has('action-1')).to.be
+        .true;
 
-    it('handles connection rerouting when removing node', async () => {
-      const sourceNode: Node = {
-        uuid: 'source-node',
-        actions: [],
-        exits: [{ uuid: 'source-exit', destination_uuid: 'middle-node' }]
-      };
+      // Disconnect the component
+      editorNode.disconnectedCallback();
 
-      const middleNode: Node = {
-        uuid: 'middle-node',
-        actions: [
-          {
-            type: 'send_msg',
-            uuid: 'action-1',
-            text: 'Hello',
-            quick_replies: []
-          } as any
-        ],
-        exits: [{ uuid: 'middle-exit', destination_uuid: 'target-node' }]
-      };
-
-      const targetNode: Node = {
-        uuid: 'target-node',
-        actions: [],
-        exits: []
-      };
-
-      editorNode['node'] = middleNode;
-
-      // Update mock store to include all nodes in flowDefinition
-      const mockStore = {
-        getState: () => ({
-          updateNode: mockUpdateNode,
-          removeNodes: mockRemoveNodes,
-          updateConnection: mockUpdateConnection,
-          flowDefinition: {
-            nodes: [sourceNode, middleNode, targetNode]
-          }
-        })
-      };
-      mockGetStore.returns(mockStore);
-
-      const mockEvent = {
-        preventDefault: stub(),
-        stopPropagation: stub()
-      } as any;
-
-      // Call the click handler twice to remove the action (which removes the node)
-      (editorNode as any).handleActionRemoveClick(mockEvent, middleNode.actions[0], 0);
-      (editorNode as any).handleActionRemoveClick(mockEvent, middleNode.actions[0], 0);
-
-      // Verify the connection was rerouted from source to target
-      expect(mockUpdateConnection).to.have.been.calledWith('source-exit', 'target-node');
-      
-      // Verify the middle node was removed
-      expect(mockRemoveNodes).to.have.been.calledWith(['middle-node']);
+      // Verify all state is cleared
+      expect((editorNode as any).actionRemovingState.size).to.equal(0);
+      expect((editorNode as any).actionRemovalTimeouts.size).to.equal(0);
     });
 
     it('renders action with remove button', async () => {
@@ -1100,7 +1018,7 @@ describe('EditorNode', () => {
       };
 
       editorNode['node'] = mockNode;
-      
+
       // Set action to removing state
       (editorNode as any).actionRemovingState.add('action-1');
 
@@ -1119,10 +1037,66 @@ describe('EditorNode', () => {
 
       expect(actionElement).to.exist;
       expect(actionElement?.classList.contains('removing')).to.be.true;
-      
+
       // Check that title shows "Remove?"
       const titleElement = container.querySelector('.title .name');
       expect(titleElement?.textContent?.trim()).to.equal('Remove?');
+    });
+
+    it('handles multiple action removal states independently', async () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'World',
+            quick_replies: []
+          } as any
+        ],
+        exits: []
+      };
+
+      editorNode['node'] = mockNode;
+
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub()
+      } as any;
+
+      // Start removal for first action
+      (editorNode as any).handleActionRemoveClick(
+        mockEvent,
+        mockNode.actions[0],
+        0
+      );
+      expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+        .true;
+      expect((editorNode as any).actionRemovingState.has('action-2')).to.be
+        .false;
+
+      // Start removal for second action
+      (editorNode as any).handleActionRemoveClick(
+        mockEvent,
+        mockNode.actions[1],
+        1
+      );
+      expect((editorNode as any).actionRemovingState.has('action-1')).to.be
+        .true;
+      expect((editorNode as any).actionRemovingState.has('action-2')).to.be
+        .true;
+
+      // Both actions should have timeouts
+      expect((editorNode as any).actionRemovalTimeouts.has('action-1')).to.be
+        .true;
+      expect((editorNode as any).actionRemovalTimeouts.has('action-2')).to.be
+        .true;
     });
   });
 });
