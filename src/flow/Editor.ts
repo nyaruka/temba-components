@@ -217,12 +217,14 @@ export class Editor extends RapidElement {
       }
 
       /* Connection dragging feedback */
-      body svg.jtk-connector.jtk-drag {
+      body svg.jtk-connector.jtk-dragging {
         z-index: 99999 !important;
       }
 
-      body svg.jtk-connector.jtk-drag path {
-        z-index: 99999 !important;
+      .katavorio-drag-no-select svg.jtk-connector path,
+      .katavorio-drag-no-select svg.jtk-endpoint path {
+        pointer-events: none !important;
+        border: 1px solid purple;
       }
 
       /* Connection target feedback */
