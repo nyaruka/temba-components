@@ -187,20 +187,19 @@ export class Editor extends RapidElement {
         fill: transparent;
       }
 
-      body .plumb-connector path {
+      body svg.jtk-connector.plumb-connector path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
-        z-index: 10;
       }
 
       body .plumb-connector {
-        z-index: 10;
+        z-index: 10 !important;
       }
 
       body .plumb-connector .plumb-arrow {
         fill: var(--color-connectors);
         stroke: var(--color-connectors);
-        stroke-width: 0px;
+        stroke-width: 0px !important;
         margin-top: 6px;
         z-index: 10;
       }
@@ -885,8 +884,8 @@ export class Editor extends RapidElement {
     }
 
     const canvasRect = canvas.getBoundingClientRect();
-    const relativeX = event.clientX - canvasRect.left;
-    const relativeY = event.clientY - canvasRect.top;
+    const relativeX = event.clientX - canvasRect.left - 10;
+    const relativeY = event.clientY - canvasRect.top - 10;
 
     // Snap position to grid
     const snappedLeft = snapToGrid(relativeX);
