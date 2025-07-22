@@ -812,4 +812,317 @@ describe('EditorNode', () => {
       }
     });
   });
+
+  describe('action removal', () => {
+    let editorNode: EditorNode;
+    let mockPlumber: any;
+    let mockUpdateNode: any;
+    let mockRemoveNodes: any;
+    let mockUpdateConnection: any;
+    let mockGetStore: any;
+
+    beforeEach(() => {
+      // Mock store functions first
+      mockUpdateNode = stub();
+      mockRemoveNodes = stub();
+      mockUpdateConnection = stub();
+
+      // Create mock store
+      const mockStore = {
+        getState: () => ({
+          updateNode: mockUpdateNode,
+          removeNodes: mockRemoveNodes,
+          updateConnection: mockUpdateConnection,
+          flowDefinition: {
+            nodes: []
+          }
+        })
+      };
+
+      // Mock getStore function
+      mockGetStore = stub().returns(mockStore);
+      
+      // Save original and replace
+      (window as any).originalGetStore = (window as any).getStore || (() => null);
+      (window as any).getStore = mockGetStore;
+
+      editorNode = new EditorNode();
+      
+      // Mock plumber
+      mockPlumber = {
+        makeTarget: stub(),
+        makeSource: stub(),
+        connectIds: stub(),
+        removeExitConnection: stub()
+      };
+      editorNode['plumber'] = mockPlumber;
+    });
+
+    afterEach(() => {
+      // Restore original getStore
+      if ((window as any).originalGetStore) {
+        (window as any).getStore = (window as any).originalGetStore;
+        delete (window as any).originalGetStore;
+      }
+    });
+
+    it('handles action click to initiate removal', async () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any,
+          {
+            type: 'send_msg',
+            uuid: 'action-2',
+            text: 'World',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }]
+      };
+
+      editorNode['node'] = mockNode;
+
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub()
+      } as any;
+
+      // Call the click handler to initiate removal
+      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+
+      // Verify the action is marked for removal
+      expect((editorNode as any).actionRemovingState.has('action-1')).to.be.true;
+
+      // Now click again to confirm removal
+      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+
+      // Verify the node was updated with the remaining action
+      expect(mockUpdateNode).to.have.been.calledWith('test-node', {
+        uuid: 'test-node',
+        actions: [mockNode.actions[1]], // Only the second action should remain
+        exits: mockNode.exits
+      });
+    });
+
+    it('cancels action removal after timeout', async () => {
+      const clock = useFakeTimers();
+      
+      try {
+        const mockNode: Node = {
+          uuid: 'test-node',
+          actions: [
+            {
+              type: 'send_msg',
+              uuid: 'action-1',
+              text: 'Hello',
+              quick_replies: []
+            } as any
+          ],
+          exits: [{ uuid: 'exit-1', destination_uuid: null }]
+        };
+
+        editorNode['node'] = mockNode;
+
+        const mockEvent = {
+          preventDefault: stub(),
+          stopPropagation: stub()
+        } as any;
+
+        // Call the click handler to initiate removal
+        (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+
+        // Verify the action is marked for removal
+        expect((editorNode as any).actionRemovingState.has('action-1')).to.be.true;
+
+        // Advance the clock past the timeout (1000ms is the action removal timeout)
+        clock.tick(1001);
+
+        // Verify the removing state is cleared after the timeout
+        expect((editorNode as any).actionRemovingState.has('action-1')).to.be.false;
+      } finally {
+        // Always restore the clock
+        clock.restore();
+      }
+    });
+
+    it('removes node when last action is removed', async () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'exit-1', destination_uuid: 'next-node' }]
+      };
+
+      editorNode['node'] = mockNode;
+
+      // Update mock store to include this node in flowDefinition
+      const mockStore = {
+        getState: () => ({
+          updateNode: mockUpdateNode,
+          removeNodes: mockRemoveNodes,
+          updateConnection: mockUpdateConnection,
+          flowDefinition: {
+            nodes: [mockNode]
+          }
+        })
+      };
+      mockGetStore.returns(mockStore);
+
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub()
+      } as any;
+
+      // Call the click handler twice to remove the action
+      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+      (editorNode as any).handleActionRemoveClick(mockEvent, mockNode.actions[0], 0);
+
+      // Verify the node was removed
+      expect(mockRemoveNodes).to.have.been.calledWith(['test-node']);
+      expect(mockPlumber.removeExitConnection).to.have.been.calledWith('exit-1');
+    });
+
+    it('handles connection rerouting when removing node', async () => {
+      const sourceNode: Node = {
+        uuid: 'source-node',
+        actions: [],
+        exits: [{ uuid: 'source-exit', destination_uuid: 'middle-node' }]
+      };
+
+      const middleNode: Node = {
+        uuid: 'middle-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'middle-exit', destination_uuid: 'target-node' }]
+      };
+
+      const targetNode: Node = {
+        uuid: 'target-node',
+        actions: [],
+        exits: []
+      };
+
+      editorNode['node'] = middleNode;
+
+      // Update mock store to include all nodes in flowDefinition
+      const mockStore = {
+        getState: () => ({
+          updateNode: mockUpdateNode,
+          removeNodes: mockRemoveNodes,
+          updateConnection: mockUpdateConnection,
+          flowDefinition: {
+            nodes: [sourceNode, middleNode, targetNode]
+          }
+        })
+      };
+      mockGetStore.returns(mockStore);
+
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub()
+      } as any;
+
+      // Call the click handler twice to remove the action (which removes the node)
+      (editorNode as any).handleActionRemoveClick(mockEvent, middleNode.actions[0], 0);
+      (editorNode as any).handleActionRemoveClick(mockEvent, middleNode.actions[0], 0);
+
+      // Verify the connection was rerouted from source to target
+      expect(mockUpdateConnection).to.have.been.calledWith('source-exit', 'target-node');
+      
+      // Verify the middle node was removed
+      expect(mockRemoveNodes).to.have.been.calledWith(['middle-node']);
+    });
+
+    it('renders action with remove button', async () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: []
+      };
+
+      editorNode['node'] = mockNode;
+
+      // Test that renderAction includes remove button
+      const result = (editorNode as any).renderAction(
+        mockNode,
+        mockNode.actions[0],
+        0
+      );
+
+      expect(result).to.exist;
+
+      // Render the template to check the actual DOM
+      const container = await fixture(html`<div>${result}</div>`);
+      const removeButton = container.querySelector('.remove-button');
+
+      expect(removeButton).to.exist;
+      expect(removeButton?.textContent?.trim()).to.equal('✕');
+      expect(removeButton?.getAttribute('title')).to.equal('Remove action');
+    });
+
+    it('shows removing state in UI', async () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: []
+      };
+
+      editorNode['node'] = mockNode;
+      
+      // Set action to removing state
+      (editorNode as any).actionRemovingState.add('action-1');
+
+      // Test that renderAction shows removing state
+      const result = (editorNode as any).renderAction(
+        mockNode,
+        mockNode.actions[0],
+        0
+      );
+
+      expect(result).to.exist;
+
+      // Render the template to check the actual DOM
+      const container = await fixture(html`<div>${result}</div>`);
+      const actionElement = container.querySelector('.action');
+
+      expect(actionElement).to.exist;
+      expect(actionElement?.classList.contains('removing')).to.be.true;
+      
+      // Check that title shows "Remove?"
+      const titleElement = container.querySelector('.title .name');
+      expect(titleElement?.textContent?.trim()).to.equal('Remove?');
+    });
+  });
 });
