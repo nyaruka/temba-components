@@ -149,7 +149,9 @@ describe('Flow Editor Self-Routing Prevention', () => {
 
       // Mock querySelector to return our mock node
       stub(document, 'querySelector').withArgs('temba-flow-node:hover').returns(mockTargetNode);
-      stub(document, 'querySelectorAll').withArgs('temba-flow-node').returns([mockTargetNode]);
+      stub(document, 'querySelectorAll').withArgs('temba-flow-node').returns({
+        forEach: (callback: (node: Element) => void) => callback(mockTargetNode)
+      } as any);
       
       // Set up editor state
       (editor as any).plumber = { connectionDragging: true };
