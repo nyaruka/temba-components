@@ -268,6 +268,115 @@ describe('Flow Render Functions', () => {
       expect(container.innerHTML).to.contain('Test Group');
       expect(container.querySelectorAll('temba-icon')).to.have.length(0);
     });
+
+    it('renders groups with limit - shows +X more for 5+ items', async () => {
+      const action: AddToGroup = {
+        type: 'add_contact_groups',
+        uuid: 'action-uuid-9b',
+        groups: [
+          {
+            uuid: 'group1',
+            name: 'Group 1',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group2',
+            name: 'Group 2',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group3',
+            name: 'Group 3',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group4',
+            name: 'Group 4',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group5',
+            name: 'Group 5',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          }
+        ]
+      };
+
+      const result = renderAddToGroups(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Group 1');
+      expect(container.textContent).to.contain('Group 2');
+      expect(container.textContent).to.contain('Group 3');
+      expect(container.textContent).to.contain('+2 more');
+      expect(container.textContent).to.not.contain('Group 4');
+      expect(container.textContent).to.not.contain('Group 5');
+    });
+
+    it('renders all 4 groups when exactly 4 items', async () => {
+      const action: AddToGroup = {
+        type: 'add_contact_groups',
+        uuid: 'action-uuid-9c',
+        groups: [
+          {
+            uuid: 'group1',
+            name: 'Group 1',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group2',
+            name: 'Group 2',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group3',
+            name: 'Group 3',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          },
+          {
+            uuid: 'group4',
+            name: 'Group 4',
+            status: 'active',
+            system: false,
+            query: '',
+            count: 1
+          }
+        ]
+      };
+
+      const result = renderAddToGroups(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Group 1');
+      expect(container.textContent).to.contain('Group 2');
+      expect(container.textContent).to.contain('Group 3');
+      expect(container.textContent).to.contain('Group 4');
+      expect(container.textContent).to.not.contain('+');
+    });
   });
 
   describe('renderRemoveFromGroups', () => {
@@ -352,7 +461,7 @@ describe('Flow Render Functions', () => {
   });
 
   describe('renderAddContactUrn', () => {
-    it('renders URN addition', async () => {
+    it('renders URN addition with friendly scheme names', async () => {
       const action: AddContactUrn = {
         type: 'add_contact_urn',
         uuid: 'action-uuid-14',
@@ -364,10 +473,25 @@ describe('Flow Render Functions', () => {
       const container = await fixture(html`<div>${result}</div>`);
 
       expect(container.textContent).to.contain('Add');
-      expect(container.textContent).to.contain('tel');
-      expect(container.textContent).to.contain('URN');
+      expect(container.textContent).to.contain('Phone Number');
       expect(container.textContent).to.contain('+1234567890');
       expect(container.querySelectorAll('b')).to.have.length(2);
+    });
+
+    it('renders URN addition with unmapped scheme', async () => {
+      const action: AddContactUrn = {
+        type: 'add_contact_urn',
+        uuid: 'action-uuid-14b',
+        scheme: 'unknown',
+        path: 'test123'
+      };
+
+      const result = renderAddContactUrn(mockNode, action);
+      const container = await fixture(html`<div>${result}</div>`);
+
+      expect(container.textContent).to.contain('Add');
+      expect(container.textContent).to.contain('unknown');
+      expect(container.textContent).to.contain('test123');
     });
   });
 
@@ -384,7 +508,7 @@ describe('Flow Render Functions', () => {
       const result = renderSendEmail(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
 
-      expect(container.textContent).to.contain('Send email to');
+      // No longer expects "Send email to" prefix
       expect(container.textContent).to.contain(
         'user@example.com, admin@example.com'
       );
@@ -563,9 +687,8 @@ describe('Flow Render Functions', () => {
       const result = renderCallLLM(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
 
-      expect(container.textContent).to.contain('Call AI');
+      // No longer expects "Call AI" prefix
       expect(container.textContent).to.contain('GPT-4');
-      expect(container.textContent).to.contain('Prompt:');
       expect(container.textContent).to.contain('Analyze this text');
       expect(container.textContent).to.contain('Save result as');
       expect(container.textContent).to.contain('ai_result');
@@ -586,12 +709,9 @@ describe('Flow Render Functions', () => {
       const result = renderOpenTicket(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
 
-      expect(container.textContent).to.contain('Subject:');
-      expect(container.textContent).to.contain('Support Request');
+      // No longer expects subject
       expect(container.textContent).to.contain('Customer needs help');
-      expect(container.textContent).to.contain('Assign to');
       expect(container.textContent).to.contain('Support Agent');
-      expect(container.textContent).to.contain('Topic:');
       expect(container.textContent).to.contain('Technical Support');
       expect(container.querySelectorAll('temba-icon')).to.have.length(2);
     });
@@ -607,11 +727,8 @@ describe('Flow Render Functions', () => {
       const result = renderOpenTicket(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
 
-      expect(container.textContent).to.contain('Subject:');
-      expect(container.textContent).to.contain('Basic Ticket');
+      // No longer expects subject
       expect(container.textContent).to.contain('Simple ticket content');
-      expect(container.textContent).to.not.contain('Assign to');
-      expect(container.textContent).to.not.contain('Topic:');
       expect(container.querySelectorAll('temba-icon')).to.have.length(0);
     });
   });
@@ -647,7 +764,7 @@ describe('Flow Render Functions', () => {
       const result = renderAddInputLabels(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
 
-      expect(container.textContent).to.contain('Add labels to input:');
+      // No longer expects "Add labels to input:" prefix
       expect(container.textContent).to.contain('Important');
       expect(container.textContent).to.contain('Customer Service');
       expect(container.querySelectorAll('temba-icon')).to.have.length(2);

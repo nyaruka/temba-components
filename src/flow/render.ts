@@ -37,18 +37,58 @@ import {
   WaitForVideo
 } from '../store/flow-definition';
 
+// URN scheme mapping for user-friendly display
+const urnSchemeMap: Record<string, string> = {
+  tel: 'Phone Number',
+  email: 'Email',
+  twitter: 'Twitter',
+  facebook: 'Facebook',
+  telegram: 'Telegram',
+  whatsapp: 'WhatsApp',
+  viber: 'Viber',
+  line: 'Line',
+  discord: 'Discord',
+  slack: 'Slack',
+  external: 'External ID'
+};
+
 const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
-  return assets.map((asset) => {
-    return html`<div style="display:flex;items-align:center">
+  const items = [];
+  const maxDisplay = 3;
+
+  // Show up to 3 items, or all 4 if exactly 4 items
+  const displayCount =
+    assets.length === 4 ? 4 : Math.min(maxDisplay, assets.length);
+
+  for (let i = 0; i < displayCount; i++) {
+    const asset = assets[i];
+    items.push(html`<div style="display:flex;items-align:center">
       ${icon
         ? html`<temba-icon
             name=${icon}
             style="margin-right:0.5em"
           ></temba-icon>`
         : null}
-      <div>${asset.name}</div>
-    </div>`;
-  });
+      <div
+        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      >
+        ${asset.name}
+      </div>
+    </div>`);
+  }
+
+  // Add "+X more" if there are more than 3 items (and not exactly 4)
+  if (assets.length > maxDisplay && assets.length !== 4) {
+    const remainingCount = assets.length - maxDisplay;
+    items.push(html`<div style="display:flex;items-align:center; color: #666;">
+      ${icon
+        ? html`<div style="margin-right:0.5em; width: 1em;"></div>` // spacing placeholder
+        : null}
+      <div>+${remainingCount} more</div>
+    </div>`);
+  }
+
+  return items;
 };
 
 export const renderSendMsg = (node: Node, action: SendMsg) => {
@@ -74,7 +114,11 @@ export const renderSetRunResult = (node: Node, action: SetRunResult) => {
 };
 
 export const renderCallWebhook = (node: Node, action: CallWebhook) => {
-  return html`<div style="word-break: break-all">${action.url}</div>`;
+  return html`<div
+    style="word-break: break-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+  >
+    ${action.url}
+  </div>`;
 };
 
 export const renderAddToGroups = (node: Node, action: AddToGroup) => {
@@ -113,16 +157,31 @@ export const renderSetContactChannel = (
 };
 
 export const renderAddContactUrn = (node: Node, action: AddContactUrn) => {
-  return html`<div>Add <b>${action.scheme}</b> URN <b>${action.path}</b></div>`;
+  const friendlyScheme = urnSchemeMap[action.scheme] || action.scheme;
+  return html`<div
+    style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+  >
+    Add <b>${friendlyScheme}</b> <b>${action.path}</b>
+  </div>`;
 };
 
 export const renderSendEmail = (node: Node, action: SendEmail) => {
   const addressList = action.addresses.join(', ');
   return html`<div>
-    <div>Send email to <b>${addressList}</b></div>
+    <div
+      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    >
+      <b>${addressList}</b>
+    </div>
     <div style="margin-top: 0.5em">
-      <div><b>Subject:</b> ${action.subject}</div>
-      <div style="margin-top: 0.25em; word-wrap: break-word">
+      <div
+        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      >
+        <b>Subject:</b> ${action.subject}
+      </div>
+      <div
+        style="margin-top: 0.25em; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+      >
         ${action.body}
       </div>
     </div>
@@ -208,11 +267,19 @@ export const renderCallResthook = (node: Node, action: CallResthook) => {
 
 export const renderCallLLM = (node: Node, action: CallLLM) => {
   return html`<div>
-    <div>Call AI <b>${action.llm.name}</b></div>
-    <div style="margin-top: 0.25em; word-wrap: break-word">
-      Prompt: <b>${action.prompt}</b>
+    <div
+      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    >
+      <b>${action.llm.name}</b>
     </div>
-    <div style="margin-top: 0.25em">
+    <div
+      style="margin-top: 0.25em; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+    >
+      ${action.prompt}
+    </div>
+    <div
+      style="margin-top: 0.25em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    >
       Save result as <b>${action.result_name}</b>
     </div>
   </div>`;
@@ -220,18 +287,33 @@ export const renderCallLLM = (node: Node, action: CallLLM) => {
 
 export const renderOpenTicket = (node: Node, action: OpenTicket) => {
   return html`<div>
-    <div><b>Subject:</b> ${action.subject}</div>
-    <div style="margin-top: 0.25em; word-wrap: break-word">${action.body}</div>
+    <div
+      style="word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+    >
+      ${action.body}
+    </div>
     ${action.assignee
-      ? html`<div style="margin-top: 0.25em">
+      ? html`<div
+          style="margin-top: 0.25em; display: flex; align-items: center;"
+        >
           <temba-icon name="user" style="margin-right: 0.25em"></temba-icon>
-          Assign to <b>${action.assignee.name}</b>
+          <span
+            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+          >
+            <b>${action.assignee.name}</b>
+          </span>
         </div>`
       : null}
     ${action.topic
-      ? html`<div style="margin-top: 0.25em">
+      ? html`<div
+          style="margin-top: 0.25em; display: flex; align-items: center;"
+        >
           <temba-icon name="topic" style="margin-right: 0.25em"></temba-icon>
-          Topic: <b>${action.topic.name}</b>
+          <span
+            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+          >
+            <b>${action.topic.name}</b>
+          </span>
         </div>`
       : null}
   </div>`;
@@ -242,28 +324,37 @@ export const renderRequestOptin = (node: Node, action: RequestOptin) => {
 };
 
 export const renderAddInputLabels = (node: Node, action: AddInputLabels) => {
-  return html`<div>
-    <div style="margin-bottom: 0.25em">Add labels to input:</div>
-    ${renderNamedObjects(action.labels, 'label')}
-  </div>`;
+  return html`<div>${renderNamedObjects(action.labels, 'label')}</div>`;
 };
 
 export const renderSayMsg = (node: Node, action: SayMsg) => {
   return html`<div>
-    <div style="word-wrap: break-word">${action.text}</div>
+    <div
+      style="word-wrap: break-word; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    >
+      ${action.text}
+    </div>
     ${action.audio_url
-      ? html`<div style="margin-top: 0.5em">
+      ? html`<div
+          style="margin-top: 0.5em; display: flex; align-items: center;"
+        >
           <temba-icon name="audio" style="margin-right: 0.25em"></temba-icon>
-          <span style="word-break: break-all">${action.audio_url}</span>
+          <span
+            style="word-break: break-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+            >${action.audio_url}</span
+          >
         </div>`
       : null}
   </div>`;
 };
 
 export const renderPlayAudio = (node: Node, action: PlayAudio) => {
-  return html`<div>
+  return html`<div style="display: flex; align-items: center;">
     <temba-icon name="audio" style="margin-right: 0.25em"></temba-icon>
-    <span style="word-break: break-all">${action.audio_url}</span>
+    <span
+      style="word-break: break-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      >${action.audio_url}</span
+    >
   </div>`;
 };
 
