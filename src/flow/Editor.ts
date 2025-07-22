@@ -16,6 +16,19 @@ export function snapToGrid(value: number): number {
   return Math.max(snapped, 0);
 }
 
+export function findNodeForExit(
+  definition: FlowDefinition,
+  exitUuid: string
+): string | null {
+  for (const node of definition.nodes) {
+    const exit = node.exits.find((e) => e.uuid === exitUuid);
+    if (exit) {
+      return node.uuid;
+    }
+  }
+  return null;
+}
+
 const SAVE_QUIET_TIME = 500;
 
 export interface DraggableItem {
@@ -86,6 +99,12 @@ export class Editor extends RapidElement {
 
   @state()
   private sourceId: string | null = null;
+
+  @state()
+  private sourceNodeId: string | null = null;
+
+  @state()
+  private isValidTarget = true;
 
   private canvasMouseDown = false;
 
@@ -196,6 +215,30 @@ export class Editor extends RapidElement {
         z-index: 10;
       }
 
+      /* Connection dragging feedback */
+      body svg.jtk-connector.jtk-dragging {
+        z-index: 99999 !important;
+      }
+
+      .katavorio-drag-no-select svg.jtk-connector path,
+      .katavorio-drag-no-select svg.jtk-endpoint path {
+        pointer-events: none !important;
+        border: 1px solid purple;
+      }
+
+      /* Connection target feedback */
+      temba-flow-node.connection-target-valid {
+        outline: 3px solid var(--color-success, #22c55e) !important;
+        outline-offset: 2px;
+        border-radius: var(--curvature);
+      }
+
+      temba-flow-node.connection-target-invalid {
+        outline: 3px solid var(--color-error, #ef4444) !important;
+        outline-offset: 2px;
+        border-radius: var(--curvature);
+      }
+
       /* Selection box styles */
       .selection-box {
         position: absolute;
@@ -234,6 +277,7 @@ export class Editor extends RapidElement {
 
     this.plumber.on('connection:drag', (info: Connection) => {
       this.sourceId = info.sourceId;
+      this.sourceNodeId = findNodeForExit(this.definition, info.sourceId);
     });
 
     this.plumber.on('connection:abort', () => {
@@ -246,7 +290,8 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection() {
-    if (this.sourceId && this.targetId) {
+    // Only create connection if target is valid (not self-targeting)
+    if (this.sourceId && this.targetId && this.isValidTarget) {
       this.plumber.connectIds(this.sourceId, this.targetId);
       getStore().getState().updateConnection(this.sourceId, this.targetId);
 
@@ -255,8 +300,18 @@ export class Editor extends RapidElement {
       }, 100);
     }
 
+    // Clean up visual feedback
+    document.querySelectorAll('temba-flow-node').forEach((node) => {
+      node.classList.remove(
+        'connection-target-valid',
+        'connection-target-invalid'
+      );
+    });
+
     this.sourceId = null;
     this.targetId = null;
+    this.sourceNodeId = null;
+    this.isValidTarget = true;
   }
 
   protected updated(
@@ -629,10 +684,29 @@ export class Editor extends RapidElement {
 
     if (this.plumber.connectionDragging) {
       const targetNode = document.querySelector('temba-flow-node:hover');
+
+      // Clear previous target styles
+      document.querySelectorAll('temba-flow-node').forEach((node) => {
+        node.classList.remove(
+          'connection-target-valid',
+          'connection-target-invalid'
+        );
+      });
+
       if (targetNode) {
         this.targetId = targetNode.getAttribute('uuid');
+        // Check if target is different from source node (prevent self-targeting)
+        this.isValidTarget = this.targetId !== this.sourceNodeId;
+
+        // Apply visual feedback based on validity
+        if (this.isValidTarget) {
+          targetNode.classList.add('connection-target-valid');
+        } else {
+          targetNode.classList.add('connection-target-invalid');
+        }
       } else {
         this.targetId = null;
+        this.isValidTarget = true;
       }
     }
 
