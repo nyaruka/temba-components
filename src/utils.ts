@@ -5,6 +5,7 @@ import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from './display/Toast';
+import { v4 as generateUUID } from 'uuid';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -928,3 +929,6 @@ export const getCenter = (a: DOMRect, b: DOMRect) => {
 export const getMiddle = (a: DOMRect, b: DOMRect) => {
   return a.top + a.height / 2 - b.height / 2;
 };
+
+// Export the UUID function from the uuid package
+export { generateUUID };

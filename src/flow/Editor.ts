@@ -94,6 +94,7 @@ export class Editor extends RapidElement {
   private boundMouseUp = this.handleMouseUp.bind(this);
   private boundGlobalMouseDown = this.handleGlobalMouseDown.bind(this);
   private boundKeyDown = this.handleKeyDown.bind(this);
+  private boundCanvasDoubleClick = this.handleCanvasDoubleClick.bind(this);
 
   static get styles() {
     return css`
@@ -312,6 +313,11 @@ export class Editor extends RapidElement {
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
     document.removeEventListener('keydown', this.boundKeyDown);
+
+    const canvas = this.querySelector('#canvas');
+    if (canvas) {
+      canvas.removeEventListener('dblclick', this.boundCanvasDoubleClick);
+    }
   }
 
   private setupGlobalEventListeners(): void {
@@ -319,6 +325,11 @@ export class Editor extends RapidElement {
     document.addEventListener('mouseup', this.boundMouseUp);
     document.addEventListener('mousedown', this.boundGlobalMouseDown);
     document.addEventListener('keydown', this.boundKeyDown);
+
+    const canvas = this.querySelector('#canvas');
+    if (canvas) {
+      canvas.addEventListener('dblclick', this.boundCanvasDoubleClick);
+    }
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -784,6 +795,38 @@ export class Editor extends RapidElement {
 
     // Update canvas size in store
     store.getState().expandCanvas(maxWidth, maxHeight);
+  }
+
+  private handleCanvasDoubleClick(event: MouseEvent): void {
+    // Check if we double-clicked on empty canvas space
+    const target = event.target as HTMLElement;
+    if (target.id !== 'canvas') {
+      return;
+    }
+
+    // Get canvas position
+    const canvas = this.querySelector('#canvas');
+    if (!canvas) {
+      return;
+    }
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const relativeX = event.clientX - canvasRect.left;
+    const relativeY = event.clientY - canvasRect.top;
+
+    // Snap position to grid
+    const snappedLeft = snapToGrid(relativeX);
+    const snappedTop = snapToGrid(relativeY);
+
+    // Create new sticky note
+    const store = getStore();
+    store.getState().createStickyNote({
+      left: snappedLeft,
+      top: snappedTop
+    });
+
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   public render(): TemplateResult {

@@ -1,5 +1,5 @@
 import { createStore, StoreApi } from 'zustand/vanilla';
-import { fetchResults } from '../utils';
+import { fetchResults, generateUUID } from '../utils';
 import {
   Action,
   Exit,
@@ -99,6 +99,7 @@ export interface AppState {
   removeNodes: (uuids: string[]) => void;
   removeStickyNotes: (uuids: string[]) => void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
+  createStickyNote(position: FlowPosition): string;
 }
 
 export const zustand = createStore<AppState>()(
@@ -304,6 +305,26 @@ export const zustand = createStore<AppState>()(
           state.flowDefinition._ui.stickies[uuid] = sticky;
           state.dirtyDate = new Date();
         });
+      },
+
+      createStickyNote: (position: FlowPosition): string => {
+        const uuid = generateUUID();
+        set((state: AppState) => {
+          if (!state.flowDefinition._ui.stickies) {
+            state.flowDefinition._ui.stickies = {};
+          }
+
+          const newSticky: StickyNote = {
+            position,
+            title: '',
+            body: '',
+            color: 'yellow'
+          };
+
+          state.flowDefinition._ui.stickies[uuid] = newSticky;
+          state.dirtyDate = new Date();
+        });
+        return uuid;
       }
     }))
   )

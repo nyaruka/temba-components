@@ -216,3 +216,111 @@ describe('AppState Language Reset', () => {
     assert.equal(zustand.getState().isTranslating, false);
   });
 });
+
+describe('AppState Sticky Note Creation', () => {
+  beforeEach(() => {
+    // Reset the store state before each test
+    const state = zustand.getState();
+    zustand.setState({
+      ...state,
+      languageCode: '',
+      isTranslating: false,
+      flowDefinition: {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        nodes: [],
+        uuid: 'test-uuid',
+        type: 'messaging' as const,
+        revision: 1,
+        spec_version: '14.3',
+        _ui: {
+          nodes: {},
+          stickies: {},
+          languages: []
+        }
+      },
+      flowInfo: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 0, languages: 1 },
+        locals: []
+      },
+      dirtyDate: null
+    });
+  });
+
+  it('should create a new sticky note with correct defaults', () => {
+    const state = zustand.getState();
+
+    const position = { left: 100, top: 200 };
+    const stickyUuid = state.createStickyNote(position);
+
+    // Verify UUID was returned
+    assert.isString(stickyUuid);
+    assert.isTrue(stickyUuid.length > 0);
+
+    // Verify sticky was added to the flow definition
+    const currentState = zustand.getState();
+    const stickies = currentState.flowDefinition._ui.stickies;
+
+    assert.property(stickies, stickyUuid);
+
+    const createdSticky = stickies[stickyUuid];
+    assert.deepEqual(createdSticky.position, position);
+    assert.equal(createdSticky.title, '');
+    assert.equal(createdSticky.body, '');
+    assert.equal(createdSticky.color, 'yellow');
+
+    // Verify dirty date was set
+    assert.isNotNull(currentState.dirtyDate);
+    assert.instanceOf(currentState.dirtyDate, Date);
+  });
+
+  it('should create multiple unique sticky notes', () => {
+    const state = zustand.getState();
+
+    const position1 = { left: 100, top: 200 };
+    const position2 = { left: 300, top: 400 };
+
+    const uuid1 = state.createStickyNote(position1);
+    const uuid2 = state.createStickyNote(position2);
+
+    // UUIDs should be different
+    assert.notEqual(uuid1, uuid2);
+
+    // Both stickies should exist
+    const currentState = zustand.getState();
+    const stickies = currentState.flowDefinition._ui.stickies;
+
+    assert.property(stickies, uuid1);
+    assert.property(stickies, uuid2);
+
+    // Positions should be correct
+    assert.deepEqual(stickies[uuid1].position, position1);
+    assert.deepEqual(stickies[uuid2].position, position2);
+  });
+
+  it('should initialize stickies object if it does not exist', () => {
+    // Set up state without stickies
+    const state = zustand.getState();
+    zustand.setState({
+      ...state,
+      flowDefinition: {
+        ...state.flowDefinition,
+        _ui: {
+          ...state.flowDefinition._ui,
+          stickies: undefined
+        }
+      }
+    });
+
+    const position = { left: 50, top: 75 };
+    const stickyUuid = state.createStickyNote(position);
+
+    // Verify stickies object was created
+    const currentState = zustand.getState();
+    assert.isObject(currentState.flowDefinition._ui.stickies);
+    assert.property(currentState.flowDefinition._ui.stickies, stickyUuid);
+  });
+});
