@@ -508,9 +508,16 @@ export class EditorNode extends RapidElement {
       // Connect each incoming connection to the first outgoing destination
       const firstDestination = outgoingExits[0].destination_uuid;
       for (const incoming of incomingConnections) {
+        // Remove the old JSPlumb connection first
+        this.plumber.removeExitConnection(incoming.exitUuid);
+
+        // Update the flow definition
         getStore()
           ?.getState()
           .updateConnection(incoming.exitUuid, firstDestination);
+
+        // Create the new JSPlumb connection
+        this.plumber.connectIds(incoming.exitUuid, firstDestination);
       }
     }
 
