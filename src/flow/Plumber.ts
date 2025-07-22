@@ -200,8 +200,37 @@ export class Plumber {
           });
         });
         this.pendingConnections = [];
+        
+        // Set up arrow hover listeners after connections are created
+        this.setupArrowHoverListeners();
       });
     }, 50);
+  }
+
+  /**
+   * Set up hover event listeners on arrow elements to handle connector highlighting
+   * This provides fallback support for browsers that don't support :has() CSS selector
+   */
+  private setupArrowHoverListeners() {
+    if (!this.jsPlumb) return;
+    
+    // Find all arrow elements and add hover listeners
+    const arrowElements = document.querySelectorAll('.plumb-arrow');
+    arrowElements.forEach((arrow) => {
+      // Find the parent connector element
+      const connector = arrow.closest('.plumb-connector');
+      if (!connector) return;
+      
+      // Add mouseenter listener
+      arrow.addEventListener('mouseenter', () => {
+        connector.classList.add('arrow-hover');
+      });
+      
+      // Add mouseleave listener  
+      arrow.addEventListener('mouseleave', () => {
+        connector.classList.remove('arrow-hover');
+      });
+    });
   }
 
   public connectIds(fromId: string, toId: string) {

@@ -196,6 +196,25 @@ export class Editor extends RapidElement {
         z-index: 10;
       }
 
+      /* When hovering over the arrow, make both arrow and connector green */
+      body .plumb-connector .plumb-arrow:hover {
+        fill: var(--color-success) !important;
+        stroke-width: 0px;
+        z-index: 10;
+      }
+
+      /* Use :has() selector for modern browsers */
+      body .plumb-connector:has(.plumb-arrow:hover) path {
+        stroke: var(--color-success) !important;
+        stroke-width: 3px;
+      }
+
+      /* Fallback class for when JavaScript adds hover state */
+      body .plumb-connector.arrow-hover path {
+        stroke: var(--color-success) !important;
+        stroke-width: 3px;
+      }
+
       /* Selection box styles */
       .selection-box {
         position: absolute;
