@@ -17,6 +17,9 @@ export class StickyNote extends RapidElement {
   @property({ type: Boolean })
   public selected = false;
 
+  @property({ type: Boolean })
+  private colorPickerExpanded = false;
+
   static get styles() {
     return css`
       :host {
@@ -175,6 +178,82 @@ export class StickyNote extends RapidElement {
       .sticky-note:focus-within .drag-handle {
         max-width: 0px;
       }
+
+      /* Color picker */
+      .color-picker {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+
+        border-radius: 3px;
+        background-color: var(--sticky-color);
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .color-picker:hover {
+        transform: scale(1.1);
+      }
+
+      .color-options {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        display: flex;
+        gap: 4px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 3px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform-origin: bottom right;
+        transform: scale(0);
+        opacity: 0;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        z-index: 1000;
+      }
+
+      .color-options.expanded {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      .color-option {
+        width: 12px;
+        height: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+      }
+
+      .color-option:hover {
+        transform: scale(1.1);
+        border-color: rgba(0, 0, 0, 0.4);
+      }
+
+      .color-option.yellow {
+        background-color: #fef08a;
+      }
+
+      .color-option.blue {
+        background-color: #bfdbfe;
+      }
+
+      .color-option.pink {
+        background-color: #fce7f3;
+      }
+
+      .color-option.green {
+        background-color: #d1fae5;
+      }
+
+      .color-option.gray {
+        background-color: #f3f4f6;
+      }
     `;
   }
 
@@ -254,6 +333,33 @@ export class StickyNote extends RapidElement {
     }
   }
 
+  private handleColorPickerMouseEnter(): void {
+    this.colorPickerExpanded = true;
+  }
+
+  private handleColorPickerMouseLeave(): void {
+    this.colorPickerExpanded = false;
+  }
+
+  private handleColorOptionClick(
+    event: MouseEvent,
+    color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray'
+  ): void {
+    event.stopPropagation();
+
+    if (this.data && color !== this.data.color) {
+      getStore()
+        .getState()
+        .updateStickyNote(this.uuid, {
+          ...this.data,
+          color: color
+        });
+    }
+
+    this.colorPickerExpanded = false;
+    this.requestUpdate();
+  }
+
   public render(): TemplateResult {
     if (!this.data) {
       return html`<div class="sticky-note" style="display: none;"></div>`;
@@ -290,6 +396,45 @@ export class StickyNote extends RapidElement {
             .textContent="${this.data.body}"
           ></div>
           <div class="edit-icon" title="Edit note"></div>
+
+          <!-- Color picker -->
+          <div
+            class="color-picker"
+            @mouseenter="${this.handleColorPickerMouseEnter}"
+            @mouseleave="${this.handleColorPickerMouseLeave}"
+          >
+            <div
+              class="color-options ${this.colorPickerExpanded
+                ? 'expanded'
+                : ''}"
+            >
+              <div
+                class="color-option yellow"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'yellow')}"
+              ></div>
+              <div
+                class="color-option blue"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'blue')}"
+              ></div>
+              <div
+                class="color-option pink"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'pink')}"
+              ></div>
+              <div
+                class="color-option green"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'green')}"
+              ></div>
+              <div
+                class="color-option gray"
+                @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'gray')}"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
     `;
