@@ -26,7 +26,7 @@
         "exits": [
           {
             "uuid": "7b122f4f-cb46-4587-af27-3df748d62539",
-            "destination_uuid": "f115fdb0-d92d-47a2-96f3-e03e36767b14"
+            "destination_uuid": "ef1a5b06-1331-4c0d-9f46-58b1e5baf671"
           }
         ]
       },
@@ -110,11 +110,11 @@
           },
           {
             "uuid": "3dfd68c4-0184-49d8-b2a4-0bbb62425f33",
-            "destination_uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef"
+            "destination_uuid": "425c4757-bead-440f-92aa-a1cc3fcd7d35"
           },
           {
             "uuid": "ae901cf0-f7a1-491c-a56a-1922e242efa0",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": "f115fdb0-d92d-47a2-96f3-e03e36767b14"
           },
           {
             "uuid": "bf3b071c-c383-4382-93a8-6093e74c2449",
@@ -168,17 +168,24 @@
         "exits": [
           {
             "uuid": "4f1f8e3b-887c-42f5-bf59-fa59c5245dc2",
-            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
+            "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
           },
           {
             "uuid": "4929ff2a-35cf-43a5-8353-dfede604add7",
-            "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
+            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
           }
         ]
       },
       {
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
+          {
+            "attachments": [],
+            "text": "Excellent choice!",
+            "type": "send_msg",
+            "quick_replies": [],
+            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
+          },
           {
             "type": "add_contact_groups",
             "groups": [
@@ -200,13 +207,6 @@
               }
             ],
             "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90"
-          },
-          {
-            "attachments": [],
-            "text": "Excellent choice!",
-            "type": "send_msg",
-            "quick_replies": [],
-            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
           },
           {
             "addresses": [
@@ -339,11 +339,11 @@
         "exits": [
           {
             "uuid": "4654d1d0-f6d8-45ee-b941-0d61846b7da0",
-            "destination_uuid": "ef1a5b06-1331-4c0d-9f46-58b1e5baf671"
+            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
           },
           {
             "uuid": "e7161b36-544c-4b0e-814f-1e3784f8e1b5",
-            "destination_uuid": "e1f22e97-a170-44b4-a79b-98ab916f4c34"
+            "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
           }
         ]
       },
@@ -783,8 +783,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 280,
-            "top": 180
+            "left": 260,
+            "top": 160
           },
           "config": {
             "cases": {}
@@ -793,22 +793,22 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 1060,
-            "top": 20
+            "left": 1040,
+            "top": 200
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
-            "left": 280,
-            "top": 360
+            "left": 260,
+            "top": 320
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 640,
+            "left": 560,
             "top": 720
           },
           "config": {}
@@ -816,8 +816,8 @@
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 620,
-            "top": 60
+            "left": 760,
+            "top": 200
           },
           "config": {
             "operand": {
@@ -831,8 +831,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 1080,
-            "top": 460
+            "left": 1020,
+            "top": 440
           },
           "config": {
             "cases": {}
@@ -841,8 +841,8 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 840,
-            "top": 360
+            "left": 780,
+            "top": 380
           },
           "config": null
         },
@@ -864,8 +864,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 560,
-            "top": 360
+            "left": 500,
+            "top": 340
           },
           "config": {
             "cases": {}
@@ -874,8 +874,8 @@
         "e780a7ef-9dad-45a3-abda-11200a9afbf4": {
           "type": "split_by_scheme",
           "position": {
-            "left": 560,
-            "top": 580
+            "left": 580,
+            "top": 480
           },
           "config": {
             "cases": {}
@@ -884,23 +884,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 1020,
-            "top": 1080
+            "left": 940,
+            "top": 1000
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 1000,
-            "top": 840
+            "left": 840,
+            "top": 720
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 760,
-            "top": 960
+            "left": 560,
+            "top": 920
           },
           "config": {}
         }
@@ -908,8 +908,8 @@
       "stickies": {
         "1a32aff1-36b9-48e3-a51e-382efdcb9a83": {
           "position": {
-            "left": 0,
-            "top": 160
+            "left": 20,
+            "top": 40
           },
           "title": "Yellow Note",
           "body": "This flow makes no sense. That's because it's just for general testing. We can keep typing in this div though and it is interesting how it just keeps expanding even if it isn't a textarea. Even this seems okay and I can keep typing as long as I like.\n\nI can even add some extra line breaks.",
@@ -917,8 +917,8 @@
         },
         "598a87e4-f20b-48ba-aac5-bb365d8f1509": {
           "position": {
-            "left": 0,
-            "top": 440
+            "left": 880,
+            "top": 0
           },
           "title": "Blue Note",
           "body": "Did you know stickies can have different colors? I just realized that and I'm pretty happy to report that this expands really nicely. It seems to be working okay I think. This.",
@@ -926,17 +926,17 @@
         },
         "598a87e4-f20b-48ba-aac5-bb365d8f1501": {
           "position": {
-            "left": 0,
-            "top": 0
+            "left": 1100,
+            "top": 640
           },
           "title": "Green Note",
           "body": "They also come in green, do I like them better? Maybe I do. There is a standard height, they will have to get used to it.",
-          "color": "green"
+          "color": "pink"
         },
         "598a87e4-f20b-48ba-aac5-bb365d8f1502": {
           "position": {
-            "left": 760,
-            "top": 180
+            "left": 580,
+            "top": 0
           },
           "title": "Pinky Note",
           "body": "This is a test. How much do I like writing in pink? Seems pretty nice honestly! I think Imma go with it",
@@ -944,12 +944,21 @@
         },
         "598a87e4-f20b-48ba-aac5-bb365d8f1503": {
           "position": {
-            "left": 0,
-            "top": 620
+            "left": 20,
+            "top": 340
           },
-          "title": "Gray Day",
-          "body": "Or grey even, toots! I think this is working ok. Hey hey.",
+          "title": "Gray notes unite!",
+          "body": "With all of their messages too.",
           "color": "gray"
+        },
+        "932a006c-4d1a-4bdd-b11c-b695729650bd": {
+          "position": {
+            "left": 20,
+            "top": 480
+          },
+          "title": "This is a pink one",
+          "body": "With a message.",
+          "color": "pink"
         }
       }
     },

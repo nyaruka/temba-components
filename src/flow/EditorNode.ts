@@ -138,8 +138,8 @@ export class EditorNode extends RapidElement {
       }
 
       .action-exits {
-        padding-bottom: 0.75em;
-        margin-top: -0.75em;
+        padding-bottom: 0.6em;
+        margin-top: -0.8em;
       }
 
       .category .title {
@@ -161,13 +161,11 @@ export class EditorNode extends RapidElement {
         justify-content: center;
         align-items: center;
         position: relative;
-        margin-bottom: -16px;
-        padding-top:1px;
+        margin-bottom: -1.2em;
+        padding-top:0.2em;
       }
 
       .exit {
-        self-align: center;
-        justify-content: center;
         width: 12px;
         height: 12px;
         border-radius: 50%;
@@ -212,7 +210,7 @@ export class EditorNode extends RapidElement {
         --color-connector-removing: var(--color-error);
       }
       
-      body .plumb-connector.removing path {
+      body svg.plumb-connector.removing path {
         stroke: var(--color-connector-removing, tomato) !important;
         stroke-width: 3px;
       }
