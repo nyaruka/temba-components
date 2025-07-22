@@ -200,9 +200,11 @@ export class Plumber {
           });
         });
         this.pendingConnections = [];
-        
+
         // Set up arrow hover listeners after connections are created
-        this.setupArrowHoverListeners();
+        setTimeout(() => {
+          this.setupArrowHoverListenersInternal();
+        }, 100);
       });
     }, 50);
   }
@@ -211,26 +213,40 @@ export class Plumber {
    * Set up hover event listeners on arrow elements to handle connector highlighting
    * This provides fallback support for browsers that don't support :has() CSS selector
    */
-  private setupArrowHoverListeners() {
+  private setupArrowHoverListenersInternal() {
     if (!this.jsPlumb) return;
-    
+
     // Find all arrow elements and add hover listeners
     const arrowElements = document.querySelectorAll('.plumb-arrow');
     arrowElements.forEach((arrow) => {
+      // Check if listener is already attached to avoid duplicates
+      if ((arrow as any)._arrowHoverListenerAttached) return;
+
       // Find the parent connector element
       const connector = arrow.closest('.plumb-connector');
       if (!connector) return;
-      
+
       // Add mouseenter listener
       arrow.addEventListener('mouseenter', () => {
         connector.classList.add('arrow-hover');
       });
-      
-      // Add mouseleave listener  
+
+      // Add mouseleave listener
       arrow.addEventListener('mouseleave', () => {
         connector.classList.remove('arrow-hover');
       });
+
+      // Mark as having listener attached
+      (arrow as any)._arrowHoverListenerAttached = true;
     });
+  }
+
+  /**
+   * Public method to set up arrow hover listeners
+   * Can be called externally when connections are updated
+   */
+  public setupArrowHoverListeners() {
+    this.setupArrowHoverListenersInternal();
   }
 
   public connectIds(fromId: string, toId: string) {

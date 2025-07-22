@@ -271,6 +271,7 @@ export class Editor extends RapidElement {
 
       setTimeout(() => {
         this.plumber.repaintEverything();
+        this.plumber.setupArrowHoverListeners();
       }, 100);
     }
 
@@ -767,6 +768,7 @@ export class Editor extends RapidElement {
 
         setTimeout(() => {
           this.plumber.repaintEverything();
+          this.plumber.setupArrowHoverListeners();
         }, 0);
       }
 
