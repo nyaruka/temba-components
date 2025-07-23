@@ -12,6 +12,7 @@ import {
 import { immer } from 'zustand/middleware/immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { property } from 'lit/decorators.js';
+import { produce } from 'immer';
 
 export const FLOW_SPEC_VERSION = '14.3';
 const CANVAS_PADDING = 800;
@@ -94,7 +95,11 @@ export interface AppState {
     uuid: string,
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
   ): unknown;
-  updateConnection(exitUuid: string, destinationNodeUuid: string): unknown;
+  updateConnection(
+    nodeUuid: string,
+    exitUuid: string,
+    destinationNodeUuid: string
+  ): unknown;
   updateCanvasPositions: (positions: CanvasPositions) => void;
   removeNodes: (uuids: string[]) => void;
   removeStickyNotes: (uuids: string[]) => void;
@@ -243,18 +248,20 @@ export const zustand = createStore<AppState>()(
             delete state.flowDefinition._ui.nodes[uuid];
           }
 
-          state.flowDefinition.nodes = state.flowDefinition.nodes.filter(
-            (node) => !uuids.includes(node.uuid)
-          );
+          state.flowDefinition = produce(state.flowDefinition, (draft) => {
+            draft.nodes = draft.nodes.filter(
+              (node) => !uuids.includes(node.uuid)
+            );
 
-          // nullify any destinations that point to these nodes
-          for (const node of state.flowDefinition.nodes) {
-            node.exits.forEach((exit) => {
-              if (uuids.includes(exit.destination_uuid)) {
-                exit.destination_uuid = null;
-              }
+            draft.nodes.forEach((node) => {
+              node.exits.forEach((exit) => {
+                if (uuids.includes(exit.destination_uuid)) {
+                  exit.destination_uuid = null;
+                }
+              });
             });
-          }
+          });
+
           state.dirtyDate = new Date();
         });
       },
@@ -282,17 +289,22 @@ export const zustand = createStore<AppState>()(
         });
       },
 
-      updateConnection: (exitUuid: string, destinationNodeUuid: string) => {
+      updateConnection: (
+        nodeUuid: string,
+        exitUuid: string,
+        destinationNodeUuid: string
+      ) => {
         set((state: AppState) => {
           // Find the exit with this UUID
-          for (const node of state.flowDefinition.nodes) {
-            const exit = node.exits.find((e) => e.uuid === exitUuid);
-            if (exit) {
-              // Update the destination
-              exit.destination_uuid = destinationNodeUuid;
-              state.dirtyDate = new Date();
-              break;
-            }
+          const node = state.flowDefinition.nodes.find(
+            (node) => node.uuid === nodeUuid
+          );
+
+          const exit = node?.exits.find((e) => e.uuid === exitUuid);
+          if (exit) {
+            // Update the destination
+            exit.destination_uuid = destinationNodeUuid;
+            state.dirtyDate = new Date();
           }
         });
       },
