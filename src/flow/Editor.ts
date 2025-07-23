@@ -5,6 +5,7 @@ import { FlowDefinition, FlowPosition } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
+import { repeat } from 'lit-html/directives/repeat.js';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
@@ -86,6 +87,9 @@ export class Editor extends RapidElement {
 
   @state()
   private sourceId: string | null = null;
+
+  @state()
+  private dragFromNodeId: string | null = null;
 
   private canvasMouseDown = false;
 
@@ -233,6 +237,9 @@ export class Editor extends RapidElement {
     }
 
     this.plumber.on('connection:drag', (info: Connection) => {
+      this.dragFromNodeId = document
+        .getElementById(info.sourceId)
+        .closest('.node').id;
       this.sourceId = info.sourceId;
     });
 
@@ -247,8 +254,14 @@ export class Editor extends RapidElement {
 
   private makeConnection() {
     if (this.sourceId && this.targetId) {
-      this.plumber.connectIds(this.sourceId, this.targetId);
-      getStore().getState().updateConnection(this.sourceId, this.targetId);
+      this.plumber.connectIds(
+        this.dragFromNodeId,
+        this.sourceId,
+        this.targetId
+      );
+      getStore()
+        .getState()
+        .updateConnection(this.dragFromNodeId, this.sourceId, this.targetId);
 
       setTimeout(() => {
         this.plumber.repaintEverything();
@@ -257,6 +270,7 @@ export class Editor extends RapidElement {
 
     this.sourceId = null;
     this.targetId = null;
+    this.dragFromNodeId = null;
   }
 
   protected updated(
@@ -482,40 +496,32 @@ export class Editor extends RapidElement {
     });
   }
 
-  private deleteSelectedItems(): void {
-    const store = getStore();
-
-    // Separate nodes and stickies
-    const nodeUuids: string[] = [];
-    const stickyUuids: string[] = [];
-
-    this.selectedItems.forEach((uuid) => {
-      // Check if it's a node or sticky by looking at the definition
-      if (this.definition.nodes.find((node) => node.uuid === uuid)) {
-        nodeUuids.push(uuid);
-      } else if (this.definition._ui?.stickies?.[uuid]) {
-        stickyUuids.push(uuid);
-      }
+  private deleteNodes(uuids: string[]): void {
+    // Clean up jsPlumb connections for nodes before removing them
+    uuids.forEach((uuid) => {
+      this.plumber.removeNodeConnections(uuid);
     });
 
-    // Clean up jsPlumb connections for nodes before removing them
-    if (nodeUuids.length > 0 && this.plumber) {
-      nodeUuids.forEach((uuid) => {
-        this.plumber.removeNodeConnections(uuid);
-      });
-
-      // Remove nodes using the existing method
-      store.getState().removeNodes(nodeUuids);
+    // Now remove them from the definition
+    if (uuids.length > 0 && this.plumber) {
+      getStore().getState().removeNodes(uuids);
     }
+  }
 
-    // Remove sticky notes using the new AppState method
-    if (stickyUuids.length > 0) {
-      store.getState().removeStickyNotes(stickyUuids);
-    }
+  private deleteSelectedItems(): void {
+    const nodes = Array.from(this.selectedItems).filter((uuid) =>
+      this.definition.nodes.some((node) => node.uuid === uuid)
+    );
+    this.deleteNodes(Array.from(nodes));
+
+    const stickies = Array.from(this.selectedItems).filter(
+      (uuid) => this.definition._ui?.stickies?.[uuid]
+    );
+
+    getStore().getState().removeStickyNotes(stickies);
 
     // Clear selection
     this.selectedItems.clear();
-    this.requestUpdate();
   }
 
   private updateSelectionBox(event: MouseEvent): void {
@@ -847,46 +853,58 @@ export class Editor extends RapidElement {
         >
           <div id="canvas">
             ${this.definition
-              ? this.definition.nodes.map((node) => {
-                  const position =
-                    this.definition._ui.nodes[node.uuid].position;
+              ? repeat(
+                  this.definition.nodes,
+                  (node) => node.uuid,
+                  (node) => {
+                    const position =
+                      this.definition._ui.nodes[node.uuid].position;
 
-                  const dragging =
-                    this.isDragging && this.currentDragItem?.uuid === node.uuid;
+                    const dragging =
+                      this.isDragging &&
+                      this.currentDragItem?.uuid === node.uuid;
 
-                  const selected = this.selectedItems.has(node.uuid);
+                    const selected = this.selectedItems.has(node.uuid);
 
-                  return html`<temba-flow-node
-                    class="draggable ${dragging ? 'dragging' : ''} ${selected
-                      ? 'selected'
-                      : ''}"
-                    @mousedown=${this.handleMouseDown.bind(this)}
-                    uuid=${node.uuid}
-                    style="left:${position.left}px; top:${position.top}px"
-                    .plumber=${this.plumber}
-                    .node=${node}
-                    .ui=${this.definition._ui.nodes[node.uuid]}
-                  ></temba-flow-node>`;
-                })
+                    return html`<temba-flow-node
+                      class="draggable ${dragging ? 'dragging' : ''} ${selected
+                        ? 'selected'
+                        : ''}"
+                      @mousedown=${this.handleMouseDown.bind(this)}
+                      uuid=${node.uuid}
+                      style="left:${position.left}px; top:${position.top}px"
+                      .plumber=${this.plumber}
+                      .node=${node}
+                      .ui=${this.definition._ui.nodes[node.uuid]}
+                      @temba-node-deleted=${(event) => {
+                        this.deleteNodes([event.detail.uuid]);
+                      }}
+                    ></temba-flow-node>`;
+                  }
+                )
               : html`<temba-loading></temba-loading>`}
-            ${Object.entries(stickies).map(([uuid, sticky]) => {
-              const position = sticky.position || { left: 0, top: 0 };
-              const dragging =
-                this.isDragging && this.currentDragItem?.uuid === uuid;
-              const selected = this.selectedItems.has(uuid);
-              return html`<temba-sticky-note
-                class="draggable ${dragging ? 'dragging' : ''} ${selected
-                  ? 'selected'
-                  : ''}"
-                @mousedown=${this.handleMouseDown.bind(this)}
-                style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
-                position.top}"
-                uuid=${uuid}
-                .data=${sticky}
-                .dragging=${dragging}
-                .selected=${selected}
-              ></temba-sticky-note>`;
-            })}
+            ${repeat(
+              Object.entries(stickies),
+              ([uuid]) => uuid,
+              ([uuid, sticky]) => {
+                const position = sticky.position || { left: 0, top: 0 };
+                const dragging =
+                  this.isDragging && this.currentDragItem?.uuid === uuid;
+                const selected = this.selectedItems.has(uuid);
+                return html`<temba-sticky-note
+                  class="draggable ${dragging ? 'dragging' : ''} ${selected
+                    ? 'selected'
+                    : ''}"
+                  @mousedown=${this.handleMouseDown.bind(this)}
+                  style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
+                  position.top}"
+                  uuid=${uuid}
+                  .data=${sticky}
+                  .dragging=${dragging}
+                  .selected=${selected}
+                ></temba-sticky-note>`;
+              }
+            )}
             ${this.renderSelectionBox()}
           </div>
         </div>

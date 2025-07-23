@@ -6,6 +6,7 @@ import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
+import { CustomEventType } from '../interfaces';
 
 export class EditorNode extends RapidElement {
   createRenderRoot() {
@@ -299,7 +300,11 @@ export class EditorNode extends RapidElement {
           if (!exit.destination_uuid) {
             this.plumber.makeSource(exit.uuid);
           } else {
-            this.plumber.connectIds(exit.uuid, exit.destination_uuid);
+            this.plumber.connectIds(
+              this.node.uuid,
+              exit.uuid,
+              exit.destination_uuid
+            );
           }
         }
       }
@@ -464,70 +469,17 @@ export class EditorNode extends RapidElement {
 
     // If no actions remain, remove the entire node
     if (updatedActions.length === 0) {
-      this.removeNodeWithConnections();
-      return;
+      this.fireCustomEvent(CustomEventType.NodeDeleted, {
+        uuid: this.node.uuid
+      });
+    } else {
+      // Update the node with remaining actions
+      const updatedNode = { ...this.node, actions: updatedActions };
+      getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+      // Request update to reflect changes
+      this.requestUpdate();
     }
-
-    // Update the node with remaining actions
-    const updatedNode = { ...this.node, actions: updatedActions };
-    getStore()?.getState().updateNode(this.node.uuid, updatedNode);
-
-    // Request update to reflect changes
-    this.requestUpdate();
-  }
-
-  private removeNodeWithConnections() {
-    const nodeUuid = this.node.uuid;
-
-    // Find all connections coming into this node and going out of this node
-    const incomingConnections: { exitUuid: string; sourceNodeUuid: string }[] =
-      [];
-    const outgoingExits = this.node.exits.filter(
-      (exit) => exit.destination_uuid
-    );
-
-    // Find incoming connections by checking all other nodes' exits
-    const flowDefinition = getStore()?.getState().flowDefinition;
-    if (flowDefinition) {
-      for (const node of flowDefinition.nodes) {
-        if (node.uuid !== nodeUuid) {
-          for (const exit of node.exits) {
-            if (exit.destination_uuid === nodeUuid) {
-              incomingConnections.push({
-                exitUuid: exit.uuid,
-                sourceNodeUuid: node.uuid
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // If there are both incoming and outgoing connections, create new connections
-    if (incomingConnections.length > 0 && outgoingExits.length > 0) {
-      // Connect each incoming connection to the first outgoing destination
-      const firstDestination = outgoingExits[0].destination_uuid;
-      for (const incoming of incomingConnections) {
-        // Remove the old JSPlumb connection first
-        this.plumber.removeExitConnection(incoming.exitUuid);
-
-        // Update the flow definition
-        getStore()
-          ?.getState()
-          .updateConnection(incoming.exitUuid, firstDestination);
-
-        // Create the new JSPlumb connection
-        this.plumber.connectIds(incoming.exitUuid, firstDestination);
-      }
-    }
-
-    // Remove all JSPlumb connections for this node
-    for (const exit of this.node.exits) {
-      this.plumber.removeExitConnection(exit.uuid);
-    }
-
-    // Remove the node from the store
-    getStore()?.getState().removeNodes([nodeUuid]);
   }
 
   private handleActionOrderChanged(event: CustomEvent) {
