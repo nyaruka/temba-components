@@ -41,10 +41,11 @@ export class StickyNote extends RapidElement {
         overflow: hidden;
         transition: transform 0.1s ease, box-shadow 0.2s ease;
         color: var(--sticky-text-color);
+        opacity: 0.85;
       }
 
       .sticky-note.dragging {
-        opacity: 0.5;
+        opacity: 0.7;
         z-index: 1000;
         transform: rotate(0deg);
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
@@ -153,20 +154,16 @@ export class StickyNote extends RapidElement {
       .sticky-title-container > .drag-handle {
         --icon-color: var(--sticky-border-color);
         cursor: move;
-        max-width: 0px;
+        max-width: 20px;
+        padding-left: 8px;
         overflow: hidden;
         transition: all 0.2s ease;
-        padding-left: 0;
       }
 
       .sticky-note:hover .drag-handle {
-        max-width: 20px;
-        padding-left: 8px;
       }
 
       .sticky-note:focus-within .sticky-title-container > .drag-handle {
-        max-width: 0px;
-        padding-left: 0px;
       }
 
       /* Focus/active states */
@@ -177,6 +174,7 @@ export class StickyNote extends RapidElement {
 
       .sticky-note:focus-within .drag-handle {
         max-width: 0px;
+        padding-left: 0px;
       }
 
       /* Color picker */

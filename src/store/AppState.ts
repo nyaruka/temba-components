@@ -273,6 +273,7 @@ export const zustand = createStore<AppState>()(
               delete state.flowDefinition._ui.stickies[uuid];
             }
           }
+          state.dirtyDate = new Date();
         });
       },
 

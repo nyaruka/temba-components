@@ -91,6 +91,9 @@ export class Editor extends RapidElement {
   @state()
   private dragFromNodeId: string | null = null;
 
+  @state()
+  private isValidTarget = true;
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -171,20 +174,19 @@ export class Editor extends RapidElement {
         fill: transparent;
       }
 
-      body .plumb-connector path {
+      body svg.jtk-connector.plumb-connector path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
-        z-index: 10;
       }
 
       body .plumb-connector {
-        z-index: 10;
+        z-index: 10 !important;
       }
 
       body .plumb-connector .plumb-arrow {
         fill: var(--color-connectors);
         stroke: var(--color-connectors);
-        stroke-width: 0px;
+        stroke-width: 0px !important;
         margin-top: 6px;
         z-index: 10;
       }
@@ -198,6 +200,30 @@ export class Editor extends RapidElement {
         fill: var(--color-success) !important;
         stroke-width: 0px;
         z-index: 10;
+      }
+
+      /* Connection dragging feedback */
+      body svg.jtk-connector.jtk-dragging {
+        z-index: 99999 !important;
+      }
+
+      .katavorio-drag-no-select svg.jtk-connector path,
+      .katavorio-drag-no-select svg.jtk-endpoint path {
+        pointer-events: none !important;
+        border: 1px solid purple;
+      }
+
+      /* Connection target feedback */
+      temba-flow-node.connection-target-valid {
+        outline: 3px solid var(--color-success, #22c55e) !important;
+        outline-offset: 2px;
+        border-radius: var(--curvature);
+      }
+
+      temba-flow-node.connection-target-invalid {
+        outline: 3px solid var(--color-error, #ef4444) !important;
+        outline-offset: 2px;
+        border-radius: var(--curvature);
       }
 
       /* Selection box styles */
@@ -253,7 +279,7 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection() {
-    if (this.sourceId && this.targetId) {
+    if (this.sourceId && this.targetId && this.isValidTarget) {
       this.plumber.connectIds(
         this.dragFromNodeId,
         this.sourceId,
@@ -268,9 +294,18 @@ export class Editor extends RapidElement {
       }, 100);
     }
 
+    // Clean up visual feedback
+    document.querySelectorAll('temba-flow-node').forEach((node) => {
+      node.classList.remove(
+        'connection-target-valid',
+        'connection-target-invalid'
+      );
+    });
+
     this.sourceId = null;
     this.targetId = null;
     this.dragFromNodeId = null;
+    this.isValidTarget = true;
   }
 
   protected updated(
@@ -635,10 +670,29 @@ export class Editor extends RapidElement {
 
     if (this.plumber.connectionDragging) {
       const targetNode = document.querySelector('temba-flow-node:hover');
+
+      // Clear previous target styles
+      document.querySelectorAll('temba-flow-node').forEach((node) => {
+        node.classList.remove(
+          'connection-target-valid',
+          'connection-target-invalid'
+        );
+      });
+
       if (targetNode) {
         this.targetId = targetNode.getAttribute('uuid');
+        // Check if target is different from source node (prevent self-targeting)
+        this.isValidTarget = this.targetId !== this.dragFromNodeId;
+
+        // Apply visual feedback based on validity
+        if (this.isValidTarget) {
+          targetNode.classList.add('connection-target-valid');
+        } else {
+          targetNode.classList.add('connection-target-invalid');
+        }
       } else {
         this.targetId = null;
+        this.isValidTarget = true;
       }
     }
 
@@ -817,8 +871,8 @@ export class Editor extends RapidElement {
     }
 
     const canvasRect = canvas.getBoundingClientRect();
-    const relativeX = event.clientX - canvasRect.left;
-    const relativeY = event.clientY - canvasRect.top;
+    const relativeX = event.clientX - canvasRect.left - 10;
+    const relativeY = event.clientY - canvasRect.top - 10;
 
     // Snap position to grid
     const snappedLeft = snapToGrid(relativeX);
