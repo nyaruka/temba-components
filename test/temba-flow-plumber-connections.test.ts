@@ -85,7 +85,7 @@ describe('Plumber - Connection Management', () => {
   describe('connectIds and processPendingConnections', () => {
     it('adds connection to pending connections', () => {
       // Call connectIds which should add to pending connections
-      plumber.connectIds('test-from', 'test-to');
+      plumber.connectIds('test-node', 'test-from', 'test-to');
 
       // Verify pendingConnections has the new connection
       expect((plumber as any).pendingConnections.length).to.equal(1);

@@ -286,5 +286,6 @@ export enum CustomEventType {
   Opened = 'temba-opened',
   TicketUpdated = 'temba-ticket-updated',
   Moved = 'temba-moved',
-  DateRangeChanged = 'temba-date-range-changed'
+  DateRangeChanged = 'temba-date-range-changed',
+  NodeDeleted = 'temba-node-deleted'
 }

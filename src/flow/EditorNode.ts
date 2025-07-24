@@ -6,6 +6,7 @@ import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
+import { CustomEventType } from '../interfaces';
 
 export class EditorNode extends RapidElement {
   createRenderRoot() {
@@ -26,6 +27,12 @@ export class EditorNode extends RapidElement {
 
   // Set of exit UUIDs that are in the removing state
   private exitRemovingState: Set<string> = new Set();
+
+  // Track actions that are in "removing" state
+  private actionRemovalTimeouts: Map<string, number> = new Map();
+
+  // Set of action UUIDs that are in the removing state
+  private actionRemovingState: Set<string> = new Set();
 
   static get styles() {
     return css`
@@ -55,6 +62,37 @@ export class EditorNode extends RapidElement {
       .action {
         max-width: 200px;
         position: relative;
+      }
+
+      .action .remove-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--color-error, #dc3545);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        line-height: 1;
+        z-index: 10;
+      }
+
+      .action:hover .remove-button {
+        display: flex;
+      }
+
+      .action.removing .title {
+        background-color: var(--color-error, #dc3545) !important;
+      }
+
+      .action.removing .title .name {
+        color: white;
       }
 
       .action.sortable {
@@ -138,8 +176,8 @@ export class EditorNode extends RapidElement {
       }
 
       .action-exits {
-        padding-bottom: 0.75em;
-        margin-top: -0.75em;
+        padding-bottom: 0.6em;
+        margin-top: -0.8em;
       }
 
       .category .title {
@@ -161,13 +199,11 @@ export class EditorNode extends RapidElement {
         justify-content: center;
         align-items: center;
         position: relative;
-        margin-bottom: -16px;
-        padding-top:1px;
+        margin-bottom: -1.2em;
+        padding-top:0.2em;
       }
 
       .exit {
-        self-align: center;
-        justify-content: center;
         width: 12px;
         height: 12px;
         border-radius: 50%;
@@ -212,7 +248,7 @@ export class EditorNode extends RapidElement {
         --color-connector-removing: var(--color-error);
       }
       
-      body .plumb-connector.removing path {
+      body svg.plumb-connector.removing path {
         stroke: var(--color-connector-removing, tomato) !important;
         stroke-width: 3px;
       }
@@ -262,7 +298,11 @@ export class EditorNode extends RapidElement {
           if (!exit.destination_uuid) {
             this.plumber.makeSource(exit.uuid);
           } else {
-            this.plumber.connectIds(exit.uuid, exit.destination_uuid);
+            this.plumber.connectIds(
+              this.node.uuid,
+              exit.uuid,
+              exit.destination_uuid
+            );
           }
         }
       }
@@ -289,8 +329,15 @@ export class EditorNode extends RapidElement {
     });
     this.exitRemovalTimeouts.clear();
 
+    // Clear any pending action removal timeouts
+    this.actionRemovalTimeouts.forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+    this.actionRemovalTimeouts.clear();
+
     // Clear the removing state
     this.exitRemovingState.clear();
+    this.actionRemovingState.clear();
   }
 
   private handleExitClick(event: MouseEvent, exit: Exit) {
@@ -367,6 +414,72 @@ export class EditorNode extends RapidElement {
     this.requestUpdate();
   }
 
+  private handleActionRemoveClick(
+    event: MouseEvent,
+    action: Action,
+    index: number
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const actionId = action.uuid;
+
+    // If the action is already in removing state, perform the removal
+    if (this.actionRemovingState.has(actionId)) {
+      this.removeAction(action, index);
+      return;
+    }
+
+    // Start removal UI state
+    this.actionRemovingState.add(actionId);
+    this.requestUpdate();
+
+    // Clear any existing timeout for this action
+    if (this.actionRemovalTimeouts.has(actionId)) {
+      clearTimeout(this.actionRemovalTimeouts.get(actionId));
+    }
+
+    // Set timeout to reset UI if user doesn't click
+    const timeoutId = window.setTimeout(() => {
+      this.actionRemovingState.delete(actionId);
+      this.actionRemovalTimeouts.delete(actionId);
+      this.requestUpdate();
+    }, 1000); // 1 second as per requirements
+
+    this.actionRemovalTimeouts.set(actionId, timeoutId);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private removeAction(action: Action, _index: number) {
+    const actionId = action.uuid;
+
+    // Clear the UI state
+    this.actionRemovingState.delete(actionId);
+
+    // Clear any timeout
+    if (this.actionRemovalTimeouts.has(actionId)) {
+      clearTimeout(this.actionRemovalTimeouts.get(actionId));
+      this.actionRemovalTimeouts.delete(actionId);
+    }
+
+    // Remove the action from the node
+    const updatedActions = this.node.actions.filter((a) => a.uuid !== actionId);
+
+    // If no actions remain, remove the entire node
+    if (updatedActions.length === 0) {
+      this.fireCustomEvent(CustomEventType.NodeDeleted, {
+        uuid: this.node.uuid
+      });
+    } else {
+      // Update the node with remaining actions
+      const updatedNode = { ...this.node, actions: updatedActions };
+      getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+      // Request update to reflect changes
+      this.requestUpdate();
+    }
+  }
+
   private handleActionOrderChanged(event: CustomEvent) {
     const [fromIdx, toIdx] = event.detail.swap;
 
@@ -385,26 +498,35 @@ export class EditorNode extends RapidElement {
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
   }
 
-  private renderTitle(config: UIConfig) {
+  private renderTitle(config: UIConfig, isRemoving: boolean = false) {
     return html`<div class="title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : null}
 
-      <div class="name">${config.name}</div>
+      <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
     </div>`;
   }
 
   private renderAction(node: Node, action: Action, index: number) {
     const config = EDITOR_CONFIG[action.type];
+    const isRemoving = this.actionRemovingState.has(action.uuid);
 
     if (config) {
       return html`<div
-        class="action sortable ${action.type}"
+        class="action sortable ${action.type} ${isRemoving ? 'removing' : ''}"
         id="action-${index}"
       >
+        <button
+          class="remove-button"
+          @click=${(e: MouseEvent) =>
+            this.handleActionRemoveClick(e, action, index)}
+          title="Remove action"
+        >
+          ✕
+        </button>
         <div class="action-content">
-          ${this.renderTitle(config)}
+          ${this.renderTitle(config, isRemoving)}
           <div class="body">
             ${config.render
               ? config.render(node, action)
@@ -413,7 +535,18 @@ export class EditorNode extends RapidElement {
         </div>
       </div>`;
     }
-    return html`<div class="action sortable" id="action-${index}">
+    return html`<div
+      class="action sortable ${isRemoving ? 'removing' : ''}"
+      id="action-${index}"
+    >
+      <button
+        class="remove-button"
+        @click=${(e: MouseEvent) =>
+          this.handleActionRemoveClick(e, action, index)}
+        title="Remove action"
+      >
+        ✕
+      </button>
       ${action.type}
     </div>`;
   }
@@ -422,7 +555,7 @@ export class EditorNode extends RapidElement {
     const config = EDITOR_CONFIG[ui.type];
     if (config) {
       return html`<div class="router">
-        ${this.renderTitle(config)}
+        ${this.renderTitle(config, false)}
         ${router.result_name
           ? html`<div class="body">
               Save as

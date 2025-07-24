@@ -77,8 +77,8 @@ export class Plumber {
   private jsPlumb = null;
   private pendingConnections = [];
   private connectionListeners = new Map();
-
   public connectionDragging = false;
+  private connectionWait = null;
 
   constructor(canvas: HTMLElement) {
     ready(() => {
@@ -157,8 +157,6 @@ export class Plumber {
     this.jsPlumb.addEndpoint(element, SOURCE_DEFAULTS);
   }
 
-  private connectionWait = null;
-
   // we'll process our pending connections, but we want to debounce this
   public processPendingConnections() {
     // if we have a pending connection wait, clear it
@@ -171,7 +169,7 @@ export class Plumber {
     this.connectionWait = setTimeout(() => {
       this.jsPlumb.batch(() => {
         this.pendingConnections.forEach((connection) => {
-          const { fromId, toId } = connection;
+          const { scope, fromId, toId } = connection;
           const fromElement = document.getElementById(fromId);
           const toElement = document.getElementById(toId);
 
@@ -196,6 +194,9 @@ export class Plumber {
             connector: {
               ...CONNECTOR_DEFAULTS,
               options: { ...CONNECTOR_DEFAULTS.options, gap: [0, 5] }
+            },
+            data: {
+              nodeId: scope
             }
           });
         });
@@ -204,8 +205,8 @@ export class Plumber {
     }, 50);
   }
 
-  public connectIds(fromId: string, toId: string) {
-    this.pendingConnections.push({ fromId, toId });
+  public connectIds(scope: string, fromId: string, toId: string) {
+    this.pendingConnections.push({ scope, fromId, toId });
     this.processPendingConnections();
   }
 
@@ -230,34 +231,25 @@ export class Plumber {
   public removeNodeConnections(nodeId: string) {
     if (!this.jsPlumb) return;
 
-    // Get the node element to find its exit elements
-    const nodeElement = document.getElementById(nodeId);
-    if (!nodeElement) return;
+    const inbound = this.jsPlumb.select({ target: nodeId });
 
-    const exitElements = nodeElement.querySelectorAll('.exit');
-    const exitIds = Array.from(exitElements).map((exit) => exit.id);
+    // keep track of our source ids that are connected, we'll need new endpoints
+    const sourceIds = inbound.map((connection) => connection.sourceId);
 
-    // Get all connections and identify ones to remove
-    const connections = this.jsPlumb.getConnections();
-    const connectionsToRemove = connections.filter((connection) => {
-      const sourceId = connection.source.id;
-      const targetId = connection.target.id;
+    const exitIds =
+      Array.from(
+        document.getElementById(nodeId)?.querySelectorAll('.exit') || []
+      ).map((exit) => {
+        return exit.id;
+      }) || [];
 
-      // Remove connections where:
-      // - Target is the node itself (incoming connections)
-      // - Source is one of the node's exits (outgoing connections)
-      return targetId === nodeId || exitIds.includes(sourceId);
-    });
+    inbound.deleteAll();
+    this.jsPlumb.select({ source: exitIds }).deleteAll();
+    this.jsPlumb.selectEndpoints({ source: exitIds }).deleteAll();
 
-    // Remove the connections
-    connectionsToRemove.forEach((connection) => {
-      this.jsPlumb.deleteConnection(connection);
-    });
-
-    // Remove all endpoints from the node and its exits
-    this.jsPlumb.removeAllEndpoints(nodeElement);
-    exitElements.forEach((exitElement) => {
-      this.jsPlumb.removeAllEndpoints(exitElement);
+    // Recreate source endpoints for each source
+    sourceIds.forEach((exitId) => {
+      this.makeSource(exitId);
     });
   }
 

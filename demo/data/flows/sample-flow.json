@@ -10,16 +10,10 @@
         "uuid": "a229fa3c-16bb-440b-9ae8-b7ee7a723f44",
         "actions": [
           {
-            "attachments": [
-              "image:http://google.com/logo.png"
-            ],
+            "attachments": ["image:http://google.com/logo.png"],
             "text": "What is your favorite color?",
             "type": "send_msg",
-            "quick_replies": [
-              "red",
-              "green",
-              "blue"
-            ],
+            "quick_replies": ["red", "green", "blue"],
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5"
           }
         ],
@@ -38,25 +32,19 @@
           "default_category_uuid": "e6a9f714-6f2a-4884-b850-f79ff397ee63",
           "cases": [
             {
-              "arguments": [
-                "red"
-              ],
+              "arguments": ["red"],
               "type": "has_any_word",
               "uuid": "2040ff07-f509-416d-b150-15abc27a9dfd",
               "category_uuid": "4ceb8f3b-05a2-4d75-950e-fa4934ab24fb"
             },
             {
-              "arguments": [
-                "green"
-              ],
+              "arguments": ["green"],
               "type": "has_any_word",
               "uuid": "b7b142d8-2434-41d9-9e5c-4e0335841972",
               "category_uuid": "153aa4a6-553c-4adf-9773-1f44596c33fb"
             },
             {
-              "arguments": [
-                "blue"
-              ],
+              "arguments": ["blue"],
               "type": "has_any_word",
               "uuid": "e2ccc4e7-c379-43e3-8115-48e8fe7ef4de",
               "category_uuid": "ee972b45-3bfe-4e93-9d4e-e9c8f8ffc587"
@@ -143,10 +131,7 @@
             {
               "uuid": "024a8d66-be1e-4821-bec4-8c54fd7135c6",
               "type": "has_number_between",
-              "arguments": [
-                "200",
-                "299"
-              ],
+              "arguments": ["200", "299"],
               "category_uuid": "0bb08076-45e2-4ca1-b321-1506f1779198"
             }
           ],
@@ -209,9 +194,7 @@
             "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
           },
           {
-            "addresses": [
-              "name@domain.com"
-            ],
+            "addresses": ["name@domain.com"],
             "subject": "Did you get this?",
             "body": "I hope it arrived!",
             "type": "send_email",
@@ -314,9 +297,7 @@
           "default_category_uuid": "50ededa6-7dd3-4f4f-81d2-e3011ea1cc05",
           "cases": [
             {
-              "arguments": [
-                "Archived"
-              ],
+              "arguments": ["Archived"],
               "type": "has_any_word",
               "uuid": "bc2e884d-9740-4028-a6bb-72f0c263336c",
               "category_uuid": "8032da05-1778-4d0c-9b7d-d218a7fb561d"
@@ -367,9 +348,7 @@
           ],
           "cases": [
             {
-              "arguments": [
-                "bleep"
-              ],
+              "arguments": ["bleep"],
               "type": "has_any_word",
               "uuid": "5fcb78ba-245d-40e5-986a-a9cbafb3e527",
               "category_uuid": "5a9d7012-02c3-46ac-a926-7b6d9c503fde"
@@ -437,9 +416,7 @@
           ],
           "cases": [
             {
-              "arguments": [
-                "red"
-              ],
+              "arguments": ["red"],
               "type": "has_any_word",
               "uuid": "44f4d027-f904-4c38-8cad-e01aae9b4faf",
               "category_uuid": "c8ba0faf-cf72-447a-84fe-5dc63775c0f5"
@@ -467,19 +444,13 @@
             {
               "uuid": "e1c0d59e-1810-4677-ad3b-69c4d1d645e8",
               "type": "has_group",
-              "arguments": [
-                "269e8abf-e81b-404c-82ce-45ff42d13769",
-                "Empty"
-              ],
+              "arguments": ["269e8abf-e81b-404c-82ce-45ff42d13769", "Empty"],
               "category_uuid": "d7ae9a33-357f-445f-84f0-ac11da786602"
             },
             {
               "uuid": "90ab3ac3-bc46-402a-a569-5739aa8a590d",
               "type": "has_group",
-              "arguments": [
-                "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c",
-                "Drivers"
-              ],
+              "arguments": ["4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c", "Drivers"],
               "category_uuid": "92e8677a-8070-4a98-901d-8247ac8e1898"
             }
           ],
@@ -528,17 +499,13 @@
             {
               "uuid": "93312571-e686-4561-8bfd-5bc00c0cd442",
               "type": "has_only_phrase",
-              "arguments": [
-                "tel"
-              ],
+              "arguments": ["tel"],
               "category_uuid": "8334572c-c31d-422a-8a95-2cb3d55e733b"
             },
             {
               "uuid": "03ce9105-dd9f-41b7-adc3-56b0547e031b",
               "type": "has_only_phrase",
-              "arguments": [
-                "facebook"
-              ],
+              "arguments": ["facebook"],
               "category_uuid": "23e7a079-3f2c-406b-9acc-dbbf388b3b79"
             }
           ],
@@ -597,16 +564,12 @@
             {
               "uuid": "625daede-4c37-45d4-9af6-5607ad4b1ce0",
               "type": "has_only_text",
-              "arguments": [
-                "completed"
-              ],
+              "arguments": ["completed"],
               "category_uuid": "894652f9-cc6c-4192-827d-3c5543778478"
             },
             {
               "uuid": "1e5f9d1e-794d-4279-ad93-3c7541962388",
-              "arguments": [
-                "expired"
-              ],
+              "arguments": ["expired"],
               "type": "has_only_text",
               "category_uuid": "48e318f7-4153-471a-856a-be01ac2f18a0"
             }
@@ -658,9 +621,7 @@
             {
               "uuid": "ac40cb14-6886-4f4e-b309-bcf4ef92b26d",
               "type": "has_only_text",
-              "arguments": [
-                "<ERROR>"
-              ],
+              "arguments": ["<ERROR>"],
               "category_uuid": "00685353-2326-4150-a403-58f006e50885"
             }
           ],

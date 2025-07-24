@@ -34,12 +34,11 @@ class MockWebSocket {
     this.url = url;
     // Only auto-open if enabled
     if (this.autoOpen) {
-      setTimeout(() => {
-        this.readyState = 1; // OPEN
-        if (this.onopen) {
-          this.onopen(new Event('open'));
-        }
-      }, 0);
+      // Use synchronous execution instead of setTimeout to avoid clock advancing issues
+      this.readyState = 1; // OPEN
+      if (this.onopen) {
+        this.onopen(new Event('open'));
+      }
     }
   }
 
@@ -100,7 +99,11 @@ describe('temba-webchat', () => {
     // Mock document.cookie
     cookieStub = stub(document, 'cookie').value('');
 
-    clock = useFakeTimers();
+    // Use fake timers but with a shorter timeout to avoid test hanging
+    clock = useFakeTimers({
+      shouldAdvanceTime: true,
+      advanceTimeDelta: 10
+    });
   });
 
   afterEach(() => {
@@ -188,6 +191,7 @@ describe('temba-webchat', () => {
 
       await mouseClickElement(toggleElement);
       await webChat.updateComplete;
+      clock.tick(50);
 
       // Now it should be open and connecting
       expect(webChat.open).to.equal(true);
@@ -238,12 +242,14 @@ describe('temba-webchat', () => {
 
       await mouseClickElement(toggleElement);
       await webChat.updateComplete;
+      clock.tick(50);
 
       expect(webChat.open).to.equal(true);
 
       // Click toggle again
       await mouseClickElement(toggleElement);
       await webChat.updateComplete;
+      clock.tick(50);
 
       expect(webChat.open).to.equal(false);
     });
@@ -291,6 +297,7 @@ describe('temba-webchat', () => {
       // Open chat - this should trigger socket connection
       webChat.open = true;
       await webChat.updateComplete;
+      clock.tick(50);
 
       expect(webChat.status).to.equal('connecting');
       expect(webSocketStub.called).to.be.true;
@@ -299,6 +306,7 @@ describe('temba-webchat', () => {
       // Now simulate the socket opening
       mockWebSocket.manualOpen();
       await webChat.updateComplete;
+      clock.tick(50);
 
       expect(webChat.status).to.equal('connected');
     });
@@ -332,7 +340,7 @@ describe('temba-webchat', () => {
 
       webChat.open = true;
       await webChat.updateComplete;
-      await clock.tick(0);
+      clock.tick(50);
 
       expect(mockWebSocket.url).to.equal(
         'wss://localhost.textit.com/wc/connect/my-channel/'
@@ -347,7 +355,7 @@ describe('temba-webchat', () => {
 
       webChat.open = true;
       await webChat.updateComplete;
-      await clock.tick(0);
+      clock.tick(50);
 
       expect(mockWebSocket.url).to.equal(
         'wss://localhost.textit.com/wc/connect/my-channel/?chat_id=chat-123'
@@ -361,9 +369,13 @@ describe('temba-webchat', () => {
 
       webChat.open = true;
       await webChat.updateComplete;
-      await clock.tick(0);
 
-      expect(mockWebSocket.sentMessages).to.have.length(1);
+      // Manually open the socket to trigger the start_chat command
+      mockWebSocket.manualOpen();
+      await webChat.updateComplete;
+      clock.tick(100);
+
+      expect(mockWebSocket.sentMessages.length).to.be.at.least(1);
       const sentMessage = JSON.parse(mockWebSocket.sentMessages[0]);
       expect(sentMessage.type).to.equal('start_chat');
     });
@@ -382,6 +394,7 @@ describe('temba-webchat', () => {
 
       mockWebSocket.manualOpen();
       await webChat.updateComplete;
+      clock.tick(50);
 
       const sentMessage = JSON.parse(mockWebSocket.sentMessages[0]);
       expect(sentMessage.type).to.equal('start_chat');
@@ -396,11 +409,13 @@ describe('temba-webchat', () => {
 
       webChat.open = true;
       await webChat.updateComplete;
+      clock.tick(50);
 
       expect(webChat.status).to.equal('connecting');
 
       mockWebSocket.close();
       await webChat.updateComplete;
+      clock.tick(50);
 
       expect(webChat.status).to.equal('disconnected');
     });

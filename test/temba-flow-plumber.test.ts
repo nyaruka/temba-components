@@ -71,7 +71,7 @@ describe('Plumber', () => {
 
   describe('connectIds', () => {
     it('adds connection to pending connections and processes them', () => {
-      plumber.connectIds('test-from', 'test-to');
+      plumber.connectIds('test-node', 'test-from', 'test-to');
 
       // Verify pendingConnections has the new connection
       expect((plumber as any).pendingConnections.length).to.equal(1);
@@ -87,7 +87,7 @@ describe('Plumber', () => {
   describe('processPendingConnections', () => {
     it('processes pending connections with timeout', () => {
       // Add a connection to pending connections
-      plumber.connectIds('test-from', 'test-to');
+      plumber.connectIds('test-node', 'test-from', 'test-to');
 
       // Fast-forward clock past the timeout
       clock.tick(51); // Just past the 50ms timeout
@@ -96,7 +96,7 @@ describe('Plumber', () => {
     });
 
     it('creates endpoints and connections for pending connections', () => {
-      plumber.connectIds('test-from', 'test-to');
+      plumber.connectIds('test-node', 'test-from', 'test-to');
 
       // Fast-forward clock past the timeout
       clock.tick(51); // Just past the 50ms timeout

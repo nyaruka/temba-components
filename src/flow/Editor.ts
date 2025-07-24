@@ -5,6 +5,7 @@ import { FlowDefinition, FlowPosition } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
+import { repeat } from 'lit-html/directives/repeat.js';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
@@ -14,19 +15,6 @@ import { Connection } from '@jsplumb/browser-ui';
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
   return Math.max(snapped, 0);
-}
-
-export function findNodeForExit(
-  definition: FlowDefinition,
-  exitUuid: string
-): string | null {
-  for (const node of definition.nodes) {
-    const exit = node.exits.find((e) => e.uuid === exitUuid);
-    if (exit) {
-      return node.uuid;
-    }
-  }
-  return null;
 }
 
 const SAVE_QUIET_TIME = 500;
@@ -101,7 +89,7 @@ export class Editor extends RapidElement {
   private sourceId: string | null = null;
 
   @state()
-  private sourceNodeId: string | null = null;
+  private dragFromNodeId: string | null = null;
 
   @state()
   private isValidTarget = true;
@@ -186,20 +174,19 @@ export class Editor extends RapidElement {
         fill: transparent;
       }
 
-      body .plumb-connector path {
+      body svg.jtk-connector.plumb-connector path {
         stroke: var(--color-connectors) !important;
         stroke-width: 3px;
-        z-index: 10;
       }
 
       body .plumb-connector {
-        z-index: 10;
+        z-index: 10 !important;
       }
 
       body .plumb-connector .plumb-arrow {
         fill: var(--color-connectors);
         stroke: var(--color-connectors);
-        stroke-width: 0px;
+        stroke-width: 0px !important;
         margin-top: 6px;
         z-index: 10;
       }
@@ -276,8 +263,10 @@ export class Editor extends RapidElement {
     }
 
     this.plumber.on('connection:drag', (info: Connection) => {
+      this.dragFromNodeId = document
+        .getElementById(info.sourceId)
+        .closest('.node').id;
       this.sourceId = info.sourceId;
-      this.sourceNodeId = findNodeForExit(this.definition, info.sourceId);
     });
 
     this.plumber.on('connection:abort', () => {
@@ -290,10 +279,15 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection() {
-    // Only create connection if target is valid (not self-targeting)
     if (this.sourceId && this.targetId && this.isValidTarget) {
-      this.plumber.connectIds(this.sourceId, this.targetId);
-      getStore().getState().updateConnection(this.sourceId, this.targetId);
+      this.plumber.connectIds(
+        this.dragFromNodeId,
+        this.sourceId,
+        this.targetId
+      );
+      getStore()
+        .getState()
+        .updateConnection(this.dragFromNodeId, this.sourceId, this.targetId);
 
       setTimeout(() => {
         this.plumber.repaintEverything();
@@ -310,7 +304,7 @@ export class Editor extends RapidElement {
 
     this.sourceId = null;
     this.targetId = null;
-    this.sourceNodeId = null;
+    this.dragFromNodeId = null;
     this.isValidTarget = true;
   }
 
@@ -537,40 +531,32 @@ export class Editor extends RapidElement {
     });
   }
 
-  private deleteSelectedItems(): void {
-    const store = getStore();
-
-    // Separate nodes and stickies
-    const nodeUuids: string[] = [];
-    const stickyUuids: string[] = [];
-
-    this.selectedItems.forEach((uuid) => {
-      // Check if it's a node or sticky by looking at the definition
-      if (this.definition.nodes.find((node) => node.uuid === uuid)) {
-        nodeUuids.push(uuid);
-      } else if (this.definition._ui?.stickies?.[uuid]) {
-        stickyUuids.push(uuid);
-      }
+  private deleteNodes(uuids: string[]): void {
+    // Clean up jsPlumb connections for nodes before removing them
+    uuids.forEach((uuid) => {
+      this.plumber.removeNodeConnections(uuid);
     });
 
-    // Clean up jsPlumb connections for nodes before removing them
-    if (nodeUuids.length > 0 && this.plumber) {
-      nodeUuids.forEach((uuid) => {
-        this.plumber.removeNodeConnections(uuid);
-      });
-
-      // Remove nodes using the existing method
-      store.getState().removeNodes(nodeUuids);
+    // Now remove them from the definition
+    if (uuids.length > 0 && this.plumber) {
+      getStore().getState().removeNodes(uuids);
     }
+  }
 
-    // Remove sticky notes using the new AppState method
-    if (stickyUuids.length > 0) {
-      store.getState().removeStickyNotes(stickyUuids);
-    }
+  private deleteSelectedItems(): void {
+    const nodes = Array.from(this.selectedItems).filter((uuid) =>
+      this.definition.nodes.some((node) => node.uuid === uuid)
+    );
+    this.deleteNodes(Array.from(nodes));
+
+    const stickies = Array.from(this.selectedItems).filter(
+      (uuid) => this.definition._ui?.stickies?.[uuid]
+    );
+
+    getStore().getState().removeStickyNotes(stickies);
 
     // Clear selection
     this.selectedItems.clear();
-    this.requestUpdate();
   }
 
   private updateSelectionBox(event: MouseEvent): void {
@@ -696,7 +682,7 @@ export class Editor extends RapidElement {
       if (targetNode) {
         this.targetId = targetNode.getAttribute('uuid');
         // Check if target is different from source node (prevent self-targeting)
-        this.isValidTarget = this.targetId !== this.sourceNodeId;
+        this.isValidTarget = this.targetId !== this.dragFromNodeId;
 
         // Apply visual feedback based on validity
         if (this.isValidTarget) {
@@ -885,8 +871,8 @@ export class Editor extends RapidElement {
     }
 
     const canvasRect = canvas.getBoundingClientRect();
-    const relativeX = event.clientX - canvasRect.left;
-    const relativeY = event.clientY - canvasRect.top;
+    const relativeX = event.clientX - canvasRect.left - 10;
+    const relativeY = event.clientY - canvasRect.top - 10;
 
     // Snap position to grid
     const snappedLeft = snapToGrid(relativeX);
@@ -921,46 +907,58 @@ export class Editor extends RapidElement {
         >
           <div id="canvas">
             ${this.definition
-              ? this.definition.nodes.map((node) => {
-                  const position =
-                    this.definition._ui.nodes[node.uuid].position;
+              ? repeat(
+                  this.definition.nodes,
+                  (node) => node.uuid,
+                  (node) => {
+                    const position =
+                      this.definition._ui.nodes[node.uuid].position;
 
-                  const dragging =
-                    this.isDragging && this.currentDragItem?.uuid === node.uuid;
+                    const dragging =
+                      this.isDragging &&
+                      this.currentDragItem?.uuid === node.uuid;
 
-                  const selected = this.selectedItems.has(node.uuid);
+                    const selected = this.selectedItems.has(node.uuid);
 
-                  return html`<temba-flow-node
-                    class="draggable ${dragging ? 'dragging' : ''} ${selected
-                      ? 'selected'
-                      : ''}"
-                    @mousedown=${this.handleMouseDown.bind(this)}
-                    uuid=${node.uuid}
-                    style="left:${position.left}px; top:${position.top}px"
-                    .plumber=${this.plumber}
-                    .node=${node}
-                    .ui=${this.definition._ui.nodes[node.uuid]}
-                  ></temba-flow-node>`;
-                })
+                    return html`<temba-flow-node
+                      class="draggable ${dragging ? 'dragging' : ''} ${selected
+                        ? 'selected'
+                        : ''}"
+                      @mousedown=${this.handleMouseDown.bind(this)}
+                      uuid=${node.uuid}
+                      style="left:${position.left}px; top:${position.top}px"
+                      .plumber=${this.plumber}
+                      .node=${node}
+                      .ui=${this.definition._ui.nodes[node.uuid]}
+                      @temba-node-deleted=${(event) => {
+                        this.deleteNodes([event.detail.uuid]);
+                      }}
+                    ></temba-flow-node>`;
+                  }
+                )
               : html`<temba-loading></temba-loading>`}
-            ${Object.entries(stickies).map(([uuid, sticky]) => {
-              const position = sticky.position || { left: 0, top: 0 };
-              const dragging =
-                this.isDragging && this.currentDragItem?.uuid === uuid;
-              const selected = this.selectedItems.has(uuid);
-              return html`<temba-sticky-note
-                class="draggable ${dragging ? 'dragging' : ''} ${selected
-                  ? 'selected'
-                  : ''}"
-                @mousedown=${this.handleMouseDown.bind(this)}
-                style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
-                position.top}"
-                uuid=${uuid}
-                .data=${sticky}
-                .dragging=${dragging}
-                .selected=${selected}
-              ></temba-sticky-note>`;
-            })}
+            ${repeat(
+              Object.entries(stickies),
+              ([uuid]) => uuid,
+              ([uuid, sticky]) => {
+                const position = sticky.position || { left: 0, top: 0 };
+                const dragging =
+                  this.isDragging && this.currentDragItem?.uuid === uuid;
+                const selected = this.selectedItems.has(uuid);
+                return html`<temba-sticky-note
+                  class="draggable ${dragging ? 'dragging' : ''} ${selected
+                    ? 'selected'
+                    : ''}"
+                  @mousedown=${this.handleMouseDown.bind(this)}
+                  style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
+                  position.top}"
+                  uuid=${uuid}
+                  .data=${sticky}
+                  .dragging=${dragging}
+                  .selected=${selected}
+                ></temba-sticky-note>`;
+              }
+            )}
             ${this.renderSelectionBox()}
           </div>
         </div>
