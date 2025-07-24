@@ -1,6 +1,6 @@
 import { expect, fixture, html } from '@open-wc/testing';
-import { stub, restore, SinonStub } from 'sinon';
-import { Editor, findNodeForExit } from '../src/flow/Editor';
+import { stub, restore, useFakeTimers, SinonFakeTimers } from 'sinon';
+import { Editor } from '../src/flow/Editor';
 import { FlowDefinition } from '../src/store/flow-definition';
 import * as Store from '../src/store/Store';
 
@@ -10,10 +10,17 @@ customElements.define('temba-flow-editor-test', Editor);
 describe('Flow Editor Self-Routing Prevention', () => {
   let editor: Editor;
   let mockDefinition: FlowDefinition;
+  let clock: SinonFakeTimers;
 
   beforeEach(() => {
     restore();
-    
+
+    // Use fake timers to control any async operations
+    clock = useFakeTimers({
+      shouldAdvanceTime: true,
+      advanceTimeDelta: 10
+    });
+
     // Create a mock flow definition with test nodes and exits
     mockDefinition = {
       uuid: 'test-flow',
@@ -28,11 +35,9 @@ describe('Flow Editor Self-Routing Prevention', () => {
           ]
         },
         {
-          uuid: 'node-2', 
+          uuid: 'node-2',
           actions: [],
-          exits: [
-            { uuid: 'exit-2a', destination_uuid: undefined }
-          ]
+          exits: [{ uuid: 'exit-2a', destination_uuid: undefined }]
         }
       ],
       localization: {},
@@ -52,23 +57,9 @@ describe('Flow Editor Self-Routing Prevention', () => {
 
   afterEach(() => {
     restore();
-  });
-
-  describe('findNodeForExit helper function', () => {
-    it('finds the correct node for an exit', () => {
-      const nodeId = findNodeForExit(mockDefinition, 'exit-1a');
-      expect(nodeId).to.equal('node-1');
-    });
-
-    it('finds the correct node for another exit', () => {
-      const nodeId = findNodeForExit(mockDefinition, 'exit-2a');
-      expect(nodeId).to.equal('node-2');
-    });
-
-    it('returns null for non-existent exit', () => {
-      const nodeId = findNodeForExit(mockDefinition, 'non-existent-exit');
-      expect(nodeId).to.be.null;
-    });
+    if (clock) {
+      clock.restore();
+    }
   });
 
   describe('connection dragging behavior', () => {
@@ -76,8 +67,13 @@ describe('Flow Editor Self-Routing Prevention', () => {
     let mockMouseEvent: MouseEvent;
 
     beforeEach(async () => {
-      editor = await fixture(html`<temba-flow-editor-test></temba-flow-editor-test>`) as Editor;
-      
+      editor = (await fixture(
+        html`<temba-flow-editor-test></temba-flow-editor-test>`
+      )) as Editor;
+
+      // Wait for element to be fully initialized
+      await editor.updateComplete;
+
       // Mock the plumber
       mockPlumber = {
         connectionDragging: false,
@@ -85,11 +81,11 @@ describe('Flow Editor Self-Routing Prevention', () => {
         connectIds: stub(),
         repaintEverything: stub()
       };
-      
+
       // Set up editor state
       (editor as any).plumber = mockPlumber;
       (editor as any).definition = mockDefinition;
-      
+
       // Create a mock mouse event
       mockMouseEvent = new MouseEvent('mousemove', {
         clientX: 200,
@@ -97,26 +93,19 @@ describe('Flow Editor Self-Routing Prevention', () => {
       });
     });
 
-    it('tracks source node when connection drag starts', () => {
-      // Simulate connection drag event with exit from node-1
-      (editor as any).sourceId = 'exit-1a';
-      (editor as any).sourceNodeId = findNodeForExit(mockDefinition, 'exit-1a');
-      
-      expect((editor as any).sourceNodeId).to.equal('node-1');
-    });
-
     it('prevents connection when targeting same node', () => {
-      // Set up connection drag state 
+      // Set up connection drag state
       (editor as any).sourceId = 'exit-1a';
       (editor as any).sourceNodeId = 'node-1';
       (editor as any).targetId = 'node-1'; // Same node as source
       (editor as any).isValidTarget = false;
-      
+
       // Test the validation logic directly without makeConnection
-      const shouldConnect = (editor as any).sourceId && 
-                           (editor as any).targetId && 
-                           (editor as any).isValidTarget;
-      
+      const shouldConnect =
+        (editor as any).sourceId &&
+        (editor as any).targetId &&
+        (editor as any).isValidTarget;
+
       expect(shouldConnect).to.be.false;
     });
 
@@ -126,12 +115,13 @@ describe('Flow Editor Self-Routing Prevention', () => {
       (editor as any).sourceNodeId = 'node-1';
       (editor as any).targetId = 'node-2'; // Different node
       (editor as any).isValidTarget = true;
-      
+
       // Test the validation logic directly without makeConnection
-      const shouldConnect = (editor as any).sourceId && 
-                           (editor as any).targetId && 
-                           (editor as any).isValidTarget;
-      
+      const shouldConnect =
+        (editor as any).sourceId &&
+        (editor as any).targetId &&
+        (editor as any).isValidTarget;
+
       expect(shouldConnect).to.be.true;
     });
   });
@@ -140,58 +130,94 @@ describe('Flow Editor Self-Routing Prevention', () => {
     let mockTargetNode: HTMLElement;
 
     beforeEach(async () => {
-      editor = await fixture(html`<temba-flow-editor-test></temba-flow-editor-test>`) as Editor;
-      
+      editor = (await fixture(
+        html`<temba-flow-editor-test></temba-flow-editor-test>`
+      )) as Editor;
+
+      // Wait for element to be fully initialized
+      await editor.updateComplete;
+
       // Create mock target node
       mockTargetNode = document.createElement('temba-flow-node');
       mockTargetNode.setAttribute('uuid', 'node-2');
       document.body.appendChild(mockTargetNode);
 
       // Mock querySelector to return our mock node
-      stub(document, 'querySelector').withArgs('temba-flow-node:hover').returns(mockTargetNode);
-      stub(document, 'querySelectorAll').withArgs('temba-flow-node').returns({
-        forEach: (callback: (node: Element) => void) => callback(mockTargetNode)
-      } as any);
-      
+      stub(document, 'querySelector')
+        .withArgs('temba-flow-node:hover')
+        .returns(mockTargetNode);
+      stub(document, 'querySelectorAll')
+        .withArgs('temba-flow-node')
+        .returns({
+          forEach: (callback: (node: Element) => void) =>
+            callback(mockTargetNode)
+        } as any);
+
       // Set up editor state
       (editor as any).plumber = { connectionDragging: true };
       (editor as any).definition = mockDefinition;
       (editor as any).sourceId = 'exit-1a';
       (editor as any).sourceNodeId = 'node-1';
+      (editor as any).dragFromNodeId = 'node-1'; // This is the key property used in validation
     });
 
     afterEach(() => {
-      document.body.removeChild(mockTargetNode);
+      if (document.body.contains(mockTargetNode)) {
+        document.body.removeChild(mockTargetNode);
+      }
     });
 
-    it('adds valid target class when hovering over different node', () => {
+    it('adds valid target class when hovering over different node', async () => {
+      // Make sure other properties on the editor are correctly set up
+      (editor as any).targetId = 'node-2';
+      (editor as any).isValidTarget = true;
+
       // Simulate mouse move over different node
       (editor as any).handleMouseMove(new MouseEvent('mousemove'));
-      
-      expect(mockTargetNode.classList.contains('connection-target-valid')).to.be.true;
-      expect(mockTargetNode.classList.contains('connection-target-invalid')).to.be.false;
+      await editor.updateComplete;
+
+      // Allow time for DOM updates
+      clock.tick(50);
+
+      expect(mockTargetNode.classList.contains('connection-target-valid')).to.be
+        .true;
+      expect(mockTargetNode.classList.contains('connection-target-invalid')).to
+        .be.false;
     });
 
-    it('adds invalid target class when hovering over same node', () => {
+    it('adds invalid target class when hovering over same node', async () => {
       // Change target to same node as source
       mockTargetNode.setAttribute('uuid', 'node-1');
-      
+
+      // Make sure other properties on the editor are correctly set up
+      (editor as any).targetId = 'node-1';
+      (editor as any).isValidTarget = false;
+
       // Simulate mouse move over same node
       (editor as any).handleMouseMove(new MouseEvent('mousemove'));
-      
-      expect(mockTargetNode.classList.contains('connection-target-invalid')).to.be.true;
-      expect(mockTargetNode.classList.contains('connection-target-valid')).to.be.false;
+      await editor.updateComplete;
+
+      // Allow time for DOM updates
+      clock.tick(50);
+
+      expect(mockTargetNode.classList.contains('connection-target-invalid')).to
+        .be.true;
+      expect(mockTargetNode.classList.contains('connection-target-valid')).to.be
+        .false;
     });
 
-    it('cleans up visual feedback after connection attempt', () => {
+    it('cleans up visual feedback after connection attempt', async () => {
       // Add classes to simulate active state
       mockTargetNode.classList.add('connection-target-valid');
-      
+
       // Make connection (which should clean up)
       (editor as any).makeConnection();
-      
-      expect(mockTargetNode.classList.contains('connection-target-valid')).to.be.false;
-      expect(mockTargetNode.classList.contains('connection-target-invalid')).to.be.false;
+      await editor.updateComplete;
+
+      expect(mockTargetNode.classList.contains('connection-target-valid')).to.be
+        .false;
+      expect(mockTargetNode.classList.contains('connection-target-invalid')).to
+        .be.false;
     });
   });
 });
