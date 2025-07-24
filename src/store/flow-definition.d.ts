@@ -97,6 +97,131 @@ export interface AddToGroup extends Action {
   groups: Group[];
 }
 
+export interface RemoveFromGroup extends Action {
+  groups: Group[];
+}
+
+export interface SetContactField extends Action {
+  field: NamedObject;
+  value: string;
+}
+
+export interface SetContactLanguage extends Action {
+  language: string;
+}
+
+export interface SetContactStatus extends Action {
+  status: 'active' | 'blocked' | 'stopped' | 'archived';
+}
+
+export interface SetContactChannel extends Action {
+  channel: NamedObject;
+}
+
+export interface AddContactUrn extends Action {
+  scheme: string;
+  path: string;
+}
+
+export interface SendEmail extends Action {
+  subject: string;
+  body: string;
+  addresses: string[];
+}
+
+export interface SendBroadcast extends Action {
+  text: string;
+  groups: Group[];
+  contacts: NamedObject[];
+}
+
+export interface EnterFlow extends Action {
+  flow: NamedObject;
+}
+
+export interface StartSession extends Action {
+  flow: NamedObject;
+  groups: Group[];
+  contacts: NamedObject[];
+  create_contact?: boolean;
+}
+
+export interface TransferAirtime extends Action {
+  amounts: number[];
+  result_name: string;
+}
+
+export interface CallClassifier extends Action {
+  classifier: NamedObject;
+  input: string;
+  result_name: string;
+}
+
+export interface CallResthook extends Action {
+  resthook: string;
+  result_name: string;
+}
+
+export interface CallLLM extends Action {
+  llm: NamedObject;
+  instructions: string;
+  result_name: string;
+}
+
+export interface OpenTicket extends Action {
+  subject: string;
+  body: string;
+  assignee?: NamedObject;
+  topic?: NamedObject;
+}
+
+export interface RequestOptin extends Action {
+  optin: NamedObject;
+}
+
+export interface AddInputLabels extends Action {
+  labels: NamedObject[];
+}
+
+export interface SayMsg extends Action {
+  text: string;
+  audio_url?: string;
+}
+
+export interface PlayAudio extends Action {
+  audio_url: string;
+}
+
+export interface WaitForResponse extends Action {
+  timeout?: number;
+}
+
+export interface WaitForMenu extends Action {
+  menu: NamedObject;
+  timeout?: number;
+}
+
+export interface WaitForDigits extends Action {
+  count: number;
+  timeout?: number;
+}
+
+export interface WaitForAudio extends Action {
+  timeout?: number;
+}
+
+export interface WaitForVideo extends Action {
+  timeout?: number;
+}
+
+export interface WaitForImage extends Action {
+  timeout?: number;
+}
+
+export interface WaitForLocation extends Action {
+  timeout?: number;
+}
+
 export interface Exit {
   uuid: string;
   destination_uuid?: string;

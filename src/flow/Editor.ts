@@ -17,6 +17,19 @@ export function snapToGrid(value: number): number {
   return Math.max(snapped, 0);
 }
 
+export function findNodeForExit(
+  definition: FlowDefinition,
+  exitUuid: string
+): string | null {
+  for (const node of definition.nodes) {
+    const exit = node.exits.find((e) => e.uuid === exitUuid);
+    if (exit) {
+      return node.uuid;
+    }
+  }
+  return null;
+}
+
 const SAVE_QUIET_TIME = 500;
 
 export interface DraggableItem {
