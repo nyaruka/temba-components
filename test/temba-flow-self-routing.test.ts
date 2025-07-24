@@ -1,5 +1,5 @@
 import { expect, fixture, html } from '@open-wc/testing';
-import { stub, restore } from 'sinon';
+import { stub, restore, useFakeTimers, SinonFakeTimers } from 'sinon';
 import { Editor } from '../src/flow/Editor';
 import { FlowDefinition } from '../src/store/flow-definition';
 
@@ -9,9 +9,16 @@ customElements.define('temba-flow-editor-test', Editor);
 describe('Flow Editor Self-Routing Prevention', () => {
   let editor: Editor;
   let mockDefinition: FlowDefinition;
+  let clock: SinonFakeTimers;
 
   beforeEach(() => {
     restore();
+
+    // Use fake timers to control any async operations
+    clock = useFakeTimers({
+      shouldAdvanceTime: true,
+      advanceTimeDelta: 10
+    });
 
     // Create a mock flow definition with test nodes and exits
     mockDefinition = {
@@ -49,6 +56,9 @@ describe('Flow Editor Self-Routing Prevention', () => {
 
   afterEach(() => {
     restore();
+    if (clock) {
+      clock.restore();
+    }
   });
 
   describe('connection dragging behavior', () => {
@@ -58,6 +68,9 @@ describe('Flow Editor Self-Routing Prevention', () => {
       editor = (await fixture(
         html`<temba-flow-editor-test></temba-flow-editor-test>`
       )) as Editor;
+
+      // Wait for element to be fully initialized
+      await editor.updateComplete;
 
       // Mock the plumber
       mockPlumber = {
@@ -113,6 +126,9 @@ describe('Flow Editor Self-Routing Prevention', () => {
         html`<temba-flow-editor-test></temba-flow-editor-test>`
       )) as Editor;
 
+      // Wait for element to be fully initialized
+      await editor.updateComplete;
+
       // Create mock target node
       mockTargetNode = document.createElement('temba-flow-node');
       mockTargetNode.setAttribute('uuid', 'node-2');
@@ -134,15 +150,26 @@ describe('Flow Editor Self-Routing Prevention', () => {
       (editor as any).definition = mockDefinition;
       (editor as any).sourceId = 'exit-1a';
       (editor as any).sourceNodeId = 'node-1';
+      (editor as any).dragFromNodeId = 'node-1'; // This is the key property used in validation
     });
 
     afterEach(() => {
-      document.body.removeChild(mockTargetNode);
+      if (document.body.contains(mockTargetNode)) {
+        document.body.removeChild(mockTargetNode);
+      }
     });
 
-    it('adds valid target class when hovering over different node', () => {
+    it('adds valid target class when hovering over different node', async () => {
+      // Make sure other properties on the editor are correctly set up
+      (editor as any).targetId = 'node-2';
+      (editor as any).isValidTarget = true;
+
       // Simulate mouse move over different node
       (editor as any).handleMouseMove(new MouseEvent('mousemove'));
+      await editor.updateComplete;
+
+      // Allow time for DOM updates
+      clock.tick(50);
 
       expect(mockTargetNode.classList.contains('connection-target-valid')).to.be
         .true;
@@ -150,12 +177,20 @@ describe('Flow Editor Self-Routing Prevention', () => {
         .be.false;
     });
 
-    it('adds invalid target class when hovering over same node', () => {
+    it('adds invalid target class when hovering over same node', async () => {
       // Change target to same node as source
       mockTargetNode.setAttribute('uuid', 'node-1');
 
+      // Make sure other properties on the editor are correctly set up
+      (editor as any).targetId = 'node-1';
+      (editor as any).isValidTarget = false;
+
       // Simulate mouse move over same node
       (editor as any).handleMouseMove(new MouseEvent('mousemove'));
+      await editor.updateComplete;
+
+      // Allow time for DOM updates
+      clock.tick(50);
 
       expect(mockTargetNode.classList.contains('connection-target-invalid')).to
         .be.true;
@@ -163,12 +198,13 @@ describe('Flow Editor Self-Routing Prevention', () => {
         .false;
     });
 
-    it('cleans up visual feedback after connection attempt', () => {
+    it('cleans up visual feedback after connection attempt', async () => {
       // Add classes to simulate active state
       mockTargetNode.classList.add('connection-target-valid');
 
       // Make connection (which should clean up)
       (editor as any).makeConnection();
+      await editor.updateComplete;
 
       expect(mockTargetNode.classList.contains('connection-target-valid')).to.be
         .false;
