@@ -2,7 +2,6 @@ import { expect, fixture, html } from '@open-wc/testing';
 import { stub, restore, useFakeTimers, SinonFakeTimers } from 'sinon';
 import { Editor } from '../src/flow/Editor';
 import { FlowDefinition } from '../src/store/flow-definition';
-import * as Store from '../src/store/Store';
 
 // Register the component
 customElements.define('temba-flow-editor-test', Editor);
@@ -64,7 +63,6 @@ describe('Flow Editor Self-Routing Prevention', () => {
 
   describe('connection dragging behavior', () => {
     let mockPlumber: any;
-    let mockMouseEvent: MouseEvent;
 
     beforeEach(async () => {
       editor = (await fixture(
@@ -85,12 +83,6 @@ describe('Flow Editor Self-Routing Prevention', () => {
       // Set up editor state
       (editor as any).plumber = mockPlumber;
       (editor as any).definition = mockDefinition;
-
-      // Create a mock mouse event
-      mockMouseEvent = new MouseEvent('mousemove', {
-        clientX: 200,
-        clientY: 150
-      });
     });
 
     it('prevents connection when targeting same node', () => {

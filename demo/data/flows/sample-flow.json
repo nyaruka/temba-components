@@ -194,6 +194,13 @@
             "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90"
           },
           {
+            "attachments": [],
+            "text": "Excellent choice!",
+            "type": "send_msg",
+            "quick_replies": [],
+            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
+          },
+          {
             "addresses": ["name@domain.com"],
             "subject": "Did you get this?",
             "body": "I hope it arrived!",

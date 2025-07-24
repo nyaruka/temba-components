@@ -232,10 +232,10 @@ export class Plumber {
     if (!this.jsPlumb) return;
 
     const inbound = this.jsPlumb.select({ target: nodeId });
-    // const outbound = this.connectionMap[nodeId] || [];
 
-    // delete endpoints on our exits, this techincally isn't required if the
-    // node is being subsequently removed
+    // keep track of our source ids that are connected, we'll need new endpoints
+    const sourceIds = inbound.map((connection) => connection.sourceId);
+
     const exitIds =
       Array.from(
         document.getElementById(nodeId)?.querySelectorAll('.exit') || []
@@ -246,6 +246,11 @@ export class Plumber {
     inbound.deleteAll();
     this.jsPlumb.select({ source: exitIds }).deleteAll();
     this.jsPlumb.selectEndpoints({ source: exitIds }).deleteAll();
+
+    // Recreate source endpoints for each source
+    sourceIds.forEach((exitId) => {
+      this.makeSource(exitId);
+    });
   }
 
   public removeExitConnection(exitId: string) {
