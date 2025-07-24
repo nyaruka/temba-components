@@ -143,6 +143,7 @@ export interface StartSession extends Action {
   flow: NamedObject;
   groups: Group[];
   contacts: NamedObject[];
+  create_contact?: boolean;
 }
 
 export interface TransferAirtime extends Action {
@@ -163,7 +164,7 @@ export interface CallResthook extends Action {
 
 export interface CallLLM extends Action {
   llm: NamedObject;
-  prompt: string;
+  instructions: string;
   result_name: string;
 }
 

@@ -36,6 +36,7 @@ import {
   WaitForResponse,
   WaitForVideo
 } from '../store/flow-definition';
+import { Icon } from '../Icons';
 
 // URN scheme mapping for user-friendly display
 const urnSchemeMap: Record<string, string> = {
@@ -52,6 +53,19 @@ const urnSchemeMap: Record<string, string> = {
   external: 'External ID'
 };
 
+const renderLineItem = (name: string, icon?: string) => {
+  return html`<div style="display:flex;items-align:center">
+    ${icon
+      ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
+      : null}
+    <div
+      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    >
+      ${name}
+    </div>
+  </div>`;
+};
+
 const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
   const items = [];
   const maxDisplay = 3;
@@ -62,19 +76,7 @@ const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
 
   for (let i = 0; i < displayCount; i++) {
     const asset = assets[i];
-    items.push(html`<div style="display:flex;items-align:center">
-      ${icon
-        ? html`<temba-icon
-            name=${icon}
-            style="margin-right:0.5em"
-          ></temba-icon>`
-        : null}
-      <div
-        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-      >
-        ${asset.name}
-      </div>
-    </div>`);
+    items.push(renderLineItem(asset.name, icon));
   }
 
   // Add "+X more" if there are more than 3 items (and not exactly 4)
@@ -177,7 +179,7 @@ export const renderSendEmail = (node: Node, action: SendEmail) => {
       <div
         style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
       >
-        <b>Subject:</b> ${action.subject}
+        ${action.subject}
       </div>
       <div
         style="margin-top: 0.25em; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
@@ -220,7 +222,6 @@ export const renderStartSession = (node: Node, action: StartSession) => {
   const hasContacts = action.contacts && action.contacts.length > 0;
 
   return html`<div>
-    <div>Start <b>${action.flow.name}</b> for:</div>
     ${hasGroups
       ? html`<div style="margin-top: 0.5em">
           <div style="font-weight: bold; margin-bottom: 0.25em">Groups:</div>
@@ -233,6 +234,10 @@ export const renderStartSession = (node: Node, action: StartSession) => {
           ${renderNamedObjects(action.contacts, 'contact')}
         </div>`
       : null}
+    ${action.create_contact
+      ? renderLineItem('Create contact', Icon.contact)
+      : null}
+    ${renderLineItem(action.flow.name, Icon.flow)}
   </div>`;
 };
 
@@ -267,20 +272,18 @@ export const renderCallResthook = (node: Node, action: CallResthook) => {
 
 export const renderCallLLM = (node: Node, action: CallLLM) => {
   return html`<div>
-    <div
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-    >
-      <b>${action.llm.name}</b>
+    <div style="margin-top: 0.25em; display: flex; align-items: center;">
+      <temba-icon name="ai" style="margin-right: 0.5em"></temba-icon>
+      <span
+        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      >
+        ${action.llm.name}
+      </span>
     </div>
     <div
       style="margin-top: 0.25em; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
     >
-      ${action.prompt}
-    </div>
-    <div
-      style="margin-top: 0.25em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-    >
-      Save result as <b>${action.result_name}</b>
+      ${action.instructions}
     </div>
   </div>`;
 };
@@ -296,11 +299,11 @@ export const renderOpenTicket = (node: Node, action: OpenTicket) => {
       ? html`<div
           style="margin-top: 0.25em; display: flex; align-items: center;"
         >
-          <temba-icon name="user" style="margin-right: 0.25em"></temba-icon>
+          <temba-icon name="user" style="margin-right: 0.5em"></temba-icon>
           <span
             style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
           >
-            <b>${action.assignee.name}</b>
+            ${action.assignee.name}
           </span>
         </div>`
       : null}
@@ -308,11 +311,11 @@ export const renderOpenTicket = (node: Node, action: OpenTicket) => {
       ? html`<div
           style="margin-top: 0.25em; display: flex; align-items: center;"
         >
-          <temba-icon name="topic" style="margin-right: 0.25em"></temba-icon>
+          <temba-icon name="topic" style="margin-right: 0.5em"></temba-icon>
           <span
             style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
           >
-            <b>${action.topic.name}</b>
+            ${action.topic.name}
           </span>
         </div>`
       : null}

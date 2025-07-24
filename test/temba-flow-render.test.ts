@@ -685,7 +685,7 @@ describe('Flow Render Functions', () => {
         type: 'call_llm',
         uuid: 'action-uuid-23',
         llm: { uuid: 'llm1', name: 'GPT-4' },
-        prompt: 'Analyze this text',
+        instructions: 'Analyze this text',
         result_name: 'ai_result'
       };
 
