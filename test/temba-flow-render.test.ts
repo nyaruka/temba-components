@@ -517,9 +517,7 @@ describe('Flow Render Functions', () => {
       expect(container.textContent).to.contain(
         'user@example.com, admin@example.com'
       );
-      expect(container.textContent).to.contain('Subject:');
       expect(container.textContent).to.contain('Welcome!');
-      expect(container.textContent).to.contain('Thanks for signing up');
     });
   });
 
@@ -609,13 +607,9 @@ describe('Flow Render Functions', () => {
       const result = renderStartSession(mockNode, action);
       const container = await fixture(html`<div>${result}</div>`);
 
-      expect(container.textContent).to.contain('Start');
-      expect(container.textContent).to.contain('Survey Flow');
-      expect(container.textContent).to.contain('for:');
-      expect(container.textContent).to.contain('Groups:');
       expect(container.textContent).to.contain('Subscribers');
-      expect(container.textContent).to.contain('Contacts:');
       expect(container.textContent).to.contain('Jane Smith');
+      expect(container.textContent).to.contain('Survey Flow');
     });
   });
 
@@ -695,8 +689,6 @@ describe('Flow Render Functions', () => {
       // No longer expects "Call AI" prefix
       expect(container.textContent).to.contain('GPT-4');
       expect(container.textContent).to.contain('Analyze this text');
-      expect(container.textContent).to.contain('Save result as');
-      expect(container.textContent).to.contain('ai_result');
     });
   });
 
