@@ -159,9 +159,9 @@ export const renderSetContactChannel = (
 export const renderAddContactUrn = (node: Node, action: AddContactUrn) => {
   const friendlyScheme = urnSchemeMap[action.scheme] || action.scheme;
   return html`<div
-    style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+    style="word-wrap: break-word; overflow: hidden; text-overflow: ellipsis;"
   >
-    Add <b>${friendlyScheme}</b> <b>${action.path}</b>
+    Add ${friendlyScheme} <b>${action.path}</b>
   </div>`;
 };
 

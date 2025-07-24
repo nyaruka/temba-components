@@ -475,7 +475,9 @@ describe('Flow Render Functions', () => {
       expect(container.textContent).to.contain('Add');
       expect(container.textContent).to.contain('Phone Number');
       expect(container.textContent).to.contain('+1234567890');
-      expect(container.querySelectorAll('b')).to.have.length(2);
+      // Only the phone number should be bold, not the scheme
+      expect(container.querySelectorAll('b')).to.have.length(1);
+      expect(container.querySelector('b')?.textContent).to.equal('+1234567890');
     });
 
     it('renders URN addition with unmapped scheme', async () => {
@@ -492,6 +494,9 @@ describe('Flow Render Functions', () => {
       expect(container.textContent).to.contain('Add');
       expect(container.textContent).to.contain('unknown');
       expect(container.textContent).to.contain('test123');
+      // Only the URN path should be bold
+      expect(container.querySelectorAll('b')).to.have.length(1);
+      expect(container.querySelector('b')?.textContent).to.equal('test123');
     });
   });
 
