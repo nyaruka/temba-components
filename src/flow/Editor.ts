@@ -638,19 +638,31 @@ export class Editor extends RapidElement {
     const stickies = this.definition?._ui?.stickies || {};
     Object.entries(stickies).forEach(([uuid, sticky]) => {
       if (sticky.position) {
-        const stickyLeft = sticky.position.left;
-        const stickyTop = sticky.position.top;
-        const stickyRight = stickyLeft + 200; // Sticky note width
-        const stickyBottom = stickyTop + 100; // Sticky note height
+        const stickyElement = this.querySelector(
+          `temba-sticky-note[uuid="${uuid}"]`
+        ) as HTMLElement;
 
-        // Check if selection box intersects with sticky
-        if (
-          boxLeft < stickyRight &&
-          boxRight > stickyLeft &&
-          boxTop < stickyBottom &&
-          boxBottom > stickyTop
-        ) {
-          newSelection.add(uuid);
+        if (stickyElement) {
+          // Use clientWidth/clientHeight instead of getBoundingClientRect() to get element dimensions
+          // This avoids the coordinate system mismatch between viewport and canvas coordinates
+          const width = stickyElement.clientWidth;
+          const height = stickyElement.clientHeight;
+
+          // Use the canvas coordinates from the sticky's position
+          const stickyLeft = sticky.position.left;
+          const stickyTop = sticky.position.top;
+          const stickyRight = stickyLeft + width;
+          const stickyBottom = stickyTop + height;
+
+          // Check if selection box intersects with sticky
+          if (
+            boxLeft < stickyRight &&
+            boxRight > stickyLeft &&
+            boxTop < stickyBottom &&
+            boxBottom > stickyTop
+          ) {
+            newSelection.add(uuid);
+          }
         }
       }
     });
@@ -859,10 +871,25 @@ export class Editor extends RapidElement {
 
     // Check sticky note positions
     const stickies = this.definition._ui?.stickies || {};
-    Object.values(stickies).forEach((sticky) => {
+    Object.entries(stickies).forEach(([uuid, sticky]) => {
       if (sticky.position) {
-        maxWidth = Math.max(maxWidth, sticky.position.left + 200); // Sticky note width
-        maxHeight = Math.max(maxHeight, sticky.position.top + 100); // Sticky note height
+        const stickyElement = this.querySelector(
+          `temba-sticky-note[uuid="${uuid}"]`
+        ) as HTMLElement;
+        if (stickyElement) {
+          // Use clientWidth/clientHeight instead of getBoundingClientRect() to get element dimensions
+          // This avoids the coordinate system mismatch between viewport and canvas coordinates
+          const width = stickyElement.clientWidth;
+          const height = stickyElement.clientHeight;
+
+          // Both sticky.position and width/height are now in the same coordinate system
+          maxWidth = Math.max(maxWidth, sticky.position.left + width);
+          maxHeight = Math.max(maxHeight, sticky.position.top + height);
+        } else {
+          // Fallback to default sizes if element not found
+          maxWidth = Math.max(maxWidth, sticky.position.left + 200);
+          maxHeight = Math.max(maxHeight, sticky.position.top + 100);
+        }
       }
     });
 
