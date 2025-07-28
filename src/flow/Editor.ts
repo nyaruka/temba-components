@@ -872,9 +872,12 @@ export class Editor extends RapidElement {
           `temba-sticky-note[uuid="${uuid}"]`
         ) as HTMLElement;
         if (stickyElement) {
-          const rect = stickyElement.getBoundingClientRect();
-          maxWidth = Math.max(maxWidth, sticky.position.left + rect.width);
-          maxHeight = Math.max(maxHeight, sticky.position.top + rect.height);
+          const stickyLeft = stickyElement.offsetLeft;
+          const stickyTop = stickyElement.offsetTop;
+          const stickyWidth = stickyElement.offsetWidth;
+          const stickyHeight = stickyElement.offsetHeight;
+          maxWidth = Math.max(maxWidth, sticky.position.left + stickyWidth);
+          maxHeight = Math.max(maxHeight, sticky.position.top + stickyHeight);
         } else {
           // Fallback to default sizes if element not found
           maxWidth = Math.max(maxWidth, sticky.position.left + 200);
