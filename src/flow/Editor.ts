@@ -643,11 +643,16 @@ export class Editor extends RapidElement {
         ) as HTMLElement;
 
         if (stickyElement) {
-          const stickyRect = stickyElement.getBoundingClientRect();
+          // Use clientWidth/clientHeight instead of getBoundingClientRect() to get element dimensions
+          // This avoids the coordinate system mismatch between viewport and canvas coordinates
+          const width = stickyElement.clientWidth;
+          const height = stickyElement.clientHeight;
+
+          // Use the canvas coordinates from the sticky's position
           const stickyLeft = sticky.position.left;
           const stickyTop = sticky.position.top;
-          const stickyRight = stickyLeft + stickyRect.width;
-          const stickyBottom = stickyTop + stickyRect.height;
+          const stickyRight = stickyLeft + width;
+          const stickyBottom = stickyTop + height;
 
           // Check if selection box intersects with sticky
           if (
@@ -872,12 +877,14 @@ export class Editor extends RapidElement {
           `temba-sticky-note[uuid="${uuid}"]`
         ) as HTMLElement;
         if (stickyElement) {
-          const stickyLeft = stickyElement.offsetLeft;
-          const stickyTop = stickyElement.offsetTop;
-          const stickyWidth = stickyElement.offsetWidth;
-          const stickyHeight = stickyElement.offsetHeight;
-          maxWidth = Math.max(maxWidth, sticky.position.left + stickyWidth);
-          maxHeight = Math.max(maxHeight, sticky.position.top + stickyHeight);
+          // Use clientWidth/clientHeight instead of getBoundingClientRect() to get element dimensions
+          // This avoids the coordinate system mismatch between viewport and canvas coordinates
+          const width = stickyElement.clientWidth;
+          const height = stickyElement.clientHeight;
+
+          // Both sticky.position and width/height are now in the same coordinate system
+          maxWidth = Math.max(maxWidth, sticky.position.left + width);
+          maxHeight = Math.max(maxHeight, sticky.position.top + height);
         } else {
           // Fallback to default sizes if element not found
           maxWidth = Math.max(maxWidth, sticky.position.left + 200);
