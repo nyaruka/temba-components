@@ -1615,6 +1615,131 @@ export class Select<T extends SelectOption> extends FormElement {
         `
       : placeholderDiv;
 
+    const items = html`${!this.multi && !this.resolving ? input : null}
+    ${this.multi && this.values.length > 1
+      ? html`
+          <temba-sortable-list
+            horizontal
+            @temba-order-changed=${this.handleOrderChanged}
+            .prepareGhost=${(item: any) => {
+              item.style.transform = 'scale(1)';
+              item.querySelector('.remove-item').style.display = 'none';
+            }}
+          >
+            ${this.values.map(
+              (selected: any, index: number) => html`
+                <div
+                  class="selected-item sortable ${index === this.selectedIndex
+                    ? 'focused'
+                    : ''} ${this.draggingId === `selected-${index}`
+                    ? 'dragging'
+                    : ''}"
+                  id="selected-${index}"
+                  style="
+                                vertical-align: middle;
+                                background: rgba(100,100,100,0.1);
+                                user-select: none;
+                                border-radius: 2px;
+                                align-items: center;
+                                flex-direction: row;
+                                flex-wrap: nowrap;
+                                margin: 2px 2px;
+                                display: flex;
+                                overflow: hidden;
+                                color: var(--color-widget-text);
+                                line-height: var(--temba-select-selected-line-height);
+                                --icon-color: var(--color-text-dark);
+                                ${index === this.selectedIndex
+                    ? 'background: rgba(100,100,100,0.3);'
+                    : ''}
+                                ${this.draggingId === `selected-${index}`
+                    ? 'opacity: 0.5;'
+                    : ''}
+                              "
+                >
+                  ${this.multi
+                    ? html`
+                        <div
+                          class="remove-item"
+                          style="
+                                        cursor: pointer;
+                                        display: inline-block;
+                                        padding: 3px 6px;
+                                        border-right: 1px solid rgba(100,100,100,0.2);
+                                        margin: 0;
+                                        background: rgba(100,100,100,0.05);
+                                        margin-top:1px;
+                                      "
+                          @click=${(evt: MouseEvent) => {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            this.handleRemoveSelection(selected);
+                          }}
+                        >
+                          <temba-icon
+                            name="${Icon.delete_small}"
+                            size="1"
+                          ></temba-icon>
+                        </div>
+                      `
+                    : null}
+                  ${this.renderSelectedItem(selected)}
+                </div>
+              `
+            )}
+          </temba-sortable-list>
+        `
+      : this.values.map(
+          (selected: any, index: number) => html`
+            <div
+              class="selected-item ${index === this.selectedIndex
+                ? 'focused'
+                : ''}"
+              style="
+                            display: flex;
+                            overflow: hidden;
+                            color: var(--color-widget-text);
+                            line-height: var(--temba-select-selected-line-height);
+                            --icon-color: var(--color-text-dark);
+                            ${index === this.selectedIndex
+                ? 'background: rgba(100,100,100,0.3);'
+                : ''}
+                          "
+            >
+              ${this.multi
+                ? html`
+                    <div
+                      class="remove-item"
+                      style="
+                                    cursor: pointer;
+                                    display: inline-block;
+                                    padding: 3px 6px;
+                                    border-right: 1px solid rgba(100,100,100,0.2);
+                                    margin: 0;
+                                    background: rgba(100,100,100,0.05);
+                                    margin-top:1px;
+                                  "
+                      @click=${(evt: MouseEvent) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        this.handleRemoveSelection(selected);
+                      }}
+                    >
+                      <temba-icon
+                        name="${Icon.delete_small}"
+                        size="1"
+                      ></temba-icon>
+                    </div>
+                  `
+                : null}
+              ${!this.input || this.multi
+                ? this.renderSelectedItem(selected)
+                : null}
+            </div>
+          `
+        )}
+    ${this.multi ? input : null}`;
+
     return html`
             
       <temba-field
@@ -1642,136 +1767,9 @@ export class Select<T extends SelectOption> extends FormElement {
                   ? html`<temba-loading
                       style="margin-left:1em"
                     ></temba-loading>`
-                  : null
+                  : items
               }
-              ${!this.multi && !this.resolving ? input : null}
-              ${
-                this.multi && this.values.length > 1
-                  ? html`
-                      <temba-sortable-list
-                        horizontal
-                        @temba-order-changed=${this.handleOrderChanged}
-                        .prepareGhost=${(item: any) => {
-                          item.style.transform = 'scale(1)';
-                          item.querySelector('.remove-item').style.display =
-                            'none';
-                        }}
-                      >
-                        ${this.values.map(
-                          (selected: any, index: number) => html`
-                            <div
-                              class="selected-item sortable ${index ===
-                              this.selectedIndex
-                                ? 'focused'
-                                : ''} ${this.draggingId === `selected-${index}`
-                                ? 'dragging'
-                                : ''}"
-                              id="selected-${index}"
-                              style="
-                                vertical-align: middle;
-                                background: rgba(100,100,100,0.1);
-                                user-select: none;
-                                border-radius: 2px;
-                                align-items: center;
-                                flex-direction: row;
-                                flex-wrap: nowrap;
-                                margin: 2px 2px;
-                                display: flex;
-                                overflow: hidden;
-                                color: var(--color-widget-text);
-                                line-height: var(--temba-select-selected-line-height);
-                                --icon-color: var(--color-text-dark);
-                                ${index === this.selectedIndex
-                                ? 'background: rgba(100,100,100,0.3);'
-                                : ''}
-                                ${this.draggingId === `selected-${index}`
-                                ? 'opacity: 0.5;'
-                                : ''}
-                              "
-                            >
-                              ${this.multi
-                                ? html`
-                                    <div
-                                      class="remove-item"
-                                      style="
-                                        cursor: pointer;
-                                        display: inline-block;
-                                        padding: 3px 6px;
-                                        border-right: 1px solid rgba(100,100,100,0.2);
-                                        margin: 0;
-                                        background: rgba(100,100,100,0.05);
-                                        margin-top:1px;
-                                      "
-                                      @click=${(evt: MouseEvent) => {
-                                        evt.preventDefault();
-                                        evt.stopPropagation();
-                                        this.handleRemoveSelection(selected);
-                                      }}
-                                    >
-                                      <temba-icon
-                                        name="${Icon.delete_small}"
-                                        size="1"
-                                      ></temba-icon>
-                                    </div>
-                                  `
-                                : null}
-                              ${this.renderSelectedItem(selected)}
-                            </div>
-                          `
-                        )}
-                      </temba-sortable-list>
-                    `
-                  : this.values.map(
-                      (selected: any, index: number) => html`
-                        <div
-                          class="selected-item ${index === this.selectedIndex
-                            ? 'focused'
-                            : ''}"
-                          style="
-                            display: flex;
-                            overflow: hidden;
-                            color: var(--color-widget-text);
-                            line-height: var(--temba-select-selected-line-height);
-                            --icon-color: var(--color-text-dark);
-                            ${index === this.selectedIndex
-                            ? 'background: rgba(100,100,100,0.3);'
-                            : ''}
-                          "
-                        >
-                          ${this.multi
-                            ? html`
-                                <div
-                                  class="remove-item"
-                                  style="
-                                    cursor: pointer;
-                                    display: inline-block;
-                                    padding: 3px 6px;
-                                    border-right: 1px solid rgba(100,100,100,0.2);
-                                    margin: 0;
-                                    background: rgba(100,100,100,0.05);
-                                    margin-top:1px;
-                                  "
-                                  @click=${(evt: MouseEvent) => {
-                                    evt.preventDefault();
-                                    evt.stopPropagation();
-                                    this.handleRemoveSelection(selected);
-                                  }}
-                                >
-                                  <temba-icon
-                                    name="${Icon.delete_small}"
-                                    size="1"
-                                  ></temba-icon>
-                                </div>
-                              `
-                            : null}
-                          ${!this.input || this.multi
-                            ? this.renderSelectedItem(selected)
-                            : null}
-                        </div>
-                      `
-                    )
-              }
-              ${this.multi ? input : null}
+              
             </div>
 
           </div>
