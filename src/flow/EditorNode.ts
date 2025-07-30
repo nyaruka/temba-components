@@ -498,6 +498,27 @@ export class EditorNode extends RapidElement {
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
   }
 
+  private handleActionClick(event: MouseEvent, action: Action): void {
+    // Prevent event bubbling to avoid triggering drag operations
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Don't handle clicks on the remove button or when action is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(action.uuid)
+    ) {
+      return;
+    }
+
+    // Fire event to request action editing
+    this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+      action,
+      nodeUuid: this.node.uuid
+    });
+  }
+
   private renderTitle(config: UIConfig, isRemoving: boolean = false) {
     return html`<div class="title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
@@ -525,7 +546,11 @@ export class EditorNode extends RapidElement {
         >
           ✕
         </button>
-        <div class="action-content">
+        <div
+          class="action-content"
+          @click=${(e: MouseEvent) => this.handleActionClick(e, action)}
+          style="cursor: pointer;"
+        >
           ${this.renderTitle(config, isRemoving)}
           <div class="body">
             ${config.render

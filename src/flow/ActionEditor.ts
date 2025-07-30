@@ -1,0 +1,460 @@
+import { html, TemplateResult, css } from 'lit';
+import { property, state } from 'lit/decorators.js';
+import { RapidElement } from '../RapidElement';
+import { Action } from '../store/flow-definition';
+import {
+  ActionConfig,
+  PropertyConfig,
+  ValidationResult,
+  ACTION_EDITOR_CONFIG,
+  getDefaultComponent,
+  getDefaultComponentProps
+} from './action-config';
+import { EDITOR_CONFIG } from './config';
+import { FormElement } from '../form/FormElement';
+import { CustomEventType } from '../interfaces';
+
+export interface ActionEditorConfig {
+  actionType: string;
+  action: Action;
+  nodeUuid: string;
+  onSave: (updatedAction: Action) => void;
+  onCancel: () => void;
+}
+
+export class ActionEditor extends RapidElement {
+  static get styles() {
+    return css`
+      .action-editor-form {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        min-width: 400px;
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .error-message {
+        color: var(--color-error);
+        font-size: 0.85em;
+        margin-top: 0.25em;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+    `;
+  }
+
+  @property({ type: Object })
+  action: Action | null = null;
+
+  @property({ type: String })
+  nodeUuid: string = '';
+
+  @state()
+  private formData: { [key: string]: any } = {};
+
+  @state()
+  private errors: { [key: string]: string } = {};
+
+  @state()
+  private isOpen: boolean = false;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.action) {
+      this.openDialog();
+    }
+  }
+
+  updated(changedProperties: Map<string | number | symbol, unknown>): void {
+    super.updated(changedProperties);
+
+    if (changedProperties.has('action')) {
+      if (this.action) {
+        this.openDialog();
+      } else {
+        this.closeDialog();
+      }
+    }
+  }
+
+  private openDialog(): void {
+    this.initializeFormData();
+    this.errors = {};
+    this.isOpen = true;
+  }
+
+  private closeDialog(): void {
+    this.isOpen = false;
+    this.formData = {};
+    this.errors = {};
+  }
+
+  public open(config: ActionEditorConfig): void {
+    this.action = config.action;
+    this.nodeUuid = config.nodeUuid;
+    this.openDialog();
+  }
+
+  public close(): void {
+    this.closeDialog();
+    this.action = null;
+  }
+
+  private initializeFormData(): void {
+    if (!this.action) return;
+
+    const config = this.getActionConfig();
+    this.formData = { ...this.action };
+
+    // Apply transformation functions to convert action data to form data
+    if (config?.properties) {
+      Object.entries(config.properties).forEach(
+        ([propertyName, propertyConfig]) => {
+          if (propertyConfig.toFormValue && this.action) {
+            const actionValue = this.action[propertyName as keyof Action];
+            this.formData[propertyName] =
+              propertyConfig.toFormValue(actionValue);
+          }
+        }
+      );
+    }
+  }
+
+  private getActionConfig(): ActionConfig | null {
+    if (!this.action) return null;
+    return ACTION_EDITOR_CONFIG[this.action.type] || null;
+  }
+
+  private getHeaderColor(): string {
+    if (!this.action) return '#666666';
+    const config = this.getActionConfig();
+    return config?.color || EDITOR_CONFIG[this.action.type]?.color || '#666666';
+  }
+
+  private handleDialogButtonClick(event: CustomEvent): void {
+    const button = event.detail.button;
+
+    if (button.name === 'Save') {
+      this.handleSave();
+    } else if (button.name === 'Cancel') {
+      this.handleCancel();
+    }
+  }
+
+  private handleSave(): void {
+    if (!this.action) return;
+
+    // Validate the form
+    const validation = this.validateForm();
+    if (!validation.valid) {
+      this.errors = validation.errors;
+      return;
+    }
+
+    // Apply transformation functions to convert form data back to action data
+    const config = this.getActionConfig();
+    const transformedFormData = { ...this.formData };
+
+    if (config?.properties) {
+      Object.entries(config.properties).forEach(
+        ([propertyName, propertyConfig]) => {
+          if (propertyConfig.fromFormValue) {
+            const formValue = this.formData[propertyName];
+            transformedFormData[propertyName] =
+              propertyConfig.fromFormValue(formValue);
+          }
+        }
+      );
+    }
+
+    // Create updated action
+    const updatedAction = {
+      ...this.action,
+      ...transformedFormData
+    };
+
+    // Fire save event
+    this.fireCustomEvent(CustomEventType.ActionSaved, {
+      action: updatedAction
+    });
+    this.closeDialog();
+  }
+
+  private handleCancel(): void {
+    this.fireCustomEvent(CustomEventType.ActionEditCanceled, {});
+    this.closeDialog();
+  }
+
+  private validateForm(): ValidationResult {
+    const config = this.getActionConfig();
+
+    // Apply transformation functions to convert form data back to action data for validation
+    const transformedFormData = { ...this.formData };
+
+    if (config?.properties) {
+      Object.entries(config.properties).forEach(
+        ([propertyName, propertyConfig]) => {
+          if (propertyConfig.fromFormValue) {
+            const formValue = this.formData[propertyName];
+            transformedFormData[propertyName] =
+              propertyConfig.fromFormValue(formValue);
+          }
+        }
+      );
+    }
+
+    // Run custom validation if available
+    if (config?.validate) {
+      return config.validate({
+        ...this.action,
+        ...transformedFormData
+      } as Action);
+    }
+
+    // Basic validation based on property configs
+    const errors: { [key: string]: string } = {};
+
+    if (config?.properties) {
+      Object.entries(config.properties).forEach(
+        ([propertyName, propertyConfig]) => {
+          const value = this.formData[propertyName];
+
+          if (
+            propertyConfig.required &&
+            (!value || (Array.isArray(value) && value.length === 0))
+          ) {
+            errors[propertyName] = `${
+              propertyConfig.label || propertyName
+            } is required`;
+          }
+
+          if (
+            typeof value === 'string' &&
+            propertyConfig.minLength &&
+            value.length < propertyConfig.minLength
+          ) {
+            errors[propertyName] = `${
+              propertyConfig.label || propertyName
+            } must be at least ${propertyConfig.minLength} characters`;
+          }
+
+          if (
+            typeof value === 'string' &&
+            propertyConfig.maxLength &&
+            value.length > propertyConfig.maxLength
+          ) {
+            errors[propertyName] = `${
+              propertyConfig.label || propertyName
+            } must be no more than ${propertyConfig.maxLength} characters`;
+          }
+        }
+      );
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  }
+
+  private handleFormFieldChange(propertyName: string, event: Event): void {
+    const target = event.target as FormElement;
+    let value = target.value;
+
+    // Handle different component types
+    if (target.tagName === 'TEMBA-CHECKBOX') {
+      value = (target as any).checked;
+    } else if (target.tagName === 'TEMBA-SELECT' && (target as any).multi) {
+      value = (target as any).values || [];
+    }
+
+    this.formData = {
+      ...this.formData,
+      [propertyName]: value
+    };
+
+    // Clear error for this field if it exists
+    if (this.errors[propertyName]) {
+      this.errors = {
+        ...this.errors,
+        [propertyName]: ''
+      };
+      delete this.errors[propertyName];
+    }
+  }
+
+  private renderProperty(
+    propertyName: string,
+    config: PropertyConfig
+  ): TemplateResult {
+    const value = this.formData[propertyName];
+    const component = config.component || getDefaultComponent(value);
+    const defaultProps = getDefaultComponentProps(value);
+    const hasError = !!this.errors[propertyName];
+
+    // Common properties for all form elements
+    const name = propertyName;
+    const label = config.label || propertyName;
+    const help_text = config.helpText;
+    const required = config.required;
+    const cssClass = hasError ? 'error' : '';
+
+    let fieldHtml: TemplateResult;
+
+    switch (component) {
+      case 'temba-textinput':
+        fieldHtml = html`<temba-textinput
+          name="${name}"
+          label="${label}"
+          help_text="${help_text}"
+          ?required="${required}"
+          class="${cssClass}"
+          .value="${value || ''}"
+          type="${config.type || defaultProps.type || 'text'}"
+          ?textarea="${config.textarea}"
+          ?expressions="${config.expressions}"
+          placeholder="${config.placeholder || ''}"
+          @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+        ></temba-textinput>`;
+        break;
+
+      case 'temba-completion':
+        fieldHtml = html`<temba-completion
+          name="${name}"
+          label="${label}"
+          help_text="${help_text}"
+          ?required="${required}"
+          class="${cssClass}"
+          .value="${value || ''}"
+          ?textarea="${config.textarea}"
+          expressions="${config.expressions || ''}"
+          placeholder="${config.placeholder || ''}"
+          @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+        ></temba-completion>`;
+        break;
+
+      case 'temba-checkbox':
+        fieldHtml = html`<temba-checkbox
+          name="${name}"
+          label="${label}"
+          help_text="${help_text}"
+          ?required="${required}"
+          class="${cssClass}"
+          ?checked="${value}"
+          @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+        ></temba-checkbox>`;
+        break;
+
+      case 'temba-select':
+        fieldHtml = html`<temba-select
+          name="${name}"
+          label="${label}"
+          help_text="${help_text}"
+          ?required="${required}"
+          class="${cssClass}"
+          .values="${value || (config.multi || defaultProps.multi ? [] : '')}"
+          ?multi="${config.multi || defaultProps.multi}"
+          ?searchable="${config.searchable}"
+          ?tags="${config.tags || defaultProps.tags}"
+          valueKey="${config.valueKey || 'value'}"
+          nameKey="${config.nameKey || 'name'}"
+          ?maxItems="${config.maxItems || defaultProps.maxItems}"
+          ?maxItemsText="${config.maxItemsText || defaultProps.maxItemsText}"
+          placeholder="${config.placeholder || ''}"
+          endpoint="${config.endpoint || ''}"
+          @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+        >
+          ${config.options?.map(
+            (option) =>
+              html`<temba-option
+                name="${option.name}"
+                value="${option.value}"
+              ></temba-option>`
+          )}
+        </temba-select>`;
+        break;
+      case 'temba-compose':
+        fieldHtml = html`<temba-compose
+          name="${name}"
+          label="${label}"
+          help_text="${help_text}"
+          ?required="${required}"
+          class="${cssClass}"
+          .value="${value || ''}"
+          placeholder="${config.placeholder || ''}"
+          @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+        ></temba-compose>`;
+        break;
+
+      default:
+        fieldHtml = html`<div>Unsupported component: ${component}</div>`;
+    }
+
+    return html`
+      <div class="form-field">
+        ${fieldHtml}
+        ${hasError
+          ? html`<div class="error-message">${this.errors[propertyName]}</div>`
+          : ''}
+      </div>
+    `;
+  }
+
+  private renderForm(): TemplateResult {
+    const config = this.getActionConfig();
+
+    if (!config || !this.action) {
+      return html`
+        <div class="action-editor-form">
+          <div>
+            No configuration available for action type:
+            ${this.action?.type || 'unknown'}
+          </div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="action-editor-form">
+        ${Object.entries(config.properties).map(
+          ([propertyName, propertyConfig]) =>
+            this.renderProperty(propertyName, propertyConfig)
+        )}
+      </div>
+    `;
+  }
+
+  public render(): TemplateResult {
+    if (!this.isOpen) {
+      return html``;
+    }
+
+    const config = this.getActionConfig();
+    const headerColor = this.getHeaderColor();
+
+    return html`
+      <temba-dialog
+        .open="${this.isOpen}"
+        .header="${config?.name || 'Edit Action'}"
+        primaryButtonName="Save"
+        cancelButtonName="Cancel"
+        size="medium"
+        @temba-button-clicked="${this.handleDialogButtonClick}"
+        @temba-dialog-hidden="${this.handleCancel}"
+        style="--header-bg: ${headerColor}"
+      >
+        ${this.renderForm()}
+      </temba-dialog>
+    `;
+  }
+}

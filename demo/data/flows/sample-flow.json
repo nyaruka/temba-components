@@ -13,12 +13,12 @@
             "attachments": [
               "image:http://google.com/logo.png"
             ],
-            "text": "What is your favorite color?",
+            "text": "Heyooo.. pick your favorite color.",
             "type": "send_msg",
             "quick_replies": [
-              "red",
               "green",
-              "blue"
+              "blue",
+              "yellow"
             ],
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5"
           }
@@ -181,7 +181,7 @@
         "actions": [
           {
             "attachments": [],
-            "text": "Excellent choice!",
+            "text": "Excellent choices!",
             "type": "send_msg",
             "quick_replies": [],
             "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
@@ -775,8 +775,8 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 280,
-            "top": 0
+            "left": 260,
+            "top": 20
           },
           "type": "execute_actions"
         },
@@ -784,7 +784,7 @@
           "type": "wait_for_response",
           "position": {
             "left": 260,
-            "top": 160
+            "top": 200
           },
           "config": {
             "cases": {}
@@ -801,15 +801,15 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 240,
-            "top": 380
+            "top": 420
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 580,
-            "top": 600
+            "left": 620,
+            "top": 700
           },
           "config": {}
         },
@@ -864,8 +864,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 500,
-            "top": 340
+            "left": 480,
+            "top": 420
           },
           "config": {
             "cases": {}
@@ -875,7 +875,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 580,
-            "top": 480
+            "top": 560
           },
           "config": {
             "cases": {}
