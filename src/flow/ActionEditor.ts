@@ -3,14 +3,12 @@ import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Action } from '../store/flow-definition';
 import {
-  ActionConfig,
-  PropertyConfig,
   ValidationResult,
-  ACTION_EDITOR_CONFIG,
+  PropertyConfig,
   getDefaultComponent,
-  getDefaultComponentProps
-} from './action-config';
-import { EDITOR_CONFIG } from './config';
+  getDefaultComponentProps,
+  EDITOR_CONFIG
+} from './config';
 import { FormElement } from '../form/FormElement';
 import { CustomEventType } from '../interfaces';
 
@@ -120,25 +118,25 @@ export class ActionEditor extends RapidElement {
     if (config?.properties) {
       Object.entries(config.properties).forEach(
         ([propertyName, propertyConfig]) => {
-          if (propertyConfig.toFormValue && this.action) {
+          if ((propertyConfig as PropertyConfig).toFormValue && this.action) {
             const actionValue = this.action[propertyName as keyof Action];
-            this.formData[propertyName] =
-              propertyConfig.toFormValue(actionValue);
+            this.formData[propertyName] = (propertyConfig as PropertyConfig)
+              .toFormValue!(actionValue);
           }
         }
       );
     }
   }
 
-  private getActionConfig(): ActionConfig | null {
+  private getActionConfig() {
     if (!this.action) return null;
-    return ACTION_EDITOR_CONFIG[this.action.type] || null;
+    return EDITOR_CONFIG[this.action.type] || null;
   }
 
   private getHeaderColor(): string {
     if (!this.action) return '#666666';
     const config = this.getActionConfig();
-    return config?.color || EDITOR_CONFIG[this.action.type]?.color || '#666666';
+    return config?.color || '#666666';
   }
 
   private handleDialogButtonClick(event: CustomEvent): void {
@@ -168,10 +166,11 @@ export class ActionEditor extends RapidElement {
     if (config?.properties) {
       Object.entries(config.properties).forEach(
         ([propertyName, propertyConfig]) => {
-          if (propertyConfig.fromFormValue) {
+          if ((propertyConfig as PropertyConfig).fromFormValue) {
             const formValue = this.formData[propertyName];
-            transformedFormData[propertyName] =
-              propertyConfig.fromFormValue(formValue);
+            transformedFormData[propertyName] = (
+              propertyConfig as PropertyConfig
+            ).fromFormValue!(formValue);
           }
         }
       );
@@ -204,10 +203,11 @@ export class ActionEditor extends RapidElement {
     if (config?.properties) {
       Object.entries(config.properties).forEach(
         ([propertyName, propertyConfig]) => {
-          if (propertyConfig.fromFormValue) {
+          if ((propertyConfig as PropertyConfig).fromFormValue) {
             const formValue = this.formData[propertyName];
-            transformedFormData[propertyName] =
-              propertyConfig.fromFormValue(formValue);
+            transformedFormData[propertyName] = (
+              propertyConfig as PropertyConfig
+            ).fromFormValue!(formValue);
           }
         }
       );
@@ -228,34 +228,35 @@ export class ActionEditor extends RapidElement {
       Object.entries(config.properties).forEach(
         ([propertyName, propertyConfig]) => {
           const value = this.formData[propertyName];
+          const propConfig = propertyConfig as PropertyConfig;
 
           if (
-            propertyConfig.required &&
+            propConfig.required &&
             (!value || (Array.isArray(value) && value.length === 0))
           ) {
             errors[propertyName] = `${
-              propertyConfig.label || propertyName
+              propConfig.label || propertyName
             } is required`;
           }
 
           if (
             typeof value === 'string' &&
-            propertyConfig.minLength &&
-            value.length < propertyConfig.minLength
+            propConfig.minLength &&
+            value.length < propConfig.minLength
           ) {
             errors[propertyName] = `${
-              propertyConfig.label || propertyName
-            } must be at least ${propertyConfig.minLength} characters`;
+              propConfig.label || propertyName
+            } must be at least ${propConfig.minLength} characters`;
           }
 
           if (
             typeof value === 'string' &&
-            propertyConfig.maxLength &&
-            value.length > propertyConfig.maxLength
+            propConfig.maxLength &&
+            value.length > propConfig.maxLength
           ) {
             errors[propertyName] = `${
-              propertyConfig.label || propertyName
-            } must be no more than ${propertyConfig.maxLength} characters`;
+              propConfig.label || propertyName
+            } must be no more than ${propConfig.maxLength} characters`;
           }
         }
       );
@@ -295,9 +296,10 @@ export class ActionEditor extends RapidElement {
 
   private renderProperty(
     propertyName: string,
-    config: PropertyConfig
+    propertyConfig: PropertyConfig
   ): TemplateResult {
     const value = this.formData[propertyName];
+    const config = propertyConfig;
     const component = config.component || getDefaultComponent(value);
     const defaultProps = getDefaultComponentProps(value);
     const hasError = !!this.errors[propertyName];
@@ -426,9 +428,9 @@ export class ActionEditor extends RapidElement {
 
     return html`
       <div class="action-editor-form">
-        ${Object.entries(config.properties).map(
+        ${Object.entries(config.properties || {}).map(
           ([propertyName, propertyConfig]) =>
-            this.renderProperty(propertyName, propertyConfig)
+            this.renderProperty(propertyName, propertyConfig as PropertyConfig)
         )}
       </div>
     `;

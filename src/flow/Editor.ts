@@ -82,6 +82,11 @@ export class Editor extends RapidElement {
   private isMouseDown = false;
   private dragStartPos = { x: 0, y: 0 };
 
+  // Public getter for drag state
+  public get dragging(): boolean {
+    return this.isDragging;
+  }
+
   @state()
   private currentDragItem: DraggableItem | null = null;
   private startPos = { left: 0, top: 0 };
