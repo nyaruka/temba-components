@@ -1,4 +1,39 @@
-import { TemplateResult } from 'lit-html';
+/**
+ * Simple type-safe Property configuration system for Action Editor components
+ *
+ * This provides a clean, intuitive structure where type safety is implicitly enforced:
+ *
+ * ```typescript
+ * properties: {
+ *   text: {
+ *     label: 'Message Text',
+ *     required: true,
+ *     widget: {
+ *       type: 'temba-completion',
+ *       attributes: {
+ *         textarea: true,
+ *         expressions: 'session'
+ *         // multi: true  // ❌ TypeScript Error - not valid for completion
+ *       }
+ *     }
+ *   },
+ *   quick_replies: {
+ *     label: 'Quick Replies',
+ *     widget: {
+ *       type: 'temba-select',
+ *       attributes: {
+ *         multi: true,
+ *         searchable: true,
+ *         maxItems: 10
+ *         // textarea: true  // ❌ TypeScript Error - not valid for select
+ *       }
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * The `widget.type` automatically restricts what's allowed in `widget.attributes`.
+ */ import { TemplateResult } from 'lit-html';
 import {
   renderAddContactUrn,
   renderAddInputLabels,
@@ -39,47 +74,87 @@ export interface ValidationResult {
   errors: { [key: string]: string };
 }
 
+// Component attribute interfaces - these define what's allowed for each component type
+export interface TextInputAttributes {
+  type?: 'text' | 'email' | 'number' | 'url' | 'tel';
+  placeholder?: string;
+  clearable?: boolean;
+  maxlength?: number;
+  gsm?: boolean;
+  autogrow?: boolean;
+  textarea?: boolean;
+  submitOnEnter?: boolean;
+}
+
+export interface CompletionAttributes {
+  placeholder?: string;
+  clearable?: boolean;
+  maxlength?: number;
+  gsm?: boolean;
+  autogrow?: boolean;
+  textarea?: boolean;
+  expressions?: string;
+  counter?: string;
+}
+
+export interface SelectAttributes {
+  placeholder?: string;
+  multi?: boolean;
+  searchable?: boolean;
+  tags?: boolean;
+  clearable?: boolean;
+  endpoint?: string;
+  valueKey?: string;
+  nameKey?: string;
+  queryParam?: string;
+  maxItems?: number;
+  maxItemsText?: string;
+  expressions?: string;
+  options?: Array<{ name: string; value: any }>;
+  sorted?: boolean;
+  allowCreate?: boolean;
+  jsonValue?: boolean;
+  spaceSelect?: boolean;
+  infoText?: string;
+}
+
+export interface CheckboxAttributes {
+  size?: number;
+  disabled?: boolean;
+  animateChange?: string;
+}
+
+export interface SliderAttributes {
+  min?: number;
+  max?: number;
+  range?: boolean;
+}
+
+// Widget configuration using discriminated union for type safety
+export type WidgetConfig =
+  | { type: 'temba-textinput'; attributes?: TextInputAttributes }
+  | { type: 'temba-completion'; attributes?: CompletionAttributes }
+  | { type: 'temba-select'; attributes?: SelectAttributes }
+  | { type: 'temba-checkbox'; attributes?: CheckboxAttributes }
+  | { type: 'temba-slider'; attributes?: SliderAttributes }
+  | { type: string; attributes?: { [key: string]: any } }; // Generic fallback
+
+// Property configuration with the clean structure you want
 export interface PropertyConfig {
-  // Component to use for editing this property
-  component?: string; // 'temba-textinput', 'temba-checkbox', 'temba-select', etc.
-
-  // Label for the form field
+  // Form field metadata
   label?: string;
-
-  // Help text for the form field
   helpText?: string;
-
-  // Validation rules
   required?: boolean;
   maxLength?: number;
   minLength?: number;
   pattern?: string;
 
-  // For select components - options to display
-  options?: Array<{ name: string; value: any }>;
-
-  // For textinput - input type
-  type?: 'text' | 'email' | 'number' | 'url' | 'tel';
-
-  // Component-specific properties
-  textarea?: boolean;
-  expressions?: string;
-  multi?: boolean;
-  searchable?: boolean;
-  tags?: boolean;
-  placeholder?: string;
-  endpoint?: string;
-  valueKey?: string;
-  nameKey?: string;
+  // Widget configuration
+  widget: WidgetConfig;
 
   // Data transformation functions
-  // Transform action data to form component format
   toFormValue?: (actionValue: any) => any;
-  // Transform form component data back to action format
   fromFormValue?: (formValue: any) => any;
-
-  // Additional component-specific props
-  [key: string]: any;
 }
 
 export interface UIConfig {
@@ -157,27 +232,35 @@ export const EDITOR_CONFIG: {
     render: renderSendMsg,
     properties: {
       text: {
-        component: 'temba-completion',
         label: 'Message Text',
         helpText:
           'Enter the message to send. You can use expressions like @contact.name',
         required: true,
-        textarea: true,
-        expressions: 'session'
+        widget: {
+          type: 'temba-completion',
+          attributes: {
+            textarea: true,
+            expressions: 'session'
+          }
+        }
       },
       quick_replies: {
-        component: 'temba-select',
         label: 'Quick Replies',
         helpText: 'Add quick reply options for this message',
-        multi: true,
-        tags: true,
-        searchable: true,
-        placeholder: 'Add quick replies...',
-        expressions: 'session',
-        nameKey: 'name',
-        valueKey: 'value',
-        maxItems: 10,
-        maxItemsText: 'You can add up to 10 quick replies',
+        widget: {
+          type: 'temba-select',
+          attributes: {
+            multi: true,
+            tags: true,
+            searchable: true,
+            placeholder: 'Add quick replies...',
+            expressions: 'session',
+            nameKey: 'name',
+            valueKey: 'value',
+            maxItems: 10,
+            maxItemsText: 'You can add up to 10 quick replies'
+          }
+        },
         // Transform string array to name/value objects for the form
         toFormValue: (actionValue: string[]) => {
           if (!Array.isArray(actionValue)) return [];
@@ -294,16 +377,20 @@ export const EDITOR_CONFIG: {
     render: renderAddToGroups,
     properties: {
       groups: {
-        component: 'temba-select',
         label: 'Groups',
         helpText: 'Select the groups to add the contact to',
         required: true,
-        multi: true,
-        searchable: true,
-        endpoint: '/api/v2/groups.json',
-        valueKey: 'uuid',
-        nameKey: 'name',
-        placeholder: 'Search for groups...'
+        widget: {
+          type: 'temba-select',
+          attributes: {
+            multi: true,
+            searchable: true,
+            endpoint: '/api/v2/groups.json',
+            valueKey: 'uuid',
+            nameKey: 'name',
+            placeholder: 'Search for groups...'
+          }
+        }
       }
     },
     validate: (action: AddToGroup) => {
@@ -366,7 +453,7 @@ export const EDITOR_CONFIG: {
 };
 
 // Default property type mappings
-export function getDefaultComponent(value: any): string {
+export function getDefaultComponent(value: any): WidgetConfig['type'] {
   if (typeof value === 'boolean') {
     return 'temba-checkbox';
   }
@@ -374,25 +461,75 @@ export function getDefaultComponent(value: any): string {
     return 'temba-textinput';
   }
   if (Array.isArray(value)) {
-    if (value.length > 0 && typeof value[0] === 'string') {
-      return 'temba-select'; // For string arrays, use multi-select with tags
-    }
-    return 'temba-select'; // For object arrays, use multi-select
+    return 'temba-select'; // For arrays, use multi-select
   }
   // Default to text input for strings and unknown types
   return 'temba-textinput';
 }
 
-// Get component properties for default mappings
-export function getDefaultComponentProps(value: any): Partial<PropertyConfig> {
+// Get component properties for default mappings with proper typing
+export function getDefaultComponentProps(value: any): PropertyConfig {
+  if (typeof value === 'boolean') {
+    return {
+      widget: { type: 'temba-checkbox' }
+    };
+  }
   if (typeof value === 'number') {
-    return { type: 'number' };
+    return {
+      widget: {
+        type: 'temba-textinput',
+        attributes: { type: 'number' }
+      }
+    };
   }
   if (Array.isArray(value)) {
     if (value.length > 0 && typeof value[0] === 'string') {
-      return { multi: true, tags: true };
+      return {
+        widget: {
+          type: 'temba-select',
+          attributes: { multi: true, tags: true }
+        }
+      };
     }
-    return { multi: true };
+    return {
+      widget: {
+        type: 'temba-select',
+        attributes: { multi: true }
+      }
+    };
   }
-  return {};
+  return {
+    widget: { type: 'temba-textinput' }
+  };
+}
+
+// Type guard functions for working with WidgetConfig
+export function isTextInputWidget(
+  config: WidgetConfig
+): config is { type: 'temba-textinput'; attributes?: TextInputAttributes } {
+  return config.type === 'temba-textinput';
+}
+
+export function isCompletionWidget(
+  config: WidgetConfig
+): config is { type: 'temba-completion'; attributes?: CompletionAttributes } {
+  return config.type === 'temba-completion';
+}
+
+export function isSelectWidget(
+  config: WidgetConfig
+): config is { type: 'temba-select'; attributes?: SelectAttributes } {
+  return config.type === 'temba-select';
+}
+
+export function isCheckboxWidget(
+  config: WidgetConfig
+): config is { type: 'temba-checkbox'; attributes?: CheckboxAttributes } {
+  return config.type === 'temba-checkbox';
+}
+
+export function isSliderWidget(
+  config: WidgetConfig
+): config is { type: 'temba-slider'; attributes?: SliderAttributes } {
+  return config.type === 'temba-slider';
 }
