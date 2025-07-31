@@ -180,6 +180,32 @@
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
           {
+            "type": "remove_contact_groups",
+            "groups": [
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
+              },
+              {
+                "uuid": "66e7a094-22ea-441d-91c4-283d8168e8e4",
+                "name": "The Poots",
+                "query": "name ~ \"poots\" OR name ~ \"dave\"",
+                "status": "ready",
+                "count": 1028
+              },
+              {
+                "uuid": "94e3ff12-9206-4ce8-87ab-934a864a1819",
+                "name": "Youth",
+                "query": "age <= 18",
+                "status": "ready",
+                "count": 174
+              }
+            ],
+            "all_groups": true,
+            "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d"
+          },
+          {
             "attachments": [],
             "text": "Excellent choice.",
             "type": "send_msg",
@@ -250,39 +276,21 @@
             "language": "eng"
           },
           {
-            "type": "remove_contact_groups",
-            "groups": [
+            "uuid": "773fa48f-7341-4f57-bf74-2afed2e4b763",
+            "actions": [
               {
-                "uuid": "269e8abf-e81b-404c-82ce-45ff42d13769",
-                "name": "Empty"
-              },
-              {
-                "uuid": "2f81d414-47b7-446d-b8c7-6662f611cb3d",
-                "name": "Testers"
-              },
-              {
-                "uuid": "90c0dc52-ddd8-466d-8333-a96fdd67195a",
-                "name": "Teachers"
-              },
-              {
-                "uuid": "58a6a3cd-20c0-4791-82da-ce9f319ab91b",
-                "name": "Farmers"
-              },
-              {
-                "uuid": "3b9caef9-e701-4475-a0c3-ef346704f71e",
-                "name": "Reporters"
-              },
-              {
-                "uuid": "f4f46e03-3d7c-4840-8ed3-8c6c5677a2f2",
-                "name": "Doctors"
-              },
-              {
-                "uuid": "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c",
-                "name": "Drivers"
+                "type": "remove_contact_groups",
+                "groups": [],
+                "all_groups": true,
+                "uuid": "4f6a8bbb-5563-4bdb-8b53-e23490596fcd"
               }
             ],
-            "all_groups": false,
-            "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d"
+            "exits": [
+              {
+                "uuid": "f2265a88-4568-4105-8a0c-c698d32ff18f",
+                "destination_uuid": null
+              }
+            ]
           },
           {
             "type": "add_contact_urn",
@@ -785,7 +793,7 @@
           "type": "wait_for_response",
           "position": {
             "left": 240,
-            "top": 140
+            "top": 160
           },
           "config": {
             "cases": {}
@@ -801,7 +809,7 @@
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
-            "left": 240,
+            "left": 260,
             "top": 340
           },
           "type": "execute_actions"
@@ -809,8 +817,8 @@
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 620,
-            "top": 700
+            "left": 580,
+            "top": 840
           },
           "config": {}
         },
@@ -865,8 +873,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 580,
-            "top": 280
+            "left": 520,
+            "top": 340
           },
           "config": {
             "cases": {}
@@ -876,7 +884,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 580,
-            "top": 560
+            "top": 500
           },
           "config": {
             "cases": {}
@@ -886,7 +894,7 @@
           "type": "split_by_llm",
           "position": {
             "left": 580,
-            "top": 880
+            "top": 1040
           },
           "config": {}
         },

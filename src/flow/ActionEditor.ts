@@ -7,7 +7,11 @@ import {
   PropertyConfig,
   getDefaultComponent,
   getDefaultComponentProps,
-  EDITOR_CONFIG
+  EDITOR_CONFIG,
+  CheckboxAttributes,
+  CompletionAttributes,
+  TextInputAttributes,
+  SelectAttributes
 } from './config';
 import { FormElement } from '../form/FormElement';
 import { CustomEventType } from '../interfaces';
@@ -315,10 +319,10 @@ export class ActionEditor extends RapidElement {
 
     switch (component) {
       case 'temba-textinput': {
-        const textInputAttrs = attributes as any; // Type assertion for flexibility
+        const textInputAttrs = attributes as TextInputAttributes;
         fieldHtml = html`<temba-textinput
           name="${name}"
-          ${label ? html`label="${label}"` : ''}
+          label="${label}"
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
@@ -332,10 +336,10 @@ export class ActionEditor extends RapidElement {
       }
 
       case 'temba-completion': {
-        const completionAttrs = attributes as any; // Type assertion for flexibility
+        const completionAttrs = attributes as CompletionAttributes;
         fieldHtml = html`<temba-completion
           name="${name}"
-          ${label ? html`label="${label}"` : ''}
+          label="${label}"
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
@@ -349,20 +353,25 @@ export class ActionEditor extends RapidElement {
         break;
       }
 
-      case 'temba-checkbox':
+      case 'temba-checkbox': {
+        const checkboxAttrs = attributes as CheckboxAttributes;
         fieldHtml = html`<temba-checkbox
           name="${name}"
-          ${label ? html`label="${label}"` : ''}
+          label="${label}"
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
           ?checked="${value}"
+          size="${checkboxAttrs.size || 1.2}"
+          ?disabled="${checkboxAttrs.disabled}"
+          animateChange="${checkboxAttrs.animateChange || 'pulse'}"
           @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
-        ></temba-checkbox>`;
+        ></temba-checkbox> `;
         break;
+      }
 
       case 'temba-select': {
-        const selectAttrs = attributes as any; // Type assertion for flexibility
+        const selectAttrs = attributes as SelectAttributes;
         const defaultMulti =
           defaultProps.widget?.attributes &&
           'multi' in defaultProps.widget.attributes
@@ -395,20 +404,6 @@ export class ActionEditor extends RapidElement {
               ></temba-option>`
           )}
         </temba-select>`;
-        break;
-      }
-      case 'temba-compose': {
-        const composeAttrs = attributes as any; // Type assertion for flexibility
-        fieldHtml = html`<temba-compose
-          name="${name}"
-          ${label ? html`label="${label}"` : ''}
-          help_text="${help_text}"
-          ?required="${required}"
-          .errors="${propertyErrors}"
-          .value="${value || ''}"
-          placeholder="${composeAttrs.placeholder || ''}"
-          @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
-        ></temba-compose>`;
         break;
       }
 
