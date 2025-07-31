@@ -233,7 +233,8 @@
           },
           {
             "addresses": [
-              "name@domain.com"
+              "name@domain.com",
+              "mistermeowface@whiskers.com"
             ],
             "subject": "Did you get this?",
             "body": "I hope it arrived! But this message is a bit longer.",

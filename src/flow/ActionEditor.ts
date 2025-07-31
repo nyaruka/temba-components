@@ -307,7 +307,7 @@ export class ActionEditor extends RapidElement {
 
     // Common properties for all form elements
     const name = propertyName;
-    const label = config.label || propertyName;
+    const label = config.label;
     const help_text = config.helpText;
     const required = config.required;
 
@@ -318,7 +318,7 @@ export class ActionEditor extends RapidElement {
         const textInputAttrs = attributes as any; // Type assertion for flexibility
         fieldHtml = html`<temba-textinput
           name="${name}"
-          label="${label}"
+          ${label ? html`label="${label}"` : ''}
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
@@ -335,7 +335,7 @@ export class ActionEditor extends RapidElement {
         const completionAttrs = attributes as any; // Type assertion for flexibility
         fieldHtml = html`<temba-completion
           name="${name}"
-          label="${label}"
+          ${label ? html`label="${label}"` : ''}
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
@@ -352,7 +352,7 @@ export class ActionEditor extends RapidElement {
       case 'temba-checkbox':
         fieldHtml = html`<temba-checkbox
           name="${name}"
-          label="${label}"
+          ${label ? html`label="${label}"` : ''}
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
@@ -370,7 +370,7 @@ export class ActionEditor extends RapidElement {
             : false;
         fieldHtml = html`<temba-select
           name="${name}"
-          label="${label}"
+          ${label ? html`label="${label}"` : ''}
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
@@ -401,7 +401,7 @@ export class ActionEditor extends RapidElement {
         const composeAttrs = attributes as any; // Type assertion for flexibility
         fieldHtml = html`<temba-compose
           name="${name}"
-          label="${label}"
+          ${label ? html`label="${label}"` : ''}
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
