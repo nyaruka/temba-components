@@ -3,14 +3,12 @@ import { UIConfig, COLORS, ValidationResult } from '../types';
 import { Node, RemoveFromGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
-const render = (node: Node, action: RemoveFromGroup) => {
-  return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
-};
-
 export const remove_contact_groups: UIConfig = {
   name: 'Remove from Group',
   color: COLORS.remove,
-  render,
+  render: (node: Node, action: RemoveFromGroup) => {
+    return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
+  },
   properties: {
     all_groups: {
       helpText:

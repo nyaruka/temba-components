@@ -3,14 +3,12 @@ import { UIConfig, COLORS, ValidationResult } from '../types';
 import { Node, AddToGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
-const render = (node: Node, action: AddToGroup) => {
-  return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
-};
-
 export const add_contact_groups: UIConfig = {
   name: 'Add to Group',
   color: COLORS.add,
-  render,
+  render: (node: Node, action: AddToGroup) => {
+    return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
+  },
   properties: {
     groups: {
       label: 'Groups',

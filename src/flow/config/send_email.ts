@@ -4,23 +4,21 @@ import { Node, SendEmail } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
 import { Icon } from '../../Icons';
 
-const render = (node: Node, action: SendEmail) => {
-  return html`<div>
-    <div>${renderStringList(action.addresses, Icon.email)}</div>
-    <div style="margin-top: 0.5em">
-      <div
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-      >
-        ${action.subject}
-      </div>
-    </div>
-  </div>`;
-};
-
 export const send_email: UIConfig = {
   name: 'Send Email',
-  color: COLORS.broadcast,
-  render,
+  color: COLORS.send,
+  render: (node: Node, action: SendEmail) => {
+    return html`<div>
+      <div>${renderStringList(action.addresses, Icon.email)}</div>
+      <div style="margin-top: 0.5em">
+        <div
+          style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+        >
+          ${action.subject}
+        </div>
+      </div>
+    </div>`;
+  },
   properties: {
     addresses: {
       label: 'Recipients',

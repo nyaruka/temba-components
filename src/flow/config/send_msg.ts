@@ -3,24 +3,22 @@ import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { UIConfig, COLORS, ValidationResult } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 
-const render = (node: Node, action: SendMsg) => {
-  const text = action.text.replace(/\n/g, '<br>');
-  return html`
-    ${unsafeHTML(text)}
-    ${action.quick_replies.length > 0
-      ? html`<div class="quick-replies">
-          ${action.quick_replies.map((reply) => {
-            return html`<div class="quick-reply">${reply}</div>`;
-          })}
-        </div>`
-      : null}
-  `;
-};
-
 export const send_msg: UIConfig = {
   name: 'Send Message',
   color: COLORS.send,
-  render,
+  render: (node: Node, action: SendMsg) => {
+    const text = action.text.replace(/\n/g, '<br>');
+    return html`
+      ${unsafeHTML(text)}
+      ${action.quick_replies.length > 0
+        ? html`<div class="quick-replies">
+            ${action.quick_replies.map((reply) => {
+              return html`<div class="quick-reply">${reply}</div>`;
+            })}
+          </div>`
+        : null}
+    `;
+  },
   properties: {
     text: {
       label: 'Message Text',
