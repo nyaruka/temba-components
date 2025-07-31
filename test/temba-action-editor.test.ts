@@ -1,6 +1,6 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { ActionEditor } from '../src/flow/ActionEditor';
-import { SendMsg } from '../src/store/flow-definition';
+import { SendMsg, RemoveFromGroup } from '../src/store/flow-definition';
 import '../temba-modules';
 
 describe('ActionEditor', () => {
@@ -235,6 +235,118 @@ describe('ActionEditor', () => {
       const formData = (actionEditor as any).formData;
       expect(formData.quick_replies).to.be.an('array');
       expect(formData.quick_replies).to.have.length(0);
+    });
+  });
+
+  describe('conditional properties', () => {
+    it('should show groups field when all_groups is false for remove_contact_groups', async () => {
+      const removeFromGroupAction: RemoveFromGroup = {
+        type: 'remove_contact_groups',
+        uuid: 'test-action',
+        all_groups: false,
+        groups: []
+      };
+
+      actionEditor.action = removeFromGroupAction;
+      await actionEditor.updateComplete;
+
+      // Give it another update cycle to ensure rendering is complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await actionEditor.updateComplete;
+
+      // Check that groups field is visible
+      const groupsSelect = actionEditor.shadowRoot?.querySelector(
+        'temba-select[name="groups"]'
+      );
+      expect(groupsSelect).to.exist;
+
+      // Check that all_groups checkbox is present
+      const allGroupsCheckbox = actionEditor.shadowRoot?.querySelector(
+        'temba-checkbox[name="all_groups"]'
+      );
+      expect(allGroupsCheckbox).to.exist;
+    });
+
+    it('should hide groups field when all_groups is true for remove_contact_groups', async () => {
+      const removeFromGroupAction: RemoveFromGroup = {
+        type: 'remove_contact_groups',
+        uuid: 'test-action',
+        all_groups: true,
+        groups: []
+      };
+
+      actionEditor.action = removeFromGroupAction;
+      await actionEditor.updateComplete;
+
+      // Give it another update cycle to ensure rendering is complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await actionEditor.updateComplete;
+
+      // Check that groups field is NOT present (hidden)
+      const groupsSelect = actionEditor.shadowRoot?.querySelector(
+        'temba-select[name="groups"]'
+      );
+      expect(groupsSelect).to.not.exist;
+
+      // Check that all_groups checkbox is still present
+      const allGroupsCheckbox = actionEditor.shadowRoot?.querySelector(
+        'temba-checkbox[name="all_groups"]'
+      );
+      expect(allGroupsCheckbox).to.exist;
+    });
+
+    it('should dynamically show/hide groups field when all_groups checkbox is toggled', async () => {
+      const removeFromGroupAction: RemoveFromGroup = {
+        type: 'remove_contact_groups',
+        uuid: 'test-action',
+        all_groups: false,
+        groups: []
+      };
+
+      actionEditor.action = removeFromGroupAction;
+      await actionEditor.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await actionEditor.updateComplete;
+
+      // Initially, groups field should be visible
+      let groupsSelect = actionEditor.shadowRoot?.querySelector(
+        'temba-select[name="groups"]'
+      );
+      expect(groupsSelect).to.exist;
+
+      // Find and check the all_groups checkbox
+      const allGroupsCheckbox = actionEditor.shadowRoot?.querySelector(
+        'temba-checkbox[name="all_groups"]'
+      ) as any;
+      expect(allGroupsCheckbox).to.exist;
+
+      // Simulate checking the checkbox
+      allGroupsCheckbox.checked = true;
+      allGroupsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      await actionEditor.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await actionEditor.updateComplete;
+
+      // Now groups field should be hidden
+      groupsSelect = actionEditor.shadowRoot?.querySelector(
+        'temba-select[name="groups"]'
+      );
+      expect(groupsSelect).to.not.exist;
+
+      // Uncheck the checkbox
+      allGroupsCheckbox.checked = false;
+      allGroupsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      await actionEditor.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await actionEditor.updateComplete;
+
+      // Groups field should be visible again
+      groupsSelect = actionEditor.shadowRoot?.querySelector(
+        'temba-select[name="groups"]'
+      );
+      expect(groupsSelect).to.exist;
     });
   });
 });

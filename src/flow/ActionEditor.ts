@@ -309,11 +309,30 @@ export class ActionEditor extends RapidElement {
       ? [this.errors[propertyName]]
       : [];
 
+    // Evaluate conditional behavior
+    const conditions = config.conditions;
+    const isVisible = conditions?.visible
+      ? conditions.visible(this.formData)
+      : true;
+    const isDynamicRequired = conditions?.required
+      ? conditions.required(this.formData)
+      : null;
+    const isDisabled = conditions?.disabled
+      ? conditions.disabled(this.formData)
+      : false;
+
+    // Don't render if not visible
+    if (!isVisible) {
+      return html``;
+    }
+
     // Common properties for all form elements
     const name = propertyName;
     const label = config.label;
     const help_text = config.helpText;
-    const required = config.required;
+    // Use dynamic required if available, otherwise fall back to config required
+    const required =
+      isDynamicRequired !== null ? isDynamicRequired : config.required;
 
     let fieldHtml: TemplateResult;
 
@@ -330,6 +349,7 @@ export class ActionEditor extends RapidElement {
           type="${textInputAttrs.type || 'text'}"
           ?textarea="${textInputAttrs.textarea}"
           placeholder="${textInputAttrs.placeholder || ''}"
+          ?disabled="${isDisabled}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-textinput>`;
         break;
@@ -348,6 +368,7 @@ export class ActionEditor extends RapidElement {
           expressions="${completionAttrs.expressions || ''}"
           placeholder="${completionAttrs.placeholder || ''}"
           .minHeight="${completionAttrs.minHeight}"
+          ?disabled="${isDisabled}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-completion>`;
         break;
@@ -363,7 +384,7 @@ export class ActionEditor extends RapidElement {
           .errors="${propertyErrors}"
           ?checked="${value}"
           size="${checkboxAttrs.size || 1.2}"
-          ?disabled="${checkboxAttrs.disabled}"
+          ?disabled="${isDisabled || checkboxAttrs.disabled}"
           animateChange="${checkboxAttrs.animateChange || 'pulse'}"
           @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-checkbox> `;
@@ -394,6 +415,7 @@ export class ActionEditor extends RapidElement {
           maxItemsText="${selectAttrs.maxItemsText}"
           placeholder="${selectAttrs.placeholder || ''}"
           endpoint="${selectAttrs.endpoint || ''}"
+          ?disabled="${isDisabled}"
           @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         >
           ${selectAttrs.options?.map(

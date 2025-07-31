@@ -193,17 +193,10 @@
                 "query": "name ~ \"poots\" OR name ~ \"dave\"",
                 "status": "ready",
                 "count": 1028
-              },
-              {
-                "uuid": "94e3ff12-9206-4ce8-87ab-934a864a1819",
-                "name": "Youth",
-                "query": "age <= 18",
-                "status": "ready",
-                "count": 174
               }
             ],
-            "all_groups": true,
-            "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d"
+            "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d",
+            "all_groups": true
           },
           {
             "attachments": [],

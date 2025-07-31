@@ -161,6 +161,16 @@ export interface PropertyConfig {
   // Widget configuration
   widget: WidgetConfig;
 
+  // Conditional behavior based on other field values
+  conditions?: {
+    // When to show this field
+    visible?: (formData: any) => boolean;
+    // When this field is required (overrides base required)
+    required?: (formData: any) => boolean;
+    // When this field is disabled
+    disabled?: (formData: any) => boolean;
+  };
+
   // Data transformation functions
   toFormValue?: (actionValue: any) => any;
   fromFormValue?: (formValue: any) => any;
@@ -462,6 +472,15 @@ export const EDITOR_CONFIG: {
     color: COLORS.remove,
     render: renderRemoveFromGroups,
     properties: {
+      all_groups: {
+        helpText:
+          'Check this to remove the contact from all groups instead of specific ones',
+        label: 'Remove from All Groups',
+        widget: {
+          type: 'temba-checkbox',
+          attributes: {}
+        }
+      },
       groups: {
         label: 'Groups',
         helpText: 'Select the groups to remove the contact from',
@@ -475,15 +494,12 @@ export const EDITOR_CONFIG: {
             nameKey: 'name',
             placeholder: 'Search for groups...'
           }
-        }
-      },
-      all_groups: {
-        helpText:
-          'Check this to remove the contact from all groups instead of specific ones',
-        label: 'Remove from All Groups',
-        widget: {
-          type: 'temba-checkbox',
-          attributes: {}
+        },
+        conditions: {
+          // Hide this field when all_groups is checked
+          visible: (formData) => !formData.all_groups,
+          // Only required when all_groups is not checked
+          required: (formData) => !formData.all_groups
         }
       }
     },
