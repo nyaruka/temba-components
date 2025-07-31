@@ -36,12 +36,6 @@ export class ActionEditor extends RapidElement {
         flex-direction: column;
       }
 
-      .error-message {
-        color: var(--color-error);
-        font-size: 0.85em;
-        margin-top: 0.25em;
-      }
-
       .form-actions {
         display: flex;
         gap: 10px;
@@ -302,15 +296,16 @@ export class ActionEditor extends RapidElement {
     const config = propertyConfig;
     const component = config.widget?.type || getDefaultComponent(value);
     const defaultProps = getDefaultComponentProps(value);
-    const hasError = !!this.errors[propertyName];
     const attributes = config.widget?.attributes || {};
+    const propertyErrors = this.errors[propertyName]
+      ? [this.errors[propertyName]]
+      : [];
 
     // Common properties for all form elements
     const name = propertyName;
     const label = config.label || propertyName;
     const help_text = config.helpText;
     const required = config.required;
-    const cssClass = hasError ? 'error' : '';
 
     let fieldHtml: TemplateResult;
 
@@ -322,7 +317,7 @@ export class ActionEditor extends RapidElement {
           label="${label}"
           help_text="${help_text}"
           ?required="${required}"
-          class="${cssClass}"
+          .errors="${propertyErrors}"
           .value="${value || ''}"
           type="${textInputAttrs.type || 'text'}"
           ?textarea="${textInputAttrs.textarea}"
@@ -339,7 +334,7 @@ export class ActionEditor extends RapidElement {
           label="${label}"
           help_text="${help_text}"
           ?required="${required}"
-          class="${cssClass}"
+          .errors="${propertyErrors}"
           .value="${value || ''}"
           ?textarea="${completionAttrs.textarea}"
           expressions="${completionAttrs.expressions || ''}"
@@ -355,7 +350,7 @@ export class ActionEditor extends RapidElement {
           label="${label}"
           help_text="${help_text}"
           ?required="${required}"
-          class="${cssClass}"
+          .errors="${propertyErrors}"
           ?checked="${value}"
           @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-checkbox>`;
@@ -373,7 +368,7 @@ export class ActionEditor extends RapidElement {
           label="${label}"
           help_text="${help_text}"
           ?required="${required}"
-          class="${cssClass}"
+          .errors="${propertyErrors}"
           .values="${value || (selectAttrs.multi || defaultMulti ? [] : '')}"
           ?multi="${selectAttrs.multi || defaultMulti}"
           ?searchable="${selectAttrs.searchable}"
@@ -403,7 +398,7 @@ export class ActionEditor extends RapidElement {
           label="${label}"
           help_text="${help_text}"
           ?required="${required}"
-          class="${cssClass}"
+          .errors="${propertyErrors}"
           .value="${value || ''}"
           placeholder="${composeAttrs.placeholder || ''}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
@@ -415,14 +410,7 @@ export class ActionEditor extends RapidElement {
         fieldHtml = html`<div>Unsupported component: ${component}</div>`;
     }
 
-    return html`
-      <div class="form-field">
-        ${fieldHtml}
-        ${hasError
-          ? html`<div class="error-message">${this.errors[propertyName]}</div>`
-          : ''}
-      </div>
-    `;
+    return html` <div class="form-field">${fieldHtml}</div> `;
   }
 
   private renderForm(): TemplateResult {

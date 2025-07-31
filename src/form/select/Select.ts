@@ -55,6 +55,10 @@ export class Select<T extends SelectOption> extends FormElement {
         --temba-options-font-size: var(--temba-select-selected-font-size);
         --icon-color: var(--color-text-dark);
         --color-options-bg: #fff;
+        /* Always use normal border colors for options popup, even when select is in error state */
+        --color-widget-border: #ddd;
+        --color-focus: #007bff;
+        --widget-box-shadow-focused: 0 0 0 3px rgba(0, 123, 255, 0.25);
       }
 
       :host:focus {

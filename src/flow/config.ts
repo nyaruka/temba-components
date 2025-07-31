@@ -281,6 +281,10 @@ export const EDITOR_CONFIG: {
         errors.text = 'Message text is required';
       }
 
+      if (action.quick_replies && action.quick_replies.length > 3) {
+        errors.quick_replies = 'You can add up to 3 quick replies';
+      }
+
       return {
         valid: Object.keys(errors).length === 0,
         errors
