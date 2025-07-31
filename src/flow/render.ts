@@ -59,7 +59,7 @@ const renderLineItem = (name: string, icon?: string) => {
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
       : null}
     <div
-      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
     >
       ${name}
     </div>
@@ -91,6 +91,35 @@ const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
   }
 
   return items;
+};
+
+const renderStringList = (items: string[], icon?: string) => {
+  const itemElements = [];
+  const maxDisplay = 3;
+
+  // Show up to 3 items, or all 4 if exactly 4 items
+  const displayCount =
+    items.length === 4 ? 4 : Math.min(maxDisplay, items.length);
+
+  for (let i = 0; i < displayCount; i++) {
+    const item = items[i];
+    itemElements.push(renderLineItem(item, icon));
+  }
+
+  // Add "+X more" if there are more than 3 items (and not exactly 4)
+  if (items.length > maxDisplay && items.length !== 4) {
+    const remainingCount = items.length - maxDisplay;
+    itemElements.push(html`<div
+      style="display:flex;items-align:center; color: #666;"
+    >
+      ${icon
+        ? html`<div style="margin-right:0.5em; width: 1em;"></div>` // spacing placeholder
+        : null}
+      <div>+${remainingCount} more</div>
+    </div>`);
+  }
+
+  return itemElements;
 };
 
 export const renderSendMsg = (node: Node, action: SendMsg) => {
@@ -168,23 +197,13 @@ export const renderAddContactUrn = (node: Node, action: AddContactUrn) => {
 };
 
 export const renderSendEmail = (node: Node, action: SendEmail) => {
-  const addressList = action.addresses.join(', ');
   return html`<div>
-    <div
-      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-    >
-      <b>${addressList}</b>
-    </div>
+    <div>${renderStringList(action.addresses, Icon.email)}</div>
     <div style="margin-top: 0.5em">
       <div
         style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
       >
         ${action.subject}
-      </div>
-      <div
-        style="margin-top: 0.25em; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-      >
-        ${action.body}
       </div>
     </div>
   </div>`;

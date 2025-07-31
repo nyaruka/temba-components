@@ -17,6 +17,11 @@
       "count": 0
     },
     {
+      "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+      "name": "Some Really Long Group Name",
+      "count": 2028
+    },
+    {
       "uuid": "66e7a094-22ea-441d-91c4-283d8168e8e4",
       "name": "The Poots",
       "query": "name ~ \"poots\" OR name ~ \"dave\"",
