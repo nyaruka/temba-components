@@ -111,10 +111,17 @@ export class EditorNode extends RapidElement {
         flex-grow: 1;
         display: flex;
         flex-direction: column;
+        min-width: 0; /* Allow flex item to shrink below its content size */
+        overflow: hidden;
       }
 
       .action .body {
         padding: 1em;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        white-space: normal;
+        overflow: hidden;
       }
 
       .action .drag-handle {

@@ -220,6 +220,13 @@
                 "query": "age <= 18",
                 "status": "ready",
                 "count": 174
+              },
+              {
+                "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
+                "name": "Reporters",
+                "query": null,
+                "status": "ready",
+                "count": 0
               }
             ],
             "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90"
@@ -832,8 +839,8 @@
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 800,
-            "top": 220
+            "left": 820,
+            "top": 240
           },
           "config": {
             "operand": {
@@ -880,8 +887,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 480,
-            "top": 420
+            "left": 580,
+            "top": 280
           },
           "config": {
             "cases": {}
