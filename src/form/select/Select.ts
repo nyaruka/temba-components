@@ -1491,7 +1491,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public addValue(value: any) {
     const oldValues = [...this.values];
-    this.values.push(value);
+    this.values = [...this.values, value];
     this.requestUpdate('values', oldValues);
   }
 
@@ -1499,7 +1499,7 @@ export class Select<T extends SelectOption> extends FormElement {
     const oldValues = [...this.values];
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
-      this.values.splice(idx, 1);
+      this.values = this.values.filter((_, index) => index !== idx);
 
       // Also remove the 'selected' attribute from the corresponding temba-option element
       const valueToMatch = this.getValue(valueToRemove);
@@ -1519,7 +1519,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public popValue() {
     const oldValues = [...this.values];
-    this.values.pop();
+    this.values = this.values.slice(0, -1);
     this.requestUpdate('values', oldValues);
     this.infoText = '';
   }
@@ -1557,9 +1557,12 @@ export class Select<T extends SelectOption> extends FormElement {
         toIdx < this.values.length
       ) {
         const oldValues = [...this.values];
-        // Move the item from fromIdx to toIdx
-        const movedItem = this.values.splice(fromIdx, 1)[0];
-        this.values.splice(toIdx, 0, movedItem);
+        // Create a new array with the moved item
+        const newValues = [...this.values];
+        const movedItem = newValues[fromIdx];
+        newValues.splice(fromIdx, 1);
+        newValues.splice(toIdx, 0, movedItem);
+        this.values = newValues;
         this.requestUpdate('values', oldValues);
       }
     }
