@@ -1,0 +1,26 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "uuid": "user-1",
+      "email": "admin@example.com",
+      "first_name": "Admin",
+      "last_name": "User",
+      "username": "admin",
+      "is_active": true,
+      "is_staff": true,
+      "date_joined": "2024-01-01T00:00:00Z"
+    },
+    {
+      "uuid": "user-2",
+      "email": "editor@example.com",
+      "first_name": "Editor",
+      "last_name": "User",
+      "username": "editor",
+      "is_active": true,
+      "is_staff": false,
+      "date_joined": "2024-01-01T00:00:00Z"
+    }
+  ]
+}

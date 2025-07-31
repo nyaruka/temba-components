@@ -1,0 +1,21 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "uuid": "topic-1",
+      "name": "General Support",
+      "created_on": "2024-01-01T00:00:00Z"
+    },
+    {
+      "uuid": "topic-2",
+      "name": "Technical Issues",
+      "created_on": "2024-01-01T00:00:00Z"
+    },
+    {
+      "uuid": "topic-3",
+      "name": "Billing Questions",
+      "created_on": "2024-01-01T00:00:00Z"
+    }
+  ]
+}
