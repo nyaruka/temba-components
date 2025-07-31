@@ -300,9 +300,10 @@ export class ActionEditor extends RapidElement {
   ): TemplateResult {
     const value = this.formData[propertyName];
     const config = propertyConfig;
-    const component = config.component || getDefaultComponent(value);
+    const component = config.widget?.type || getDefaultComponent(value);
     const defaultProps = getDefaultComponentProps(value);
     const hasError = !!this.errors[propertyName];
+    const attributes = config.widget?.attributes || {};
 
     // Common properties for all form elements
     const name = propertyName;
@@ -314,7 +315,8 @@ export class ActionEditor extends RapidElement {
     let fieldHtml: TemplateResult;
 
     switch (component) {
-      case 'temba-textinput':
+      case 'temba-textinput': {
+        const textInputAttrs = attributes as any; // Type assertion for flexibility
         fieldHtml = html`<temba-textinput
           name="${name}"
           label="${label}"
@@ -322,15 +324,16 @@ export class ActionEditor extends RapidElement {
           ?required="${required}"
           class="${cssClass}"
           .value="${value || ''}"
-          type="${config.type || defaultProps.type || 'text'}"
-          ?textarea="${config.textarea}"
-          ?expressions="${config.expressions}"
-          placeholder="${config.placeholder || ''}"
+          type="${textInputAttrs.type || 'text'}"
+          ?textarea="${textInputAttrs.textarea}"
+          placeholder="${textInputAttrs.placeholder || ''}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-textinput>`;
         break;
+      }
 
-      case 'temba-completion':
+      case 'temba-completion': {
+        const completionAttrs = attributes as any; // Type assertion for flexibility
         fieldHtml = html`<temba-completion
           name="${name}"
           label="${label}"
@@ -338,12 +341,13 @@ export class ActionEditor extends RapidElement {
           ?required="${required}"
           class="${cssClass}"
           .value="${value || ''}"
-          ?textarea="${config.textarea}"
-          expressions="${config.expressions || ''}"
-          placeholder="${config.placeholder || ''}"
+          ?textarea="${completionAttrs.textarea}"
+          expressions="${completionAttrs.expressions || ''}"
+          placeholder="${completionAttrs.placeholder || ''}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-completion>`;
         break;
+      }
 
       case 'temba-checkbox':
         fieldHtml = html`<temba-checkbox
@@ -357,27 +361,33 @@ export class ActionEditor extends RapidElement {
         ></temba-checkbox>`;
         break;
 
-      case 'temba-select':
+      case 'temba-select': {
+        const selectAttrs = attributes as any; // Type assertion for flexibility
+        const defaultMulti =
+          defaultProps.widget?.attributes &&
+          'multi' in defaultProps.widget.attributes
+            ? defaultProps.widget.attributes.multi
+            : false;
         fieldHtml = html`<temba-select
           name="${name}"
           label="${label}"
           help_text="${help_text}"
           ?required="${required}"
           class="${cssClass}"
-          .values="${value || (config.multi || defaultProps.multi ? [] : '')}"
-          ?multi="${config.multi || defaultProps.multi}"
-          ?searchable="${config.searchable}"
-          ?tags="${config.tags || defaultProps.tags}"
-          valueKey="${config.valueKey || 'value'}"
-          nameKey="${config.nameKey || 'name'}"
-          ?maxItems="${config.maxItems || defaultProps.maxItems}"
-          ?maxItemsText="${config.maxItemsText || defaultProps.maxItemsText}"
-          placeholder="${config.placeholder || ''}"
-          endpoint="${config.endpoint || ''}"
+          .values="${value || (selectAttrs.multi || defaultMulti ? [] : '')}"
+          ?multi="${selectAttrs.multi || defaultMulti}"
+          ?searchable="${selectAttrs.searchable}"
+          ?tags="${selectAttrs.tags}"
+          valueKey="${selectAttrs.valueKey || 'value'}"
+          nameKey="${selectAttrs.nameKey || 'name'}"
+          ?maxItems="${selectAttrs.maxItems}"
+          ?maxItemsText="${selectAttrs.maxItemsText}"
+          placeholder="${selectAttrs.placeholder || ''}"
+          endpoint="${selectAttrs.endpoint || ''}"
           @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         >
-          ${config.options?.map(
-            (option) =>
+          ${selectAttrs.options?.map(
+            (option: any) =>
               html`<temba-option
                 name="${option.name}"
                 value="${option.value}"
@@ -385,7 +395,9 @@ export class ActionEditor extends RapidElement {
           )}
         </temba-select>`;
         break;
-      case 'temba-compose':
+      }
+      case 'temba-compose': {
+        const composeAttrs = attributes as any; // Type assertion for flexibility
         fieldHtml = html`<temba-compose
           name="${name}"
           label="${label}"
@@ -393,10 +405,11 @@ export class ActionEditor extends RapidElement {
           ?required="${required}"
           class="${cssClass}"
           .value="${value || ''}"
-          placeholder="${config.placeholder || ''}"
+          placeholder="${composeAttrs.placeholder || ''}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-compose>`;
         break;
+      }
 
       default:
         fieldHtml = html`<div>Unsupported component: ${component}</div>`;

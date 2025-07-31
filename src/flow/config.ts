@@ -33,7 +33,8 @@
  * ```
  *
  * The `widget.type` automatically restricts what's allowed in `widget.attributes`.
- */ import { TemplateResult } from 'lit-html';
+ */
+import { TemplateResult } from 'lit-html';
 import {
   renderAddContactUrn,
   renderAddInputLabels,

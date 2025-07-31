@@ -181,9 +181,12 @@
         "actions": [
           {
             "attachments": [],
-            "text": "Excellent choices!",
+            "text": "Excellent choice.",
             "type": "send_msg",
-            "quick_replies": [],
+            "quick_replies": [
+              "blooooop",
+              "bleep"
+            ],
             "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
           },
           {
@@ -783,7 +786,7 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 260,
+            "left": 280,
             "top": 200
           },
           "config": {
