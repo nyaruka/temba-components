@@ -124,6 +124,9 @@ export class Completion extends FormElement {
   @property({ type: Boolean })
   autogrow = false;
 
+  @property({ type: Number })
+  minHeight: number;
+
   private hiddenElement: HTMLInputElement;
   private query: string;
 
@@ -290,6 +293,9 @@ export class Completion extends FormElement {
             ?autogrow=${this.autogrow}
             ?textarea=${this.textarea}
             ?submitOnEnter=${this.submitOnEnter}
+            style=${this.minHeight
+              ? `--textarea-min-height: ${this.minHeight}px`
+              : ''}
           >
           </temba-textinput>
           <temba-options

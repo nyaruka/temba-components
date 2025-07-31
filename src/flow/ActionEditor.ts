@@ -29,6 +29,7 @@ export class ActionEditor extends RapidElement {
         flex-direction: column;
         gap: 15px;
         min-width: 400px;
+        padding-bottom: 40px;
       }
 
       .form-field {
@@ -269,7 +270,10 @@ export class ActionEditor extends RapidElement {
     // Handle different component types
     if (target.tagName === 'TEMBA-CHECKBOX') {
       value = (target as any).checked;
-    } else if (target.tagName === 'TEMBA-SELECT' && (target as any).multi) {
+    } else if (
+      target.tagName === 'TEMBA-SELECT' &&
+      ((target as any).multi || (target as any).emails || (target as any).tags)
+    ) {
       value = (target as any).values || [];
     }
 
@@ -339,6 +343,7 @@ export class ActionEditor extends RapidElement {
           ?textarea="${completionAttrs.textarea}"
           expressions="${completionAttrs.expressions || ''}"
           placeholder="${completionAttrs.placeholder || ''}"
+          .minHeight="${completionAttrs.minHeight}"
           @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
         ></temba-completion>`;
         break;
@@ -373,10 +378,11 @@ export class ActionEditor extends RapidElement {
           ?multi="${selectAttrs.multi || defaultMulti}"
           ?searchable="${selectAttrs.searchable}"
           ?tags="${selectAttrs.tags}"
+          ?emails="${selectAttrs.emails}"
           valueKey="${selectAttrs.valueKey || 'value'}"
           nameKey="${selectAttrs.nameKey || 'name'}"
-          ?maxItems="${selectAttrs.maxItems}"
-          ?maxItemsText="${selectAttrs.maxItemsText}"
+          maxItems="${selectAttrs.maxItems || 0}"
+          maxItemsText="${selectAttrs.maxItemsText}"
           placeholder="${selectAttrs.placeholder || ''}"
           endpoint="${selectAttrs.endpoint || ''}"
           @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"

@@ -96,6 +96,7 @@ export interface CompletionAttributes {
   textarea?: boolean;
   expressions?: string;
   counter?: string;
+  minHeight?: number;
 }
 
 export interface SelectAttributes {
@@ -103,6 +104,7 @@ export interface SelectAttributes {
   multi?: boolean;
   searchable?: boolean;
   tags?: boolean;
+  emails?: boolean;
   clearable?: boolean;
   endpoint?: string;
   valueKey?: string;
@@ -241,7 +243,8 @@ export const EDITOR_CONFIG: {
           type: 'temba-completion',
           attributes: {
             textarea: true,
-            expressions: 'session'
+            expressions: 'session',
+            minHeight: 75
           }
         }
       },
@@ -259,15 +262,13 @@ export const EDITOR_CONFIG: {
             nameKey: 'name',
             valueKey: 'value',
             maxItems: 10,
-            maxItemsText: 'You can add up to 10 quick replies'
+            maxItemsText: 'You can only add up to 10 quick replies'
           }
         },
-        // Transform string array to name/value objects for the form
         toFormValue: (actionValue: string[]) => {
           if (!Array.isArray(actionValue)) return [];
           return actionValue.map((text) => ({ name: text, value: text }));
         },
-        // Transform name/value objects back to string array for the action
         fromFormValue: (formValue: Array<{ name: string; value: string }>) => {
           if (!Array.isArray(formValue)) return [];
           return formValue.map((item) => item.value || item.name || item);
@@ -281,10 +282,6 @@ export const EDITOR_CONFIG: {
         errors.text = 'Message text is required';
       }
 
-      if (action.quick_replies && action.quick_replies.length > 3) {
-        errors.quick_replies = 'You can add up to 3 quick replies';
-      }
-
       return {
         valid: Object.keys(errors).length === 0,
         errors
@@ -294,7 +291,50 @@ export const EDITOR_CONFIG: {
   send_email: {
     name: 'Send Email',
     color: COLORS.broadcast,
-    render: renderSendEmail
+    render: renderSendEmail,
+    properties: {
+      addresses: {
+        label: 'Recipients',
+        widget: {
+          type: 'temba-select',
+          attributes: {
+            emails: true,
+            searchable: true,
+            placeholder: 'Search for contacts...'
+          }
+        },
+        toFormValue: (actionValue: string[]) => {
+          if (!Array.isArray(actionValue)) return [];
+          return actionValue.map((text) => ({ name: text, value: text }));
+        },
+        fromFormValue: (formValue: Array<{ name: string; value: string }>) => {
+          if (!Array.isArray(formValue)) return [];
+          return formValue.map((item) => item.value || item.name || item);
+        }
+      },
+      subject: {
+        label: 'Subject',
+        required: true,
+        widget: {
+          type: 'temba-textinput',
+          attributes: {
+            placeholder: 'Enter email subject',
+            maxlength: 255
+          }
+        }
+      },
+      body: {
+        required: true,
+        widget: {
+          type: 'temba-completion',
+          attributes: {
+            textarea: true,
+            minHeight: 75,
+            expressions: 'session'
+          }
+        }
+      }
+    }
   },
   start_session: {
     name: 'Start Somebody Else',

@@ -573,6 +573,134 @@ describe('temba-select', () => {
     });
   });
 
+  describe('emails functionality', () => {
+    it('only allows valid email addresses as options', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      // Try typing an invalid email - should not show as option
+      await typeInto('temba-select', 'invalid-email', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      let visibleOptions = select.shadowRoot.querySelectorAll(
+        '.option:not(.header)'
+      );
+      expect(visibleOptions.length).to.equal(0);
+
+      // Clear input
+      select.input = '';
+      await select.updateComplete;
+
+      // Try typing a valid email - should show as option
+      await typeInto('temba-select', 'test@example.com', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      visibleOptions = select.shadowRoot.querySelectorAll(
+        '.option:not(.header)'
+      );
+      expect(visibleOptions.length).to.equal(1);
+      expect(visibleOptions[0].textContent).to.contain('test@example.com');
+    });
+
+    it('behaves as multi-select when emails is true', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      // Add first email
+      await typeInto('temba-select', 'first@example.com', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      // Click on the option to select it
+      const firstOption = select.shadowRoot.querySelector(
+        '.option:not(.header)'
+      );
+      (firstOption as HTMLElement).click();
+      await clock.runAll();
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].value).to.equal('first@example.com');
+
+      // Add second email
+      await typeInto('temba-select', 'second@example.com', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      const secondOption = select.shadowRoot.querySelector(
+        '.option:not(.header)'
+      );
+      (secondOption as HTMLElement).click();
+      await clock.runAll();
+      await select.updateComplete;
+
+      // Should have both emails selected (multi-select behavior)
+      expect(select.values.length).to.equal(2);
+      expect(select.values[0].value).to.equal('first@example.com');
+      expect(select.values[1].value).to.equal('second@example.com');
+    });
+
+    it('validates email format correctly', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      // Test various email formats
+      const testCases = [
+        { email: 'valid@example.com', shouldBeValid: true },
+        { email: 'user.name+tag@example.co.uk', shouldBeValid: true },
+        { email: 'invalid-email', shouldBeValid: false },
+        { email: '@example.com', shouldBeValid: false },
+        { email: 'user@', shouldBeValid: false },
+        { email: 'user name@example.com', shouldBeValid: false }, // space not allowed
+        { email: 'user@example', shouldBeValid: false } // no domain extension
+      ];
+
+      for (const testCase of testCases) {
+        select.input = '';
+        await select.updateComplete;
+
+        await typeInto('temba-select', testCase.email, false, false);
+        await clock.runAll();
+        await select.updateComplete;
+
+        const visibleOptions = select.shadowRoot.querySelectorAll(
+          '.option:not(.header)'
+        );
+        if (testCase.shouldBeValid) {
+          expect(
+            visibleOptions.length,
+            `${testCase.email} should be valid`
+          ).to.equal(1);
+        } else {
+          expect(
+            visibleOptions.length,
+            `${testCase.email} should be invalid`
+          ).to.equal(0);
+        }
+      }
+    });
+  });
+
   describe('static options', () => {
     it('accepts an initial value', async () => {
       const select = await createSelect(
