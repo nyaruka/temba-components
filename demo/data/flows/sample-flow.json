@@ -13,24 +13,12 @@
             "attachments": [
               "image:http://google.com/logo.png"
             ],
-            "text": "arst",
+            "text": "What is your favorite color?",
             "type": "send_msg",
             "quick_replies": [
-              "green",
-              "blue",
-              "yellow",
-              "arst",
-              "arsttt",
-              "sssss",
-              "arstfft",
-              "arstt",
-              "arsttff",
-              "arstffff",
-              "arstarst",
-              "arsttttttafwrfparst",
-              "acvs",
-              "arstrsatff",
-              "arssf"
+              "Red",
+              "Green",
+              "Blue"
             ],
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5"
           }
@@ -790,7 +778,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 260,
+            "left": 240,
             "top": 0
           },
           "type": "execute_actions"
@@ -798,8 +786,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 260,
-            "top": 260
+            "left": 280,
+            "top": 160
           },
           "config": {
             "cases": {}
@@ -816,7 +804,7 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 240,
-            "top": 420
+            "top": 340
           },
           "type": "execute_actions"
         },

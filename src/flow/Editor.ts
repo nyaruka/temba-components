@@ -967,6 +967,14 @@ export class Editor extends RapidElement {
 
         // Update the node in the store
         getStore()?.getState().updateNode(this.editingNodeUuid, updatedNode);
+
+        // Repaint jsplumb connections in case node size changed
+        if (this.plumber) {
+          // Use requestAnimationFrame to ensure DOM has been updated first
+          requestAnimationFrame(() => {
+            this.plumber.repaintEverything();
+          });
+        }
       }
     }
     this.closeActionEditor();
