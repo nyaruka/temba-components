@@ -6,7 +6,7 @@ import { Node, SendMsg } from '../../store/flow-definition';
 export const send_msg: UIConfig = {
   name: 'Send Message',
   color: COLORS.send,
-  render: (node: Node, action: SendMsg) => {
+  render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`
       ${unsafeHTML(text)}

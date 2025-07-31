@@ -7,7 +7,7 @@ import { Icon } from '../../Icons';
 export const send_email: UIConfig = {
   name: 'Send Email',
   color: COLORS.send,
-  render: (node: Node, action: SendEmail) => {
+  render: (_node: Node, action: SendEmail) => {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email)}</div>
       <div style="margin-top: 0.5em">

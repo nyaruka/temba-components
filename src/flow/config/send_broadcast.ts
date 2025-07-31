@@ -6,7 +6,7 @@ import { renderNamedObjects } from '../utils';
 export const send_broadcast: UIConfig = {
   name: 'Send Broadcast',
   color: COLORS.broadcast,
-  render: (node: Node, action: SendBroadcast) => {
+  render: (_node: Node, action: SendBroadcast) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;
 

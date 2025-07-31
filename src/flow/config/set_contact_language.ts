@@ -5,7 +5,7 @@ import { Node, SetContactLanguage } from '../../store/flow-definition';
 export const set_contact_language: UIConfig = {
   name: 'Update Contact Language',
   color: COLORS.update,
-  render: (node: Node, action: SetContactLanguage) => {
+  render: (_node: Node, action: SetContactLanguage) => {
     return html`<div>Set contact language to <b>${action.language}</b></div>`;
   }
 };

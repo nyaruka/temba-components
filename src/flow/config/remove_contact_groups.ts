@@ -6,7 +6,7 @@ import { renderNamedObjects } from '../utils';
 export const remove_contact_groups: UIConfig = {
   name: 'Remove from Group',
   color: COLORS.remove,
-  render: (node: Node, action: RemoveFromGroup) => {
+  render: (_node: Node, action: RemoveFromGroup) => {
     return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
   },
   properties: {
