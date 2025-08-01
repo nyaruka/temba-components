@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.86% </span>
+                <span class="strong">65.27% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>51/73</span>
+                <span class='fraction'>47/72</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.86% </span>
+                <span class="strong">65.27% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>51/73</span>
+                <span class='fraction'>47/72</span>
             </div>
         
             
@@ -135,8 +135,7 @@
 <a name='L70'></a><a href='#L70'>70</a>
 <a name='L71'></a><a href='#L71'>71</a>
 <a name='L72'></a><a href='#L72'>72</a>
-<a name='L73'></a><a href='#L73'>73</a>
-<a name='L74'></a><a href='#L74'>74</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">50x</span>
+<a name='L73'></a><a href='#L73'>73</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
@@ -147,8 +146,9 @@
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-yes">50x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -157,17 +157,6 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
@@ -200,6 +189,15 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -218,36 +216,18 @@ export const remove_contact_groups: UIConfig = {
   name: 'Remove from Group',
   color: COLORS.remove,
   render: <span class="fstat-no" title="function not covered" >(_node: Node, action: RemoveFromGroup) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (action.all_groups) {</span>
+<span class="cstat-no" title="statement not covered" >      return html`&lt;div&gt;Remove from all groups&lt;/div&gt;`;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >    return html`&lt;div&gt;${renderNamedObjects(action.groups, 'group')}&lt;/div&gt;`;</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
-&nbsp;
-  // Form-level transformations - default 1:1 mapping for this case
   toFormData: (action: RemoveFromGroup) =&gt; {
     return {
       all_groups: action.all_groups || false,
       groups: action.<span class="branch-0 cbranch-no" title="branch not covered" >groups || []</span>
     };
   },
-&nbsp;
-  fromFormData: <span class="fstat-no" title="function not covered" >(formData: any): RemoveFromGroup =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return {</span>
-<span class="cstat-no" title="statement not covered" >      ...formData,</span>
-<span class="cstat-no" title="statement not covered" >      type: 'remove_contact_groups',</span>
-<span class="cstat-no" title="statement not covered" >      uuid: formData.uuid || 'new-uuid',</span>
-<span class="cstat-no" title="statement not covered" >      all_groups: formData.all_groups || false,</span>
-<span class="cstat-no" title="statement not covered" >      groups: formData.groups || []</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" >  },</span>
-&nbsp;
   form: {
-    all_groups: {
-      helpText:
-        'Check this to remove the contact from all groups instead of specific ones',
-      label: 'Remove from All Groups',
-      widget: {
-        type: 'temba-checkbox'
-      }
-    },
     groups: {
       label: 'Groups',
       helpText: 'Select the groups to remove the contact from',
@@ -266,6 +246,14 @@ export const remove_contact_groups: UIConfig = {
         visible: (formData) =&gt; !formData.all_groups,
         required: (formData) =&gt; !formData.all_groups
       }
+    },
+    all_groups: {
+      helpText:
+        'Check this to remove the contact from all groups instead of specific ones',
+      label: 'Remove from All Groups',
+      widget: {
+        type: 'temba-checkbox'
+      }
     }
   },
   validate: <span class="fstat-no" title="function not covered" >(action: RemoveFromGroup): ValidationResult =&gt; {</span>
@@ -280,6 +268,15 @@ export const remove_contact_groups: UIConfig = {
 <span class="cstat-no" title="statement not covered" >      valid: Object.keys(errors).length === 0,</span>
 <span class="cstat-no" title="statement not covered" >      errors</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+  fromFormData: <span class="fstat-no" title="function not covered" >(formData: any): RemoveFromGroup =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+<span class="cstat-no" title="statement not covered" >      ...formData,</span>
+<span class="cstat-no" title="statement not covered" >      type: 'remove_contact_groups',</span>
+<span class="cstat-no" title="statement not covered" >      uuid: formData.uuid || 'new-uuid',</span>
+<span class="cstat-no" title="statement not covered" >      all_groups: formData.all_groups || false,</span>
+<span class="cstat-no" title="statement not covered" >      groups: formData.all_groups ? [] : formData.groups || []</span>
+<span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 };
 &nbsp;</pre></td></tr></table></pre>
@@ -289,7 +286,7 @@ export const remove_contact_groups: UIConfig = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-01T15:49:44.926Z
+                at 2025-08-01T16:01:23.980Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>
