@@ -16,16 +16,6 @@ export const add_contact_groups: UIConfig = {
       groups: action.groups || []
     };
   },
-
-  fromFormData: (formData: any): AddToGroup => {
-    return {
-      ...formData,
-      type: 'add_contact_groups',
-      uuid: formData.uuid || 'new-uuid',
-      groups: formData.groups || []
-    };
-  },
-
   form: {
     groups: {
       label: 'Groups',
@@ -54,6 +44,14 @@ export const add_contact_groups: UIConfig = {
     return {
       valid: Object.keys(errors).length === 0,
       errors
+    };
+  },
+  fromFormData: (formData: any): AddToGroup => {
+    return {
+      ...formData,
+      type: 'add_contact_groups',
+      uuid: formData.uuid || 'new-uuid',
+      groups: formData.groups || []
     };
   }
 };
