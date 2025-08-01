@@ -32,7 +32,6 @@
 
     /* primary colors, should be dark */
     --color-selection: #f0f6ff;
-
     --color-success: #3ca96a;
 
     --widget-box-shadow: rgba(-1, -1, 0, .15) 0px 1px 7px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
@@ -43,8 +42,8 @@
     --shadow-widget: 0 3px 20px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 
     /* page text, borders, widgets */
-    --color-text: #555;
-    --color-widget-text: #555;
+    --color-text: #333;;
+    --color-widget-text: #333;
     --color-borders: rgba(0, 0, 0, 0.07);
     --color-placeholder: rgb(167, 167, 167);
 
@@ -58,11 +57,9 @@
 
     /* light text goes over dark, dark over lights */
     --color-text-light: rgba(255, 255, 255, 1);
-    --color-text-dark: rgba(0, 0, 0, 0.5);
+    --color-text-dark: rgba(0, 0, 0, 0.8);
     --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
     --color-text-help: rgba(0, 0, 0, 0.35);
-
-
     --color-tertiary: rgb(var(--tertiary-rgb));
 
     --help-text-size: 0.85em;

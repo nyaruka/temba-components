@@ -1,11 +1,12 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { FlowDefinition, FlowPosition } from '../store/flow-definition';
+import { FlowDefinition, FlowPosition, Action } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
+import { CustomEventType } from '../interfaces';
 
 import { Plumber } from './Plumber';
 import { EditorNode } from './EditorNode';
@@ -81,6 +82,11 @@ export class Editor extends RapidElement {
   private isMouseDown = false;
   private dragStartPos = { x: 0, y: 0 };
 
+  // Public getter for drag state
+  public get dragging(): boolean {
+    return this.isDragging;
+  }
+
   @state()
   private currentDragItem: DraggableItem | null = null;
   private startPos = { left: 0, top: 0 };
@@ -106,6 +112,13 @@ export class Editor extends RapidElement {
 
   @state()
   private isValidTarget = true;
+
+  // Action editor state
+  @state()
+  private editingAction: Action | null = null;
+
+  @state()
+  private editingNodeUuid: string | null = null;
 
   private canvasMouseDown = false;
 
@@ -392,6 +405,12 @@ export class Editor extends RapidElement {
     if (canvas) {
       canvas.addEventListener('dblclick', this.boundCanvasDoubleClick);
     }
+
+    // Listen for action edit requests from flow nodes
+    this.addEventListener(
+      CustomEventType.ActionEditRequested,
+      this.handleActionEditRequested.bind(this)
+    );
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -929,6 +948,47 @@ export class Editor extends RapidElement {
     event.stopPropagation();
   }
 
+  private handleActionEditRequested(event: CustomEvent): void {
+    this.editingAction = event.detail.action;
+    this.editingNodeUuid = event.detail.nodeUuid;
+  }
+
+  private handleActionSaved(updatedAction: Action): void {
+    if (this.editingNodeUuid && this.editingAction) {
+      // Find the node and update the specific action
+      const node = this.definition.nodes.find(
+        (n) => n.uuid === this.editingNodeUuid
+      );
+      if (node) {
+        const updatedActions = node.actions.map((action) =>
+          action.uuid === this.editingAction.uuid ? updatedAction : action
+        );
+        const updatedNode = { ...node, actions: updatedActions };
+
+        // Update the node in the store
+        getStore()?.getState().updateNode(this.editingNodeUuid, updatedNode);
+
+        // Repaint jsplumb connections in case node size changed
+        if (this.plumber) {
+          // Use requestAnimationFrame to ensure DOM has been updated first
+          requestAnimationFrame(() => {
+            this.plumber.repaintEverything();
+          });
+        }
+      }
+    }
+    this.closeActionEditor();
+  }
+
+  private closeActionEditor(): void {
+    this.editingAction = null;
+    this.editingNodeUuid = null;
+  }
+
+  private handleActionEditCanceled(): void {
+    this.closeActionEditor();
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
@@ -1002,6 +1062,15 @@ export class Editor extends RapidElement {
             ${this.renderSelectionBox()}
           </div>
         </div>
-      </div>`;
+      </div>
+
+      ${this.editingAction
+        ? html`<temba-action-editor
+            .action=${this.editingAction}
+            @temba-action-saved=${(e: CustomEvent) =>
+              this.handleActionSaved(e.detail.action)}
+            @temba-action-edit-canceled=${this.handleActionEditCanceled}
+          ></temba-action-editor>`
+        : ''} `;
   }
 }

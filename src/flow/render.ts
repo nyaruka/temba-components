@@ -59,7 +59,7 @@ const renderLineItem = (name: string, icon?: string) => {
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
       : null}
     <div
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
     >
       ${name}
     </div>
@@ -116,10 +116,11 @@ export const renderSetRunResult = (node: Node, action: SetRunResult) => {
 };
 
 export const renderCallWebhook = (node: Node, action: CallWebhook) => {
-  return html`<div
-    style="word-break: break-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-  >
-    ${action.url}
+  return html`<div style="display:flex;word-break: break-all;">
+    <temba-icon name="${Icon.webhook}" size="1"></temba-icon>
+    <div style="padding-left:0.5em;">
+      <b>${action.url}</b>
+    </div>
   </div>`;
 };
 
@@ -161,30 +162,24 @@ export const renderSetContactChannel = (
 export const renderAddContactUrn = (node: Node, action: AddContactUrn) => {
   const friendlyScheme = urnSchemeMap[action.scheme] || action.scheme;
   return html`<div
-    style="word-wrap: break-word; overflow: hidden; text-overflow: ellipsis;"
+    style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
   >
     Add ${friendlyScheme} <b>${action.path}</b>
   </div>`;
 };
 
 export const renderSendEmail = (node: Node, action: SendEmail) => {
-  const addressList = action.addresses.join(', ');
+  const addressesText = action.addresses ? action.addresses.join(', ') : '';
   return html`<div>
-    <div
-      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-    >
-      <b>${addressList}</b>
+    <div style="display:flex;align-items:center;">
+      <temba-icon name="${Icon.email}" size="1"></temba-icon>
+      <div style="padding-left:0.5em;">${addressesText}</div>
     </div>
     <div style="margin-top: 0.5em">
       <div
-        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
       >
         ${action.subject}
-      </div>
-      <div
-        style="margin-top: 0.25em; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-      >
-        ${action.body}
       </div>
     </div>
   </div>`;
@@ -195,7 +190,9 @@ export const renderSendBroadcast = (node: Node, action: SendBroadcast) => {
   const hasContacts = action.contacts && action.contacts.length > 0;
 
   return html`<div>
-    <div style="word-wrap: break-word; margin-bottom: 0.5em">
+    <div
+      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; margin-bottom: 0.5em"
+    >
       ${action.text}
     </div>
     ${hasGroups
@@ -275,13 +272,13 @@ export const renderCallLLM = (node: Node, action: CallLLM) => {
     <div style="margin-top: 0.25em; display: flex; align-items: center;">
       <temba-icon name="ai" style="margin-right: 0.5em"></temba-icon>
       <span
-        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; flex: 1;"
       >
         ${action.llm.name}
       </span>
     </div>
     <div
-      style="margin-top: 0.25em; word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+      style="margin-top: 0.25em; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
     >
       ${action.instructions}
     </div>
@@ -291,7 +288,7 @@ export const renderCallLLM = (node: Node, action: CallLLM) => {
 export const renderOpenTicket = (node: Node, action: OpenTicket) => {
   return html`<div>
     <div
-      style="word-wrap: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
     >
       ${action.body}
     </div>
@@ -301,7 +298,7 @@ export const renderOpenTicket = (node: Node, action: OpenTicket) => {
         >
           <temba-icon name="user" style="margin-right: 0.5em"></temba-icon>
           <span
-            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+            style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; flex: 1;"
           >
             ${action.assignee.name}
           </span>
@@ -313,7 +310,7 @@ export const renderOpenTicket = (node: Node, action: OpenTicket) => {
         >
           <temba-icon name="topic" style="margin-right: 0.5em"></temba-icon>
           <span
-            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+            style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; flex: 1;"
           >
             ${action.topic.name}
           </span>
@@ -333,7 +330,7 @@ export const renderAddInputLabels = (node: Node, action: AddInputLabels) => {
 export const renderSayMsg = (node: Node, action: SayMsg) => {
   return html`<div>
     <div
-      style="word-wrap: break-word; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
     >
       ${action.text}
     </div>
@@ -343,7 +340,7 @@ export const renderSayMsg = (node: Node, action: SayMsg) => {
         >
           <temba-icon name="audio" style="margin-right: 0.25em"></temba-icon>
           <span
-            style="word-break: break-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+            style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; flex: 1;"
             >${action.audio_url}</span
           >
         </div>`
@@ -355,7 +352,7 @@ export const renderPlayAudio = (node: Node, action: PlayAudio) => {
   return html`<div style="display: flex; align-items: center;">
     <temba-icon name="audio" style="margin-right: 0.25em"></temba-icon>
     <span
-      style="word-break: break-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; flex: 1;"
       >${action.audio_url}</span
     >
   </div>`;

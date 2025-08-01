@@ -16,9 +16,9 @@
             "text": "What is your favorite color?",
             "type": "send_msg",
             "quick_replies": [
-              "red",
-              "green",
-              "blue"
+              "Red",
+              "Green",
+              "Blue"
             ],
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5"
           }
@@ -180,10 +180,32 @@
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
           {
+            "type": "remove_contact_groups",
+            "groups": [
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
+              },
+              {
+                "uuid": "66e7a094-22ea-441d-91c4-283d8168e8e4",
+                "name": "The Poots",
+                "query": "name ~ \"poots\" OR name ~ \"dave\"",
+                "status": "ready",
+                "count": 1028
+              }
+            ],
+            "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d",
+            "all_groups": true
+          },
+          {
             "attachments": [],
-            "text": "Excellent choice!",
+            "text": "Excellent choice.",
             "type": "send_msg",
-            "quick_replies": [],
+            "quick_replies": [
+              "blooooop",
+              "bleep"
+            ],
             "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
           },
           {
@@ -198,22 +220,20 @@
                 "count": 0
               },
               {
-                "uuid": "58a6a3cd-20c0-4791-82da-ce9f319ab91b",
-                "name": "Farmers",
-                "query": null,
-                "status": "ready",
-                "system": false,
-                "count": 2414
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
               }
             ],
             "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90"
           },
           {
             "addresses": [
-              "name@domain.com"
+              "name@domain.com",
+              "mistermeowface@whiskers.com"
             ],
             "subject": "Did you get this?",
-            "body": "I hope it arrived!",
+            "body": "I hope it arrived! But this message is a bit longer.",
             "type": "send_email",
             "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7"
           },
@@ -249,39 +269,21 @@
             "language": "eng"
           },
           {
-            "type": "remove_contact_groups",
-            "groups": [
+            "uuid": "773fa48f-7341-4f57-bf74-2afed2e4b763",
+            "actions": [
               {
-                "uuid": "269e8abf-e81b-404c-82ce-45ff42d13769",
-                "name": "Empty"
-              },
-              {
-                "uuid": "2f81d414-47b7-446d-b8c7-6662f611cb3d",
-                "name": "Testers"
-              },
-              {
-                "uuid": "90c0dc52-ddd8-466d-8333-a96fdd67195a",
-                "name": "Teachers"
-              },
-              {
-                "uuid": "58a6a3cd-20c0-4791-82da-ce9f319ab91b",
-                "name": "Farmers"
-              },
-              {
-                "uuid": "3b9caef9-e701-4475-a0c3-ef346704f71e",
-                "name": "Reporters"
-              },
-              {
-                "uuid": "f4f46e03-3d7c-4840-8ed3-8c6c5677a2f2",
-                "name": "Doctors"
-              },
-              {
-                "uuid": "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c",
-                "name": "Drivers"
+                "type": "remove_contact_groups",
+                "groups": [],
+                "all_groups": true,
+                "uuid": "4f6a8bbb-5563-4bdb-8b53-e23490596fcd"
               }
             ],
-            "all_groups": false,
-            "uuid": "6ec87721-6ec2-43fa-b7d2-930bf1f0574d"
+            "exits": [
+              {
+                "uuid": "f2265a88-4568-4105-8a0c-c698d32ff18f",
+                "destination_uuid": null
+              }
+            ]
           },
           {
             "type": "add_contact_urn",
@@ -775,7 +777,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 280,
+            "left": 240,
             "top": 0
           },
           "type": "execute_actions"
@@ -783,7 +785,7 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 260,
+            "left": 240,
             "top": 160
           },
           "config": {
@@ -801,7 +803,7 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 240,
-            "top": 380
+            "top": 320
           },
           "type": "execute_actions"
         },
@@ -809,15 +811,15 @@
           "type": "split_by_subflow",
           "position": {
             "left": 580,
-            "top": 600
+            "top": 840
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 800,
-            "top": 220
+            "left": 820,
+            "top": 240
           },
           "config": {
             "operand": {
@@ -864,7 +866,7 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 500,
+            "left": 520,
             "top": 340
           },
           "config": {
@@ -875,7 +877,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 580,
-            "top": 480
+            "top": 500
           },
           "config": {
             "cases": {}
@@ -885,7 +887,7 @@
           "type": "split_by_llm",
           "position": {
             "left": 580,
-            "top": 880
+            "top": 1040
           },
           "config": {}
         },

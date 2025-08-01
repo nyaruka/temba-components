@@ -8,6 +8,8 @@ import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
 
+const DRAG_THRESHOLD = 5;
+
 export class EditorNode extends RapidElement {
   createRenderRoot() {
     return this;
@@ -33,6 +35,11 @@ export class EditorNode extends RapidElement {
 
   // Set of action UUIDs that are in the removing state
   private actionRemovingState: Set<string> = new Set();
+
+  // Track action click state to distinguish from drag
+  private actionClickStartPos: { x: number; y: number } | null = null;
+  private pendingActionClick: { action: Action; event: MouseEvent } | null =
+    null;
 
   static get styles() {
     return css`
@@ -104,10 +111,17 @@ export class EditorNode extends RapidElement {
         flex-grow: 1;
         display: flex;
         flex-direction: column;
+        min-width: 0; /* Allow flex item to shrink below its content size */
+        overflow: hidden;
       }
 
       .action .body {
         padding: 1em;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        white-space: normal;
+        overflow: hidden;
       }
 
       .action .drag-handle {
@@ -498,6 +512,92 @@ export class EditorNode extends RapidElement {
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
   }
 
+  private handleActionMouseDown(event: MouseEvent, action: Action): void {
+    // Don't handle clicks on the remove button or when action is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(action.uuid)
+    ) {
+      return;
+    }
+
+    // Store the starting position and action for later comparison
+    // Don't prevent default - let the Editor's drag system work normally
+    this.actionClickStartPos = { x: event.clientX, y: event.clientY };
+    this.pendingActionClick = { action, event };
+  }
+
+  private handleActionMouseUp(event: MouseEvent, action: Action): void {
+    // Don't handle if we don't have a pending click or if it's not the same action
+    if (
+      !this.pendingActionClick ||
+      this.pendingActionClick.action.uuid !== action.uuid
+    ) {
+      this.actionClickStartPos = null;
+      this.pendingActionClick = null;
+      return;
+    }
+
+    // Don't handle clicks on the remove button or when action is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(action.uuid)
+    ) {
+      this.actionClickStartPos = null;
+      this.pendingActionClick = null;
+      return;
+    }
+
+    // Check if the mouse moved beyond the drag threshold
+    if (this.actionClickStartPos) {
+      const deltaX = event.clientX - this.actionClickStartPos.x;
+      const deltaY = event.clientY - this.actionClickStartPos.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // Check if the Editor is currently in dragging mode
+      const editor = this.closest('temba-flow-editor') as any;
+      const editorWasDragging = editor?.dragging;
+
+      // Only fire the action edit event if we haven't dragged beyond the threshold
+      // AND either there's no Editor parent (test case) or the Editor didn't drag the node
+      if (distance <= DRAG_THRESHOLD && (!editor || !editorWasDragging)) {
+        // Fire event to request action editing
+        this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+          action,
+          nodeUuid: this.node.uuid
+        });
+      }
+    }
+
+    // Clean up
+    this.actionClickStartPos = null;
+    this.pendingActionClick = null;
+  }
+
+  private handleActionClick(event: MouseEvent, action: Action): void {
+    // This method is kept for backward compatibility but should not be used
+    // The new mousedown/mouseup approach handles click vs drag properly
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Don't handle clicks on the remove button or when action is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(action.uuid)
+    ) {
+      return;
+    }
+
+    // Fire event to request action editing
+    this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+      action,
+      nodeUuid: this.node.uuid
+    });
+  }
+
   private renderTitle(config: UIConfig, isRemoving: boolean = false) {
     return html`<div class="title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
@@ -525,7 +625,12 @@ export class EditorNode extends RapidElement {
         >
           ✕
         </button>
-        <div class="action-content">
+        <div
+          class="action-content"
+          @mousedown=${(e: MouseEvent) => this.handleActionMouseDown(e, action)}
+          @mouseup=${(e: MouseEvent) => this.handleActionMouseUp(e, action)}
+          style="cursor: pointer;"
+        >
           ${this.renderTitle(config, isRemoving)}
           <div class="body">
             ${config.render

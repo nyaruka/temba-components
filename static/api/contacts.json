@@ -1,0 +1,30 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "uuid": "contact-1",
+      "name": "John Doe",
+      "language": "eng",
+      "urns": ["tel:+1234567890"],
+      "fields": {},
+      "groups": [],
+      "blocked": false,
+      "stopped": false,
+      "created_on": "2024-01-01T00:00:00Z",
+      "modified_on": "2024-01-01T00:00:00Z"
+    },
+    {
+      "uuid": "contact-2",
+      "name": "Jane Smith",
+      "language": "eng",
+      "urns": ["tel:+0987654321"],
+      "fields": {},
+      "groups": [],
+      "blocked": false,
+      "stopped": false,
+      "created_on": "2024-01-01T00:00:00Z",
+      "modified_on": "2024-01-01T00:00:00Z"
+    }
+  ]
+}

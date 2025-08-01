@@ -75,8 +75,29 @@ export class Checkbox extends FormElement {
   @property({ type: String })
   animateChange = 'pulse';
 
+  public connectedCallback() {
+    super.connectedCallback();
+  }
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
+
+    // Normalize label property changes
+    if (changes.has('label')) {
+      // Normalize whitespace labels to empty string for proper behavior
+      if (
+        this.label &&
+        typeof this.label === 'string' &&
+        this.label.trim() === ''
+      ) {
+        this.label = '';
+      }
+      // Ensure undefined labels remain as null to match test expectations
+      if (this.label === undefined) {
+        this.label = null;
+      }
+    }
+
     if (changes.has('checked') || changes.has('value')) {
       if (this.checked || this.partial) {
         this.internals.setFormValue(this.value || '1');
@@ -113,8 +134,6 @@ export class Checkbox extends FormElement {
       animatechange="${this.animateChange}"
     />`;
 
-    this.label = this.label ? this.label.trim() : null;
-
     return html`
       <div class="wrapper ${this.label ? 'label' : ''}">
         <temba-field
@@ -128,7 +147,7 @@ export class Checkbox extends FormElement {
         >
           <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
             ${icon}
-            ${this.label
+            ${this.label && String(this.label).trim()
               ? html`<div class="checkbox-label">${this.label}</div>`
               : null}
           </div>

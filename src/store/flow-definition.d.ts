@@ -99,6 +99,7 @@ export interface AddToGroup extends Action {
 
 export interface RemoveFromGroup extends Action {
   groups: Group[];
+  all_groups?: boolean;
 }
 
 export interface SetContactField extends Action {

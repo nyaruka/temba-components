@@ -55,6 +55,10 @@ export class Select<T extends SelectOption> extends FormElement {
         --temba-options-font-size: var(--temba-select-selected-font-size);
         --icon-color: var(--color-text-dark);
         --color-options-bg: #fff;
+        /* Always use normal border colors for options popup, even when select is in error state */
+        --color-widget-border: #ddd;
+        --color-focus: #007bff;
+        --widget-box-shadow-focused: 0 0 0 3px rgba(0, 123, 255, 0.25);
       }
 
       :host:focus {
@@ -448,6 +452,9 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Boolean })
   tags = false;
 
+  @property({ type: Boolean })
+  emails = false;
+
   @property({ type: Boolean, attribute: 'space_select' })
   spaceSelect: boolean;
 
@@ -599,7 +606,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
             this.staticOptions.push(option);
             if (selected) {
-              if (this.multi) {
+              if (this.isMultiMode) {
                 this.addValue(option);
               } else {
                 this.setValues([option]);
@@ -855,7 +862,7 @@ export class Select<T extends SelectOption> extends FormElement {
       const name = this.getAttribute('name');
 
       if (name) {
-        if (!this.multi && this.values.length === 1) {
+        if (!this.isMultiMode && this.values.length === 1) {
           this.selection = this.values[0];
           this.value = this.serializeValue(this.values[0]);
         } else {
@@ -875,13 +882,13 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   private setSelectedOption(option: any) {
-    if (this.multi) {
+    if (this.isMultiMode) {
       this.addValue(option);
     } else {
       this.setValues([option]);
     }
 
-    if (!this.multi || !this.searchable) {
+    if (!this.isMultiMode || !this.searchable) {
       this.blur();
       this.focused = false;
     }
@@ -904,7 +911,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public handleOptionSelection(event: CustomEvent) {
     if (
-      this.multi &&
+      this.isMultiMode &&
       this.maxItems > 0 &&
       this.values.length >= this.maxItems
     ) {
@@ -969,8 +976,25 @@ export class Select<T extends SelectOption> extends FormElement {
     this.visibleOptions = [];
   }
 
-  private createArbitraryOptionDefault(): any {
+  private createArbitraryOptionDefault(input: string, _options: any[]): any {
+    if (this.emails && input && this.isValidEmail(input)) {
+      return { name: input, value: input };
+    }
+    if (this.tags && input) {
+      return { name: input, value: input };
+    }
     return null;
+  }
+
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Helper method to determine if this select should behave as multi-select
+  // Returns true if multi is explicitly set OR if emails mode is enabled
+  private get isMultiMode(): boolean {
+    return this.multi || this.emails;
   }
 
   public open(): void {
@@ -1042,7 +1066,7 @@ export class Select<T extends SelectOption> extends FormElement {
     // filter out any options already selected by id
     // TODO: should maybe be doing a deep equals here with option to optimize
     if (this.values.length > 0) {
-      if (this.multi) {
+      if (this.isMultiMode) {
         options = options.filter(
           (option) =>
             !this.values.find(
@@ -1063,7 +1087,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     if (
-      this.multi &&
+      this.isMultiMode &&
       this.maxItems > 0 &&
       this.values.length >= this.maxItems
     ) {
@@ -1123,6 +1147,18 @@ export class Select<T extends SelectOption> extends FormElement {
         }
       }
 
+      if (this.emails && q) {
+        if (
+          this.isValidEmail(q) &&
+          !options.find(
+            (option: any) =>
+              this.getValue(option) && this.getValue(option).toLowerCase() === q
+          )
+        ) {
+          options.splice(0, 0, { name: query, value: query });
+        }
+      }
+
       if (this.endpoint) {
         let url = this.endpoint;
         if (next) {
@@ -1149,7 +1185,7 @@ export class Select<T extends SelectOption> extends FormElement {
         }
 
         const cache = this.lruCache.get(url);
-        if (this.cache && !this.tags && cache) {
+        if (this.cache && !this.tags && !this.emails && cache) {
           if (page === 0 && !this.next) {
             this.cursorIndex = 0;
             this.setVisibleOptions([...options, ...cache.options]);
@@ -1168,7 +1204,7 @@ export class Select<T extends SelectOption> extends FormElement {
           fetchResults(url).then((results: any) => {
             results = this.prepareOptions(results);
 
-            if (this.cache && !this.tags) {
+            if (this.cache && !this.tags && !this.emails) {
               this.lruCache.set(url, {
                 options: results,
                 complete: true,
@@ -1207,7 +1243,7 @@ export class Select<T extends SelectOption> extends FormElement {
                 this.complete = this.isComplete(results, response);
               }
 
-              if (this.cache && !this.tags) {
+              if (this.cache && !this.tags && !this.emails) {
                 this.lruCache.set(url, {
                   options: results,
                   complete: this.complete,
@@ -1249,7 +1285,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     if (
-      this.multi &&
+      this.isMultiMode &&
       this.maxItems > 0 &&
       this.values.length >= this.maxItems
     ) {
@@ -1270,7 +1306,7 @@ export class Select<T extends SelectOption> extends FormElement {
       expression: true
     };
 
-    if (this.multi) {
+    if (this.isMultiMode) {
       if (
         !this.values.find((option: T) => {
           return (
@@ -1289,7 +1325,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     this.input = '';
-    if (!this.multi) {
+    if (!this.isMultiMode) {
       this.blur();
     }
   }
@@ -1303,6 +1339,21 @@ export class Select<T extends SelectOption> extends FormElement {
       this.input.indexOf('@') > -1
     ) {
       this.addInputAsValue();
+      return;
+    }
+
+    // if we are in email mode and have a valid email, add it
+    if (
+      evt.key === 'Enter' &&
+      this.emails &&
+      this.input &&
+      this.isValidEmail(this.input.trim()) &&
+      this.visibleOptions.length === 0
+    ) {
+      evt.preventDefault();
+      const emailOption = { name: this.input.trim(), value: this.input.trim() };
+      this.setSelectedOption(emailOption);
+      return;
     }
 
     // see if we should open our options on a key event
@@ -1323,7 +1374,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
 
     // focus our last item on delete
-    if (this.multi && evt.key === 'Backspace' && !this.input) {
+    if (this.isMultiMode && evt.key === 'Backspace' && !this.input) {
       if (this.visibleOptions.length > 0) {
         this.visibleOptions = [];
         return;
@@ -1447,7 +1498,10 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public serializeValue(value: any): string {
     // static options just use their value
-    if (!this.jsonValue && (this.staticOptions.length > 0 || this.tags)) {
+    if (
+      !this.jsonValue &&
+      (this.staticOptions.length > 0 || this.isMultiMode)
+    ) {
       return value.value;
     }
 
@@ -1487,7 +1541,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public addValue(value: any) {
     const oldValues = [...this.values];
-    this.values.push(value);
+    this.values = [...this.values, value];
     this.requestUpdate('values', oldValues);
   }
 
@@ -1495,7 +1549,7 @@ export class Select<T extends SelectOption> extends FormElement {
     const oldValues = [...this.values];
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
-      this.values.splice(idx, 1);
+      this.values = this.values.filter((_, index) => index !== idx);
 
       // Also remove the 'selected' attribute from the corresponding temba-option element
       const valueToMatch = this.getValue(valueToRemove);
@@ -1515,7 +1569,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public popValue() {
     const oldValues = [...this.values];
-    this.values.pop();
+    this.values = this.values.slice(0, -1);
     this.requestUpdate('values', oldValues);
     this.infoText = '';
   }
@@ -1553,9 +1607,12 @@ export class Select<T extends SelectOption> extends FormElement {
         toIdx < this.values.length
       ) {
         const oldValues = [...this.values];
-        // Move the item from fromIdx to toIdx
-        const movedItem = this.values.splice(fromIdx, 1)[0];
-        this.values.splice(toIdx, 0, movedItem);
+        // Create a new array with the moved item
+        const newValues = [...this.values];
+        const movedItem = newValues[fromIdx];
+        newValues.splice(fromIdx, 1);
+        newValues.splice(toIdx, 0, movedItem);
+        this.values = newValues;
         this.requestUpdate('values', oldValues);
       }
     }
@@ -1568,7 +1625,7 @@ export class Select<T extends SelectOption> extends FormElement {
     `;
 
     const clear =
-      this.clearable && this.values.length > 0 && !this.multi
+      this.clearable && this.values.length > 0 && !this.isMultiMode
         ? html`<temba-icon
             name="${Icon.select_clear}"
             size="1.1"
@@ -1578,8 +1635,8 @@ export class Select<T extends SelectOption> extends FormElement {
         : null;
 
     const classes = getClasses({
-      multi: this.multi,
-      single: !this.multi,
+      multi: this.isMultiMode,
+      single: !this.isMultiMode,
       searchable: this.searchable,
       empty: this.values.length === 0,
       options: this.visibleOptions.length > 0,
@@ -1615,8 +1672,8 @@ export class Select<T extends SelectOption> extends FormElement {
         `
       : placeholderDiv;
 
-    const items = html`${!this.multi && !this.resolving ? input : null}
-    ${this.multi && this.values.length > 1
+    const items = html`${!this.isMultiMode && !this.resolving ? input : null}
+    ${this.isMultiMode && this.values.length > 1
       ? html`
           <temba-sortable-list
             horizontal
@@ -1657,7 +1714,7 @@ export class Select<T extends SelectOption> extends FormElement {
                     : ''}
                               "
                 >
-                  ${this.multi
+                  ${this.isMultiMode
                     ? html`
                         <div
                           class="remove-item"
@@ -1706,7 +1763,7 @@ export class Select<T extends SelectOption> extends FormElement {
                 : ''}
                           "
             >
-              ${this.multi
+              ${this.isMultiMode
                 ? html`
                     <div
                       class="remove-item"
@@ -1732,13 +1789,13 @@ export class Select<T extends SelectOption> extends FormElement {
                     </div>
                   `
                 : null}
-              ${!this.input || this.multi
+              ${!this.input || this.isMultiMode
                 ? this.renderSelectedItem(selected)
                 : null}
             </div>
           `
         )}
-    ${this.multi ? input : null}`;
+    ${this.isMultiMode ? input : null}`;
 
     return html`
             
@@ -1778,7 +1835,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
           <slot name="right"></slot>
           ${
-            !this.tags
+            !this.tags && !this.emails
               ? html`<div
                   class="right-side arrow"
                   style="display:block;margin-right:5px"
