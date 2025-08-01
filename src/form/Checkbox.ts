@@ -77,22 +77,26 @@ export class Checkbox extends FormElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    // Normalize whitespace labels to empty string for proper behavior
-    if (
-      this.label &&
-      typeof this.label === 'string' &&
-      this.label.trim() === ''
-    ) {
-      this.label = '';
-    }
-    // Ensure undefined labels remain as null to match test expectations
-    if (this.label === undefined) {
-      this.label = null;
-    }
   }
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
+
+    // Normalize label property changes
+    if (changes.has('label')) {
+      // Normalize whitespace labels to empty string for proper behavior
+      if (
+        this.label &&
+        typeof this.label === 'string' &&
+        this.label.trim() === ''
+      ) {
+        this.label = '';
+      }
+      // Ensure undefined labels remain as null to match test expectations
+      if (this.label === undefined) {
+        this.label = null;
+      }
+    }
 
     if (changes.has('checked') || changes.has('value')) {
       if (this.checked || this.partial) {
