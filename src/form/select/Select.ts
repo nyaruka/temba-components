@@ -976,7 +976,13 @@ export class Select<T extends SelectOption> extends FormElement {
     this.visibleOptions = [];
   }
 
-  private createArbitraryOptionDefault(): any {
+  private createArbitraryOptionDefault(input: string, _options: any[]): any {
+    if (this.emails && input && this.isValidEmail(input)) {
+      return { name: input, value: input };
+    }
+    if (this.tags && input) {
+      return { name: input, value: input };
+    }
     return null;
   }
 
@@ -1333,6 +1339,21 @@ export class Select<T extends SelectOption> extends FormElement {
       this.input.indexOf('@') > -1
     ) {
       this.addInputAsValue();
+      return;
+    }
+
+    // if we are in email mode and have a valid email, add it
+    if (
+      evt.key === 'Enter' &&
+      this.emails &&
+      this.input &&
+      this.isValidEmail(this.input.trim()) &&
+      this.visibleOptions.length === 0
+    ) {
+      evt.preventDefault();
+      const emailOption = { name: this.input.trim(), value: this.input.trim() };
+      this.setSelectedOption(emailOption);
+      return;
     }
 
     // see if we should open our options on a key event

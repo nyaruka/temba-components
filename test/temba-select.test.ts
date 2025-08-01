@@ -602,8 +602,12 @@ describe('temba-select', () => {
       await typeInto('temba-select', 'test@example.com', false, false);
       await clock.runAll();
       await select.updateComplete;
+      await openSelect(clock, select);
 
-      visibleOptions = select.shadowRoot.querySelectorAll(
+      const optionsComponent = select.shadowRoot.querySelector(
+        'temba-options'
+      ) as any;
+      visibleOptions = optionsComponent.shadowRoot.querySelectorAll(
         '.option:not(.header)'
       );
       expect(visibleOptions.length).to.equal(1);
@@ -625,13 +629,8 @@ describe('temba-select', () => {
       await clock.runAll();
       await select.updateComplete;
 
-      // Click on the option to select it
-      const firstOption = select.shadowRoot.querySelector(
-        '.option:not(.header)'
-      );
-      (firstOption as HTMLElement).click();
-      await clock.runAll();
-      await select.updateComplete;
+      // Click on the first option to select it using the standard helper
+      await openAndClick(clock, select, 0);
 
       expect(select.values.length).to.equal(1);
       expect(select.values[0].value).to.equal('first@example.com');
@@ -641,12 +640,8 @@ describe('temba-select', () => {
       await clock.runAll();
       await select.updateComplete;
 
-      const secondOption = select.shadowRoot.querySelector(
-        '.option:not(.header)'
-      );
-      (secondOption as HTMLElement).click();
-      await clock.runAll();
-      await select.updateComplete;
+      // Click on the second option to select it using the standard helper
+      await openAndClick(clock, select, 0);
 
       // Should have both emails selected (multi-select behavior)
       expect(select.values.length).to.equal(2);
@@ -682,8 +677,12 @@ describe('temba-select', () => {
         await typeInto('temba-select', testCase.email, false, false);
         await clock.runAll();
         await select.updateComplete;
+        await openSelect(clock, select);
 
-        const visibleOptions = select.shadowRoot.querySelectorAll(
+        const optionsComponent = select.shadowRoot.querySelector(
+          'temba-options'
+        ) as any;
+        const visibleOptions = optionsComponent.shadowRoot.querySelectorAll(
           '.option:not(.header)'
         );
         if (testCase.shouldBeValid) {

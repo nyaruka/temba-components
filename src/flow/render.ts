@@ -93,35 +93,6 @@ const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
   return items;
 };
 
-const renderStringList = (items: string[], icon?: string) => {
-  const itemElements = [];
-  const maxDisplay = 3;
-
-  // Show up to 3 items, or all 4 if exactly 4 items
-  const displayCount =
-    items.length === 4 ? 4 : Math.min(maxDisplay, items.length);
-
-  for (let i = 0; i < displayCount; i++) {
-    const item = items[i];
-    itemElements.push(renderLineItem(item, icon));
-  }
-
-  // Add "+X more" if there are more than 3 items (and not exactly 4)
-  if (items.length > maxDisplay && items.length !== 4) {
-    const remainingCount = items.length - maxDisplay;
-    itemElements.push(html`<div
-      style="display:flex;items-align:center; color: #666;"
-    >
-      ${icon
-        ? html`<div style="margin-right:0.5em; width: 1em;"></div>` // spacing placeholder
-        : null}
-      <div>+${remainingCount} more</div>
-    </div>`);
-  }
-
-  return itemElements;
-};
-
 export const renderSendMsg = (node: Node, action: SendMsg) => {
   const text = action.text.replace(/\n/g, '<br>');
   return html`
@@ -145,10 +116,11 @@ export const renderSetRunResult = (node: Node, action: SetRunResult) => {
 };
 
 export const renderCallWebhook = (node: Node, action: CallWebhook) => {
-  return html`<div
-    style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-  >
-    ${action.url}
+  return html`<div style="display:flex;word-break: break-all;">
+    <temba-icon name="${Icon.webhook}" size="1"></temba-icon>
+    <div style="padding-left:0.5em;">
+      <b>${action.url}</b>
+    </div>
   </div>`;
 };
 
@@ -197,8 +169,12 @@ export const renderAddContactUrn = (node: Node, action: AddContactUrn) => {
 };
 
 export const renderSendEmail = (node: Node, action: SendEmail) => {
+  const addressesText = action.addresses ? action.addresses.join(', ') : '';
   return html`<div>
-    <div>${renderStringList(action.addresses, Icon.email)}</div>
+    <div style="display:flex;align-items:center;">
+      <temba-icon name="${Icon.email}" size="1"></temba-icon>
+      <div style="padding-left:0.5em;">${addressesText}</div>
+    </div>
     <div style="margin-top: 0.5em">
       <div
         style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"

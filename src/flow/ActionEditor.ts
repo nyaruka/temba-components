@@ -400,7 +400,7 @@ export class ActionEditor extends RapidElement {
             : false;
         fieldHtml = html`<temba-select
           name="${name}"
-          ${label ? html`label="${label}"` : ''}
+          label=${label || ''}
           help_text="${help_text}"
           ?required="${required}"
           .errors="${propertyErrors}"
