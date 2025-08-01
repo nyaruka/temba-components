@@ -1,5 +1,5 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { EDITOR_CONFIG, UIConfig } from './config';
+import { ACTION_CONFIG, ActionConfig, NODE_CONFIG, NodeConfig } from './config';
 import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
@@ -90,16 +90,38 @@ export class EditorNode extends RapidElement {
         z-index: 10;
       }
 
-      .action:hover .remove-button {
+      .action:hover .remove-button,
+      .router:hover .remove-button {
         display: flex;
       }
 
-      .action.removing .title {
+      .action.removing .title,
+      .router .title.removing {
         background-color: var(--color-error, #dc3545) !important;
       }
 
-      .action.removing .title .name {
+      .action.removing .title .name,
+      .router .title.removing .name {
         color: white;
+      }
+
+      .router .remove-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--color-error, #dc3545);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        line-height: 1;
+        z-index: 10;
       }
 
       .action.sortable {
@@ -494,6 +516,55 @@ export class EditorNode extends RapidElement {
     }
   }
 
+  private handleNodeRemoveClick(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const nodeId = this.node.uuid;
+
+    // If the node is already in removing state, perform the removal
+    if (this.actionRemovingState.has(nodeId)) {
+      this.removeNode();
+      return;
+    }
+
+    // Start removal UI state
+    this.actionRemovingState.add(nodeId);
+    this.requestUpdate();
+
+    // Clear any existing timeout for this node
+    if (this.actionRemovalTimeouts.has(nodeId)) {
+      clearTimeout(this.actionRemovalTimeouts.get(nodeId));
+    }
+
+    // Set timeout to reset UI if user doesn't click
+    const timeoutId = window.setTimeout(() => {
+      this.actionRemovingState.delete(nodeId);
+      this.actionRemovalTimeouts.delete(nodeId);
+      this.requestUpdate();
+    }, 1000); // 1 second as per requirements
+
+    this.actionRemovalTimeouts.set(nodeId, timeoutId);
+  }
+
+  private removeNode() {
+    const nodeId = this.node.uuid;
+
+    // Clear the UI state
+    this.actionRemovingState.delete(nodeId);
+
+    // Clear any timeout
+    if (this.actionRemovalTimeouts.has(nodeId)) {
+      clearTimeout(this.actionRemovalTimeouts.get(nodeId));
+      this.actionRemovalTimeouts.delete(nodeId);
+    }
+
+    // Fire the node deleted event
+    this.fireCustomEvent(CustomEventType.NodeDeleted, {
+      uuid: this.node.uuid
+    });
+  }
+
   private handleActionOrderChanged(event: CustomEvent) {
     const [fromIdx, toIdx] = event.detail.swap;
 
@@ -598,7 +669,7 @@ export class EditorNode extends RapidElement {
     });
   }
 
-  private renderTitle(config: UIConfig, isRemoving: boolean = false) {
+  private renderTitle(config: ActionConfig, isRemoving: boolean = false) {
     return html`<div class="title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
@@ -608,8 +679,17 @@ export class EditorNode extends RapidElement {
     </div>`;
   }
 
+  private renderNodeTitle(config: NodeConfig, isRemoving: boolean = false) {
+    return html`<div
+      class="title ${isRemoving ? 'removing' : ''}"
+      style="background:${config.color}"
+    >
+      <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
+    </div>`;
+  }
+
   private renderAction(node: Node, action: Action, index: number) {
-    const config = EDITOR_CONFIG[action.type];
+    const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
 
     if (config) {
@@ -657,10 +737,23 @@ export class EditorNode extends RapidElement {
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
-    const config = EDITOR_CONFIG[ui.type];
-    if (config) {
-      return html`<div class="router">
-        ${this.renderTitle(config, false)}
+    const nodeConfig = NODE_CONFIG[ui.type];
+    if (nodeConfig) {
+      const isRemoving =
+        this.node.actions.length === 0 &&
+        this.actionRemovingState.has(this.node.uuid);
+
+      return html`<div class="router" style="position: relative;">
+        ${this.node.actions.length === 0
+          ? html` <button
+                class="remove-button"
+                @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+                title="Remove node"
+              >
+                ✕
+              </button>
+              ${this.renderNodeTitle(nodeConfig, isRemoving)}`
+          : ''}
         ${router.result_name
           ? html`<div class="body">
               Save as
@@ -708,6 +801,8 @@ export class EditorNode extends RapidElement {
       return html`<div class="node">Loading...</div>`;
     }
 
+    const nodeConfig = NODE_CONFIG[this.ui.type];
+
     return html`
       <div
         id="${this.node.uuid}"
@@ -715,14 +810,32 @@ export class EditorNode extends RapidElement {
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
         ${this.node.actions.length > 0
-          ? html`<temba-sortable-list
-              dragHandle="drag-handle"
-              @temba-order-changed="${this.handleActionOrderChanged}"
-            >
-              ${this.node.actions.map((actionSpec, index) => {
+          ? this.ui.type === 'execute_actions'
+            ? html`<temba-sortable-list
+                dragHandle="drag-handle"
+                @temba-order-changed="${this.handleActionOrderChanged}"
+              >
+                ${this.node.actions.map((actionSpec, index) => {
+                  return this.renderAction(this.node, actionSpec, index);
+                })}
+              </temba-sortable-list>`
+            : html`${this.node.actions.map((actionSpec, index) => {
                 return this.renderAction(this.node, actionSpec, index);
-              })}
-            </temba-sortable-list>`
+              })}`
+          : !this.node.router && nodeConfig && nodeConfig.name
+          ? html`<div class="router" style="position: relative;">
+              <button
+                class="remove-button"
+                @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+                title="Remove node"
+              >
+                ✕
+              </button>
+              ${this.renderNodeTitle(
+                nodeConfig,
+                this.actionRemovingState.has(this.node.uuid)
+              )}
+            </div>`
           : ''}
         ${this.node.router
           ? html` ${this.renderRouter(this.node.router, this.ui)}

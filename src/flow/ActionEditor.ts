@@ -7,7 +7,7 @@ import {
   PropertyConfig,
   getDefaultComponent,
   getDefaultComponentProps,
-  EDITOR_CONFIG,
+  ACTION_CONFIG,
   CheckboxAttributes,
   CompletionAttributes,
   TextInputAttributes,
@@ -123,7 +123,7 @@ export class ActionEditor extends RapidElement {
 
   private getActionConfig() {
     if (!this.action) return null;
-    return EDITOR_CONFIG[this.action.type] || null;
+    return ACTION_CONFIG[this.action.type] || null;
   }
 
   private getHeaderColor(): string {

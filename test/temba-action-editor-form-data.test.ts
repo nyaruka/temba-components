@@ -1,7 +1,7 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { ActionEditor } from '../src/flow/ActionEditor';
 import { Action } from '../src/store/flow-definition';
-import { UIConfig, COLORS } from '../src/flow/types';
+import { ActionConfig, COLORS } from '../src/flow/types';
 import '../temba-modules';
 
 // Define a form data structure that combines action properties
@@ -11,7 +11,7 @@ interface TestFormData {
 }
 
 // Create a test config that uses the new form-level transformations
-const testComplexConfig: UIConfig = {
+const testComplexConfig: ActionConfig = {
   name: 'Test Complex Action',
   color: COLORS.update,
   // New form-level transformations - use any to avoid TypeScript strict typing issues in test
@@ -71,7 +71,7 @@ describe('ActionEditor Form Data Abstraction', () => {
 
   beforeEach(async () => {
     // Temporarily add our test config to the editor config
-    const { EDITOR_CONFIG } = await import('../src/flow/config');
+    const { ACTION_CONFIG: EDITOR_CONFIG } = await import('../src/flow/config');
     (EDITOR_CONFIG as any).test_complex = testComplexConfig;
 
     actionEditor = await fixture(
