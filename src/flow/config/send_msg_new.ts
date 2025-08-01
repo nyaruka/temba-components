@@ -20,26 +20,31 @@ export const send_msg_new: UIConfig = {
         : null}
     `;
   },
-  
+
   // New form-level transformations
   toFormValue: (action: SendMsg) => {
     return {
       text: action.text,
-      quick_replies: action.quick_replies.map((text) => ({ name: text, value: text }))
+      quick_replies: action.quick_replies.map((text) => ({
+        name: text,
+        value: text
+      }))
     };
   },
-  
+
   fromFormValue: (formData: any): SendMsg => {
     return {
       ...formData, // Start with form data
       type: 'send_msg',
       uuid: formData.uuid || 'new-uuid',
       quick_replies: Array.isArray(formData.quick_replies)
-        ? formData.quick_replies.map((item: any) => item.value || item.name || item)
+        ? formData.quick_replies.map(
+            (item: any) => item.value || item.name || item
+          )
         : []
     };
   },
-  
+
   // Form configuration - keys match form data structure
   form: {
     text: {
@@ -75,7 +80,7 @@ export const send_msg_new: UIConfig = {
       }
     }
   },
-  
+
   validate: (action: SendMsg): ValidationResult => {
     const errors: { [key: string]: string } = {};
 

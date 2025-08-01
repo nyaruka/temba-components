@@ -114,7 +114,7 @@ export interface UIConfig {
   form?: {
     [formFieldName: string]: PropertyConfig;
   };
-  
+
   // Legacy properties configuration (for backward compatibility)
   properties?: {
     [propertyName: string]: PropertyConfig;

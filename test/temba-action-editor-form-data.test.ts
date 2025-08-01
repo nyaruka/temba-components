@@ -4,14 +4,6 @@ import { Action } from '../src/store/flow-definition';
 import { UIConfig, COLORS } from '../src/flow/types';
 import '../temba-modules';
 
-// Define a test action type that demonstrates form data abstraction
-interface TestComplexAction extends Action {
-  type: 'test_complex';
-  name: string;
-  email: string;
-  options: string[];
-}
-
 // Define a form data structure that combines action properties
 interface TestFormData {
   contact_info: string; // combines name and email
@@ -22,25 +14,25 @@ interface TestFormData {
 const testComplexConfig: UIConfig = {
   name: 'Test Complex Action',
   color: COLORS.update,
-  // New form-level transformations
-  toFormValue: (action: TestComplexAction): TestFormData => {
+  // New form-level transformations - use any to avoid TypeScript strict typing issues in test
+  toFormValue: (action: any): TestFormData => {
     return {
       contact_info: `${action.name} <${action.email}>`,
-      selected_options: action.options.map(opt => ({ name: opt, value: opt }))
+      selected_options: action.options.map((opt: string) => ({ name: opt, value: opt }))
     };
   },
-  fromFormValue: (formData: TestFormData): TestComplexAction => {
+  fromFormValue: (formData: TestFormData): any => {
     // Extract name and email from combined contact_info
     const contactMatch = formData.contact_info.match(/^(.*?)\s*<([^>]+)>$/);
     const name = contactMatch ? contactMatch[1].trim() : formData.contact_info;
     const email = contactMatch ? contactMatch[2] : '';
-    
+
     return {
       type: 'test_complex',
       uuid: 'test-uuid',
       name,
       email,
-      options: formData.selected_options.map(opt => opt.value)
+      options: formData.selected_options.map((opt) => opt.value)
     };
   },
   // Form configuration with keys matching form data structure
@@ -85,13 +77,13 @@ describe('ActionEditor Form Data Abstraction', () => {
   });
 
   it('should use form-level toFormValue transformation', async () => {
-    const testAction: TestComplexAction = {
+    const testAction = {
       type: 'test_complex',
       uuid: 'test-uuid',
       name: 'John Doe',
       email: 'john@example.com',
       options: ['option1', 'option2']
-    };
+    } as unknown as Action;
 
     actionEditor.action = testAction;
     await actionEditor.updateComplete;
@@ -110,13 +102,13 @@ describe('ActionEditor Form Data Abstraction', () => {
   });
 
   it('should use form-level fromFormValue transformation on save', async () => {
-    const testAction: TestComplexAction = {
+    const testAction = {
       type: 'test_complex',
       uuid: 'test-uuid',
       name: 'John Doe',
       email: 'john@example.com',
       options: ['option1']
-    };
+    } as unknown as Action;
 
     actionEditor.action = testAction;
     await actionEditor.updateComplete;
@@ -125,7 +117,7 @@ describe('ActionEditor Form Data Abstraction', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await actionEditor.updateComplete;
 
-    let savedAction: TestComplexAction | null = null;
+    let savedAction: any = null;
     actionEditor.addEventListener('temba-action-saved', (e: CustomEvent) => {
       savedAction = e.detail.action;
     });
@@ -152,19 +144,19 @@ describe('ActionEditor Form Data Abstraction', () => {
     }
 
     expect(savedAction).to.exist;
-    expect(savedAction!.name).to.equal('Jane Smith');
-    expect(savedAction!.email).to.equal('jane@example.com');
-    expect(savedAction!.options).to.deep.equal(['option1', 'option3']);
+    expect(savedAction.name).to.equal('Jane Smith');
+    expect(savedAction.email).to.equal('jane@example.com');
+    expect(savedAction.options).to.deep.equal(['option1', 'option3']);
   });
 
   it('should render form fields based on form configuration', async () => {
-    const testAction: TestComplexAction = {
+    const testAction = {
       type: 'test_complex',
       uuid: 'test-uuid',
       name: 'John Doe',
       email: 'john@example.com',
       options: ['option1']
-    };
+    } as unknown as Action;
 
     actionEditor.action = testAction;
     await actionEditor.updateComplete;

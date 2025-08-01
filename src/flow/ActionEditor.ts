@@ -111,7 +111,7 @@ export class ActionEditor extends RapidElement {
     if (!this.action) return;
 
     const config = this.getActionConfig();
-    
+
     // Use new form-level transformation if available
     if (config?.toFormValue) {
       this.formData = config.toFormValue(this.action);
@@ -213,7 +213,7 @@ export class ActionEditor extends RapidElement {
 
     // Convert form data back to action for validation
     let actionForValidation: Action;
-    
+
     if (config?.fromFormValue) {
       actionForValidation = config.fromFormValue(this.formData);
     } else {
@@ -251,41 +251,37 @@ export class ActionEditor extends RapidElement {
     const formConfig = config?.form || config?.properties;
 
     if (formConfig) {
-      Object.entries(formConfig).forEach(
-        ([fieldName, fieldConfig]) => {
-          const value = this.formData[fieldName];
-          const propConfig = fieldConfig as PropertyConfig;
+      Object.entries(formConfig).forEach(([fieldName, fieldConfig]) => {
+        const value = this.formData[fieldName];
+        const propConfig = fieldConfig as PropertyConfig;
 
-          if (
-            propConfig.required &&
-            (!value || (Array.isArray(value) && value.length === 0))
-          ) {
-            errors[fieldName] = `${
-              propConfig.label || fieldName
-            } is required`;
-          }
-
-          if (
-            typeof value === 'string' &&
-            propConfig.minLength &&
-            value.length < propConfig.minLength
-          ) {
-            errors[fieldName] = `${
-              propConfig.label || fieldName
-            } must be at least ${propConfig.minLength} characters`;
-          }
-
-          if (
-            typeof value === 'string' &&
-            propConfig.maxLength &&
-            value.length > propConfig.maxLength
-          ) {
-            errors[fieldName] = `${
-              propConfig.label || fieldName
-            } must be no more than ${propConfig.maxLength} characters`;
-          }
+        if (
+          propConfig.required &&
+          (!value || (Array.isArray(value) && value.length === 0))
+        ) {
+          errors[fieldName] = `${propConfig.label || fieldName} is required`;
         }
-      );
+
+        if (
+          typeof value === 'string' &&
+          propConfig.minLength &&
+          value.length < propConfig.minLength
+        ) {
+          errors[fieldName] = `${
+            propConfig.label || fieldName
+          } must be at least ${propConfig.minLength} characters`;
+        }
+
+        if (
+          typeof value === 'string' &&
+          propConfig.maxLength &&
+          value.length > propConfig.maxLength
+        ) {
+          errors[fieldName] = `${
+            propConfig.label || fieldName
+          } must be no more than ${propConfig.maxLength} characters`;
+        }
+      });
     }
 
     return {
@@ -479,7 +475,7 @@ export class ActionEditor extends RapidElement {
 
     // Use 'form' configuration if available, otherwise fall back to 'properties'
     const formConfig = config.form || config.properties;
-    
+
     if (!formConfig) {
       return html`
         <div class="action-editor-form">
@@ -490,9 +486,8 @@ export class ActionEditor extends RapidElement {
 
     return html`
       <div class="action-editor-form">
-        ${Object.entries(formConfig).map(
-          ([fieldName, fieldConfig]) =>
-            this.renderProperty(fieldName, fieldConfig as PropertyConfig)
+        ${Object.entries(formConfig).map(([fieldName, fieldConfig]) =>
+          this.renderProperty(fieldName, fieldConfig as PropertyConfig)
         )}
       </div>
     `;
