@@ -3,8 +3,9 @@ import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { UIConfig, COLORS, ValidationResult } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 
-export const send_msg: UIConfig = {
-  name: 'Send Message',
+// Example of how to migrate send_msg to use the new form-level approach
+export const send_msg_new: UIConfig = {
+  name: 'Send Message (New Form API)',
   color: COLORS.send,
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
@@ -23,8 +24,8 @@ export const send_msg: UIConfig = {
   // Form-level transformations
   toFormData: (action: SendMsg) => {
     return {
-      text: action.text || '',
-      quick_replies: (action.quick_replies || []).map((text) => ({
+      text: action.text,
+      quick_replies: action.quick_replies.map((text) => ({
         name: text,
         value: text
       }))
@@ -44,6 +45,7 @@ export const send_msg: UIConfig = {
     };
   },
 
+  // Form configuration - keys match form data structure
   form: {
     text: {
       label: 'Message Text',
@@ -78,6 +80,7 @@ export const send_msg: UIConfig = {
       }
     }
   },
+
   validate: (action: SendMsg): ValidationResult => {
     const errors: { [key: string]: string } = {};
 
