@@ -96,10 +96,6 @@ export interface PropertyConfig {
     // When this field is disabled
     disabled?: (formData: any) => boolean;
   };
-
-  // Data transformation functions
-  toFormValue?: (actionValue: any) => any;
-  fromFormValue?: (formValue: any) => any;
 }
 
 export interface UIConfig {
@@ -108,17 +104,13 @@ export interface UIConfig {
   render?: (node: any, action: any) => TemplateResult;
 
   // Action editor configuration
-  // New form-level transformations (takes precedence over properties)
-  toFormValue?: (action: Action) => any;
-  fromFormValue?: (formData: any) => Action;
+  // Form-level transformations
+  toFormData?: (action: Action) => any;
+  fromFormData?: (formData: any) => Action;
   form?: {
     [formFieldName: string]: PropertyConfig;
   };
 
-  // Legacy properties configuration (for backward compatibility)
-  properties?: {
-    [propertyName: string]: PropertyConfig;
-  };
   validate?: (action: Action) => ValidationResult;
 }
 

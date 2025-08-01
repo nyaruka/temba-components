@@ -9,7 +9,26 @@ export const remove_contact_groups: UIConfig = {
   render: (_node: Node, action: RemoveFromGroup) => {
     return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
   },
-  properties: {
+
+  // Form-level transformations - default 1:1 mapping for this case
+  toFormData: (action: RemoveFromGroup) => {
+    return {
+      all_groups: action.all_groups || false,
+      groups: action.groups || []
+    };
+  },
+
+  fromFormData: (formData: any): RemoveFromGroup => {
+    return {
+      ...formData,
+      type: 'remove_contact_groups',
+      uuid: formData.uuid || 'new-uuid',
+      all_groups: formData.all_groups || false,
+      groups: formData.groups || []
+    };
+  },
+
+  form: {
     all_groups: {
       helpText:
         'Check this to remove the contact from all groups instead of specific ones',

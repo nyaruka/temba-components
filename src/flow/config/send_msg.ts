@@ -19,7 +19,32 @@ export const send_msg: UIConfig = {
         : null}
     `;
   },
-  properties: {
+
+  // Form-level transformations
+  toFormData: (action: SendMsg) => {
+    return {
+      text: action.text || '',
+      quick_replies: (action.quick_replies || []).map((text) => ({
+        name: text,
+        value: text
+      }))
+    };
+  },
+
+  fromFormData: (formData: any): SendMsg => {
+    return {
+      ...formData, // Start with form data
+      type: 'send_msg',
+      uuid: formData.uuid || 'new-uuid',
+      quick_replies: Array.isArray(formData.quick_replies)
+        ? formData.quick_replies.map(
+            (item: any) => item.value || item.name || item
+          )
+        : []
+    };
+  },
+
+  form: {
     text: {
       label: 'Message Text',
       helpText:
@@ -50,14 +75,6 @@ export const send_msg: UIConfig = {
           maxItems: 10,
           maxItemsText: 'You can only add up to 10 quick replies'
         }
-      },
-      toFormValue: (actionValue: string[]) => {
-        if (!Array.isArray(actionValue)) return [];
-        return actionValue.map((text) => ({ name: text, value: text }));
-      },
-      fromFormValue: (formValue: Array<{ name: string; value: string }>) => {
-        if (!Array.isArray(formValue)) return [];
-        return formValue.map((item) => item.value || item.name || item);
       }
     }
   },

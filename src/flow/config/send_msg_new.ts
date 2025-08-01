@@ -21,8 +21,8 @@ export const send_msg_new: UIConfig = {
     `;
   },
 
-  // New form-level transformations
-  toFormValue: (action: SendMsg) => {
+  // Form-level transformations
+  toFormData: (action: SendMsg) => {
     return {
       text: action.text,
       quick_replies: action.quick_replies.map((text) => ({
@@ -32,7 +32,7 @@ export const send_msg_new: UIConfig = {
     };
   },
 
-  fromFormValue: (formData: any): SendMsg => {
+  fromFormData: (formData: any): SendMsg => {
     return {
       ...formData, // Start with form data
       type: 'send_msg',

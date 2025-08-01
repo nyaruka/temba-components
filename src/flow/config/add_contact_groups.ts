@@ -9,7 +9,24 @@ export const add_contact_groups: UIConfig = {
   render: (_node: Node, action: AddToGroup) => {
     return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
   },
-  properties: {
+
+  // Form-level transformations - default 1:1 mapping for this case
+  toFormData: (action: AddToGroup) => {
+    return {
+      groups: action.groups || []
+    };
+  },
+
+  fromFormData: (formData: any): AddToGroup => {
+    return {
+      ...formData,
+      type: 'add_contact_groups',
+      uuid: formData.uuid || 'new-uuid',
+      groups: formData.groups || []
+    };
+  },
+
+  form: {
     groups: {
       label: 'Groups',
       helpText: 'Select the groups to add the contact to',

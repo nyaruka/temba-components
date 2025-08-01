@@ -15,13 +15,16 @@ const testComplexConfig: UIConfig = {
   name: 'Test Complex Action',
   color: COLORS.update,
   // New form-level transformations - use any to avoid TypeScript strict typing issues in test
-  toFormValue: (action: any): TestFormData => {
+  toFormData: (action: any): TestFormData => {
     return {
       contact_info: `${action.name} <${action.email}>`,
-      selected_options: action.options.map((opt: string) => ({ name: opt, value: opt }))
+      selected_options: action.options.map((opt: string) => ({
+        name: opt,
+        value: opt
+      }))
     };
   },
-  fromFormValue: (formData: TestFormData): any => {
+  fromFormData: (formData: TestFormData): any => {
     // Extract name and email from combined contact_info
     const contactMatch = formData.contact_info.match(/^(.*?)\s*<([^>]+)>$/);
     const name = contactMatch ? contactMatch[1].trim() : formData.contact_info;
@@ -76,7 +79,7 @@ describe('ActionEditor Form Data Abstraction', () => {
     );
   });
 
-  it('should use form-level toFormValue transformation', async () => {
+  it('should use form-level toFormData transformation', async () => {
     const testAction = {
       type: 'test_complex',
       uuid: 'test-uuid',
@@ -101,7 +104,7 @@ describe('ActionEditor Form Data Abstraction', () => {
     ]);
   });
 
-  it('should use form-level fromFormValue transformation on save', async () => {
+  it('should use form-level fromFormData transformation on save', async () => {
     const testAction = {
       type: 'test_complex',
       uuid: 'test-uuid',
@@ -134,7 +137,9 @@ describe('ActionEditor Form Data Abstraction', () => {
     await actionEditor.updateComplete;
 
     // Trigger save
-    const dialog = actionEditor.shadowRoot?.querySelector('temba-dialog') as any;
+    const dialog = actionEditor.shadowRoot?.querySelector(
+      'temba-dialog'
+    ) as any;
     if (dialog) {
       dialog.dispatchEvent(
         new CustomEvent('temba-button-clicked', {
@@ -166,12 +171,16 @@ describe('ActionEditor Form Data Abstraction', () => {
     await actionEditor.updateComplete;
 
     // Check that form renders with expected fields based on form config
-    const textInput = actionEditor.shadowRoot?.querySelector('temba-textinput[name="contact_info"]');
-    const select = actionEditor.shadowRoot?.querySelector('temba-select[name="selected_options"]');
-    
+    const textInput = actionEditor.shadowRoot?.querySelector(
+      'temba-textinput[name="contact_info"]'
+    );
+    const select = actionEditor.shadowRoot?.querySelector(
+      'temba-select[name="selected_options"]'
+    );
+
     expect(textInput).to.exist;
     expect(select).to.exist;
-    
+
     // Verify that the transformed form values are displayed
     expect((textInput as any).value).to.equal('John Doe <john@example.com>');
   });

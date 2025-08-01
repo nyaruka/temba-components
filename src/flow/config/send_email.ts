@@ -19,7 +19,33 @@ export const send_email: UIConfig = {
       </div>
     </div>`;
   },
-  properties: {
+
+  // Form-level transformations
+  toFormData: (action: SendEmail) => {
+    return {
+      addresses: (action.addresses || []).map((text) => ({
+        name: text,
+        value: text
+      })),
+      subject: action.subject || '',
+      body: action.body || ''
+    };
+  },
+
+  fromFormData: (formData: any): SendEmail => {
+    return {
+      ...formData,
+      type: 'send_email',
+      uuid: formData.uuid || 'new-uuid',
+      addresses: Array.isArray(formData.addresses)
+        ? formData.addresses.map((item: any) => item.value || item.name || item)
+        : [],
+      subject: formData.subject || '',
+      body: formData.body || ''
+    };
+  },
+
+  form: {
     addresses: {
       label: 'Recipients',
       widget: {
@@ -29,14 +55,6 @@ export const send_email: UIConfig = {
           searchable: true,
           placeholder: 'Search for contacts...'
         }
-      },
-      toFormValue: (actionValue: string[]) => {
-        if (!Array.isArray(actionValue)) return [];
-        return actionValue.map((text) => ({ name: text, value: text }));
-      },
-      fromFormValue: (formValue: Array<{ name: string; value: string }>) => {
-        if (!Array.isArray(formValue)) return [];
-        return formValue.map((item) => item.value || item.name || item);
       }
     },
     subject: {
@@ -51,6 +69,7 @@ export const send_email: UIConfig = {
       }
     },
     body: {
+      label: 'Body',
       required: true,
       widget: {
         type: 'temba-completion',
