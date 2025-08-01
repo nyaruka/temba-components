@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">63.09% </span>
+                <span class="strong">55.78% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>53/84</span>
+                <span class='fraction'>53/95</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">63.09% </span>
+                <span class="strong">55.78% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>53/84</span>
+                <span class='fraction'>53/95</span>
             </div>
         
             
@@ -147,7 +147,18 @@
 <a name='L82'></a><a href='#L82'>82</a>
 <a name='L83'></a><a href='#L83'>83</a>
 <a name='L84'></a><a href='#L84'>84</a>
-<a name='L85'></a><a href='#L85'>85</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">50x</span>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
@@ -180,18 +191,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
@@ -230,9 +229,32 @@
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
+<span class="cline-any cline-yes">50x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">50x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { html } from 'lit-html';
-import { UIConfig, COLORS } from '../types';
+import { UIConfig, COLORS, ValidationResult } from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
 import { Icon } from '../../Icons';
@@ -256,25 +278,13 @@ export const send_email: UIConfig = {
   // Form-level transformations
   toFormData: <span class="fstat-no" title="function not covered" >(action: SendEmail) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return {</span>
+<span class="cstat-no" title="statement not covered" >      uuid: action.uuid,</span>
 <span class="cstat-no" title="statement not covered" >      addresses: (action.addresses || []).map((text) =&gt; ({</span>
 <span class="cstat-no" title="statement not covered" >        name: text,</span>
 <span class="cstat-no" title="statement not covered" >        value: text</span>
 <span class="cstat-no" title="statement not covered" >      })),</span>
 <span class="cstat-no" title="statement not covered" >      subject: action.subject || '',</span>
 <span class="cstat-no" title="statement not covered" >      body: action.body || ''</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" >  },</span>
-&nbsp;
-  fromFormData: <span class="fstat-no" title="function not covered" >(formData: any): SendEmail =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return {</span>
-<span class="cstat-no" title="statement not covered" >      ...formData,</span>
-<span class="cstat-no" title="statement not covered" >      type: 'send_email',</span>
-<span class="cstat-no" title="statement not covered" >      uuid: formData.uuid || 'new-uuid',</span>
-<span class="cstat-no" title="statement not covered" >      addresses: Array.isArray(formData.addresses)</span>
-<span class="cstat-no" title="statement not covered" >        ? formData.addresses.map((item: any) =&gt; item.value || item.name || item)</span>
-<span class="cstat-no" title="statement not covered" >        : [],</span>
-<span class="cstat-no" title="statement not covered" >      subject: formData.subject || '',</span>
-<span class="cstat-no" title="statement not covered" >      body: formData.body || ''</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 &nbsp;
@@ -313,7 +323,30 @@ export const send_email: UIConfig = {
         }
       }
     }
-  }
+  },
+  validate: <span class="fstat-no" title="function not covered" >(action: SendEmail): ValidationResult =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const errors: { [key: string]: string } = {};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    if (!action.addresses || action.addresses.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      errors.addresses = 'At least one recipient email address is required';</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+<span class="cstat-no" title="statement not covered" >      valid: Object.keys(errors).length === 0,</span>
+<span class="cstat-no" title="statement not covered" >      errors</span>
+<span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+  fromFormData: <span class="fstat-no" title="function not covered" >(formData: any): SendEmail =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+<span class="cstat-no" title="statement not covered" >      uuid: formData.uuid,</span>
+<span class="cstat-no" title="statement not covered" >      type: 'send_email',</span>
+<span class="cstat-no" title="statement not covered" >      addresses: Array.isArray(formData.addresses)</span>
+<span class="cstat-no" title="statement not covered" >        ? formData.addresses.map((item: any) =&gt; item.value || item.name || item)</span>
+<span class="cstat-no" title="statement not covered" >        : [],</span>
+<span class="cstat-no" title="statement not covered" >      subject: formData.subject || '',</span>
+<span class="cstat-no" title="statement not covered" >      body: formData.body || ''</span>
+<span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 };
 &nbsp;</pre></td></tr></table></pre>
 
@@ -322,7 +355,7 @@ export const send_email: UIConfig = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-01T16:01:23.980Z
+                at 2025-08-01T16:36:29.215Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

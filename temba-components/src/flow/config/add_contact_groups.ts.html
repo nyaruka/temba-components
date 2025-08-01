@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.89% </span>
+                <span class="strong">71.11% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>33/57</span>
+                <span class='fraction'>32/45</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.89% </span>
+                <span class="strong">71.11% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>33/57</span>
+                <span class='fraction'>32/45</span>
             </div>
         
             
@@ -108,19 +108,7 @@
 <a name='L43'></a><a href='#L43'>43</a>
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
-<a name='L46'></a><a href='#L46'>46</a>
-<a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a>
-<a name='L50'></a><a href='#L50'>50</a>
-<a name='L51'></a><a href='#L51'>51</a>
-<a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a>
-<a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a>
-<a name='L56'></a><a href='#L56'>56</a>
-<a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">50x</span>
+<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
@@ -134,6 +122,7 @@
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -157,19 +146,6 @@
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">50x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -178,7 +154,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">50x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { html } from 'lit-html';
-import { UIConfig, COLORS, ValidationResult } from '../types';
+import { UIConfig, COLORS } from '../types';
 import { Node, AddToGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 &nbsp;
@@ -192,7 +168,8 @@ export const add_contact_groups: UIConfig = {
   // Form-level transformations - default 1:1 mapping for this case
   toFormData: <span class="fstat-no" title="function not covered" >(action: AddToGroup) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return {</span>
-<span class="cstat-no" title="statement not covered" >      groups: action.groups || []</span>
+<span class="cstat-no" title="statement not covered" >      groups: action.groups || [],</span>
+<span class="cstat-no" title="statement not covered" >      uuid: action.uuid</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
   form: {
@@ -213,23 +190,10 @@ export const add_contact_groups: UIConfig = {
       }
     }
   },
-  validate: <span class="fstat-no" title="function not covered" >(action: AddToGroup): ValidationResult =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const errors: { [key: string]: string } = {};</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    if (!action.groups || action.groups.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >      errors.groups = 'At least one group must be selected';</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    return {</span>
-<span class="cstat-no" title="statement not covered" >      valid: Object.keys(errors).length === 0,</span>
-<span class="cstat-no" title="statement not covered" >      errors</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" >  },</span>
   fromFormData: <span class="fstat-no" title="function not covered" >(formData: any): AddToGroup =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return {</span>
-<span class="cstat-no" title="statement not covered" >      ...formData,</span>
+<span class="cstat-no" title="statement not covered" >      uuid: formData.uuid,</span>
 <span class="cstat-no" title="statement not covered" >      type: 'add_contact_groups',</span>
-<span class="cstat-no" title="statement not covered" >      uuid: formData.uuid || 'new-uuid',</span>
 <span class="cstat-no" title="statement not covered" >      groups: formData.groups || []</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -241,7 +205,7 @@ export const add_contact_groups: UIConfig = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-01T16:01:23.980Z
+                at 2025-08-01T16:36:29.215Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

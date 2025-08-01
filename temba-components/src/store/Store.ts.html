@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75.34% </span>
+                <span class="strong">73.79% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>486/645</span>
+                <span class='fraction'>476/645</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.38% </span>
+                <span class="strong">76.05% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>55/72</span>
+                <span class='fraction'>54/71</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">56.25% </span>
+                <span class="strong">54.16% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>27/48</span>
+                <span class='fraction'>26/48</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75.34% </span>
+                <span class="strong">73.79% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>486/645</span>
+                <span class='fraction'>476/645</span>
             </div>
         
             
@@ -1078,16 +1078,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">51x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">51x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">51x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-yes">4x</span>
@@ -1196,16 +1196,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">51x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-yes">51x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -1840,17 +1840,17 @@ export class Store extends RapidElement {
 <span class="cstat-no" title="statement not covered" >          this.cache.set(key, results);</span>
 <span class="cstat-no" title="statement not covered" >          const pending = this.pendingResolves[url] || [];</span>
 <span class="cstat-no" title="statement not covered" >          while (pending.length &gt; 0) {</span>
-            const resolve = pending.pop();
-            resolve(results);
-          }
-        });
-      }
-    });
-  }
-&nbsp;
-  public fetching: { [url: string]: number } = {};
-&nbsp;
-  public updateCache(url: string, data: any) {
+            const resolve = pending.<span class="fstat-no" title="function not covered" >pop();</span>
+<span class="cstat-no" title="statement not covered" >            resolve(results);</span>
+<span class="cstat-no" title="statement not covered" >          }</span>
+<span class="cstat-no" title="statement not covered" >        });</span>
+<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  public fetching: { [url: string]: number } = {};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  public updateCache(url: string, data: any) {</span>
 <span class="fstat-no" title="function not covered" >    this.cache.set(url, data);</span>
     this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data });
   }
@@ -2005,7 +2005,7 @@ export class Store extends RapidElement {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-01T16:01:23.980Z
+                at 2025-08-01T16:36:29.215Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
