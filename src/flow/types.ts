@@ -108,6 +108,14 @@ export interface UIConfig {
   render?: (node: any, action: any) => TemplateResult;
 
   // Action editor configuration
+  // New form-level transformations (takes precedence over properties)
+  toFormValue?: (action: Action) => any;
+  fromFormValue?: (formData: any) => Action;
+  form?: {
+    [formFieldName: string]: PropertyConfig;
+  };
+  
+  // Legacy properties configuration (for backward compatibility)
   properties?: {
     [propertyName: string]: PropertyConfig;
   };

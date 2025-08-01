@@ -111,19 +111,26 @@ export class ActionEditor extends RapidElement {
     if (!this.action) return;
 
     const config = this.getActionConfig();
-    this.formData = { ...this.action };
+    
+    // Use new form-level transformation if available
+    if (config?.toFormValue) {
+      this.formData = config.toFormValue(this.action);
+    } else {
+      // Fall back to legacy per-property transformations or 1:1 mapping
+      this.formData = { ...this.action };
 
-    // Apply transformation functions to convert action data to form data
-    if (config?.properties) {
-      Object.entries(config.properties).forEach(
-        ([propertyName, propertyConfig]) => {
-          if ((propertyConfig as PropertyConfig).toFormValue && this.action) {
-            const actionValue = this.action[propertyName as keyof Action];
-            this.formData[propertyName] = (propertyConfig as PropertyConfig)
-              .toFormValue!(actionValue);
+      // Apply legacy per-property transformation functions
+      if (config?.properties) {
+        Object.entries(config.properties).forEach(
+          ([propertyName, propertyConfig]) => {
+            if ((propertyConfig as PropertyConfig).toFormValue && this.action) {
+              const actionValue = this.action[propertyName as keyof Action];
+              this.formData[propertyName] = (propertyConfig as PropertyConfig)
+                .toFormValue!(actionValue);
+            }
           }
-        }
-      );
+        );
+      }
     }
   }
 
@@ -160,26 +167,34 @@ export class ActionEditor extends RapidElement {
 
     // Apply transformation functions to convert form data back to action data
     const config = this.getActionConfig();
-    const transformedFormData = { ...this.formData };
+    let updatedAction: Action;
 
-    if (config?.properties) {
-      Object.entries(config.properties).forEach(
-        ([propertyName, propertyConfig]) => {
-          if ((propertyConfig as PropertyConfig).fromFormValue) {
-            const formValue = this.formData[propertyName];
-            transformedFormData[propertyName] = (
-              propertyConfig as PropertyConfig
-            ).fromFormValue!(formValue);
+    // Use new form-level transformation if available
+    if (config?.fromFormValue) {
+      updatedAction = config.fromFormValue(this.formData);
+    } else {
+      // Fall back to legacy per-property transformations or 1:1 mapping
+      const transformedFormData = { ...this.formData };
+
+      if (config?.properties) {
+        Object.entries(config.properties).forEach(
+          ([propertyName, propertyConfig]) => {
+            if ((propertyConfig as PropertyConfig).fromFormValue) {
+              const formValue = this.formData[propertyName];
+              transformedFormData[propertyName] = (
+                propertyConfig as PropertyConfig
+              ).fromFormValue!(formValue);
+            }
           }
-        }
-      );
-    }
+        );
+      }
 
-    // Create updated action
-    const updatedAction = {
-      ...this.action,
-      ...transformedFormData
-    };
+      // Create updated action
+      updatedAction = {
+        ...this.action,
+        ...transformedFormData
+      };
+    }
 
     // Fire save event
     this.fireCustomEvent(CustomEventType.ActionSaved, {
@@ -196,45 +211,57 @@ export class ActionEditor extends RapidElement {
   private validateForm(): ValidationResult {
     const config = this.getActionConfig();
 
-    // Apply transformation functions to convert form data back to action data for validation
-    const transformedFormData = { ...this.formData };
+    // Convert form data back to action for validation
+    let actionForValidation: Action;
+    
+    if (config?.fromFormValue) {
+      actionForValidation = config.fromFormValue(this.formData);
+    } else {
+      // Fall back to legacy per-property transformations or 1:1 mapping
+      const transformedFormData = { ...this.formData };
 
-    if (config?.properties) {
-      Object.entries(config.properties).forEach(
-        ([propertyName, propertyConfig]) => {
-          if ((propertyConfig as PropertyConfig).fromFormValue) {
-            const formValue = this.formData[propertyName];
-            transformedFormData[propertyName] = (
-              propertyConfig as PropertyConfig
-            ).fromFormValue!(formValue);
+      if (config?.properties) {
+        Object.entries(config.properties).forEach(
+          ([propertyName, propertyConfig]) => {
+            if ((propertyConfig as PropertyConfig).fromFormValue) {
+              const formValue = this.formData[propertyName];
+              transformedFormData[propertyName] = (
+                propertyConfig as PropertyConfig
+              ).fromFormValue!(formValue);
+            }
           }
-        }
-      );
+        );
+      }
+
+      actionForValidation = {
+        ...this.action,
+        ...transformedFormData
+      } as Action;
     }
 
     // Run custom validation if available
     if (config?.validate) {
-      return config.validate({
-        ...this.action,
-        ...transformedFormData
-      } as Action);
+      return config.validate(actionForValidation);
     }
 
-    // Basic validation based on property configs
+    // Basic validation based on form field configs
     const errors: { [key: string]: string } = {};
 
-    if (config?.properties) {
-      Object.entries(config.properties).forEach(
-        ([propertyName, propertyConfig]) => {
-          const value = this.formData[propertyName];
-          const propConfig = propertyConfig as PropertyConfig;
+    // Get the form configuration (prefer 'form' over 'properties')
+    const formConfig = config?.form || config?.properties;
+
+    if (formConfig) {
+      Object.entries(formConfig).forEach(
+        ([fieldName, fieldConfig]) => {
+          const value = this.formData[fieldName];
+          const propConfig = fieldConfig as PropertyConfig;
 
           if (
             propConfig.required &&
             (!value || (Array.isArray(value) && value.length === 0))
           ) {
-            errors[propertyName] = `${
-              propConfig.label || propertyName
+            errors[fieldName] = `${
+              propConfig.label || fieldName
             } is required`;
           }
 
@@ -243,8 +270,8 @@ export class ActionEditor extends RapidElement {
             propConfig.minLength &&
             value.length < propConfig.minLength
           ) {
-            errors[propertyName] = `${
-              propConfig.label || propertyName
+            errors[fieldName] = `${
+              propConfig.label || fieldName
             } must be at least ${propConfig.minLength} characters`;
           }
 
@@ -253,8 +280,8 @@ export class ActionEditor extends RapidElement {
             propConfig.maxLength &&
             value.length > propConfig.maxLength
           ) {
-            errors[propertyName] = `${
-              propConfig.label || propertyName
+            errors[fieldName] = `${
+              propConfig.label || fieldName
             } must be no more than ${propConfig.maxLength} characters`;
           }
         }
@@ -450,11 +477,22 @@ export class ActionEditor extends RapidElement {
       `;
     }
 
+    // Use 'form' configuration if available, otherwise fall back to 'properties'
+    const formConfig = config.form || config.properties;
+    
+    if (!formConfig) {
+      return html`
+        <div class="action-editor-form">
+          <div>No form configuration available</div>
+        </div>
+      `;
+    }
+
     return html`
       <div class="action-editor-form">
-        ${Object.entries(config.properties || {}).map(
-          ([propertyName, propertyConfig]) =>
-            this.renderProperty(propertyName, propertyConfig as PropertyConfig)
+        ${Object.entries(formConfig).map(
+          ([fieldName, fieldConfig]) =>
+            this.renderProperty(fieldName, fieldConfig as PropertyConfig)
         )}
       </div>
     `;
