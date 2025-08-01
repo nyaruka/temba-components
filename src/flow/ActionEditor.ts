@@ -195,12 +195,7 @@ export class ActionEditor extends RapidElement {
       } as Action;
     }
 
-    // Run custom validation if available
-    if (config?.validate) {
-      return config.validate(actionForValidation);
-    }
-
-    // Basic validation based on form field configs
+    // Start with basic validation based on form field configs
     const errors: { [key: string]: string } = {};
 
     // Get the form configuration (use provided form or generate default)
@@ -241,6 +236,14 @@ export class ActionEditor extends RapidElement {
           } must be no more than ${propConfig.maxLength} characters`;
         }
       });
+    }
+
+    // Run custom validation if available and merge results
+    if (config?.validate) {
+      const customValidation = config.validate(actionForValidation);
+
+      // Merge custom validation errors with basic form validation errors
+      Object.assign(errors, customValidation.errors);
     }
 
     return {
@@ -296,9 +299,7 @@ export class ActionEditor extends RapidElement {
     const isVisible = conditions?.visible
       ? conditions.visible(this.formData)
       : true;
-    const isDynamicRequired = conditions?.required
-      ? conditions.required(this.formData)
-      : null;
+
     const isDisabled = conditions?.disabled
       ? conditions.disabled(this.formData)
       : false;
@@ -312,9 +313,7 @@ export class ActionEditor extends RapidElement {
     const name = propertyName;
     const label = config.label;
     const help_text = config.helpText;
-    // Use dynamic required if available, otherwise fall back to config required
-    const required =
-      isDynamicRequired !== null ? isDynamicRequired : config.required;
+    const required = config.required;
 
     let fieldHtml: TemplateResult;
 

@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { UIConfig, COLORS, ValidationResult } from '../types';
+import { UIConfig, COLORS } from '../types';
 import { Node, AddToGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
@@ -13,7 +13,8 @@ export const add_contact_groups: UIConfig = {
   // Form-level transformations - default 1:1 mapping for this case
   toFormData: (action: AddToGroup) => {
     return {
-      groups: action.groups || []
+      groups: action.groups || [],
+      uuid: action.uuid
     };
   },
   form: {
@@ -34,23 +35,10 @@ export const add_contact_groups: UIConfig = {
       }
     }
   },
-  validate: (action: AddToGroup): ValidationResult => {
-    const errors: { [key: string]: string } = {};
-
-    if (!action.groups || action.groups.length === 0) {
-      errors.groups = 'At least one group must be selected';
-    }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
   fromFormData: (formData: any): AddToGroup => {
     return {
-      ...formData,
+      uuid: formData.uuid,
       type: 'add_contact_groups',
-      uuid: formData.uuid || 'new-uuid',
       groups: formData.groups || []
     };
   }

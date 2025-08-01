@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { UIConfig, COLORS } from '../types';
+import { UIConfig, COLORS, ValidationResult } from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
 import { Icon } from '../../Icons';
@@ -23,25 +23,13 @@ export const send_email: UIConfig = {
   // Form-level transformations
   toFormData: (action: SendEmail) => {
     return {
+      uuid: action.uuid,
       addresses: (action.addresses || []).map((text) => ({
         name: text,
         value: text
       })),
       subject: action.subject || '',
       body: action.body || ''
-    };
-  },
-
-  fromFormData: (formData: any): SendEmail => {
-    return {
-      ...formData,
-      type: 'send_email',
-      uuid: formData.uuid || 'new-uuid',
-      addresses: Array.isArray(formData.addresses)
-        ? formData.addresses.map((item: any) => item.value || item.name || item)
-        : [],
-      subject: formData.subject || '',
-      body: formData.body || ''
     };
   },
 
@@ -80,5 +68,28 @@ export const send_email: UIConfig = {
         }
       }
     }
+  },
+  validate: (action: SendEmail): ValidationResult => {
+    const errors: { [key: string]: string } = {};
+
+    if (!action.addresses || action.addresses.length === 0) {
+      errors.addresses = 'At least one recipient email address is required';
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  },
+  fromFormData: (formData: any): SendEmail => {
+    return {
+      uuid: formData.uuid,
+      type: 'send_email',
+      addresses: Array.isArray(formData.addresses)
+        ? formData.addresses.map((item: any) => item.value || item.name || item)
+        : [],
+      subject: formData.subject || '',
+      body: formData.body || ''
+    };
   }
 };

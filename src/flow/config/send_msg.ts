@@ -23,24 +23,12 @@ export const send_msg: UIConfig = {
   // Form-level transformations
   toFormData: (action: SendMsg) => {
     return {
+      uuid: action.uuid,
       text: action.text || '',
       quick_replies: (action.quick_replies || []).map((text) => ({
         name: text,
         value: text
       }))
-    };
-  },
-
-  fromFormData: (formData: any): SendMsg => {
-    return {
-      ...formData, // Start with form data
-      type: 'send_msg',
-      uuid: formData.uuid || 'new-uuid',
-      quick_replies: Array.isArray(formData.quick_replies)
-        ? formData.quick_replies.map(
-            (item: any) => item.value || item.name || item
-          )
-        : []
     };
   },
 
@@ -88,6 +76,18 @@ export const send_msg: UIConfig = {
     return {
       valid: Object.keys(errors).length === 0,
       errors
+    };
+  },
+  fromFormData: (formData: any): SendMsg => {
+    return {
+      uuid: formData.uuid,
+      type: 'send_msg',
+      text: formData.text,
+      quick_replies: Array.isArray(formData.quick_replies)
+        ? formData.quick_replies.map(
+            (item: any) => item.value || item.name || item
+          )
+        : []
     };
   }
 };

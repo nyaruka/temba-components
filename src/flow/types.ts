@@ -91,8 +91,7 @@ export interface PropertyConfig {
   conditions?: {
     // When to show this field
     visible?: (formData: any) => boolean;
-    // When this field is required (overrides base required)
-    required?: (formData: any) => boolean;
+
     // When this field is disabled
     disabled?: (formData: any) => boolean;
   };

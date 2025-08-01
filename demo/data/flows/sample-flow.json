@@ -180,35 +180,35 @@
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
           {
-            "all_groups": false,
+            "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
+            "type": "remove_contact_groups",
             "groups": [
-              {
-                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
-                "name": "Empty",
-                "query": null,
-                "status": "ready",
-                "count": 0
-              },
               {
                 "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
                 "name": "Some Really Long Group Name",
                 "count": 2028
+              },
+              {
+                "uuid": "66e7a094-22ea-441d-91c4-283d8168e8e4",
+                "name": "The Poots",
+                "query": "name ~ \"poots\" OR name ~ \"dave\"",
+                "status": "ready",
+                "count": 1028
               }
             ],
-            "type": "remove_contact_groups",
-            "uuid": "new-uuid"
+            "all_groups": false
           },
           {
-            "attachments": [],
-            "text": "Excellent choice.",
+            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8",
             "type": "send_msg",
+            "text": "Excellent choice.",
             "quick_replies": [
               "blooooop",
               "bleep"
-            ],
-            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8"
+            ]
           },
           {
+            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
             "type": "add_contact_groups",
             "groups": [
               {
@@ -224,18 +224,17 @@
                 "name": "Some Really Long Group Name",
                 "count": 2028
               }
-            ],
-            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90"
+            ]
           },
           {
+            "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7",
+            "type": "send_email",
             "addresses": [
               "name@domain.com",
               "mistermeowface@whiskers.com"
             ],
             "subject": "Did you get this?",
-            "body": "I hope it arrived! But this message is a bit longer.",
-            "type": "send_email",
-            "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7"
+            "body": "I hope it arrived! But this message is a bit longer."
           },
           {
             "type": "set_run_result",

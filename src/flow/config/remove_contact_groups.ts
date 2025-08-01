@@ -14,6 +14,7 @@ export const remove_contact_groups: UIConfig = {
   },
   toFormData: (action: RemoveFromGroup) => {
     return {
+      uuid: action.uuid,
       all_groups: action.all_groups || false,
       groups: action.groups || []
     };
@@ -34,8 +35,7 @@ export const remove_contact_groups: UIConfig = {
         }
       },
       conditions: {
-        visible: (formData) => !formData.all_groups,
-        required: (formData) => !formData.all_groups
+        visible: (formData) => !formData.all_groups
       }
     },
     all_groups: {
@@ -62,11 +62,10 @@ export const remove_contact_groups: UIConfig = {
   },
   fromFormData: (formData: any): RemoveFromGroup => {
     return {
-      ...formData,
+      uuid: formData.uuid,
       type: 'remove_contact_groups',
-      uuid: formData.uuid || 'new-uuid',
-      all_groups: formData.all_groups || false,
-      groups: formData.all_groups ? [] : formData.groups || []
+      groups: formData.all_groups ? [] : formData.groups || [],
+      all_groups: formData.all_groups || false
     };
   }
 };
