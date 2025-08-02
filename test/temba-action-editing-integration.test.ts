@@ -1,5 +1,5 @@
 import { expect, fixture, html } from '@open-wc/testing';
-import { EditorNode } from '../src/flow/EditorNode';
+import { CanvasNode } from '../src/flow/CanvasNode';
 import { SendMsg, Node } from '../src/store/flow-definition';
 import { CustomEventType } from '../src/interfaces';
 import '../temba-modules';
@@ -21,7 +21,7 @@ describe('Action Editing Integration', () => {
     };
 
     // Create EditorNode
-    const editorNode: EditorNode = await fixture(html`
+    const editorNode: CanvasNode = await fixture(html`
       <temba-flow-node
         .node=${testNode}
         .ui=${{ position: { left: 0, top: 0 } }}
@@ -88,7 +88,7 @@ describe('Action Editing Integration', () => {
     };
 
     // Create EditorNode
-    const editorNode: EditorNode = await fixture(html`
+    const editorNode: CanvasNode = await fixture(html`
       <temba-flow-node
         .node=${testNode}
         .ui=${{ position: { left: 0, top: 0 } }}
@@ -134,7 +134,7 @@ describe('Action Editing Integration', () => {
     };
 
     // Create EditorNode
-    const editorNode: EditorNode = await fixture(html`
+    const editorNode: CanvasNode = await fixture(html`
       <temba-flow-node
         .node=${testNode}
         .ui=${{ position: { left: 0, top: 0 } }}
@@ -192,7 +192,7 @@ describe('Action Editing Integration', () => {
     };
 
     // Create EditorNode
-    const editorNode: EditorNode = await fixture(html`
+    const editorNode: CanvasNode = await fixture(html`
       <temba-flow-node
         .node=${testNode}
         .ui=${{ position: { left: 0, top: 0 } }}

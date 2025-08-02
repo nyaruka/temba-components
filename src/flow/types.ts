@@ -97,7 +97,28 @@ export interface PropertyConfig {
   };
 }
 
-export interface UIConfig {
+export interface NodeConfig {
+  type: string;
+  name?: string;
+  color?: string;
+  action?: ActionConfig;
+  router?: {
+    type: 'switch' | 'random';
+    defaultCategory?: string;
+    operand?: string;
+    configurable?: boolean; // can the rules be configured in the UI
+    rules?: {
+      type: 'has_number_between' | 'has_string' | 'has_value' | 'has_not_value';
+      arguments: string[];
+      categoryName: string;
+    }[];
+  };
+  properties?: { [key: string]: PropertyConfig };
+  toFormData?: (node: any) => any;
+  fromFormData?: (formData: any, originalNode: any) => any;
+}
+
+export interface ActionConfig {
   name: string;
   color: string;
   render?: (node: any, action: any) => TemplateResult;

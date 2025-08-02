@@ -1,6 +1,6 @@
 import '../temba-modules';
 import { html, fixture, expect } from '@open-wc/testing';
-import { EditorNode } from '../src/flow/EditorNode';
+import { CanvasNode } from '../src/flow/CanvasNode';
 import {
   Node,
   NodeUI,
@@ -12,7 +12,7 @@ import { stub, restore, useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 
 describe('EditorNode', () => {
-  let editorNode: EditorNode;
+  let editorNode: CanvasNode;
   let mockPlumber: any;
 
   beforeEach(async () => {
@@ -30,14 +30,14 @@ describe('EditorNode', () => {
 
   describe('basic functionality', () => {
     it('creates render root as element itself', () => {
-      const editorNode = new EditorNode();
+      const editorNode = new CanvasNode();
       expect(editorNode.createRenderRoot()).to.equal(editorNode);
     });
   });
 
   describe('renderAction', () => {
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
     });
 
     it('renders action with known config', () => {
@@ -77,7 +77,7 @@ describe('EditorNode', () => {
 
   describe('renderRouter', () => {
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
     });
 
     it('renders router with result name', () => {
@@ -129,7 +129,7 @@ describe('EditorNode', () => {
 
   describe('renderCategories', () => {
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
     });
 
     it('returns null when no router', () => {
@@ -179,7 +179,7 @@ describe('EditorNode', () => {
 
   describe('renderExit', () => {
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
     });
 
     it('renders exit with connected class when destination exists', async () => {
@@ -214,7 +214,7 @@ describe('EditorNode', () => {
 
   describe('renderTitle', () => {
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
     });
 
     it('renders title with config color and name', async () => {
@@ -235,7 +235,7 @@ describe('EditorNode', () => {
 
   describe('updated lifecycle', () => {
     it('handles updated without node changes', () => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
       (editorNode as any).plumber = mockPlumber;
 
       const changes = new Map();
@@ -250,12 +250,12 @@ describe('EditorNode', () => {
     });
 
     it('verifies updated method exists', () => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
       expect(typeof (editorNode as any).updated).to.equal('function');
     });
 
     it('processes node changes and calls plumber methods', () => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
       (editorNode as any).plumber = mockPlumber;
 
       const mockNode: Node = {
@@ -321,7 +321,7 @@ describe('EditorNode', () => {
       };
 
       // Test individual render methods work
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
 
       // Test renderAction
       const actionResult = (editorNode as any).renderAction(
@@ -343,10 +343,10 @@ describe('EditorNode', () => {
   });
 
   describe('drag and drop functionality', () => {
-    let editorNode: EditorNode;
+    let editorNode: CanvasNode;
 
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
     });
 
     it('renders actions with sortable class and proper IDs', async () => {
@@ -414,7 +414,7 @@ describe('EditorNode', () => {
         exits: []
       };
 
-      let editorNode: EditorNode = await fixture(
+      let editorNode: CanvasNode = await fixture(
         html`<temba-flow-node
           .node=${mockNode}
           .ui=${{ position: { left: 0, top: 0 } }}
@@ -681,7 +681,7 @@ describe('EditorNode', () => {
 
       (window as any).getStore = () => mockStore;
 
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
       (editorNode as any).plumber = mockPlumber;
     });
 
@@ -814,12 +814,12 @@ describe('EditorNode', () => {
   });
 
   describe('action removal', () => {
-    let editorNode: EditorNode;
+    let editorNode: CanvasNode;
     let mockPlumber: any;
     let getStoreStub: any;
 
     beforeEach(() => {
-      editorNode = new EditorNode();
+      editorNode = new CanvasNode();
 
       // Mock plumber
       mockPlumber = {

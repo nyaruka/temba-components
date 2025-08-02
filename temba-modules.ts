@@ -56,8 +56,7 @@ import { Toast } from './src/display/Toast';
 import { Chat } from './src/display/Chat';
 import { MediaPicker } from './src/form/MediaPicker';
 import { Editor } from './src/flow/Editor';
-import { EditorNode } from './src/flow/EditorNode';
-import { ActionEditor } from './src/flow/ActionEditor';
+import { CanvasNode } from './src/flow/CanvasNode';
 import { StickyNote } from './src/flow/StickyNote';
 import { ContactNotepad } from './src/live/ContactNotepad';
 import { ProgressBar } from './src/display/ProgressBar';
@@ -68,6 +67,7 @@ import { UserSelect } from './src/form/select/UserSelect';
 import { WorkspaceSelect } from './src/form/select/WorkspaceSelect';
 import { TembaChart } from './src/live/TembaChart';
 import { RangePicker } from './src/form/RangePicker';
+import { NodeEditor } from './src/flow/NodeEditor';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -135,8 +135,8 @@ addCustomElement('temba-toast', Toast);
 addCustomElement('temba-chat', Chat);
 addCustomElement('temba-media-picker', MediaPicker);
 addCustomElement('temba-flow-editor', Editor);
-addCustomElement('temba-flow-node', EditorNode);
-addCustomElement('temba-action-editor', ActionEditor);
+addCustomElement('temba-node-editor', NodeEditor);
+addCustomElement('temba-flow-node', CanvasNode);
 addCustomElement('temba-sticky-note', StickyNote);
 addCustomElement('temba-contact-notepad', ContactNotepad);
 addCustomElement('temba-progress', ProgressBar);
