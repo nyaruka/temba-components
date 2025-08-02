@@ -106,12 +106,16 @@ export interface NodeConfig {
     type: 'switch' | 'random';
     defaultCategory?: string;
     operand?: string;
+    configurable?: boolean; // can the rules be configured in the UI
     rules?: {
       type: 'has_number_between' | 'has_string' | 'has_value' | 'has_not_value';
       arguments: string[];
       categoryName: string;
     }[];
   };
+  properties?: { [key: string]: PropertyConfig };
+  toFormData?: (node: any) => any;
+  fromFormData?: (formData: any, originalNode: any) => any;
 }
 
 export interface ActionConfig {

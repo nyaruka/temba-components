@@ -290,5 +290,8 @@ export enum CustomEventType {
   NodeDeleted = 'temba-node-deleted',
   ActionEditRequested = 'temba-action-edit-requested',
   ActionSaved = 'temba-action-saved',
-  ActionEditCanceled = 'temba-action-edit-canceled'
+  ActionEditCanceled = 'temba-action-edit-canceled',
+  NodeEditRequested = 'temba-node-edit-requested',
+  NodeSaved = 'temba-node-saved',
+  NodeEditCancelled = 'temba-node-edit-cancelled'
 }

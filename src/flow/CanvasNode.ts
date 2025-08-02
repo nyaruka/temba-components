@@ -1,4 +1,5 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { ACTION_CONFIG, ActionConfig, NODE_CONFIG, NodeConfig } from './config';
 import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
@@ -10,7 +11,7 @@ import { CustomEventType } from '../interfaces';
 
 const DRAG_THRESHOLD = 5;
 
-export class EditorNode extends RapidElement {
+export class CanvasNode extends RapidElement {
   createRenderRoot() {
     return this;
   }
@@ -41,6 +42,10 @@ export class EditorNode extends RapidElement {
   private pendingActionClick: { action: Action; event: MouseEvent } | null =
     null;
 
+  // Track node click state to distinguish from drag
+  private nodeClickStartPos: { x: number; y: number } | null = null;
+  private pendingNodeClick: { event: MouseEvent } | null = null;
+
   static get styles() {
     return css`
 
@@ -56,6 +61,11 @@ export class EditorNode extends RapidElement {
 
       }
 
+      /* Cap width for execute_actions nodes */
+      .node.execute-actions {
+        max-width: 200px;
+      }
+
       .node:hover {
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
       }
@@ -67,7 +77,6 @@ export class EditorNode extends RapidElement {
       }
 
       .action {
-        max-width: 200px;
         position: relative;
       }
 
@@ -219,6 +228,10 @@ export class EditorNode extends RapidElement {
       .category .title {
         font-weight: normal;
         font-size: 1em;
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .router .body {
@@ -328,10 +341,14 @@ export class EditorNode extends RapidElement {
   ): void {
     super.updated(changes);
     if (changes.has('node')) {
-      // make our initial connections
-      if (changes.get('node') === undefined) {
+      // Only proceed if plumber is available (for tests that don't set it up)
+      if (this.plumber) {
+        this.plumber.removeNodeConnections(this.node.uuid);
+        // make our initial connections
         for (const exit of this.node.exits) {
           if (!exit.destination_uuid) {
+            // if we have no destination, then we are a source
+            // so make our source endpoint
             this.plumber.makeSource(exit.uuid);
           } else {
             this.plumber.connectIds(
@@ -341,17 +358,21 @@ export class EditorNode extends RapidElement {
             );
           }
         }
+
+        this.plumber.revalidate([this.node.uuid]);
       }
 
       const ele = this.parentElement;
-      const rect = ele.getBoundingClientRect();
+      if (ele) {
+        const rect = ele.getBoundingClientRect();
 
-      getStore()
-        ?.getState()
-        .expandCanvas(
-          this.ui.position.left + rect.width,
-          this.ui.position.top + rect.height
-        );
+        getStore()
+          ?.getState()
+          .expandCanvas(
+            this.ui.position.left + rect.width,
+            this.ui.position.top + rect.height
+          );
+      }
     }
   }
 
@@ -669,6 +690,92 @@ export class EditorNode extends RapidElement {
     });
   }
 
+  private handleNodeEditClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Don't handle clicks on the remove button or when node is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(this.node.uuid)
+    ) {
+      return;
+    }
+
+    // Fire node edit requested event if the node has a router
+    if (this.node.router) {
+      this.fireCustomEvent(CustomEventType.NodeEditRequested, {
+        node: this.node,
+        nodeUI: this.ui
+      });
+    }
+  }
+
+  private handleNodeMouseDown(event: MouseEvent): void {
+    // Don't handle clicks on the remove button or when node is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(this.node.uuid)
+    ) {
+      return;
+    }
+
+    // Store the starting position for later comparison
+    // Don't prevent default - let the Editor's drag system work normally
+    this.nodeClickStartPos = { x: event.clientX, y: event.clientY };
+    this.pendingNodeClick = { event };
+  }
+
+  private handleNodeMouseUp(event: MouseEvent): void {
+    // Don't handle if we don't have a pending click
+    if (!this.pendingNodeClick) {
+      this.nodeClickStartPos = null;
+      this.pendingNodeClick = null;
+      return;
+    }
+
+    // Don't handle clicks on the remove button or when node is in removing state
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      this.actionRemovingState.has(this.node.uuid)
+    ) {
+      this.nodeClickStartPos = null;
+      this.pendingNodeClick = null;
+      return;
+    }
+
+    // Check if the mouse moved beyond the drag threshold
+    if (this.nodeClickStartPos) {
+      const deltaX = event.clientX - this.nodeClickStartPos.x;
+      const deltaY = event.clientY - this.nodeClickStartPos.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // Check if the Editor is currently in dragging mode
+      const editor = this.closest('temba-flow-editor') as any;
+      const editorWasDragging = editor?.dragging;
+
+      // Only fire the node edit event if we haven't dragged beyond the threshold
+      // AND either there's no Editor parent (test case) or the Editor didn't drag the node
+      if (distance <= 5 && (!editor || !editorWasDragging)) {
+        // Using literal 5 instead of DRAG_THRESHOLD since it's not imported
+        // Fire event to request node editing if the node has a router
+        if (this.node.router) {
+          this.fireCustomEvent(CustomEventType.NodeEditRequested, {
+            node: this.node,
+            nodeUI: this.ui
+          });
+        }
+      }
+    }
+
+    // Clean up
+    this.nodeClickStartPos = null;
+    this.pendingNodeClick = null;
+  }
+
   private renderTitle(config: ActionConfig, isRemoving: boolean = false) {
     return html`<div class="title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
@@ -739,12 +846,15 @@ export class EditorNode extends RapidElement {
   private renderRouter(router: Router, ui: NodeUI) {
     const nodeConfig = NODE_CONFIG[ui.type];
     if (nodeConfig) {
+      // For tests that call renderRouter directly without setting this.node
+      const hasActions = this.node ? this.node.actions.length > 0 : false;
       const isRemoving =
+        this.node &&
         this.node.actions.length === 0 &&
         this.actionRemovingState.has(this.node.uuid);
 
       return html`<div class="router" style="position: relative;">
-        ${this.node.actions.length === 0
+        ${!hasActions
           ? html` <button
                 class="remove-button"
                 @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
@@ -752,10 +862,21 @@ export class EditorNode extends RapidElement {
               >
                 ✕
               </button>
-              ${this.renderNodeTitle(nodeConfig, isRemoving)}`
+              <div
+                @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
+                @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+                style="cursor: pointer;"
+              >
+                ${this.renderNodeTitle(nodeConfig, isRemoving)}
+              </div>`
           : ''}
         ${router.result_name
-          ? html`<div class="body">
+          ? html`<div
+              class="body"
+              @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
+              @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+              style="cursor: pointer;"
+            >
               Save as
               <div class="result-name">${router.result_name}</div>
             </div>`
@@ -768,18 +889,28 @@ export class EditorNode extends RapidElement {
     if (!node.router || !node.router.categories) {
       return null;
     }
-    const categories = node.router.categories.map((category) => {
-      const exit = node.exits.find(
-        (exit: Exit) => exit.uuid == category.exit_uuid
-      );
 
-      return html`<div class="category">
-        <div class="title">${category.name}</div>
-        ${this.renderExit(exit)}
-      </div>`;
-    });
+    return html`<div class="categories">
+      ${repeat(
+        node.router.categories,
+        (category) => category.uuid,
+        (category) => {
+          const exit = node.exits.find(
+            (exit: Exit) => exit.uuid == category.exit_uuid
+          );
 
-    return html`<div class="categories">${categories}</div>`;
+          return html`<div
+            class="category"
+            @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
+            @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+            style="cursor: pointer;"
+          >
+            <div class="title">${category.name}</div>
+            ${this.renderExit(exit)}
+          </div>`;
+        }
+      )}
+    </div>`;
   }
 
   private renderExit(exit: Exit): TemplateResult {
@@ -806,7 +937,9 @@ export class EditorNode extends RapidElement {
     return html`
       <div
         id="${this.node.uuid}"
-        class="node"
+        class="node ${this.ui.type === 'execute_actions'
+          ? 'execute-actions'
+          : ''}"
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
         ${this.node.actions.length > 0
@@ -815,13 +948,17 @@ export class EditorNode extends RapidElement {
                 dragHandle="drag-handle"
                 @temba-order-changed="${this.handleActionOrderChanged}"
               >
-                ${this.node.actions.map((actionSpec, index) => {
-                  return this.renderAction(this.node, actionSpec, index);
-                })}
+                ${repeat(
+                  this.node.actions,
+                  (action) => action.uuid,
+                  (action, index) => this.renderAction(this.node, action, index)
+                )}
               </temba-sortable-list>`
-            : html`${this.node.actions.map((actionSpec, index) => {
-                return this.renderAction(this.node, actionSpec, index);
-              })}`
+            : html`${repeat(
+                this.node.actions,
+                (action) => action.uuid,
+                (action, index) => this.renderAction(this.node, action, index)
+              )}`
           : !this.node.router && nodeConfig && nodeConfig.name
           ? html`<div class="router" style="position: relative;">
               <button
@@ -841,9 +978,11 @@ export class EditorNode extends RapidElement {
           ? html` ${this.renderRouter(this.node.router, this.ui)}
             ${this.renderCategories(this.node)}`
           : html`<div class="action-exits">
-              ${this.node.exits.map((exit) => {
-                return this.renderExit(exit);
-              })}
+              ${repeat(
+                this.node.exits,
+                (exit) => exit.uuid,
+                (exit) => this.renderExit(exit)
+              )}
             </div>`}
       </div>
     `;

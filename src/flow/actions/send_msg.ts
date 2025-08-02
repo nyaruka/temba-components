@@ -19,8 +19,6 @@ export const send_msg: ActionConfig = {
         : null}
     `;
   },
-
-  // Form-level transformations
   toFormData: (action: SendMsg) => {
     return {
       uuid: action.uuid,
@@ -31,7 +29,6 @@ export const send_msg: ActionConfig = {
       }))
     };
   },
-
   form: {
     text: {
       label: 'Message Text',

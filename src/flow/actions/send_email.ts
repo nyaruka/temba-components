@@ -57,7 +57,6 @@ export const send_email: ActionConfig = {
       }
     },
     body: {
-      label: 'Body',
       required: true,
       widget: {
         type: 'temba-completion',

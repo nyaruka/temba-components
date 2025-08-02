@@ -1,12 +1,12 @@
 import { html } from 'lit-html';
 import { ActionConfig, COLORS } from '../types';
 import { Node, AddInputLabels } from '../../store/flow-definition';
+import { renderNamedObjects } from '../utils';
 
 export const add_input_labels: ActionConfig = {
   name: 'Add Input Labels',
-  color: COLORS.add,
-  render: (_node: Node, _action: AddInputLabels) => {
-    // This will need to be implemented based on the actual render logic
-    return html`<div>Add Input Labels</div>`;
+  color: COLORS.update,
+  render: (_node: Node, action: AddInputLabels) => {
+    return html`<div>${renderNamedObjects(action.labels, 'label')}</div>`;
   }
 };

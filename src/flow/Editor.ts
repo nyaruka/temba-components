@@ -1,7 +1,13 @@
 import { html, TemplateResult } from 'lit-html';
 import { css, PropertyValueMap, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { FlowDefinition, FlowPosition, Action } from '../store/flow-definition';
+import {
+  FlowDefinition,
+  FlowPosition,
+  Action,
+  Node,
+  NodeUI
+} from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
@@ -9,7 +15,7 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType } from '../interfaces';
 
 import { Plumber } from './Plumber';
-import { EditorNode } from './EditorNode';
+import { CanvasNode } from './CanvasNode';
 import { Dialog } from '../layout/Dialog';
 import { Connection } from '@jsplumb/browser-ui';
 
@@ -113,12 +119,15 @@ export class Editor extends RapidElement {
   @state()
   private isValidTarget = true;
 
-  // Action editor state
+  // NodeEditor state - handles both node and action editing
   @state()
-  private editingAction: Action | null = null;
+  private editingNode: Node | null = null;
 
   @state()
-  private editingNodeUuid: string | null = null;
+  private editingNodeUI: NodeUI | null = null;
+
+  @state()
+  private editingAction: Action | null = null;
 
   private canvasMouseDown = false;
 
@@ -410,6 +419,12 @@ export class Editor extends RapidElement {
     this.addEventListener(
       CustomEventType.ActionEditRequested,
       this.handleActionEditRequested.bind(this)
+    );
+
+    // Listen for node edit requests from flow nodes
+    this.addEventListener(
+      CustomEventType.NodeEditRequested,
+      this.handleNodeEditRequested.bind(this)
     );
   }
 
@@ -949,51 +964,99 @@ export class Editor extends RapidElement {
   }
 
   private handleActionEditRequested(event: CustomEvent): void {
+    // For action editing, we set the action and find the corresponding node
     this.editingAction = event.detail.action;
-    this.editingNodeUuid = event.detail.nodeUuid;
+
+    // Find the node that contains this action
+    const nodeUuid = event.detail.nodeUuid;
+    const node = this.definition.nodes.find((n) => n.uuid === nodeUuid);
+
+    if (node) {
+      this.editingNode = node;
+      this.editingNodeUI = this.definition._ui.nodes[nodeUuid];
+    }
+  }
+  private handleNodeEditRequested(event: CustomEvent): void {
+    this.editingNode = event.detail.node;
+    this.editingNodeUI = event.detail.nodeUI;
   }
 
   private handleActionSaved(updatedAction: Action): void {
-    if (this.editingNodeUuid && this.editingAction) {
-      // Find the node and update the specific action
-      const node = this.definition.nodes.find(
-        (n) => n.uuid === this.editingNodeUuid
+    if (this.editingNode && this.editingAction) {
+      // Update the specific action in the node
+      const updatedActions = this.editingNode.actions.map((action) =>
+        action.uuid === this.editingAction.uuid ? updatedAction : action
       );
-      if (node) {
-        const updatedActions = node.actions.map((action) =>
-          action.uuid === this.editingAction.uuid ? updatedAction : action
-        );
-        const updatedNode = { ...node, actions: updatedActions };
+      const updatedNode = { ...this.editingNode, actions: updatedActions };
 
-        // Update the node in the store
-        getStore()?.getState().updateNode(this.editingNodeUuid, updatedNode);
+      // Update the node in the store
+      getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
 
-        // Repaint jsplumb connections in case node size changed
-        if (this.plumber) {
-          // Use requestAnimationFrame to ensure DOM has been updated first
-          requestAnimationFrame(() => {
-            this.plumber.repaintEverything();
-          });
-        }
+      // Repaint jsplumb connections in case node size changed
+      if (this.plumber) {
+        // Use requestAnimationFrame to ensure DOM has been updated first
+        requestAnimationFrame(() => {
+          this.plumber.repaintEverything();
+        });
       }
     }
-    this.closeActionEditor();
+    this.closeNodeEditor();
   }
 
-  private closeActionEditor(): void {
+  private closeNodeEditor(): void {
+    this.editingNode = null;
+    this.editingNodeUI = null;
     this.editingAction = null;
-    this.editingNodeUuid = null;
   }
 
   private handleActionEditCanceled(): void {
-    this.closeActionEditor();
+    this.closeNodeEditor();
+  }
+
+  private handleNodeSaved(updatedNode: Node): void {
+    if (this.editingNode) {
+      // Clean up jsPlumb connections for removed exits before updating the node
+      if (this.plumber) {
+        const oldExits = this.editingNode.exits || [];
+        const newExits = updatedNode.exits || [];
+
+        // Find exits that were removed
+        const removedExits = oldExits.filter(
+          (oldExit) =>
+            !newExits.find((newExit) => newExit.uuid === oldExit.uuid)
+        );
+
+        // Remove jsPlumb connections for removed exits
+        removedExits.forEach((exit) => {
+          this.plumber.removeExitConnection(exit.uuid);
+        });
+      }
+
+      this.plumber.revalidate([updatedNode.uuid]);
+
+      // Update the node in the store
+      getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+
+      // Repaint jsplumb connections in case node size changed
+      if (this.plumber) {
+        // Use requestAnimationFrame to ensure DOM has been updated first
+        requestAnimationFrame(() => {
+          this.plumber.repaintEverything();
+        });
+      }
+    }
+    this.closeNodeEditor();
+  }
+
+  private handleNodeEditCanceled(): void {
+    this.closeNodeEditor();
   }
 
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
       ${unsafeCSS(Editor.styles.cssText)}
-      ${unsafeCSS(EditorNode.styles.cssText)}
+      ${unsafeCSS(CanvasNode.styles.cssText)}
     </style>`;
 
     const stickies = this.definition?._ui?.stickies || {};
@@ -1064,13 +1127,17 @@ export class Editor extends RapidElement {
         </div>
       </div>
 
-      ${this.editingAction
-        ? html`<temba-action-editor
+      ${this.editingNode || this.editingAction
+        ? html`<temba-node-editor
+            .node=${this.editingNode}
+            .nodeUI=${this.editingNodeUI}
             .action=${this.editingAction}
+            @temba-node-saved=${(e: CustomEvent) =>
+              this.handleNodeSaved(e.detail.node)}
             @temba-action-saved=${(e: CustomEvent) =>
               this.handleActionSaved(e.detail.action)}
-            @temba-action-edit-canceled=${this.handleActionEditCanceled}
-          ></temba-action-editor>`
+            @temba-node-edit-cancelled=${this.handleNodeEditCanceled}
+          ></temba-node-editor>`
         : ''} `;
   }
 }
