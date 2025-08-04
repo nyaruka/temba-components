@@ -77,10 +77,6 @@ export class Checkbox extends FormElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    // Normalize undefined label to null to match test expectations
-    if (this.label === undefined) {
-      this.label = null;
-    }
   }
 
   public updated(changes: Map<string, any>) {

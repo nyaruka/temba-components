@@ -458,7 +458,7 @@ export class Dialog extends ResizeElement {
           ></temba-loading>
         </div>
 
-        <div id="modal" class="flex">
+        <div class="flex">
           <div class="grow-top" style="${
             this.isMobile() ? 'flex-grow:0' : ''
           }"></div>
