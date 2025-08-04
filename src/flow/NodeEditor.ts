@@ -780,7 +780,9 @@ export class NodeEditor extends RapidElement {
       >
         <div class="node-editor-form">
           ${this.renderActionForm()}
-          ${nodeConfig.router?.configurable ? this.renderRouterSection() : null}
+          ${nodeConfig?.router?.configurable
+            ? this.renderRouterSection()
+            : null}
         </div>
       </temba-dialog>
     `;
