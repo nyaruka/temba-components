@@ -25,7 +25,9 @@ jobs:
         uses: devcontainers/ci@v0.3
         continue-on-error: true
         with:
-          runCmd: yarn validate 2>&1 | tee validate_output.log
+          runCmd: |
+            yarn validate 2>&1 | tee validate_output.log
+            exit ${PIPESTATUS[0]}
           push: never
           env: |
             CI=true
