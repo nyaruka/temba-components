@@ -89,7 +89,7 @@ jobs:
             - **Functions:** ${functionsCoverage}
             - **Branches:** ${branchesCoverage}
 
-            [View detailed coverage report](https://s3.us-east-1.amazonaws.com/dev.temba.io/temba-components/coverage/pr-${context.payload.number}/index.html)
+            [View detailed coverage report](https://s3.us-east-1.amazonaws.com/dev.temba.io/coverage/temba-components/pr-${context.payload.number}/index.html)
             `;
 
             // Find existing coverage comment
@@ -139,10 +139,10 @@ jobs:
             
             if [ "${{ github.event_name }}" == "pull_request" ]; then
               # For PRs, upload to a PR-specific folder
-              S3_PATH="s3://dev.temba.io/temba-components/coverage/pr-${{ github.event.number }}/"
+              S3_PATH="s3://dev.temba.io/coverage/temba-components/pr-${{ github.event.number }}/"
             else
               # For main branch, upload to main folder
-              S3_PATH="s3://dev.temba.io/temba-components/coverage/main/"
+              S3_PATH="s3://dev.temba.io/coverage/temba-components/main/"
             fi
             
             aws s3 sync coverage/lcov-report/ "$S3_PATH" --delete
