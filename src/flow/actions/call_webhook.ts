@@ -5,6 +5,7 @@ import { Node, CallWebhook } from '../../store/flow-definition';
 export const call_webhook: ActionConfig = {
   name: 'Call Webhook',
   color: COLORS.call,
+  evaluated: ['urls', 'headers', 'body'],
   render: (_node: Node, action: CallWebhook) => {
     return html`<div
       style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"

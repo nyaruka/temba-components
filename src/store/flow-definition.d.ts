@@ -91,6 +91,10 @@ export interface SetContactName extends Action {
 
 export interface CallWebhook extends Action {
   url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: string;
+  result_name?: string;
 }
 
 export interface AddToGroup extends Action {

@@ -121,6 +121,7 @@ export interface NodeConfig {
 export interface ActionConfig {
   name: string;
   color: string;
+  evaluated?: string[];
   render?: (node: any, action: any) => TemplateResult;
 
   // Action editor configuration
