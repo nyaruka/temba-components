@@ -21,7 +21,7 @@ const assertDialogScreenshot = async (
   await assertScreenshot(screenshotName, getClip(dialog));
 };
 
-xdescribe('temba-node-editor', () => {
+describe('temba-node-editor', () => {
   it('can be created', async () => {
     const el = (await fixture(html`
       <temba-node-editor .isOpen=${true}></temba-node-editor>
