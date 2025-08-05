@@ -75,7 +75,7 @@
             },
             {
               "uuid": "ee972b45-3bfe-4e93-9d4e-e9c8f8ffc587",
-              "name": "Blue",
+              "name": "Blue but longer so it hits the max width for categories in nodes",
               "exit_uuid": "3dfd68c4-0184-49d8-b2a4-0bbb62425f33"
             },
             {
@@ -152,14 +152,14 @@
           ],
           "categories": [
             {
-              "uuid": "0bb08076-45e2-4ca1-b321-1506f1779198",
+              "uuid": "1b9100a4-f3f0-410e-8b6f-d339bf58a13a",
               "name": "Success",
-              "exit_uuid": "4f1f8e3b-887c-42f5-bf59-fa59c5245dc2"
+              "exit_uuid": "e6d66511-f532-44c5-acbe-bede3963e677"
             },
             {
-              "uuid": "67fc0e41-eeb2-4f54-9f71-abdd64c097f4",
+              "uuid": "13915377-5eb1-46c5-8955-78646b75b8ef",
               "name": "Failure",
-              "exit_uuid": "4929ff2a-35cf-43a5-8353-dfede604add7"
+              "exit_uuid": "8087c747-eebc-4f35-8032-33490ba390d6"
             }
           ],
           "default_category_uuid": "67fc0e41-eeb2-4f54-9f71-abdd64c097f4",
@@ -167,12 +167,12 @@
         },
         "exits": [
           {
-            "uuid": "4f1f8e3b-887c-42f5-bf59-fa59c5245dc2",
+            "uuid": "e6d66511-f532-44c5-acbe-bede3963e677",
             "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
           },
           {
-            "uuid": "4929ff2a-35cf-43a5-8353-dfede604add7",
-            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
+            "uuid": "8087c747-eebc-4f35-8032-33490ba390d6",
+            "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
           }
         ]
       },
@@ -180,9 +180,50 @@
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
           {
+            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8",
+            "type": "send_msg",
+            "text": "Excellent choices.",
+            "quick_replies": [
+              "blooooop",
+              "bleep"
+            ]
+          },
+          {
+            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
+            "type": "add_contact_groups",
+            "groups": [
+              {
+                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
+                "name": "Empty",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              },
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
+              }
+            ]
+          },
+          {
             "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
             "type": "remove_contact_groups",
             "groups": [
+              {
+                "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
+                "name": "Reporters",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              },
+              {
+                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
+                "name": "Empty",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              },
               {
                 "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
                 "name": "Some Really Long Group Name",
@@ -194,44 +235,23 @@
                 "query": "name ~ \"poots\" OR name ~ \"dave\"",
                 "status": "ready",
                 "count": 1028
+              },
+              {
+                "uuid": "94e3ff12-9206-4ce8-87ab-934a864a1819",
+                "name": "Youth",
+                "query": "age <= 18",
+                "status": "ready",
+                "count": 174
               }
             ],
             "all_groups": false
           },
           {
-            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8",
-            "type": "send_msg",
-            "text": "Excellent choice.",
-            "quick_replies": [
-              "blooooop",
-              "bleep"
-            ]
-          },
-          {
-            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
-            "type": "add_contact_groups",
-            "groups": [
-              {
-                "uuid": "269e8abf-e81b-404c-82ce-45ff42d13769",
-                "name": "Empty",
-                "query": null,
-                "status": "ready",
-                "system": false,
-                "count": 0
-              },
-              {
-                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
-                "name": "Some Really Long Group Name",
-                "count": 2028
-              }
-            ]
-          },
-          {
             "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7",
             "type": "send_email",
             "addresses": [
-              "name@domain.com",
-              "mistermeowface@whiskers.com"
+              "mistermeowface@whiskers.com",
+              "name@domain.com"
             ],
             "subject": "Did you get this?",
             "body": "I hope it arrived! But this message is a bit longer."
@@ -516,7 +536,7 @@
           },
           {
             "uuid": "5ef3425c-f015-46a5-9975-046879eba986",
-            "destination_uuid": "e780a7ef-9dad-45a3-abda-11200a9afbf4"
+            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
           }
         ]
       },
@@ -776,7 +796,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 240,
+            "left": 260,
             "top": 0
           },
           "type": "execute_actions"
@@ -794,31 +814,31 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 1020,
-            "top": 100
+            "left": 800,
+            "top": 0
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 240,
-            "top": 320
+            "top": 380
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 580,
-            "top": 840
+            "left": 520,
+            "top": 680
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 820,
-            "top": 240
+            "left": 1020,
+            "top": 220
           },
           "config": {
             "operand": {
@@ -832,8 +852,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 1020,
-            "top": 440
+            "left": 720,
+            "top": 240
           },
           "config": {
             "cases": {}
@@ -842,16 +862,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 780,
-            "top": 380
+            "left": 940,
+            "top": 360
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 900,
-            "top": 560
+            "left": 800,
+            "top": 600
           },
           "config": {
             "operand": {
@@ -865,8 +885,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 520,
-            "top": 340
+            "left": 540,
+            "top": 400
           },
           "config": {
             "cases": {}
@@ -875,8 +895,8 @@
         "e780a7ef-9dad-45a3-abda-11200a9afbf4": {
           "type": "split_by_scheme",
           "position": {
-            "left": 580,
-            "top": 500
+            "left": 480,
+            "top": 560
           },
           "config": {
             "cases": {}
@@ -892,16 +912,16 @@
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 900,
-            "top": 740
+            "left": 620,
+            "top": 840
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 900,
-            "top": 860
+            "left": 920,
+            "top": 900
           },
           "config": {}
         }
@@ -951,6 +971,15 @@
           "title": "Gray Note",
           "body": "And a nice, little gray message to go with it.",
           "color": "gray"
+        },
+        "9cd5ccdd-b87b-43f9-8442-5932a5408702": {
+          "position": {
+            "left": 20,
+            "top": 1380
+          },
+          "title": "",
+          "body": "",
+          "color": "pink"
         }
       }
     },

@@ -71,7 +71,7 @@ describe('temba-checkbox', () => {
     const el: Checkbox = await fixture(html`
       <temba-checkbox name="My Checkbox"></temba-checkbox>
     `);
-    expect(el.label).to.equal(null);
+    expect(el.label).to.equal(undefined);
     //the ".wrapper.label" style results in the background hover effect
     const wrapperDivEl = el.shadowRoot.querySelector(
       'div.wrapper.label'
