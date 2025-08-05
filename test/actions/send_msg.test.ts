@@ -89,6 +89,15 @@ describe('send_msg action config', () => {
       } as SendMsg,
       'long-quick-replies'
     );
+
+    helper.testAction(
+      {
+        uuid: 'test-action-7',
+        type: 'send_msg',
+        text: 'This action definition is missing quick_replies altogether.'
+      } as SendMsg,
+      'text-without-quick-replies'
+    );
   });
 
   describe('validation edge cases', () => {

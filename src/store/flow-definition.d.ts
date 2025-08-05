@@ -76,7 +76,7 @@ export interface Group extends NamedObject {
 
 export interface SendMsg extends Action {
   text: string;
-  quick_replies: string[];
+  quick_replies?: string[];
 }
 
 export interface SetRunResult extends Action {

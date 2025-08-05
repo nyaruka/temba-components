@@ -78,6 +78,7 @@ export class CanvasNode extends RapidElement {
 
       .action {
         position: relative;
+        font-size: 13px;
       }
 
       .action .remove-button {
@@ -147,7 +148,7 @@ export class CanvasNode extends RapidElement {
       }
 
       .action .body {
-        padding: 1em;
+        padding: 0.75em;
         word-wrap: break-word;
         overflow-wrap: break-word;
         hyphens: auto;
