@@ -189,24 +189,6 @@
             ]
           },
           {
-            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
-            "type": "add_contact_groups",
-            "groups": [
-              {
-                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
-                "name": "Empty",
-                "query": null,
-                "status": "ready",
-                "count": 0
-              },
-              {
-                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
-                "name": "Some Really Long Group Name",
-                "count": 2028
-              }
-            ]
-          },
-          {
             "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
             "type": "remove_contact_groups",
             "groups": [
@@ -247,14 +229,22 @@
             "all_groups": false
           },
           {
-            "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7",
-            "type": "send_email",
-            "addresses": [
-              "mistermeowface@whiskers.com",
-              "name@domain.com"
-            ],
-            "subject": "Did you get this?",
-            "body": "I hope it arrived! But this message is a bit longer."
+            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
+            "type": "add_contact_groups",
+            "groups": [
+              {
+                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
+                "name": "Empty",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              },
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
+              }
+            ]
           },
           {
             "type": "set_run_result",
@@ -303,6 +293,16 @@
                 "destination_uuid": null
               }
             ]
+          },
+          {
+            "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7",
+            "type": "send_email",
+            "addresses": [
+              "mistermeowface@whiskers.com",
+              "name@domain.com"
+            ],
+            "subject": "Did you get this?",
+            "body": "I hope it arrived! But this message is a bit longer."
           },
           {
             "type": "add_contact_urn",
@@ -804,7 +804,7 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 240,
+            "left": 260,
             "top": 160
           },
           "config": {
@@ -822,7 +822,7 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 240,
-            "top": 380
+            "top": 340
           },
           "type": "execute_actions"
         },
@@ -885,8 +885,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 540,
-            "top": 400
+            "left": 500,
+            "top": 360
           },
           "config": {
             "cases": {}
@@ -971,15 +971,6 @@
           "title": "Gray Note",
           "body": "And a nice, little gray message to go with it.",
           "color": "gray"
-        },
-        "9cd5ccdd-b87b-43f9-8442-5932a5408702": {
-          "position": {
-            "left": 20,
-            "top": 1380
-          },
-          "title": "",
-          "body": "",
-          "color": "pink"
         }
       }
     },
