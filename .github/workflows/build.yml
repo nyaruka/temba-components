@@ -89,7 +89,7 @@ jobs:
             - **Functions:** ${functionsCoverage}
             - **Branches:** ${branchesCoverage}
 
-            [View detailed coverage report](https://s3.us-east-1.amazonaws.com/dev.temba.io/coverage/temba-components/pr-${context.payload.number}/index.html)
+            [Coverage Report](https://s3.us-east-1.amazonaws.com/dev.temba.io/coverage/temba-components/pr-${context.payload.number}/index.html)
             `;
 
             // Find existing coverage comment
