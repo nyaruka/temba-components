@@ -5,15 +5,16 @@ import { Node, NodeUI, Action } from '../store/flow-definition';
 import {
   ValidationResult,
   NodeConfig,
-  PropertyConfig,
   NODE_CONFIG,
   ACTION_CONFIG,
-  getDefaultComponentProps,
-  TextInputAttributes,
-  CompletionAttributes,
-  CheckboxAttributes,
-  SelectAttributes
+  FieldConfig,
+  ActionConfig
 } from './config';
+import {
+  SelectFieldConfig,
+  CheckboxFieldConfig,
+  TextareaFieldConfig
+} from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 
@@ -32,6 +33,19 @@ export class NodeEditor extends RapidElement {
       .form-field {
         display: flex;
         flex-direction: column;
+      }
+
+      .form-field label {
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: #333;
+        font-size: 14px;
+      }
+
+      .field-errors {
+        color: #dc2626;
+        font-size: 12px;
+        margin-top: 4px;
       }
 
       .form-actions {
@@ -126,7 +140,12 @@ export class NodeEditor extends RapidElement {
         this.formData = actionConfig.toFormData(this.action);
       } else {
         this.formData = { ...this.action };
+        // Apply smart transformations for select fields that expect {name, value} format
+        this.applySmartSelectTransformations(actionConfig);
       }
+
+      // Convert Record objects to array format for key-value editors
+      this.processFormDataForEditing();
     } else if (this.node) {
       // Node editing mode - use node config
       const nodeConfig = this.getNodeConfig();
@@ -135,7 +154,80 @@ export class NodeEditor extends RapidElement {
       } else {
         this.formData = { ...this.node };
       }
+
+      // Convert Record objects to array format for key-value editors
+      this.processFormDataForEditing();
     }
+  }
+
+  private processFormDataForEditing(): void {
+    const processed = { ...this.formData };
+
+    // Convert Record objects to key-value arrays for key-value editors
+    Object.keys(processed).forEach((key) => {
+      const value = processed[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Check if this field should be a key-value editor
+        const isKeyValueField = this.isKeyValueField(key);
+        if (isKeyValueField) {
+          // Convert Record to array format
+          processed[key] = Object.entries(value).map(([k, v]) => ({
+            key: k,
+            value: v
+          }));
+        }
+      }
+    });
+
+    this.formData = processed;
+  }
+
+  private applySmartSelectTransformations(actionConfig: ActionConfig): void {
+    if (!actionConfig) return;
+
+    const fields = actionConfig.form;
+    if (!fields) return;
+
+    Object.entries(fields).forEach(([fieldName, fieldConfig]) => {
+      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
+        const value = this.formData[fieldName];
+        if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          typeof value[0] === 'string'
+        ) {
+          // Transform string array to select options format
+          this.formData[fieldName] = value.map((item: string) => ({
+            name: item,
+            value: item
+          }));
+        }
+      }
+    });
+  }
+
+  private shouldApplySmartSelectTransformation(
+    fieldName: string,
+    fieldConfig: any
+  ): boolean {
+    const selectConfig = fieldConfig as SelectFieldConfig;
+    return (
+      (fieldConfig.type === 'select' &&
+        (selectConfig.multi || selectConfig.tags) &&
+        // Don't transform if already has explicit transformations
+        !this.action) ||
+      !ACTION_CONFIG[this.action.type]?.toFormData
+    );
+  }
+
+  private isKeyValueField(fieldName: string): boolean {
+    // Check if this field is configured as a key-value type
+    if (this.action) {
+      const actionConfig = ACTION_CONFIG[this.action.type];
+      const fields = actionConfig?.form;
+      return fields?.[fieldName]?.type === 'key-value';
+    }
+    return false;
   }
 
   private getNodeConfig(): NodeConfig | null {
@@ -175,28 +267,64 @@ export class NodeEditor extends RapidElement {
       return;
     }
 
+    // Process form data to convert key-value arrays to Records before saving
+    const processedFormData = this.processFormDataForSave();
+
     // Determine whether to use node or action saving based on context
     // If we have a node with a router, always use node saving (even if action is set)
     // because router configuration is handled at the node level
     if (this.node && this.node.router) {
       // Node editing mode with router - use formDataToNode
-      const updatedNode = this.formDataToNode();
+      const updatedNode = this.formDataToNode(processedFormData);
       this.fireCustomEvent(CustomEventType.NodeSaved, {
         node: updatedNode
       });
     } else if (this.action) {
       // Pure action editing mode (no router)
-      const updatedAction = this.formDataToAction();
+      const updatedAction = this.formDataToAction(processedFormData);
       this.fireCustomEvent(CustomEventType.ActionSaved, {
         action: updatedAction
       });
     } else if (this.node) {
       // Node editing mode without router
-      const updatedNode = this.formDataToNode();
+      const updatedNode = this.formDataToNode(processedFormData);
       this.fireCustomEvent(CustomEventType.NodeSaved, {
         node: updatedNode
       });
     }
+  }
+
+  private processFormDataForSave(): any {
+    const processed = { ...this.formData };
+
+    // Convert key-value arrays to Records
+    Object.keys(processed).forEach((key) => {
+      const value = processed[key];
+      if (
+        Array.isArray(value) &&
+        value.length > 0 &&
+        typeof value[0] === 'object' &&
+        'key' in value[0] &&
+        'value' in value[0]
+      ) {
+        // This is a key-value array, convert to Record
+        const record: Record<string, string> = {};
+        value.forEach(({ key: k, value: v }) => {
+          if (k.trim() !== '' || v.trim() !== '') {
+            record[k] = v;
+          }
+        });
+        processed[key] = record;
+      } else if (Array.isArray(value) && value.length === 0) {
+        // Empty key-value array should become empty object
+        const isKeyValueField = this.isKeyValueField(key);
+        if (isKeyValueField) {
+          processed[key] = {};
+        }
+      }
+    });
+
+    return processed;
   }
 
   private handleCancel(): void {
@@ -207,70 +335,63 @@ export class NodeEditor extends RapidElement {
     const errors: { [key: string]: string } = {};
 
     if (this.action) {
-      // Action validation - follow ActionEditor's pattern exactly
+      // Action validation using fields configuration
       const actionConfig = ACTION_CONFIG[this.action.type];
 
-      // Convert form data back to action for validation
-      let actionForValidation: Action;
+      // Check if new field configuration system is available
+      if (actionConfig?.form) {
+        Object.entries(actionConfig?.form).forEach(
+          ([fieldName, fieldConfig]) => {
+            const value = this.formData[fieldName];
 
-      if (actionConfig?.fromFormData) {
-        actionForValidation = actionConfig.fromFormData(this.formData);
-      } else {
-        // Provide default 1:1 mapping when no transformation is provided
-        actionForValidation = {
-          ...this.action,
-          ...this.formData
-        } as Action;
+            // Check required fields
+            if (
+              (fieldConfig as any).required &&
+              (!value || (Array.isArray(value) && value.length === 0))
+            ) {
+              errors[fieldName] = `${
+                (fieldConfig as any).label || fieldName
+              } is required`;
+            }
+
+            // Check minLength for text fields
+            if (
+              typeof value === 'string' &&
+              (fieldConfig as any).minLength &&
+              value.length < (fieldConfig as any).minLength
+            ) {
+              errors[fieldName] = `${
+                (fieldConfig as any).label || fieldName
+              } must be at least ${(fieldConfig as any).minLength} characters`;
+            }
+
+            // Check maxLength for text fields
+            if (
+              typeof value === 'string' &&
+              (fieldConfig as any).maxLength &&
+              value.length > (fieldConfig as any).maxLength
+            ) {
+              errors[fieldName] = `${
+                (fieldConfig as any).label || fieldName
+              } must be no more than ${
+                (fieldConfig as any).maxLength
+              } characters`;
+            }
+          }
+        );
       }
 
-      // Get the form configuration (use provided form or generate default)
-      let formConfig = actionConfig?.form;
-      if (!formConfig && this.action) {
-        formConfig = this.generateDefaultFormConfig();
-      }
-
-      // Basic validation based on form field configs
-      if (formConfig) {
-        Object.entries(formConfig).forEach(([fieldName, fieldConfig]) => {
-          const value = this.formData[fieldName];
-          const propConfig = fieldConfig as PropertyConfig;
-
-          // Check required fields (don't skip based on visibility like ActionEditor)
-          if (
-            propConfig.required &&
-            (!value || (Array.isArray(value) && value.length === 0))
-          ) {
-            errors[fieldName] = `${propConfig.label || fieldName} is required`;
-          }
-
-          // Check minLength
-          if (
-            typeof value === 'string' &&
-            propConfig.minLength &&
-            value.length < propConfig.minLength
-          ) {
-            errors[fieldName] = `${
-              propConfig.label || fieldName
-            } must be at least ${propConfig.minLength} characters`;
-          }
-
-          // Check maxLength
-          if (
-            typeof value === 'string' &&
-            propConfig.maxLength &&
-            value.length > propConfig.maxLength
-          ) {
-            errors[fieldName] = `${
-              propConfig.label || fieldName
-            } must be no more than ${propConfig.maxLength} characters`;
-          }
-        });
-      }
-
-      // Run custom validation if available and merge results
+      // Run custom validation if available
       if (actionConfig?.validate) {
+        // Convert form data back to action for validation
+        let actionForValidation: Action;
+        if (actionConfig.fromFormData) {
+          actionForValidation = actionConfig.fromFormData(this.formData);
+        } else {
+          actionForValidation = { ...this.action, ...this.formData } as Action;
+        }
+
         const customValidation = actionConfig.validate(actionForValidation);
-        // Merge custom validation errors with basic form validation errors
         Object.assign(errors, customValidation.errors);
       }
     } else if (this.node) {
@@ -297,13 +418,55 @@ export class NodeEditor extends RapidElement {
       }
     }
 
+    // Validate key-value fields for unique keys
+    this.validateKeyValueUniqueness(errors);
+
     return {
       valid: Object.keys(errors).length === 0,
       errors
     };
   }
 
-  private formDataToNode(): Node {
+  private validateKeyValueUniqueness(errors: { [key: string]: string }): void {
+    // The individual key-value editors will show validation errors on duplicate keys and empty keys with values
+    // We just need to prevent form submission when there are validation issues
+    Object.entries(this.formData).forEach(([fieldName, value]) => {
+      if (
+        Array.isArray(value) &&
+        value.length > 0 &&
+        typeof value[0] === 'object' &&
+        'key' in value[0] &&
+        'value' in value[0]
+      ) {
+        // This is a key-value array
+        let hasValidationErrors = false;
+
+        // Check for empty keys with values
+        value.forEach(({ key, value: itemValue }: any) => {
+          if (key.trim() === '' && itemValue.trim() !== '') {
+            hasValidationErrors = true;
+          }
+        });
+
+        // Check for duplicate keys (only non-empty ones)
+        const keys = value
+          .filter(({ key }: any) => key.trim() !== '') // Only check non-empty keys
+          .map(({ key }: any) => key.trim());
+
+        const uniqueKeys = new Set(keys);
+
+        if (keys.length !== uniqueKeys.size) {
+          hasValidationErrors = true;
+        }
+
+        if (hasValidationErrors) {
+          errors[fieldName] = `Please resolve validation errors before saving`;
+        }
+      }
+    });
+  }
+
+  private formDataToNode(formData: any = this.formData): Node {
     if (!this.node) throw new Error('No node to update');
     let updatedNode: Node = { ...this.node };
 
@@ -315,10 +478,10 @@ export class NodeEditor extends RapidElement {
           const actionConfig = ACTION_CONFIG[action.type];
           if (actionConfig?.fromFormData) {
             // Use action-specific form data transformation
-            return actionConfig.fromFormData(this.formData);
+            return actionConfig.fromFormData(formData);
           } else {
             // Default transformation - merge form data with original action
-            return { ...action, ...this.formData };
+            return { ...action, ...formData };
           }
         } else {
           // Keep other actions unchanged
@@ -333,14 +496,14 @@ export class NodeEditor extends RapidElement {
 
       if (nodeConfig?.fromFormData) {
         // Use node-specific form data transformation
-        updatedNode = nodeConfig.fromFormData(this.formData, updatedNode);
+        updatedNode = nodeConfig.fromFormData(formData, updatedNode);
       } else {
         // Default router handling
         updatedNode.router = { ...this.node.router };
 
         // Apply form data to router fields if they exist
-        if (this.formData.result_name !== undefined) {
-          updatedNode.router.result_name = this.formData.result_name;
+        if (formData.result_name !== undefined) {
+          updatedNode.router.result_name = formData.result_name;
         }
 
         // Handle preconfigured rules from node config
@@ -446,14 +609,14 @@ export class NodeEditor extends RapidElement {
       }
     } else {
       // If no router, just apply form data to node properties
-      Object.keys(this.formData).forEach((key) => {
+      Object.keys(formData).forEach((key) => {
         if (
           key !== 'uuid' &&
           key !== 'actions' &&
           key !== 'exits' &&
           key !== 'router'
         ) {
-          (updatedNode as any)[key] = this.formData[key];
+          (updatedNode as any)[key] = formData[key];
         }
       });
     }
@@ -461,17 +624,48 @@ export class NodeEditor extends RapidElement {
     return updatedNode;
   }
 
-  private formDataToAction(): Action {
+  private formDataToAction(formData: any = this.formData): Action {
     if (!this.action) throw new Error('No action to update');
 
     // Use action config transformation if available
     const actionConfig = ACTION_CONFIG[this.action.type];
     if (actionConfig?.fromFormData) {
-      return actionConfig.fromFormData(this.formData);
+      return actionConfig.fromFormData(formData);
     } else {
-      // Provide default 1:1 mapping when no transformation is provided
-      return { ...this.action, ...this.formData };
+      // Apply smart select transformations in reverse and provide default 1:1 mapping
+      const processedFormData = this.reverseSmartSelectTransformations(
+        formData,
+        actionConfig
+      );
+      return { ...this.action, ...processedFormData };
     }
+  }
+
+  private reverseSmartSelectTransformations(
+    formData: any,
+    actionConfig: ActionConfig
+  ): any {
+    if (!actionConfig || !actionConfig.form) return formData;
+    const processed = { ...formData };
+
+    Object.entries(actionConfig.form).forEach(([fieldName, fieldConfig]) => {
+      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
+        const value = processed[fieldName];
+        if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          typeof value[0] === 'object' &&
+          'value' in value[0]
+        ) {
+          // Transform select options format back to string array
+          processed[fieldName] = value.map(
+            (item: any) => item.value || item.name || item
+          );
+        }
+      }
+    });
+
+    return processed;
   }
 
   private handleFormFieldChange(propertyName: string, event: Event): void {
@@ -508,192 +702,217 @@ export class NodeEditor extends RapidElement {
     this.requestUpdate();
   }
 
-  private renderProperty(
-    propertyName: string,
-    propertyConfig: PropertyConfig
+  private renderNewField(
+    fieldName: string,
+    config: FieldConfig,
+    value: any
   ): TemplateResult {
     // Check visibility condition
-    if (propertyConfig.conditions?.visible) {
+    if (config.conditions?.visible) {
       try {
-        const isVisible = propertyConfig.conditions.visible(this.formData);
+        const isVisible = config.conditions.visible(this.formData);
         if (!isVisible) {
           return html``;
         }
       } catch (error) {
-        console.error(`Error checking visibility for ${propertyName}:`, error);
+        console.error(`Error checking visibility for ${fieldName}:`, error);
         // If there's an error, show the field by default
       }
     }
 
-    const { label, helpText, required, widget } = propertyConfig;
-    const value = this.formData[propertyName];
-    const propertyErrors = this.errors[propertyName]
-      ? [this.errors[propertyName]]
-      : [];
-    const component = widget?.type || 'temba-textinput';
-    const attributes = widget?.attributes || {};
-    const name = propertyName;
+    const errors = this.errors[fieldName] ? [this.errors[fieldName]] : [];
 
-    // Check disabled condition
-    const isDisabled = propertyConfig.conditions?.disabled
-      ? propertyConfig.conditions.disabled(this.formData)
-      : false;
-
-    let fieldHtml: TemplateResult;
-
-    switch (component) {
-      case 'temba-textinput': {
-        const textAttrs = attributes as TextInputAttributes;
-        fieldHtml = html`<temba-textinput
-          name="${name}"
-          label="${label || ''}"
-          help_text="${helpText || ''}"
-          ?required="${required}"
-          .errors="${propertyErrors}"
+    switch (config.type) {
+      case 'text':
+        return html`<temba-textinput
+          name="${fieldName}"
+          label="${config.label}"
+          ?required="${config.required}"
+          .errors="${errors}"
           .value="${value || ''}"
-          type="${textAttrs.type || 'text'}"
-          ?textarea="${textAttrs.textarea}"
-          placeholder="${textAttrs.placeholder || ''}"
-          ?disabled="${isDisabled}"
-          @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+          placeholder="${config.placeholder || ''}"
+          .helpText="${config.helpText || ''}"
+          @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
         ></temba-textinput>`;
-        break;
+
+      case 'textarea': {
+        const textareaConfig = config as TextareaFieldConfig;
+        const minHeightStyle = textareaConfig.minHeight
+          ? `--textarea-min-height: ${textareaConfig.minHeight}px;`
+          : '';
+
+        if (config.evaluated) {
+          return html`<temba-completion
+            name="${fieldName}"
+            label="${config.label}"
+            ?required="${config.required}"
+            .errors="${errors}"
+            .value="${value || ''}"
+            placeholder="${config.placeholder || ''}"
+            textarea
+            expressions="session"
+            style="${minHeightStyle}"
+            .helpText="${config.helpText || ''}"
+            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
+          ></temba-completion>`;
+        } else {
+          return html`<temba-textinput
+            name="${fieldName}"
+            label="${config.label}"
+            ?required="${config.required}"
+            .errors="${errors}"
+            .value="${value || ''}"
+            placeholder="${config.placeholder || ''}"
+            textarea
+            .rows="${textareaConfig.rows || 3}"
+            style="${minHeightStyle}"
+            .helpText="${config.helpText || ''}"
+            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
+          ></temba-textinput>`;
+        }
       }
 
-      case 'temba-completion': {
-        const completionAttrs = attributes as CompletionAttributes;
-        fieldHtml = html`<temba-completion
-          name="${name}"
-          label="${label || ''}"
-          help_text="${helpText || ''}"
-          ?required="${required}"
-          .errors="${propertyErrors}"
-          .value="${value || ''}"
-          ?textarea="${completionAttrs.textarea}"
-          expressions="${completionAttrs.expressions || ''}"
-          placeholder="${completionAttrs.placeholder || ''}"
-          .minHeight="${completionAttrs.minHeight}"
-          ?disabled="${isDisabled}"
-          @input="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
-        ></temba-completion>`;
-        break;
-      }
-
-      case 'temba-checkbox': {
-        const checkboxAttrs = attributes as CheckboxAttributes;
-        fieldHtml = html`<temba-checkbox
-          name="${name}"
-          label="${label}"
-          help_text="${helpText}"
-          ?required="${required}"
-          .errors="${propertyErrors}"
-          ?checked="${value}"
-          size="${checkboxAttrs.size || 1.2}"
-          ?disabled="${isDisabled || checkboxAttrs.disabled}"
-          animateChange="${checkboxAttrs.animateChange || 'pulse'}"
-          @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
-        ></temba-checkbox> `;
-        break;
-      }
-
-      case 'temba-select': {
-        const selectAttrs = attributes as SelectAttributes;
-        const defaultMulti =
-          propertyConfig.widget?.attributes &&
-          'multi' in propertyConfig.widget.attributes
-            ? propertyConfig.widget.attributes.multi
-            : false;
-        fieldHtml = html`<temba-select
-          name="${name}"
-          label=${label || ''}
-          help_text="${helpText}"
-          ?required="${required}"
-          .errors="${propertyErrors}"
-          .values="${value || (selectAttrs.multi || defaultMulti ? [] : '')}"
-          ?multi="${selectAttrs.multi || defaultMulti}"
-          ?searchable="${selectAttrs.searchable}"
-          ?tags="${selectAttrs.tags}"
-          ?emails="${selectAttrs.emails}"
-          valueKey="${selectAttrs.valueKey || 'value'}"
-          nameKey="${selectAttrs.nameKey || 'name'}"
-          maxItems="${selectAttrs.maxItems || 0}"
-          maxItemsText="${selectAttrs.maxItemsText}"
-          placeholder="${selectAttrs.placeholder || ''}"
-          endpoint="${selectAttrs.endpoint || ''}"
-          ?disabled="${isDisabled}"
-          @change="${(e: Event) => this.handleFormFieldChange(propertyName, e)}"
+      case 'select': {
+        const selectConfig = config as SelectFieldConfig;
+        return html`<temba-select
+          name="${fieldName}"
+          label="${config.label}"
+          ?required="${config.required}"
+          .errors="${errors}"
+          .values="${value || (selectConfig.multi ? [] : '')}"
+          ?multi="${selectConfig.multi}"
+          ?searchable="${selectConfig.searchable}"
+          ?tags="${selectConfig.tags}"
+          ?emails="${selectConfig.emails}"
+          placeholder="${selectConfig.placeholder || ''}"
+          maxItems="${selectConfig.maxItems || 0}"
+          valueKey="${selectConfig.valueKey || 'value'}"
+          nameKey="${selectConfig.nameKey || 'name'}"
+          endpoint="${selectConfig.endpoint || ''}"
+          .helpText="${config.helpText || ''}"
+          @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
         >
-          ${selectAttrs.options?.map(
-            (option: any) =>
-              html`<temba-option
-                name="${option.name}"
+          ${selectConfig.options?.map((option: any) => {
+            if (typeof option === 'string') {
+              return html`<temba-option
+                name="${option}"
+                value="${option}"
+              ></temba-option>`;
+            } else {
+              return html`<temba-option
+                name="${option.label || option.name}"
                 value="${option.value}"
-              ></temba-option>`
-          )}
+              ></temba-option>`;
+            }
+          })}
         </temba-select>`;
-        break;
+      }
+
+      case 'key-value':
+        return html`<div class="form-field">
+          <label>${config.label}${config.required ? ' *' : ''}</label>
+          <temba-key-value-editor
+            name="${fieldName}"
+            .value="${value || []}"
+            .sortable="${config.sortable}"
+            .keyPlaceholder="${config.keyPlaceholder || 'Key'}"
+            .valuePlaceholder="${config.valuePlaceholder || 'Value'}"
+            .minRows="${config.minRows || 0}"
+            @change="${(e: CustomEvent) => {
+              if (e.detail) {
+                this.handleNewFieldChange(fieldName, e.detail.value);
+              }
+            }}"
+          ></temba-key-value-editor>
+          ${errors.length
+            ? html`<div class="field-errors">${errors.join(', ')}</div>`
+            : ''}
+        </div>`;
+
+      case 'array':
+        return html`<div class="form-field">
+          <label>${config.label}${config.required ? ' *' : ''}</label>
+          <temba-array-editor
+            .value="${value || []}"
+            .itemConfig="${config.itemConfig}"
+            .sortable="${config.sortable}"
+            .itemLabel="${config.itemLabel || 'Item'}"
+            .minItems="${config.minItems || 0}"
+            .onItemChange="${config.onItemChange}"
+            @change="${(e: CustomEvent) =>
+              this.handleNewFieldChange(fieldName, e.detail.value)}"
+          ></temba-array-editor>
+          ${errors.length
+            ? html`<div class="field-errors">${errors.join(', ')}</div>`
+            : ''}
+        </div>`;
+
+      case 'checkbox': {
+        const checkboxConfig = config as CheckboxFieldConfig;
+        return html`<div class="form-field">
+          <temba-checkbox
+            name="${fieldName}"
+            label="${config.label}"
+            .helpText="${config.helpText || ''}"
+            ?required="${config.required}"
+            .errors="${errors}"
+            ?checked="${value || false}"
+            size="${checkboxConfig.size || 1.2}"
+            animateChange="${checkboxConfig.animateChange || 'pulse'}"
+            @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
+          ></temba-checkbox>
+          ${errors.length
+            ? html`<div class="field-errors">${errors.join(', ')}</div>`
+            : ''}
+        </div>`;
       }
 
       default:
-        fieldHtml = html`<div>Unsupported component: ${component}</div>`;
+        return html`<div>Unsupported field type: ${(config as any).type}</div>`;
     }
-
-    return html` <div class="form-field">${fieldHtml}</div> `;
   }
 
-  private renderActionForm(): TemplateResult {
+  private handleNewFieldChange(fieldName: string, value: any) {
+    this.formData = {
+      ...this.formData,
+      [fieldName]: value
+    };
+
+    // Clear any existing error for this field
+    if (this.errors[fieldName]) {
+      const newErrors = { ...this.errors };
+      delete newErrors[fieldName];
+      this.errors = newErrors;
+    }
+
+    // Trigger re-render
+    this.requestUpdate();
+  }
+
+  private renderFields(): TemplateResult {
     if (!this.action) {
-      return html`<div>No action to edit</div>`;
+      return html` <div>No action selected</div> `;
     }
 
     const config = ACTION_CONFIG[this.action.type];
-
     if (!config) {
+      return html` <div>No configuration available for this action</div> `;
+    }
+
+    // Use the new fields configuration system
+    if (config.form) {
       return html`
-        <div>
-          No configuration available for action type: ${this.action.type}
-        </div>
+        ${Object.entries(config.form).map(([fieldName, fieldConfig]) =>
+          this.renderNewField(
+            fieldName,
+            fieldConfig as FieldConfig,
+            this.formData[fieldName]
+          )
+        )}
       `;
     }
 
-    // Use 'form' configuration if available
-    let formConfig = config.form;
-
-    // If no form config is provided, generate a default one based on action properties
-    if (!formConfig && this.action) {
-      formConfig = this.generateDefaultFormConfig();
-    }
-
-    if (!formConfig) {
-      return html` <div>No form configuration available</div> `;
-    }
-
-    return html`
-      ${Object.entries(formConfig).map(([fieldName, fieldConfig]) =>
-        this.renderProperty(fieldName, fieldConfig as PropertyConfig)
-      )}
-    `;
-  }
-
-  private generateDefaultFormConfig(): { [key: string]: PropertyConfig } {
-    if (!this.action) return {};
-
-    const formConfig: { [key: string]: PropertyConfig } = {};
-
-    // Generate default form fields for all action properties except type and uuid
-    Object.keys(this.action).forEach((key) => {
-      if (key !== 'type' && key !== 'uuid') {
-        const value = this.action![key as keyof typeof this.action];
-        const defaultProps = getDefaultComponentProps(value);
-
-        formConfig[key] = {
-          label: key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' '),
-          ...defaultProps
-        };
-      }
-    });
-
-    return formConfig;
+    return html` <div>No form configuration available</div> `;
   }
 
   private renderActionSection(): TemplateResult {
@@ -779,7 +998,7 @@ export class NodeEditor extends RapidElement {
         style="--header-bg: ${headerColor}"
       >
         <div class="node-editor-form">
-          ${this.renderActionForm()}
+          ${this.renderFields()}
           ${nodeConfig?.router?.configurable
             ? this.renderRouterSection()
             : null}

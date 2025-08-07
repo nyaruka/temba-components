@@ -20,30 +20,25 @@ export const remove_contact_groups: ActionConfig = {
     };
   },
   form: {
+    all_groups: {
+      type: 'checkbox',
+      label: 'Remove from All Groups',
+      helpText:
+        'Check this to remove the contact from all groups instead of specific ones'
+    },
     groups: {
+      type: 'select',
       label: 'Groups',
       helpText: 'Select the groups to remove the contact from',
-      widget: {
-        type: 'temba-select',
-        attributes: {
-          multi: true,
-          searchable: true,
-          endpoint: '/api/v2/groups.json',
-          valueKey: 'uuid',
-          nameKey: 'name',
-          placeholder: 'Search for groups...'
-        }
-      },
+      options: [],
+      multi: true,
+      searchable: true,
+      endpoint: '/api/v2/groups.json',
+      valueKey: 'uuid',
+      nameKey: 'name',
+      placeholder: 'Search for groups...',
       conditions: {
         visible: (formData) => !formData.all_groups
-      }
-    },
-    all_groups: {
-      helpText:
-        'Check this to remove the contact from all groups instead of specific ones',
-      label: 'Remove from All Groups',
-      widget: {
-        type: 'temba-checkbox'
       }
     }
   },

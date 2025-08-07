@@ -20,52 +20,29 @@ export const send_email: ActionConfig = {
     </div>`;
   },
 
-  // Form-level transformations
-  toFormData: (action: SendEmail) => {
-    return {
-      uuid: action.uuid,
-      addresses: (action.addresses || []).map((text) => ({
-        name: text,
-        value: text
-      })),
-      subject: action.subject || '',
-      body: action.body || ''
-    };
-  },
-
   form: {
     addresses: {
+      type: 'select',
       label: 'Recipients',
-      widget: {
-        type: 'temba-select',
-        attributes: {
-          emails: true,
-          searchable: true,
-          placeholder: 'Search for contacts...'
-        }
-      }
+      options: [],
+      multi: true,
+      searchable: true,
+      placeholder: 'Search for contacts...',
+      emails: true
     },
     subject: {
+      type: 'text',
       label: 'Subject',
       required: true,
-      widget: {
-        type: 'temba-textinput',
-        attributes: {
-          placeholder: 'Enter email subject',
-          maxlength: 255
-        }
-      }
+      placeholder: 'Enter email subject',
+      maxLength: 255
     },
     body: {
+      type: 'textarea',
       required: true,
-      widget: {
-        type: 'temba-completion',
-        attributes: {
-          textarea: true,
-          minHeight: 75,
-          expressions: 'session'
-        }
-      }
+      evaluated: true,
+      rows: 4,
+      minHeight: 75
     }
   },
   validate: (action: SendEmail): ValidationResult => {
@@ -78,17 +55,6 @@ export const send_email: ActionConfig = {
     return {
       valid: Object.keys(errors).length === 0,
       errors
-    };
-  },
-  fromFormData: (formData: any): SendEmail => {
-    return {
-      uuid: formData.uuid,
-      type: 'send_email',
-      addresses: Array.isArray(formData.addresses)
-        ? formData.addresses.map((item: any) => item.value || item.name || item)
-        : [],
-      subject: formData.subject || '',
-      body: formData.body || ''
     };
   }
 };

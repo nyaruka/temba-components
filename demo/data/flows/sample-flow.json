@@ -127,13 +127,15 @@
         "actions": [
           {
             "uuid": "cb497975-a8fb-4d28-a662-277eb7a699f9",
-            "headers": {
-              "Accept": "application/json"
-            },
             "type": "call_webhook",
             "url": "http://google.com",
-            "body": "",
-            "method": "GET"
+            "method": "PUT",
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              "Authentication": "Bearer token here"
+            },
+            "body": ""
           }
         ],
         "router": {
