@@ -29,38 +29,27 @@ export const send_msg: ActionConfig = {
       }))
     };
   },
-  form: {
+  fields: {
     text: {
+      type: 'textarea',
       label: 'Message Text',
       helpText:
         'Enter the message to send. You can use expressions like @contact.name',
       required: true,
-      widget: {
-        type: 'temba-completion',
-        attributes: {
-          textarea: true,
-          expressions: 'session',
-          minHeight: 75
-        }
-      }
+      evaluated: true,
+      rows: 4
     },
     quick_replies: {
+      type: 'select',
       label: 'Quick Replies',
       helpText: 'Add quick reply options for this message',
-      widget: {
-        type: 'temba-select',
-        attributes: {
-          multi: true,
-          tags: true,
-          searchable: true,
-          placeholder: 'Add quick replies...',
-          expressions: 'session',
-          nameKey: 'name',
-          valueKey: 'value',
-          maxItems: 10,
-          maxItemsText: 'You can only add up to 10 quick replies'
-        }
-      }
+      options: [],
+      multi: true,
+      tags: true,
+      searchable: true,
+      placeholder: 'Add quick replies...',
+      maxItems: 10,
+      evaluated: true
     }
   },
   validate: (action: SendMsg): ValidationResult => {
@@ -81,9 +70,7 @@ export const send_msg: ActionConfig = {
       type: 'send_msg',
       text: formData.text,
       quick_replies: Array.isArray(formData.quick_replies)
-        ? formData.quick_replies.map(
-            (item: any) => item.value || item.name || item
-          )
+        ? formData.quick_replies
         : []
     };
   }

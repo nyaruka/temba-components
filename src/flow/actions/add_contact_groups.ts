@@ -17,22 +17,19 @@ export const add_contact_groups: ActionConfig = {
       uuid: action.uuid
     };
   },
-  form: {
+  fields: {
     groups: {
+      type: 'select',
       label: 'Groups',
       helpText: 'Select the groups to add the contact to',
       required: true,
-      widget: {
-        type: 'temba-select',
-        attributes: {
-          multi: true,
-          searchable: true,
-          endpoint: '/api/v2/groups.json',
-          valueKey: 'uuid',
-          nameKey: 'name',
-          placeholder: 'Search for groups...'
-        }
-      }
+      options: [],
+      multi: true,
+      searchable: true,
+      endpoint: '/api/v2/groups.json',
+      valueKey: 'uuid',
+      nameKey: 'name',
+      placeholder: 'Search for groups...'
     }
   },
   fromFormData: (formData: any): AddToGroup => {

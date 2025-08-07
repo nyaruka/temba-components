@@ -24,48 +24,35 @@ export const send_email: ActionConfig = {
   toFormData: (action: SendEmail) => {
     return {
       uuid: action.uuid,
-      addresses: (action.addresses || []).map((text) => ({
-        name: text,
-        value: text
-      })),
+      addresses: action.addresses || [],
       subject: action.subject || '',
       body: action.body || ''
     };
   },
 
-  form: {
+  fields: {
     addresses: {
+      type: 'select',
       label: 'Recipients',
-      widget: {
-        type: 'temba-select',
-        attributes: {
-          emails: true,
-          searchable: true,
-          placeholder: 'Search for contacts...'
-        }
-      }
+      options: [],
+      multi: true,
+      searchable: true,
+      tags: true,
+      placeholder: 'Search for contacts...'
     },
     subject: {
+      type: 'text',
       label: 'Subject',
       required: true,
-      widget: {
-        type: 'temba-textinput',
-        attributes: {
-          placeholder: 'Enter email subject',
-          maxlength: 255
-        }
-      }
+      placeholder: 'Enter email subject',
+      maxLength: 255
     },
     body: {
+      type: 'textarea',
+      label: 'Body',
       required: true,
-      widget: {
-        type: 'temba-completion',
-        attributes: {
-          textarea: true,
-          minHeight: 75,
-          expressions: 'session'
-        }
-      }
+      evaluated: true,
+      rows: 4
     }
   },
   validate: (action: SendEmail): ValidationResult => {
@@ -84,9 +71,7 @@ export const send_email: ActionConfig = {
     return {
       uuid: formData.uuid,
       type: 'send_email',
-      addresses: Array.isArray(formData.addresses)
-        ? formData.addresses.map((item: any) => item.value || item.name || item)
-        : [],
+      addresses: Array.isArray(formData.addresses) ? formData.addresses : [],
       subject: formData.subject || '',
       body: formData.body || ''
     };

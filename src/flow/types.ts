@@ -118,13 +118,99 @@ export interface NodeConfig {
   fromFormData?: (formData: any, originalNode: any) => any;
 }
 
+// New field configuration system for generic form generation
+export interface BaseFieldConfig {
+  label: string;
+  required?: boolean;
+  evaluated?: boolean; // if this field supports expression evaluation
+  dependsOn?: string[]; // fields this field depends on
+  computeValue?: (values: Record<string, any>, currentValue: any) => any;
+  shouldCompute?: (values: Record<string, any>, currentValue: any) => boolean;
+
+  // Validation properties
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  helpText?: string;
+
+  // Conditional rendering
+  conditions?: {
+    visible?: (formData: Record<string, any>) => boolean;
+    disabled?: (formData: Record<string, any>) => boolean;
+  };
+}
+
+export interface TextFieldConfig extends BaseFieldConfig {
+  type: 'text';
+  placeholder?: string;
+}
+
+export interface TextareaFieldConfig extends BaseFieldConfig {
+  type: 'textarea';
+  placeholder?: string;
+  rows?: number;
+}
+
+export interface SelectFieldConfig extends BaseFieldConfig {
+  type: 'select';
+  options: string[] | { value: string; label: string }[];
+  multi?: boolean;
+  searchable?: boolean;
+  tags?: boolean;
+  placeholder?: string;
+  maxItems?: number;
+  valueKey?: string;
+  nameKey?: string;
+  endpoint?: string;
+}
+
+export interface KeyValueFieldConfig extends BaseFieldConfig {
+  type: 'key-value';
+  sortable?: boolean;
+  keyPlaceholder?: string;
+  valuePlaceholder?: string;
+  minRows?: number;
+}
+
+export interface ArrayFieldConfig extends BaseFieldConfig {
+  type: 'array';
+  itemConfig: Record<string, FieldConfig>;
+  sortable?: boolean;
+  minItems?: number;
+  maxItems?: number;
+  itemLabel?: string;
+  onItemChange?: (
+    itemIndex: number,
+    field: string,
+    value: any,
+    allItems: any[]
+  ) => any[];
+}
+
+export interface CheckboxFieldConfig extends BaseFieldConfig {
+  type: 'checkbox';
+  size?: number;
+  animateChange?: string;
+}
+
+export type FieldConfig =
+  | TextFieldConfig
+  | TextareaFieldConfig
+  | SelectFieldConfig
+  | KeyValueFieldConfig
+  | ArrayFieldConfig
+  | CheckboxFieldConfig;
+
 export interface ActionConfig {
   name: string;
   color: string;
   evaluated?: string[];
   render?: (node: any, action: any) => TemplateResult;
 
-  // Action editor configuration
+  // New field configuration system
+  fields?: Record<string, FieldConfig>;
+
+  // Action editor configuration (legacy)
   // Form-level transformations
   toFormData?: (action: Action) => any;
   fromFormData?: (formData: any) => Action;
