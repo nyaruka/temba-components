@@ -17,7 +17,7 @@ export const add_contact_groups: ActionConfig = {
       uuid: action.uuid
     };
   },
-  fields: {
+  form: {
     groups: {
       type: 'select',
       label: 'Groups',

@@ -13,7 +13,7 @@ export const call_webhook: ActionConfig = {
     </div>`;
   },
   evaluated: ['url', 'headers', 'body'], // keep for backward compatibility
-  fields: {
+  form: {
     url: {
       type: 'text',
       label: 'URL',

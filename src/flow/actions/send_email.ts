@@ -20,20 +20,7 @@ export const send_email: ActionConfig = {
     </div>`;
   },
 
-  // Form-level transformations
-  toFormData: (action: SendEmail) => {
-    return {
-      uuid: action.uuid,
-      addresses: (action.addresses || []).map((address) => ({
-        name: address,
-        value: address
-      })),
-      subject: action.subject || '',
-      body: action.body || ''
-    };
-  },
-
-  fields: {
+  form: {
     addresses: {
       type: 'select',
       label: 'Recipients',
@@ -68,17 +55,6 @@ export const send_email: ActionConfig = {
     return {
       valid: Object.keys(errors).length === 0,
       errors
-    };
-  },
-  fromFormData: (formData: any): SendEmail => {
-    return {
-      uuid: formData.uuid,
-      type: 'send_email',
-      addresses: Array.isArray(formData.addresses)
-        ? formData.addresses.map((option: any) => option.value)
-        : [],
-      subject: formData.subject || '',
-      body: formData.body || ''
     };
   }
 };

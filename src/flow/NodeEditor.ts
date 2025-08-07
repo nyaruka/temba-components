@@ -7,7 +7,8 @@ import {
   NodeConfig,
   NODE_CONFIG,
   ACTION_CONFIG,
-  FieldConfig
+  FieldConfig,
+  ActionConfig
 } from './config';
 import {
   SelectFieldConfig,
@@ -139,6 +140,8 @@ export class NodeEditor extends RapidElement {
         this.formData = actionConfig.toFormData(this.action);
       } else {
         this.formData = { ...this.action };
+        // Apply smart transformations for select fields that expect {name, value} format
+        this.applySmartSelectTransformations(actionConfig);
       }
 
       // Convert Record objects to array format for key-value editors
@@ -179,11 +182,50 @@ export class NodeEditor extends RapidElement {
     this.formData = processed;
   }
 
+  private applySmartSelectTransformations(actionConfig: ActionConfig): void {
+    if (!actionConfig) return;
+
+    const fields = actionConfig.form;
+    if (!fields) return;
+
+    Object.entries(fields).forEach(([fieldName, fieldConfig]) => {
+      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
+        const value = this.formData[fieldName];
+        if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          typeof value[0] === 'string'
+        ) {
+          // Transform string array to select options format
+          this.formData[fieldName] = value.map((item: string) => ({
+            name: item,
+            value: item
+          }));
+        }
+      }
+    });
+  }
+
+  private shouldApplySmartSelectTransformation(
+    fieldName: string,
+    fieldConfig: any
+  ): boolean {
+    const selectConfig = fieldConfig as SelectFieldConfig;
+    return (
+      (fieldConfig.type === 'select' &&
+        (selectConfig.multi || selectConfig.tags) &&
+        // Don't transform if already has explicit transformations
+        !this.action) ||
+      !ACTION_CONFIG[this.action.type]?.toFormData
+    );
+  }
+
   private isKeyValueField(fieldName: string): boolean {
     // Check if this field is configured as a key-value type
     if (this.action) {
       const actionConfig = ACTION_CONFIG[this.action.type];
-      return actionConfig?.fields?.[fieldName]?.type === 'key-value';
+      const fields = actionConfig?.form;
+      return fields?.[fieldName]?.type === 'key-value';
     }
     return false;
   }
@@ -297,41 +339,43 @@ export class NodeEditor extends RapidElement {
       const actionConfig = ACTION_CONFIG[this.action.type];
 
       // Check if new field configuration system is available
-      if (actionConfig?.fields) {
-        Object.entries(actionConfig.fields).forEach(
+      if (actionConfig?.form) {
+        Object.entries(actionConfig?.form).forEach(
           ([fieldName, fieldConfig]) => {
             const value = this.formData[fieldName];
 
             // Check required fields
             if (
-              fieldConfig.required &&
+              (fieldConfig as any).required &&
               (!value || (Array.isArray(value) && value.length === 0))
             ) {
               errors[fieldName] = `${
-                fieldConfig.label || fieldName
+                (fieldConfig as any).label || fieldName
               } is required`;
             }
 
             // Check minLength for text fields
             if (
               typeof value === 'string' &&
-              fieldConfig.minLength &&
-              value.length < fieldConfig.minLength
+              (fieldConfig as any).minLength &&
+              value.length < (fieldConfig as any).minLength
             ) {
               errors[fieldName] = `${
-                fieldConfig.label || fieldName
-              } must be at least ${fieldConfig.minLength} characters`;
+                (fieldConfig as any).label || fieldName
+              } must be at least ${(fieldConfig as any).minLength} characters`;
             }
 
             // Check maxLength for text fields
             if (
               typeof value === 'string' &&
-              fieldConfig.maxLength &&
-              value.length > fieldConfig.maxLength
+              (fieldConfig as any).maxLength &&
+              value.length > (fieldConfig as any).maxLength
             ) {
               errors[fieldName] = `${
-                fieldConfig.label || fieldName
-              } must be no more than ${fieldConfig.maxLength} characters`;
+                (fieldConfig as any).label || fieldName
+              } must be no more than ${
+                (fieldConfig as any).maxLength
+              } characters`;
             }
           }
         );
@@ -588,9 +632,40 @@ export class NodeEditor extends RapidElement {
     if (actionConfig?.fromFormData) {
       return actionConfig.fromFormData(formData);
     } else {
-      // Provide default 1:1 mapping when no transformation is provided
-      return { ...this.action, ...formData };
+      // Apply smart select transformations in reverse and provide default 1:1 mapping
+      const processedFormData = this.reverseSmartSelectTransformations(
+        formData,
+        actionConfig
+      );
+      return { ...this.action, ...processedFormData };
     }
+  }
+
+  private reverseSmartSelectTransformations(
+    formData: any,
+    actionConfig: ActionConfig
+  ): any {
+    if (!actionConfig || !actionConfig.form) return formData;
+    const processed = { ...formData };
+
+    Object.entries(actionConfig.form).forEach(([fieldName, fieldConfig]) => {
+      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
+        const value = processed[fieldName];
+        if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          typeof value[0] === 'object' &&
+          'value' in value[0]
+        ) {
+          // Transform select options format back to string array
+          processed[fieldName] = value.map(
+            (item: any) => item.value || item.name || item
+          );
+        }
+      }
+    });
+
+    return processed;
   }
 
   private handleFormFieldChange(propertyName: string, event: Event): void {
@@ -825,9 +900,9 @@ export class NodeEditor extends RapidElement {
     }
 
     // Use the new fields configuration system
-    if (config.fields) {
+    if (config.form) {
       return html`
-        ${Object.entries(config.fields).map(([fieldName, fieldConfig]) =>
+        ${Object.entries(config.form).map(([fieldName, fieldConfig]) =>
           this.renderNewField(
             fieldName,
             fieldConfig as FieldConfig,

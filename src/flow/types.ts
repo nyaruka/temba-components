@@ -209,16 +209,12 @@ export interface ActionConfig {
   evaluated?: string[];
   render?: (node: any, action: any) => TemplateResult;
 
-  // New field configuration system
-  fields?: Record<string, FieldConfig>;
+  form?: Record<string, FieldConfig>;
 
   // Action editor configuration (legacy)
   // Form-level transformations
   toFormData?: (action: Action) => any;
   fromFormData?: (formData: any) => Action;
-  form?: {
-    [formFieldName: string]: PropertyConfig;
-  };
 
   validate?: (action: Action) => ValidationResult;
 }

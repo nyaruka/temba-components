@@ -19,7 +19,7 @@ export const remove_contact_groups: ActionConfig = {
       groups: action.groups || []
     };
   },
-  fields: {
+  form: {
     all_groups: {
       type: 'checkbox',
       label: 'Remove from All Groups',

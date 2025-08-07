@@ -16,7 +16,7 @@ const generateCategoryFromOperand = (operand: string): string => {
 export const split_by_expression: ActionConfig = {
   name: 'Split by Expression',
   color: COLORS.split,
-  fields: {
+  form: {
     operand: {
       type: 'text',
       label: 'Split by',

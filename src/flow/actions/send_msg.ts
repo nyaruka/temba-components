@@ -19,17 +19,7 @@ export const send_msg: ActionConfig = {
         : null}
     `;
   },
-  toFormData: (action: SendMsg) => {
-    return {
-      uuid: action.uuid,
-      text: action.text || '',
-      quick_replies: (action.quick_replies || []).map((text) => ({
-        name: text,
-        value: text
-      }))
-    };
-  },
-  fields: {
+  form: {
     text: {
       type: 'textarea',
       label: 'Message Text',
@@ -63,16 +53,6 @@ export const send_msg: ActionConfig = {
     return {
       valid: Object.keys(errors).length === 0,
       errors
-    };
-  },
-  fromFormData: (formData: any): SendMsg => {
-    return {
-      uuid: formData.uuid,
-      type: 'send_msg',
-      text: formData.text,
-      quick_replies: Array.isArray(formData.quick_replies)
-        ? formData.quick_replies
-        : []
     };
   }
 };
