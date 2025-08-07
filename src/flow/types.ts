@@ -120,7 +120,7 @@ export interface NodeConfig {
 
 // New field configuration system for generic form generation
 export interface BaseFieldConfig {
-  label: string;
+  label?: string;
   required?: boolean;
   evaluated?: boolean; // if this field supports expression evaluation
   dependsOn?: string[]; // fields this field depends on
@@ -149,6 +149,7 @@ export interface TextareaFieldConfig extends BaseFieldConfig {
   type: 'textarea';
   placeholder?: string;
   rows?: number;
+  minHeight?: number;
 }
 
 export interface SelectFieldConfig extends BaseFieldConfig {
@@ -162,6 +163,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   valueKey?: string;
   nameKey?: string;
   endpoint?: string;
+  emails?: boolean;
 }
 
 export interface KeyValueFieldConfig extends BaseFieldConfig {

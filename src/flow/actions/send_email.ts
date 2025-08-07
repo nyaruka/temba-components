@@ -24,7 +24,10 @@ export const send_email: ActionConfig = {
   toFormData: (action: SendEmail) => {
     return {
       uuid: action.uuid,
-      addresses: action.addresses || [],
+      addresses: (action.addresses || []).map((address) => ({
+        name: address,
+        value: address
+      })),
       subject: action.subject || '',
       body: action.body || ''
     };
@@ -37,8 +40,8 @@ export const send_email: ActionConfig = {
       options: [],
       multi: true,
       searchable: true,
-      tags: true,
-      placeholder: 'Search for contacts...'
+      placeholder: 'Search for contacts...',
+      emails: true
     },
     subject: {
       type: 'text',
@@ -49,10 +52,10 @@ export const send_email: ActionConfig = {
     },
     body: {
       type: 'textarea',
-      label: 'Body',
       required: true,
       evaluated: true,
-      rows: 4
+      rows: 4,
+      minHeight: 75
     }
   },
   validate: (action: SendEmail): ValidationResult => {
@@ -71,7 +74,9 @@ export const send_email: ActionConfig = {
     return {
       uuid: formData.uuid,
       type: 'send_email',
-      addresses: Array.isArray(formData.addresses) ? formData.addresses : [],
+      addresses: Array.isArray(formData.addresses)
+        ? formData.addresses.map((option: any) => option.value)
+        : [],
       subject: formData.subject || '',
       body: formData.body || ''
     };

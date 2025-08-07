@@ -9,7 +9,11 @@ import {
   ACTION_CONFIG,
   FieldConfig
 } from './config';
-import { SelectFieldConfig, CheckboxFieldConfig } from './types';
+import {
+  SelectFieldConfig,
+  CheckboxFieldConfig,
+  TextareaFieldConfig
+} from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 
@@ -652,21 +656,46 @@ export class NodeEditor extends RapidElement {
           .errors="${errors}"
           .value="${value || ''}"
           placeholder="${config.placeholder || ''}"
+          .helpText="${config.helpText || ''}"
           @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
         ></temba-textinput>`;
 
-      case 'textarea':
-        return html`<temba-textinput
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .value="${value || ''}"
-          placeholder="${config.placeholder || ''}"
-          textarea
-          .rows="${config.rows || 3}"
-          @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-        ></temba-textinput>`;
+      case 'textarea': {
+        const textareaConfig = config as TextareaFieldConfig;
+        const minHeightStyle = textareaConfig.minHeight
+          ? `--textarea-min-height: ${textareaConfig.minHeight}px;`
+          : '';
+
+        if (config.evaluated) {
+          return html`<temba-completion
+            name="${fieldName}"
+            label="${config.label}"
+            ?required="${config.required}"
+            .errors="${errors}"
+            .value="${value || ''}"
+            placeholder="${config.placeholder || ''}"
+            textarea
+            expressions="session"
+            style="${minHeightStyle}"
+            .helpText="${config.helpText || ''}"
+            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
+          ></temba-completion>`;
+        } else {
+          return html`<temba-textinput
+            name="${fieldName}"
+            label="${config.label}"
+            ?required="${config.required}"
+            .errors="${errors}"
+            .value="${value || ''}"
+            placeholder="${config.placeholder || ''}"
+            textarea
+            .rows="${textareaConfig.rows || 3}"
+            style="${minHeightStyle}"
+            .helpText="${config.helpText || ''}"
+            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
+          ></temba-textinput>`;
+        }
+      }
 
       case 'select': {
         const selectConfig = config as SelectFieldConfig;
@@ -679,11 +708,13 @@ export class NodeEditor extends RapidElement {
           ?multi="${selectConfig.multi}"
           ?searchable="${selectConfig.searchable}"
           ?tags="${selectConfig.tags}"
+          ?emails="${selectConfig.emails}"
           placeholder="${selectConfig.placeholder || ''}"
           maxItems="${selectConfig.maxItems || 0}"
           valueKey="${selectConfig.valueKey || 'value'}"
           nameKey="${selectConfig.nameKey || 'name'}"
           endpoint="${selectConfig.endpoint || ''}"
+          .helpText="${config.helpText || ''}"
           @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
         >
           ${selectConfig.options?.map((option: any) => {
@@ -747,7 +778,7 @@ export class NodeEditor extends RapidElement {
           <temba-checkbox
             name="${fieldName}"
             label="${config.label}"
-            help_text="${config.helpText || ''}"
+            .helpText="${config.helpText || ''}"
             ?required="${config.required}"
             .errors="${errors}"
             ?checked="${value || false}"
