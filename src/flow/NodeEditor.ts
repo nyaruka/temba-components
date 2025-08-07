@@ -13,7 +13,10 @@ import {
 import {
   SelectFieldConfig,
   CheckboxFieldConfig,
-  TextareaFieldConfig
+  TextareaFieldConfig,
+  LayoutItem,
+  RowLayoutConfig,
+  GroupLayoutConfig
 } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
@@ -43,9 +46,10 @@ export class NodeEditor extends RapidElement {
       }
 
       .field-errors {
-        color: #dc2626;
+        color: var(--color-error, tomato);
         font-size: 12px;
-        margin-top: 4px;
+        margin-left: 5px;
+        margin-top: 15px;
       }
 
       .form-actions {
@@ -82,6 +86,107 @@ export class NodeEditor extends RapidElement {
         font-size: 14px;
         font-weight: 600;
       }
+
+      .form-row {
+        display: grid;
+        gap: 1rem;
+        align-items: end;
+      }
+
+      .form-group {
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .form-group.has-errors {
+        border-color: var(--color-error, tomato);
+      }
+
+      .form-group-header {
+        background: #f8f9fa;
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .form-group-header.collapsible:hover {
+        background: #f1f3f4;
+      }
+
+      .form-group-info {
+        flex: 1;
+      }
+
+      .form-group-title {
+        font-weight: 500;
+        color: #333;
+        font-size: 14px;
+        display: flex;
+      }
+
+      .form-group-help {
+        font-size: 12px;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      .form-group-toggle {
+        color: #666;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+      }
+
+      .form-group-toggle.collapsed {
+        transform: rotate(-90deg);
+      }
+
+      .form-group-content {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        max-height: 1000px; /* Large enough to accommodate most content */
+        opacity: 1;
+      }
+
+      .form-group-content.collapsed {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+      }
+
+      .group-toggle-icon {
+        color: #666;
+        transition: transform 0.3s ease;
+        cursor: pointer;
+        transform: rotate(0deg);
+      }
+
+      .group-toggle-icon.expanded {
+        transform: rotate(90deg);
+      }
+
+      .group-toggle-icon.collapsed {
+        transform: rotate(0deg);
+      }
+
+      .group-toggle-icon:hover {
+        color: #333;
+      }
+
+      .group-error-icon {
+        color: var(--color-error, tomato);
+        margin-right: 8px;
+      }
     `;
   }
 
@@ -101,7 +206,13 @@ export class NodeEditor extends RapidElement {
   private formData: any = {};
 
   @state()
+  private originalFormData: any = {};
+
+  @state()
   private errors: { [key: string]: string } = {};
+
+  @state()
+  private groupCollapseState: { [key: string]: boolean } = {};
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -129,6 +240,7 @@ export class NodeEditor extends RapidElement {
     this.isOpen = false;
     this.formData = {};
     this.errors = {};
+    this.groupCollapseState = {};
   }
 
   private initializeFormData(): void {
@@ -146,6 +258,9 @@ export class NodeEditor extends RapidElement {
 
       // Convert Record objects to array format for key-value editors
       this.processFormDataForEditing();
+
+      // Store a copy of the original form data for computed field comparisons
+      this.originalFormData = JSON.parse(JSON.stringify(this.formData));
     } else if (this.node) {
       // Node editing mode - use node config
       const nodeConfig = this.getNodeConfig();
@@ -157,6 +272,9 @@ export class NodeEditor extends RapidElement {
 
       // Convert Record objects to array format for key-value editors
       this.processFormDataForEditing();
+
+      // Store a copy of the original form data for computed field comparisons
+      this.originalFormData = JSON.parse(JSON.stringify(this.formData));
     }
   }
 
@@ -264,6 +382,10 @@ export class NodeEditor extends RapidElement {
     const validation = this.validateForm();
     if (!validation.valid) {
       this.errors = validation.errors;
+
+      // Expand any groups that contain validation errors
+      this.expandGroupsWithErrors(validation.errors);
+
       return;
     }
 
@@ -460,7 +582,7 @@ export class NodeEditor extends RapidElement {
         }
 
         if (hasValidationErrors) {
-          errors[fieldName] = `Please resolve validation errors before saving`;
+          errors[fieldName] = `Please resolve validation errors to continue`;
         }
       }
     });
@@ -698,8 +820,39 @@ export class NodeEditor extends RapidElement {
       this.errors = newErrors;
     }
 
+    // Check for computed values in dependent fields
+    this.updateComputedFields(propertyName);
+
     // Trigger re-render to handle conditional field visibility
     this.requestUpdate();
+  }
+
+  private updateComputedFields(changedFieldName: string): void {
+    if (!this.action) return;
+
+    const config = ACTION_CONFIG[this.action.type];
+    if (!config?.form) return;
+
+    // Check all fields to see if any depend on the changed field
+    Object.entries(config.form).forEach(([fieldName, fieldConfig]) => {
+      if (fieldConfig.dependsOn?.includes(changedFieldName)) {
+        if (fieldConfig.computeValue) {
+          const currentValue = this.formData[fieldName];
+
+          const computedValue = fieldConfig.computeValue(
+            this.formData,
+            currentValue,
+            this.originalFormData
+          );
+
+          // Update the form data with the computed value
+          this.formData = {
+            ...this.formData,
+            [fieldName]: computedValue
+          };
+        }
+      }
+    });
   }
 
   private renderNewField(
@@ -722,6 +875,32 @@ export class NodeEditor extends RapidElement {
 
     const errors = this.errors[fieldName] ? [this.errors[fieldName]] : [];
 
+    // Build container style with maxWidth if specified
+    const containerStyle = config.maxWidth
+      ? `max-width: ${config.maxWidth};`
+      : '';
+
+    const fieldContent = this.renderFieldContent(
+      fieldName,
+      config,
+      value,
+      errors
+    );
+
+    // Wrap in container with style if maxWidth is specified
+    if (containerStyle) {
+      return html`<div style="${containerStyle}">${fieldContent}</div>`;
+    }
+
+    return fieldContent;
+  }
+
+  private renderFieldContent(
+    fieldName: string,
+    config: FieldConfig,
+    value: any,
+    errors: string[]
+  ): TemplateResult {
     switch (config.type) {
       case 'text':
         return html`<temba-textinput
@@ -872,6 +1051,236 @@ export class NodeEditor extends RapidElement {
     }
   }
 
+  private handleGroupToggle(groupLabel: string): void {
+    this.groupCollapseState = {
+      ...this.groupCollapseState,
+      [groupLabel]: !this.groupCollapseState[groupLabel]
+    };
+  }
+
+  private expandGroupsWithErrors(errors: { [key: string]: string }): void {
+    if (!this.action) return;
+
+    const config = ACTION_CONFIG[this.action.type];
+    if (!config?.layout) return;
+
+    const errorFields = new Set(Object.keys(errors));
+    this.expandGroupsWithErrorsRecursive(config.layout, errorFields);
+  }
+
+  private expandGroupsWithErrorsRecursive(
+    items: LayoutItem[],
+    errorFields: Set<string>
+  ): void {
+    items.forEach((item) => {
+      if (typeof item === 'object' && item.type === 'group') {
+        const fieldsInGroup = this.collectFieldsFromItems(item.items);
+        const groupHasErrors = fieldsInGroup.some((fieldName) =>
+          errorFields.has(fieldName)
+        );
+
+        if (groupHasErrors) {
+          // Expand this group
+          this.groupCollapseState = {
+            ...this.groupCollapseState,
+            [item.label]: false
+          };
+        }
+
+        // Recursively check nested items
+        this.expandGroupsWithErrorsRecursive(item.items, errorFields);
+      } else if (typeof item === 'object' && item.type === 'row') {
+        // Recursively check items in rows
+        this.expandGroupsWithErrorsRecursive(item.items, errorFields);
+      }
+    });
+  }
+
+  private renderLayoutItem(
+    item: LayoutItem,
+    config: ActionConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    if (typeof item === 'string') {
+      // String shorthand for field
+      return this.renderLayoutItem(
+        { type: 'field', field: item },
+        config,
+        renderedFields
+      );
+    }
+
+    switch (item.type) {
+      case 'field':
+        if (config.form![item.field] && !renderedFields.has(item.field)) {
+          renderedFields.add(item.field);
+          return this.renderNewField(
+            item.field,
+            config.form![item.field] as FieldConfig,
+            this.formData[item.field]
+          );
+        }
+        return html``;
+
+      case 'row':
+        return this.renderRow(item, config, renderedFields);
+
+      case 'group':
+        return this.renderGroup(item, config, renderedFields);
+
+      default:
+        return html``;
+    }
+  }
+
+  private renderRow(
+    rowConfig: RowLayoutConfig,
+    config: ActionConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const { items, gap = '1rem' } = rowConfig;
+
+    // Collect all fields from this row for width calculations
+    const fieldsInRow = this.collectFieldsFromItems(items);
+    const validFields = fieldsInRow.filter(
+      (fieldName) => config.form?.[fieldName]
+    );
+
+    if (validFields.length === 0) {
+      return html``;
+    }
+
+    // Calculate grid template columns based on field maxWidth constraints
+    const columns = validFields.map((fieldName) => {
+      const fieldConfig = config.form![fieldName];
+      return fieldConfig.maxWidth || '1fr';
+    });
+
+    return html`
+      <div
+        class="form-row"
+        style="display: grid; grid-template-columns: ${columns.join(
+          ' '
+        )}; gap: ${gap};"
+      >
+        ${items.map((item) =>
+          this.renderLayoutItem(item, config, renderedFields)
+        )}
+      </div>
+    `;
+  }
+
+  private renderGroup(
+    groupConfig: GroupLayoutConfig,
+    config: ActionConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const {
+      label,
+      items,
+      collapsible = false,
+      collapsed = false,
+      helpText
+    } = groupConfig;
+
+    // Initialize collapse state if not set
+    if (collapsible && !(label in this.groupCollapseState)) {
+      this.groupCollapseState = {
+        ...this.groupCollapseState,
+        [label]: collapsed
+      };
+    }
+
+    const isCollapsed = collapsible
+      ? this.groupCollapseState[label] ?? collapsed
+      : false;
+
+    // Check if any field in this group has errors
+    const fieldsInGroup = this.collectFieldsFromItems(items);
+    const groupHasErrors = fieldsInGroup.some(
+      (fieldName) => this.errors[fieldName]
+    );
+
+    return html`
+      <div
+        class="form-group ${collapsible ? 'collapsible' : ''} ${groupHasErrors
+          ? 'has-errors'
+          : ''}"
+      >
+        <div
+          class="form-group-header ${collapsible ? 'clickable' : ''}"
+          @click=${collapsible
+            ? () => this.handleGroupToggle(label)
+            : undefined}
+        >
+          <div class="form-group-info">
+            <div class="form-group-title">${label}</div>
+            ${helpText
+              ? html`<div class="form-group-help">${helpText}</div>`
+              : ''}
+          </div>
+          ${groupHasErrors
+            ? html`<temba-icon
+                name="alert_warning"
+                class="group-error-icon"
+                size="1.5"
+              ></temba-icon>`
+            : ''}
+          ${collapsible && !groupHasErrors
+            ? html`<temba-icon
+                name="arrow_right"
+                size="1.5"
+                class="group-toggle-icon ${isCollapsed
+                  ? 'collapsed'
+                  : 'expanded'}"
+              ></temba-icon>`
+            : ''}
+        </div>
+        <div
+          class="form-group-content ${isCollapsed ? 'collapsed' : 'expanded'}"
+        >
+          ${items.map((item) =>
+            this.renderLayoutItem(item, config, renderedFields)
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  private collectFieldsFromItems(items: LayoutItem[]): string[] {
+    const fields: string[] = [];
+
+    items.forEach((item) => {
+      if (typeof item === 'string') {
+        fields.push(item);
+      } else if (item.type === 'field') {
+        fields.push(item.field);
+      } else if (item.type === 'row') {
+        fields.push(...this.collectFieldsFromItems(item.items));
+      } else if (item.type === 'group') {
+        fields.push(...this.collectFieldsFromItems(item.items));
+      }
+    });
+
+    return fields;
+  }
+
+  private renderFieldRow(
+    rowConfig: RowLayoutConfig,
+    config: ActionConfig
+  ): TemplateResult {
+    // This method is deprecated - use renderRow instead
+    return this.renderRow(rowConfig, config, new Set());
+  }
+
+  private renderFieldGroup(
+    groupConfig: GroupLayoutConfig,
+    config: ActionConfig
+  ): TemplateResult {
+    // This method is deprecated - use renderGroup instead
+    return this.renderGroup(groupConfig, config, new Set());
+  }
+
   private handleNewFieldChange(fieldName: string, value: any) {
     this.formData = {
       ...this.formData,
@@ -901,15 +1310,40 @@ export class NodeEditor extends RapidElement {
 
     // Use the new fields configuration system
     if (config.form) {
-      return html`
-        ${Object.entries(config.form).map(([fieldName, fieldConfig]) =>
-          this.renderNewField(
-            fieldName,
-            fieldConfig as FieldConfig,
-            this.formData[fieldName]
-          )
-        )}
-      `;
+      // If layout is specified, use it
+      if (config.layout) {
+        const renderedFields = new Set<string>();
+
+        return html`
+          ${config.layout.map((item) =>
+            this.renderLayoutItem(item, config, renderedFields)
+          )}
+          ${
+            /* Render any fields not explicitly placed in layout */
+            Object.entries(config.form).map(([fieldName, fieldConfig]) => {
+              if (!renderedFields.has(fieldName)) {
+                return this.renderNewField(
+                  fieldName,
+                  fieldConfig as FieldConfig,
+                  this.formData[fieldName]
+                );
+              }
+              return html``;
+            })
+          }
+        `;
+      } else {
+        // Default rendering without layout
+        return html`
+          ${Object.entries(config.form).map(([fieldName, fieldConfig]) =>
+            this.renderNewField(
+              fieldName,
+              fieldConfig as FieldConfig,
+              this.formData[fieldName]
+            )
+          )}
+        `;
+      }
     }
 
     return html` <div>No form configuration available</div> `;

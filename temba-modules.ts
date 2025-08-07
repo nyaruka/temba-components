@@ -68,7 +68,7 @@ import { WorkspaceSelect } from './src/form/select/WorkspaceSelect';
 import { TembaChart } from './src/live/TembaChart';
 import { RangePicker } from './src/form/RangePicker';
 import { NodeEditor } from './src/flow/NodeEditor';
-import { TembaKeyValueEditor } from './src/form/KeyValueEditor';
+import { KeyValueEditor } from './src/form/KeyValueEditor';
 import { TembaArrayEditor } from './src/form/ArrayEditor';
 import './src/form/BaseListEditor'; // Import base class
 
@@ -149,5 +149,5 @@ addCustomElement('temba-popup-select', PopupSelect);
 addCustomElement('temba-user-select', UserSelect);
 addCustomElement('temba-workspace-select', WorkspaceSelect);
 addCustomElement('temba-chart', TembaChart);
-addCustomElement('temba-key-value-editor', TembaKeyValueEditor);
+addCustomElement('temba-key-value-editor', KeyValueEditor);
 addCustomElement('temba-array-editor', TembaArrayEditor);
