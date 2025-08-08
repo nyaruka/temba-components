@@ -103,8 +103,27 @@ const getResponse = (endpoint: string, options = { method: 'GET' }) => {
       return createJSONResponse(codeMock);
     }
   }
-  // otherwise fetch over http
-  return normalFetch(endpoint, options);
+
+  // Handle test-assets directly by reading from filesystem
+  if (endpoint.startsWith('/test-assets/') || endpoint.startsWith('http://localhost:3000/test-assets/')) {
+    const path = endpoint.replace('http://localhost:3000', '').substring(1);
+    const filePath = require('path').resolve(process.cwd(), path);
+    
+    if (require('fs').existsSync(filePath)) {
+      const content = require('fs').readFileSync(filePath, 'utf-8');
+      return Promise.resolve(new Response(content, {
+        status: 200,
+        headers: {
+          'Content-Type': path.endsWith('.json') ? 'application/json' : 'text/html'
+        }
+      }));
+    } else {
+      return Promise.reject(new Error(`File not found: ${filePath}`));
+    }
+  }
+  
+  // For test environment, don't allow actual network requests - simulate network errors
+  return Promise.reject(new Error(`Network error: ${endpoint}`));
 };
 
 beforeAll(async () => {

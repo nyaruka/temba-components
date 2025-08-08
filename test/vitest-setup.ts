@@ -1,6 +1,49 @@
-import { beforeAll, afterAll } from 'vitest'
+import { beforeAll, afterAll, expect, vi } from 'vitest'
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
+
+// Set up Chai matchers for Vitest spies (since we're using @open-wc/testing with Chai)
+const setupChaiMatchers = () => {
+  // Access global chai if available
+  const chai = (globalThis as any).chai;
+  if (chai) {
+    chai.use(function (chai: any, utils: any) {
+      chai.Assertion.addMethod('toHaveBeenCalled', function () {
+        const spy = this._obj;
+        const hasBeenCalled = spy.mock && spy.mock.calls.length > 0;
+        this.assert(
+          hasBeenCalled,
+          'expected spy to have been called',
+          'expected spy not to have been called'
+        );
+      });
+
+      chai.Assertion.addMethod('toHaveBeenCalledWith', function (...args: any[]) {
+        const spy = this._obj;
+        const hasBeenCalledWith = spy.mock && spy.mock.calls.some((call: any[]) => 
+          call.length === args.length && call.every((arg: any, i: number) => 
+            JSON.stringify(arg) === JSON.stringify(args[i])
+          )
+        );
+        this.assert(
+          hasBeenCalledWith,
+          `expected spy to have been called with ${JSON.stringify(args)}`,
+          `expected spy not to have been called with ${JSON.stringify(args)}`
+        );
+      });
+
+      chai.Assertion.addMethod('toHaveBeenCalledTimes', function (times: number) {
+        const spy = this._obj;
+        const callCount = spy.mock ? spy.mock.calls.length : 0;
+        this.assert(
+          callCount === times,
+          `expected spy to have been called ${times} times but was called ${callCount} times`,
+          `expected spy not to have been called ${times} times`
+        );
+      });
+    });
+  }
+};
 
 // Global browser function stubs for non-browser environment
 declare global {
@@ -12,6 +55,7 @@ declare global {
   var moveMouse: (x: number, y: number) => Promise<void>
   var waitFor: (millis: number) => Promise<void>
   var setViewport: (options: any) => Promise<void>
+  var stub: any // Add global stub for compatibility
 }
 
 // Mock fetch setup for API testing
@@ -107,6 +151,9 @@ const getResponse = (endpoint: string, options = { method: 'GET' }) => {
 
 // Set up browser and fetch mocking
 beforeAll(() => {
+  // Set up Chai matchers
+  setupChaiMatchers();
+  
   // Mock browser interaction functions
   if (typeof globalThis !== 'undefined') {
     globalThis.click = async (selector: string) => {
@@ -146,6 +193,19 @@ beforeAll(() => {
     globalThis.setViewport = async (options: any) => {
       console.log(`Mock setViewport:`, options)
       // For now just simulate
+    }
+    
+    // Add global stub function for compatibility with legacy tests
+    globalThis.stub = (...args: any[]) => {
+      if (args.length === 0) {
+        return vi.fn()
+      } else if (args.length === 2) {
+        // stub(object, methodName) syntax
+        return vi.spyOn(args[0], args[1])
+      } else {
+        // Fallback to simple mock
+        return vi.fn()
+      }
     }
     
     // Set up fetch mocking

@@ -19,16 +19,24 @@ const getContentMenu = async (attrs: any = {}, width = 0) => {
     return contentMenu;
   }
 
-  // if we have an endpoint, wait for a loaded event before returning
-  return new Promise<ContentMenu>((resolve) => {
-    contentMenu.addEventListener(
-      CustomEventType.Loaded,
-      async () => {
-        resolve(contentMenu);
-      },
-      { once: true }
-    );
-  });
+  // Wait for the component to be loaded by checking if items and buttons are populated
+  // This is more reliable than waiting for events in the test environment
+  let attempts = 0;
+  const maxAttempts = 50;
+  
+  while (attempts < maxAttempts) {
+    // Check if the component has loaded (items or buttons populated)
+    if (contentMenu.items.length > 0 || contentMenu.buttons.length > 0) {
+      return contentMenu;
+    }
+    
+    // Wait a short time before checking again
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  
+  // If we still don't have data, return the component anyway for error tests
+  return contentMenu;
 };
 
 describe('temba-content-menu', () => {
