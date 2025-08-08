@@ -101,17 +101,19 @@ export class ActionTest<T extends Action> {
       );
 
       // Step 3: Test round-trip conversion (simulates save workflow)
-      const formData = this.actionConfig.toFormData(action);
-      const convertedAction = this.actionConfig.fromFormData(formData) as T;
+      if (this.actionConfig.toFormData && this.actionConfig.fromFormData) {
+        const formData = this.actionConfig.toFormData(action);
+        const convertedAction = this.actionConfig.fromFormData(formData) as T;
 
-      // Validate the round trip worked
-      expect(convertedAction.uuid).to.equal(action.uuid);
-      expect(convertedAction.type).to.equal(action.type);
+        // Validate the round trip worked
+        expect(convertedAction.uuid).to.equal(action.uuid);
+        expect(convertedAction.type).to.equal(action.type);
 
-      // Validate the converted action
-      if (this.actionConfig.validate) {
-        const validation = this.actionConfig.validate(convertedAction);
-        expect(validation.valid).to.be.true;
+        // Validate the converted action
+        if (this.actionConfig.validate) {
+          const validation = this.actionConfig.validate(convertedAction);
+          expect(validation.valid).to.be.true;
+        }
       }
     });
   }
@@ -123,8 +125,15 @@ export class ActionTest<T extends Action> {
     it('has correct basic properties', () => {
       expect(this.actionConfig.name).to.be.a('string');
       expect(this.actionConfig.color).to.exist;
-      expect(this.actionConfig.toFormData).to.be.a('function');
-      expect(this.actionConfig.fromFormData).to.be.a('function');
+
+      // toFormData and fromFormData are optional - only needed for complex data transformations
+      if (this.actionConfig.toFormData) {
+        expect(this.actionConfig.toFormData).to.be.a('function');
+      }
+      if (this.actionConfig.fromFormData) {
+        expect(this.actionConfig.fromFormData).to.be.a('function');
+      }
+
       if (this.actionConfig.validate) {
         expect(this.actionConfig.validate).to.be.a('function');
       }

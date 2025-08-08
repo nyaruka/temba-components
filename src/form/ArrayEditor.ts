@@ -79,7 +79,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     const item = this._items[itemIndex] || {};
     const currentValue = item[fieldName];
 
-    if (config.computeValue && config.shouldCompute?.(item, currentValue)) {
+    if (config.computeValue) {
       return config.computeValue(item, currentValue);
     }
 

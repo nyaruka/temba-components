@@ -706,10 +706,19 @@ export class CanvasNode extends RapidElement {
 
     // Fire node edit requested event if the node has a router
     if (this.node.router) {
-      this.fireCustomEvent(CustomEventType.NodeEditRequested, {
-        node: this.node,
-        nodeUI: this.ui
-      });
+      // If router node has exactly one action, open the action editor directly
+      if (this.node.actions && this.node.actions.length === 1) {
+        this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+          action: this.node.actions[0],
+          nodeUuid: this.node.uuid
+        });
+      } else {
+        // Otherwise open the node editor as before
+        this.fireCustomEvent(CustomEventType.NodeEditRequested, {
+          node: this.node,
+          nodeUI: this.ui
+        });
+      }
     }
   }
 
@@ -764,10 +773,19 @@ export class CanvasNode extends RapidElement {
         // Using literal 5 instead of DRAG_THRESHOLD since it's not imported
         // Fire event to request node editing if the node has a router
         if (this.node.router) {
-          this.fireCustomEvent(CustomEventType.NodeEditRequested, {
-            node: this.node,
-            nodeUI: this.ui
-          });
+          // If router node has exactly one action, open the action editor directly
+          if (this.node.actions && this.node.actions.length === 1) {
+            this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+              action: this.node.actions[0],
+              nodeUuid: this.node.uuid
+            });
+          } else {
+            // Otherwise open the node editor as before
+            this.fireCustomEvent(CustomEventType.NodeEditRequested, {
+              node: this.node,
+              nodeUI: this.ui
+            });
+          }
         }
       }
     }

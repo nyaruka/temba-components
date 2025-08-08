@@ -129,13 +129,13 @@
             "uuid": "cb497975-a8fb-4d28-a662-277eb7a699f9",
             "type": "call_webhook",
             "url": "http://google.com",
-            "method": "PUT",
+            "method": "POST",
             "headers": {
-              "Accept": "application/json",
+              "Accepts": "application/json",
               "Content-Type": "application/json",
-              "Authentication": "Bearer token here"
+              "Authorization": "Bearer token here"
             },
-            "body": ""
+            "body": "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"value\", \"category\")\n)))"
           }
         ],
         "router": {

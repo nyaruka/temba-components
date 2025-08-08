@@ -8,7 +8,7 @@ interface KeyValueItem extends ListItem {
 }
 
 @customElement('temba-key-value-editor')
-export class TembaKeyValueEditor extends BaseListEditor<KeyValueItem> {
+export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
   @property({ type: String })
   keyPlaceholder = 'Key';
 

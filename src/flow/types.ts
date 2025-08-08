@@ -124,14 +124,20 @@ export interface BaseFieldConfig {
   required?: boolean;
   evaluated?: boolean; // if this field supports expression evaluation
   dependsOn?: string[]; // fields this field depends on
-  computeValue?: (values: Record<string, any>, currentValue: any) => any;
-  shouldCompute?: (values: Record<string, any>, currentValue: any) => boolean;
+  computeValue?: (
+    values: Record<string, any>,
+    currentValue: any,
+    originalValues?: Record<string, any>
+  ) => any;
 
   // Validation properties
   minLength?: number;
   maxLength?: number;
   pattern?: string;
   helpText?: string;
+
+  // Layout properties
+  maxWidth?: string; // CSS max-width value (e.g., '200px', '50%', '10rem')
 
   // Conditional rendering
   conditions?: {
@@ -203,6 +209,35 @@ export type FieldConfig =
   | ArrayFieldConfig
   | CheckboxFieldConfig;
 
+// Layout configurations for better form organization
+// Recursive layout system - any layout item can contain other layout items
+
+export interface FieldItemConfig {
+  type: 'field';
+  field: string; // field name to render
+}
+
+export interface RowLayoutConfig {
+  type: 'row';
+  items: LayoutItem[]; // can contain fields, groups, or other rows
+  gap?: string; // CSS gap value, defaults to '1rem'
+}
+
+export interface GroupLayoutConfig {
+  type: 'group';
+  label: string;
+  items: LayoutItem[]; // can contain fields, rows, or other groups
+  collapsible?: boolean;
+  collapsed?: boolean; // initial state if collapsible
+  helpText?: string;
+}
+
+export type LayoutItem =
+  | FieldItemConfig
+  | RowLayoutConfig
+  | GroupLayoutConfig
+  | string; // string is shorthand for field
+
 export interface ActionConfig {
   name: string;
   color: string;
@@ -210,6 +245,7 @@ export interface ActionConfig {
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;
+  layout?: LayoutItem[]; // optional layout configuration - array of layout items
 
   // Action editor configuration (legacy)
   // Form-level transformations

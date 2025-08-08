@@ -14,22 +14,21 @@ export const call_webhook: ActionConfig = {
   },
   evaluated: ['url', 'headers', 'body'], // keep for backward compatibility
   form: {
+    method: {
+      type: 'select',
+      required: true,
+      options: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
+      maxWidth: '120px',
+      searchable: true
+    },
     url: {
       type: 'text',
-      label: 'URL',
       required: true,
       evaluated: true,
       placeholder: 'https://example.com/webhook'
     },
-    method: {
-      type: 'select',
-      label: 'Method',
-      required: true,
-      options: ['GET', 'POST', 'PUT', 'DELETE']
-    },
     headers: {
       type: 'key-value',
-      label: 'Headers',
       sortable: true,
       keyPlaceholder: 'Header name',
       valuePlaceholder: 'Header value',
@@ -37,12 +36,81 @@ export const call_webhook: ActionConfig = {
     },
     body: {
       type: 'textarea',
-      label: 'Request Body',
       evaluated: true,
       placeholder: 'Request body content (JSON, XML, etc.)',
-      rows: 4
+      minHeight: 200,
+      dependsOn: ['method'],
+      computeValue: (
+        values: Record<string, any>,
+        currentValue: any,
+        originalValues?: Record<string, any>
+      ) => {
+        // Check if method is POST (handle both string and select object formats)
+        const method =
+          Array.isArray(values.method) && values.method.length > 0
+            ? values.method[0].value || values.method[0].name
+            : values.method;
+
+        const defaultTemplate = `@(json(object(
+  "contact", object(
+    "uuid", contact.uuid, 
+    "name", contact.name, 
+    "urn", contact.urn
+  ),
+  "flow", object(
+    "uuid", run.flow.uuid, 
+    "name", run.flow.name
+  ),
+  "results", foreach_value(results, extract_object, "value", "category")
+)))`;
+
+        if (method === 'POST') {
+          // For POST, provide the template if body is empty or was never set by user
+          if (!currentValue || currentValue.trim() === '') {
+            return defaultTemplate;
+          }
+        } else {
+          // For non-POST methods, clear the body if it was auto-generated or empty
+          // Check if the original body was empty (user never specified a body)
+          const originalBody = originalValues?.body || '';
+          const isOriginallyEmpty = !originalBody || originalBody.trim() === '';
+
+          // Clear if: originally empty, contains default template, or is currently empty
+          if (
+            isOriginallyEmpty ||
+            !currentValue ||
+            currentValue.trim() === '' ||
+            currentValue.trim() === defaultTemplate.trim()
+          ) {
+            return '';
+          }
+        }
+
+        return currentValue; // Keep existing value if user has customized it
+      }
     }
   },
+  layout: [
+    // Row with method and URL side by side
+    { type: 'row', items: ['method', 'url'] },
+    // Advanced group with nested layouts
+    {
+      type: 'group',
+      label: 'Headers',
+      items: ['headers'],
+      collapsible: true,
+      collapsed: true,
+      helpText: 'Configure authentication or custom headers'
+    },
+    {
+      type: 'group',
+      label: 'Body',
+      items: ['body'],
+      collapsible: true,
+      collapsed: true,
+      helpText: 'Configure the request payload'
+    }
+  ],
   toFormData: (action: CallWebhook) => {
     return {
       uuid: action.uuid,

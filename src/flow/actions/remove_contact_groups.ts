@@ -20,12 +20,6 @@ export const remove_contact_groups: ActionConfig = {
     };
   },
   form: {
-    all_groups: {
-      type: 'checkbox',
-      label: 'Remove from All Groups',
-      helpText:
-        'Check this to remove the contact from all groups instead of specific ones'
-    },
     groups: {
       type: 'select',
       label: 'Groups',
@@ -40,6 +34,12 @@ export const remove_contact_groups: ActionConfig = {
       conditions: {
         visible: (formData) => !formData.all_groups
       }
+    },
+    all_groups: {
+      type: 'checkbox',
+      label: 'Remove from All Groups',
+      helpText:
+        'Check this to remove the contact from all groups instead of specific ones'
     }
   },
   validate: (action: RemoveFromGroup): ValidationResult => {
