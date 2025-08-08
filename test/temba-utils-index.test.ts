@@ -1,5 +1,5 @@
+import { describe, it, beforeEach, afterEach, vi } from 'vitest';
 import { expect, fixture, html } from '@open-wc/testing';
-import { stub, SinonStub } from 'sinon';
 import {
   log,
   getHTTPCookie,
@@ -67,42 +67,38 @@ describe('utils/index', () => {
   });
 
   describe('log', () => {
-    let consoleLogStub: SinonStub;
+    let consoleLogStub: any;
 
     beforeEach(() => {
-      consoleLogStub = stub(console, 'log');
+      consoleLogStub = vi.spyOn(console, 'log').mockImplementation(() => {});
     });
 
     afterEach(() => {
-      consoleLogStub.restore();
+      consoleLogStub.mockRestore();
     });
 
     it('logs a simple message without styling', () => {
       log('test message');
-      expect(consoleLogStub.calledOnceWith('test message')).to.be.true;
+      expect(consoleLogStub).toHaveBeenCalledWith('test message');
     });
 
     it('logs an object with styling', () => {
       const obj = { test: 'value' };
       log(obj, 'color: red;');
-      expect(
-        consoleLogStub.calledOnceWith(
-          '%c' + JSON.stringify(obj, null, 2),
-          'color: red;'
-        )
-      ).to.be.true;
+      expect(consoleLogStub).toHaveBeenCalledWith(
+        '%c' + JSON.stringify(obj, null, 2),
+        'color: red;'
+      );
     });
 
     it('logs a string with styling and details', () => {
       log('test message', 'color: blue;', ['detail1', 'detail2']);
-      expect(
-        consoleLogStub.calledOnceWith(
-          '%ctest message',
-          'color: blue;',
-          'detail1',
-          'detail2'
-        )
-      ).to.be.true;
+      expect(consoleLogStub).toHaveBeenCalledWith(
+        '%ctest message',
+        'color: blue;',
+        'detail1',
+        'detail2'
+      );
     });
   });
 

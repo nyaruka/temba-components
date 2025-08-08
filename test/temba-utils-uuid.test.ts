@@ -1,3 +1,4 @@
+import { describe, it } from 'vitest';
 import { assert } from '@open-wc/testing';
 import { generateUUID } from '../src/utils';
 
