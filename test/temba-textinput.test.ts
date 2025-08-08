@@ -1,3 +1,4 @@
+import { describe, it, beforeAll, vi } from 'vitest';
 import { fixture, expect, assert } from '@open-wc/testing';
 import { TextInput } from '../src/form/TextInput';
 import { assertScreenshot, getAttributes, getClip } from './utils.test';
