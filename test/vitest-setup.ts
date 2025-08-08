@@ -1,4 +1,6 @@
 import { beforeAll, afterAll } from 'vitest'
+import { readFileSync, existsSync } from 'fs'
+import { resolve } from 'path'
 
 // Global browser function stubs for non-browser environment
 declare global {
@@ -33,6 +35,7 @@ export const clearMockPosts = () => {
 const createResponse = (mock: any) => {
   return new Response(mock.body, {
     status: parseInt(mock.status),
+    statusText: mock.status === '200' ? 'OK' : 'Error',
     headers: {
       'Content-Type': 'text/html',
       ...mock.headers
@@ -43,6 +46,7 @@ const createResponse = (mock: any) => {
 const createJSONResponse = (mock: any) => {
   return new Response(JSON.stringify(mock.body), {
     status: parseInt(mock.status),
+    statusText: mock.status === '200' ? 'OK' : 'Error',
     headers: {
       'Content-Type': 'application/json',
       ...mock.headers
@@ -57,8 +61,20 @@ const getResponse = (endpoint: string, options = { method: 'GET' }) => {
   if (mock) {
     if (typeof mock.body === 'string') {
       if (mock.body.startsWith('/')) {
-        // Mock points to a file, use original fetch
-        return originalFetch(endpoint, options)
+        // Mock points to a file, read from filesystem
+        const filePath = resolve(process.cwd(), mock.body.substring(1))
+        if (existsSync(filePath)) {
+          const content = readFileSync(filePath, 'utf-8')
+          return Promise.resolve(new Response(content, {
+            status: 200,
+            headers: {
+              'Content-Type': mock.body.endsWith('.json') ? 'application/json' : 'text/html',
+              ...mock.headers
+            }
+          }))
+        } else {
+          return Promise.reject(new Error(`File not found: ${filePath}`))
+        }
       } else {
         return Promise.resolve(createResponse(mock))
       }
@@ -67,8 +83,26 @@ const getResponse = (endpoint: string, options = { method: 'GET' }) => {
     }
   }
   
-  // Fall back to original fetch
-  return originalFetch(endpoint, options)
+  // Handle test-assets directly by reading from filesystem
+  if (endpoint.startsWith('/test-assets/') || endpoint.startsWith('http://localhost:3000/test-assets/')) {
+    const path = endpoint.replace('http://localhost:3000', '').substring(1)
+    const filePath = resolve(process.cwd(), path)
+    
+    if (existsSync(filePath)) {
+      const content = readFileSync(filePath, 'utf-8')
+      return Promise.resolve(new Response(content, {
+        status: 200,
+        headers: {
+          'Content-Type': path.endsWith('.json') ? 'application/json' : 'text/html'
+        }
+      }))
+    } else {
+      return Promise.reject(new Error(`File not found: ${filePath}`))
+    }
+  }
+  
+  // For test environment, don't allow actual network requests - simulate network errors instead
+  return Promise.reject(new Error(`Network error: ${endpoint}`))
 }
 
 // Set up browser and fetch mocking
