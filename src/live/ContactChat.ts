@@ -11,7 +11,6 @@ import {
 import {
   fetchResults,
   getUrl,
-  oxford,
   oxfordFn,
   postJSON,
   postUrl,
@@ -21,24 +20,18 @@ import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
 import {
   AirtimeTransferredEvent,
-  CampaignFiredEvent,
   ChannelEvent,
   ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
   ContactLanguageChangedEvent,
-  EmailSentEvent,
-  ErrorMessageEvent,
   FlowEvent,
-  LabelsAddedEvent,
   MsgEvent,
   NameChangedEvent,
   OptinRequestedEvent,
   TicketEvent,
   UpdateFieldEvent,
-  UpdateResultEvent,
-  URNsChangedEvent,
-  WebhookEvent
+  URNsChangedEvent
 } from '../events';
 import { Chat, ChatEvent, MessageType } from '../display/Chat';
 import { getUserDisplay } from '../webchat';
@@ -63,19 +56,14 @@ export enum Events {
   FLOW_ENTERED = 'flow_entered',
 
   FLOW_EXITED = 'flow_exited',
-  RUN_RESULT_CHANGED = 'run_result_changed',
   CONTACT_FIELD_CHANGED = 'contact_field_changed',
   CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
   CONTACT_NAME_CHANGED = 'contact_name_changed',
   CONTACT_URNS_CHANGED = 'contact_urns_changed',
-  CAMPAIGN_FIRED = 'campaign_fired',
   CHANNEL_EVENT = 'channel_event',
   CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
-  WEBHOOK_CALLED = 'webhook_called',
   AIRTIME_TRANSFERRED = 'airtime_transferred',
   CALL_STARTED = 'call_started',
-  EMAIL_SENT = 'email_sent',
-  INPUT_LABELS_ADDED = 'input_labels_added',
   NOTE_CREATED = 'note_created',
   TICKET_ASSIGNED = 'ticket_assigned',
   TICKET_NOTE_ADDED = 'ticket_note_added',
@@ -83,9 +71,7 @@ export enum Events {
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
   TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
-  OPTIN_REQUESTED = 'optin_requested',
-  ERROR = 'error',
-  FAILURE = 'failure'
+  OPTIN_REQUESTED = 'optin_requested'
 }
 
 const renderInfoList = (singular: string, plural: string, items: any[]) => {
@@ -100,10 +86,6 @@ const renderInfoList = (singular: string, plural: string, items: any[]) => {
       return `${plural} ${list.join(', ')}, and ${last}`;
     }
   }
-};
-
-const toTitleCase = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
 const renderChannelEvent = (event: ChannelEvent): string => {
@@ -144,12 +126,6 @@ const renderFlowEvent = (event: FlowEvent): string => {
   return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
 };
 
-const renderResultEvent = (event: UpdateResultEvent): string => {
-  if (!event.name.startsWith('_') && event.value) {
-    return `Updated flow result **${event.name}** to **${event.value}**`;
-  }
-};
-
 const renderUpdateEvent = (event: UpdateFieldEvent): string => {
   return event.value
     ? `Updated **${event.field.name}** to **${event.value.text}**`
@@ -165,16 +141,6 @@ const renderContactURNsChanged = (event: URNsChangedEvent): string => {
     event.urns,
     (urn: string) => `**${urn.split(':')[1].split('?')[0]}**`
   )}`;
-};
-
-const renderEmailSent = (event: EmailSentEvent): string => {
-  return `Email sent to **${oxford(event.to, 'and')}** with subject **${
-    event.subject
-  }**`;
-};
-
-const renderLabelsAdded = (event: LabelsAddedEvent): string => {
-  return `Applied ${renderInfoList('label', 'labels', event.labels)}`;
 };
 
 export const renderTicketAction = (
@@ -216,29 +182,8 @@ export const renderContactGroupsEvent = (event: ContactGroupsEvent): string => {
   }
 };
 
-export const renderCampaignFiredEvent = (event: CampaignFiredEvent): string => {
-  return `Campaign ${event.campaign.name}
-      ${event.fired_result === 'S' ? 'skipped' : 'triggered'}
-      ${event.campaign_event.offset_display}
-      ${event.campaign_event.relative_to.name}`;
-};
-
 export const renderTicketOpened = (event: TicketEvent): string => {
   return `${event.ticket.topic.name} ticket was opened`;
-};
-
-export const renderErrorMessage = (event: ErrorMessageEvent): string => {
-  return `${event.text} ${
-    event.type === Events.FAILURE
-      ? `Run ended prematurely, check the flow design`
-      : null
-  }`;
-};
-
-export const renderWebhookEvent = (event: WebhookEvent): string => {
-  return event.status === 'success'
-    ? `Successfully called ${event.url}`
-    : `Failed to call ${event.url}`;
 };
 
 export const renderAirtimeTransferredEvent = (
@@ -656,15 +601,6 @@ export class ContactChat extends ContactStoreElement {
   public getEventMessage(event: ContactEvent): ChatEvent {
     let message = null;
     switch (event.type) {
-      case Events.ERROR:
-      case Events.FAILURE:
-        message = {
-          type: MessageType.Inline,
-          text: `Error during flow: ${toTitleCase(
-            (event as ErrorMessageEvent).text
-          )}`
-        };
-        break;
       case Events.TICKET_OPENED:
         message = {
           type: MessageType.Inline,
@@ -702,12 +638,6 @@ export class ContactChat extends ContactStoreElement {
           text: renderFlowEvent(event as FlowEvent)
         };
         break;
-      case Events.RUN_RESULT_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderResultEvent(event as UpdateResultEvent)
-        };
-        break;
       case Events.CONTACT_FIELD_CHANGED:
         message = {
           type: MessageType.Inline,
@@ -726,28 +656,10 @@ export class ContactChat extends ContactStoreElement {
           text: renderContactURNsChanged(event as URNsChangedEvent)
         };
         break;
-      case Events.EMAIL_SENT:
-        message = {
-          type: MessageType.Inline,
-          text: renderEmailSent(event as EmailSentEvent)
-        };
-        break;
-      case Events.INPUT_LABELS_ADDED:
-        message = {
-          type: MessageType.Inline,
-          text: renderLabelsAdded(event as LabelsAddedEvent)
-        };
-        break;
       case Events.CONTACT_GROUPS_CHANGED:
         message = {
           type: MessageType.Inline,
           text: renderContactGroupsEvent(event as ContactGroupsEvent)
-        };
-        break;
-      case Events.WEBHOOK_CALLED:
-        message = {
-          type: MessageType.Inline,
-          text: renderWebhookEvent(event as WebhookEvent)
         };
         break;
       case Events.AIRTIME_TRANSFERRED:
@@ -760,12 +672,6 @@ export class ContactChat extends ContactStoreElement {
         message = {
           type: MessageType.Inline,
           text: renderCallStartedEvent()
-        };
-        break;
-      case Events.CAMPAIGN_FIRED:
-        message = {
-          type: MessageType.Inline,
-          text: renderCampaignFiredEvent(event as CampaignFiredEvent)
         };
         break;
       case Events.CHANNEL_EVENT:
@@ -853,8 +759,8 @@ export class ContactChat extends ContactStoreElement {
         ) {
           const msgEvent = event as MsgEvent;
           messages.push({
+            uuid: event.uuid,
             type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
-            id: msgEvent.msg.id + '',
             user: this.getUserForEvent(msgEvent),
             date: new Date(msgEvent.created_on),
             attachments: msgEvent.msg.attachments,

@@ -45,11 +45,10 @@
       }
     },
     {
+      "uuid": "01988a70-075b-74e4-b738-3be521174d83",
       "type": "msg_created",
       "created_on": "2021-03-31T00:30:00.585471+00:00",
       "msg": {
-        "uuid": "70e2e0bb-418a-410c-b90f-10374a0c8caf",
-        "id": 1485,
         "urn": "tel:+250788123123",
         "text": "Hey John, just checking in on you",
         "channel": {
@@ -72,21 +71,20 @@
       "status": "C"
     },
     {
+      "uuid": "01988a70-3e8f-7890-b1d2-7418db7a575e",
       "type": "airtime_transferred",
       "created_on": "2021-03-30T22:20:35.573511+00:00",
       "sender": "tel:123456",
       "recipient": "tel:+250788123123?channel=8a81e9e0-10a0-4319-9b00-ce723cfa8303&id=9951&priority=1000",
       "currency": null,
       "desired_amount": "0.00",
-      "actual_amount": "0.00",
-      "logs_url": "/airtimetransfer/read/2/"
+      "actual_amount": "0.00"
     },
     {
+      "uuid": "01988a70-6cd1-738d-b5d6-ef9f9a0c529f",
       "type": "msg_created",
       "created_on": "2021-03-30T22:20:33.924847+00:00",
       "msg": {
-        "uuid": "37507bdd-9087-4782-828d-ad5c17c14f72",
-        "id": 1484,
         "urn": "tel:+250788123123",
         "text": "No problem, we are all done then!",
         "channel": {
@@ -98,11 +96,10 @@
       "logs_url": "/channels/channellog/read/1478/"
     },
     {
+      "uuid": "01988a71-045a-7902-8734-84311a7569de",
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:33.801814+00:00",
       "msg": {
-        "uuid": "b872ae96-28b1-4858-95c5-b7b662ccd08c",
-        "id": 1483,
         "urn": "tel:+250788123123",
         "text": "no",
         "channel": {
@@ -114,11 +111,10 @@
       "logs_url": "/channels/channellog/read/1477/"
     },
     {
+      "uuid": "01988a71-6736-7948-9517-32971fcba1cb",
       "type": "msg_created",
       "created_on": "2021-03-30T22:20:31.933653+00:00",
       "msg": {
-        "uuid": "c095a764-590a-4359-ba2a-c626f4e9baeb",
-        "id": 1482,
         "urn": "tel:+250788123123",
         "text": "Mmmmm... delicious Primus. If only they made blue Primus! Do you want to set your name?",
         "channel": {
@@ -130,11 +126,10 @@
       "logs_url": "/channels/channellog/read/1476/"
     },
     {
+      "uuid": "01988a75-60cc-7681-bf4b-2b0b42347fc4",
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:31.656303+00:00",
       "msg": {
-        "uuid": "925995ad-fa5f-4f01-b8f1-050703f333e0",
-        "id": 1481,
         "urn": "tel:+250788123123",
         "text": "primus",
         "channel": {
@@ -146,11 +141,10 @@
       "logs_url": "/channels/channellog/read/1475/"
     },
     {
+      "uuid": "01988a76-58fb-7252-9fac-3c6a385e8af1",
       "type": "msg_created",
       "created_on": "2021-03-30T22:20:29.397529+00:00",
       "msg": {
-        "uuid": "9f0b200a-6e24-451d-a7cb-06ef2518d1e5",
-        "id": 1480,
         "urn": "tel:+250788123123",
         "text": "Good choice, I like Blue too! What is your favorite beer?",
         "channel": {
@@ -162,11 +156,10 @@
       "logs_url": "/channels/channellog/read/1474/"
     },
     {
+      "uuid": "01988a76-afe4-7958-bea8-51683d99f665",
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:29.277186+00:00",
       "msg": {
-        "uuid": "a702b6a6-3035-433b-9029-1a8dfa0c0194",
-        "id": 1479,
         "urn": "tel:+250788123123",
         "text": "blue",
         "channel": {
@@ -202,24 +195,10 @@
       "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
     },
     {
-      "type": "input_labels_added",
-      "created_on": "2021-03-30T15:20:26.704494-07:00",
-      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
-      "input_uuid": "89109a8c-2895-46b7-aa44-170570de7d6a",
-      "labels": [
-        {
-          "uuid": "825e2cef-2465-4467-a315-f10a83b6d8aa",
-          "name": "A label"
-        }
-      ],
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
-    },
-    {
+      "uuid": "01988a76-febd-7157-b2cd-4bc0c1663173",
       "type": "msg_created",
       "created_on": "2021-03-30T22:20:26.704491+00:00",
       "msg": {
-        "uuid": "eef09c0f-24dc-426c-8050-50795dca8e8b",
-        "id": 1478,
         "urn": "tel:+250788123123",
         "text": "What is your favorite color?",
         "channel": {
@@ -240,11 +219,10 @@
       "logs_url": null
     },
     {
+      "uuid": "01988a77-979e-7768-a940-8d9c348e24fe",
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:26.557388+00:00",
       "msg": {
-        "uuid": "89109a8c-2895-46b7-aa44-170570de7d6a",
-        "id": 1477,
         "urn": "tel:+250788123123",
         "text": "fav",
         "channel": {

@@ -7,6 +7,7 @@ export interface EventGroup {
 }
 
 export interface ContactEvent {
+  uuid?: string;
   type: string;
   created_on: string;
   created_by?: User;
@@ -46,7 +47,6 @@ export interface MsgEvent extends ContactEvent {
   failed_reason?: string;
   failed_reason_display?: string;
   logs_url: string;
-  msg_type: string;
   recipient_count?: number;
   created_by?: User;
   optin?: ObjectReference;
@@ -55,12 +55,6 @@ export interface MsgEvent extends ContactEvent {
 export interface FlowEvent extends ContactEvent {
   flow: ObjectReference;
   status: string;
-}
-
-export interface EmailSentEvent extends ContactEvent {
-  to: string[];
-  subject: string;
-  body: string;
 }
 
 export interface URNsChangedEvent extends ContactEvent {
@@ -80,10 +74,6 @@ export interface TicketEvent extends ContactEvent {
   created_by?: User;
 }
 
-export interface LabelsAddedEvent extends ContactEvent {
-  labels: ObjectReference[];
-}
-
 export interface NameChangedEvent extends ContactEvent {
   name: string;
 }
@@ -93,28 +83,9 @@ export interface UpdateFieldEvent extends ContactEvent {
   value: { text: string };
 }
 
-export interface ErrorMessageEvent extends ContactEvent {
-  text: string;
-}
-
-export interface UpdateResultEvent extends ContactEvent {
-  name: string;
-  value: string;
-  category: string;
-  input: string;
-}
-
 export interface ContactGroupsEvent extends ContactEvent {
   groups_added: ObjectReference[];
   groups_removed: ObjectReference[];
-}
-
-export interface WebhookEvent extends ContactEvent {
-  status: string;
-  status_code: number;
-  elapsed_ms: number;
-  logs_url: string;
-  url: string;
 }
 
 export interface AirtimeTransferredEvent extends ContactEvent {
@@ -123,19 +94,9 @@ export interface AirtimeTransferredEvent extends ContactEvent {
   currency: string;
   desired_amount: string;
   actual_amount: string;
-  logs_url: string;
 }
 
 export type CallStartedEvent = ContactEvent;
-export interface CampaignFiredEvent extends ContactEvent {
-  campaign: { uuid: string; id: number; name: string };
-  campaign_event: {
-    id: number;
-    offset_display: string;
-    relative_to: { key: string; name: string };
-  };
-  fired_result: string;
-}
 
 export interface ContactHistoryPage {
   has_older: boolean;
