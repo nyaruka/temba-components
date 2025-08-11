@@ -100,7 +100,6 @@ export interface Msg {
   channel: ObjectReference;
   quick_replies: string[];
   urn: string;
-  id: number;
   direction: string;
   type: string;
   attachments: string[];
