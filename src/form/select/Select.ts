@@ -742,9 +742,11 @@ export class Select<T extends SelectOption> extends FormElement {
             }
 
             // remove any arbitrary values
-            this.values = this.values.filter((value) => {
-              return !(value as any).arbitrary;
-            });
+            for (let i = this.values.length - 1; i >= 0; i--) {
+              if ((this.values[i] as any).arbitrary) {
+                this.values.splice(i, 1);
+              }
+            }
 
             // reset our cache
             this.cacheKey = new Date().getTime().toString();
@@ -865,6 +867,11 @@ export class Select<T extends SelectOption> extends FormElement {
         if (!this.isMultiMode && this.values.length === 1) {
           this.selection = this.values[0];
           this.value = this.serializeValue(this.values[0]);
+
+          // Ensure FormElement internals are updated
+          if (this.internals) {
+            this.internals.setFormValue(this.value);
+          }
         } else {
           if (this.inputRoot.parentElement) {
             this.values.forEach((value) => {
@@ -1535,21 +1542,25 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public setValues(values: any[]) {
     const oldValues = this.values;
-    this.values = values;
+    this.values.splice(0, this.values.length, ...values);
     this.requestUpdate('values', oldValues);
+    this.updateInputs();
+    this.fireEvent('change');
   }
 
   public addValue(value: any) {
     const oldValues = [...this.values];
-    this.values = [...this.values, value];
+    this.values.push(value);
     this.requestUpdate('values', oldValues);
+    this.updateInputs();
+    this.fireEvent('change');
   }
 
   public removeValue(valueToRemove: any) {
     const oldValues = [...this.values];
     const idx = this.values.indexOf(valueToRemove);
     if (idx > -1) {
-      this.values = this.values.filter((_, index) => index !== idx);
+      this.values.splice(idx, 1);
 
       // Also remove the 'selected' attribute from the corresponding temba-option element
       const valueToMatch = this.getValue(valueToRemove);
@@ -1565,19 +1576,25 @@ export class Select<T extends SelectOption> extends FormElement {
     }
     this.requestUpdate('values', oldValues);
     this.infoText = '';
+    this.updateInputs();
+    this.fireEvent('change');
   }
 
   public popValue() {
     const oldValues = [...this.values];
-    this.values = this.values.slice(0, -1);
+    this.values.pop();
     this.requestUpdate('values', oldValues);
     this.infoText = '';
+    this.updateInputs();
+    this.fireEvent('change');
   }
 
   public clear() {
     const oldValues = this.values;
-    this.values = [];
+    this.values.splice(0, this.values.length);
     this.requestUpdate('values', oldValues);
+    this.updateInputs();
+    this.fireEvent('change');
   }
 
   private shouldShowEmptyMessage(): boolean {
@@ -1607,13 +1624,12 @@ export class Select<T extends SelectOption> extends FormElement {
         toIdx < this.values.length
       ) {
         const oldValues = [...this.values];
-        // Create a new array with the moved item
-        const newValues = [...this.values];
-        const movedItem = newValues[fromIdx];
-        newValues.splice(fromIdx, 1);
-        newValues.splice(toIdx, 0, movedItem);
-        this.values = newValues;
+        // Move the item using splice operations directly on this.values
+        const movedItem = this.values.splice(fromIdx, 1)[0];
+        this.values.splice(toIdx, 0, movedItem);
         this.requestUpdate('values', oldValues);
+        this.updateInputs();
+        this.fireEvent('change');
       }
     }
   }

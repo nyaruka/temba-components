@@ -276,6 +276,17 @@ export class NodeEditor extends RapidElement {
       // Store a copy of the original form data for computed field comparisons
       this.originalFormData = JSON.parse(JSON.stringify(this.formData));
     }
+
+    // enforce immutability of formData
+    Object.keys(this.formData).forEach((key) => {
+      const value = this.formData[key];
+      if (Array.isArray(value)) {
+        this.formData[key] = [...value];
+      } else if (value && typeof value === 'object') {
+        // If it's an object, ensure we don't mutate the original
+        this.formData[key] = { ...value };
+      }
+    });
   }
 
   private processFormDataForEditing(): void {
