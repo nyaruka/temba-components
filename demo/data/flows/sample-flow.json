@@ -203,11 +203,23 @@
                 "count": 0
               },
               {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
+              },
+              {
                 "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
                 "name": "Empty",
                 "query": null,
                 "status": "ready",
                 "count": 0
+              },
+              {
+                "uuid": "94e3ff12-9206-4ce8-87ab-934a864a1819",
+                "name": "Youth",
+                "query": "age <= 18",
+                "status": "ready",
+                "count": 174
               }
             ],
             "all_groups": false

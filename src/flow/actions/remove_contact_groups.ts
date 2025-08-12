@@ -16,7 +16,7 @@ export const remove_contact_groups: ActionConfig = {
     return {
       uuid: action.uuid,
       all_groups: action.all_groups || false,
-      groups: action.groups ? [...action.groups] : []
+      groups: action.groups || []
     };
   },
   form: {
