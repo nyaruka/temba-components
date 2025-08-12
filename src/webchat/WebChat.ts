@@ -88,7 +88,7 @@ const sockToChat = function (msg: any): ChatEvent | Message {
   const msgContent = msg.msg_in || msg.msg_out;
 
   return {
-    id: msgContent.id,
+    uuid: msgContent.uuid,
     type,
     text: msgContent.text,
     date: new Date(msgContent.time),

@@ -26,7 +26,7 @@ interface User {
 }
 
 export interface ChatEvent {
-  id?: string;
+  uuid?: string;
   type: MessageType;
   text: string;
   date: Date;
@@ -533,8 +533,8 @@ export class Chat extends RapidElement {
   ) {
     // make sure our messages have ids
     messages.forEach((m) => {
-      if (!m.id) {
-        m.id = hashCode(m.text) + '_' + m.date.toISOString();
+      if (!m.uuid) {
+        m.uuid = hashCode(m.text) + '_' + m.date.toISOString();
       }
     });
 
@@ -550,7 +550,7 @@ export class Chat extends RapidElement {
         const newMessages = [];
         for (const m of messages) {
           if (this.addMessage(m)) {
-            newMessages.push(m.id);
+            newMessages.push(m.uuid);
           }
         }
 
@@ -579,12 +579,12 @@ export class Chat extends RapidElement {
 
   private addMessage(msg: ChatEvent): boolean {
     const isNew = !this.messageExists(msg);
-    this.msgMap.set(msg.id, msg);
+    this.msgMap.set(msg.uuid, msg);
     return isNew;
   }
 
   public messageExists(msg: ChatEvent): boolean {
-    return this.msgMap.has(msg.id);
+    return this.msgMap.has(msg.uuid);
   }
 
   private isSameGroup(msg1: ChatEvent, msg2: ChatEvent): boolean {
