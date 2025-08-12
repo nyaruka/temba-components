@@ -33,7 +33,10 @@
             "attachments": [],
             "text": "Chicken or fish?",
             "type": "send_msg",
-            "quick_replies": [],
+            "quick_replies": [
+              "Chicken",
+              "Fish"
+            ],
             "uuid": "90957b4e-05a4-4d00-8163-47046f81246d",
             "template": {
               "uuid": "b5e47571-4ee7-4e9e-b48f-1c4efd4d6429",
@@ -63,13 +66,17 @@
           "default_category_uuid": "706df9a8-9f55-446f-9212-2493da1b42c2",
           "cases": [
             {
-              "arguments": ["chicken \ud83d\udc14"],
+              "arguments": [
+                "chicken 🐔"
+              ],
               "type": "has_any_word",
               "uuid": "a0046472-2a86-4c1f-b02d-a63a98abb5e3",
               "category_uuid": "6f4689dd-6a8b-454c-a1db-192de1c283ee"
             },
             {
-              "arguments": ["fish \ud83d\udc1f"],
+              "arguments": [
+                "fish 🐟"
+              ],
               "type": "has_any_word",
               "uuid": "2f8fbf02-80cd-4b26-b7d7-709e8681d2ce",
               "category_uuid": "390bbb17-49fd-4253-ac7f-6a27ef240b56"
@@ -78,12 +85,12 @@
           "categories": [
             {
               "uuid": "6f4689dd-6a8b-454c-a1db-192de1c283ee",
-              "name": "\ud83d\udc14",
+              "name": "🐔",
               "exit_uuid": "9e84e680-a710-4894-a838-dd22a8dcc341"
             },
             {
               "uuid": "390bbb17-49fd-4253-ac7f-6a27ef240b56",
-              "name": "\ud83d\udc1f",
+              "name": "🐟",
               "exit_uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099"
             },
             {
@@ -116,54 +123,5 @@
     "type": "messaging",
     "uuid": "8f1fa2e3-740a-4f06-b67b-d521643eb52b",
     "revision": 32
-  },
-  "info": {
-    "counts": {
-      "nodes": 2,
-      "languages": 0
-    },
-    "issues": [],
-    "locals": [],
-    "results": [
-      {
-        "key": "order",
-        "name": "Order",
-        "categories": ["\ud83d\udc14", "\ud83d\udc1f", "Other"],
-        "node_uuids": ["3b28a90f-27be-4753-b0c0-3e98b83f0627"]
-      }
-    ],
-    "parent_refs": [],
-    "dependencies": [
-      {
-        "name": "Dinner Menu",
-        "type": "template",
-        "uuid": "b5e47571-4ee7-4e9e-b48f-1c4efd4d6429"
-      }
-    ]
-  },
-  "issues": [],
-  "metadata": {
-    "counts": {
-      "languages": 0,
-      "nodes": 2
-    },
-    "dependencies": [
-      {
-        "uuid": "b5e47571-4ee7-4e9e-b48f-1c4efd4d6429",
-        "name": "Dinner Menu",
-        "type": "template"
-      }
-    ],
-    "locals": [],
-    "results": [
-      {
-        "key": "order",
-        "name": "Order",
-        "categories": ["\ud83d\udc14", "\ud83d\udc1f", "Other"],
-        "node_uuids": ["3b28a90f-27be-4753-b0c0-3e98b83f0627"]
-      }
-    ],
-    "parent_refs": [],
-    "issues": []
   }
 }
