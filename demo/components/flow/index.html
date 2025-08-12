@@ -95,16 +95,11 @@
         const flowCardsContainer = document.getElementById('flow-cards');
 
         try {
-          // Get list of flow files from the flows directory
-          const response = await fetch('/demo/data/flows/');
-          const text = await response.text();
+          // Get list of flow files from the flows directory API
+          const response = await fetch('/api/flows-list');
+          const files = await response.json();
 
-          // Parse the directory listing to extract flow file names
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(text, 'text/html');
-          const links = Array.from(doc.querySelectorAll('a[href$=".json"]'));
-
-          if (links.length === 0) {
+          if (!Array.isArray(files) || files.length === 0) {
             // Fallback: try known flows if directory listing doesn't work
             await loadKnownFlows(flowCardsContainer);
             return;
@@ -113,8 +108,7 @@
           const flows = [];
 
           // Load each flow file to get its definition
-          for (const link of links) {
-            const fileName = link.getAttribute('href');
+          for (const fileName of files) {
             const flowId = fileName.replace('.json', '');
 
             try {
@@ -144,7 +138,7 @@
             'Failed to load flows from directory, using fallback:',
             error
           );
-          await loadKnownFlows(flowCardsContainer);
+          // await loadKnownFlows(flowCardsContainer);
         }
       }
 
