@@ -563,7 +563,7 @@ export class ContactSearch extends FormElement {
                 .errors=${this.errors}
                 id="recipients"
                 name="recipients"
-                .values=${this.recipients}
+                .values=${this.recipients || []}
                 endpoint="/contact/omnibox/?"
                 @change=${this.handleRecipientsChanged}
               >

@@ -718,6 +718,113 @@ describe('temba-select', () => {
         getClip(select)
       );
     });
+
+    it('fires change event when static option sets initial value', async () => {
+      const changeEvent = sinon.spy();
+
+      // Create a basic select element with manual HTML
+      const parentNode = document.createElement('div');
+      parentNode.innerHTML = `<temba-select name="test">
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1" selected></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>`;
+
+      const select = parentNode.querySelector(
+        'temba-select'
+      ) as Select<SelectOption>;
+      document.body.appendChild(parentNode);
+
+      // Add event listener before triggering initialization
+      select.addEventListener('change', changeEvent);
+
+      // Manually trigger slot change to process the selected attribute
+      select.handleSlotChange();
+      clock.runAll();
+      await select.updateComplete;
+
+      // The change event should have been fired when the initial value was set
+      assert(
+        changeEvent.called,
+        'change event should fire when static option sets initial value'
+      );
+      expect(select.values[0].name).to.equal('Green');
+
+      document.body.removeChild(parentNode);
+    });
+
+    it('fires change event when static option sets initial value via value attribute', async () => {
+      const changeEvent = sinon.spy();
+
+      // Create a basic select element with value attribute
+      const parentNode = document.createElement('div');
+      parentNode.innerHTML = `<temba-select name="test" value="1">
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1"></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>`;
+
+      const select = parentNode.querySelector(
+        'temba-select'
+      ) as Select<SelectOption>;
+      document.body.appendChild(parentNode);
+
+      // Add event listener before triggering initialization
+      select.addEventListener('change', changeEvent);
+
+      // First process the static options
+      select.handleSlotChange();
+      // Then check for selected option based on value attribute
+      select.setSelectedValue(select.getAttribute('value'));
+
+      clock.runAll();
+      await select.updateComplete;
+
+      // The change event should have been fired when the initial value was set
+      assert(
+        changeEvent.called,
+        'change event should fire when value attribute sets initial value'
+      );
+      expect(select.values[0].name).to.equal('Green');
+
+      document.body.removeChild(parentNode);
+    });
+
+    it('creates proper form inputs for static options', async () => {
+      // Create a form with a select that has static options
+      const form = document.createElement('form');
+      form.innerHTML = `<temba-select name="color" value="1">
+        <temba-option name="Red" value="0"></temba-option>
+        <temba-option name="Green" value="1"></temba-option>
+        <temba-option name="Blue" value="2"></temba-option>
+      </temba-select>`;
+
+      document.body.appendChild(form);
+      const select = form.querySelector('temba-select') as Select<SelectOption>;
+
+      // Wait for component to be ready
+      await select.updateComplete;
+
+      // Process the static options and set initial value
+      select.handleSlotChange();
+      select.setSelectedValue(select.getAttribute('value'));
+
+      clock.runAll();
+      await select.updateComplete;
+
+      // Check that the select has the correct value
+      expect(select.values[0].name).to.equal('Green');
+      expect(select.values[0].value).to.equal('1');
+
+      // For single-mode selects, check the value property
+      expect(select.value).to.equal('1');
+
+      // Test FormData - it should include the select's value
+      const formData = new FormData(form);
+      expect(formData.get('color')).to.equal('1');
+
+      document.body.removeChild(form);
+    });
   });
 
   describe('endpoints', () => {
