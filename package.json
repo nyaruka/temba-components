@@ -1,6 +1,6 @@
 {
   "name": "@nyaruka/temba-components",
-  "version": "0.129.5",
+  "version": "0.129.6",
   "description": "Web components to support rapidpro and related projects",
   "author": "Nyaruka <code@nyaruka.coim>",
   "main": "dist/index.js",
