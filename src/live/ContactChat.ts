@@ -759,7 +759,7 @@ export class ContactChat extends ContactStoreElement {
         ) {
           const msgEvent = event as MsgEvent;
           messages.push({
-            uuid: event.uuid,
+            id: event.uuid,
             type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
             user: this.getUserForEvent(msgEvent),
             date: new Date(msgEvent.created_on),
