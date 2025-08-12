@@ -37,10 +37,17 @@
   </head>
   <body>
     <temba-store></temba-store>
-    <temba-flow-editor flow="sample-flow"></temba-flow-editor>
+    <temba-flow-editor id="flow-editor"></temba-flow-editor>
 
     <script type="module">
       import '/out-tsc/temba-modules.js';
+
+      // Get flow parameter from URL, default to 'sample-flow'
+      const urlParams = new URLSearchParams(window.location.search);
+      const flowName = urlParams.get('flow') || 'sample-flow';
+
+      // Set the flow attribute on the editor
+      document.getElementById('flow-editor').setAttribute('flow', flowName);
     </script>
   </body>
 </html>

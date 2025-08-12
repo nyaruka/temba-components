@@ -47,6 +47,37 @@ export default {
       }
     },
     {
+      name: 'flows-directory-listing',
+      serve(context) {
+        // Handle directory listing for flows
+        if (context.request.method === 'GET' && context.path === '/demo/data/flows/') {
+          const flowsDir = path.resolve('./demo/data/flows');
+          
+          if (fs.existsSync(flowsDir)) {
+            const files = fs.readdirSync(flowsDir).filter(file => file.endsWith('.json'));
+            
+            // Generate a simple HTML directory listing
+            const html = `
+              <!DOCTYPE html>
+              <html>
+              <head><title>Flow Files</title></head>
+              <body>
+                <h1>Flow Files</h1>
+                <ul>
+                  ${files.map(file => `<li><a href="${file}">${file}</a></li>`).join('')}
+                </ul>
+              </body>
+              </html>
+            `;
+            
+            context.contentType = 'text/html';
+            context.body = html;
+            return;
+          }
+        }
+      }
+    },
+    {
       name: 'flow-files',
       serve(context) {
         if (context.request.method === 'POST' && context.path.startsWith('/flow/revisions/')) {

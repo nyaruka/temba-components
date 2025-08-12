@@ -41,8 +41,7 @@ export const send_email: ActionConfig = {
       type: 'textarea',
       required: true,
       evaluated: true,
-      rows: 4,
-      minHeight: 75
+      minHeight: 175
     }
   },
   validate: (action: SendEmail): ValidationResult => {

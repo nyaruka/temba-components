@@ -156,6 +156,10 @@ export class CanvasNode extends RapidElement {
         overflow: hidden;
       }
 
+      .node.execute-actions temba-sortable-list .action:last-child .body {
+        padding-bottom: 1.5em;
+      }      
+
       .action .drag-handle {
         opacity: 0;
         transition: all 200ms ease-in-out;
