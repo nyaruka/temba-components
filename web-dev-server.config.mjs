@@ -47,6 +47,26 @@ export default {
       }
     },
     {
+      name: 'flows-directory-listing',
+      serve(context) {
+        // Handle directory listing for flows using a special API endpoint
+
+        if (context.request.method === 'GET' && context.path === '/api/flows-list') {
+
+          const flowsDir = path.resolve('./demo/data/flows');
+          
+          if (fs.existsSync(flowsDir)) {
+            const files = fs.readdirSync(flowsDir).filter(file => file.endsWith('.json'));
+
+            // Return JSON array of filenames
+            context.contentType = 'application/json';
+            context.body = JSON.stringify(files);
+            return;
+          }
+        }
+      }
+    },
+    {
       name: 'flow-files',
       serve(context) {
         if (context.request.method === 'POST' && context.path.startsWith('/flow/revisions/')) {
@@ -64,7 +84,6 @@ export default {
                   path.resolve(`./demo/data/flows/${uuid}.json`),
                   JSON.stringify({ definition: JSON.parse(body) }, null, 2)
                 );
-                // console.log(`Flow ${uuid} saved successfully.`);
                 context.body = {
                   status: 'success',
                   message: `Flow ${uuid} saved successfully.`,

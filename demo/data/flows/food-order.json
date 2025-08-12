@@ -1,0 +1,127 @@
+{
+  "definition": {
+    "_ui": {
+      "nodes": {
+        "b01610c8-d6dc-4bdb-9439-5713cdcf9afa": {
+          "position": {
+            "left": 100,
+            "top": 40
+          },
+          "type": "execute_actions"
+        },
+        "3b28a90f-27be-4753-b0c0-3e98b83f0627": {
+          "type": "wait_for_response",
+          "position": {
+            "left": 100,
+            "top": 240
+          },
+          "config": {
+            "cases": {}
+          }
+        }
+      }
+    },
+    "expire_after_minutes": 10080,
+    "language": "eng",
+    "localization": {},
+    "name": "Food Order",
+    "nodes": [
+      {
+        "uuid": "b01610c8-d6dc-4bdb-9439-5713cdcf9afa",
+        "actions": [
+          {
+            "attachments": [],
+            "text": "Chicken or fish?",
+            "type": "send_msg",
+            "quick_replies": [
+              "Chicken",
+              "Fish"
+            ],
+            "uuid": "90957b4e-05a4-4d00-8163-47046f81246d",
+            "template": {
+              "uuid": "b5e47571-4ee7-4e9e-b48f-1c4efd4d6429",
+              "name": "Dinner Menu"
+            },
+            "template_variables": [
+              "Food",
+              "@contact.name",
+              "Chicken",
+              "Fish",
+              "Rowan"
+            ]
+          }
+        ],
+        "exits": [
+          {
+            "uuid": "87e6cd04-4dd7-44e7-b517-3f3fa63e837e",
+            "destination_uuid": "3b28a90f-27be-4753-b0c0-3e98b83f0627"
+          }
+        ]
+      },
+      {
+        "uuid": "3b28a90f-27be-4753-b0c0-3e98b83f0627",
+        "actions": [],
+        "router": {
+          "type": "switch",
+          "default_category_uuid": "706df9a8-9f55-446f-9212-2493da1b42c2",
+          "cases": [
+            {
+              "arguments": [
+                "chicken 🐔"
+              ],
+              "type": "has_any_word",
+              "uuid": "a0046472-2a86-4c1f-b02d-a63a98abb5e3",
+              "category_uuid": "6f4689dd-6a8b-454c-a1db-192de1c283ee"
+            },
+            {
+              "arguments": [
+                "fish 🐟"
+              ],
+              "type": "has_any_word",
+              "uuid": "2f8fbf02-80cd-4b26-b7d7-709e8681d2ce",
+              "category_uuid": "390bbb17-49fd-4253-ac7f-6a27ef240b56"
+            }
+          ],
+          "categories": [
+            {
+              "uuid": "6f4689dd-6a8b-454c-a1db-192de1c283ee",
+              "name": "🐔",
+              "exit_uuid": "9e84e680-a710-4894-a838-dd22a8dcc341"
+            },
+            {
+              "uuid": "390bbb17-49fd-4253-ac7f-6a27ef240b56",
+              "name": "🐟",
+              "exit_uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099"
+            },
+            {
+              "uuid": "706df9a8-9f55-446f-9212-2493da1b42c2",
+              "name": "Other",
+              "exit_uuid": "79b6a4e6-1a00-44cc-9fd4-2d9ba2a394e0"
+            }
+          ],
+          "operand": "@input.text",
+          "wait": {
+            "type": "msg"
+          },
+          "result_name": "Order"
+        },
+        "exits": [
+          {
+            "uuid": "9e84e680-a710-4894-a838-dd22a8dcc341"
+          },
+          {
+            "uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099"
+          },
+          {
+            "uuid": "79b6a4e6-1a00-44cc-9fd4-2d9ba2a394e0",
+            "destination_uuid": null
+          }
+        ]
+      }
+    ],
+    "spec_version": "14.3.0",
+    "type": "messaging",
+    "uuid": "8f1fa2e3-740a-4f06-b67b-d521643eb52b",
+    "revision": 32
+  }
+}

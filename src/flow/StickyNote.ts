@@ -30,7 +30,7 @@ export class StickyNote extends RapidElement {
       }
 
       .sticky-note {
-        width: 200px;
+        width: 182px;
         background-color: var(--sticky-color);
         border: 1px solid var(--sticky-border-color);
         border-radius: var(--curvature);

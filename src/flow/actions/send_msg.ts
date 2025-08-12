@@ -27,8 +27,7 @@ export const send_msg: ActionConfig = {
         'Enter the message to send. You can use expressions like @contact.name',
       required: true,
       evaluated: true,
-      rows: 5,
-      minHeight: 75
+      minHeight: 175
     },
     quick_replies: {
       type: 'select',

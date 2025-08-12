@@ -182,15 +182,6 @@
         "uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef",
         "actions": [
           {
-            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8",
-            "type": "send_msg",
-            "text": "Excellent choices.",
-            "quick_replies": [
-              "blooooop",
-              "bleep"
-            ]
-          },
-          {
             "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
             "type": "remove_contact_groups",
             "groups": [
@@ -229,6 +220,15 @@
               }
             ],
             "all_groups": false
+          },
+          {
+            "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8",
+            "type": "send_msg",
+            "text": "Excellent choices.",
+            "quick_replies": [
+              "blooooop",
+              "bleep"
+            ]
           },
           {
             "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
@@ -907,14 +907,14 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 580,
-            "top": 1040
+            "left": 520,
+            "top": 1020
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 620,
+            "left": 760,
             "top": 840
           },
           "type": "execute_actions"
@@ -922,8 +922,8 @@
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 920,
-            "top": 900
+            "left": 820,
+            "top": 980
           },
           "config": {}
         }
