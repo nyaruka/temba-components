@@ -1077,7 +1077,8 @@ export class NodeEditor extends RapidElement {
           endpoint="${messageConfig.endpoint || ''}"
           max-attachments="${messageConfig.maxAttachments || 3}"
           min-height="${messageConfig.minHeight || 60}"
-          @change="${(e: Event) => this.handleMessageEditorChange(fieldName, e)}"
+          @change="${(e: Event) =>
+            this.handleMessageEditorChange(fieldName, e)}"
         ></temba-message-editor>`;
       }
 
@@ -1335,7 +1336,7 @@ export class NodeEditor extends RapidElement {
 
   private handleMessageEditorChange(fieldName: string, event: Event): void {
     const target = event.target as any;
-    
+
     // Update both text and attachments from the message editor
     this.formData = {
       ...this.formData,

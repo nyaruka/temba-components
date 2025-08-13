@@ -69,7 +69,9 @@ describe('temba-node-editor', () => {
     expect(el.action).to.equal(action);
 
     // Check that the message editor component is rendered
-    const messageEditor = el.shadowRoot.querySelector('temba-message-editor') as any;
+    const messageEditor = el.shadowRoot.querySelector(
+      'temba-message-editor'
+    ) as any;
     expect(messageEditor).to.not.be.null;
     expect(messageEditor.value).to.equal(action.text);
   });

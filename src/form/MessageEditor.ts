@@ -4,8 +4,7 @@ import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { FormElement } from './FormElement';
 import { Completion } from './Completion';
 import { MediaPicker } from './MediaPicker';
-import { Attachment, Position, CompletionOption } from '../interfaces';
-import { styleMap } from 'lit-html/directives/style-map.js';
+import { Attachment } from '../interfaces';
 import { getClasses } from '../utils';
 
 /**
@@ -158,9 +157,13 @@ export class MessageEditor extends FormElement {
 
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
-    
-    this.completionElement = this.shadowRoot.querySelector('temba-completion') as Completion;
-    this.mediaPickerElement = this.shadowRoot.querySelector('temba-media-picker') as MediaPicker;
+
+    this.completionElement = this.shadowRoot.querySelector(
+      'temba-completion'
+    ) as Completion;
+    this.mediaPickerElement = this.shadowRoot.querySelector(
+      'temba-media-picker'
+    ) as MediaPicker;
 
     // Set up proper attachment filtering and parsing
     this.parseAndFilterAttachments();
@@ -173,7 +176,7 @@ export class MessageEditor extends FormElement {
     if (!this.attachments) return;
 
     // Filter out runtime attachments (those without '/' in content type)
-    const staticAttachments = this.attachments.filter(attachment => {
+    const staticAttachments = this.attachments.filter((attachment) => {
       if (typeof attachment === 'string') {
         const [contentType] = attachment.split(':');
         return contentType.includes('/');
@@ -182,7 +185,7 @@ export class MessageEditor extends FormElement {
     });
 
     // Convert string attachments to Attachment objects for media picker
-    const mediaAttachments = staticAttachments.map(attachment => {
+    const mediaAttachments = staticAttachments.map((attachment) => {
       if (typeof attachment === 'string') {
         const [contentType, url] = attachment.split(':');
         return {
@@ -220,14 +223,14 @@ export class MessageEditor extends FormElement {
   private handleMediaChange(event: Event) {
     event.stopPropagation();
     const mediaPicker = event.target as MediaPicker;
-    
+
     // Convert media picker attachments back to the format expected by the form
-    const formattedAttachments = mediaPicker.attachments.map(attachment => {
+    const formattedAttachments = mediaPicker.attachments.map((attachment) => {
       return `${attachment.content_type}:${attachment.url}`;
     });
 
     // Merge with any runtime attachments that were filtered out
-    const runtimeAttachments = (this.attachments || []).filter(attachment => {
+    const runtimeAttachments = (this.attachments || []).filter((attachment) => {
       if (typeof attachment === 'string') {
         const [contentType] = attachment.split(':');
         return !contentType.includes('/');
@@ -253,7 +256,7 @@ export class MessageEditor extends FormElement {
 
   private handleDrop(evt: DragEvent): void {
     this.unhighlight(evt);
-    
+
     // Forward to media picker
     if (this.mediaPickerElement) {
       const files = [...evt.dataTransfer.files];
@@ -264,7 +267,7 @@ export class MessageEditor extends FormElement {
   private highlight(evt: DragEvent): void {
     evt.preventDefault();
     evt.stopPropagation();
-    
+
     // Always allow highlight for testing purposes, but in real usage check media picker
     this.pendingDrop = true;
   }
@@ -306,8 +309,6 @@ export class MessageEditor extends FormElement {
   }
 
   public render(): TemplateResult {
-    const showMediaPicker = true; // Always show media picker for file uploads
-
     return html`
       <temba-field
         name=${this.name}
@@ -339,7 +340,9 @@ export class MessageEditor extends FormElement {
               ?disableCompletion=${this.disableCompletion}
               maxlength=${ifDefined(this.maxLength)}
               counter=${ifDefined(this.counter)}
-              style=${this.minHeight ? `--textarea-min-height: ${this.minHeight}px` : ''}
+              style=${this.minHeight
+                ? `--textarea-min-height: ${this.minHeight}px`
+                : ''}
               widgetOnly
               @change=${this.handleCompletionChange}
             ></temba-completion>

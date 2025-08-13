@@ -16,8 +16,10 @@ describe('temba-message-editor', () => {
   });
 
   it('has default properties', async () => {
-    const editor = await getComponent('temba-message-editor') as MessageEditor;
-    
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
+
     expect(editor.name).to.equal('');
     expect(editor.value).to.equal('');
     expect(editor.placeholder).to.equal('');
@@ -26,37 +28,48 @@ describe('temba-message-editor', () => {
     expect(editor.minHeight).to.equal(60);
     expect(editor.attachments).to.deep.equal([]);
     expect(editor.maxAttachments).to.equal(3);
-    
-    await assertScreenshot('message-editor/default', getClip(editor as HTMLElement));
+
+    await assertScreenshot(
+      'message-editor/default',
+      getClip(editor as HTMLElement)
+    );
   });
 
   it('can set properties', async () => {
-    const editor = await getComponent('temba-message-editor', {
+    const editor = (await getComponent('temba-message-editor', {
       name: 'message',
       value: 'Hello world',
       placeholder: 'Type your message...',
       'max-attachments': '5'
-    }) as MessageEditor;
+    })) as MessageEditor;
 
     expect(editor.name).to.equal('message');
     expect(editor.value).to.equal('Hello world');
     expect(editor.placeholder).to.equal('Type your message...');
     expect(editor.maxAttachments).to.equal(5);
 
-    await assertScreenshot('message-editor/with-properties', getClip(editor as HTMLElement));
+    await assertScreenshot(
+      'message-editor/with-properties',
+      getClip(editor as HTMLElement)
+    );
   });
 
   it('renders completion component', async () => {
-    const editor = await getComponent('temba-message-editor', {
+    const editor = (await getComponent('temba-message-editor', {
       value: 'Test message',
       placeholder: 'Enter message'
-    }) as MessageEditor;
+    })) as MessageEditor;
 
-    const completion = editor.shadowRoot.querySelector('temba-completion') as any;
+    const completion = editor.shadowRoot.querySelector(
+      'temba-completion'
+    ) as any;
     expect(completion).to.not.be.null;
     expect(completion.hasAttribute('widgetOnly')).to.be.true;
 
-    await assertScreenshot('message-editor/with-completion', getClip(editor as HTMLElement));
+    await assertScreenshot(
+      'message-editor/with-completion',
+      getClip(editor as HTMLElement)
+    );
   });
 
   it('filters runtime attachments', async () => {
@@ -67,33 +80,42 @@ describe('temba-message-editor', () => {
       'application/pdf:http://example.com/doc.pdf'
     ];
 
-    const editor = await getComponent('temba-message-editor', { 
-      attachments: JSON.stringify(attachments) 
-    }) as MessageEditor;
+    const editor = (await getComponent('temba-message-editor', {
+      attachments: JSON.stringify(attachments)
+    })) as MessageEditor;
 
     // Wait for component to update
     await editor.updateComplete;
 
-    const mediaPicker = editor.shadowRoot.querySelector('temba-media-picker') as any;
+    const mediaPicker = editor.shadowRoot.querySelector(
+      'temba-media-picker'
+    ) as any;
     expect(mediaPicker).to.not.be.null;
-    
+
     // Should only have the static attachments (those with '/' in content type)
     expect(mediaPicker.attachments.length).to.equal(2);
     expect(mediaPicker.attachments[0].content_type).to.equal('image/jpeg');
     expect(mediaPicker.attachments[1].content_type).to.equal('application/pdf');
 
-    await assertScreenshot('message-editor/filtered-attachments', getClip(editor as HTMLElement));
+    await assertScreenshot(
+      'message-editor/filtered-attachments',
+      getClip(editor as HTMLElement)
+    );
   });
 
   it('handles completion change events', async () => {
-    const editor = await getComponent('temba-message-editor') as MessageEditor;
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
     let changeEvent: CustomEvent = null;
 
     editor.addEventListener('change', (e: CustomEvent) => {
       changeEvent = e;
     });
 
-    const completion = editor.shadowRoot.querySelector('temba-completion') as any;
+    const completion = editor.shadowRoot.querySelector(
+      'temba-completion'
+    ) as any;
     completion.value = 'New message';
     completion.dispatchEvent(new Event('change'));
 
@@ -102,23 +124,31 @@ describe('temba-message-editor', () => {
   });
 
   it('handles media picker change events', async () => {
-    const editor = await getComponent('temba-message-editor') as MessageEditor;
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
     let changeEvent: CustomEvent = null;
 
     editor.addEventListener('change', (e: CustomEvent) => {
       changeEvent = e;
     });
 
-    const mediaPicker = editor.shadowRoot.querySelector('temba-media-picker') as any;
-    mediaPicker.attachments = [{
-      content_type: 'image/jpeg',
-      url: 'http://example.com/test.jpg',
-      filename: 'test.jpg',
-      size: 1024
-    }];
+    const mediaPicker = editor.shadowRoot.querySelector(
+      'temba-media-picker'
+    ) as any;
+    mediaPicker.attachments = [
+      {
+        content_type: 'image/jpeg',
+        url: 'http://example.com/test.jpg',
+        filename: 'test.jpg',
+        size: 1024
+      }
+    ];
     mediaPicker.dispatchEvent(new Event('change'));
 
-    expect(editor.attachments).to.include('image/jpeg:http://example.com/test.jpg');
+    expect(editor.attachments).to.include(
+      'image/jpeg:http://example.com/test.jpg'
+    );
     expect(changeEvent).to.not.be.null;
   });
 
@@ -128,34 +158,44 @@ describe('temba-message-editor', () => {
       'image/jpeg:http://example.com/existing.jpg'
     ];
 
-    const editor = await getComponent('temba-message-editor', {
+    const editor = (await getComponent('temba-message-editor', {
       attachments: JSON.stringify(initialAttachments)
-    }) as MessageEditor;
+    })) as MessageEditor;
 
     await editor.updateComplete;
 
     // Simulate media picker change
-    const mediaPicker = editor.shadowRoot.querySelector('temba-media-picker') as any;
-    mediaPicker.attachments = [{
-      content_type: 'image/png',
-      url: 'http://example.com/new.png',
-      filename: 'new.png',
-      size: 2048
-    }];
+    const mediaPicker = editor.shadowRoot.querySelector(
+      'temba-media-picker'
+    ) as any;
+    mediaPicker.attachments = [
+      {
+        content_type: 'image/png',
+        url: 'http://example.com/new.png',
+        filename: 'new.png',
+        size: 2048
+      }
+    ];
     mediaPicker.dispatchEvent(new Event('change'));
 
     // Should preserve runtime attachments and add new static ones
     expect(editor.attachments).to.include('image:@fields.profile_pic');
-    expect(editor.attachments).to.include('image/png:http://example.com/new.png');
+    expect(editor.attachments).to.include(
+      'image/png:http://example.com/new.png'
+    );
     expect(editor.attachments.length).to.equal(2);
   });
 
   it('supports drag and drop highlighting', async () => {
-    const editor = await getComponent('temba-message-editor') as MessageEditor;
-    const container = editor.shadowRoot.querySelector('.message-editor-container');
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
+    const container = editor.shadowRoot.querySelector(
+      '.message-editor-container'
+    );
 
     // Simulate drag enter
-    const dragEvent = new DragEvent('dragenter', { 
+    const dragEvent = new DragEvent('dragenter', {
       bubbles: true,
       dataTransfer: new DataTransfer()
     });
@@ -167,10 +207,13 @@ describe('temba-message-editor', () => {
     expect(editor.pendingDrop).to.be.true;
     expect(container.classList.contains('highlight')).to.be.true;
 
-    await assertScreenshot('message-editor/drag-highlight', getClip(editor as HTMLElement));
+    await assertScreenshot(
+      'message-editor/drag-highlight',
+      getClip(editor as HTMLElement)
+    );
 
     // Simulate drag leave
-    const dragLeaveEvent = new DragEvent('dragleave', { 
+    const dragLeaveEvent = new DragEvent('dragleave', {
       bubbles: true,
       dataTransfer: new DataTransfer()
     });
@@ -180,22 +223,34 @@ describe('temba-message-editor', () => {
   });
 
   it('focuses completion on focus', async () => {
-    const editor = await getComponent('temba-message-editor') as MessageEditor;
-    const completion = editor.shadowRoot.querySelector('temba-completion') as any;
-    
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
+    const completion = editor.shadowRoot.querySelector(
+      'temba-completion'
+    ) as any;
+
     let focusCalled = false;
-    completion.focus = () => { focusCalled = true; };
+    completion.focus = () => {
+      focusCalled = true;
+    };
 
     editor.focus();
     expect(focusCalled).to.be.true;
   });
 
   it('clicks completion on click', async () => {
-    const editor = await getComponent('temba-message-editor') as MessageEditor;
-    const completion = editor.shadowRoot.querySelector('temba-completion') as any;
-    
+    const editor = (await getComponent(
+      'temba-message-editor'
+    )) as MessageEditor;
+    const completion = editor.shadowRoot.querySelector(
+      'temba-completion'
+    ) as any;
+
     let clickCalled = false;
-    completion.click = () => { clickCalled = true; };
+    completion.click = () => {
+      clickCalled = true;
+    };
 
     editor.click();
     expect(clickCalled).to.be.true;
