@@ -92,8 +92,7 @@ export interface AirtimeTransferredEvent extends ContactEvent {
   sender: string;
   recipient: string;
   currency: string;
-  desired_amount: string;
-  actual_amount: string;
+  amount: string;
 }
 
 export type CallStartedEvent = ContactEvent;

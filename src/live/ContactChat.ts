@@ -189,10 +189,10 @@ export const renderTicketOpened = (event: TicketEvent): string => {
 export const renderAirtimeTransferredEvent = (
   event: AirtimeTransferredEvent
 ): string => {
-  if (parseFloat(event.actual_amount) === 0) {
+  if (parseFloat(event.amount) === 0) {
     return `Airtime transfer failed`;
   }
-  return `Transferred **${event.actual_amount}** ${event.currency} of airtime`;
+  return `Transferred **${event.amount}** ${event.currency} of airtime`;
 };
 
 export const renderCallStartedEvent = (): string => {
