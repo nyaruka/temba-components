@@ -77,8 +77,7 @@
       "sender": "tel:123456",
       "recipient": "tel:+250788123123?channel=8a81e9e0-10a0-4319-9b00-ce723cfa8303&id=9951&priority=1000",
       "currency": null,
-      "desired_amount": "0.00",
-      "actual_amount": "0.00"
+      "amount": "0.00"
     },
     {
       "uuid": "01988a70-6cd1-738d-b5d6-ef9f9a0c529f",
