@@ -29,13 +29,36 @@ export const send_msg: ActionConfig = {
   },
   form: {
     text: {
-      type: 'textarea',
-      label: 'Message Text',
+      type: 'message-editor',
+      label: 'Message',
       helpText:
-        'Enter the message to send. You can use expressions like @contact.name',
+        'Enter the message to send with optional attachments. You can use expressions like @contact.name',
       required: true,
       evaluated: true,
-      minHeight: 175
+      minHeight: 175,
+      placeholder: 'Type your message here...',
+      maxAttachments: 3,
+      accept: '',
+      endpoint: '/api/v2/media.json',
+      counter: 'temba-charcount',
+      gsm: true,
+      autogrow: true
+    },
+    attachments: {
+      type: 'array',
+      label: 'Attachments',
+      helpText: 'Message attachments (managed by the message editor above)',
+      minItems: 0,
+      maxItems: 3,
+      itemConfig: {
+        attachment: {
+          type: 'text',
+          label: 'Attachment URL'
+        }
+      },
+      conditions: {
+        visible: () => false // Hidden since handled by message editor
+      }
     },
     quick_replies: {
       type: 'select',

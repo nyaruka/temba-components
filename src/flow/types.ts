@@ -201,13 +201,27 @@ export interface CheckboxFieldConfig extends BaseFieldConfig {
   animateChange?: string;
 }
 
+export interface MessageEditorFieldConfig extends BaseFieldConfig {
+  type: 'message-editor';
+  placeholder?: string;
+  minHeight?: number;
+  maxAttachments?: number;
+  accept?: string;
+  endpoint?: string;
+  counter?: string;
+  gsm?: boolean;
+  autogrow?: boolean;
+  disableCompletion?: boolean;
+}
+
 export type FieldConfig =
   | TextFieldConfig
   | TextareaFieldConfig
   | SelectFieldConfig
   | KeyValueFieldConfig
   | ArrayFieldConfig
-  | CheckboxFieldConfig;
+  | CheckboxFieldConfig
+  | MessageEditorFieldConfig;
 
 // Layout configurations for better form organization
 // Recursive layout system - any layout item can contain other layout items

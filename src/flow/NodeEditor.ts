@@ -14,6 +14,7 @@ import {
   SelectFieldConfig,
   CheckboxFieldConfig,
   TextareaFieldConfig,
+  MessageEditorFieldConfig,
   LayoutItem,
   RowLayoutConfig,
   GroupLayoutConfig
@@ -1057,6 +1058,29 @@ export class NodeEditor extends RapidElement {
         </div>`;
       }
 
+      case 'message-editor': {
+        const messageConfig = config as MessageEditorFieldConfig;
+        return html`<temba-message-editor
+          name="${fieldName}"
+          label="${config.label}"
+          ?required="${config.required}"
+          .errors="${errors}"
+          .value="${value || ''}"
+          .attachments="${this.formData.attachments || []}"
+          placeholder="${messageConfig.placeholder || ''}"
+          .helpText="${config.helpText || ''}"
+          ?autogrow="${messageConfig.autogrow}"
+          ?gsm="${messageConfig.gsm}"
+          ?disableCompletion="${messageConfig.disableCompletion}"
+          counter="${messageConfig.counter || ''}"
+          accept="${messageConfig.accept || ''}"
+          endpoint="${messageConfig.endpoint || ''}"
+          max-attachments="${messageConfig.maxAttachments || 3}"
+          min-height="${messageConfig.minHeight || 60}"
+          @change="${(e: Event) => this.handleMessageEditorChange(fieldName, e)}"
+        ></temba-message-editor>`;
+      }
+
       default:
         return html`<div>Unsupported field type: ${(config as any).type}</div>`;
     }
@@ -1302,6 +1326,28 @@ export class NodeEditor extends RapidElement {
     if (this.errors[fieldName]) {
       const newErrors = { ...this.errors };
       delete newErrors[fieldName];
+      this.errors = newErrors;
+    }
+
+    // Trigger re-render
+    this.requestUpdate();
+  }
+
+  private handleMessageEditorChange(fieldName: string, event: Event): void {
+    const target = event.target as any;
+    
+    // Update both text and attachments from the message editor
+    this.formData = {
+      ...this.formData,
+      [fieldName]: target.value,
+      attachments: target.attachments || []
+    };
+
+    // Clear any existing errors for both fields
+    if (this.errors[fieldName]) {
+      const newErrors = { ...this.errors };
+      delete newErrors[fieldName];
+      delete newErrors.attachments;
       this.errors = newErrors;
     }
 
