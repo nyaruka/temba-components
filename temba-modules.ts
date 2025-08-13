@@ -70,6 +70,7 @@ import { RangePicker } from './src/form/RangePicker';
 import { NodeEditor } from './src/flow/NodeEditor';
 import { KeyValueEditor } from './src/form/KeyValueEditor';
 import { TembaArrayEditor } from './src/form/ArrayEditor';
+import { MessageEditor } from './src/form/MessageEditor';
 import './src/form/BaseListEditor'; // Import base class
 
 export function addCustomElement(name: string, comp: any) {
@@ -151,3 +152,4 @@ addCustomElement('temba-workspace-select', WorkspaceSelect);
 addCustomElement('temba-chart', TembaChart);
 addCustomElement('temba-key-value-editor', KeyValueEditor);
 addCustomElement('temba-array-editor', TembaArrayEditor);
+addCustomElement('temba-message-editor', MessageEditor);
