@@ -727,10 +727,12 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleNodeMouseDown(event: MouseEvent): void {
-    // Don't handle clicks on the remove button or when node is in removing state
+    // Don't handle clicks on the remove button, exits, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
+      target.closest('.exit') ||
+      target.closest('.exit-wrapper') ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       return;
@@ -750,10 +752,12 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button or when node is in removing state
+    // Don't handle clicks on the remove button, exits, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
+      target.closest('.exit') ||
+      target.closest('.exit-wrapper') ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       this.nodeClickStartPos = null;

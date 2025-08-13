@@ -15,6 +15,14 @@ export const send_msg: ActionConfig = {
             ${action.quick_replies.map((reply) => {
               return html`<div class="quick-reply">${reply}</div>`;
             })}
+            ${action.template
+              ? html`<div
+                  style="border: 1px solid var(--color-widget-border);padding: 0.5em;margin-top: 1em;border-radius: var(--curvature); display:flex;background: rgba(0,0,0,.03);"
+                >
+                  <temba-icon name="channel_wac"></temba-icon>
+                  <div style="margin-left:0.5em">${action.template.name}</div>
+                </div>`
+              : null}
           </div>`
         : null}
     `;
