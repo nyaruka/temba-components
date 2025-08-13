@@ -4,7 +4,7 @@
       "nodes": {
         "b01610c8-d6dc-4bdb-9439-5713cdcf9afa": {
           "position": {
-            "left": 100,
+            "left": 40,
             "top": 40
           },
           "type": "execute_actions"
@@ -12,12 +12,23 @@
         "3b28a90f-27be-4753-b0c0-3e98b83f0627": {
           "type": "wait_for_response",
           "position": {
-            "left": 100,
+            "left": 40,
             "top": 240
           },
           "config": {
             "cases": {}
           }
+        }
+      },
+      "stickies": {
+        "052c8ecb-9e1b-46dc-9dd6-551f535a73b6": {
+          "position": {
+            "left": 300,
+            "top": 120
+          },
+          "title": "Long Awaited Note",
+          "body": "This is the body of a note that I have been waiting to write for a very long time. Now I am able to add it to my flow and that makes me very happy.",
+          "color": "blue"
         }
       }
     },
@@ -107,14 +118,16 @@
         },
         "exits": [
           {
-            "uuid": "9e84e680-a710-4894-a838-dd22a8dcc341"
+            "uuid": "9e84e680-a710-4894-a838-dd22a8dcc341",
+            "destination_uuid": null
           },
           {
-            "uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099"
+            "uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099",
+            "destination_uuid": null
           },
           {
             "uuid": "79b6a4e6-1a00-44cc-9fd4-2d9ba2a394e0",
-            "destination_uuid": null
+            "destination_uuid": "b01610c8-d6dc-4bdb-9439-5713cdcf9afa"
           }
         ]
       }

@@ -68,15 +68,18 @@ export interface NamedObject {
 }
 
 export interface Group extends NamedObject {
-  status: string;
-  system: boolean;
-  query: string;
-  count: number;
+  status?: string;
+  system?: boolean;
+  query?: string;
+  count?: number;
 }
 
 export interface SendMsg extends Action {
   text: string;
   quick_replies?: string[];
+  attachments?: string[];
+  template?: NamedObject;
+  template_variables?: string[];
 }
 
 export interface SetRunResult extends Action {
@@ -257,9 +260,26 @@ export interface Category {
   exit_uuid: string;
 }
 
+export interface Case {
+  uuid: string;
+  type:
+    | 'has_any_word'
+    | 'has_number_between'
+    | 'has_group'
+    | 'has_only_phrase'
+    | 'has_only_text'
+    | 'has_text'
+    | string;
+  arguments: string[];
+  category_uuid: string;
+}
+
 export interface Router {
   type: 'switch' | 'random';
   result_name?: string;
+  operand?: string;
+  default_category_uuid?: string;
+  cases?: Case[];
   categories: Category[];
   wait?: Wait;
 }
@@ -308,5 +328,6 @@ export interface FlowDefinition {
   type: FlowTypes;
   revision: number;
   spec_version: string;
+  expire_after_minutes?: number;
   _ui: FlowUI;
 }
