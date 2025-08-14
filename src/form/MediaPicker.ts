@@ -29,7 +29,7 @@ export class MediaPicker extends RapidElement {
       }
 
       .highlight .drop-mask {
-        background: rgba(210, 243, 184, 0.8);
+        // background: var(--drop-mask-bg, rgba(210, 243, 184, 0.8));
       }
 
       .drop-mask > div {
@@ -126,6 +126,9 @@ export class MediaPicker extends RapidElement {
   @property({ type: Boolean })
   pendingDrop: boolean;
 
+  @property({ type: Boolean })
+  ignoreDrops = false;
+
   @property({ type: String })
   icon = Icon.add;
 
@@ -180,6 +183,9 @@ export class MediaPicker extends RapidElement {
   }
 
   private handleDrop(evt: DragEvent): void {
+    if (this.ignoreDrops) {
+      return;
+    }
     this.unhighlight(evt);
     if (this.canAcceptAttachments()) {
       this.uploadFiles(this.getAcceptableFiles(evt));
@@ -191,6 +197,10 @@ export class MediaPicker extends RapidElement {
   }
 
   private highlight(evt: DragEvent): void {
+    if (this.ignoreDrops) {
+      return;
+    }
+
     evt.preventDefault();
     evt.stopPropagation();
     if (this.canAcceptAttachments()) {
@@ -199,6 +209,9 @@ export class MediaPicker extends RapidElement {
   }
 
   private unhighlight(evt: DragEvent): void {
+    if (this.ignoreDrops) {
+      return;
+    }
     evt.preventDefault();
     evt.stopPropagation();
     this.pendingDrop = false;

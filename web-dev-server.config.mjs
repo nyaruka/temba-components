@@ -2,8 +2,36 @@ import replace from '@rollup/plugin-replace';
 import { fromRollup } from '@web/dev-server-rollup';
 import fs from 'fs';
 import path from 'path';
+import { Client as MinioClient } from 'minio';
+import busboy from 'busboy';
+import { v4 as uuidv4 } from 'uuid';
 
 const replacePlugin = fromRollup(replace);
+
+// Initialize Minio client for file uploads
+const minioClient = new MinioClient({
+  endPoint: 'minio',
+  port: 9000,
+  useSSL: false,
+  accessKey: 'root',
+  secretKey: 'tembatemba'
+});
+
+// Helper function to generate the correct public URL for uploaded files
+function getPublicUrl(bucketName, fileName, request) {
+  // Check if request is coming from localhost/127.0.0.1 (host machine)
+  // or from within docker network
+  const host = request.headers.host;
+  const userAgent = request.headers['user-agent'] || '';
+  
+  // If accessing from host machine (localhost:3010), use localhost for minio too
+  if (host && host.startsWith('localhost:')) {
+    return `http://localhost:9000/${bucketName}/${fileName}`;
+  }
+  
+  // If accessing from docker network, use internal hostname
+  return `http://minio:9000/${bucketName}/${fileName}`;
+}
 
 export default {
   nodeResolve: true,
@@ -11,6 +39,10 @@ export default {
     replacePlugin({
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('development'),
+      'process.env.MINIO_ENDPOINT': JSON.stringify('http://minio:9000'),
+      'process.env.MINIO_PUBLIC_ENDPOINT': JSON.stringify('http://localhost:9000'),
+      'process.env.MINIO_ACCESS_KEY': JSON.stringify('root'),
+      'process.env.MINIO_SECRET_KEY': JSON.stringify('tembatemba'),
     }),
     {
       name: 'api-mock-server',
@@ -43,6 +75,93 @@ export default {
             context.body = fs.readFileSync(path.resolve(staticFile), 'utf-8');
             return;
           }
+        }
+
+        // Handle minio file uploads for media
+        if (context.request.method === 'POST' && context.path === '/api/v2/media.json') {
+          return new Promise((resolve) => {
+            try {
+              const bb = busboy({ headers: context.request.headers });
+              let fileInfo = null;
+              let fileBuffer = null;
+              
+              bb.on('file', (name, file, info) => {
+                fileInfo = info;
+                const chunks = [];
+                
+                file.on('data', (chunk) => {
+                  chunks.push(chunk);
+                });
+                
+                file.on('end', () => {
+                  fileBuffer = Buffer.concat(chunks);
+                });
+              });
+              
+              bb.on('finish', async () => {
+                if (!fileBuffer || !fileInfo) {
+                  context.status = 400;
+                  context.body = JSON.stringify({ error: 'No file uploaded' });
+                  resolve();
+                  return;
+                }
+                
+                try {
+                  const fileUuid = uuidv4();
+                  const fileName = `${fileUuid}-${fileInfo.filename}`;
+                  const bucketName = 'temba-attachments';
+                  
+                  // Upload to minio
+                  await minioClient.putObject(bucketName, fileName, fileBuffer, {
+                    'Content-Type': fileInfo.mimeType
+                  });
+                  
+                  // Return success response with appropriate URL based on request source
+                  const publicUrl = getPublicUrl(bucketName, fileName, context.request);
+                  
+                  // Debug logging
+                  console.log('🔧 Upload Debug:', {
+                    fileUuid,
+                    fileName,
+                    bucketName,
+                    publicUrl,
+                    contentType: fileInfo.mimeType,
+                    host: context.request.headers.host
+                  });
+                  
+                  context.contentType = 'application/json';
+                  context.body = JSON.stringify({
+                    uuid: fileUuid,
+                    content_type: fileInfo.mimeType,
+                    url: publicUrl,
+                    filename: fileInfo.filename,
+                    size: fileBuffer.length
+                  });
+                  
+                } catch (uploadError) {
+                  console.error('Minio upload error:', uploadError);
+                  context.status = 500;
+                  context.body = JSON.stringify({ 
+                    error: 'Upload failed',
+                    details: uploadError.message 
+                  });
+                }
+                
+                resolve();
+              });
+              
+              context.req.pipe(bb);
+              
+            } catch (error) {
+              console.error('File upload processing error:', error);
+              context.status = 500;
+              context.body = JSON.stringify({ 
+                error: 'Upload processing failed',
+                details: error.message 
+              });
+              resolve();
+            }
+          });
         }
       }
     },

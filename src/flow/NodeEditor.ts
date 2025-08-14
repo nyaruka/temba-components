@@ -153,8 +153,8 @@ export class NodeEditor extends RapidElement {
         flex-direction: column;
         gap: 15px;
         overflow: hidden;
-        transition: all 0.3s ease;
-        max-height: 1000px; /* Large enough to accommodate most content */
+        transition: all 0.2s ease-in-out;
+
         opacity: 1;
       }
 
@@ -485,7 +485,7 @@ export class NodeEditor extends RapidElement {
             ) {
               errors[fieldName] = `${
                 (fieldConfig as any).label || fieldName
-              } is required`;
+              } is required.`;
             }
 
             // Check minLength for text fields
@@ -519,6 +519,11 @@ export class NodeEditor extends RapidElement {
       if (actionConfig?.validate) {
         // Convert form data back to action for validation
         let actionForValidation: Action;
+
+        if (actionConfig.sanitize) {
+          actionConfig.sanitize(this.formData);
+        }
+
         if (actionConfig.fromFormData) {
           actionForValidation = actionConfig.fromFormData(this.formData);
         } else {
@@ -1029,9 +1034,11 @@ export class NodeEditor extends RapidElement {
             .sortable="${config.sortable}"
             .itemLabel="${config.itemLabel || 'Item'}"
             .minItems="${config.minItems || 0}"
+            .maxItems="${config.maxItems || 0}"
             .onItemChange="${config.onItemChange}"
-            @change="${(e: CustomEvent) =>
-              this.handleNewFieldChange(fieldName, e.detail.value)}"
+            .isEmptyItemFn="${config.isEmptyItem}"
+            @change="${(e: Event) =>
+              this.handleNewFieldChange(fieldName, (e.target as any).value)}"
           ></temba-array-editor>
           ${errors.length
             ? html`<div class="field-errors">${errors.join(', ')}</div>`
@@ -1076,7 +1083,7 @@ export class NodeEditor extends RapidElement {
           accept="${messageConfig.accept || ''}"
           endpoint="${messageConfig.endpoint || ''}"
           max-attachments="${messageConfig.maxAttachments || 3}"
-          min-height="${messageConfig.minHeight || 60}"
+          minHeight="${messageConfig.minHeight || 60}"
           @change="${(e: Event) =>
             this.handleMessageEditorChange(fieldName, e)}"
         ></temba-message-editor>`;
@@ -1333,7 +1340,6 @@ export class NodeEditor extends RapidElement {
     // Trigger re-render
     this.requestUpdate();
   }
-
   private handleMessageEditorChange(fieldName: string, event: Event): void {
     const target = event.target as any;
 

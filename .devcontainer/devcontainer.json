@@ -10,10 +10,11 @@
   "runArgs": [
     "--name=dev-components",
     "--network=textit_default",
-    "--hostname=temba-components"
+    "--hostname=temba-components",
+    "--add-host=minio:host-gateway"
   ],
   "remoteUser": "node",
-  "postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install",
+  "postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install && echo 'Testing minio connection:' && curl -f http://minio:9000/minio/health/live || echo 'Minio connection failed - this is expected if minio is not running'",
   "customizations": {
     "vscode": {
       "extensions": [

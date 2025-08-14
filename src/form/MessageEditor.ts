@@ -6,6 +6,7 @@ import { Completion } from './Completion';
 import { MediaPicker } from './MediaPicker';
 import { Attachment } from '../interfaces';
 import { getClasses } from '../utils';
+import { Icon } from '../Icons';
 
 /**
  * MessageEditor is a composed component that combines temba-completion and temba-media-picker
@@ -32,8 +33,7 @@ export class MessageEditor extends FormElement {
       }
 
       .message-editor-container.highlight {
-        border-color: var(--color-primary);
-        background: rgba(210, 243, 184, 0.1);
+        border-color: rgba(156, 222, 106, 0.88);
       }
 
       /* Hide the completion field border since we draw our own */
@@ -44,18 +44,27 @@ export class MessageEditor extends FormElement {
       }
 
       .message-editor-container temba-completion {
+        --widget-box-shadow: none;
+        --widget-box-shadow-focused: none;
         --widget-box-shadow-focused: none;
         --color-widget-border: transparent;
+        --color-focus: transparent;
       }
 
       .completion-wrapper {
-        padding: 8px 12px;
-        padding-bottom: 4px;
       }
 
       .media-wrapper {
-        border-top: 1px solid var(--color-widget-border-light, #e6e6e6);
         padding: 4px 8px;
+        background: rgba(0, 0, 0, 0.03);
+        border-top: 1px solid var(--color-widget-border);
+        border-radius: 0 0 var(--curvature-widget) var(--curvature-widget);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+        margin-top: 3px;
+        display: none;
+      }
+      .has-attachments .media-wrapper {
+        display: flex;
       }
 
       /* Override media picker styles to integrate better */
@@ -73,7 +82,7 @@ export class MessageEditor extends FormElement {
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(210, 243, 184, 0.8);
+        background: rgba(210, 243, 184, 0.5);
         border-radius: var(--curvature-widget);
         display: flex;
         align-items: center;
@@ -94,6 +103,26 @@ export class MessageEditor extends FormElement {
         padding: 12px 24px;
         border-radius: var(--curvature);
         font-weight: 500;
+      }
+
+      .attachment-icon {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        color: var(--color-text-dark);
+        cursor: pointer;
+        padding: 6px;
+        border-radius: var(--curvature);
+        transition: background-color 0.2s ease-in-out;
+        display: block;
+      }
+
+      .has-attachments .attachment-icon {
+        display: none;
+      }
+
+      .attachment-icon:hover {
+        background-color: rgba(0, 0, 0, 0.05);
       }
     `;
   }
@@ -161,6 +190,8 @@ export class MessageEditor extends FormElement {
     this.completionElement = this.shadowRoot.querySelector(
       'temba-completion'
     ) as Completion;
+
+    // Get the visible media picker (either in media-wrapper or the hidden one)
     this.mediaPickerElement = this.shadowRoot.querySelector(
       'temba-media-picker'
     ) as MediaPicker;
@@ -187,7 +218,11 @@ export class MessageEditor extends FormElement {
     // Convert string attachments to Attachment objects for media picker
     const mediaAttachments = staticAttachments.map((attachment) => {
       if (typeof attachment === 'string') {
-        const [contentType, url] = attachment.split(':');
+        // split into content type and URL
+        // e.g. "image/jpeg:http://example.com/image.jpg"
+        const colonIndex = attachment.indexOf(':');
+        const contentType = attachment.substring(0, colonIndex);
+        const url = attachment.substring(colonIndex + 1);
         return {
           content_type: contentType,
           url: url,
@@ -201,6 +236,21 @@ export class MessageEditor extends FormElement {
     if (this.mediaPickerElement) {
       this.mediaPickerElement.attachments = mediaAttachments;
     }
+  }
+
+  /**
+   * Check if there are any static attachments (excluding runtime attachments)
+   */
+  private hasStaticAttachments(): boolean {
+    if (!this.attachments || this.attachments.length === 0) return false;
+
+    return this.attachments.some((attachment) => {
+      if (typeof attachment === 'string') {
+        const [contentType] = attachment.split(':');
+        return contentType.includes('/');
+      }
+      return true;
+    });
   }
 
   private getFilenameFromUrl(url: string): string {
@@ -223,7 +273,6 @@ export class MessageEditor extends FormElement {
   private handleMediaChange(event: Event) {
     event.stopPropagation();
     const mediaPicker = event.target as MediaPicker;
-
     // Convert media picker attachments back to the format expected by the form
     const formattedAttachments = mediaPicker.attachments.map((attachment) => {
       return `${attachment.content_type}:${attachment.url}`;
@@ -264,6 +313,18 @@ export class MessageEditor extends FormElement {
     }
   }
 
+  private handleAttachmentIconClick(): void {
+    // Trigger the file picker on the media picker
+    if (this.mediaPickerElement) {
+      const uploadInput = this.mediaPickerElement.shadowRoot.querySelector(
+        '#upload-input'
+      ) as HTMLInputElement;
+      if (uploadInput) {
+        uploadInput.click();
+      }
+    }
+  }
+
   private highlight(evt: DragEvent): void {
     evt.preventDefault();
     evt.stopPropagation();
@@ -282,7 +343,10 @@ export class MessageEditor extends FormElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('attachments')) {
-      this.parseAndFilterAttachments();
+      // Re-query media picker since the DOM structure may have changed
+      this.mediaPickerElement = this.shadowRoot.querySelector(
+        'temba-media-picker'
+      ) as MediaPicker;
     }
 
     if (changedProperties.has('uploading')) {
@@ -309,6 +373,8 @@ export class MessageEditor extends FormElement {
   }
 
   public render(): TemplateResult {
+    const hasAttachments = this.hasStaticAttachments();
+
     return html`
       <temba-field
         name=${this.name}
@@ -320,7 +386,8 @@ export class MessageEditor extends FormElement {
         <div
           class=${getClasses({
             'message-editor-container': true,
-            highlight: this.pendingDrop
+            highlight: this.pendingDrop,
+            'has-attachments': hasAttachments
           })}
           @dragenter=${this.handleDragEnter}
           @dragover=${this.handleDragOver}
@@ -340,27 +407,41 @@ export class MessageEditor extends FormElement {
               ?disableCompletion=${this.disableCompletion}
               maxlength=${ifDefined(this.maxLength)}
               counter=${ifDefined(this.counter)}
-              style=${this.minHeight
-                ? `--textarea-min-height: ${this.minHeight}px`
-                : ''}
+              minHeight=${ifDefined(this.minHeight)}
               widgetOnly
               @change=${this.handleCompletionChange}
             ></temba-completion>
           </div>
 
-          <div class="media-wrapper">
+          <div class="media-wrapper ">
             <temba-media-picker
-              .attachments=${[]}
               .accept=${this.accept}
               .max=${this.maxAttachments}
               .endpoint=${this.endpoint}
               @change=${this.handleMediaChange}
+              ignoreDrops
             ></temba-media-picker>
           </div>
+          <temba-icon
+            class="attachment-icon"
+            name=${Icon.attachment}
+            size="1.2"
+            @click=${this.handleAttachmentIconClick}
+          ></temba-icon>
 
-          <div class="drop-overlay">
-            <div class="drop-message">Drop files here to attach</div>
-          </div>
+          <div class="drop-overlay"></div>
+
+          <!-- Hidden media picker for handling uploads when no attachments are shown -->
+          ${!hasAttachments
+            ? html`<temba-media-picker
+                style="display: none;"
+                .accept=${this.accept}
+                .max=${this.maxAttachments}
+                .endpoint=${this.endpoint}
+                @change=${this.handleMediaChange}
+                ignoreDrops
+              ></temba-media-picker>`
+            : ''}
         </div>
       </temba-field>
     `;

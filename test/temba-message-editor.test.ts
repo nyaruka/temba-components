@@ -255,4 +255,46 @@ describe('temba-message-editor', () => {
     editor.click();
     expect(clickCalled).to.be.true;
   });
+
+  it('initializes with correct height for long text content', async () => {
+    const longText =
+      'This is a very long text that should span multiple lines and cause the autogrow functionality to kick in and expand the textarea to accommodate all the content. This text should be long enough to trigger the autogrow behavior during initialization.';
+
+    const editor = (await getComponent('temba-message-editor', {
+      value: longText,
+      'min-height': '60'
+    })) as MessageEditor;
+
+    // Wait for component to fully render
+    await editor.updateComplete;
+
+    // Get the text input element to verify its height
+    const completion = editor.shadowRoot.querySelector(
+      'temba-completion'
+    ) as any;
+    expect(completion).to.not.be.null;
+
+    // The completion should have the long text value
+    expect(completion.value).to.equal(longText);
+
+    // Get the actual TextInput component inside the completion
+    const textInput = completion.getTextInput();
+    expect(textInput).to.not.be.null;
+
+    // The textarea should be in autogrow mode
+    expect(textInput.autogrow).to.be.true;
+    expect(textInput.textarea).to.be.true;
+
+    // Check that the autogrow div has been updated with content
+    const autogrowDiv = textInput.shadowRoot.querySelector(
+      '.grow-wrap > div'
+    ) as HTMLDivElement;
+    expect(autogrowDiv).to.not.be.null;
+    expect(autogrowDiv.innerText).to.include(longText);
+
+    await assertScreenshot(
+      'message-editor/autogrow-initial-content',
+      getClip(editor as HTMLElement)
+    );
+  });
 });

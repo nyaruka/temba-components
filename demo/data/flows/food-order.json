@@ -4,16 +4,16 @@
       "nodes": {
         "b01610c8-d6dc-4bdb-9439-5713cdcf9afa": {
           "position": {
-            "left": 80,
-            "top": 80
+            "left": 60,
+            "top": 20
           },
           "type": "execute_actions"
         },
         "3b28a90f-27be-4753-b0c0-3e98b83f0627": {
           "type": "wait_for_response",
           "position": {
-            "left": 80,
-            "top": 260
+            "left": 100,
+            "top": 340
           },
           "config": {
             "cases": {}
@@ -42,10 +42,10 @@
         "actions": [
           {
             "attachments": [
-              "image/jpeg:http://minio:9000/temba-default/orgs/1/media/495c/495c33e3-237e-4c36-b854-6ca609839e3a/intro-1745448388.jpg",
-              "image:@fields.profile_pic"
+              "image/jpeg:http://localhost:9000/temba-attachments/dcdbbe1f-0b0b-4bbc-93e8-b58020d459a0-IMG_3288.jpeg",
+              "image/jpeg:http://localhost:9000/temba-attachments/d197d181-35df-4351-906c-440bf6cd170f-IMG_3308.jpeg"
             ],
-            "text": "Chicken or fish?",
+            "text": "Would you like chicken or fish?",
             "type": "send_msg",
             "quick_replies": [
               "Chicken",
@@ -124,7 +124,8 @@
             "uuid": "9e84e680-a710-4894-a838-dd22a8dcc341"
           },
           {
-            "uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099"
+            "uuid": "12043e9e-7aa0-41fd-8f04-e0d42a0c2099",
+            "destination_uuid": null
           },
           {
             "uuid": "79b6a4e6-1a00-44cc-9fd4-2d9ba2a394e0",

@@ -81,7 +81,7 @@ export class Select<T extends SelectOption> extends FormElement {
         background: rgba(100, 100, 100, 0.05);
       }
 
-      . selected-item.multi .remove-item {
+      .selected-item.multi .remove-item {
         display: none;
       }
 
@@ -320,10 +320,11 @@ export class Select<T extends SelectOption> extends FormElement {
       }
 
       .small {
-        --temba-select-selected-padding: 7px;
-        --temba-select-selected-line-height: 13px;
+        --temba-select-selected-padding: 6px;
+        --temba-select-selected-line-height: 12px;
         --temba-select-selected-font-size: 12px;
         --search-input-height: 7px !important;
+        --temba-select-min-height: 2.28em;
       }
 
       .info-text {
