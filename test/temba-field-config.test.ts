@@ -122,7 +122,8 @@ describe('Field Configuration System', () => {
       await (el as any).updateComplete;
 
       expect(el).to.exist;
-      expect(el.shadowRoot?.querySelector('.add-btn')).to.exist;
+      // ArrayEditor with maintainEmptyItem=true doesn't show add button
+      expect(el.shadowRoot?.querySelector('.add-btn')).to.not.exist;
     });
 
     it('should render with initial items', async () => {
@@ -146,7 +147,8 @@ describe('Field Configuration System', () => {
 
       expect(el).to.exist;
       const items = el.shadowRoot?.querySelectorAll('.array-item');
-      expect(items?.length).to.equal(2);
+      // Expects 3 items: 2 initial items + 1 auto-generated empty item
+      expect(items?.length).to.equal(3);
     });
   });
 });

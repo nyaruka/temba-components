@@ -178,14 +178,15 @@ export const send_msg: ActionConfig = {
       errors.text = 'Message text is required';
     }
 
-    if (action.attachments.length > 10) {
-      const staticAttachments = action.attachments.filter(
+    const attachments = action.attachments || [];
+    if (attachments.length > 10) {
+      const staticAttachments = attachments.filter(
         (attachment) =>
           typeof attachment === 'string' &&
           attachment.substring(0, attachment.indexOf(':')).includes('/')
       );
 
-      const runtimeAttachments = action.attachments.filter(
+      const runtimeAttachments = attachments.filter(
         (attachment) =>
           typeof attachment === 'string' &&
           !attachment.substring(0, attachment.indexOf(':')).includes('/')
