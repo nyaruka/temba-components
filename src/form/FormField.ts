@@ -21,7 +21,7 @@ export class FormField extends LitElement {
         font-size: var(--label-size);
         letter-spacing: 0.05em;
         line-height: normal;
-        color: #777;
+        color: var(--color-label, #777);
       }
 
       .help-text {

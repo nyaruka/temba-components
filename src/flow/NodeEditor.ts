@@ -40,10 +40,6 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-field label {
-        font-weight: 500;
-        margin-bottom: 6px;
-        color: #333;
-        font-size: 14px;
       }
 
       .field-errors {
@@ -106,13 +102,18 @@ export class NodeEditor extends RapidElement {
 
       .form-group-header {
         background: #f8f9fa;
-        padding: 12px 15px;
+        padding: 8px 10px;
         border-bottom: 1px solid #e0e0e0;
+
         display: flex;
         align-items: center;
         justify-content: space-between;
         cursor: pointer;
         user-select: none;
+      }
+
+      .collapsed .form-group-header {
+        border: none;
       }
 
       .form-group-header.collapsible:hover {
@@ -125,7 +126,7 @@ export class NodeEditor extends RapidElement {
 
       .form-group-title {
         font-weight: 500;
-        color: #333;
+        color: var(--color-label, #777);
         font-size: 14px;
         display: flex;
       }
@@ -148,7 +149,7 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group-content {
-        padding: 15px;
+        padding: 6px;
         display: flex;
         flex-direction: column;
         gap: 15px;
@@ -1248,7 +1249,7 @@ export class NodeEditor extends RapidElement {
       <div
         class="form-group ${collapsible ? 'collapsible' : ''} ${groupHasErrors
           ? 'has-errors'
-          : ''}"
+          : ''} ${isCollapsed ? 'collapsed' : 'expanded'}"
       >
         <div
           class="form-group-header ${collapsible ? 'clickable' : ''}"
