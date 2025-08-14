@@ -56,7 +56,8 @@ export class Thumbnail extends RapidElement {
         background-repeat: no-repeat;
         border-radius: var(--curvature);
         max-height: calc(var(--thumb-size, 4em) * 2);
-        width: var(--thumb-size, 4em);
+        max-width: calc(var(--thumb-size, 4em) * 2);
+        height: var(--thumb-size, 4em);
         display: flex;
         align-items: center;
         justify-content: center;

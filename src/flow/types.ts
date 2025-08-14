@@ -162,6 +162,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   type: 'select';
   options: string[] | { value: string; label: string }[];
   multi?: boolean;
+  clearable?: boolean;
   searchable?: boolean;
   tags?: boolean;
   placeholder?: string;
@@ -193,6 +194,7 @@ export interface ArrayFieldConfig extends BaseFieldConfig {
     value: any,
     allItems: any[]
   ) => any[];
+  isEmptyItem?: (item: any) => boolean;
 }
 
 export interface CheckboxFieldConfig extends BaseFieldConfig {
@@ -201,13 +203,27 @@ export interface CheckboxFieldConfig extends BaseFieldConfig {
   animateChange?: string;
 }
 
+export interface MessageEditorFieldConfig extends BaseFieldConfig {
+  type: 'message-editor';
+  placeholder?: string;
+  minHeight?: number;
+  maxAttachments?: number;
+  accept?: string;
+  endpoint?: string;
+  counter?: string;
+  gsm?: boolean;
+  autogrow?: boolean;
+  disableCompletion?: boolean;
+}
+
 export type FieldConfig =
   | TextFieldConfig
   | TextareaFieldConfig
   | SelectFieldConfig
   | KeyValueFieldConfig
   | ArrayFieldConfig
-  | CheckboxFieldConfig;
+  | CheckboxFieldConfig
+  | MessageEditorFieldConfig;
 
 // Layout configurations for better form organization
 // Recursive layout system - any layout item can contain other layout items
@@ -249,6 +265,7 @@ export interface ActionConfig {
 
   // Action editor configuration (legacy)
   // Form-level transformations
+  sanitize?: (formData: any) => any;
   toFormData?: (action: Action) => any;
   fromFormData?: (formData: any) => Action;
 

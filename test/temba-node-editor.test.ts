@@ -48,6 +48,34 @@ describe('temba-node-editor', () => {
     expect(el.action).to.equal(action);
   });
 
+  it('renders send_msg action with message editor', async () => {
+    const action = {
+      uuid: 'test-action-uuid',
+      type: 'send_msg',
+      text: 'Hello @contact.name, check this out!',
+      attachments: [
+        'image/jpeg:http://example.com/photo.jpg',
+        'image:@fields.profile_pic'
+      ],
+      quick_replies: ['Yes', 'No']
+    };
+
+    const el = (await fixture(html`
+      <temba-node-editor .action=${action} .isOpen=${true}></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+    expect(el.shadowRoot).to.not.be.null;
+    expect(el.action).to.equal(action);
+
+    // Check that the message editor component is rendered
+    const messageEditor = el.shadowRoot.querySelector(
+      'temba-message-editor'
+    ) as any;
+    expect(messageEditor).to.not.be.null;
+    expect(messageEditor.value).to.equal(action.text);
+  });
+
   it('renders set_run_result action', async () => {
     const action = {
       uuid: 'test-action-uuid',

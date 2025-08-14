@@ -202,7 +202,20 @@ export class TextInput extends FormElement {
         root = document;
       }
       this.counterElement = root.querySelector(this.counter);
-      this.counterElement.text = this.value;
+      if (this.counterElement) {
+        this.counterElement.text = this.value;
+      }
+    }
+  }
+
+  private updateAutogrowSize(): void {
+    if (this.textarea && this.autogrow) {
+      const autogrow = this.shadowRoot.querySelector(
+        '.grow-wrap > div'
+      ) as HTMLDivElement;
+      if (autogrow) {
+        autogrow.innerText = this.value + String.fromCharCode(10);
+      }
     }
   }
 
@@ -214,12 +227,7 @@ export class TextInput extends FormElement {
         this.fireEvent('change');
       }
 
-      if (this.textarea && this.autogrow) {
-        const autogrow = this.shadowRoot.querySelector(
-          '.grow-wrap > div'
-        ) as HTMLDivElement;
-        autogrow.innerText = this.value + String.fromCharCode(10);
-      }
+      this.updateAutogrowSize();
 
       if (this.cursorStart > -1 && this.cursorEnd > -1) {
         this.inputElement.setSelectionRange(this.cursorStart, this.cursorEnd);

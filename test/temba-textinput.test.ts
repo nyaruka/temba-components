@@ -197,4 +197,30 @@ describe('temba-textinput', () => {
     await assertScreenshot('textinput/input-updated', getClip(input));
     expect(widget.value).to.equal('Updated by attribute change');
   });
+
+  it('initializes autogrow with content', async () => {
+    const longText =
+      'This is a very long text that should span multiple lines and cause the autogrow functionality to kick in and expand the textarea to accommodate all the content during initialization.';
+
+    const input: TextInput = await createInput(
+      getInputHTML({
+        value: longText,
+        textarea: true,
+        autogrow: true
+      })
+    );
+
+    // Wait for component to fully render
+    await input.updateComplete;
+
+    // Check that autogrow div has been updated with initial content
+    const autogrowDiv = input.shadowRoot.querySelector(
+      '.grow-wrap > div'
+    ) as HTMLDivElement;
+    expect(autogrowDiv).to.not.be.null;
+    expect(autogrowDiv.innerText).to.include(longText);
+    expect(autogrowDiv.innerText).to.include('\n'); // Should have the newline character added
+
+    await assertScreenshot('textinput/autogrow-initial', getClip(input));
+  });
 });

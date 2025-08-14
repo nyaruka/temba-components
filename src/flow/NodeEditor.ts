@@ -14,6 +14,7 @@ import {
   SelectFieldConfig,
   CheckboxFieldConfig,
   TextareaFieldConfig,
+  MessageEditorFieldConfig,
   LayoutItem,
   RowLayoutConfig,
   GroupLayoutConfig
@@ -152,8 +153,8 @@ export class NodeEditor extends RapidElement {
         flex-direction: column;
         gap: 15px;
         overflow: hidden;
-        transition: all 0.3s ease;
-        max-height: 1000px; /* Large enough to accommodate most content */
+        transition: all 0.2s ease-in-out;
+
         opacity: 1;
       }
 
@@ -484,7 +485,7 @@ export class NodeEditor extends RapidElement {
             ) {
               errors[fieldName] = `${
                 (fieldConfig as any).label || fieldName
-              } is required`;
+              } is required.`;
             }
 
             // Check minLength for text fields
@@ -518,6 +519,11 @@ export class NodeEditor extends RapidElement {
       if (actionConfig?.validate) {
         // Convert form data back to action for validation
         let actionForValidation: Action;
+
+        if (actionConfig.sanitize) {
+          actionConfig.sanitize(this.formData);
+        }
+
         if (actionConfig.fromFormData) {
           actionForValidation = actionConfig.fromFormData(this.formData);
         } else {
@@ -1028,9 +1034,11 @@ export class NodeEditor extends RapidElement {
             .sortable="${config.sortable}"
             .itemLabel="${config.itemLabel || 'Item'}"
             .minItems="${config.minItems || 0}"
+            .maxItems="${config.maxItems || 0}"
             .onItemChange="${config.onItemChange}"
-            @change="${(e: CustomEvent) =>
-              this.handleNewFieldChange(fieldName, e.detail.value)}"
+            .isEmptyItemFn="${config.isEmptyItem}"
+            @change="${(e: Event) =>
+              this.handleNewFieldChange(fieldName, (e.target as any).value)}"
           ></temba-array-editor>
           ${errors.length
             ? html`<div class="field-errors">${errors.join(', ')}</div>`
@@ -1055,6 +1063,30 @@ export class NodeEditor extends RapidElement {
             ? html`<div class="field-errors">${errors.join(', ')}</div>`
             : ''}
         </div>`;
+      }
+
+      case 'message-editor': {
+        const messageConfig = config as MessageEditorFieldConfig;
+        return html`<temba-message-editor
+          name="${fieldName}"
+          label="${config.label}"
+          ?required="${config.required}"
+          .errors="${errors}"
+          .value="${value || ''}"
+          .attachments="${this.formData.attachments || []}"
+          placeholder="${messageConfig.placeholder || ''}"
+          .helpText="${config.helpText || ''}"
+          ?autogrow="${messageConfig.autogrow}"
+          ?gsm="${messageConfig.gsm}"
+          ?disableCompletion="${messageConfig.disableCompletion}"
+          counter="${messageConfig.counter || ''}"
+          accept="${messageConfig.accept || ''}"
+          endpoint="${messageConfig.endpoint || ''}"
+          max-attachments="${messageConfig.maxAttachments || 3}"
+          minHeight="${messageConfig.minHeight || 60}"
+          @change="${(e: Event) =>
+            this.handleMessageEditorChange(fieldName, e)}"
+        ></temba-message-editor>`;
       }
 
       default:
@@ -1302,6 +1334,27 @@ export class NodeEditor extends RapidElement {
     if (this.errors[fieldName]) {
       const newErrors = { ...this.errors };
       delete newErrors[fieldName];
+      this.errors = newErrors;
+    }
+
+    // Trigger re-render
+    this.requestUpdate();
+  }
+  private handleMessageEditorChange(fieldName: string, event: Event): void {
+    const target = event.target as any;
+
+    // Update both text and attachments from the message editor
+    this.formData = {
+      ...this.formData,
+      [fieldName]: target.value,
+      attachments: target.attachments || []
+    };
+
+    // Clear any existing errors for both fields
+    if (this.errors[fieldName]) {
+      const newErrors = { ...this.errors };
+      delete newErrors[fieldName];
+      delete newErrors.attachments;
       this.errors = newErrors;
     }
 

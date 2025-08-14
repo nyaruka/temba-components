@@ -1,6 +1,6 @@
 import { html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { FieldConfig } from '../flow/types';
+import { FieldConfig, SelectFieldConfig } from '../flow/types';
 import { BaseListEditor, ListItem } from './BaseListEditor';
 
 @customElement('temba-array-editor')
@@ -18,6 +18,12 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     value: any,
     allItems: any[]
   ) => any[];
+
+  @property({ type: Function })
+  isEmptyItemFn?: (item: any) => boolean;
+
+  @property({ type: Boolean })
+  maintainEmptyItem = true; // Enable by default for better UX
 
   constructor() {
     super();
@@ -37,9 +43,34 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
   // Implement abstract methods
   isEmptyItem(item: ListItem): boolean {
-    return Object.values(item).every(
+    // Use configurable function if provided
+    if (this.isEmptyItemFn) {
+      return this.isEmptyItemFn(item);
+    }
+
+    // Default behavior: check if all values are empty
+    const values = Object.values(item);
+    if (values.length === 0) {
+      return true;
+    }
+
+    return values.every(
       (value) => value === undefined || value === null || value === ''
     );
+  }
+
+  // Override cleanItems to be more permissive for form data
+  protected cleanItems(items: ListItem[]): any {
+    // For runtime attachments, keep items that have at least one non-empty field
+    return items.filter((item) => {
+      const values = Object.values(item);
+      return (
+        values.length > 0 &&
+        values.some(
+          (value) => value !== undefined && value !== null && value !== ''
+        )
+      );
+    });
   }
 
   createEmptyItem(): ListItem {
@@ -83,6 +114,14 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       return config.computeValue(item, currentValue);
     }
 
+    // For select fields, ensure we return the right type
+    if (config.type === 'select') {
+      const selectConfig = config as SelectFieldConfig;
+      if (currentValue === undefined || currentValue === null) {
+        return selectConfig.multi ? [] : '';
+      }
+    }
+
     return currentValue;
   }
 
@@ -112,13 +151,64 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
             this.handleFieldChange(itemIndex, fieldName, e.target.value)}
         ></temba-textinput>`;
 
-      case 'select':
+      case 'select': {
+        const selectConfig = config as SelectFieldConfig;
+        const fieldValue = this.computeFieldValue(itemIndex, fieldName, config);
+
         return html`<temba-select
-          .value=${computedValue || ''}
-          .options=${config.options}
-          @change=${(e: any) =>
-            this.handleFieldChange(itemIndex, fieldName, e.target.value)}
-        ></temba-select>`;
+          class="form-control"
+          ?clearable="${selectConfig.clearable || false}"
+          ?searchable="${selectConfig.searchable || false}"
+          ?tags="${selectConfig.tags || false}"
+          ?multi="${selectConfig.multi || false}"
+          ?emails="${selectConfig.emails || false}"
+          placeholder="${selectConfig.placeholder || ''}"
+          maxItems="${selectConfig.maxItems || 0}"
+          valueKey="${selectConfig.valueKey || 'value'}"
+          nameKey="${selectConfig.nameKey || 'name'}"
+          endpoint="${selectConfig.endpoint || ''}"
+          value="${fieldValue || ''}"
+          flavor="small"
+          @change="${(e: Event) => {
+            const target = e.target as any;
+            let value: any;
+
+            // For temba-select, extract the correct value
+            if (target.tagName === 'TEMBA-SELECT') {
+              if (target.multi || target.emails || target.tags) {
+                value = target.values || [];
+              } else {
+                // Single select: extract value from first selected option
+                const values = target.values || [];
+                value =
+                  values.length > 0 && values[0]
+                    ? values[0].value !== undefined
+                      ? values[0].value
+                      : values[0]
+                    : '';
+              }
+            } else {
+              value = target.value;
+            }
+
+            this.handleFieldChange(itemIndex, fieldName, value);
+          }}"
+        >
+          ${selectConfig.options?.map((option: any) => {
+            if (typeof option === 'string') {
+              return html`<temba-option
+                name="${option}"
+                value="${option}"
+              ></temba-option>`;
+            } else {
+              return html`<temba-option
+                name="${option.label || option.name}"
+                value="${option.value}"
+              ></temba-option>`;
+            }
+          })}
+        </temba-select>`;
+      }
 
       default:
         return html`<span>Unsupported field type: ${config.type}</span>`;
@@ -130,28 +220,24 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
     return html`
       <div class="array-item">
-        <div class="item-header">
-          <span class="item-title">${this.itemLabel} ${index + 1}</span>
+        <div class="item-fields">
+          ${Object.entries(this.itemConfig).map(
+            ([fieldName, config]) => html`
+              <div class="field">
+                ${this.renderField(index, fieldName, config)}
+              </div>
+            `
+          )}
           ${canRemove
             ? html`
                 <button
                   @click=${() => this.removeItem(index)}
                   class="remove-btn"
                 >
-                  Remove
+                  <temba-icon name="x"></temba-icon>
                 </button>
               `
             : ''}
-        </div>
-        <div class="item-fields">
-          ${Object.entries(this.itemConfig).map(
-            ([fieldName, config]) => html`
-              <div class="field">
-                <label>${config.label}${config.required ? ' *' : ''}</label>
-                ${this.renderField(index, fieldName, config)}
-              </div>
-            `
-          )}
         </div>
       </div>
     `;
@@ -171,27 +257,16 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
   static styles = css`
     .array-editor {
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      padding: 16px;
-      background: #fafafa;
     }
 
     .array-item {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      padding: 16px;
       margin-bottom: 12px;
-      background: white;
     }
 
     .item-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
     }
 
     .item-title {
@@ -200,8 +275,17 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     }
 
     .item-fields {
-      display: grid;
+      display: flex;
       gap: 12px;
+      align-items: center;
+    }
+
+    .field {
+      flex: 1;
+    }
+
+    .field:first-child {
+      flex: 0 0 140px; /* Fixed width for type dropdown */
     }
 
     .field label {
@@ -214,7 +298,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
     .add-btn,
     .remove-btn {
-      padding: 8px 16px;
+      padding: 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
       background: white;
@@ -228,13 +312,8 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     }
 
     .remove-btn {
-      background: #fff5f5;
-      border-color: #fecaca;
-      color: #dc2626;
-    }
-
-    .remove-btn:hover {
-      background: #fef2f2;
+      background: #fefefe;
+      color: #999;
     }
   `;
 }

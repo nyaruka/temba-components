@@ -52,10 +52,12 @@ export abstract class BaseListEditor<
   }
 
   protected shouldShowAddButton(): boolean {
-    return (
-      !this.maintainEmptyItem &&
-      (!this.maxItems || this._items.length < this.maxItems)
-    );
+    // Never show add button when maintaining empty items (auto-add behavior)
+    if (this.maintainEmptyItem) {
+      return false;
+    }
+
+    return !this.maxItems || this._items.length < this.maxItems;
   }
 
   render(): TemplateResult {
@@ -65,7 +67,7 @@ export abstract class BaseListEditor<
       <div class=${this.getContainerClass()}>
         <div
           class="list-items"
-          style="gap: 8px; display: grid; grid-template-columns: 1fr;"
+          style="display: grid; grid-template-columns: 1fr;"
         >
           ${items.map((item, index) => this.renderItem(item, index))}
         </div>
@@ -89,7 +91,8 @@ export abstract class BaseListEditor<
 
     if (this.maintainEmptyItem) {
       const hasEmptyItem = items.some((item) => this.isEmptyItem(item));
-      if (!hasEmptyItem) {
+      // Only add empty item if we haven't reached maxItems and don't already have an empty item
+      if (!hasEmptyItem && (!this.maxItems || items.length < this.maxItems)) {
         items.push(this.createEmptyItem());
       }
     }
@@ -111,6 +114,19 @@ export abstract class BaseListEditor<
     fieldValue: any
   ) {
     const updatedItems = [...this._items];
+
+    // If editing beyond the current array (auto-generated empty row), check maxItems
+    if (index >= this._items.length) {
+      if (this.maxItems && this._items.length >= this.maxItems) {
+        // Don't allow adding new items if we've reached maxItems
+        return;
+      }
+      // Extend the array to include the new item
+      while (updatedItems.length <= index) {
+        updatedItems.push(this.createEmptyItem());
+      }
+    }
+
     const currentItem = updatedItems[index] || this.createEmptyItem();
 
     updatedItems[index] = {
