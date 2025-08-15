@@ -12,8 +12,8 @@
         "3b28a90f-27be-4753-b0c0-3e98b83f0627": {
           "type": "wait_for_response",
           "position": {
-            "left": 100,
-            "top": 340
+            "left": 80,
+            "top": 240
           },
           "config": {
             "cases": {}
@@ -41,27 +41,17 @@
         "uuid": "b01610c8-d6dc-4bdb-9439-5713cdcf9afa",
         "actions": [
           {
-            "attachments": [
-              "image/jpeg:http://localhost:9000/temba-attachments/dcdbbe1f-0b0b-4bbc-93e8-b58020d459a0-IMG_3288.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/d197d181-35df-4351-906c-440bf6cd170f-IMG_3308.jpeg"
-            ],
-            "text": "Would you like chicken or fish?",
+            "uuid": "90957b4e-05a4-4d00-8163-47046f81246d",
             "type": "send_msg",
+            "text": "Would you like chicken or fish?",
+            "attachments": [
+              "image/jpeg:http://localhost:9000/temba-attachments/816f8797-c929-47a8-a1ad-9a33f0123406-IMG_0917.jpeg",
+              "image/jpeg:http://localhost:9000/temba-attachments/de0f23fc-2d71-4a93-90d3-729b1ad65cd2-IMG_3208.jpeg"
+            ],
             "quick_replies": [
               "Chicken",
-              "Fish"
-            ],
-            "uuid": "90957b4e-05a4-4d00-8163-47046f81246d",
-            "template": {
-              "uuid": "b5e47571-4ee7-4e9e-b48f-1c4efd4d6429",
-              "name": "Dinner Menu"
-            },
-            "template_variables": [
-              "Food",
-              "@contact.name",
-              "Chicken",
               "Fish",
-              "Rowan"
+              "arst"
             ]
           }
         ],

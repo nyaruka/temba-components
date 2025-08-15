@@ -32,6 +32,10 @@ export class NodeEditor extends RapidElement {
         gap: 15px;
         min-width: 400px;
         padding-bottom: 40px;
+
+        --color-bubble-bg: rgba(255, 255, 255, 0.8);
+        --color-bubble-border: #999;
+        --color-bubble-text: #777;
       }
 
       .form-field {
@@ -100,6 +104,11 @@ export class NodeEditor extends RapidElement {
         border-color: var(--color-error, tomato);
       }
 
+      .form-group.has-bubble {
+        border-width: 1px;
+        border-color: var(--color-bubble-border, #aaa);
+      }
+
       .form-group-header {
         background: #f8f9fa;
         padding: 8px 10px;
@@ -110,6 +119,9 @@ export class NodeEditor extends RapidElement {
         justify-content: space-between;
         cursor: pointer;
         user-select: none;
+      }
+
+      .form-group.has-bubble .form-group-header {
       }
 
       .collapsed .form-group-header {
@@ -200,18 +212,15 @@ export class NodeEditor extends RapidElement {
       }
 
       .group-count-bubble {
-        background: rgba(0, 0, 0, 0.05);
-        color: rgba(0, 0, 0, 0.5);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 11px;
         font-weight: 600;
-        line-height: 1;
-        padding: 6px;
-        min-width: 9px;
-        height: 9px;
+        padding: 4px;
+        min-width: 12px;
+        min-height: 12px;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -219,9 +228,31 @@ export class NodeEditor extends RapidElement {
         line-height: 0px;
         opacity: 1;
         transition: opacity 0.3s ease;
+        background: var(--color-bubble-bg, #fff);
+        border: 1px solid var(--color-bubble-border, #777);
+        color: var(--color-bubble-text, #000);
       }
 
       .group-count-bubble.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .group-checkmark-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        border-radius: 50%;
+        color: var(--color-bubble-text, #000);
+        background: var(--color-bubble-bg, #fff);
+        border: 1px solid var(--color-bubble-border, #777);
+        padding: 0.2em;
+      }
+
+      .group-checkmark-icon.hidden {
         opacity: 0;
         pointer-events: none;
       }
@@ -1072,6 +1103,7 @@ export class NodeEditor extends RapidElement {
           nameKey="${selectConfig.nameKey || 'name'}"
           endpoint="${selectConfig.endpoint || ''}"
           .helpText="${config.helpText || ''}"
+          flavor="${selectConfig.flavor || 'small'}"
           @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
         >
           ${selectConfig.options?.map((option: any) => {
@@ -1353,13 +1385,24 @@ export class NodeEditor extends RapidElement {
     // Calculate count for bubble display
     let valueCount = 0;
     let showBubble = false;
+    let showCheckmark = false;
+    let hasValue = false;
     const isHovered = this.groupHoverState[label] ?? false;
 
     if (getGroupValueCount && collapsible) {
       try {
-        valueCount = getGroupValueCount(this.formData);
-        // Only show bubble if group is collapsed, has a count, and is not being hovered
-        showBubble = valueCount > 0 && isCollapsed && !isHovered;
+        const result = getGroupValueCount(this.formData);
+
+        if (typeof result === 'boolean') {
+          // Boolean result - show checkmark when true
+          showCheckmark = result && isCollapsed && !isHovered;
+          hasValue = result;
+        } else if (typeof result === 'number') {
+          // Numeric result - show count bubble
+          valueCount = result;
+          showBubble = valueCount > 0 && isCollapsed && !isHovered;
+          hasValue = valueCount > 0;
+        }
       } catch (error) {
         console.error(
           `Error calculating group value count for ${label}:`,
@@ -1372,7 +1415,9 @@ export class NodeEditor extends RapidElement {
       <div
         class="form-group ${collapsible ? 'collapsible' : ''} ${groupHasErrors
           ? 'has-errors'
-          : ''} ${isCollapsed ? 'collapsed' : 'expanded'}"
+          : ''} ${isCollapsed ? 'collapsed' : 'expanded'} ${hasValue
+          ? 'has-bubble'
+          : ''}"
       >
         <div
           class="form-group-header ${collapsible ? 'clickable' : ''}"
@@ -1406,9 +1451,15 @@ export class NodeEditor extends RapidElement {
                   size="1.5"
                   class="group-toggle-icon ${isCollapsed
                     ? 'collapsed'
-                    : 'expanded'} ${showBubble ? 'faded' : ''}"
+                    : 'expanded'} ${showBubble || showCheckmark ? 'faded' : ''}"
                 ></temba-icon>
-                ${valueCount > 0 && getGroupValueCount
+                ${showCheckmark
+                  ? html`<temba-icon
+                      name="check"
+                      size="1"
+                      class="group-checkmark-icon"
+                    ></temba-icon>`
+                  : showBubble
                   ? html`<div
                       class="group-count-bubble ${!showBubble ? 'hidden' : ''}"
                     >
