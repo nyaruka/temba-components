@@ -24,6 +24,21 @@ const getWebChat = async (attrs: any = {}) => {
   return webChat;
 };
 
+const takeScreenshotWithClockRestore = async (filename: string, clip: any) => {
+  // Temporarily restore real timers for screenshot to avoid CI timing issues
+  clock.restore();
+
+  try {
+    await assertScreenshot(filename, clip);
+  } finally {
+    // Restore fake timers
+    clock = useFakeTimers({
+      shouldAdvanceTime: true,
+      advanceTimeDelta: 10
+    });
+  }
+};
+
 // Mock WebSocket
 class MockWebSocket {
   public onopen: ((event: Event) => void) | null = null;
@@ -170,7 +185,10 @@ describe('temba-webchat', () => {
         channel: 'test-channel'
       });
 
-      await assertScreenshot('webchat/closed-widget', getClip(webChat));
+      await takeScreenshotWithClockRestore(
+        'webchat/closed-widget',
+        getClip(webChat)
+      );
     });
 
     it('renders opened chat widget', async () => {
@@ -179,7 +197,10 @@ describe('temba-webchat', () => {
         open: true
       });
 
-      await assertScreenshot('webchat/opened-widget', getClip(webChat));
+      await takeScreenshotWithClockRestore(
+        'webchat/opened-widget',
+        getClip(webChat)
+      );
     });
 
     it('renders connecting state', async () => {
@@ -202,7 +223,10 @@ describe('temba-webchat', () => {
       expect(webChat.open).to.equal(true);
       expect(webChat.status).to.equal('connecting');
 
-      await assertScreenshot('webchat/connecting-state', getClip(webChat));
+      await takeScreenshotWithClockRestore(
+        'webchat/connecting-state',
+        getClip(webChat)
+      );
     });
 
     it('renders disconnected state with reconnect option', async () => {
@@ -212,7 +236,10 @@ describe('temba-webchat', () => {
         status: 'disconnected'
       });
 
-      await assertScreenshot('webchat/disconnected-state', getClip(webChat));
+      await takeScreenshotWithClockRestore(
+        'webchat/disconnected-state',
+        getClip(webChat)
+      );
     });
 
     it('renders connected state with input field', async () => {
@@ -229,7 +256,10 @@ describe('temba-webchat', () => {
       expect(inputField).to.exist;
       inputField.style.caretColor = 'transparent';
 
-      await assertScreenshot('webchat/connected-state', getClip(webChat));
+      await takeScreenshotWithClockRestore(
+        'webchat/connected-state',
+        getClip(webChat)
+      );
     });
   });
 
