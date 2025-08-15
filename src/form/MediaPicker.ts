@@ -29,7 +29,6 @@ export class MediaPicker extends RapidElement {
       }
 
       .highlight .drop-mask {
-        // background: var(--drop-mask-bg, rgba(210, 243, 184, 0.8));
       }
 
       .drop-mask > div {

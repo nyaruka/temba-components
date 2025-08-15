@@ -260,7 +260,6 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     }
 
     .array-item {
-      margin-bottom: 12px;
     }
 
     .item-header {

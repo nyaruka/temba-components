@@ -89,7 +89,13 @@ export const send_msg: ActionConfig = {
       label: 'Quick Replies',
       items: ['quick_replies'],
       collapsible: true,
-      collapsed: false
+      collapsed: (formData: any) => {
+        // Collapse only if there are no quick replies
+        return !formData.quick_replies || formData.quick_replies.length === 0;
+      },
+      getGroupValueCount: (formData: any) => {
+        return formData.quick_replies?.length || 0;
+      }
     },
     {
       type: 'group',
@@ -97,7 +103,15 @@ export const send_msg: ActionConfig = {
       items: ['runtime_attachments'],
       collapsible: true,
       collapsed: true,
-      helpText: 'Add dynamic attachments that are evaluated at runtime'
+      helpText: 'Add dynamic attachments that are evaluated at runtime',
+      getGroupValueCount: (formData: any) => {
+        return (
+          formData.runtime_attachments?.filter(
+            (item: any) =>
+              item && item.expression && item.expression.trim() !== ''
+          ).length || 0
+        );
+      }
     }
   ],
   toFormData: (action: SendMsg) => {

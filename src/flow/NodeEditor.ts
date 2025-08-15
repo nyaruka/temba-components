@@ -32,6 +32,10 @@ export class NodeEditor extends RapidElement {
         gap: 15px;
         min-width: 400px;
         padding-bottom: 40px;
+
+        --color-bubble-bg: rgba(255, 255, 255, 0.8);
+        --color-bubble-border: #999;
+        --color-bubble-text: #777;
       }
 
       .form-field {
@@ -40,10 +44,6 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-field label {
-        font-weight: 500;
-        margin-bottom: 6px;
-        color: #333;
-        font-size: 14px;
       }
 
       .field-errors {
@@ -104,15 +104,32 @@ export class NodeEditor extends RapidElement {
         border-color: var(--color-error, tomato);
       }
 
+      .form-group.has-bubble {
+        border-width: 1px;
+        border-color: var(--color-bubble-border, #aaa);
+      }
+
       .form-group-header {
         background: #f8f9fa;
-        padding: 12px 15px;
+        padding: 8px 10px;
         border-bottom: 1px solid #e0e0e0;
+
         display: flex;
         align-items: center;
         justify-content: space-between;
         cursor: pointer;
         user-select: none;
+      }
+
+      .form-group.has-bubble .form-group-header {
+      }
+
+      .collapsed .form-group-header {
+        border: none;
+      }
+
+      .form-group-header:hover {
+        background: rgba(0, 0, 0, 0.05);
       }
 
       .form-group-header.collapsible:hover {
@@ -125,7 +142,7 @@ export class NodeEditor extends RapidElement {
 
       .form-group-title {
         font-weight: 500;
-        color: #333;
+        color: var(--color-label, #777);
         font-size: 14px;
         display: flex;
       }
@@ -148,7 +165,7 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group-content {
-        padding: 15px;
+        padding: 6px;
         display: flex;
         flex-direction: column;
         gap: 15px;
@@ -167,9 +184,14 @@ export class NodeEditor extends RapidElement {
 
       .group-toggle-icon {
         color: #666;
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
         cursor: pointer;
         transform: rotate(0deg);
+        opacity: 1;
+      }
+
+      .group-toggle-icon.faded {
+        opacity: 0;
       }
 
       .group-toggle-icon.expanded {
@@ -187,6 +209,58 @@ export class NodeEditor extends RapidElement {
       .group-error-icon {
         color: var(--color-error, tomato);
         margin-right: 8px;
+      }
+
+      .group-count-bubble {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px;
+        min-width: 12px;
+        min-height: 12px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        line-height: 0px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        background: var(--color-bubble-bg, #fff);
+        border: 1px solid var(--color-bubble-border, #777);
+        color: var(--color-bubble-text, #000);
+      }
+
+      .group-count-bubble.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .group-checkmark-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        border-radius: 50%;
+        color: var(--color-bubble-text, #000);
+        background: var(--color-bubble-bg, #fff);
+        border: 1px solid var(--color-bubble-border, #777);
+        padding: 0.2em;
+      }
+
+      .group-checkmark-icon.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .group-toggle-container {
+        position: relative;
+        display: flex;
+        align-items: center;
       }
     `;
   }
@@ -215,6 +289,9 @@ export class NodeEditor extends RapidElement {
   @state()
   private groupCollapseState: { [key: string]: boolean } = {};
 
+  @state()
+  private groupHoverState: { [key: string]: boolean } = {};
+
   connectedCallback(): void {
     super.connectedCallback();
     this.initializeFormData();
@@ -242,6 +319,7 @@ export class NodeEditor extends RapidElement {
     this.formData = {};
     this.errors = {};
     this.groupCollapseState = {};
+    this.groupHoverState = {};
   }
 
   private initializeFormData(): void {
@@ -840,8 +918,47 @@ export class NodeEditor extends RapidElement {
     // Check for computed values in dependent fields
     this.updateComputedFields(propertyName);
 
+    // Re-evaluate group collapse states that depend on form data
+    this.updateGroupCollapseStates();
+
     // Trigger re-render to handle conditional field visibility
     this.requestUpdate();
+  }
+
+  private updateGroupCollapseStates(): void {
+    if (!this.action) return;
+
+    const config = ACTION_CONFIG[this.action.type];
+    if (!config?.layout) return;
+
+    this.updateGroupCollapseStatesRecursive(config.layout);
+  }
+
+  private updateGroupCollapseStatesRecursive(items: LayoutItem[]): void {
+    items.forEach((item) => {
+      if (typeof item === 'object' && item.type === 'group') {
+        const { label, collapsed, collapsible } = item;
+
+        // Only update if the group is collapsible and has a function-based collapsed property
+        if (collapsible && typeof collapsed === 'function') {
+          const newCollapsedState = collapsed(this.formData);
+
+          // Only update if the state has changed to avoid unnecessary re-renders
+          if (this.groupCollapseState[label] !== newCollapsedState) {
+            this.groupCollapseState = {
+              ...this.groupCollapseState,
+              [label]: newCollapsedState
+            };
+          }
+        }
+
+        // Recursively check nested items
+        this.updateGroupCollapseStatesRecursive(item.items);
+      } else if (typeof item === 'object' && item.type === 'row') {
+        // Recursively check items in rows
+        this.updateGroupCollapseStatesRecursive(item.items);
+      }
+    });
   }
 
   private updateComputedFields(changedFieldName: string): void {
@@ -986,6 +1103,7 @@ export class NodeEditor extends RapidElement {
           nameKey="${selectConfig.nameKey || 'name'}"
           endpoint="${selectConfig.endpoint || ''}"
           .helpText="${config.helpText || ''}"
+          flavor="${selectConfig.flavor || 'small'}"
           @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
         >
           ${selectConfig.options?.map((option: any) => {
@@ -1098,6 +1216,20 @@ export class NodeEditor extends RapidElement {
     this.groupCollapseState = {
       ...this.groupCollapseState,
       [groupLabel]: !this.groupCollapseState[groupLabel]
+    };
+  }
+
+  private handleGroupMouseEnter(groupLabel: string): void {
+    this.groupHoverState = {
+      ...this.groupHoverState,
+      [groupLabel]: true
+    };
+  }
+
+  private handleGroupMouseLeave(groupLabel: string): void {
+    this.groupHoverState = {
+      ...this.groupHoverState,
+      [groupLabel]: false
     };
   }
 
@@ -1223,19 +1355,25 @@ export class NodeEditor extends RapidElement {
       items,
       collapsible = false,
       collapsed = false,
-      helpText
+      helpText,
+      getGroupValueCount
     } = groupConfig;
 
     // Initialize collapse state if not set
     if (collapsible && !(label in this.groupCollapseState)) {
+      // Evaluate collapsed property - can be boolean or function
+      const initialCollapsed =
+        typeof collapsed === 'function' ? collapsed(this.formData) : collapsed;
+
       this.groupCollapseState = {
         ...this.groupCollapseState,
-        [label]: collapsed
+        [label]: initialCollapsed
       };
     }
 
     const isCollapsed = collapsible
-      ? this.groupCollapseState[label] ?? collapsed
+      ? this.groupCollapseState[label] ??
+        (typeof collapsed === 'function' ? collapsed(this.formData) : collapsed)
       : false;
 
     // Check if any field in this group has errors
@@ -1244,16 +1382,53 @@ export class NodeEditor extends RapidElement {
       (fieldName) => this.errors[fieldName]
     );
 
+    // Calculate count for bubble display
+    let valueCount = 0;
+    let showBubble = false;
+    let showCheckmark = false;
+    let hasValue = false;
+    const isHovered = this.groupHoverState[label] ?? false;
+
+    if (getGroupValueCount && collapsible) {
+      try {
+        const result = getGroupValueCount(this.formData);
+
+        if (typeof result === 'boolean') {
+          // Boolean result - show checkmark when true
+          showCheckmark = result && isCollapsed && !isHovered;
+          hasValue = result;
+        } else if (typeof result === 'number') {
+          // Numeric result - show count bubble
+          valueCount = result;
+          showBubble = valueCount > 0 && isCollapsed && !isHovered;
+          hasValue = valueCount > 0;
+        }
+      } catch (error) {
+        console.error(
+          `Error calculating group value count for ${label}:`,
+          error
+        );
+      }
+    }
+
     return html`
       <div
         class="form-group ${collapsible ? 'collapsible' : ''} ${groupHasErrors
           ? 'has-errors'
+          : ''} ${isCollapsed ? 'collapsed' : 'expanded'} ${hasValue
+          ? 'has-bubble'
           : ''}"
       >
         <div
           class="form-group-header ${collapsible ? 'clickable' : ''}"
           @click=${collapsible
             ? () => this.handleGroupToggle(label)
+            : undefined}
+          @mouseenter=${collapsible
+            ? () => this.handleGroupMouseEnter(label)
+            : undefined}
+          @mouseleave=${collapsible
+            ? () => this.handleGroupMouseLeave(label)
             : undefined}
         >
           <div class="form-group-info">
@@ -1270,13 +1445,28 @@ export class NodeEditor extends RapidElement {
               ></temba-icon>`
             : ''}
           ${collapsible && !groupHasErrors
-            ? html`<temba-icon
-                name="arrow_right"
-                size="1.5"
-                class="group-toggle-icon ${isCollapsed
-                  ? 'collapsed'
-                  : 'expanded'}"
-              ></temba-icon>`
+            ? html`<div class="group-toggle-container">
+                <temba-icon
+                  name="arrow_right"
+                  size="1.5"
+                  class="group-toggle-icon ${isCollapsed
+                    ? 'collapsed'
+                    : 'expanded'} ${showBubble || showCheckmark ? 'faded' : ''}"
+                ></temba-icon>
+                ${showCheckmark
+                  ? html`<temba-icon
+                      name="check"
+                      size="1"
+                      class="group-checkmark-icon"
+                    ></temba-icon>`
+                  : showBubble
+                  ? html`<div
+                      class="group-count-bubble ${!showBubble ? 'hidden' : ''}"
+                    >
+                      ${valueCount}
+                    </div>`
+                  : ''}
+              </div>`
             : ''}
         </div>
         <div
@@ -1336,6 +1526,9 @@ export class NodeEditor extends RapidElement {
       delete newErrors[fieldName];
       this.errors = newErrors;
     }
+
+    // Re-evaluate group collapse states that depend on form data
+    this.updateGroupCollapseStates();
 
     // Trigger re-render
     this.requestUpdate();

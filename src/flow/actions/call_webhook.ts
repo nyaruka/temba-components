@@ -2,6 +2,19 @@ import { html } from 'lit-html';
 import { ActionConfig, COLORS } from '../types';
 import { Node, CallWebhook } from '../../store/flow-definition';
 
+const defaultPost = `@(json(object(
+  "contact", object(
+    "uuid", contact.uuid, 
+    "name", contact.name, 
+    "urn", contact.urn
+  ),
+  "flow", object(
+    "uuid", run.flow.uuid, 
+    "name", run.flow.name
+  ),
+  "results", foreach_value(results, extract_object, "value", "category")
+)))`;
+
 export const call_webhook: ActionConfig = {
   name: 'Call Webhook',
   color: COLORS.call,
@@ -19,7 +32,7 @@ export const call_webhook: ActionConfig = {
       required: true,
       options: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
       maxWidth: '120px',
-      searchable: true
+      searchable: false
     },
     url: {
       type: 'text',
@@ -51,23 +64,10 @@ export const call_webhook: ActionConfig = {
             ? values.method[0].value || values.method[0].name
             : values.method;
 
-        const defaultTemplate = `@(json(object(
-  "contact", object(
-    "uuid", contact.uuid, 
-    "name", contact.name, 
-    "urn", contact.urn
-  ),
-  "flow", object(
-    "uuid", run.flow.uuid, 
-    "name", run.flow.name
-  ),
-  "results", foreach_value(results, extract_object, "value", "category")
-)))`;
-
         if (method === 'POST') {
           // For POST, provide the template if body is empty or was never set by user
           if (!currentValue || currentValue.trim() === '') {
-            return defaultTemplate;
+            return defaultPost;
           }
         } else {
           // For non-POST methods, clear the body if it was auto-generated or empty
@@ -80,7 +80,7 @@ export const call_webhook: ActionConfig = {
             isOriginallyEmpty ||
             !currentValue ||
             currentValue.trim() === '' ||
-            currentValue.trim() === defaultTemplate.trim()
+            currentValue.trim() === defaultPost.trim()
           ) {
             return '';
           }
@@ -100,7 +100,10 @@ export const call_webhook: ActionConfig = {
       items: ['headers'],
       collapsible: true,
       collapsed: true,
-      helpText: 'Configure authentication or custom headers'
+      helpText: 'Configure authentication or custom headers',
+      getGroupValueCount: (formData: any) => {
+        return formData.headers?.length + 10 || 0;
+      }
     },
     {
       type: 'group',
@@ -108,7 +111,14 @@ export const call_webhook: ActionConfig = {
       items: ['body'],
       collapsible: true,
       collapsed: true,
-      helpText: 'Configure the request payload'
+      helpText: 'Configure the request payload',
+      getGroupValueCount: (formData: any) => {
+        return !!(
+          formData.body &&
+          formData.body.trim() !== '' &&
+          formData.body !== defaultPost
+        );
+      }
     }
   ],
   toFormData: (action: CallWebhook) => {

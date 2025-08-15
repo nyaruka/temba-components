@@ -19,8 +19,7 @@
               "image/jpeg:http://localhost:9000/temba-attachments/ae831575-0d23-40b7-ae0c-531b8775a6bc-IMG_3282.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/837ac13b-e524-4a4c-9385-81873c5df138-IMG_3290.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/761e6345-3a19-49da-8a53-5c772d7739bc-IMG_3339.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/ea6b336d-4389-4d32-b58a-e5a138d13c84-IMG_3237.jpeg",
-              "document:arst"
+              "image/jpeg:http://localhost:9000/temba-attachments/ea6b336d-4389-4d32-b58a-e5a138d13c84-IMG_3237.jpeg"
             ],
             "quick_replies": [
               "Red",
@@ -141,7 +140,7 @@
               "Content-Type": "application/json",
               "Authorization": "Bearer token here"
             },
-            "body": "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"value\", \"category\")\n)))"
+            "body": "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"value\", \"category\")\n)))ast"
           }
         ],
         "router": {
@@ -193,10 +192,6 @@
             "text": "Excellent choices.",
             "attachments": [
               "audio:http://arst"
-            ],
-            "quick_replies": [
-              "blooooop",
-              "bleep"
             ]
           },
           {

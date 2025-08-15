@@ -16,6 +16,11 @@ const TAG = 'temba-webchat';
 const getWebChat = async (attrs: any = {}) => {
   const webChat = (await getComponent(TAG, attrs, '', 400, 600)) as WebChat;
 
+  // Ensure component is fully initialized before returning
+  await webChat.updateComplete;
+  clock.tick(100);
+  await webChat.updateComplete;
+
   return webChat;
 };
 

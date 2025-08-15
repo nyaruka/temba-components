@@ -67,7 +67,7 @@ export abstract class BaseListEditor<
       <div class=${this.getContainerClass()}>
         <div
           class="list-items"
-          style="display: grid; grid-template-columns: 1fr;"
+          style="display: grid; grid-template-columns: 1fr; gap: 8px;"
         >
           ${items.map((item, index) => this.renderItem(item, index))}
         </div>

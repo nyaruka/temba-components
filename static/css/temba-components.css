@@ -51,6 +51,8 @@
     --color-primary-light: #eee;
     --color-secondary-light: #ccc;
 
+    --color-label: #333;
+
     /* dark colors, nav bar, buttons, etc */
     --color-primary-dark: rgb(var(--primary-rgb));
     --color-secondary-dark: rgb(var(--secondary-rgb));

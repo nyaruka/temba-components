@@ -7,7 +7,7 @@ interface Clip {
   height: number;
 }
 
-import { expect, fixture, html, assert, waitUntil } from '@open-wc/testing';
+import { expect, fixture, html, assert } from '@open-wc/testing';
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { stub } from 'sinon';
@@ -200,18 +200,7 @@ export const waitForCondition = async (
   }
 };
 
-export const assertScreenshot = async (
-  filename: string,
-  clip: Clip,
-  waitFor?: { clock?: any; predicate?: () => boolean }
-) => {
-  if (waitFor) {
-    if (waitFor.clock) {
-      waitFor.clock.restore();
-    }
-    await waitUntil(waitFor.predicate);
-  }
-
+export const assertScreenshot = async (filename: string, clip: Clip) => {
   // detect if we're running in copilot's environment and use adaptive threshold
   const isCopilotEnvironment = (window as any).isCopilotEnvironment;
   const threshold = isCopilotEnvironment ? 1.0 : 0.1;
