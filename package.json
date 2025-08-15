@@ -9,8 +9,7 @@
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/nyaruka/temba-components/",
   "scripts": {
-    "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --open --watch --port 3010 --esbuild-target auto\"",
-    "start:bg": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
+    "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
     "build": "rimraf dist && yarn svg && tsc && rollup -c rollup.components.mjs ",
     "build-wc": "rollup -c rollup.webchat.mjs",
