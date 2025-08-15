@@ -116,6 +116,10 @@ export class NodeEditor extends RapidElement {
         border: none;
       }
 
+      .form-group-header:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
       .form-group-header.collapsible:hover {
         background: #f1f3f4;
       }
@@ -188,6 +192,21 @@ export class NodeEditor extends RapidElement {
       .group-error-icon {
         color: var(--color-error, tomato);
         margin-right: 8px;
+      }
+
+      .group-count-bubble {
+        background: rgba(0, 0, 0, 0.05);
+        color: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 4px;
+        line-height: 1;
+        padding: 10px 7px;
+        line-height: 0px;
       }
     `;
   }
@@ -1224,7 +1243,8 @@ export class NodeEditor extends RapidElement {
       items,
       collapsible = false,
       collapsed = false,
-      helpText
+      helpText,
+      getGroupValueCount
     } = groupConfig;
 
     // Initialize collapse state if not set
@@ -1244,6 +1264,21 @@ export class NodeEditor extends RapidElement {
     const groupHasErrors = fieldsInGroup.some(
       (fieldName) => this.errors[fieldName]
     );
+
+    // Calculate count for bubble display
+    let valueCount = 0;
+    let showBubble = false;
+    if (getGroupValueCount && collapsible) {
+      try {
+        valueCount = getGroupValueCount(this.formData);
+        showBubble = valueCount > 0;
+      } catch (error) {
+        console.error(
+          `Error calculating group value count for ${label}:`,
+          error
+        );
+      }
+    }
 
     return html`
       <div
@@ -1271,13 +1306,15 @@ export class NodeEditor extends RapidElement {
               ></temba-icon>`
             : ''}
           ${collapsible && !groupHasErrors
-            ? html`<temba-icon
-                name="arrow_right"
-                size="1.5"
-                class="group-toggle-icon ${isCollapsed
-                  ? 'collapsed'
-                  : 'expanded'}"
-              ></temba-icon>`
+            ? showBubble
+              ? html`<div class="group-count-bubble">${valueCount}</div>`
+              : html`<temba-icon
+                  name="arrow_right"
+                  size="1.5"
+                  class="group-toggle-icon ${isCollapsed
+                    ? 'collapsed'
+                    : 'expanded'}"
+                ></temba-icon>`
             : ''}
         </div>
         <div

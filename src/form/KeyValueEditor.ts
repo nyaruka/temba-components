@@ -216,9 +216,8 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
     .row {
       display: grid;
       grid-template-columns: 1fr 1fr auto;
-      gap: 8px;
       align-items: center;
-      margin: 4px;
+      column-gap: 6px;
     }
 
     .remove-btn {

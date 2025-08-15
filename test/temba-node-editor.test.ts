@@ -378,4 +378,66 @@ describe('temba-node-editor', () => {
       await assertDialogScreenshot(el, `editor/${actionType.type}`);
     }
   });
+
+  it('displays bubble count for group value counts', async () => {
+    const action = {
+      uuid: 'test-action-uuid',
+      type: 'send_msg',
+      text: 'Hello world',
+      quick_replies: ['Yes', 'No', 'Maybe'],
+      attachments: ['image:@contact.photo', 'document:@contact.resume']
+    };
+
+    const el = (await fixture(html`
+      <temba-node-editor .action=${action} .isOpen=${true}></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+
+    // Wait for form data to be fully initialized and re-render to complete
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await el.updateComplete;
+
+    // Check that bubble counts are displayed
+    const shadowRoot = el.shadowRoot;
+    const bubbles = shadowRoot.querySelectorAll('.group-count-bubble');
+
+    // Should have bubbles for groups with values
+    expect(bubbles.length).to.be.greaterThan(0);
+
+    // Check specific bubble values
+    const bubbleTexts = Array.from(bubbles).map((bubble) => bubble.textContent);
+    expect(bubbleTexts).to.include('3'); // 3 quick replies
+    expect(bubbleTexts).to.include('2'); // 2 runtime attachments
+  });
+
+  it('shows arrow when group has no values', async () => {
+    const action = {
+      uuid: 'test-action-uuid',
+      type: 'send_msg',
+      text: 'Hello world'
+      // No quick_replies or attachments provided
+    };
+
+    const el = (await fixture(html`
+      <temba-node-editor .action=${action} .isOpen=${true}></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+
+    // Wait for form data initialization
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await el.updateComplete;
+
+    // Check that arrows are displayed instead of bubbles
+    const shadowRoot = el.shadowRoot;
+    const bubbles = shadowRoot.querySelectorAll('.group-count-bubble');
+    const arrows = shadowRoot.querySelectorAll('.group-toggle-icon');
+
+    // Should have no bubbles when counts are 0
+    expect(bubbles.length).to.equal(0);
+
+    // Should have arrows for collapsible groups
+    expect(arrows.length).to.be.greaterThan(0);
+  });
 });

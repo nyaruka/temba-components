@@ -246,6 +246,7 @@ export interface GroupLayoutConfig {
   collapsible?: boolean;
   collapsed?: boolean; // initial state if collapsible
   helpText?: string;
+  getGroupValueCount?: (formData: any) => number; // optional function to get count for bubble display
 }
 
 export type LayoutItem =
