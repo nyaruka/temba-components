@@ -410,9 +410,9 @@ describe('temba-node-editor', () => {
       bubble.textContent?.trim()
     );
 
-    // Both groups should show bubbles when they have values and are in collapsed state
-    expect(bubbleTexts).to.include('3'); // 3 quick replies
+    // Runtime attachments group should show bubble when collapsed and has values
     expect(bubbleTexts).to.include('2'); // 2 runtime attachments
+    // Note: Quick replies group auto-expands when it has content, so no bubble is shown
   });
 
   it('shows arrow when group has no values', async () => {

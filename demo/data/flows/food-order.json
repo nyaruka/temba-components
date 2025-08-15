@@ -49,8 +49,8 @@
               "image/jpeg:http://localhost:9000/temba-attachments/de0f23fc-2d71-4a93-90d3-729b1ad65cd2-IMG_3208.jpeg"
             ],
             "quick_replies": [
-              "Chicken",
               "Fish",
+              "Chicken",
               "arst"
             ]
           }
