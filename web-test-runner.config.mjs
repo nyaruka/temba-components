@@ -159,7 +159,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
             await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
           }
         } catch (error) {
-          console.error('Error waiting for network idle, proceeding', error);
+          console.error('Error waiting for network idle, proceeding: ' + filename);
         }
 
         if (!(await fileExists(truthFile))) {
