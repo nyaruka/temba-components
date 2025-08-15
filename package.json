@@ -25,6 +25,7 @@
     "check-coverage": "node check-coverage.js",
     "validate": "yarn format && yarn build && yarn test:coverage && yarn check-coverage",
     "test:watch": "wtr --node-resolve --watch",
+    "stress-test": "node stress-test.js",
     "svg": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/index.svg' --usage='./src/Icons.ts'",
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",

@@ -13,6 +13,7 @@ import rimraf from 'rimraf';
 
 import replace from '@rollup/plugin-replace';
 import { fromRollup } from '@web/dev-server-rollup';
+
 const replacePlugin = fromRollup(replace);
 
 const SCREENSHOTS = 'screenshots';
@@ -151,10 +152,14 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
         const truthFile = await getPath(TRUTH, filename);
 
         // Only wait for network idle if explicitly requested
-        if (wait) {
-          await page.waitForNetworkIdle();
-        } else {
-          await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
+        try{
+          if (wait) {
+            await page.waitForNetworkIdle({idleTime: 200, timeout: 1000});
+          } else {
+            await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
+          }
+        } catch (error) {
+          console.error('Error waiting for network idle, proceeding', error);
         }
 
         if (!(await fileExists(truthFile))) {
