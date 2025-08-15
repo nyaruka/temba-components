@@ -244,7 +244,7 @@ export interface GroupLayoutConfig {
   label: string;
   items: LayoutItem[]; // can contain fields, rows, or other groups
   collapsible?: boolean;
-  collapsed?: boolean; // initial state if collapsible
+  collapsed?: boolean | ((formData: any) => boolean); // initial state if collapsible - can be a function
   helpText?: string;
   getGroupValueCount?: (formData: any) => number; // optional function to get count for bubble display
 }

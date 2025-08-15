@@ -405,8 +405,12 @@ describe('temba-node-editor', () => {
     // Should have bubbles for groups with values
     expect(bubbles.length).to.be.greaterThan(0);
 
-    // Check specific bubble values
-    const bubbleTexts = Array.from(bubbles).map((bubble) => bubble.textContent);
+    // Check specific bubble values (trim to handle whitespace in rendered text)
+    const bubbleTexts = Array.from(bubbles).map((bubble) =>
+      bubble.textContent?.trim()
+    );
+
+    // Both groups should show bubbles when they have values and are in collapsed state
     expect(bubbleTexts).to.include('3'); // 3 quick replies
     expect(bubbleTexts).to.include('2'); // 2 runtime attachments
   });

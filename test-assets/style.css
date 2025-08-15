@@ -60,6 +60,8 @@ html {
   --error-rgb: 255, 99, 71;
   --success-rgb: 102, 186, 104;
 
+  --color-label: #333;
+
   --selection-light-rgb: 240, 240, 240;
   --selection-dark-rgb: 180, 180, 180;
 

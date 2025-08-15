@@ -172,9 +172,14 @@ export class NodeEditor extends RapidElement {
 
       .group-toggle-icon {
         color: #666;
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
         cursor: pointer;
         transform: rotate(0deg);
+        opacity: 1;
+      }
+
+      .group-toggle-icon.faded {
+        opacity: 0;
       }
 
       .group-toggle-icon.expanded {
@@ -203,10 +208,28 @@ export class NodeEditor extends RapidElement {
         justify-content: center;
         font-size: 11px;
         font-weight: 600;
-        margin-right: 4px;
         line-height: 1;
-        padding: 10px 7px;
+        padding: 6px;
+        min-width: 9px;
+        height: 9px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         line-height: 0px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .group-count-bubble.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .group-toggle-container {
+        position: relative;
+        display: flex;
+        align-items: center;
       }
     `;
   }
@@ -235,6 +258,9 @@ export class NodeEditor extends RapidElement {
   @state()
   private groupCollapseState: { [key: string]: boolean } = {};
 
+  @state()
+  private groupHoverState: { [key: string]: boolean } = {};
+
   connectedCallback(): void {
     super.connectedCallback();
     this.initializeFormData();
@@ -262,6 +288,7 @@ export class NodeEditor extends RapidElement {
     this.formData = {};
     this.errors = {};
     this.groupCollapseState = {};
+    this.groupHoverState = {};
   }
 
   private initializeFormData(): void {
@@ -860,8 +887,47 @@ export class NodeEditor extends RapidElement {
     // Check for computed values in dependent fields
     this.updateComputedFields(propertyName);
 
+    // Re-evaluate group collapse states that depend on form data
+    this.updateGroupCollapseStates();
+
     // Trigger re-render to handle conditional field visibility
     this.requestUpdate();
+  }
+
+  private updateGroupCollapseStates(): void {
+    if (!this.action) return;
+
+    const config = ACTION_CONFIG[this.action.type];
+    if (!config?.layout) return;
+
+    this.updateGroupCollapseStatesRecursive(config.layout);
+  }
+
+  private updateGroupCollapseStatesRecursive(items: LayoutItem[]): void {
+    items.forEach((item) => {
+      if (typeof item === 'object' && item.type === 'group') {
+        const { label, collapsed, collapsible } = item;
+
+        // Only update if the group is collapsible and has a function-based collapsed property
+        if (collapsible && typeof collapsed === 'function') {
+          const newCollapsedState = collapsed(this.formData);
+
+          // Only update if the state has changed to avoid unnecessary re-renders
+          if (this.groupCollapseState[label] !== newCollapsedState) {
+            this.groupCollapseState = {
+              ...this.groupCollapseState,
+              [label]: newCollapsedState
+            };
+          }
+        }
+
+        // Recursively check nested items
+        this.updateGroupCollapseStatesRecursive(item.items);
+      } else if (typeof item === 'object' && item.type === 'row') {
+        // Recursively check items in rows
+        this.updateGroupCollapseStatesRecursive(item.items);
+      }
+    });
   }
 
   private updateComputedFields(changedFieldName: string): void {
@@ -1121,6 +1187,20 @@ export class NodeEditor extends RapidElement {
     };
   }
 
+  private handleGroupMouseEnter(groupLabel: string): void {
+    this.groupHoverState = {
+      ...this.groupHoverState,
+      [groupLabel]: true
+    };
+  }
+
+  private handleGroupMouseLeave(groupLabel: string): void {
+    this.groupHoverState = {
+      ...this.groupHoverState,
+      [groupLabel]: false
+    };
+  }
+
   private expandGroupsWithErrors(errors: { [key: string]: string }): void {
     if (!this.action) return;
 
@@ -1249,14 +1329,19 @@ export class NodeEditor extends RapidElement {
 
     // Initialize collapse state if not set
     if (collapsible && !(label in this.groupCollapseState)) {
+      // Evaluate collapsed property - can be boolean or function
+      const initialCollapsed =
+        typeof collapsed === 'function' ? collapsed(this.formData) : collapsed;
+
       this.groupCollapseState = {
         ...this.groupCollapseState,
-        [label]: collapsed
+        [label]: initialCollapsed
       };
     }
 
     const isCollapsed = collapsible
-      ? this.groupCollapseState[label] ?? collapsed
+      ? this.groupCollapseState[label] ??
+        (typeof collapsed === 'function' ? collapsed(this.formData) : collapsed)
       : false;
 
     // Check if any field in this group has errors
@@ -1268,10 +1353,13 @@ export class NodeEditor extends RapidElement {
     // Calculate count for bubble display
     let valueCount = 0;
     let showBubble = false;
+    const isHovered = this.groupHoverState[label] ?? false;
+
     if (getGroupValueCount && collapsible) {
       try {
         valueCount = getGroupValueCount(this.formData);
-        showBubble = valueCount > 0;
+        // Only show bubble if group is collapsed, has a count, and is not being hovered
+        showBubble = valueCount > 0 && isCollapsed && !isHovered;
       } catch (error) {
         console.error(
           `Error calculating group value count for ${label}:`,
@@ -1291,6 +1379,12 @@ export class NodeEditor extends RapidElement {
           @click=${collapsible
             ? () => this.handleGroupToggle(label)
             : undefined}
+          @mouseenter=${collapsible
+            ? () => this.handleGroupMouseEnter(label)
+            : undefined}
+          @mouseleave=${collapsible
+            ? () => this.handleGroupMouseLeave(label)
+            : undefined}
         >
           <div class="form-group-info">
             <div class="form-group-title">${label}</div>
@@ -1306,15 +1400,22 @@ export class NodeEditor extends RapidElement {
               ></temba-icon>`
             : ''}
           ${collapsible && !groupHasErrors
-            ? showBubble
-              ? html`<div class="group-count-bubble">${valueCount}</div>`
-              : html`<temba-icon
+            ? html`<div class="group-toggle-container">
+                <temba-icon
                   name="arrow_right"
                   size="1.5"
                   class="group-toggle-icon ${isCollapsed
                     ? 'collapsed'
-                    : 'expanded'}"
-                ></temba-icon>`
+                    : 'expanded'} ${showBubble ? 'faded' : ''}"
+                ></temba-icon>
+                ${valueCount > 0 && getGroupValueCount
+                  ? html`<div
+                      class="group-count-bubble ${!showBubble ? 'hidden' : ''}"
+                    >
+                      ${valueCount}
+                    </div>`
+                  : ''}
+              </div>`
             : ''}
         </div>
         <div
@@ -1374,6 +1475,9 @@ export class NodeEditor extends RapidElement {
       delete newErrors[fieldName];
       this.errors = newErrors;
     }
+
+    // Re-evaluate group collapse states that depend on form data
+    this.updateGroupCollapseStates();
 
     // Trigger re-render
     this.requestUpdate();
