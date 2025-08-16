@@ -12,7 +12,7 @@
           {
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5",
             "type": "send_msg",
-            "text": "What is your favorite color?",
+            "text": "What is your favorite color?!",
             "attachments": [
               "image/jpeg:http://localhost:9000/temba-attachments/c4e84ebf-fdd7-439b-a2ca-aeb5e54dfc1d-IMG_3245.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/e7d4d3cd-ec89-45c2-bc0b-4f652f1f7fde-IMG_3262.jpeg",
@@ -24,7 +24,9 @@
             "quick_replies": [
               "Red",
               "Green",
-              "Blue"
+              "Blue",
+              "Yellow",
+              "Purple"
             ]
           }
         ],
@@ -802,7 +804,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 260,
+            "left": 200,
             "top": 0
           },
           "type": "execute_actions"
@@ -954,7 +956,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1501": {
           "position": {
             "left": 0,
-            "top": 720
+            "top": 780
           },
           "title": "Green Note",
           "body": "They also come in green, do I like them better? Maybe I do. There is a standard height, they will have to get used to it.",

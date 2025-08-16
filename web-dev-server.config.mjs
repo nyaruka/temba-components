@@ -8,6 +8,109 @@ import { v4 as uuidv4 } from 'uuid';
 
 const replacePlugin = fromRollup(replace);
 
+// Function to generate flow metadata similar to production
+function generateFlowMetadata(flowDefinition) {
+  const dependencies = [];
+  const results = [];
+  const locals = [];
+  const issues = [];
+  
+  // Count nodes
+  const nodeCount = flowDefinition.nodes ? flowDefinition.nodes.length : 0;
+  
+  // Count languages in localization
+  const languageCount = flowDefinition.localization ? Object.keys(flowDefinition.localization).length : 0;
+  
+  // Extract dependencies and results from nodes
+  if (flowDefinition.nodes) {
+    flowDefinition.nodes.forEach(node => {
+      // Extract dependencies from actions
+      if (node.actions) {
+        node.actions.forEach(action => {
+          // Template dependencies
+          if (action.type === 'send_msg' && action.template) {
+            dependencies.push({
+              uuid: action.template.uuid,
+              name: action.template.name,
+              type: 'template'
+            });
+          }
+          
+          // Field dependencies
+          if (action.type === 'set_contact_field' && action.field) {
+            dependencies.push({
+              key: action.field.key,
+              name: action.field.name || '',
+              type: 'field'
+            });
+          }
+          
+          // Flow dependencies
+          if (action.type === 'enter_flow' && action.flow) {
+            dependencies.push({
+              uuid: action.flow.uuid,
+              name: action.flow.name,
+              type: 'flow'
+            });
+          }
+          
+          if (action.type === 'start_session' && action.flow) {
+            dependencies.push({
+              uuid: action.flow.uuid,
+              name: action.flow.name,
+              type: 'flow'
+            });
+          }
+        });
+      }
+      
+      // Extract results from routers
+      if (node.router && node.router.result_name) {
+        const resultName = node.router.result_name;
+        if (resultName && !results.find(r => r.key === resultName.toLowerCase())) {
+          const categories = [];
+          
+          // Extract categories from router
+          if (node.router.categories) {
+            node.router.categories.forEach(category => {
+              if (category.name && category.name !== 'Other' && category.name !== 'No Response') {
+                categories.push(category.name);
+              }
+            });
+          }
+          
+          results.push({
+            key: resultName.toLowerCase(),
+            name: resultName,
+            categories: categories,
+            node_uuids: [node.uuid]
+          });
+        }
+      }
+    });
+  }
+  
+  // Remove duplicate dependencies
+  const uniqueDependencies = dependencies.filter((dep, index, self) => 
+    index === self.findIndex(d => 
+      (d.uuid && d.uuid === dep.uuid) || 
+      (d.key && d.key === dep.key)
+    )
+  );
+  
+  return {
+    counts: {
+      languages: languageCount,
+      nodes: nodeCount
+    },
+    dependencies: uniqueDependencies,
+    locals: locals,
+    results: results,
+    parent_refs: [],
+    issues: issues
+  };
+}
+
 // Initialize Minio client for file uploads
 const minioClient = new MinioClient({
   endPoint: 'minio',
@@ -199,14 +302,31 @@ export default {
             context.req.on('end', () => {
               context.contentType = 'application/json';
               if (body) {
+                const flowDefinition = JSON.parse(body);
                 fs.writeFileSync(
                   path.resolve(`./demo/data/flows/${uuid}.json`),
-                  JSON.stringify({ definition: JSON.parse(body) }, null, 2)
+                  JSON.stringify({ definition: flowDefinition }, null, 2)
                 );
+                
+                // Generate metadata similar to production
+                const metadata = generateFlowMetadata(flowDefinition);
+                
                 context.body = {
                   status: 'success',
-                  message: `Flow ${uuid} saved successfully.`,
-                  definition: JSON.parse(body),
+                  saved_on: new Date().toISOString(),
+                  revision: {
+                    id: Math.floor(Math.random() * 1000) + 1,
+                    user: {
+                      email: 'test@textit.com',
+                      name: 'Test User'
+                    },
+                    created_on: new Date().toISOString(),
+                    version: flowDefinition.spec_version || '14.3.0',
+                    revision: flowDefinition.revision || 1
+                  },
+                  info: metadata,
+                  issues: [],
+                  metadata: metadata
                 };
                 context.status = 200;
               } else {
