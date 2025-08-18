@@ -927,7 +927,7 @@ describe('temba-select', () => {
 
       await openSelect(clock, select);
       // Cached results should be available immediately, but give some time for rendering
-      await waitForSelectPagination(select, clock, 15, 30);
+      await waitForSelectPagination(select, clock, 15, 10);
       assert.equal(select.visibleOptions.length, 15);
 
       // close and reopen once more (previous bug failed on third opening)
