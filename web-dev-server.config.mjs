@@ -150,34 +150,10 @@ export default {
           
           const flowData = JSON.parse(flowFileContent);
           
-          // Check if the file already has the correct structure (definition + metadata)
-          if (flowData.definition && flowData.metadata) {
-            // File has both definition and metadata - transform metadata to info format
-            const info = {
-              results: flowData.metadata.results || [],
-              dependencies: flowData.metadata.dependencies || [],
-              counts: flowData.metadata.counts || { nodes: 0, languages: 0 },
-              locals: flowData.metadata.locals || []
-            };
-            
-            context.body = JSON.stringify({
-              definition: flowData.definition,
-              info: info
-            });
-          } else if (flowData.definition) {
-            // File has definition but no metadata - generate info from definition
+          if (flowData.definition) {
             const info = generateFlowMetadata(flowData.definition);
-            
             context.body = JSON.stringify({
               definition: flowData.definition,
-              info: info
-            });
-          } else {
-            // Legacy format - flow definition is at root level
-            const info = generateFlowMetadata(flowData);
-            
-            context.body = JSON.stringify({
-              definition: flowData,
               info: info
             });
           }
