@@ -2,138 +2,15 @@ import replace from '@rollup/plugin-replace';
 import { fromRollup } from '@web/dev-server-rollup';
 import fs from 'fs';
 import path from 'path';
-import { Client as MinioClient } from 'minio';
-import busboy from 'busboy';
-import { v4 as uuidv4 } from 'uuid';
+
+// Import the shared flow info generator and Minio functionality
+import { generateFlowInfo, handleMinioUpload } from './web-dev-mock.mjs';
 
 const replacePlugin = fromRollup(replace);
 
-// Function to generate flow metadata similar to production
+// Simple wrapper function to use the shared flow info generator
 function generateFlowMetadata(flowDefinition) {
-  const dependencies = [];
-  const results = [];
-  const locals = [];
-  const issues = [];
-  
-  // Count nodes
-  const nodeCount = flowDefinition.nodes ? flowDefinition.nodes.length : 0;
-  
-  // Count languages in localization
-  const languageCount = flowDefinition.localization ? Object.keys(flowDefinition.localization).length : 0;
-  
-  // Extract dependencies and results from nodes
-  if (flowDefinition.nodes) {
-    flowDefinition.nodes.forEach(node => {
-      // Extract dependencies from actions
-      if (node.actions) {
-        node.actions.forEach(action => {
-          // Template dependencies
-          if (action.type === 'send_msg' && action.template) {
-            dependencies.push({
-              uuid: action.template.uuid,
-              name: action.template.name,
-              type: 'template'
-            });
-          }
-          
-          // Field dependencies
-          if (action.type === 'set_contact_field' && action.field) {
-            dependencies.push({
-              key: action.field.key,
-              name: action.field.name || '',
-              type: 'field'
-            });
-          }
-          
-          // Flow dependencies
-          if (action.type === 'enter_flow' && action.flow) {
-            dependencies.push({
-              uuid: action.flow.uuid,
-              name: action.flow.name,
-              type: 'flow'
-            });
-          }
-          
-          if (action.type === 'start_session' && action.flow) {
-            dependencies.push({
-              uuid: action.flow.uuid,
-              name: action.flow.name,
-              type: 'flow'
-            });
-          }
-        });
-      }
-      
-      // Extract results from routers
-      if (node.router && node.router.result_name) {
-        const resultName = node.router.result_name;
-        if (resultName && !results.find(r => r.key === resultName.toLowerCase())) {
-          const categories = [];
-          
-          // Extract categories from router
-          if (node.router.categories) {
-            node.router.categories.forEach(category => {
-              if (category.name && category.name !== 'Other' && category.name !== 'No Response') {
-                categories.push(category.name);
-              }
-            });
-          }
-          
-          results.push({
-            key: resultName.toLowerCase(),
-            name: resultName,
-            categories: categories,
-            node_uuids: [node.uuid]
-          });
-        }
-      }
-    });
-  }
-  
-  // Remove duplicate dependencies
-  const uniqueDependencies = dependencies.filter((dep, index, self) => 
-    index === self.findIndex(d => 
-      (d.uuid && d.uuid === dep.uuid) || 
-      (d.key && d.key === dep.key)
-    )
-  );
-  
-  return {
-    counts: {
-      languages: languageCount,
-      nodes: nodeCount
-    },
-    dependencies: uniqueDependencies,
-    locals: locals,
-    results: results,
-    parent_refs: [],
-    issues: issues
-  };
-}
-
-// Initialize Minio client for file uploads
-const minioClient = new MinioClient({
-  endPoint: 'minio',
-  port: 9000,
-  useSSL: false,
-  accessKey: 'root',
-  secretKey: 'tembatemba'
-});
-
-// Helper function to generate the correct public URL for uploaded files
-function getPublicUrl(bucketName, fileName, request) {
-  // Check if request is coming from localhost/127.0.0.1 (host machine)
-  // or from within docker network
-  const host = request.headers.host;
-  const userAgent = request.headers['user-agent'] || '';
-  
-  // If accessing from host machine (localhost:3010), use localhost for minio too
-  if (host && host.startsWith('localhost:')) {
-    return `http://localhost:9000/${bucketName}/${fileName}`;
-  }
-  
-  // If accessing from docker network, use internal hostname
-  return `http://minio:9000/${bucketName}/${fileName}`;
+  return generateFlowInfo(flowDefinition);
 }
 
 export default {
@@ -182,89 +59,7 @@ export default {
 
         // Handle minio file uploads for media
         if (context.request.method === 'POST' && context.path === '/api/v2/media.json') {
-          return new Promise((resolve) => {
-            try {
-              const bb = busboy({ headers: context.request.headers });
-              let fileInfo = null;
-              let fileBuffer = null;
-              
-              bb.on('file', (name, file, info) => {
-                fileInfo = info;
-                const chunks = [];
-                
-                file.on('data', (chunk) => {
-                  chunks.push(chunk);
-                });
-                
-                file.on('end', () => {
-                  fileBuffer = Buffer.concat(chunks);
-                });
-              });
-              
-              bb.on('finish', async () => {
-                if (!fileBuffer || !fileInfo) {
-                  context.status = 400;
-                  context.body = JSON.stringify({ error: 'No file uploaded' });
-                  resolve();
-                  return;
-                }
-                
-                try {
-                  const fileUuid = uuidv4();
-                  const fileName = `${fileUuid}-${fileInfo.filename}`;
-                  const bucketName = 'temba-attachments';
-                  
-                  // Upload to minio
-                  await minioClient.putObject(bucketName, fileName, fileBuffer, {
-                    'Content-Type': fileInfo.mimeType
-                  });
-                  
-                  // Return success response with appropriate URL based on request source
-                  const publicUrl = getPublicUrl(bucketName, fileName, context.request);
-                  
-                  // Debug logging
-                  console.log('🔧 Upload Debug:', {
-                    fileUuid,
-                    fileName,
-                    bucketName,
-                    publicUrl,
-                    contentType: fileInfo.mimeType,
-                    host: context.request.headers.host
-                  });
-                  
-                  context.contentType = 'application/json';
-                  context.body = JSON.stringify({
-                    uuid: fileUuid,
-                    content_type: fileInfo.mimeType,
-                    url: publicUrl,
-                    filename: fileInfo.filename,
-                    size: fileBuffer.length
-                  });
-                  
-                } catch (uploadError) {
-                  console.error('Minio upload error:', uploadError);
-                  context.status = 500;
-                  context.body = JSON.stringify({ 
-                    error: 'Upload failed',
-                    details: uploadError.message 
-                  });
-                }
-                
-                resolve();
-              });
-              
-              context.req.pipe(bb);
-              
-            } catch (error) {
-              console.error('File upload processing error:', error);
-              context.status = 500;
-              context.body = JSON.stringify({ 
-                error: 'Upload processing failed',
-                details: error.message 
-              });
-              resolve();
-            }
-          });
+          return handleMinioUpload(context);
         }
       }
     },
@@ -346,10 +141,22 @@ export default {
           const parts = context.path.split('/');
           const uuid = parts[3];
           context.contentType = 'application/json';
-          context.body = fs.readFileSync(
+          
+          // Read the flow definition from file
+          const flowFileContent = fs.readFileSync(
             path.resolve(`./demo/data/flows/${uuid}.json`),
             'utf-8',
           );
+          
+          const flowData = JSON.parse(flowFileContent);
+          
+          if (flowData.definition) {
+            const info = generateFlowMetadata(flowData.definition);
+            context.body = JSON.stringify({
+              definition: flowData.definition,
+              info: info
+            });
+          }
         }
       }
     }
