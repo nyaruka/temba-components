@@ -319,45 +319,6 @@ export interface FlowUI {
   auto_translations?: Record<string, Record<string, string[]>>;
 }
 
-export interface FlowCounts {
-  languages: number;
-  nodes: number;
-}
-
-export interface FlowDependency {
-  key?: string;
-  uuid?: string;
-  name: string;
-  type:
-    | 'field'
-    | 'flow'
-    | 'group'
-    | 'channel'
-    | 'classifier'
-    | 'resthook'
-    | 'webhook'
-    | 'llm'
-    | 'optin'
-    | 'template'
-    | 'topic';
-}
-
-export interface FlowResult {
-  key: string;
-  name: string;
-  categories: string[];
-  node_uuids: string[];
-}
-
-export interface FlowMetadata {
-  counts: FlowCounts;
-  dependencies: FlowDependency[];
-  locals: any[];
-  results: FlowResult[];
-  parent_refs: any[];
-  issues: any[];
-}
-
 export interface FlowDefinition {
   localization: LocalizationMap;
   language: string;
@@ -369,5 +330,4 @@ export interface FlowDefinition {
   spec_version: string;
   expire_after_minutes?: number;
   _ui: FlowUI;
-  metadata?: FlowMetadata;
 }
