@@ -196,8 +196,9 @@
             "type": "send_msg",
             "text": "Excellent choices.",
             "attachments": [
-              "audio:http://arst",
-              "image:@contact.first_name"
+              "image:http://arst",
+              "image:@contact.first_name",
+              "video:arst @contact.first_name"
             ],
             "quick_replies": [
               "Red",
