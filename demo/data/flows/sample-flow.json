@@ -12,7 +12,7 @@
           {
             "uuid": "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5",
             "type": "send_msg",
-            "text": "What is your favorite color?!",
+            "text": "What is your favorite color?! @contact.uuid. It works.",
             "attachments": [
               "image/jpeg:http://localhost:9000/temba-attachments/c4e84ebf-fdd7-439b-a2ca-aeb5e54dfc1d-IMG_3245.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/e7d4d3cd-ec89-45c2-bc0b-4f652f1f7fde-IMG_3262.jpeg",
@@ -26,7 +26,10 @@
               "Green",
               "Blue",
               "Yellow",
-              "Purple"
+              "Purple",
+              "@contact.first_name",
+              "@contact.uuid",
+              "@contact.last_name"
             ]
           }
         ],
@@ -193,12 +196,14 @@
             "type": "send_msg",
             "text": "Excellent choices.",
             "attachments": [
-              "audio:http://arst"
+              "audio:http://arst",
+              "image:@contact.first_name"
             ],
             "quick_replies": [
               "Red",
               "Green",
-              "Blue"
+              "Blue",
+              "@contact.name"
             ]
           },
           {
@@ -809,7 +814,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 200,
+            "left": 240,
             "top": 0
           },
           "type": "execute_actions"
@@ -817,8 +822,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 200,
-            "top": 160
+            "left": 220,
+            "top": 260
           },
           "config": {
             "cases": {}
@@ -835,7 +840,7 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 220,
-            "top": 340
+            "top": 440
           },
           "type": "execute_actions"
         },
@@ -898,8 +903,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 500,
-            "top": 360
+            "left": 520,
+            "top": 380
           },
           "config": {
             "cases": {}
