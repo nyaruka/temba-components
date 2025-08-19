@@ -10,12 +10,7 @@ import {
   FieldConfig,
   ActionConfig
 } from './config';
-import {
-  SelectFieldConfig,
-  LayoutItem,
-  RowLayoutConfig,
-  GroupLayoutConfig
-} from './types';
+import { LayoutItem, RowLayoutConfig, GroupLayoutConfig } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
@@ -352,8 +347,6 @@ export class NodeEditor extends RapidElement {
         this.formData = actionConfig.toFormData(this.action);
       } else {
         this.formData = { ...this.action };
-        // Apply smart transformations for select fields that expect {name, value} format
-        this.applySmartSelectTransformations(actionConfig);
       }
 
       // Convert Record objects to array format for key-value editors
@@ -409,44 +402,6 @@ export class NodeEditor extends RapidElement {
     });
 
     this.formData = processed;
-  }
-
-  private applySmartSelectTransformations(actionConfig: ActionConfig): void {
-    if (!actionConfig) return;
-
-    const fields = actionConfig.form;
-    if (!fields) return;
-
-    Object.entries(fields).forEach(([fieldName, fieldConfig]) => {
-      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
-        const value = this.formData[fieldName];
-        if (
-          Array.isArray(value) &&
-          value.length > 0 &&
-          typeof value[0] === 'string'
-        ) {
-          // Transform string array to select options format
-          this.formData[fieldName] = value.map((item: string) => ({
-            name: item,
-            value: item
-          }));
-        }
-      }
-    });
-  }
-
-  private shouldApplySmartSelectTransformation(
-    fieldName: string,
-    fieldConfig: any
-  ): boolean {
-    const selectConfig = fieldConfig as SelectFieldConfig;
-    return (
-      (fieldConfig.type === 'select' &&
-        (selectConfig.multi || selectConfig.tags) &&
-        // Don't transform if already has explicit transformations
-        !this.action) ||
-      !ACTION_CONFIG[this.action.type]?.toFormData
-    );
   }
 
   private isKeyValueField(fieldName: string): boolean {
@@ -870,40 +825,9 @@ export class NodeEditor extends RapidElement {
     if (actionConfig?.fromFormData) {
       return actionConfig.fromFormData(formData);
     } else {
-      // Apply smart select transformations in reverse and provide default 1:1 mapping
-      const processedFormData = this.reverseSmartSelectTransformations(
-        formData,
-        actionConfig
-      );
-      return { ...this.action, ...processedFormData };
+      // Provide default 1:1 mapping (smart transformations now handled in FieldRenderer)
+      return { ...this.action, ...formData };
     }
-  }
-
-  private reverseSmartSelectTransformations(
-    formData: any,
-    actionConfig: ActionConfig
-  ): any {
-    if (!actionConfig || !actionConfig.form) return formData;
-    const processed = { ...formData };
-
-    Object.entries(actionConfig.form).forEach(([fieldName, fieldConfig]) => {
-      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
-        const value = processed[fieldName];
-        if (
-          Array.isArray(value) &&
-          value.length > 0 &&
-          typeof value[0] === 'object' &&
-          'value' in value[0]
-        ) {
-          // Transform select options format back to string array
-          processed[fieldName] = value.map(
-            (item: any) => item.value || item.name || item
-          );
-        }
-      }
-    });
-
-    return processed;
   }
 
   private handleFormFieldChange(propertyName: string, event: Event): void {

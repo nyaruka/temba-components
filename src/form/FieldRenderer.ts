@@ -25,6 +25,65 @@ export interface FieldRenderOptions {
  */
 export class FieldRenderer {
   /**
+   * Applies smart select transformations to convert string arrays to select option format
+   */
+  static applySmartSelectTransformation(
+    value: any,
+    config: SelectFieldConfig
+  ): any {
+    if (!FieldRenderer.shouldApplySmartSelectTransformation(config)) {
+      return value;
+    }
+
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      typeof value[0] === 'string'
+    ) {
+      // Transform string array to select options format
+      return value.map((item: string) => ({
+        name: item,
+        value: item
+      }));
+    }
+
+    return value;
+  }
+
+  /**
+   * Reverses smart select transformations to convert select option format back to string array
+   */
+  static reverseSmartSelectTransformation(
+    value: any,
+    config: SelectFieldConfig
+  ): any {
+    if (!FieldRenderer.shouldApplySmartSelectTransformation(config)) {
+      return value;
+    }
+
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      typeof value[0] === 'object' &&
+      'value' in value[0]
+    ) {
+      // Transform select options format back to string array
+      return value.map((item: any) => item.value || item.name || item);
+    }
+
+    return value;
+  }
+
+  /**
+   * Determines if a select field should have smart transformations applied
+   */
+  static shouldApplySmartSelectTransformation(
+    config: SelectFieldConfig
+  ): boolean {
+    return config.type === 'select' && (config.multi || config.tags);
+  }
+
+  /**
    * Renders a field based on its configuration
    */
   static renderField(
@@ -43,7 +102,20 @@ export class FieldRenderer {
     } = options;
 
     const handleChange = (e: Event) => {
-      onFieldChange(fieldName, FieldRenderer.extractValue(e), e);
+      let extractedValue = FieldRenderer.extractValue(e);
+
+      // Apply reverse smart transformations only for select fields that should have them
+      if (config.type === 'select') {
+        const selectConfig = config as SelectFieldConfig;
+        if (FieldRenderer.shouldApplySmartSelectTransformation(selectConfig)) {
+          extractedValue = FieldRenderer.reverseSmartSelectTransformation(
+            extractedValue,
+            selectConfig
+          );
+        }
+      }
+
+      onFieldChange(fieldName, extractedValue, e);
     };
 
     const fieldContent = FieldRenderer.renderFieldContent(
@@ -198,6 +270,12 @@ export class FieldRenderer {
       case 'select': {
         const selectConfig = config as SelectFieldConfig;
 
+        // Apply smart transformations only for fields that should have them
+        const transformedValue =
+          FieldRenderer.shouldApplySmartSelectTransformation(selectConfig)
+            ? FieldRenderer.applySmartSelectTransformation(value, selectConfig)
+            : value;
+
         // For multi-select fields (including tags), use .values property
         // For single-select fields, use .value property
         const isMultiSelect =
@@ -209,7 +287,7 @@ export class FieldRenderer {
             label="${showLabel ? config.label || '' : ''}"
             ?required="${config.required}"
             .errors="${errors}"
-            .values="${value || []}"
+            .values="${transformedValue || []}"
             ?multi="${selectConfig.multi}"
             ?searchable="${selectConfig.searchable}"
             ?tags="${selectConfig.tags}"
@@ -239,12 +317,44 @@ export class FieldRenderer {
             })}
           </temba-select>`;
         } else {
+          // For single-select, convert the value to the proper option format
+          let singleSelectValue;
+          if (transformedValue && selectConfig.options) {
+            const matchingOption = selectConfig.options.find((option: any) => {
+              const optionValue =
+                typeof option === 'string' ? option : option.value;
+              return optionValue === transformedValue;
+            });
+            if (matchingOption) {
+              if (typeof matchingOption === 'string') {
+                singleSelectValue = [
+                  { name: matchingOption, value: matchingOption }
+                ];
+              } else {
+                // Convert label to name for temba-select component
+                singleSelectValue = [
+                  {
+                    name:
+                      matchingOption.label ||
+                      (matchingOption as any).name ||
+                      matchingOption.value,
+                    value: matchingOption.value
+                  }
+                ];
+              }
+            } else {
+              singleSelectValue = [];
+            }
+          } else {
+            singleSelectValue = [];
+          }
+
           return html`<temba-select
             name="${name}"
             label="${showLabel ? config.label || '' : ''}"
             ?required="${config.required}"
             .errors="${errors}"
-            .value="${value || ''}"
+            .values="${singleSelectValue}"
             ?multi="${selectConfig.multi}"
             ?searchable="${selectConfig.searchable}"
             ?tags="${selectConfig.tags}"

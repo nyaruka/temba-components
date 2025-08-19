@@ -145,10 +145,7 @@ export const send_msg: ActionConfig = {
       text: action.text || '',
       attachments: staticAttachments,
       runtime_attachments: runtimeAttachments,
-      quick_replies: (action.quick_replies || []).map((reply) => ({
-        name: reply,
-        value: reply
-      }))
+      quick_replies: action.quick_replies || []
     };
   },
   fromFormData: (data: Record<string, any>) => {
@@ -157,9 +154,7 @@ export const send_msg: ActionConfig = {
       type: 'send_msg',
       text: data.text || '',
       attachments: [],
-      quick_replies: (data.quick_replies || []).map((reply: any) =>
-        typeof reply === 'string' ? reply : reply.value || reply.name || reply
-      )
+      quick_replies: data.quick_replies || []
     };
 
     // Combine static attachments from text field with runtime attachments
