@@ -12,15 +12,13 @@ import {
 } from './config';
 import {
   SelectFieldConfig,
-  CheckboxFieldConfig,
-  TextareaFieldConfig,
-  MessageEditorFieldConfig,
   LayoutItem,
   RowLayoutConfig,
   GroupLayoutConfig
 } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
+import { FieldRenderer } from '../form/FieldRenderer';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -1035,181 +1033,33 @@ export class NodeEditor extends RapidElement {
     value: any,
     errors: string[]
   ): TemplateResult {
-    switch (config.type) {
-      case 'text':
-        return html`<temba-textinput
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .value="${value || ''}"
-          placeholder="${config.placeholder || ''}"
-          .helpText="${config.helpText || ''}"
-          @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-        ></temba-textinput>`;
-
-      case 'textarea': {
-        const textareaConfig = config as TextareaFieldConfig;
-        const minHeightStyle = textareaConfig.minHeight
-          ? `--textarea-min-height: ${textareaConfig.minHeight}px;`
-          : '';
-
-        if (config.evaluated) {
-          return html`<temba-completion
-            name="${fieldName}"
-            label="${config.label}"
-            ?required="${config.required}"
-            .errors="${errors}"
-            .value="${value || ''}"
-            placeholder="${config.placeholder || ''}"
-            textarea
-            expressions="session"
-            style="${minHeightStyle}"
-            .helpText="${config.helpText || ''}"
-            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-          ></temba-completion>`;
+    // Use FieldRenderer for consistent field rendering
+    return FieldRenderer.renderField(fieldName, config, value, {
+      errors,
+      onChange: (e: Event) => {
+        // Handle different change event types
+        if (fieldName && config.type === 'key-value') {
+          // Special handling for key-value editor
+          const customEvent = e as CustomEvent;
+          if (customEvent.detail) {
+            this.handleNewFieldChange(fieldName, customEvent.detail.value);
+          }
+        } else if (fieldName && config.type === 'array') {
+          // Special handling for array editor
+          this.handleNewFieldChange(fieldName, (e.target as any).value);
+        } else if (fieldName && config.type === 'message-editor') {
+          // Special handling for message editor
+          this.handleMessageEditorChange(fieldName, e);
         } else {
-          return html`<temba-textinput
-            name="${fieldName}"
-            label="${config.label}"
-            ?required="${config.required}"
-            .errors="${errors}"
-            .value="${value || ''}"
-            placeholder="${config.placeholder || ''}"
-            textarea
-            .rows="${textareaConfig.rows || 3}"
-            style="${minHeightStyle}"
-            .helpText="${config.helpText || ''}"
-            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-          ></temba-textinput>`;
+          // Default handling for most field types
+          this.handleFormFieldChange(fieldName, e);
         }
+      },
+      showLabel: true,
+      additionalData: {
+        attachments: this.formData.attachments || []
       }
-
-      case 'select': {
-        const selectConfig = config as SelectFieldConfig;
-        return html`<temba-select
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .values="${value || (selectConfig.multi ? [] : '')}"
-          ?multi="${selectConfig.multi}"
-          ?searchable="${selectConfig.searchable}"
-          ?tags="${selectConfig.tags}"
-          ?emails="${selectConfig.emails}"
-          placeholder="${selectConfig.placeholder || ''}"
-          maxItems="${selectConfig.maxItems || 0}"
-          valueKey="${selectConfig.valueKey || 'value'}"
-          nameKey="${selectConfig.nameKey || 'name'}"
-          endpoint="${selectConfig.endpoint || ''}"
-          .helpText="${config.helpText || ''}"
-          flavor="${selectConfig.flavor || 'small'}"
-          @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-        >
-          ${selectConfig.options?.map((option: any) => {
-            if (typeof option === 'string') {
-              return html`<temba-option
-                name="${option}"
-                value="${option}"
-              ></temba-option>`;
-            } else {
-              return html`<temba-option
-                name="${option.label || option.name}"
-                value="${option.value}"
-              ></temba-option>`;
-            }
-          })}
-        </temba-select>`;
-      }
-
-      case 'key-value':
-        return html`<div class="form-field">
-          <label>${config.label}${config.required ? ' *' : ''}</label>
-          <temba-key-value-editor
-            name="${fieldName}"
-            .value="${value || []}"
-            .sortable="${config.sortable}"
-            .keyPlaceholder="${config.keyPlaceholder || 'Key'}"
-            .valuePlaceholder="${config.valuePlaceholder || 'Value'}"
-            .minRows="${config.minRows || 0}"
-            @change="${(e: CustomEvent) => {
-              if (e.detail) {
-                this.handleNewFieldChange(fieldName, e.detail.value);
-              }
-            }}"
-          ></temba-key-value-editor>
-          ${errors.length
-            ? html`<div class="field-errors">${errors.join(', ')}</div>`
-            : ''}
-        </div>`;
-
-      case 'array':
-        return html`<div class="form-field">
-          <label>${config.label}${config.required ? ' *' : ''}</label>
-          <temba-array-editor
-            .value="${value || []}"
-            .itemConfig="${config.itemConfig}"
-            .sortable="${config.sortable}"
-            .itemLabel="${config.itemLabel || 'Item'}"
-            .minItems="${config.minItems || 0}"
-            .maxItems="${config.maxItems || 0}"
-            .onItemChange="${config.onItemChange}"
-            .isEmptyItemFn="${config.isEmptyItem}"
-            @change="${(e: Event) =>
-              this.handleNewFieldChange(fieldName, (e.target as any).value)}"
-          ></temba-array-editor>
-          ${errors.length
-            ? html`<div class="field-errors">${errors.join(', ')}</div>`
-            : ''}
-        </div>`;
-
-      case 'checkbox': {
-        const checkboxConfig = config as CheckboxFieldConfig;
-        return html`<div class="form-field">
-          <temba-checkbox
-            name="${fieldName}"
-            label="${config.label}"
-            .helpText="${config.helpText || ''}"
-            ?required="${config.required}"
-            .errors="${errors}"
-            ?checked="${value || false}"
-            size="${checkboxConfig.size || 1.2}"
-            animateChange="${checkboxConfig.animateChange || 'pulse'}"
-            @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-          ></temba-checkbox>
-          ${errors.length
-            ? html`<div class="field-errors">${errors.join(', ')}</div>`
-            : ''}
-        </div>`;
-      }
-
-      case 'message-editor': {
-        const messageConfig = config as MessageEditorFieldConfig;
-        return html`<temba-message-editor
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .value="${value || ''}"
-          .attachments="${this.formData.attachments || []}"
-          placeholder="${messageConfig.placeholder || ''}"
-          .helpText="${config.helpText || ''}"
-          ?autogrow="${messageConfig.autogrow}"
-          ?gsm="${messageConfig.gsm}"
-          ?disableCompletion="${messageConfig.disableCompletion}"
-          counter="${messageConfig.counter || ''}"
-          accept="${messageConfig.accept || ''}"
-          endpoint="${messageConfig.endpoint || ''}"
-          max-attachments="${messageConfig.maxAttachments || 3}"
-          minHeight="${messageConfig.minHeight || 60}"
-          @change="${(e: Event) =>
-            this.handleMessageEditorChange(fieldName, e)}"
-        ></temba-message-editor>`;
-      }
-
-      default:
-        return html`<div>Unsupported field type: ${(config as any).type}</div>`;
-    }
+    });
   }
 
   private handleGroupToggle(groupLabel: string): void {

@@ -17,9 +17,10 @@
               "image/jpeg:http://localhost:9000/temba-attachments/c4e84ebf-fdd7-439b-a2ca-aeb5e54dfc1d-IMG_3245.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/e7d4d3cd-ec89-45c2-bc0b-4f652f1f7fde-IMG_3262.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/ae831575-0d23-40b7-ae0c-531b8775a6bc-IMG_3282.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/837ac13b-e524-4a4c-9385-81873c5df138-IMG_3290.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/761e6345-3a19-49da-8a53-5c772d7739bc-IMG_3339.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/ea6b336d-4389-4d32-b58a-e5a138d13c84-IMG_3237.jpeg"
+              "image/png:http://localhost:9000/temba-attachments/d7b04feb-c74e-43a4-a6de-6a4516a4de59-Screenshot 2025-08-19 at 10.23.24â¯AM.png",
+              "image/jpeg:http://localhost:9000/temba-attachments/d3bdb082-6dab-48ed-9598-f3a7f6b6b06d-IMG_3262.jpeg",
+              "video:@contact",
+              "image:arst"
             ],
             "quick_replies": [
               "Red",
@@ -193,12 +194,14 @@
             "type": "send_msg",
             "text": "Excellent choices.",
             "attachments": [
-              "audio:http://arst"
+              "audio:http://arst",
+              "video:strat",
+              "image:this @contact.name"
             ],
             "quick_replies": [
+              "Blue",
               "Red",
-              "Green",
-              "Blue"
+              "Green"
             ]
           },
           {
