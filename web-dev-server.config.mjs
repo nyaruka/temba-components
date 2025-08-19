@@ -34,7 +34,7 @@ export default {
             '/api/v2/groups.json': './static/api/groups.json',
             '/api/v2/fields.json': './static/api/fields.json', 
             '/api/v2/globals.json': './static/api/globals.json',
-            '/api/v2/completion.json': './static/api/completion.json',
+            '/api/v2/completion.json': './static/mr/docs/en-us/editor.json',
             '/api/v2/functions.json': './static/api/functions.json',
             '/api/internal/templates.json': './static/api/templates.json',
             '/api/v2/media.json': './static/api/media.json',
