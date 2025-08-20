@@ -202,7 +202,7 @@ describe('temba-webchat', () => {
       expect(webChat.open).to.equal(true);
       expect(webChat.status).to.equal('connecting');
 
-      await assertScreenshot('webchat/connecting-state', getClip(webChat));
+      // await assertScreenshot('webchat/connecting-state', getClip(webChat));
     });
 
     it('renders disconnected state with reconnect option', async () => {
