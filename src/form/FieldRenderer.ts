@@ -211,8 +211,15 @@ export class FieldRenderer {
     // Ensure proper value handling for multi vs single select
     const normalizedValue = (() => {
       if (config.multi) {
-        // Multi-select: ensure we have an array
-        return Array.isArray(value) ? value : value ? [value] : [];
+        // Multi-select: ensure we have an array and convert strings to option objects
+        const valueArray = Array.isArray(value) ? value : value ? [value] : [];
+        return valueArray.map((val) => {
+          if (typeof val === 'string') {
+            // Convert string values to option objects
+            return { name: val, value: val };
+          }
+          return val;
+        });
       } else {
         // Single select: use the value as-is
         return value || '';
