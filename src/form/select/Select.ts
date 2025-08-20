@@ -312,6 +312,17 @@ export class Select<T extends SelectOption> extends FormElement {
         margin-left: 6px;
       }
 
+      .empty .placeholder {
+        display: block;
+      }
+
+      .multi .placeholder {
+        display: block;
+        margin: 2px 2px;
+        padding: 2px 8px;
+        align-self: center;
+      }
+
       .footer {
         padding: 5px 10px;
         background: var(--color-primary-light);
@@ -1648,9 +1659,13 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : '';
-    const placeholderDiv = html`
-      <div class="placeholder">${placeholder}</div>
-    `;
+
+    // Single unified placeholder - shows when empty and (not focused OR not searchable)
+    const shouldShowPlaceholder =
+      this.values.length === 0 && (!this.focused || !this.searchable);
+    const placeholderElement = shouldShowPlaceholder
+      ? html`<div class="placeholder">${placeholder}</div>`
+      : null;
 
     const clear =
       this.clearable && this.values.length > 0 && !this.isMultiMode
@@ -1695,10 +1710,9 @@ export class Select<T extends SelectOption> extends FormElement {
               .value=${this.input}
             />
             <div id="anchor" style=${styleMap(anchorStyles)}></div>
-            ${placeholderDiv}
           </div>
         `
-      : placeholderDiv;
+      : null;
 
     const items = html`${!this.isMultiMode && !this.resolving ? input : null}
     ${this.isMultiMode && this.values.length > 1
@@ -1824,7 +1838,8 @@ export class Select<T extends SelectOption> extends FormElement {
             </div>
           `
         )}
-        ${this.isMultiMode && this.searchable && this.focused ? input : null}`}`;
+        ${this.isMultiMode && this.searchable && this.focused ? input : null}
+        ${placeholderElement}`}`;
 
     return html`
             
