@@ -37,7 +37,6 @@ export class FieldRenderer {
       extraClasses = '',
       style = ''
     } = context;*/
-
     switch (config.type) {
       case 'text':
         return FieldRenderer.renderTextInput(fieldName, config, value, context);
