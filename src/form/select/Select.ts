@@ -222,6 +222,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
       .multi temba-sortable-list {
         margin: 0 !important;
+        flex-grow: 1;
       }
 
       input {
@@ -255,6 +256,12 @@ export class Select<T extends SelectOption> extends FormElement {
 
       .multi .input-wrapper {
         margin-left: 2px !important;
+        margin-right: 2px !important;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+        min-width: 100px;
+        align-self: center;
       }
 
       .input-wrapper:focus-within .placeholder {
@@ -288,11 +295,6 @@ export class Select<T extends SelectOption> extends FormElement {
 
       .searchable input:focus {
         box-shadow: none !important;
-      }
-
-      .multi .input-wrapper {
-        flex-shrink: 0;
-        min-width: 100px;
       }
 
       .input-wrapper .searchbox {
@@ -1770,9 +1772,10 @@ export class Select<T extends SelectOption> extends FormElement {
                 </div>
               `
             )}
+            ${this.searchable && this.focused ? input : null}
           </temba-sortable-list>
         `
-      : this.values.map(
+      : html`${this.values.map(
           (selected: any, index: number) => html`
             <div
               class="selected-item ${index === this.selectedIndex
@@ -1821,7 +1824,7 @@ export class Select<T extends SelectOption> extends FormElement {
             </div>
           `
         )}
-    ${this.isMultiMode ? input : null}`;
+        ${this.isMultiMode && this.searchable && this.focused ? input : null}`}`;
 
     return html`
             
