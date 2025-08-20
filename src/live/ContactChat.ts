@@ -29,6 +29,7 @@ import {
   MsgEvent,
   NameChangedEvent,
   OptinRequestedEvent,
+  RunEvent,
   TicketEvent,
   UpdateFieldEvent,
   URNsChangedEvent
@@ -53,9 +54,6 @@ export enum Events {
   MESSAGE_RECEIVED = 'msg_received',
   BROADCAST_CREATED = 'broadcast_created',
   IVR_CREATED = 'ivr_created',
-  FLOW_ENTERED = 'flow_entered',
-
-  FLOW_EXITED = 'flow_exited',
   CONTACT_FIELD_CHANGED = 'contact_field_changed',
   CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
   CONTACT_NAME_CHANGED = 'contact_name_changed',
@@ -71,7 +69,13 @@ export enum Events {
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
   TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
-  OPTIN_REQUESTED = 'optin_requested'
+  OPTIN_REQUESTED = 'optin_requested',
+  RUN_STARTED = 'run_started',
+  RUN_ENDED = 'run_ended',
+
+  // deprecated
+  FLOW_ENTERED = 'flow_entered',
+  FLOW_EXITED = 'flow_exited'
 }
 
 const renderInfoList = (singular: string, plural: string, items: any[]) => {
@@ -123,6 +127,21 @@ const renderFlowEvent = (event: FlowEvent): string => {
       verb = 'Completed';
     }
   }
+  return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
+};
+
+const renderRunEvent = (event: RunEvent): string => {
+  let verb = 'Started';
+  if (event.type === Events.RUN_ENDED) {
+    if (event.status === 'completed') {
+      verb = 'Completed';
+    } else if (event.status === 'expired') {
+      verb = 'Expired from';
+    } else {
+      verb = 'Interrupted';
+    }
+  }
+
   return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
 };
 
@@ -636,6 +655,13 @@ export class ContactChat extends ContactStoreElement {
         message = {
           type: MessageType.Inline,
           text: renderFlowEvent(event as FlowEvent)
+        };
+        break;
+      case Events.RUN_STARTED:
+      case Events.RUN_ENDED:
+        message = {
+          type: MessageType.Inline,
+          text: renderRunEvent(event as RunEvent)
         };
         break;
       case Events.CONTACT_FIELD_CHANGED:

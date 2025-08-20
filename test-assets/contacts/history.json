@@ -218,6 +218,25 @@
       "logs_url": null
     },
     {
+      "type": "run_started",
+      "created_on": "2021-03-30T22:20:26.704467+00:00",
+      "run_uuid": "0198c846-2cf4-7992-9bd0-9b6581e42358",
+      "flow": {
+        "uuid": "d076d716-8071-417e-b188-d9746db223a1",
+        "name": "Favorites"
+      }
+    },
+    {
+      "type": "run_ended",
+      "created_on": "2021-03-30T22:20:26.704467+00:00",
+      "run_uuid": "0198c846-da2b-799f-8af9-aaf8857f947f",
+      "flow": {
+        "uuid": "d076d716-8071-417e-b188-d9746db223a1",
+        "name": "Favorites"
+      },
+      "status": "completed"
+    },
+    {
       "uuid": "01988a77-979e-7768-a940-8d9c348e24fe",
       "type": "msg_received",
       "created_on": "2021-03-30T22:20:26.557388+00:00",
