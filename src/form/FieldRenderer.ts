@@ -113,7 +113,7 @@ export class FieldRenderer {
     if (config.evaluated) {
       return html`<temba-completion
         name="${fieldName}"
-        ${showLabel ? `label="${config.label}"` : ''}
+        label="${showLabel ? config.label : ''}"
         ?required="${config.required}"
         .errors="${errors}"
         .value="${value || ''}"
@@ -128,7 +128,7 @@ export class FieldRenderer {
 
     return html`<temba-textinput
       name="${fieldName}"
-      ${showLabel ? `label="${config.label}"` : ''}
+      label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
       .value="${value || ''}"
@@ -163,7 +163,7 @@ export class FieldRenderer {
     if (config.evaluated) {
       return html`<temba-completion
         name="${fieldName}"
-        ${showLabel ? `label="${config.label}"` : ''}
+        label="${showLabel ? config.label : ''}"
         ?required="${config.required}"
         .errors="${errors}"
         .value="${value || ''}"
@@ -179,7 +179,7 @@ export class FieldRenderer {
 
     return html`<temba-textinput
       name="${fieldName}"
-      ${showLabel ? `label="${config.label}"` : ''}
+      label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
       .value="${value || ''}"
@@ -294,18 +294,12 @@ export class FieldRenderer {
     value: any,
     context: FieldRenderContext
   ): TemplateResult {
-    const {
-      errors = [],
-      onChange,
-      showLabel = true,
-      extraClasses,
-      style
-    } = context;
+    const { errors = [], onChange, extraClasses, style } = context;
 
     return html`<div class="form-field">
       <temba-checkbox
         name="${fieldName}"
-        ${showLabel ? `label="${config.label}"` : ''}
+        label="${config.label}"
         .helpText="${config.helpText || ''}"
         ?required="${config.required}"
         .errors="${errors}"
@@ -411,7 +405,7 @@ export class FieldRenderer {
 
     return html`<temba-message-editor
       name="${fieldName}"
-      ${showLabel ? `label="${config.label}"` : ''}
+      label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
       .value="${value || ''}"
