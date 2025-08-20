@@ -11,7 +11,7 @@ let maxRuns = 10;
 // Parse arguments
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
-  
+
   if (arg.startsWith('--runs=')) {
     maxRuns = parseInt(arg.split('=')[1]);
     if (isNaN(maxRuns) || maxRuns <= 0) {
@@ -28,12 +28,16 @@ for (let i = 0; i < args.length; i++) {
 // Validate test file
 if (!testFile) {
   console.error('❌ Usage: yarn stress-test <test-file> [--runs=N]');
-  console.error('   Example: yarn stress-test test/temba-webchat.test.ts --runs=100');
+  console.error(
+    '   Example: yarn stress-test test/temba-webchat.test.ts --runs=100'
+  );
   process.exit(1);
 }
 
 if (!testFile.startsWith('test/') || !testFile.endsWith('.test.ts')) {
-  console.error('❌ Test file must be in the test/ directory and end with .test.ts');
+  console.error(
+    '❌ Test file must be in the test/ directory and end with .test.ts'
+  );
   process.exit(1);
 }
 
@@ -51,21 +55,21 @@ const startTime = performance.now();
 try {
   while (run <= maxRuns) {
     const runStartTime = performance.now();
-    
+
     process.stdout.write(`Run ${run.toString().padStart(3)}/${maxRuns}: `);
-    
+
     try {
       // Run the test with minimal output
-      const result = execSync(`yarn test ${testFile}`, { 
+      const result = execSync(`yarn test ${testFile}`, {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe']
       });
-      
+
       const runEndTime = performance.now();
       const runTime = runEndTime - runStartTime;
       runTimes.push(runTime);
       totalTime += runTime;
-      
+
       // Check if the test actually passed by looking for success indicators
       if (result.includes('all tests passed') || result.includes('0 failed')) {
         console.log(`✅ PASS (${(runTime / 1000).toFixed(2)}s)`);
@@ -75,11 +79,10 @@ try {
         failures++;
         break;
       }
-      
     } catch (error) {
       const runEndTime = performance.now();
       const runTime = runEndTime - runStartTime;
-      
+
       console.log(`❌ FAIL (${(runTime / 1000).toFixed(2)}s)`);
       console.log('');
       console.log('💥 Test failed on run', run);
@@ -94,7 +97,7 @@ try {
       failures++;
       break;
     }
-    
+
     run++;
   }
 } catch (error) {
@@ -112,14 +115,16 @@ console.log('==================');
 console.log(`Test file: ${testFile}`);
 console.log(`Completed runs: ${run - 1}/${maxRuns}`);
 console.log(`Failures: ${failures}`);
-console.log(`Success rate: ${(((run - 1 - failures) / (run - 1)) * 100).toFixed(1)}%`);
+console.log(
+  `Success rate: ${(((run - 1 - failures) / (run - 1)) * 100).toFixed(1)}%`
+);
 console.log('');
 
 if (runTimes.length > 0) {
   const avgTime = runTimes.reduce((a, b) => a + b, 0) / runTimes.length;
   const minTime = Math.min(...runTimes);
   const maxTime = Math.max(...runTimes);
-  
+
   console.log('⏱️  Timing Statistics');
   console.log('=====================');
   console.log(`Total time: ${(totalTestTime / 1000).toFixed(2)}s`);

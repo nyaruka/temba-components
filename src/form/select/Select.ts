@@ -476,8 +476,18 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: String, attribute: 'info_text' })
   infoText = '';
 
+  // Override the setter to ensure values is always an array
   @property({ type: Array })
-  values: T[] = [];
+  set values(newValues: any) {
+    this._values = Array.isArray(newValues) ? newValues : [];
+    this.requestUpdate('values');
+  }
+
+  get values(): T[] {
+    return this._values || [];
+  }
+
+  private _values: T[] = [];
 
   @property({ type: Object })
   selection: any;

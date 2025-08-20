@@ -208,15 +208,27 @@ export class FieldRenderer {
       style
     } = context;
 
+    // Ensure proper value handling for multi vs single select
+    const normalizedValue = (() => {
+      if (config.multi) {
+        // Multi-select: ensure we have an array
+        return Array.isArray(value) ? value : value ? [value] : [];
+      } else {
+        // Single select: use the value as-is
+        return value || '';
+      }
+    })();
+
     // For ArrayEditor context (no label), use value attribute directly
     // For NodeEditor context (with label), use .values property
     if (!showLabel) {
-      // ArrayEditor context - use value attribute and handle values differently
+      // ArrayEditor context - use value attribute
       return html`<temba-select
         name="${fieldName}"
         ?required="${config.required}"
         .errors="${errors}"
-        value="${value || ''}"
+        value="${config.multi ? '' : normalizedValue}"
+        .values="${config.multi ? normalizedValue : undefined}"
         ?multi="${config.multi}"
         ?searchable="${config.searchable}"
         ?tags="${config.tags}"
@@ -255,7 +267,7 @@ export class FieldRenderer {
       label="${config.label}"
       ?required="${config.required}"
       .errors="${errors}"
-      .values="${value || (config.multi ? [] : '')}"
+      .values="${normalizedValue}"
       ?multi="${config.multi}"
       ?searchable="${config.searchable}"
       ?tags="${config.tags}"

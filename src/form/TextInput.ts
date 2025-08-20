@@ -193,7 +193,7 @@ export class TextInput extends FormElement {
 
     this.inputElement = this.shadowRoot.querySelector('.textinput');
 
-    if (changes.has('counter')) {
+    if (changes.has('counter') && this.counter && this.counter.trim()) {
       let root = this.getParentModax() as any;
       if (root) {
         root = root.shadowRoot;
