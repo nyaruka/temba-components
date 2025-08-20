@@ -26,9 +26,9 @@ export class NodeEditor extends RapidElement {
         min-width: 400px;
         padding-bottom: 40px;
 
-        --color-bubble-bg: rgba(255, 255, 255, 0.8);
-        --color-bubble-border: #999;
-        --color-bubble-text: #777;
+        --color-bubble-bg: rgba(var(--primary-rgb), 0.7);
+        --color-bubble-border: rgba(0, 0, 0, 0.2);
+        --color-bubble-text: #fff;
       }
 
       .form-field {
@@ -98,8 +98,8 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group.has-bubble {
-        border-width: 1px;
-        border-color: var(--color-bubble-border, #aaa);
+        border-width: 2px;
+        border-color: rgba(var(--primary-rgb), 0.5);
       }
 
       .form-group-header {
@@ -115,6 +115,7 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group.has-bubble .form-group-header {
+        background: rgba(var(--primary-rgb), 0.1);
       }
 
       .collapsed .form-group-header {

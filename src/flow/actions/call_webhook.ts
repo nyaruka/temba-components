@@ -102,7 +102,7 @@ export const call_webhook: ActionConfig = {
       collapsed: true,
       helpText: 'Configure authentication or custom headers',
       getGroupValueCount: (formData: any) => {
-        return formData.headers?.length + 10 || 0;
+        return formData.headers?.length || 0;
       }
     },
     {
