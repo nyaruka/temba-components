@@ -10,17 +10,10 @@ import {
   FieldConfig,
   ActionConfig
 } from './config';
-import {
-  SelectFieldConfig,
-  CheckboxFieldConfig,
-  TextareaFieldConfig,
-  MessageEditorFieldConfig,
-  LayoutItem,
-  RowLayoutConfig,
-  GroupLayoutConfig
-} from './types';
+import { LayoutItem, RowLayoutConfig, GroupLayoutConfig } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
+import { FieldRenderer } from '../form/FieldRenderer';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -33,9 +26,9 @@ export class NodeEditor extends RapidElement {
         min-width: 400px;
         padding-bottom: 40px;
 
-        --color-bubble-bg: rgba(255, 255, 255, 0.8);
-        --color-bubble-border: #999;
-        --color-bubble-text: #777;
+        --color-bubble-bg: rgba(var(--primary-rgb), 0.7);
+        --color-bubble-border: rgba(0, 0, 0, 0.2);
+        --color-bubble-text: #fff;
       }
 
       .form-field {
@@ -105,8 +98,8 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group.has-bubble {
-        border-width: 1px;
-        border-color: var(--color-bubble-border, #aaa);
+        border-width: 2px;
+        border-color: rgba(var(--primary-rgb), 0.5);
       }
 
       .form-group-header {
@@ -122,6 +115,7 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group.has-bubble .form-group-header {
+        background: rgba(var(--primary-rgb), 0.1);
       }
 
       .collapsed .form-group-header {
@@ -331,8 +325,6 @@ export class NodeEditor extends RapidElement {
         this.formData = actionConfig.toFormData(this.action);
       } else {
         this.formData = { ...this.action };
-        // Apply smart transformations for select fields that expect {name, value} format
-        this.applySmartSelectTransformations(actionConfig);
       }
 
       // Convert Record objects to array format for key-value editors
@@ -388,44 +380,6 @@ export class NodeEditor extends RapidElement {
     });
 
     this.formData = processed;
-  }
-
-  private applySmartSelectTransformations(actionConfig: ActionConfig): void {
-    if (!actionConfig) return;
-
-    const fields = actionConfig.form;
-    if (!fields) return;
-
-    Object.entries(fields).forEach(([fieldName, fieldConfig]) => {
-      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
-        const value = this.formData[fieldName];
-        if (
-          Array.isArray(value) &&
-          value.length > 0 &&
-          typeof value[0] === 'string'
-        ) {
-          // Transform string array to select options format
-          this.formData[fieldName] = value.map((item: string) => ({
-            name: item,
-            value: item
-          }));
-        }
-      }
-    });
-  }
-
-  private shouldApplySmartSelectTransformation(
-    fieldName: string,
-    fieldConfig: any
-  ): boolean {
-    const selectConfig = fieldConfig as SelectFieldConfig;
-    return (
-      (fieldConfig.type === 'select' &&
-        (selectConfig.multi || selectConfig.tags) &&
-        // Don't transform if already has explicit transformations
-        !this.action) ||
-      !ACTION_CONFIG[this.action.type]?.toFormData
-    );
   }
 
   private isKeyValueField(fieldName: string): boolean {
@@ -849,40 +803,9 @@ export class NodeEditor extends RapidElement {
     if (actionConfig?.fromFormData) {
       return actionConfig.fromFormData(formData);
     } else {
-      // Apply smart select transformations in reverse and provide default 1:1 mapping
-      const processedFormData = this.reverseSmartSelectTransformations(
-        formData,
-        actionConfig
-      );
-      return { ...this.action, ...processedFormData };
+      // Default 1:1 mapping
+      return { ...this.action, ...formData };
     }
-  }
-
-  private reverseSmartSelectTransformations(
-    formData: any,
-    actionConfig: ActionConfig
-  ): any {
-    if (!actionConfig || !actionConfig.form) return formData;
-    const processed = { ...formData };
-
-    Object.entries(actionConfig.form).forEach(([fieldName, fieldConfig]) => {
-      if (this.shouldApplySmartSelectTransformation(fieldName, fieldConfig)) {
-        const value = processed[fieldName];
-        if (
-          Array.isArray(value) &&
-          value.length > 0 &&
-          typeof value[0] === 'object' &&
-          'value' in value[0]
-        ) {
-          // Transform select options format back to string array
-          processed[fieldName] = value.map(
-            (item: any) => item.value || item.name || item
-          );
-        }
-      }
-    });
-
-    return processed;
   }
 
   private handleFormFieldChange(propertyName: string, event: Event): void {
@@ -1035,181 +958,33 @@ export class NodeEditor extends RapidElement {
     value: any,
     errors: string[]
   ): TemplateResult {
-    switch (config.type) {
-      case 'text':
-        return html`<temba-textinput
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .value="${value || ''}"
-          placeholder="${config.placeholder || ''}"
-          .helpText="${config.helpText || ''}"
-          @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-        ></temba-textinput>`;
-
-      case 'textarea': {
-        const textareaConfig = config as TextareaFieldConfig;
-        const minHeightStyle = textareaConfig.minHeight
-          ? `--textarea-min-height: ${textareaConfig.minHeight}px;`
-          : '';
-
-        if (config.evaluated) {
-          return html`<temba-completion
-            name="${fieldName}"
-            label="${config.label}"
-            ?required="${config.required}"
-            .errors="${errors}"
-            .value="${value || ''}"
-            placeholder="${config.placeholder || ''}"
-            textarea
-            expressions="session"
-            style="${minHeightStyle}"
-            .helpText="${config.helpText || ''}"
-            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-          ></temba-completion>`;
+    // Use FieldRenderer for consistent field rendering
+    return FieldRenderer.renderField(fieldName, config, value, {
+      errors,
+      onChange: (e: Event) => {
+        // Handle different change event types
+        if (fieldName && config.type === 'key-value') {
+          // Special handling for key-value editor
+          const customEvent = e as CustomEvent;
+          if (customEvent.detail) {
+            this.handleNewFieldChange(fieldName, customEvent.detail.value);
+          }
+        } else if (fieldName && config.type === 'array') {
+          // Special handling for array editor
+          this.handleNewFieldChange(fieldName, (e.target as any).value);
+        } else if (fieldName && config.type === 'message-editor') {
+          // Special handling for message editor
+          this.handleMessageEditorChange(fieldName, e);
         } else {
-          return html`<temba-textinput
-            name="${fieldName}"
-            label="${config.label}"
-            ?required="${config.required}"
-            .errors="${errors}"
-            .value="${value || ''}"
-            placeholder="${config.placeholder || ''}"
-            textarea
-            .rows="${textareaConfig.rows || 3}"
-            style="${minHeightStyle}"
-            .helpText="${config.helpText || ''}"
-            @input="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-          ></temba-textinput>`;
+          // Default handling for most field types
+          this.handleFormFieldChange(fieldName, e);
         }
+      },
+      showLabel: true,
+      additionalData: {
+        attachments: this.formData.attachments || []
       }
-
-      case 'select': {
-        const selectConfig = config as SelectFieldConfig;
-        return html`<temba-select
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .values="${value || (selectConfig.multi ? [] : '')}"
-          ?multi="${selectConfig.multi}"
-          ?searchable="${selectConfig.searchable}"
-          ?tags="${selectConfig.tags}"
-          ?emails="${selectConfig.emails}"
-          placeholder="${selectConfig.placeholder || ''}"
-          maxItems="${selectConfig.maxItems || 0}"
-          valueKey="${selectConfig.valueKey || 'value'}"
-          nameKey="${selectConfig.nameKey || 'name'}"
-          endpoint="${selectConfig.endpoint || ''}"
-          .helpText="${config.helpText || ''}"
-          flavor="${selectConfig.flavor || 'small'}"
-          @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-        >
-          ${selectConfig.options?.map((option: any) => {
-            if (typeof option === 'string') {
-              return html`<temba-option
-                name="${option}"
-                value="${option}"
-              ></temba-option>`;
-            } else {
-              return html`<temba-option
-                name="${option.label || option.name}"
-                value="${option.value}"
-              ></temba-option>`;
-            }
-          })}
-        </temba-select>`;
-      }
-
-      case 'key-value':
-        return html`<div class="form-field">
-          <label>${config.label}${config.required ? ' *' : ''}</label>
-          <temba-key-value-editor
-            name="${fieldName}"
-            .value="${value || []}"
-            .sortable="${config.sortable}"
-            .keyPlaceholder="${config.keyPlaceholder || 'Key'}"
-            .valuePlaceholder="${config.valuePlaceholder || 'Value'}"
-            .minRows="${config.minRows || 0}"
-            @change="${(e: CustomEvent) => {
-              if (e.detail) {
-                this.handleNewFieldChange(fieldName, e.detail.value);
-              }
-            }}"
-          ></temba-key-value-editor>
-          ${errors.length
-            ? html`<div class="field-errors">${errors.join(', ')}</div>`
-            : ''}
-        </div>`;
-
-      case 'array':
-        return html`<div class="form-field">
-          <label>${config.label}${config.required ? ' *' : ''}</label>
-          <temba-array-editor
-            .value="${value || []}"
-            .itemConfig="${config.itemConfig}"
-            .sortable="${config.sortable}"
-            .itemLabel="${config.itemLabel || 'Item'}"
-            .minItems="${config.minItems || 0}"
-            .maxItems="${config.maxItems || 0}"
-            .onItemChange="${config.onItemChange}"
-            .isEmptyItemFn="${config.isEmptyItem}"
-            @change="${(e: Event) =>
-              this.handleNewFieldChange(fieldName, (e.target as any).value)}"
-          ></temba-array-editor>
-          ${errors.length
-            ? html`<div class="field-errors">${errors.join(', ')}</div>`
-            : ''}
-        </div>`;
-
-      case 'checkbox': {
-        const checkboxConfig = config as CheckboxFieldConfig;
-        return html`<div class="form-field">
-          <temba-checkbox
-            name="${fieldName}"
-            label="${config.label}"
-            .helpText="${config.helpText || ''}"
-            ?required="${config.required}"
-            .errors="${errors}"
-            ?checked="${value || false}"
-            size="${checkboxConfig.size || 1.2}"
-            animateChange="${checkboxConfig.animateChange || 'pulse'}"
-            @change="${(e: Event) => this.handleFormFieldChange(fieldName, e)}"
-          ></temba-checkbox>
-          ${errors.length
-            ? html`<div class="field-errors">${errors.join(', ')}</div>`
-            : ''}
-        </div>`;
-      }
-
-      case 'message-editor': {
-        const messageConfig = config as MessageEditorFieldConfig;
-        return html`<temba-message-editor
-          name="${fieldName}"
-          label="${config.label}"
-          ?required="${config.required}"
-          .errors="${errors}"
-          .value="${value || ''}"
-          .attachments="${this.formData.attachments || []}"
-          placeholder="${messageConfig.placeholder || ''}"
-          .helpText="${config.helpText || ''}"
-          ?autogrow="${messageConfig.autogrow}"
-          ?gsm="${messageConfig.gsm}"
-          ?disableCompletion="${messageConfig.disableCompletion}"
-          counter="${messageConfig.counter || ''}"
-          accept="${messageConfig.accept || ''}"
-          endpoint="${messageConfig.endpoint || ''}"
-          max-attachments="${messageConfig.maxAttachments || 3}"
-          minHeight="${messageConfig.minHeight || 60}"
-          @change="${(e: Event) =>
-            this.handleMessageEditorChange(fieldName, e)}"
-        ></temba-message-editor>`;
-      }
-
-      default:
-        return html`<div>Unsupported field type: ${(config as any).type}</div>`;
-    }
+    });
   }
 
   private handleGroupToggle(groupLabel: string): void {

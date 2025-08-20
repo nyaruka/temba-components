@@ -2,6 +2,7 @@ import { html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { FieldConfig, SelectFieldConfig } from '../flow/types';
 import { BaseListEditor, ListItem } from './BaseListEditor';
+import { FieldRenderer } from './FieldRenderer';
 
 @customElement('temba-array-editor')
 export class TembaArrayEditor extends BaseListEditor<ListItem> {
@@ -132,87 +133,42 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   ): TemplateResult {
     const computedValue = this.computeFieldValue(itemIndex, fieldName, config);
 
-    switch (config.type) {
-      case 'text':
-        return html`<temba-textinput
-          .value=${computedValue || ''}
-          .placeholder=${config.placeholder}
-          @change=${(e: any) =>
-            this.handleFieldChange(itemIndex, fieldName, e.target.value)}
-        ></temba-textinput>`;
+    // Use FieldRenderer for consistent field rendering
+    return FieldRenderer.renderField(fieldName, config, computedValue, {
+      showLabel: false, // ArrayEditor doesn't show labels for individual fields
+      flavor: 'small', // ArrayEditor uses small flavor
+      extraClasses: 'form-control',
+      onChange: (e: Event) => {
+        let value: any;
+        const target = e.target as any;
 
-      case 'textarea':
-        return html`<temba-textinput
-          .value=${computedValue || ''}
-          .placeholder=${config.placeholder}
-          textarea
-          .rows=${config.rows || 3}
-          @change=${(e: any) =>
-            this.handleFieldChange(itemIndex, fieldName, e.target.value)}
-        ></temba-textinput>`;
-
-      case 'select': {
-        const selectConfig = config as SelectFieldConfig;
-        const fieldValue = this.computeFieldValue(itemIndex, fieldName, config);
-
-        return html`<temba-select
-          class="form-control"
-          ?clearable="${selectConfig.clearable || false}"
-          ?searchable="${selectConfig.searchable || false}"
-          ?tags="${selectConfig.tags || false}"
-          ?multi="${selectConfig.multi || false}"
-          ?emails="${selectConfig.emails || false}"
-          placeholder="${selectConfig.placeholder || ''}"
-          maxItems="${selectConfig.maxItems || 0}"
-          valueKey="${selectConfig.valueKey || 'value'}"
-          nameKey="${selectConfig.nameKey || 'name'}"
-          endpoint="${selectConfig.endpoint || ''}"
-          value="${fieldValue || ''}"
-          flavor="small"
-          @change="${(e: Event) => {
-            const target = e.target as any;
-            let value: any;
-
-            // For temba-select, extract the correct value
-            if (target.tagName === 'TEMBA-SELECT') {
-              if (target.multi || target.emails || target.tags) {
-                value = target.values || [];
-              } else {
-                // Single select: extract value from first selected option
-                const values = target.values || [];
-                value =
-                  values.length > 0 && values[0]
-                    ? values[0].value !== undefined
-                      ? values[0].value
-                      : values[0]
-                    : '';
-              }
+        // Handle different field types and their change events
+        if (config.type === 'select') {
+          // For temba-select, extract the correct value
+          if (target.tagName === 'TEMBA-SELECT') {
+            if (target.multi || target.emails || target.tags) {
+              value = target.values || [];
             } else {
-              value = target.value;
+              // Single select: extract value from first selected option
+              const values = target.values || [];
+              value =
+                values.length > 0 && values[0]
+                  ? values[0].value !== undefined
+                    ? values[0].value
+                    : values[0]
+                  : '';
             }
+          } else {
+            value = target.value;
+          }
+        } else {
+          // For other field types, use the target value directly
+          value = target.value;
+        }
 
-            this.handleFieldChange(itemIndex, fieldName, value);
-          }}"
-        >
-          ${selectConfig.options?.map((option: any) => {
-            if (typeof option === 'string') {
-              return html`<temba-option
-                name="${option}"
-                value="${option}"
-              ></temba-option>`;
-            } else {
-              return html`<temba-option
-                name="${option.label || option.name}"
-                value="${option.value}"
-              ></temba-option>`;
-            }
-          })}
-        </temba-select>`;
+        this.handleFieldChange(itemIndex, fieldName, value);
       }
-
-      default:
-        return html`<span>Unsupported field type: ${config.type}</span>`;
-    }
+    });
   }
 
   renderItem(item: ListItem, index: number): TemplateResult {
