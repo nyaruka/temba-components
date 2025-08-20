@@ -978,16 +978,16 @@ describe('temba-select', () => {
           searchable: true
         })
       );
-      await assertScreenshot(
-        'select/search-enabled',
-        getClipWithOptions(select)
-      );
+      await assertScreenshot('select/search-enabled', getClip(select));
     });
 
     it('should look the same with search enabled and selection made', async () => {
       const select = await createSelect(
         clock,
-        getSelectHTML(colors, { searchable: true })
+        getSelectHTML(colors, {
+          placeholder: 'Select a color',
+          searchable: true
+        })
       );
 
       // select the first option

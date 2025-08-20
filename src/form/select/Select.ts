@@ -222,6 +222,7 @@ export class Select<T extends SelectOption> extends FormElement {
 
       .multi temba-sortable-list {
         margin: 0 !important;
+        flex-grow: 1;
       }
 
       input {
@@ -255,6 +256,12 @@ export class Select<T extends SelectOption> extends FormElement {
 
       .multi .input-wrapper {
         margin-left: 2px !important;
+        margin-right: 2px !important;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+        min-width: 100px;
+        align-self: center;
       }
 
       .input-wrapper:focus-within .placeholder {
@@ -290,11 +297,6 @@ export class Select<T extends SelectOption> extends FormElement {
         box-shadow: none !important;
       }
 
-      .multi .input-wrapper {
-        flex-shrink: 0;
-        min-width: 100px;
-      }
-
       .input-wrapper .searchbox {
       }
 
@@ -308,6 +310,17 @@ export class Select<T extends SelectOption> extends FormElement {
         display: none;
         line-height: var(--temba-select-selected-line-height);
         margin-left: 6px;
+      }
+
+      .empty .placeholder {
+        display: block;
+      }
+
+      .multi .placeholder {
+        display: block;
+        margin: 2px 2px;
+        padding: 2px 8px;
+        align-self: center;
       }
 
       .footer {
@@ -1646,9 +1659,13 @@ export class Select<T extends SelectOption> extends FormElement {
 
   public render(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : '';
-    const placeholderDiv = html`
-      <div class="placeholder">${placeholder}</div>
-    `;
+
+    // Single unified placeholder - shows when empty and (not focused OR not searchable)
+    const shouldShowPlaceholder =
+      this.values.length === 0 && (!this.focused || !this.searchable);
+    const placeholderElement = shouldShowPlaceholder
+      ? html`<div class="placeholder">${placeholder}</div>`
+      : null;
 
     const clear =
       this.clearable && this.values.length > 0 && !this.isMultiMode
@@ -1693,10 +1710,9 @@ export class Select<T extends SelectOption> extends FormElement {
               .value=${this.input}
             />
             <div id="anchor" style=${styleMap(anchorStyles)}></div>
-            ${placeholderDiv}
           </div>
         `
-      : placeholderDiv;
+      : null;
 
     const items = html`${!this.isMultiMode && !this.resolving ? input : null}
     ${this.isMultiMode && this.values.length > 1
@@ -1770,9 +1786,10 @@ export class Select<T extends SelectOption> extends FormElement {
                 </div>
               `
             )}
+            ${this.searchable && this.focused ? input : null}
           </temba-sortable-list>
         `
-      : this.values.map(
+      : html`${this.values.map(
           (selected: any, index: number) => html`
             <div
               class="selected-item ${index === this.selectedIndex
@@ -1821,7 +1838,8 @@ export class Select<T extends SelectOption> extends FormElement {
             </div>
           `
         )}
-    ${this.isMultiMode ? input : null}`;
+        ${this.isMultiMode && this.searchable && this.focused ? input : null}
+        ${placeholderElement}`}`;
 
     return html`
             
