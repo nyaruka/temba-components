@@ -57,6 +57,11 @@ export interface FlowEvent extends ContactEvent {
   status: string;
 }
 
+export interface RunEvent extends ContactEvent {
+  flow: ObjectReference;
+  status: string;
+}
+
 export interface URNsChangedEvent extends ContactEvent {
   urns: string[];
 }
