@@ -62,14 +62,14 @@ export const open_ticket: ActionConfig = {
       topic:
         data.topic && data.topic.length > 0
           ? {
-              uuid: data.topic[0].value,
+              uuid: data.topic[0].uuid,
               name: data.topic[0].name
             }
           : undefined,
       assignee:
         data.assignee && data.assignee.length > 0
           ? {
-              uuid: data.assignee[0].value,
+              uuid: data.assignee[0].uuid,
               name:
                 data.assignee[0].name ||
                 [data.assignee[0].first_name, data.assignee[0].last_name].join(

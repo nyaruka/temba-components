@@ -755,10 +755,10 @@
             "uuid": "a7f21fc4-8bf1-47ab-a6c7-3e072f88afe7",
             "type": "open_ticket",
             "topic": {
-              "name": "General"
+              "name": "Technical Support"
             },
             "assignee": {
-              "name": "Marion Berry"
+              "name": "Sarah Smith"
             },
             "note": ""
           }
