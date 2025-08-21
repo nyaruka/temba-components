@@ -1,9 +1,8 @@
-import { assert, expect } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { split_by_llm_categorize } from '../src/flow/nodes/split_by_llm_categorize';
 import { Node } from '../src/store/flow-definition';
 
 describe('split_by_llm_categorize edge cases and validation', () => {
-  
   it('handles categories with empty names correctly', () => {
     const formData = {
       uuid: 'test-node-uuid',
@@ -11,8 +10,8 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       input: '@input',
       categories: [
         { name: 'Valid Category' },
-        { name: '' },  // empty name
-        { name: '   ' },  // only whitespace
+        { name: '' }, // empty name
+        { name: '   ' }, // only whitespace
         { name: 'Another Valid' }
       ],
       result_name: 'Intent'
@@ -24,14 +23,20 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // Should only include non-empty categories
-    const userCategories = result.router!.categories.filter(cat => 
-      cat.name !== 'Other' && cat.name !== 'Failure'
+    const userCategories = result.router!.categories.filter(
+      (cat) => cat.name !== 'Other' && cat.name !== 'Failure'
     );
     expect(userCategories).to.have.length(2);
-    expect(userCategories.map(cat => cat.name)).to.deep.equal(['Valid Category', 'Another Valid']);
+    expect(userCategories.map((cat) => cat.name)).to.deep.equal([
+      'Valid Category',
+      'Another Valid'
+    ]);
   });
 
   it('handles categories with special characters', () => {
@@ -54,22 +59,32 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // Should preserve all special characters in category names
-    const userCategories = result.router!.categories.filter(cat => 
-      cat.name !== 'Other' && cat.name !== 'Failure'
+    const userCategories = result.router!.categories.filter(
+      (cat) => cat.name !== 'Other' && cat.name !== 'Failure'
     );
     expect(userCategories).to.have.length(4);
-    expect(userCategories.map(cat => cat.name)).to.include.members([
-      'Category-1', 'Category_2', 'Category@3', 'Category with spaces'
+    expect(userCategories.map((cat) => cat.name)).to.include.members([
+      'Category-1',
+      'Category_2',
+      'Category@3',
+      'Category with spaces'
     ]);
 
     // Verify cases also have correct names
-    const caseNames = result.router!.cases.filter(c => c.arguments[0] !== '<ERROR>')
-      .map(c => c.arguments[0]);
+    const caseNames = result
+      .router!.cases.filter((c) => c.arguments[0] !== '<ERROR>')
+      .map((c) => c.arguments[0]);
     expect(caseNames).to.include.members([
-      'Category-1', 'Category_2', 'Category@3', 'Category with spaces'
+      'Category-1',
+      'Category_2',
+      'Category@3',
+      'Category with spaces'
     ]);
   });
 
@@ -78,9 +93,7 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       uuid: 'test-node-uuid',
       llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
       input: '@input',
-      categories: [
-        { name: 'Test Category' }
-      ],
+      categories: [{ name: 'Test Category' }],
       result_name: 'Intent'
     };
 
@@ -90,12 +103,21 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // Find the test category
-    const testCategory = result.router!.categories.find(cat => cat.name === 'Test Category');
-    const testCase = result.router!.cases.find(c => c.arguments[0] === 'Test Category');
-    const testExit = result.exits.find(exit => exit.uuid === testCategory!.exit_uuid);
+    const testCategory = result.router!.categories.find(
+      (cat) => cat.name === 'Test Category'
+    );
+    const testCase = result.router!.cases.find(
+      (c) => c.arguments[0] === 'Test Category'
+    );
+    const testExit = result.exits.find(
+      (exit) => exit.uuid === testCategory!.exit_uuid
+    );
 
     // Verify UUID consistency
     expect(testCase!.category_uuid).to.equal(testCategory!.uuid);
@@ -117,12 +139,20 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       exits: []
     };
 
-    const result1 = split_by_llm_categorize.fromFormData!(formData, originalNode);
-    const result2 = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result1 = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
+    const result2 = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // UUIDs should be different for each generation
     expect(result1.actions[0].uuid).to.not.equal(result2.actions[0].uuid);
-    expect(result1.router!.categories[0].uuid).to.not.equal(result2.router!.categories[0].uuid);
+    expect(result1.router!.categories[0].uuid).to.not.equal(
+      result2.router!.categories[0].uuid
+    );
     expect(result1.exits[0].uuid).to.not.equal(result2.exits[0].uuid);
   });
 
@@ -131,10 +161,7 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       uuid: 'test-node-uuid',
       llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
       input: '@custom.input',
-      categories: [
-        { name: 'Category1' },
-        { name: 'Category2' }
-      ],
+      categories: [{ name: 'Category1' }, { name: 'Category2' }],
       result_name: 'CustomResult'
     };
 
@@ -145,8 +172,11 @@ describe('split_by_llm_categorize edge cases and validation', () => {
     };
 
     // Convert form data to node
-    const node = split_by_llm_categorize.fromFormData!(originalFormData, originalNode);
-    
+    const node = split_by_llm_categorize.fromFormData!(
+      originalFormData,
+      originalNode
+    );
+
     // Convert back to form data
     const recoveredFormData = split_by_llm_categorize.toFormData!(node);
 
@@ -154,14 +184,20 @@ describe('split_by_llm_categorize edge cases and validation', () => {
     expect(recoveredFormData.uuid).to.equal(originalFormData.uuid);
     expect(recoveredFormData.llm).to.deep.equal(originalFormData.llm);
     expect(recoveredFormData.input).to.equal(originalFormData.input);
-    expect(recoveredFormData.result_name).to.equal(originalFormData.result_name);
-    expect(recoveredFormData.categories).to.deep.equal(originalFormData.categories);
+    expect(recoveredFormData.result_name).to.equal(
+      originalFormData.result_name
+    );
+    expect(recoveredFormData.categories).to.deep.equal(
+      originalFormData.categories
+    );
   });
 
   it('handles max 10 categories requirement', () => {
     // Create 12 categories to test the limit
-    const categories = Array.from({ length: 12 }, (_, i) => ({ name: `Category${i + 1}` }));
-    
+    const categories = Array.from({ length: 12 }, (_, i) => ({
+      name: `Category${i + 1}`
+    }));
+
     const formData = {
       uuid: 'test-node-uuid',
       llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
@@ -176,11 +212,14 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // Should process all categories provided (fromFormData doesn't enforce the limit, validation should)
-    const userCategories = result.router!.categories.filter(cat => 
-      cat.name !== 'Other' && cat.name !== 'Failure'
+    const userCategories = result.router!.categories.filter(
+      (cat) => cat.name !== 'Other' && cat.name !== 'Failure'
     );
     expect(userCategories).to.have.length(12);
 
@@ -203,7 +242,10 @@ describe('split_by_llm_categorize edge cases and validation', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // Should use original node UUID, not the one from form data
     expect(result.uuid).to.equal('original-node-uuid');

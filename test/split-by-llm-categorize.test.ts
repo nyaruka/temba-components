@@ -1,4 +1,4 @@
-import { assert, expect } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { split_by_llm_categorize } from '../src/flow/nodes/split_by_llm_categorize';
 import { Node } from '../src/store/flow-definition';
 
@@ -15,7 +15,7 @@ describe('split_by_llm_categorize', () => {
     expect(properties.input).to.exist;
     expect(properties.categories).to.exist;
     expect(properties.result_name).to.exist;
-    
+
     // Check required fields
     expect(properties.llm.required).to.be.true;
     expect(properties.input.required).to.be.true;
@@ -27,10 +27,7 @@ describe('split_by_llm_categorize', () => {
       uuid: 'test-node-uuid',
       llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
       input: '@input',
-      categories: [
-        { name: 'Flights' },
-        { name: 'Hotels' }
-      ],
+      categories: [{ name: 'Flights' }, { name: 'Hotels' }],
       result_name: 'Intent'
     };
 
@@ -40,7 +37,10 @@ describe('split_by_llm_categorize', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     // Check basic structure
     expect(result.uuid).to.equal('test-node-uuid');
@@ -54,7 +54,9 @@ describe('split_by_llm_categorize', () => {
     expect(callLlmAction.llm.uuid).to.equal('llm-uuid-123');
     expect(callLlmAction.llm.name).to.equal('Claude');
     expect(callLlmAction.input).to.equal('@input');
-    expect(callLlmAction.instructions).to.equal('@(prompt("categorize", slice(node.categories, 0, -2)))');
+    expect(callLlmAction.instructions).to.equal(
+      '@(prompt("categorize", slice(node.categories, 0, -2)))'
+    );
     expect(callLlmAction.output_local).to.equal('_llm_output');
 
     // Check router
@@ -66,20 +68,20 @@ describe('split_by_llm_categorize', () => {
     expect(router.cases).to.have.length(3); // 2 user categories + failure case
 
     // Check categories
-    const categoryNames = router.categories.map(cat => cat.name);
+    const categoryNames = router.categories.map((cat) => cat.name);
     expect(categoryNames).to.include('Flights');
     expect(categoryNames).to.include('Hotels');
     expect(categoryNames).to.include('Other');
     expect(categoryNames).to.include('Failure');
 
     // Check default category is "Other"
-    const otherCategory = router.categories.find(cat => cat.name === 'Other');
+    const otherCategory = router.categories.find((cat) => cat.name === 'Other');
     expect(router.default_category_uuid).to.equal(otherCategory!.uuid);
 
     // Check cases
-    const flightCase = router.cases.find(c => c.arguments[0] === 'Flights');
-    const hotelCase = router.cases.find(c => c.arguments[0] === 'Hotels');
-    const errorCase = router.cases.find(c => c.arguments[0] === '<ERROR>');
+    const flightCase = router.cases.find((c) => c.arguments[0] === 'Flights');
+    const hotelCase = router.cases.find((c) => c.arguments[0] === 'Hotels');
+    const errorCase = router.cases.find((c) => c.arguments[0] === '<ERROR>');
 
     expect(flightCase).to.exist;
     expect(flightCase!.type).to.equal('has_only_text');
@@ -92,14 +94,17 @@ describe('split_by_llm_categorize', () => {
   it('extracts form data correctly with toFormData', () => {
     const node: Node = {
       uuid: 'test-node-uuid',
-      actions: [{
-        type: 'call_llm',
-        uuid: 'action-uuid',
-        llm: { uuid: 'llm-uuid-123', name: 'Claude' },
-        instructions: '@(prompt("categorize", slice(node.categories, 0, -2)))',
-        input: '@input',
-        result_name: 'Intent'
-      } as any],
+      actions: [
+        {
+          type: 'call_llm',
+          uuid: 'action-uuid',
+          llm: { uuid: 'llm-uuid-123', name: 'Claude' },
+          instructions:
+            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          input: '@input',
+          result_name: 'Intent'
+        } as any
+      ],
       exits: [],
       router: {
         type: 'switch',
@@ -122,7 +127,10 @@ describe('split_by_llm_categorize', () => {
     expect(formData.input).to.equal('@input');
     expect(formData.result_name).to.equal('Intent');
     expect(formData.categories).to.have.length(2);
-    expect(formData.categories.map((c: any) => c.name)).to.deep.equal(['Flights', 'Hotels']);
+    expect(formData.categories.map((c: any) => c.name)).to.deep.equal([
+      'Flights',
+      'Hotels'
+    ]);
   });
 
   it('handles empty categories correctly', () => {
@@ -140,7 +148,10 @@ describe('split_by_llm_categorize', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
 
     expect(result.router!.categories).to.have.length(2); // Only Other + Failure
     expect(result.router!.cases).to.have.length(1); // Only failure case
@@ -162,7 +173,10 @@ describe('split_by_llm_categorize', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
     const callLlmAction = result.actions[0] as any;
 
     expect(callLlmAction.llm.uuid).to.equal('');
@@ -182,7 +196,10 @@ describe('split_by_llm_categorize', () => {
       exits: []
     };
 
-    const result = split_by_llm_categorize.fromFormData!(formData, originalNode);
+    const result = split_by_llm_categorize.fromFormData!(
+      formData,
+      originalNode
+    );
     const callLlmAction = result.actions[0] as any;
 
     expect(callLlmAction.input).to.equal('@input');
