@@ -20,16 +20,12 @@ describe('call_llm action config', () => {
       expect(call_llm.form).to.exist;
       expect(call_llm.form.llm).to.exist;
       expect(call_llm.form.instructions).to.exist;
-      expect(call_llm.form.result_name).to.exist;
+      expect(call_llm.form.input).to.exist;
     });
 
     it('has layout configuration', () => {
       expect(call_llm.layout).to.exist;
-      expect(call_llm.layout).to.deep.equal([
-        'llm',
-        'instructions',
-        'result_name'
-      ]);
+      expect(call_llm.layout).to.deep.equal(['llm', 'input', 'instructions']);
     });
 
     it('has data transformation functions', () => {
@@ -54,7 +50,7 @@ describe('call_llm action config', () => {
       expect(formData.uuid).to.equal('test-llm-1');
       expect(formData.llm).to.deep.equal([{ value: 'gpt-4', name: 'GPT 4.1' }]);
       expect(formData.instructions).to.equal('Translate to French');
-      expect(formData.result_name).to.equal('translated_text');
+      expect(formData.input).to.equal('@input');
     });
 
     it('converts form data to action correctly', () => {
@@ -62,7 +58,7 @@ describe('call_llm action config', () => {
         uuid: 'test-llm-2',
         llm: [{ value: 'gpt-5', name: 'GPT 5' }],
         instructions: 'Summarize the following text',
-        result_name: 'summary'
+        input: '@input'
       };
 
       const action = call_llm.fromFormData(formData) as CallLLM;
@@ -71,7 +67,7 @@ describe('call_llm action config', () => {
       expect(action.type).to.equal('call_llm');
       expect(action.llm).to.deep.equal({ uuid: 'gpt-5', name: 'GPT 5' });
       expect(action.instructions).to.equal('Summarize the following text');
-      expect(action.result_name).to.equal('summary');
+      expect(action.input).to.equal('@input');
     });
 
     it('handles empty form data', () => {
@@ -79,14 +75,14 @@ describe('call_llm action config', () => {
         uuid: 'test-llm-3',
         llm: [],
         instructions: '',
-        result_name: ''
+        input: ''
       };
 
       const action = call_llm.fromFormData(formData) as CallLLM;
 
       expect(action.llm).to.deep.equal({ uuid: '', name: '' });
       expect(action.instructions).to.equal('');
-      expect(action.result_name).to.equal('');
+      expect(action.input).to.equal('@input');
     });
   });
 
@@ -97,7 +93,7 @@ describe('call_llm action config', () => {
         type: 'call_llm',
         llm: { uuid: 'gpt-4', name: 'GPT 4.1' },
         instructions: 'Translate to French',
-        result_name: 'translated_text'
+        input: '@input'
       } as CallLLM,
       'translation-task'
     );
@@ -109,7 +105,7 @@ describe('call_llm action config', () => {
         llm: { uuid: 'gpt-5', name: 'GPT 5' },
         instructions:
           'Analyze the sentiment of the following message and classify it as positive, negative, or neutral. Provide a brief explanation for your classification.',
-        result_name: 'sentiment_analysis'
+        input: '@input'
       } as CallLLM,
       'sentiment-analysis'
     );
@@ -121,7 +117,7 @@ describe('call_llm action config', () => {
         llm: { uuid: 'gpt-4', name: 'GPT 4.1' },
         instructions:
           'Summarize the key points from the conversation above in bullet format.',
-        result_name: 'summary'
+        input: '@input'
       } as CallLLM,
       'summarization'
     );
@@ -133,7 +129,7 @@ describe('call_llm action config', () => {
         llm: { uuid: 'gpt-5', name: 'GPT 5' },
         instructions:
           'Extract any contact information (phone numbers, email addresses) from the text and format them as a JSON object.',
-        result_name: 'contact_info'
+        input: '@input'
       } as CallLLM,
       'information-extraction'
     );
