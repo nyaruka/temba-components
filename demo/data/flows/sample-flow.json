@@ -755,14 +755,12 @@
             "uuid": "a7f21fc4-8bf1-47ab-a6c7-3e072f88afe7",
             "type": "open_ticket",
             "topic": {
-              "uuid": "bf4b568d-97b8-4d20-aed5-ad8150270af8",
               "name": "General"
             },
-            "note": "This is a note",
             "assignee": {
-              "email": "agent1@textit.com",
-              "name": "Agnes McAgent"
-            }
+              "name": "Eric Newcomer"
+            },
+            "note": ""
           }
         ],
         "router": {
@@ -794,7 +792,7 @@
         "exits": [
           {
             "uuid": "2505556e-3c87-4992-91e3-1cedd95dce72",
-            "destination_uuid": null
+            "destination_uuid": "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8"
           },
           {
             "uuid": "4cf706ff-1888-4682-b844-d3ed3386bdbb",
@@ -896,7 +894,7 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 480,
+            "left": 460,
             "top": 360
           },
           "config": {
@@ -916,22 +914,22 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 500,
-            "top": 980
+            "left": 480,
+            "top": 1060
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
             "left": 780,
-            "top": 840
+            "top": 820
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 820,
+            "left": 740,
             "top": 980
           },
           "config": {}

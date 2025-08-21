@@ -6,17 +6,7 @@ export const open_ticket: ActionConfig = {
   name: 'Open Ticket',
   color: COLORS.create,
   render: (_node: Node, action: OpenTicket) => {
-    const parts = [];
-    if (action.topic?.name) {
-      parts.push(`Topic: ${action.topic.name}`);
-    }
-    if (action.assignee?.name) {
-      parts.push(`Assignee: ${action.assignee.name}`);
-    }
-    if (action.note) {
-      parts.push(`Note: ${action.note}`);
-    }
-    return html`<div>${parts.join('<br>')}</div>`;
+    return html`<div>${action.topic.name}</div>`;
   },
   form: {
     topic: {
@@ -37,7 +27,9 @@ export const open_ticket: ActionConfig = {
       options: [],
       endpoint: '/api/v2/agents.json',
       valueKey: 'uuid',
-      nameKey: 'name'
+      nameKey: 'name',
+      searchable: true,
+      clearable: true
     },
     note: {
       type: 'textarea',
