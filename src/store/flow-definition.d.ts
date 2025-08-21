@@ -173,6 +173,7 @@ export interface CallResthook extends Action {
 export interface CallLLM extends Action {
   llm: NamedObject;
   instructions: string;
+  input: string;
   result_name: string;
 }
 

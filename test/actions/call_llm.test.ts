@@ -25,7 +25,11 @@ describe('call_llm action config', () => {
 
     it('has layout configuration', () => {
       expect(call_llm.layout).to.exist;
-      expect(call_llm.layout).to.deep.equal(['llm', 'instructions', 'result_name']);
+      expect(call_llm.layout).to.deep.equal([
+        'llm',
+        'instructions',
+        'result_name'
+      ]);
     });
 
     it('has data transformation functions', () => {
@@ -39,13 +43,14 @@ describe('call_llm action config', () => {
       const action: CallLLM = {
         uuid: 'test-llm-1',
         type: 'call_llm',
+        input: '@input',
         llm: { uuid: 'gpt-4', name: 'GPT 4.1' },
         instructions: 'Translate to French',
         result_name: 'translated_text'
       };
 
       const formData = call_llm.toFormData(action);
-      
+
       expect(formData.uuid).to.equal('test-llm-1');
       expect(formData.llm).to.deep.equal([{ value: 'gpt-4', name: 'GPT 4.1' }]);
       expect(formData.instructions).to.equal('Translate to French');
@@ -61,7 +66,7 @@ describe('call_llm action config', () => {
       };
 
       const action = call_llm.fromFormData(formData) as CallLLM;
-      
+
       expect(action.uuid).to.equal('test-llm-2');
       expect(action.type).to.equal('call_llm');
       expect(action.llm).to.deep.equal({ uuid: 'gpt-5', name: 'GPT 5' });
@@ -78,7 +83,7 @@ describe('call_llm action config', () => {
       };
 
       const action = call_llm.fromFormData(formData) as CallLLM;
-      
+
       expect(action.llm).to.deep.equal({ uuid: '', name: '' });
       expect(action.instructions).to.equal('');
       expect(action.result_name).to.equal('');
@@ -102,7 +107,8 @@ describe('call_llm action config', () => {
         uuid: 'test-action-2',
         type: 'call_llm',
         llm: { uuid: 'gpt-5', name: 'GPT 5' },
-        instructions: 'Analyze the sentiment of the following message and classify it as positive, negative, or neutral. Provide a brief explanation for your classification.',
+        instructions:
+          'Analyze the sentiment of the following message and classify it as positive, negative, or neutral. Provide a brief explanation for your classification.',
         result_name: 'sentiment_analysis'
       } as CallLLM,
       'sentiment-analysis'
@@ -113,7 +119,8 @@ describe('call_llm action config', () => {
         uuid: 'test-action-3',
         type: 'call_llm',
         llm: { uuid: 'gpt-4', name: 'GPT 4.1' },
-        instructions: 'Summarize the key points from the conversation above in bullet format.',
+        instructions:
+          'Summarize the key points from the conversation above in bullet format.',
         result_name: 'summary'
       } as CallLLM,
       'summarization'
@@ -124,7 +131,8 @@ describe('call_llm action config', () => {
         uuid: 'test-action-4',
         type: 'call_llm',
         llm: { uuid: 'gpt-5', name: 'GPT 5' },
-        instructions: 'Extract any contact information (phone numbers, email addresses) from the text and format them as a JSON object.',
+        instructions:
+          'Extract any contact information (phone numbers, email addresses) from the text and format them as a JSON object.',
         result_name: 'contact_info'
       } as CallLLM,
       'information-extraction'

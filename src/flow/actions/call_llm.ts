@@ -17,13 +17,19 @@ export const call_llm: ActionConfig = {
     llm: {
       type: 'select',
       required: true,
-      label: 'Call AI service',
+      label: 'AI Model',
       options: [],
       endpoint: '/test-assets/select/llms.json',
       searchable: true,
       valueKey: 'uuid',
-      nameKey: 'name',
-      helpText: 'Select the AI model to use for processing'
+      nameKey: 'name'
+    },
+    input: {
+      type: 'text',
+      required: true,
+      label: 'The input the AI will process',
+      evaluated: true,
+      placeholder: '@input'
     },
     instructions: {
       type: 'textarea',
@@ -31,38 +37,31 @@ export const call_llm: ActionConfig = {
       label: 'Tell the AI what to do with the input',
       evaluated: true,
       placeholder: 'Enter instructions for the AI model...',
-      rows: 8,
-      helpText: 'Provide detailed instructions for how the AI should process the input'
-    },
-    result_name: {
-      type: 'text',
-      required: true,
-      label: 'Result name',
-      placeholder: 'llm_output',
-      helpText: 'The name to use when saving the AI response - can be referenced as @results.{result_name}'
+      minHeight: 130
     }
   },
-  layout: [
-    'llm',
-    'instructions', 
-    'result_name'
-  ],
+  layout: ['llm', 'input', 'instructions'],
   toFormData: (action: CallLLM) => {
     return {
       uuid: action.uuid,
-      llm: action.llm ? [{ value: action.llm.uuid, name: action.llm.name }] : [],
-      instructions: action.instructions || '',
-      result_name: action.result_name || ''
+      llm: action.llm
+        ? [{ value: action.llm.uuid, name: action.llm.name }]
+        : [],
+      input: action.input || '@input',
+      instructions: action.instructions || ''
     };
   },
   fromFormData: (data: Record<string, any>) => {
-    const llmSelection = Array.isArray(data.llm) && data.llm.length > 0 ? data.llm[0] : null;
+    const llmSelection =
+      Array.isArray(data.llm) && data.llm.length > 0 ? data.llm[0] : null;
     return {
       uuid: data.uuid,
       type: 'call_llm',
-      llm: llmSelection ? { uuid: llmSelection.value, name: llmSelection.name } : { uuid: '', name: '' },
-      instructions: data.instructions || '',
-      result_name: data.result_name || ''
+      input: data.input || '@input',
+      llm: llmSelection
+        ? { uuid: llmSelection.value, name: llmSelection.name }
+        : { uuid: '', name: '' },
+      instructions: data.instructions || ''
     } as CallLLM;
   }
 };
