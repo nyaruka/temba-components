@@ -225,10 +225,7 @@ export class FieldRenderer {
       }
     })();
 
-    // For ArrayEditor context (no label), use value attribute directly
-    // For NodeEditor context (with label), use .values property
-    if (!showLabel) {
-      // ArrayEditor context - use value attribute
+    if (typeof normalizedValue === 'string') {
       return html`<temba-select
         name="${fieldName}"
         ?required="${config.required}"
@@ -240,6 +237,7 @@ export class FieldRenderer {
         ?tags="${config.tags}"
         ?emails="${config.emails}"
         ?clearable="${config.clearable || false}"
+        label="${showLabel ? config.label : ''}"
         placeholder="${config.placeholder || ''}"
         maxItems="${config.maxItems || 0}"
         valueKey="${config.valueKey || 'value'}"
@@ -249,6 +247,7 @@ export class FieldRenderer {
         flavor="${flavor || config.flavor || 'small'}"
         class="${extraClasses}"
         style="${style}"
+        .getName=${config.getName}
         @change="${onChange || (() => {})}"
       >
         ${config.options?.map((option: any) => {
@@ -267,10 +266,9 @@ export class FieldRenderer {
       </temba-select>`;
     }
 
-    // NodeEditor context - use .values property
     return html`<temba-select
       name="${fieldName}"
-      label="${config.label}"
+      label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
       .values="${normalizedValue}"
@@ -288,6 +286,7 @@ export class FieldRenderer {
       flavor="${flavor || config.flavor || 'small'}"
       class="${extraClasses}"
       style="${style}"
+      .getName=${config.getName}
       @change="${onChange || (() => {})}"
     >
       ${config.options?.map((option: any) => {
