@@ -44,6 +44,7 @@ export type ActionType =
   | 'split_by_subflow'
   | 'split_by_webhook'
   | 'split_by_llm'
+  | 'split_by_llm_categorize'
   | 'wait_for_response'
   | 'wait_for_menu'
   | 'wait_for_dial'
