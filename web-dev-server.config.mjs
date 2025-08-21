@@ -106,23 +106,39 @@ export default {
                 // Generate metadata similar to production
                 const metadata = generateFlowMetadata(flowDefinition);
                 
-                context.body = {
+                const response = {
                   status: 'success',
                   saved_on: new Date().toISOString(),
                   revision: {
                     id: Math.floor(Math.random() * 1000) + 1,
                     user: {
-                      email: 'test@textit.com',
-                      name: 'Test User'
+                      email: 'admin1@textit.com',
+                      name: 'Adam McAdmin'
                     },
                     created_on: new Date().toISOString(),
                     version: flowDefinition.spec_version || '14.3.0',
-                    revision: flowDefinition.revision || 1
+                    revision: (flowDefinition.revision || 0) + 1
                   },
-                  info: metadata,
+                  info: {
+                    counts: metadata.counts,
+                    dependencies: metadata.dependencies,
+                    locals: metadata.locals,
+                    results: metadata.results,
+                    parent_refs: [],
+                    issues: []
+                  },
                   issues: [],
-                  metadata: metadata
+                  metadata: {
+                    counts: metadata.counts,
+                    dependencies: metadata.dependencies,
+                    locals: metadata.locals,
+                    results: metadata.results,
+                    parent_refs: [],
+                    issues: []
+                  }
                 };
+                
+                context.body = JSON.stringify(response);
                 context.status = 200;
               } else {
                 console.log(`No body received for flow ${uuid}.`);

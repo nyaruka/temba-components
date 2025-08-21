@@ -271,10 +271,11 @@ function extractDependenciesFromAction(action, dependencyMap, resultMap, nodeUui
           }
         } else {
           // Create new result
+          const categories = action.category ? [action.category] : ['All Responses'];
           resultMap.set(action.name, {
-            key: action.name.toLowerCase(),
+            key: action.name.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
             name: action.name,
-            categories: action.category ? [action.category] : [],
+            categories: categories,
             node_uuids: [nodeUuid]
           });
         }
@@ -288,14 +289,20 @@ function extractDependenciesFromRouter(router, dependencyMap, resultMap, nodeUui
   if (router.result_name && router.categories) {
     const existingResult = resultMap.get(router.result_name);
     if (existingResult) {
-      // Add this node to existing result
-      existingResult.node_uuids.push(nodeUuid);
+      // Add this node to existing result if not already present
+      if (!existingResult.node_uuids.includes(nodeUuid)) {
+        existingResult.node_uuids.push(nodeUuid);
+      }
     } else {
       // Create new result
+      const categories = router.categories.length > 0 
+        ? router.categories.map((cat) => cat.name)
+        : ['All Responses'];
+      
       const result = {
-        key: router.result_name,
+        key: router.result_name.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         name: router.result_name,
-        categories: router.categories.map((cat) => cat.name),
+        categories: categories,
         node_uuids: [nodeUuid]
       };
       resultMap.set(router.result_name, result);

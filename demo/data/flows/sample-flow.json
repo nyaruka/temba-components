@@ -259,11 +259,11 @@
             ]
           },
           {
+            "uuid": "b32fe165-e0cc-475c-a7c4-7f484fcce2f4",
             "type": "set_run_result",
-            "name": "Color",
-            "value": "Black",
-            "category": "",
-            "uuid": "b32fe165-e0cc-475c-a7c4-7f484fcce2f4"
+            "name": "Make",
+            "value": "Rivian",
+            "category": "Electric"
           },
           {
             "type": "add_input_labels",
@@ -807,7 +807,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 320,
+            "left": 220,
             "top": 0
           },
           "type": "execute_actions"
@@ -815,8 +815,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 240,
-            "top": 200
+            "left": 220,
+            "top": 220
           },
           "config": {
             "cases": {}
@@ -833,7 +833,7 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 220,
-            "top": 400
+            "top": 380
           },
           "type": "execute_actions"
         },
@@ -841,14 +841,14 @@
           "type": "split_by_subflow",
           "position": {
             "left": 480,
-            "top": 660
+            "top": 680
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 1020,
+            "left": 1060,
             "top": 220
           },
           "config": {
@@ -873,16 +873,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 940,
-            "top": 360
+            "left": 880,
+            "top": 400
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 800,
-            "top": 620
+            "left": 840,
+            "top": 660
           },
           "config": {
             "operand": {
@@ -896,8 +896,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 460,
-            "top": 360
+            "left": 480,
+            "top": 420
           },
           "config": {
             "cases": {}
@@ -907,7 +907,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 480,
-            "top": 500
+            "top": 540
           },
           "config": {
             "cases": {}
@@ -916,23 +916,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 480,
-            "top": 1060
+            "left": 460,
+            "top": 980
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
             "left": 780,
-            "top": 820
+            "top": 840
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 780,
-            "top": 960
+            "left": 820,
+            "top": 980
           },
           "config": {}
         }

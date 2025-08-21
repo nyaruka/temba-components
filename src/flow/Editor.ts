@@ -383,7 +383,18 @@ export class Editor extends RapidElement {
 
   private saveChanges(): void {
     // post the flow definition to the server
-    getStore().postJSON(`/flow/revisions/${this.flow}`, this.definition);
+    getStore()
+      .postJSON(`/flow/revisions/${this.flow}`, this.definition)
+      .then((response) => {
+        // Update flow info with the response data
+        if (response.json && response.json.info) {
+          getStore().getState().setFlowInfo(response.json.info);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to save flow:', error);
+      });
+
     getStore().getState().setDirtyDate(null);
   }
 
