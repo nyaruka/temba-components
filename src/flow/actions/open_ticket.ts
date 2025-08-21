@@ -47,16 +47,16 @@ export const open_ticket: ActionConfig = {
       minHeight: 100
     }
   },
-  layout: [
-    'topic',
-    'assignee', 
-    'note'
-  ],
+  layout: ['topic', 'assignee', 'note'],
   toFormData: (action: OpenTicket) => {
     return {
       uuid: action.uuid,
-      topic: action.topic ? [{ value: action.topic.uuid, name: action.topic.name }] : [],
-      assignee: action.assignee ? [{ value: action.assignee.uuid, name: action.assignee.name }] : [],
+      topic: action.topic
+        ? [{ value: action.topic.uuid, name: action.topic.name }]
+        : [],
+      assignee: action.assignee
+        ? [{ value: action.assignee.uuid, name: action.assignee.name }]
+        : [],
       note: action.note || ''
     };
   },
@@ -64,14 +64,20 @@ export const open_ticket: ActionConfig = {
     return {
       uuid: data.uuid,
       type: 'open_ticket',
-      topic: data.topic && data.topic.length > 0 ? {
-        uuid: data.topic[0].value,
-        name: data.topic[0].name
-      } : undefined,
-      assignee: data.assignee && data.assignee.length > 0 ? {
-        uuid: data.assignee[0].value,
-        name: data.assignee[0].name
-      } : undefined,
+      topic:
+        data.topic && data.topic.length > 0
+          ? {
+              uuid: data.topic[0].value,
+              name: data.topic[0].name
+            }
+          : undefined,
+      assignee:
+        data.assignee && data.assignee.length > 0
+          ? {
+              uuid: data.assignee[0].value,
+              name: data.assignee[0].name
+            }
+          : undefined,
       note: data.note || ''
     } as OpenTicket;
   }
