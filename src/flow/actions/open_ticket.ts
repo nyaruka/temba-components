@@ -47,10 +47,10 @@ export const open_ticket: ActionConfig = {
     return {
       uuid: action.uuid,
       topic: action.topic
-        ? [{ value: action.topic.uuid, name: action.topic.name }]
+        ? [{ uuid: action.topic.uuid, name: action.topic.name }]
         : [],
       assignee: action.assignee
-        ? [{ value: action.assignee.uuid, name: action.assignee.name }]
+        ? [{ uuid: action.assignee.uuid, name: action.assignee.name }]
         : [],
       note: action.note || ''
     };

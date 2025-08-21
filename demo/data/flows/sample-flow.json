@@ -755,10 +755,12 @@
             "uuid": "a7f21fc4-8bf1-47ab-a6c7-3e072f88afe7",
             "type": "open_ticket",
             "topic": {
-              "name": "Technical Support"
+              "uuid": "1b1cb507-e079-4b30-818c-1898edcbd178",
+              "name": "General"
             },
             "assignee": {
-              "name": "Sarah Smith"
+              "uuid": "ae79dd5b-8c34-4602-a2c1-1e4db2419f0f",
+              "name": "Eric Newcomer"
             },
             "note": ""
           }
