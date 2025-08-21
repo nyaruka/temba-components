@@ -39,6 +39,7 @@ export default {
             '/api/internal/templates.json': './static/api/templates.json',
             '/api/v2/media.json': './static/api/media.json',
             '/api/v2/users.json': './static/api/users.json',
+            '/api/v2/agents.json': './static/api/agents.json',
             '/api/v2/contacts.json': './static/api/contacts.json',
             '/api/v2/optins.json': './static/api/optins.json',
             '/api/v2/topics.json': './static/api/topics.json',

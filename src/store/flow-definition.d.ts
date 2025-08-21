@@ -178,8 +178,9 @@ export interface CallLLM extends Action {
 }
 
 export interface OpenTicket extends Action {
-  subject: string;
-  body: string;
+  subject?: string;
+  body?: string;
+  note?: string;
   assignee?: NamedObject;
   topic?: NamedObject;
 }

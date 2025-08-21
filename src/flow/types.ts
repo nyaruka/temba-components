@@ -108,7 +108,7 @@ export interface NodeConfig {
     operand?: string;
     configurable?: boolean; // can the rules be configured in the UI
     rules?: {
-      type: 'has_number_between' | 'has_string' | 'has_value' | 'has_not_value';
+      type: 'has_number_between' | 'has_string' | 'has_value' | 'has_not_value' | 'has_text';
       arguments: string[];
       categoryName: string;
     }[];
