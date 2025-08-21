@@ -505,7 +505,7 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Object })
   selection: any;
 
-  @property({ attribute: true })
+  @property({ attribute: false })
   getName: (option: any) => string = (option: any) => {
     return option[this.nameKey || 'name'];
   };
