@@ -41,7 +41,7 @@ describe('markdown', () => {
       };
 
       expect(() => new RenderMarkdown(invalidPartInfo as any)).to.throw(
-        'renderMarkdown only supports child expressions'
+        'markdown directives only support child expressions'
       );
     });
 

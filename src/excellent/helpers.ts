@@ -9,7 +9,7 @@ import {
   CompletionType
 } from '../interfaces';
 import { getStore, Store } from '../store/Store';
-import { renderMarkdown } from '../markdown';
+import { renderMarkdownInline } from '../markdown';
 
 const messageParser = new ExcellentParser('@', [
   'contact',
@@ -56,7 +56,7 @@ export const renderCompletionOption = (
               >
                 ${args}
               </div>
-              <div class="detail">${renderMarkdown(option.summary)}</div>
+              <div class="detail">${renderMarkdownInline(option.summary)}</div>
             `
           : null}
       </div>
