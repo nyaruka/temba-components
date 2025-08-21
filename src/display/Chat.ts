@@ -4,7 +4,7 @@ import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { hashCode } from '../utils';
-import { renderMarkdown } from '../markdown';
+import { renderMarkdownInline } from '../markdown';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 0.05;
@@ -764,7 +764,7 @@ export class Chat extends RapidElement {
       event.type === MessageType.Collapse ||
       event.type === MessageType.Inline
     ) {
-      return html`<div class="event">${renderMarkdown(event.text)}</div>`;
+      return html`<div class="event">${renderMarkdownInline(event.text)}</div>`;
     }
 
     const message = event as Message;

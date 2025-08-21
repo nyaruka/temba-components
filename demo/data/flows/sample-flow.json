@@ -14,20 +14,18 @@
             "type": "send_msg",
             "text": "What is your favorite color?! @contact.uuid. It works.",
             "attachments": [
+              "image/jpeg:http://localhost:9000/temba-attachments/c4e84ebf-fdd7-439b-a2ca-aeb5e54dfc1d-IMG_3245.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/e7d4d3cd-ec89-45c2-bc0b-4f652f1f7fde-IMG_3262.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/ae831575-0d23-40b7-ae0c-531b8775a6bc-IMG_3282.jpeg",
               "image/png:http://localhost:9000/temba-attachments/d7b04feb-c74e-43a4-a6de-6a4516a4de59-Screenshot 2025-08-19 at 10.23.24â¯AM.png",
-              "image/jpeg:http://localhost:9000/temba-attachments/d3bdb082-6dab-48ed-9598-f3a7f6b6b06d-IMG_3262.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/4b2addc0-da84-4d95-adc8-3580d6751e7c-IMG_3245.jpeg"
+              "image/jpeg:http://localhost:9000/temba-attachments/d3bdb082-6dab-48ed-9598-f3a7f6b6b06d-IMG_3262.jpeg"
             ],
             "quick_replies": [
               "Red",
-              "bink",
+              "Green",
               "Blue",
-              "Orange",
-              "Greenish",
-              "aaff",
-              "boop"
+              "Yellow",
+              "Purple"
             ]
           }
         ],
@@ -194,12 +192,12 @@
             "type": "send_msg",
             "text": "Excellent choices.",
             "attachments": [
-              "image:arst"
+              "image:@contact.profile_url"
             ],
             "quick_replies": [
-              "Cat",
-              "Watermelon",
-              "Cow"
+              "Red",
+              "Green",
+              "Blue"
             ]
           },
           {
@@ -679,8 +677,8 @@
             "type": "call_llm",
             "input": "@input",
             "llm": {
-              "uuid": "4399e7d6-fcdf-4e47-a835-f3bdb7f80938",
-              "name": "GPT 5"
+              "uuid": "a5f05e3e-4f9c-4f24-96ff-13676b82ac95",
+              "name": "GPT 4o"
             },
             "instructions": "Take this cat fact and expand on it. Embellish it with lies. Feel free to make up words or use phrasing to make it sound more scientific, but make sure not to use playful fake words based on furr, purr, kitten, etc. Your result should read as a statement of fact. Do not lead on that you made anything up. Your \"fact\" should not be able to be easily disproven. Your fact can range from one to three sentences. Try to keep it under 70 words."
           }
@@ -711,7 +709,7 @@
             }
           ],
           "default_category_uuid": "70f7f57b-d00e-4473-99b3-968b1ab60911",
-          "result_name": "llm_output"
+          "result_name": ""
         },
         "exits": [
           {
@@ -720,7 +718,7 @@
           },
           {
             "uuid": "3c3cccef-9865-4246-802f-90d9e76af9bf",
-            "destination_uuid": "21ff86c2-5276-4448-afb6-54d1f832ba0c"
+            "destination_uuid": null
           }
         ]
       },
@@ -809,7 +807,7 @@
       "nodes": {
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 220,
+            "left": 320,
             "top": 0
           },
           "type": "execute_actions"
@@ -817,7 +815,7 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 220,
+            "left": 240,
             "top": 200
           },
           "config": {
@@ -828,30 +826,30 @@
           "type": "split_by_webhook",
           "position": {
             "left": 840,
-            "top": 0
+            "top": 20
           },
           "config": {}
         },
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 220,
-            "top": 440
+            "top": 400
           },
           "type": "execute_actions"
         },
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 520,
-            "top": 680
+            "left": 480,
+            "top": 660
           },
           "config": {}
         },
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 1120,
-            "top": 180
+            "left": 1020,
+            "top": 220
           },
           "config": {
             "operand": {
@@ -865,8 +863,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 720,
-            "top": 240
+            "left": 760,
+            "top": 220
           },
           "config": {
             "cases": {}
@@ -875,7 +873,7 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 1020,
+            "left": 940,
             "top": 360
           },
           "config": null
@@ -883,8 +881,8 @@
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 820,
-            "top": 520
+            "left": 800,
+            "top": 620
           },
           "config": {
             "operand": {
@@ -898,8 +896,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 460,
-            "top": 380
+            "left": 480,
+            "top": 360
           },
           "config": {
             "cases": {}
@@ -909,7 +907,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 480,
-            "top": 560
+            "top": 500
           },
           "config": {
             "cases": {}
@@ -918,23 +916,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 540,
-            "top": 840
+            "left": 500,
+            "top": 980
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 800,
-            "top": 980
+            "left": 780,
+            "top": 840
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 540,
-            "top": 1140
+            "left": 820,
+            "top": 980
           },
           "config": {}
         }
@@ -961,7 +959,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1501": {
           "position": {
             "left": 0,
-            "top": 720
+            "top": 780
           },
           "title": "Green Note",
           "body": "They also come in green, do I like them better? Maybe I do. There is a standard height, they will have to get used to it.",

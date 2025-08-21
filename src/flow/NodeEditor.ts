@@ -14,6 +14,7 @@ import { LayoutItem, RowLayoutConfig, GroupLayoutConfig } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
+import { renderMarkdownInline } from '../markdown';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -1209,7 +1210,9 @@ export class NodeEditor extends RapidElement {
           <div class="form-group-info">
             <div class="form-group-title">${label}</div>
             ${helpText
-              ? html`<div class="form-group-help">${helpText}</div>`
+              ? html`<div class="form-group-help">
+                  ${renderMarkdownInline(helpText)}
+                </div>`
               : ''}
           </div>
           ${groupHasErrors

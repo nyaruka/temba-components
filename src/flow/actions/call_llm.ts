@@ -6,18 +6,16 @@ export const call_llm: ActionConfig = {
   name: 'Call AI',
   color: COLORS.call,
   render: (_node: Node, action: CallLLM) => {
-    const llmName = action.llm?.name || 'AI Service';
     return html`<div
-      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; max-width: 180px; max-height: 100px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;"
     >
-      ${llmName}
+      ${action.instructions}
     </div>`;
   },
   form: {
     llm: {
       type: 'select',
       required: true,
-      label: 'AI Model',
       options: [],
       endpoint: '/test-assets/select/llms.json',
       searchable: true,
@@ -37,7 +35,8 @@ export const call_llm: ActionConfig = {
       label: 'Tell the AI what to do with the input',
       evaluated: true,
       placeholder: 'Enter instructions for the AI model...',
-      minHeight: 130
+      minHeight: 130,
+      helpText: 'The result can be referenced as **`@locals._llm_output`**'
     }
   },
   layout: ['llm', 'input', 'instructions'],

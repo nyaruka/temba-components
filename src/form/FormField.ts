@@ -1,6 +1,6 @@
 import { TemplateResult, html, css, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
-import { renderMarkdown } from '../markdown';
+import { renderMarkdownInline } from '../markdown';
 
 /**
  * A small wrapper to display labels and help text in a smartmin style.
@@ -196,7 +196,7 @@ export class FormField extends LitElement {
     const errors = hasErrors
       ? this.errors.map((error: string) => {
           return html`
-            <div class="alert-error">${renderMarkdown(error)}</div>
+            <div class="alert-error">${renderMarkdownInline(error)}</div>
           `;
         })
       : [];
@@ -228,7 +228,7 @@ export class FormField extends LitElement {
         ${this.helpText && this.helpText !== 'None'
           ? html`
               <div class="help-text ${this.helpAlways ? 'help-always' : null}">
-                ${this.helpText}
+                ${renderMarkdownInline(this.helpText)}
               </div>
             `
           : null}

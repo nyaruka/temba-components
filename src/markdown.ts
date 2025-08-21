@@ -11,31 +11,39 @@ import { Remarkable } from 'remarkable';
 
 export const markdown = new Remarkable();
 
-// Class-based directive API
-export class RenderMarkdown extends Directive {
-  // State stored in class field
-  // value: string | undefined;
+// Base class for markdown rendering directives
+abstract class BaseMarkdownDirective extends Directive {
   constructor(partInfo: PartInfo) {
     super(partInfo);
     // When necessary, validate part in constructor using `part.type`
     if (partInfo.type !== PartType.CHILD) {
-      throw new Error('renderMarkdown only supports child expressions');
+      throw new Error('markdown directives only support child expressions');
     }
   }
+
   // Optional: override update to perform any direct DOM manipulation
-  // DirectiveParameters<this>
   update(part: Part, [initialValue]: any) {
     /* Any imperative updates to DOM/parts would go here */
     return this.render(initialValue);
   }
-  // Do SSR-compatible rendering (arguments are passed from call site)
+
+  // Abstract method to be implemented by subclasses
+  abstract render(initialValue: string): any;
+}
+
+// Class-based directive for block markdown rendering
+export class RenderMarkdown extends BaseMarkdownDirective {
   render(initialValue: string) {
-    // Previous state available on class field
-    //  if (this.value === undefined) {
-    // this.value = initialValue;
-    //}
     return html`${unsafeHTML(markdown.render(initialValue))}`;
   }
 }
 
+// Class-based directive for inline markdown rendering
+export class RenderMarkdownInline extends BaseMarkdownDirective {
+  render(initialValue: string) {
+    return html`${unsafeHTML(markdown.renderInline(initialValue))}`;
+  }
+}
+
 export const renderMarkdown = directive(RenderMarkdown);
+export const renderMarkdownInline = directive(RenderMarkdownInline);
