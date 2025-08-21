@@ -176,6 +176,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   nameKey?: string;
   endpoint?: string;
   emails?: boolean;
+  getName?: (item: any) => string;
   flavor?: 'small' | 'large';
 }
 

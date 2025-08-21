@@ -249,6 +249,7 @@ export class FieldRenderer {
         flavor="${flavor || config.flavor || 'small'}"
         class="${extraClasses}"
         style="${style}"
+        .getName=${config.getName}
         @change="${onChange || (() => {})}"
       >
         ${config.options?.map((option: any) => {
@@ -288,6 +289,7 @@ export class FieldRenderer {
       flavor="${flavor || config.flavor || 'small'}"
       class="${extraClasses}"
       style="${style}"
+      .getName=${config.getName}
       @change="${onChange || (() => {})}"
     >
       ${config.options?.map((option: any) => {

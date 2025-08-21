@@ -505,9 +505,10 @@ export class Select<T extends SelectOption> extends FormElement {
   @property({ type: Object })
   selection: any;
 
-  @property({ attribute: false })
-  getName: (option: any) => string = (option: any) =>
-    option[this.nameKey || 'name'];
+  @property({ attribute: true })
+  getName: (option: any) => string = (option: any) => {
+    return option[this.nameKey || 'name'];
+  };
 
   @property({ attribute: false })
   isMatch: (option: any, q: string) => boolean = this.isMatchDefault;
@@ -568,7 +569,7 @@ export class Select<T extends SelectOption> extends FormElement {
   private alphaSort = (a: any, b: any) => {
     // by default, all endpoint values are sorted by name
     if (this.endpoint) {
-      return this.getName(a).localeCompare(this.getName(b));
+      return this.getNameInternal(a).localeCompare(this.getNameInternal(b));
     }
     return 0;
   };
@@ -596,7 +597,7 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   public isMatchDefault(option: T, q: string) {
-    const name = this.getName(option) || '';
+    const name = this.getNameInternal(option) || '';
     return name.toLowerCase().indexOf(q) > -1;
   }
 
@@ -986,7 +987,9 @@ export class Select<T extends SelectOption> extends FormElement {
   }
 
   protected getNameInternal: (option: T) => string = (option: T) => {
-    return this.getName(option);
+    return this.getName
+      ? this.getName(option)
+      : option[this.nameKey || 'name'] || '';
   };
 
   private getOptionsDefault(response: WebResponse): any[] {
@@ -1516,7 +1519,7 @@ export class Select<T extends SelectOption> extends FormElement {
               name="${icon}"
               style="margin-right:0.5em;"
             ></temba-icon>`
-          : null}<span>${this.getName(option)}</span>
+          : null}<span>${this.getNameInternal(option)}</span>
       </div>
     `;
   }

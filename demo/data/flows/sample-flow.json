@@ -758,7 +758,7 @@
               "name": "General"
             },
             "assignee": {
-              "name": "Eric Newcomer"
+              "name": "Marion Berry"
             },
             "note": ""
           }
@@ -929,8 +929,8 @@
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 740,
-            "top": 980
+            "left": 780,
+            "top": 960
           },
           "config": {}
         }

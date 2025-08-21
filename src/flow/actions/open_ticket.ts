@@ -12,34 +12,37 @@ export const open_ticket: ActionConfig = {
     topic: {
       type: 'select',
       required: true,
-      label: 'Topic',
       placeholder: 'Select a topic',
       options: [],
       endpoint: '/api/v2/topics.json',
       valueKey: 'uuid',
-      nameKey: 'name'
+      nameKey: 'name',
+      maxWidth: '200px'
     },
     assignee: {
       type: 'select',
       required: false,
-      label: 'Assignee',
       placeholder: 'Select an agent (optional)',
       options: [],
-      endpoint: '/api/v2/agents.json',
+      endpoint: '/api/v2/users.json',
       valueKey: 'uuid',
-      nameKey: 'name',
-      searchable: true,
+      getName: (item: {
+        first_name?: string;
+        last_name?: string;
+        name?: string;
+      }) => {
+        return item.name || [item.first_name, item.last_name].join(' ');
+      },
       clearable: true
     },
     note: {
       type: 'textarea',
       required: false,
-      label: 'Note',
       placeholder: 'Enter a note for the ticket (optional)',
       minHeight: 100
     }
   },
-  layout: ['topic', 'assignee', 'note'],
+  layout: [{ type: 'row', items: ['topic', 'assignee'] }, 'note'],
   toFormData: (action: OpenTicket) => {
     return {
       uuid: action.uuid,
@@ -67,7 +70,11 @@ export const open_ticket: ActionConfig = {
         data.assignee && data.assignee.length > 0
           ? {
               uuid: data.assignee[0].value,
-              name: data.assignee[0].name
+              name:
+                data.assignee[0].name ||
+                [data.assignee[0].first_name, data.assignee[0].last_name].join(
+                  ' '
+                )
             }
           : undefined,
       note: data.note || ''
