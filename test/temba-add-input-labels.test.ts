@@ -3,6 +3,9 @@ import { html } from 'lit';
 import { NodeEditor } from '../src/flow/NodeEditor';
 import { AddInputLabels } from '../src/store/flow-definition';
 
+// Register the component
+customElements.define('temba-node-editor', NodeEditor);
+
 describe('add_input_labels action editor', () => {
   it('renders form editor for add_input_labels action', async () => {
     const action: AddInputLabels = {
