@@ -817,11 +817,6 @@
               "exit_uuid": "abbdcff7-4296-4f01-907f-f709fa4a1444"
             },
             {
-              "uuid": "f0085428-576c-45f8-90d8-b6560d0cdd30",
-              "name": "Fish",
-              "exit_uuid": "890f2256-f4fd-4f3c-b690-0cd48bce9492"
-            },
-            {
               "uuid": "7091cae1-2677-494a-967c-d9502476d4e4",
               "name": "Oyster",
               "exit_uuid": "377e720a-4815-4fa5-83cc-b6471765a9b4"
@@ -857,14 +852,6 @@
               "category_uuid": "4632b796-f8ab-4a35-80d1-a1b53a6db803"
             },
             {
-              "uuid": "f25f0371-ec13-4578-8dba-88c264f617be",
-              "type": "has_only_text",
-              "arguments": [
-                "Fish"
-              ],
-              "category_uuid": "f0085428-576c-45f8-90d8-b6560d0cdd30"
-            },
-            {
               "uuid": "87a8ccff-c153-4ff6-8a59-4d164b8bb2a8",
               "type": "has_only_text",
               "arguments": [
@@ -892,20 +879,16 @@
             "destination_uuid": null
           },
           {
-            "uuid": "890f2256-f4fd-4f3c-b690-0cd48bce9492",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
-          },
-          {
             "uuid": "377e720a-4815-4fa5-83cc-b6471765a9b4",
             "destination_uuid": null
           },
           {
             "uuid": "c7ecba49-7542-4862-a91a-9f2f8a10e222",
-            "destination_uuid": null
+            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
           },
           {
             "uuid": "3484a407-9e62-4a55-be44-a2290270000f",
-            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
+            "destination_uuid": null
           }
         ]
       }
@@ -914,8 +897,8 @@
       "nodes": {
         "145eb3d3-b841-4e66-abac-297ae525c7ad": {
           "position": {
-            "left": 860,
-            "top": 420
+            "left": 720,
+            "top": 500
           },
           "type": "split_by_llm_categorize"
         },
@@ -954,8 +937,8 @@
         "2c60c381-487d-42cd-80be-a31f44c36fd9": {
           "type": "split_by_subflow",
           "position": {
-            "left": 480,
-            "top": 640
+            "left": 460,
+            "top": 740
           },
           "config": {}
         },
@@ -987,16 +970,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 980,
-            "top": 300
+            "left": 1020,
+            "top": 360
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 760,
-            "top": 620
+            "left": 780,
+            "top": 660
           },
           "config": {
             "operand": {
@@ -1020,8 +1003,8 @@
         "e780a7ef-9dad-45a3-abda-11200a9afbf4": {
           "type": "split_by_scheme",
           "position": {
-            "left": 480,
-            "top": 500
+            "left": 460,
+            "top": 600
           },
           "config": {
             "cases": {}
@@ -1030,23 +1013,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 480,
-            "top": 800
+            "left": 460,
+            "top": 900
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 760,
-            "top": 740
+            "left": 780,
+            "top": 800
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 760,
-            "top": 860
+            "left": 780,
+            "top": 920
           },
           "config": {}
         }
@@ -1064,7 +1047,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1509": {
           "position": {
             "left": 0,
-            "top": 400
+            "top": 440
           },
           "title": "Blue Note",
           "body": "Did you know stickies can have different colors? I just realized that and I'm pretty happy to report that this expands really nicely. It seems to be working okay I think. This.",
@@ -1082,7 +1065,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1502": {
           "position": {
             "left": 0,
-            "top": 580
+            "top": 640
           },
           "title": "Pinky Note",
           "body": "This is a test. How much do I like writing in pink? Seems pretty nice honestly! I think Imma go with it",
@@ -1091,7 +1074,7 @@
         "598a87e4-f20b-48ba-aac5-bb365d8f1503": {
           "position": {
             "left": 0,
-            "top": 280
+            "top": 320
           },
           "title": "Gray Note",
           "body": "And a nice, little gray message to go with it.",
