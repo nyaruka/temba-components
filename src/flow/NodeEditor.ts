@@ -331,7 +331,7 @@ export class NodeEditor extends RapidElement {
   private initializeFormData(): void {
     const nodeConfig = this.getNodeConfig();
 
-    if ((!nodeConfig || nodeConfig.type === 'execute_actinos') && this.action) {
+    if ((!nodeConfig || nodeConfig.type === 'execute_actions') && this.action) {
       // Action editing mode - use action config
       const actionConfig = ACTION_CONFIG[this.action.type];
 
