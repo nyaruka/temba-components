@@ -561,8 +561,12 @@ export class NodeEditor extends RapidElement {
         Object.assign(errors, customValidation.errors);
       }
     } else if (this.node) {
-      // Node validation
       const nodeConfig = this.getNodeConfig();
+
+      if (nodeConfig.sanitize) {
+        nodeConfig.sanitize(this.formData);
+      }
+
       if (nodeConfig.validate) {
         const customValidation = nodeConfig.validate(this.formData);
         Object.assign(errors, customValidation.errors);
