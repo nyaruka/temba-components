@@ -25,7 +25,7 @@ export class ColorPicker extends FieldElement {
   static get styles() {
     return css`
       ${super.styles}
-      
+
       :host {
         color: var(--color-text);
         display: inline-block;
@@ -35,101 +35,101 @@ export class ColorPicker extends FieldElement {
         --temba-textinput-padding: 0.4em;
       }
 
-        temba-textinput {
-          margin-left: 0.3em;
-          width: 5em;
-        }
+      temba-textinput {
+        margin-left: 0.3em;
+        width: 5em;
+      }
 
-        .wrapper {
-          border: 1px solid var(--color-widget-border);
-          padding: calc(var(--curvature) / 2);
-          border-radius: calc(var(--curvature) * 1.5);
-          transition: all calc(var(--transition-speed) * 2) var(--bounce);
+      .wrapper {
+        border: 1px solid var(--color-widget-border);
+        padding: calc(var(--curvature) / 2);
+        border-radius: calc(var(--curvature) * 1.5);
+        transition: all calc(var(--transition-speed) * 2) var(--bounce);
 
-          display: flex;
-          flex-grow: 0;
-        }
+        display: flex;
+        flex-grow: 0;
+      }
 
-        .picker-wrapper {
-          display: flex;
-          flex-direction: row;
-          align-items: stretch;
-          transition: all calc(var(--transition-speed) * 2) var(--bounce);
-          flex-grow: 0;
-        }
+      .picker-wrapper {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        transition: all calc(var(--transition-speed) * 2) var(--bounce);
+        flex-grow: 0;
+      }
 
-        .preview {
-          width: initial;
-          border-radius: var(--curvature);
-          padding: 0.2em 0.5em;
-          font-weight: 400;
-          border: 2px solid rgba(0, 0, 0, 0.1);
-          white-space: nowrap;
-          cursor: pointer;
-          transition: transform calc(var(--transition-speed) * 0.5) var(--bounce);
-        }
+      .preview {
+        width: initial;
+        border-radius: var(--curvature);
+        padding: 0.2em 0.5em;
+        font-weight: 400;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: transform calc(var(--transition-speed) * 0.5) var(--bounce);
+      }
 
-        .preview.selecting {
-          transform: scale(1.05);
-        }
+      .preview.selecting {
+        transform: scale(1.05);
+      }
 
-        .wrapper.expanded {
-          flex-grow: 1 !important;
-        }
+      .wrapper.expanded {
+        flex-grow: 1 !important;
+      }
 
-        .wrapper.expanded .picker-wrapper {
-          flex-grow: 1 !important;
-        }
+      .wrapper.expanded .picker-wrapper {
+        flex-grow: 1 !important;
+      }
 
-        .wrapper.expanded .preview {
-          pointer-events: none;
-        }
+      .wrapper.expanded .preview {
+        pointer-events: none;
+      }
 
-        .wrapper.expanded .color-picker {
-          margin-left: calc(var(--curvature) / 2);
-        }
+      .wrapper.expanded .color-picker {
+        margin-left: calc(var(--curvature) / 2);
+      }
 
-        .wrapper.expanded temba-textinput {
-          display: block;
-        }
+      .wrapper.expanded temba-textinput {
+        display: block;
+      }
 
-        .color-picker {
-          border-radius: var(--curvature);
-          cursor: pointer;
-          transition: all calc(var(--transition-speed) * 2) var(--bounce);
-          flex-grow: 1;
-          position: relative;
-          width: 100%;
-          height: 100%;
-          background-image: linear-gradient(
-              to bottom,
-              rgba(0, 0, 0, 0) 60%,
-              rgba(0, 0, 0, 0.5) 90%,
-              rgba(0, 0, 0, 1)
-            ),
-            linear-gradient(
-              to top,
-              rgba(255, 255, 255, 0) 60%,
-              rgba(255, 255, 255, 0.8) 90%,
-              rgba(255, 255, 255, 1)
-            ),
-            linear-gradient(
-              to right,
-              hsla(0, 100%, 50%, 1),
-              hsla(60, 100%, 50%, 1),
-              hsla(120, 100%, 50%, 1),
-              hsla(180, 100%, 50%, 1),
-              hsla(240, 100%, 50%, 1),
-              hsla(300, 100%, 50%, 1),
-              hsla(360, 100%, 50%, 1)
-            );
-          mix-blend-mode: multiply;
-        }
+      .color-picker {
+        border-radius: var(--curvature);
+        cursor: pointer;
+        transition: all calc(var(--transition-speed) * 2) var(--bounce);
+        flex-grow: 1;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0) 60%,
+            rgba(0, 0, 0, 0.5) 90%,
+            rgba(0, 0, 0, 1)
+          ),
+          linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0) 60%,
+            rgba(255, 255, 255, 0.8) 90%,
+            rgba(255, 255, 255, 1)
+          ),
+          linear-gradient(
+            to right,
+            hsla(0, 100%, 50%, 1),
+            hsla(60, 100%, 50%, 1),
+            hsla(120, 100%, 50%, 1),
+            hsla(180, 100%, 50%, 1),
+            hsla(240, 100%, 50%, 1),
+            hsla(300, 100%, 50%, 1),
+            hsla(360, 100%, 50%, 1)
+          );
+        mix-blend-mode: multiply;
+      }
 
-        .color-picker:focus {
-          outline: none;
-        }
-      `;
+      .color-picker:focus {
+        outline: none;
+      }
+    `;
   }
 
   protected firstUpdated(

@@ -2,7 +2,7 @@ import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { Modax } from '../layout/Modax';
 import { sanitizeUnintendedUnicode } from '../utils';
 import { CharCount } from '../display/CharCount';
@@ -13,7 +13,7 @@ export enum InputType {
   Number = 'number'
 }
 
-export class TextInput extends FormElement {
+export class TextInput extends FieldElement {
   static get styles() {
     return css`
       .input-container {
@@ -368,9 +368,15 @@ export class TextInput extends FormElement {
 
   // TODO make this a formelement and have contactsearch set the root
   public render(): TemplateResult {
-    const containerStyle = {
-      height: `${this.textarea ? '100%' : 'auto'}`
-    };
+    return this.renderField();
+  }
+
+  protected renderWidget() {
+    const containerStyle: any = {};
+    if (this.counter) {
+      containerStyle['--counter-background'] =
+        'var(--color-widget-border, transparent)';
+    }
 
     const clear =
       this.clearable && this.inputElement && this.inputElement.value
@@ -474,31 +480,21 @@ export class TextInput extends FormElement {
     }
 
     return html`
-      <temba-field
-        name=${this.name}
-        .label="${this.label}"
-        .helpText="${this.helpText}"
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .hideLabel=${this.hideLabel}
-        .disabled=${this.disabled}
+      <div
+        class="input-container"
+        style=${styleMap(containerStyle)}
+        @click=${this.handleContainerClick}
       >
-        <div
-          class="input-container"
-          style=${styleMap(containerStyle)}
-          @click=${this.handleContainerClick}
-        >
-          <slot name="prefix"></slot>
+        <slot name="prefix"></slot>
 
-          ${input} ${clear}
-          <slot name="type" class="type-icon"
-            >${this.type === InputType.Number
-              ? html`<temba-icon name="number"></temba-icon>`
-              : null}</slot
-          >
-          <slot></slot>
-        </div>
-      </temba-field>
+        ${input} ${clear}
+        <slot name="type" class="type-icon"
+          >${this.type === InputType.Number
+            ? html`<temba-icon name="number"></temba-icon>`
+            : null}</slot
+        >
+        <slot></slot>
+      </div>
     `;
   }
 }
