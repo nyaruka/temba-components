@@ -550,6 +550,70 @@ describe('split_by_llm_categorize node config', () => {
     });
   });
 
+  describe('validation', () => {
+    it('should validate duplicate category names', () => {
+      const formData = {
+        uuid: 'test-node-uuid',
+        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        input: '@input',
+        categories: [
+          { name: 'Category1' },
+          { name: 'Category2' },
+          { name: 'Category1' }, // duplicate
+          { name: 'category2' }, // case insensitive duplicate
+          { name: 'Category3' }
+        ]
+      };
+
+      const validationResult = split_by_llm_categorize.validate!(formData);
+
+      expect(validationResult.valid).to.be.false;
+      expect(validationResult.errors.categories).to.include(
+        'Duplicate category names found'
+      );
+      expect(validationResult.errors.categories).to.include('Category1');
+      expect(validationResult.errors.categories).to.include('Category2');
+      expect(validationResult.errors.categories).to.include('category2');
+    });
+
+    it('should pass validation with unique category names', () => {
+      const formData = {
+        uuid: 'test-node-uuid',
+        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        input: '@input',
+        categories: [
+          { name: 'Category1' },
+          { name: 'Category2' },
+          { name: 'Category3' }
+        ]
+      };
+
+      const validationResult = split_by_llm_categorize.validate!(formData);
+
+      expect(validationResult.valid).to.be.true;
+      expect(Object.keys(validationResult.errors)).to.have.length(0);
+    });
+
+    it('should ignore empty categories in validation', () => {
+      const formData = {
+        uuid: 'test-node-uuid',
+        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        input: '@input',
+        categories: [
+          { name: 'Category1' },
+          { name: '' }, // empty
+          { name: '   ' }, // whitespace only
+          { name: 'Category2' }
+        ]
+      };
+
+      const validationResult = split_by_llm_categorize.validate!(formData);
+
+      expect(validationResult.valid).to.be.true;
+      expect(Object.keys(validationResult.errors)).to.have.length(0);
+    });
+  });
+
   describe('JSON output verification', () => {
     it('generates JSON matching the exact format from the issue', () => {
       const formData = {

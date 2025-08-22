@@ -239,10 +239,6 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       flex: 1;
     }
 
-    .field:first-child {
-      flex: 0 0 140px; /* Fixed width for type dropdown */
-    }
-
     .field label {
       display: block;
       margin-bottom: 4px;

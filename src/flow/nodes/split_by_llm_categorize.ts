@@ -33,7 +33,7 @@ export const split_by_llm_categorize: NodeConfig = {
       required: true,
       itemLabel: 'Category',
       minItems: 1,
-      maxItems: 20,
+      maxItems: 10,
       isEmptyItem: (item: any) => {
         return !item.name || item.name.trim() === '';
       },
@@ -47,6 +47,48 @@ export const split_by_llm_categorize: NodeConfig = {
     }
   },
   layout: ['llm', 'input', 'categories'],
+  validate: (formData: any) => {
+    const errors: { [key: string]: string } = {};
+
+    // Check for duplicate category names
+    if (formData.categories && Array.isArray(formData.categories)) {
+      const categories = formData.categories.filter(
+        (item: any) => item?.name && item.name.trim() !== ''
+      );
+
+      // Find all categories that have duplicates (case-insensitive)
+      const duplicateCategories = [];
+      const lowerCaseMap = new Map();
+
+      // First pass: map lowercase names to all original cases
+      categories.forEach((category) => {
+        const lowerName = category.name.trim().toLowerCase();
+        if (!lowerCaseMap.has(lowerName)) {
+          lowerCaseMap.set(lowerName, []);
+        }
+        lowerCaseMap.get(lowerName).push(category.name.trim());
+      });
+
+      // Second pass: collect all names that appear more than once
+      lowerCaseMap.forEach((originalNames) => {
+        if (originalNames.length > 1) {
+          duplicateCategories.push(...originalNames);
+        }
+      });
+
+      if (duplicateCategories.length > 0) {
+        const uniqueDuplicates = [...new Set(duplicateCategories)];
+        errors.categories = `Duplicate category names found: ${uniqueDuplicates.join(
+          ', '
+        )}`;
+      }
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  },
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
       (action) => action.type === 'call_llm'

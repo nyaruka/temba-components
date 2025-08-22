@@ -352,9 +352,7 @@ export class FieldRenderer {
     } = context;
 
     return html`<div class="form-field">
-      ${showLabel
-        ? html`<label>${config.label}${config.required ? ' *' : ''}</label>`
-        : ''}
+      ${showLabel ? html`<label>${config.label}</label>` : ''}
       <temba-key-value-editor
         name="${fieldName}"
         .value="${value || []}"
@@ -387,9 +385,7 @@ export class FieldRenderer {
     } = context;
 
     return html`<div class="form-field">
-      ${showLabel
-        ? html`<label>${config.label}${config.required ? ' *' : ''}</label>`
-        : ''}
+      ${showLabel ? html`<label>${config.label}</label>` : ''}
       <temba-array-editor
         .value="${value || []}"
         .itemConfig="${config.itemConfig}"
