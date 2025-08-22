@@ -266,15 +266,32 @@
             "category": "Electric"
           },
           {
+            "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472",
             "type": "add_input_labels",
             "labels": [
               {
                 "uuid": "61cae99b-56e1-4f3e-a2b9-07fb5cf2be9e",
+                "name": "Important",
+                "count": 234
+              },
+              {
+                "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
                 "name": "Spam",
                 "count": 0
+              },
+              {
+                "name": "My Fake Label",
+                "value": "temp-1755821544311-5jwapsc5q",
+                "uuid": "temp-1755821544311-ib41f0qtl",
+                "arbitrary": true
+              },
+              {
+                "name": "Another",
+                "value": "temp-1755821556729-07d27g0d7",
+                "uuid": "temp-1755821556729-0pq70cecm",
+                "arbitrary": true
               }
-            ],
-            "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472"
+            ]
           },
           {
             "uuid": "28c288f3-fb46-4c32-8a47-563132a2e8db",
@@ -873,7 +890,8 @@
         },
         "exits": [
           {
-            "uuid": "33712037-9861-4d61-9dcb-60d7fffef96a"
+            "uuid": "33712037-9861-4d61-9dcb-60d7fffef96a",
+            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
           },
           {
             "uuid": "fdd988ba-34c1-45a8-8413-e89b0a36001e"

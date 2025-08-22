@@ -32,6 +32,7 @@ export default {
           // Map API endpoints to static files
           const apiMappings = {
             '/api/v2/groups.json': './static/api/groups.json',
+            '/api/v2/labels.json': './static/api/labels.json',
             '/api/v2/fields.json': './static/api/fields.json', 
             '/api/v2/globals.json': './static/api/globals.json',
             '/api/v2/completion.json': './static/mr/docs/en-us/editor.json',
