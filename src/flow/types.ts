@@ -178,6 +178,8 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   emails?: boolean;
   getName?: (item: any) => string;
   flavor?: 'small' | 'large';
+  createArbitraryOption?: (input: string, options: any[]) => any;
+  allowCreate?: boolean;
 }
 
 export interface KeyValueFieldConfig extends BaseFieldConfig {

@@ -335,7 +335,7 @@ export class Select<T extends SelectOption> extends FormElement {
       .small {
         --temba-select-selected-padding: 6px;
         --temba-select-selected-line-height: 12px;
-        --temba-select-selected-font-size: 12px;
+        --temba-select-selected-font-size: 14px;
         --temba-select-min-height: 2.28em;
       }
 

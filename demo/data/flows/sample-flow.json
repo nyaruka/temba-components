@@ -201,6 +201,24 @@
             ]
           },
           {
+            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
+            "type": "add_contact_groups",
+            "groups": [
+              {
+                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
+                "name": "Empty",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              },
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Some Really Long Group Name",
+                "count": 2028
+              }
+            ]
+          },
+          {
             "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
             "type": "remove_contact_groups",
             "groups": [
@@ -241,40 +259,27 @@
             "all_groups": false
           },
           {
-            "uuid": "d1ca86da-f321-4e09-8bb2-981de03f5a90",
-            "type": "add_contact_groups",
-            "groups": [
-              {
-                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
-                "name": "Empty",
-                "query": null,
-                "status": "ready",
-                "count": 0
-              },
-              {
-                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
-                "name": "Some Really Long Group Name",
-                "count": 2028
-              }
-            ]
-          },
-          {
+            "uuid": "b32fe165-e0cc-475c-a7c4-7f484fcce2f4",
             "type": "set_run_result",
-            "name": "Color",
-            "value": "Black",
-            "category": "",
-            "uuid": "b32fe165-e0cc-475c-a7c4-7f484fcce2f4"
+            "name": "Make",
+            "value": "Rivian",
+            "category": "Electric"
           },
           {
+            "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472",
             "type": "add_input_labels",
             "labels": [
               {
                 "uuid": "61cae99b-56e1-4f3e-a2b9-07fb5cf2be9e",
-                "name": "Spam",
-                "count": 0
+                "name": "Important",
+                "count": 234
+              },
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Follow Up",
+                "count": 128
               }
-            ],
-            "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472"
+            ]
           },
           {
             "uuid": "28c288f3-fb46-4c32-8a47-563132a2e8db",
@@ -413,11 +418,11 @@
         "exits": [
           {
             "uuid": "7bda8b65-f797-4377-ba93-c92566e87c2e",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": null
           },
           {
             "uuid": "2361f0e4-9ad8-4db3-ba37-d7fb02726307",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": null
           }
         ]
       },
@@ -442,11 +447,11 @@
         "exits": [
           {
             "uuid": "ec491209-44e9-417c-aea7-ca665e9d8441",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": null
           },
           {
             "uuid": "bdf64af3-8585-45ce-a3ba-10aab8dcc4fd",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": null
           }
         ]
       },
@@ -801,13 +806,105 @@
             "destination_uuid": null
           }
         ]
+      },
+      {
+        "uuid": "145eb3d3-b841-4e66-abac-297ae525c7ad",
+        "actions": [
+          {
+            "type": "call_llm",
+            "uuid": "3cd8f2db-8429-462e-ab93-8041dd23abf1",
+            "llm": {
+              "uuid": "1c06c884-39dd-4ce4-ad9f-9a01cbe6c000",
+              "name": "Claude"
+            },
+            "instructions": "@(prompt(\"categorize\", slice(node.categories, 0, -2)))",
+            "input": "@input",
+            "output_local": "_llm_output"
+          }
+        ],
+        "router": {
+          "type": "switch",
+          "categories": [
+            {
+              "uuid": "6103fa71-6ca9-4300-aec6-929f50fa1ae0",
+              "name": "Flights",
+              "exit_uuid": "33712037-9861-4d61-9dcb-60d7fffef96a"
+            },
+            {
+              "uuid": "bcb18434-1932-4a38-a4cd-a2c4a70b8e9a",
+              "name": "Hotels",
+              "exit_uuid": "fdd988ba-34c1-45a8-8413-e89b0a36001e"
+            },
+            {
+              "uuid": "a766ac1a-766f-4ce5-be4c-a24061bfdec0",
+              "name": "Other",
+              "exit_uuid": "bbcb0d26-a8c4-48f7-9d39-eeb202d09876"
+            },
+            {
+              "uuid": "e86a60b9-6e8e-4150-9ab9-19e6eb7003d9",
+              "name": "Failure",
+              "exit_uuid": "959d6e4c-658a-49fc-a80d-5ed7df5af640"
+            }
+          ],
+          "default_category_uuid": "a766ac1a-766f-4ce5-be4c-a24061bfdec0",
+          "operand": "@locals._llm_output",
+          "result_name": "Intent",
+          "cases": [
+            {
+              "uuid": "d2f852ec-7b4e-457f-ae7f-f8b243c49ff5",
+              "type": "has_only_text",
+              "arguments": [
+                "Flights"
+              ],
+              "category_uuid": "6103fa71-6ca9-4300-aec6-929f50fa1ae0"
+            },
+            {
+              "uuid": "692926ea-09d6-4942-bd38-d266ec8d3716",
+              "type": "has_only_text",
+              "arguments": [
+                "Hotels"
+              ],
+              "category_uuid": "bcb18434-1932-4a38-a4cd-a2c4a70b8e9a"
+            },
+            {
+              "uuid": "73bfb9dc-9bbb-4928-92fd-d8957edf4a92",
+              "type": "has_only_text",
+              "arguments": [
+                "<ERROR>"
+              ],
+              "category_uuid": "e86a60b9-6e8e-4150-9ab9-19e6eb7003d9"
+            }
+          ]
+        },
+        "exits": [
+          {
+            "uuid": "33712037-9861-4d61-9dcb-60d7fffef96a",
+            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+          },
+          {
+            "uuid": "fdd988ba-34c1-45a8-8413-e89b0a36001e"
+          },
+          {
+            "uuid": "bbcb0d26-a8c4-48f7-9d39-eeb202d09876"
+          },
+          {
+            "uuid": "959d6e4c-658a-49fc-a80d-5ed7df5af640"
+          }
+        ]
       }
     ],
     "_ui": {
       "nodes": {
+        "145eb3d3-b841-4e66-abac-297ae525c7ad": {
+          "position": {
+            "left": 780,
+            "top": 440
+          },
+          "type": "split_by_llm_categorize"
+        },
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 320,
+            "left": 260,
             "top": 0
           },
           "type": "execute_actions"
@@ -815,8 +912,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 240,
-            "top": 200
+            "left": 260,
+            "top": 220
           },
           "config": {
             "cases": {}
@@ -833,7 +930,7 @@
         "4efc49e0-ebfe-454d-a1a0-900a911dd5ef": {
           "position": {
             "left": 220,
-            "top": 400
+            "top": 380
           },
           "type": "execute_actions"
         },
@@ -841,7 +938,7 @@
           "type": "split_by_subflow",
           "position": {
             "left": 480,
-            "top": 660
+            "top": 680
           },
           "config": {}
         },
@@ -849,7 +946,7 @@
           "type": "split_by_contact_field",
           "position": {
             "left": 1020,
-            "top": 220
+            "top": 140
           },
           "config": {
             "operand": {
@@ -863,8 +960,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 760,
-            "top": 220
+            "left": 740,
+            "top": 200
           },
           "config": {
             "cases": {}
@@ -873,16 +970,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 940,
-            "top": 360
+            "left": 820,
+            "top": 300
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 800,
-            "top": 620
+            "left": 740,
+            "top": 720
           },
           "config": {
             "operand": {
@@ -896,8 +993,8 @@
         "5f1394c1-4b8c-4357-8863-db24817b2aa3": {
           "type": "split_by_groups",
           "position": {
-            "left": 460,
-            "top": 360
+            "left": 480,
+            "top": 420
           },
           "config": {
             "cases": {}
@@ -907,7 +1004,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 480,
-            "top": 500
+            "top": 540
           },
           "config": {
             "cases": {}
@@ -916,23 +1013,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 480,
-            "top": 1060
+            "left": 460,
+            "top": 980
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
             "left": 780,
-            "top": 820
+            "top": 840
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 780,
-            "top": 960
+            "left": 820,
+            "top": 980
           },
           "config": {}
         }

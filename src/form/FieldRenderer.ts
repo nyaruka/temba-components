@@ -248,6 +248,8 @@ export class FieldRenderer {
         class="${extraClasses}"
         style="${style}"
         .getName=${config.getName}
+        .createArbitraryOption=${config.createArbitraryOption}
+        ?allowCreate="${config.allowCreate || false}"
         @change="${onChange || (() => {})}"
       >
         ${config.options?.map((option: any) => {
@@ -287,6 +289,8 @@ export class FieldRenderer {
       class="${extraClasses}"
       style="${style}"
       .getName=${config.getName}
+      .createArbitraryOption=${config.createArbitraryOption}
+      ?allowCreate="${config.allowCreate || false}"
       @change="${onChange || (() => {})}"
     >
       ${config.options?.map((option: any) => {

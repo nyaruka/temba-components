@@ -61,7 +61,7 @@
     --color-text-light: rgba(255, 255, 255, 1);
     --color-text-dark: rgba(0, 0, 0, 0.8);
     --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
-    --color-text-help: rgba(0, 0, 0, 0.35);
+    --color-text-help: rgb(120, 120, 120);
     --color-tertiary: rgb(var(--tertiary-rgb));
 
     --help-text-size: 0.85em;
@@ -125,8 +125,8 @@
     --header-bg: var(--color-primary-dark);
     --header-text: var(--color-text-light);
 
-    --temba-textinput-padding: 9px;
-    --temba-textinput-font-size: 13px;
+    --temba-textinput-padding: 9px 14px;
+    --temba-textinput-font-size: 14px;
 
     --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
     --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
