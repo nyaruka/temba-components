@@ -8,6 +8,8 @@ import '../temba-modules';
 /**
  * Generic action test framework
  * Tests the complete action lifecycle: render → edit → save → validate
+ *
+ * For node configuration testing, see NodeHelper.ts
  */
 export class ActionTest<T extends Action> {
   constructor(private actionConfig: any, private actionName: string) {}
