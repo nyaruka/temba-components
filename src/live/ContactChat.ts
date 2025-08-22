@@ -54,6 +54,8 @@ export enum Events {
   MESSAGE_RECEIVED = 'msg_received',
   BROADCAST_CREATED = 'broadcast_created',
   IVR_CREATED = 'ivr_created',
+  CALL_CREATED = 'call_created',
+  CALL_RECEIVED = 'call_received',
   CONTACT_FIELD_CHANGED = 'contact_field_changed',
   CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
   CONTACT_NAME_CHANGED = 'contact_name_changed',
@@ -61,7 +63,6 @@ export enum Events {
   CHANNEL_EVENT = 'channel_event',
   CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
   AIRTIME_TRANSFERRED = 'airtime_transferred',
-  CALL_STARTED = 'call_started',
   NOTE_CREATED = 'note_created',
   TICKET_ASSIGNED = 'ticket_assigned',
   TICKET_NOTE_ADDED = 'ticket_note_added',
@@ -74,6 +75,7 @@ export enum Events {
   RUN_ENDED = 'run_ended',
 
   // deprecated
+  CALL_STARTED = 'call_started',
   FLOW_ENTERED = 'flow_entered',
   FLOW_EXITED = 'flow_exited'
 }
@@ -214,8 +216,8 @@ export const renderAirtimeTransferredEvent = (
   return `Transferred **${event.amount}** ${event.currency} of airtime`;
 };
 
-export const renderCallStartedEvent = (): string => {
-  return `Call Started`;
+export const renderCallEvent = (action: string): string => {
+  return `Call ${action}`;
 };
 
 export const renderContactLanguageChangedEvent = (
@@ -694,10 +696,17 @@ export class ContactChat extends ContactStoreElement {
           text: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent)
         };
         break;
+      case Events.CALL_CREATED:
       case Events.CALL_STARTED:
         message = {
           type: MessageType.Inline,
-          text: renderCallStartedEvent()
+          text: renderCallEvent(`Started`)
+        };
+        break;
+      case Events.CALL_RECEIVED:
+        message = {
+          type: MessageType.Inline,
+          text: renderCallEvent(`Answered`)
         };
         break;
       case Events.CHANNEL_EVENT:
