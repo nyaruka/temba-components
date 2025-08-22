@@ -31,6 +31,7 @@ export const add_input_labels: ActionConfig = {
       valueKey: 'uuid',
       nameKey: 'name',
       placeholder: 'Search for labels or type to create new ones...',
+      allowCreate: true,
       createArbitraryOption: (input: string, options: any[]) => {
         // Check if a label with this name already exists
         const existing = options.find(
@@ -38,15 +39,8 @@ export const add_input_labels: ActionConfig = {
             option.name.toLowerCase().trim() === input.toLowerCase().trim()
         );
         if (!existing && input.trim()) {
-          // Generate a temporary UUID for new labels
           return {
             name: input.trim(),
-            value: `temp-${Date.now()}-${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
-            uuid: `temp-${Date.now()}-${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
             arbitrary: true
           };
         }

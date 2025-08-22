@@ -275,21 +275,9 @@
                 "count": 234
               },
               {
-                "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
-                "name": "Spam",
-                "count": 0
-              },
-              {
-                "name": "My Fake Label",
-                "value": "temp-1755821544311-5jwapsc5q",
-                "uuid": "temp-1755821544311-ib41f0qtl",
-                "arbitrary": true
-              },
-              {
-                "name": "Another",
-                "value": "temp-1755821556729-07d27g0d7",
-                "uuid": "temp-1755821556729-0pq70cecm",
-                "arbitrary": true
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Follow Up",
+                "count": 128
               }
             ]
           },

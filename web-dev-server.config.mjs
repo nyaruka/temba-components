@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Import the shared flow info generator and Minio functionality
-import { generateFlowInfo, handleMinioUpload } from './web-dev-mock.mjs';
+import { generateFlowInfo, handleMinioUpload, handleLabelCreation } from './web-dev-mock.mjs';
 
 const replacePlugin = fromRollup(replace);
 
@@ -61,6 +61,11 @@ export default {
         // Handle minio file uploads for media
         if (context.request.method === 'POST' && context.path === '/api/v2/media.json') {
           return handleMinioUpload(context);
+        }
+
+        // Handle label creation
+        if (context.request.method === 'POST' && context.path === '/api/v2/labels.json') {
+          return handleLabelCreation(context);
         }
       }
     },

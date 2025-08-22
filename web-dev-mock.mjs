@@ -1,6 +1,7 @@
 import { Client as MinioClient } from 'minio';
 import busboy from 'busboy';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 
 /**
  * Generates FlowInfo dynamically from a FlowDefinition
@@ -436,5 +437,87 @@ export function handleMinioUpload(context) {
       });
       resolve();
     }
+  });
+}
+
+// Handle label creation for the labels API
+export function handleLabelCreation(context) {
+  return new Promise((resolve) => {
+    let body = '';
+    
+    context.req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    context.req.on('end', () => {
+      try {
+        const requestData = JSON.parse(body);
+        const labelName = requestData.name || '';
+        
+        if (!labelName.trim()) {
+          context.status = 400;
+          context.body = JSON.stringify({ error: 'Label name is required' });
+          resolve();
+          return;
+        }
+        
+        // Read existing labels file
+        const labelsPath = './static/api/labels.json';
+        let labelsData;
+        
+        try {
+          labelsData = JSON.parse(fs.readFileSync(labelsPath, 'utf-8'));
+        } catch (error) {
+          // If file doesn't exist, create basic structure
+          labelsData = {
+            next: null,
+            previous: null,
+            results: []
+          };
+        }
+        
+        // Check if label already exists
+        const existingLabel = labelsData.results.find(
+          label => label.name.toLowerCase() === labelName.trim().toLowerCase()
+        );
+        
+        if (existingLabel) {
+          // Return existing label
+          context.contentType = 'application/json';
+          context.body = JSON.stringify(existingLabel);
+          resolve();
+          return;
+        }
+        
+        // Create new label with UUID
+        const newLabel = {
+          uuid: uuidv4(),
+          name: labelName.trim(),
+          count: 0
+        };
+        
+        // Add to labels data
+        labelsData.results.push(newLabel);
+        
+        // Write back to file
+        fs.writeFileSync(labelsPath, JSON.stringify(labelsData, null, 2));
+        
+        // Return the new label
+        context.contentType = 'application/json';
+        context.body = JSON.stringify(newLabel);
+        
+        console.log('📝 Label created:', newLabel);
+        
+      } catch (error) {
+        console.error('Label creation error:', error);
+        context.status = 500;
+        context.body = JSON.stringify({ 
+          error: 'Label creation failed',
+          details: error.message 
+        });
+      }
+      
+      resolve();
+    });
   });
 }
