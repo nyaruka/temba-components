@@ -112,11 +112,11 @@
           },
           {
             "uuid": "59a22734-24ab-4ff4-b6a9-ee6e66431d4b",
-            "destination_uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef"
+            "destination_uuid": null
           },
           {
             "uuid": "3dfd68c4-0184-49d8-b2a4-0bbb62425f33",
-            "destination_uuid": "425c4757-bead-440f-92aa-a1cc3fcd7d35"
+            "destination_uuid": null
           },
           {
             "uuid": "ae901cf0-f7a1-491c-a56a-1922e242efa0",
@@ -212,51 +212,13 @@
                 "count": 0
               },
               {
-                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
-                "name": "Some Really Long Group Name",
-                "count": 2028
-              }
-            ]
-          },
-          {
-            "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
-            "type": "remove_contact_groups",
-            "groups": [
-              {
                 "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
                 "name": "Reporters",
                 "query": null,
                 "status": "ready",
                 "count": 0
-              },
-              {
-                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
-                "name": "Empty",
-                "query": null,
-                "status": "ready",
-                "count": 0
-              },
-              {
-                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
-                "name": "Some Really Long Group Name",
-                "count": 2028
-              },
-              {
-                "uuid": "66e7a094-22ea-441d-91c4-283d8168e8e4",
-                "name": "The Poots",
-                "query": "name ~ \"poots\" OR name ~ \"dave\"",
-                "status": "ready",
-                "count": 1028
-              },
-              {
-                "uuid": "94e3ff12-9206-4ce8-87ab-934a864a1819",
-                "name": "Youth",
-                "query": "age <= 18",
-                "status": "ready",
-                "count": 174
               }
-            ],
-            "all_groups": false
+            ]
           },
           {
             "uuid": "b32fe165-e0cc-475c-a7c4-7f484fcce2f4",
@@ -264,6 +226,20 @@
             "name": "Make",
             "value": "Rivian",
             "category": "Electric"
+          },
+          {
+            "uuid": "ffe1c2d3-4e5f-6a7b-8c9d-e0f1a2b3c4d5",
+            "type": "remove_contact_groups",
+            "groups": [
+              {
+                "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
+                "name": "Empty",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              }
+            ],
+            "all_groups": false
           },
           {
             "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472",
@@ -278,6 +254,11 @@
                 "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
                 "name": "Follow Up",
                 "count": 128
+              },
+              {
+                "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
+                "name": "Spam",
+                "count": 0
               }
             ]
           },
@@ -340,7 +321,7 @@
         "exits": [
           {
             "uuid": "99fbc988-714e-4ea8-bf93-5bdaf397b37c",
-            "destination_uuid": "2c60c381-487d-42cd-80be-a31f44c36fd9"
+            "destination_uuid": null
           }
         ]
       },
@@ -447,7 +428,7 @@
         "exits": [
           {
             "uuid": "ec491209-44e9-417c-aea7-ca665e9d8441",
-            "destination_uuid": null
+            "destination_uuid": "145eb3d3-b841-4e66-abac-297ae525c7ad"
           },
           {
             "uuid": "bdf64af3-8585-45ce-a3ba-10aab8dcc4fd",
@@ -670,7 +651,7 @@
           },
           {
             "uuid": "e3314f8b-5598-4592-b5f9-2999c4a28a4f",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": null
           }
         ]
       },
@@ -719,7 +700,7 @@
         "exits": [
           {
             "uuid": "9285a0af-c70e-4945-9829-e620069830d2",
-            "destination_uuid": "425c4757-bead-440f-92aa-a1cc3fcd7d35"
+            "destination_uuid": null
           },
           {
             "uuid": "3c3cccef-9865-4246-802f-90d9e76af9bf",
@@ -799,7 +780,7 @@
         "exits": [
           {
             "uuid": "2505556e-3c87-4992-91e3-1cedd95dce72",
-            "destination_uuid": "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8"
+            "destination_uuid": null
           },
           {
             "uuid": "4cf706ff-1888-4682-b844-d3ed3386bdbb",
@@ -812,10 +793,10 @@
         "actions": [
           {
             "type": "call_llm",
-            "uuid": "3cd8f2db-8429-462e-ab93-8041dd23abf1",
+            "uuid": "145eb3d3-b841-4e66-abac-297ae525c7ad",
             "llm": {
-              "uuid": "1c06c884-39dd-4ce4-ad9f-9a01cbe6c000",
-              "name": "Claude"
+              "uuid": "4399e7d6-fcdf-4e47-a835-f3bdb7f80938",
+              "name": "GPT 5"
             },
             "instructions": "@(prompt(\"categorize\", slice(node.categories, 0, -2)))",
             "input": "@input",
@@ -826,69 +807,105 @@
           "type": "switch",
           "categories": [
             {
-              "uuid": "6103fa71-6ca9-4300-aec6-929f50fa1ae0",
-              "name": "Flights",
-              "exit_uuid": "33712037-9861-4d61-9dcb-60d7fffef96a"
+              "uuid": "96d0d4c4-5830-4a6d-b20b-6730b1e10679",
+              "name": "Cat",
+              "exit_uuid": "ea2e15d3-d398-421f-bc51-26e094f97325"
             },
             {
-              "uuid": "bcb18434-1932-4a38-a4cd-a2c4a70b8e9a",
-              "name": "Hotels",
-              "exit_uuid": "fdd988ba-34c1-45a8-8413-e89b0a36001e"
+              "uuid": "4632b796-f8ab-4a35-80d1-a1b53a6db803",
+              "name": "Dog",
+              "exit_uuid": "abbdcff7-4296-4f01-907f-f709fa4a1444"
             },
             {
-              "uuid": "a766ac1a-766f-4ce5-be4c-a24061bfdec0",
+              "uuid": "f0085428-576c-45f8-90d8-b6560d0cdd30",
+              "name": "Fish",
+              "exit_uuid": "890f2256-f4fd-4f3c-b690-0cd48bce9492"
+            },
+            {
+              "uuid": "7091cae1-2677-494a-967c-d9502476d4e4",
+              "name": "Oyster",
+              "exit_uuid": "377e720a-4815-4fa5-83cc-b6471765a9b4"
+            },
+            {
+              "uuid": "8e4624ee-57fe-43cd-8fa3-fa630c22cd72",
               "name": "Other",
-              "exit_uuid": "bbcb0d26-a8c4-48f7-9d39-eeb202d09876"
+              "exit_uuid": "c7ecba49-7542-4862-a91a-9f2f8a10e222"
             },
             {
-              "uuid": "e86a60b9-6e8e-4150-9ab9-19e6eb7003d9",
+              "uuid": "b3a625e7-97f2-461d-a481-20dec52bd609",
               "name": "Failure",
-              "exit_uuid": "959d6e4c-658a-49fc-a80d-5ed7df5af640"
+              "exit_uuid": "3484a407-9e62-4a55-be44-a2290270000f"
             }
           ],
-          "default_category_uuid": "a766ac1a-766f-4ce5-be4c-a24061bfdec0",
+          "default_category_uuid": "8e4624ee-57fe-43cd-8fa3-fa630c22cd72",
           "operand": "@locals._llm_output",
-          "result_name": "Intent",
           "cases": [
             {
-              "uuid": "d2f852ec-7b4e-457f-ae7f-f8b243c49ff5",
+              "uuid": "055e63a4-5eae-4325-b436-ca013e20ae17",
               "type": "has_only_text",
               "arguments": [
-                "Flights"
+                "Cat"
               ],
-              "category_uuid": "6103fa71-6ca9-4300-aec6-929f50fa1ae0"
+              "category_uuid": "96d0d4c4-5830-4a6d-b20b-6730b1e10679"
             },
             {
-              "uuid": "692926ea-09d6-4942-bd38-d266ec8d3716",
+              "uuid": "f0795c37-977e-4d0f-9136-378626a40173",
               "type": "has_only_text",
               "arguments": [
-                "Hotels"
+                "Dog"
               ],
-              "category_uuid": "bcb18434-1932-4a38-a4cd-a2c4a70b8e9a"
+              "category_uuid": "4632b796-f8ab-4a35-80d1-a1b53a6db803"
             },
             {
-              "uuid": "73bfb9dc-9bbb-4928-92fd-d8957edf4a92",
+              "uuid": "f25f0371-ec13-4578-8dba-88c264f617be",
+              "type": "has_only_text",
+              "arguments": [
+                "Fish"
+              ],
+              "category_uuid": "f0085428-576c-45f8-90d8-b6560d0cdd30"
+            },
+            {
+              "uuid": "87a8ccff-c153-4ff6-8a59-4d164b8bb2a8",
+              "type": "has_only_text",
+              "arguments": [
+                "Oyster"
+              ],
+              "category_uuid": "7091cae1-2677-494a-967c-d9502476d4e4"
+            },
+            {
+              "uuid": "8fd5f13b-0398-4286-b18a-a92b5a2ea19d",
               "type": "has_only_text",
               "arguments": [
                 "<ERROR>"
               ],
-              "category_uuid": "e86a60b9-6e8e-4150-9ab9-19e6eb7003d9"
+              "category_uuid": "b3a625e7-97f2-461d-a481-20dec52bd609"
             }
           ]
         },
         "exits": [
           {
-            "uuid": "33712037-9861-4d61-9dcb-60d7fffef96a",
+            "uuid": "ea2e15d3-d398-421f-bc51-26e094f97325",
             "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
           },
           {
-            "uuid": "fdd988ba-34c1-45a8-8413-e89b0a36001e"
+            "uuid": "abbdcff7-4296-4f01-907f-f709fa4a1444",
+            "destination_uuid": null
           },
           {
-            "uuid": "bbcb0d26-a8c4-48f7-9d39-eeb202d09876"
+            "uuid": "890f2256-f4fd-4f3c-b690-0cd48bce9492",
+            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
           },
           {
-            "uuid": "959d6e4c-658a-49fc-a80d-5ed7df5af640"
+            "uuid": "377e720a-4815-4fa5-83cc-b6471765a9b4",
+            "destination_uuid": null
+          },
+          {
+            "uuid": "c7ecba49-7542-4862-a91a-9f2f8a10e222",
+            "destination_uuid": null
+          },
+          {
+            "uuid": "3484a407-9e62-4a55-be44-a2290270000f",
+            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
           }
         ]
       }
@@ -897,14 +914,14 @@
       "nodes": {
         "145eb3d3-b841-4e66-abac-297ae525c7ad": {
           "position": {
-            "left": 780,
-            "top": 440
+            "left": 860,
+            "top": 420
           },
           "type": "split_by_llm_categorize"
         },
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 260,
+            "left": 220,
             "top": 0
           },
           "type": "execute_actions"
@@ -912,8 +929,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 260,
-            "top": 220
+            "left": 220,
+            "top": 200
           },
           "config": {
             "cases": {}
@@ -938,7 +955,7 @@
           "type": "split_by_subflow",
           "position": {
             "left": 480,
-            "top": 680
+            "top": 640
           },
           "config": {}
         },
@@ -970,7 +987,7 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 820,
+            "left": 980,
             "top": 300
           },
           "config": null
@@ -978,8 +995,8 @@
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 740,
-            "top": 720
+            "left": 760,
+            "top": 620
           },
           "config": {
             "operand": {
@@ -994,7 +1011,7 @@
           "type": "split_by_groups",
           "position": {
             "left": 480,
-            "top": 420
+            "top": 380
           },
           "config": {
             "cases": {}
@@ -1004,7 +1021,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 480,
-            "top": 540
+            "top": 500
           },
           "config": {
             "cases": {}
@@ -1013,23 +1030,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 460,
-            "top": 980
+            "left": 480,
+            "top": 800
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 780,
-            "top": 840
+            "left": 760,
+            "top": 740
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 820,
-            "top": 980
+            "left": 760,
+            "top": 860
           },
           "config": {}
         }

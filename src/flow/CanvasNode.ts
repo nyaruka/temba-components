@@ -969,7 +969,28 @@ export class CanvasNode extends RapidElement {
           : ''}"
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
-        ${this.node.actions.length > 0
+        ${nodeConfig && nodeConfig.render
+          ? html`<div class="router" style="position: relative;">
+              <button
+                class="remove-button"
+                @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+                title="Remove node"
+              >
+                ✕
+              </button>
+              <div
+                @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
+                @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+                style="cursor: pointer;"
+              >
+                ${this.renderNodeTitle(
+                  nodeConfig,
+                  this.actionRemovingState.has(this.node.uuid)
+                )}
+                ${nodeConfig.render(this.node)}
+              </div>
+            </div>`
+          : this.node.actions.length > 0
           ? this.ui.type === 'execute_actions'
             ? html`<temba-sortable-list
                 dragHandle="drag-handle"

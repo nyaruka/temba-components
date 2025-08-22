@@ -16,7 +16,16 @@ export const set_run_result: ActionConfig = {
       helpText: 'Select an existing result name or type a new one',
       required: true,
       placeholder: 'Select or enter result name...',
-      tags: true,
+      createArbitraryOption: (input, options) => {
+        const exists = options.some(
+          (option: any) =>
+            option.value.toLowerCase() === input.toLowerCase() ||
+            option.name.toLowerCase() === input.toLowerCase()
+        );
+        return !exists && input.trim().length > 0
+          ? { value: input, name: input }
+          : null;
+      },
       searchable: true,
       clearable: false,
       options: []
