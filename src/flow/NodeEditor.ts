@@ -550,43 +550,22 @@ export class NodeEditor extends RapidElement {
 
       // Run custom validation if available
       if (actionConfig?.validate) {
-        // Convert form data back to action for validation
-        let actionForValidation: Action;
-
         if (actionConfig.sanitize) {
           actionConfig.sanitize(this.formData);
         }
 
-        if (actionConfig.fromFormData) {
-          actionForValidation = actionConfig.fromFormData(this.formData);
-        } else {
-          actionForValidation = { ...this.action, ...this.formData } as Action;
-        }
-
-        const customValidation = actionConfig.validate(actionForValidation);
+        const customValidation = actionConfig.validate({
+          ...this.action,
+          ...this.formData
+        });
         Object.assign(errors, customValidation.errors);
       }
     } else if (this.node) {
       // Node validation
       const nodeConfig = this.getNodeConfig();
-
-      // Check required fields from node properties
-      if (nodeConfig?.properties) {
-        Object.entries(nodeConfig.properties).forEach(
-          ([fieldName, fieldConfig]) => {
-            const value = this.formData[fieldName];
-
-            // Check required fields
-            if (
-              fieldConfig.required &&
-              (!value || (Array.isArray(value) && value.length === 0))
-            ) {
-              errors[fieldName] = `${
-                fieldConfig.label || fieldName
-              } is required`;
-            }
-          }
-        );
+      if (nodeConfig.validate) {
+        const customValidation = nodeConfig.validate(this.formData);
+        Object.assign(errors, customValidation.errors);
       }
     }
 

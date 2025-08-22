@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig, PropertyConfig } from '../types';
+import { COLORS, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 
@@ -6,60 +6,6 @@ export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
   name: 'Split by AI Categorize',
   color: COLORS.split,
-  properties: {
-    llm: {
-      label: 'AI Model',
-      required: true,
-      widget: {
-        type: 'temba-select',
-        attributes: {
-          endpoint: '/test-assets/select/llms.json',
-          searchable: true,
-          valueKey: 'uuid',
-          nameKey: 'name'
-        }
-      }
-    } satisfies PropertyConfig,
-    input: {
-      label: 'Input to categorize',
-      required: true,
-      widget: {
-        type: 'temba-textinput',
-        attributes: {
-          placeholder: '@input'
-        }
-      }
-    } satisfies PropertyConfig,
-    categories: {
-      label: 'Categories',
-      required: true,
-      widget: {
-        type: 'temba-array-editor',
-        attributes: {
-          maxItems: 10,
-          minItems: 1,
-          itemLabel: 'Category',
-          itemConfig: {
-            name: {
-              type: 'text',
-              required: true,
-              placeholder: 'Category name'
-            }
-          },
-          isEmptyItem: (item: any) => !item?.name?.trim()
-        }
-      }
-    } satisfies PropertyConfig,
-    result_name: {
-      label: 'Result name',
-      widget: {
-        type: 'temba-textinput',
-        attributes: {
-          placeholder: 'Intent'
-        }
-      }
-    } satisfies PropertyConfig
-  },
   toFormData: (node: Node) => {
     // Extract data from the existing node structure
     const callLlmAction = node.actions?.find(

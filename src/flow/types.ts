@@ -1,5 +1,5 @@
 import { TemplateResult } from 'lit-html';
-import { Action } from '../store/flow-definition';
+import { Action, Node } from '../store/flow-definition';
 
 export interface ValidationResult {
   valid: boolean;
@@ -65,39 +65,16 @@ export interface SliderAttributes {
   range?: boolean;
 }
 
-// Widget configuration using discriminated union for type safety
-export type WidgetConfig =
-  | { type: 'temba-textinput'; attributes?: TextInputAttributes }
-  | { type: 'temba-completion'; attributes?: CompletionAttributes }
-  | { type: 'temba-select'; attributes?: SelectAttributes }
-  | { type: 'temba-checkbox'; attributes?: CheckboxAttributes }
-  | { type: 'temba-slider'; attributes?: SliderAttributes }
-  | { type: string; attributes?: { [key: string]: any } }; // Generic fallback
+export interface FormData extends Record<string, any> {}
 
-// Property configuration with the clean structure you want
-export interface PropertyConfig {
-  // Form field metadata
-  label?: string;
-  helpText?: string;
-  required?: boolean;
-  maxLength?: number;
-  minLength?: number;
-  pattern?: string;
-
-  // Widget configuration
-  widget: WidgetConfig;
-
-  // Conditional behavior based on other field values
-  conditions?: {
-    // When to show this field
-    visible?: (formData: any) => boolean;
-
-    // When this field is disabled
-    disabled?: (formData: any) => boolean;
-  };
+export interface FormConfig {
+  form?: Record<string, FieldConfig>;
+  layout?: LayoutItem[];
+  sanitize?: (formData: FormData) => void;
+  validate?: (formData: FormData) => ValidationResult;
 }
 
-export interface NodeConfig {
+export interface NodeConfig extends FormConfig {
   type: string;
   name?: string;
   color?: string;
@@ -118,17 +95,17 @@ export interface NodeConfig {
       categoryName: string;
     }[];
   };
-  properties?: { [key: string]: PropertyConfig };
-  toFormData?: (node: any) => any;
-  fromFormData?: (formData: any, originalNode: any) => any;
+
+  toFormData?: (node: Node) => FormData;
+  fromFormData?: (formData: FormData, originalNode: Node) => Node;
 }
 
 // New field configuration system for generic form generation
 export interface BaseFieldConfig {
   label?: string;
   required?: boolean;
-  evaluated?: boolean; // if this field supports expression evaluation
-  dependsOn?: string[]; // fields this field depends on
+  evaluated?: boolean;
+  dependsOn?: string[];
   computeValue?: (
     values: Record<string, any>,
     currentValue: any,
@@ -142,7 +119,7 @@ export interface BaseFieldConfig {
   helpText?: string;
 
   // Layout properties
-  maxWidth?: string; // CSS max-width value (e.g., '200px', '50%', '10rem')
+  maxWidth?: string;
 
   // Conditional rendering
   conditions?: {
@@ -264,7 +241,7 @@ export type LayoutItem =
   | GroupLayoutConfig
   | string; // string is shorthand for field
 
-export interface ActionConfig {
+export interface ActionConfig extends FormConfig {
   name: string;
   color: string;
   evaluated?: string[];
@@ -273,13 +250,8 @@ export interface ActionConfig {
   form?: Record<string, FieldConfig>;
   layout?: LayoutItem[]; // optional layout configuration - array of layout items
 
-  // Action editor configuration (legacy)
-  // Form-level transformations
-  sanitize?: (formData: any) => any;
   toFormData?: (action: Action) => any;
   fromFormData?: (formData: any) => Action;
-
-  validate?: (action: Action) => ValidationResult;
 }
 
 export const COLORS = {
@@ -295,85 +267,3 @@ export const COLORS = {
   add: '#309c42',
   remove: '#e74c3c'
 };
-
-// Default property type mappings
-export function getDefaultComponent(value: any): WidgetConfig['type'] {
-  if (typeof value === 'boolean') {
-    return 'temba-checkbox';
-  }
-  if (typeof value === 'number') {
-    return 'temba-textinput';
-  }
-  if (Array.isArray(value)) {
-    return 'temba-select'; // For arrays, use multi-select
-  }
-  // Default to text input for strings and unknown types
-  return 'temba-textinput';
-}
-
-// Get component properties for default mappings with proper typing
-export function getDefaultComponentProps(value: any): PropertyConfig {
-  if (typeof value === 'boolean') {
-    return {
-      widget: { type: 'temba-checkbox' }
-    };
-  }
-  if (typeof value === 'number') {
-    return {
-      widget: {
-        type: 'temba-textinput',
-        attributes: { type: 'number' }
-      }
-    };
-  }
-  if (Array.isArray(value)) {
-    if (value.length > 0 && typeof value[0] === 'string') {
-      return {
-        widget: {
-          type: 'temba-select',
-          attributes: { multi: true, tags: true }
-        }
-      };
-    }
-    return {
-      widget: {
-        type: 'temba-select',
-        attributes: { multi: true }
-      }
-    };
-  }
-  return {
-    widget: { type: 'temba-textinput' }
-  };
-}
-
-// Type guard functions for working with WidgetConfig
-export function isTextInputWidget(
-  config: WidgetConfig
-): config is { type: 'temba-textinput'; attributes?: TextInputAttributes } {
-  return config.type === 'temba-textinput';
-}
-
-export function isCompletionWidget(
-  config: WidgetConfig
-): config is { type: 'temba-completion'; attributes?: CompletionAttributes } {
-  return config.type === 'temba-completion';
-}
-
-export function isSelectWidget(
-  config: WidgetConfig
-): config is { type: 'temba-select'; attributes?: SelectAttributes } {
-  return config.type === 'temba-select';
-}
-
-export function isCheckboxWidget(
-  config: WidgetConfig
-): config is { type: 'temba-checkbox'; attributes?: CheckboxAttributes } {
-  return config.type === 'temba-checkbox';
-}
-
-export function isSliderWidget(
-  config: WidgetConfig
-): config is { type: 'slider'; attributes?: SliderAttributes } {
-  return config.type === 'temba-slider';
-}
