@@ -142,7 +142,7 @@ export interface TextareaFieldConfig extends BaseFieldConfig {
 
 export interface SelectFieldConfig extends BaseFieldConfig {
   type: 'select';
-  options: string[] | { value: string; label: string }[];
+  options?: string[] | { value: string; label: string }[];
   multi?: boolean;
   clearable?: boolean;
   searchable?: boolean;

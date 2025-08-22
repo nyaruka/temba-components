@@ -385,12 +385,18 @@ export class NodeEditor extends RapidElement {
 
   private isKeyValueField(fieldName: string): boolean {
     // Check if this field is configured as a key-value type
+    const config = this.getConfig();
+    const fields = config?.form;
+    return fields?.[fieldName]?.type === 'key-value';
+  }
+
+  private getConfig(): ActionConfig | NodeConfig | null {
     if (this.action) {
-      const actionConfig = ACTION_CONFIG[this.action.type];
-      const fields = actionConfig?.form;
-      return fields?.[fieldName]?.type === 'key-value';
+      return ACTION_CONFIG[this.action.type] || null;
+    } else if (this.node) {
+      return this.getNodeConfig();
     }
-    return false;
+    return null;
   }
 
   private getNodeConfig(): NodeConfig | null {
@@ -500,75 +506,65 @@ export class NodeEditor extends RapidElement {
 
   private validateForm(): ValidationResult {
     const errors: { [key: string]: string } = {};
+    const config = this.getConfig();
 
-    if (this.action) {
-      // Action validation using fields configuration
-      const actionConfig = ACTION_CONFIG[this.action.type];
-
+    if (config) {
       // Check if new field configuration system is available
-      if (actionConfig?.form) {
-        Object.entries(actionConfig?.form).forEach(
-          ([fieldName, fieldConfig]) => {
-            const value = this.formData[fieldName];
+      if (config.form) {
+        Object.entries(config.form).forEach(([fieldName, fieldConfig]) => {
+          const value = this.formData[fieldName];
 
-            // Check required fields
-            if (
-              (fieldConfig as any).required &&
-              (!value || (Array.isArray(value) && value.length === 0))
-            ) {
-              errors[fieldName] = `${
-                (fieldConfig as any).label || fieldName
-              } is required.`;
-            }
-
-            // Check minLength for text fields
-            if (
-              typeof value === 'string' &&
-              (fieldConfig as any).minLength &&
-              value.length < (fieldConfig as any).minLength
-            ) {
-              errors[fieldName] = `${
-                (fieldConfig as any).label || fieldName
-              } must be at least ${(fieldConfig as any).minLength} characters`;
-            }
-
-            // Check maxLength for text fields
-            if (
-              typeof value === 'string' &&
-              (fieldConfig as any).maxLength &&
-              value.length > (fieldConfig as any).maxLength
-            ) {
-              errors[fieldName] = `${
-                (fieldConfig as any).label || fieldName
-              } must be no more than ${
-                (fieldConfig as any).maxLength
-              } characters`;
-            }
+          // Check required fields
+          if (
+            (fieldConfig as any).required &&
+            (!value || (Array.isArray(value) && value.length === 0))
+          ) {
+            errors[fieldName] = `${
+              (fieldConfig as any).label || fieldName
+            } is required.`;
           }
-        );
+
+          // Check minLength for text fields
+          if (
+            typeof value === 'string' &&
+            (fieldConfig as any).minLength &&
+            value.length < (fieldConfig as any).minLength
+          ) {
+            errors[fieldName] = `${
+              (fieldConfig as any).label || fieldName
+            } must be at least ${(fieldConfig as any).minLength} characters`;
+          }
+
+          // Check maxLength for text fields
+          if (
+            typeof value === 'string' &&
+            (fieldConfig as any).maxLength &&
+            value.length > (fieldConfig as any).maxLength
+          ) {
+            errors[fieldName] = `${
+              (fieldConfig as any).label || fieldName
+            } must be no more than ${
+              (fieldConfig as any).maxLength
+            } characters`;
+          }
+        });
       }
 
       // Run custom validation if available
-      if (actionConfig?.validate) {
-        if (actionConfig.sanitize) {
-          actionConfig.sanitize(this.formData);
+      if (config.validate) {
+        if (config.sanitize) {
+          config.sanitize(this.formData);
         }
 
-        const customValidation = actionConfig.validate({
-          ...this.action,
-          ...this.formData
-        });
-        Object.assign(errors, customValidation.errors);
-      }
-    } else if (this.node) {
-      const nodeConfig = this.getNodeConfig();
-
-      if (nodeConfig.sanitize) {
-        nodeConfig.sanitize(this.formData);
-      }
-
-      if (nodeConfig.validate) {
-        const customValidation = nodeConfig.validate(this.formData);
+        let customValidation;
+        if (this.action) {
+          customValidation = config.validate({
+            ...this.action,
+            ...this.formData
+          });
+        } else {
+          customValidation = config.validate(this.formData);
+        }
         Object.assign(errors, customValidation.errors);
       }
     }
@@ -833,9 +829,7 @@ export class NodeEditor extends RapidElement {
   }
 
   private updateGroupCollapseStates(): void {
-    if (!this.action) return;
-
-    const config = ACTION_CONFIG[this.action.type];
+    const config = this.getConfig();
     if (!config?.layout) return;
 
     this.updateGroupCollapseStatesRecursive(config.layout);
@@ -869,9 +863,7 @@ export class NodeEditor extends RapidElement {
   }
 
   private updateComputedFields(changedFieldName: string): void {
-    if (!this.action) return;
-
-    const config = ACTION_CONFIG[this.action.type];
+    const config = this.getConfig();
     if (!config?.form) return;
 
     // Check all fields to see if any depend on the changed field
@@ -993,9 +985,7 @@ export class NodeEditor extends RapidElement {
   }
 
   private expandGroupsWithErrors(errors: { [key: string]: string }): void {
-    if (!this.action) return;
-
-    const config = ACTION_CONFIG[this.action.type];
+    const config = this.getConfig();
     if (!config?.layout) return;
 
     const errorFields = new Set(Object.keys(errors));
@@ -1032,7 +1022,7 @@ export class NodeEditor extends RapidElement {
 
   private renderLayoutItem(
     item: LayoutItem,
-    config: ActionConfig,
+    config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
     if (typeof item === 'string') {
@@ -1069,7 +1059,7 @@ export class NodeEditor extends RapidElement {
 
   private renderRow(
     rowConfig: RowLayoutConfig,
-    config: ActionConfig,
+    config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
     const { items, gap = '1rem' } = rowConfig;
@@ -1106,7 +1096,7 @@ export class NodeEditor extends RapidElement {
 
   private renderGroup(
     groupConfig: GroupLayoutConfig,
-    config: ActionConfig,
+    config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
     const {
@@ -1261,7 +1251,7 @@ export class NodeEditor extends RapidElement {
 
   private renderFieldRow(
     rowConfig: RowLayoutConfig,
-    config: ActionConfig
+    config: ActionConfig | NodeConfig
   ): TemplateResult {
     // This method is deprecated - use renderRow instead
     return this.renderRow(rowConfig, config, new Set());
@@ -1269,7 +1259,7 @@ export class NodeEditor extends RapidElement {
 
   private renderFieldGroup(
     groupConfig: GroupLayoutConfig,
-    config: ActionConfig
+    config: ActionConfig | NodeConfig
   ): TemplateResult {
     // This method is deprecated - use renderGroup instead
     return this.renderGroup(groupConfig, config, new Set());
@@ -1317,13 +1307,9 @@ export class NodeEditor extends RapidElement {
   }
 
   private renderFields(): TemplateResult {
-    if (!this.action) {
-      return html` <div>No action selected</div> `;
-    }
-
-    const config = ACTION_CONFIG[this.action.type];
+    const config = this.getConfig();
     if (!config) {
-      return html` <div>No configuration available for this action</div> `;
+      return html` <div>No configuration available</div> `;
     }
 
     // Use the new fields configuration system
@@ -1364,7 +1350,12 @@ export class NodeEditor extends RapidElement {
       }
     }
 
-    return html` <div>No form configuration available</div> `;
+    // Fallback for configs without form configuration
+    if (this.action) {
+      return html` <div>No form configuration available for this action</div> `;
+    } else {
+      return html` <div>No form configuration available for this node</div> `;
+    }
   }
 
   private renderActionSection(): TemplateResult {

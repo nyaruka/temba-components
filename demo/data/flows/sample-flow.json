@@ -112,11 +112,11 @@
           },
           {
             "uuid": "59a22734-24ab-4ff4-b6a9-ee6e66431d4b",
-            "destination_uuid": "4efc49e0-ebfe-454d-a1a0-900a911dd5ef"
+            "destination_uuid": null
           },
           {
             "uuid": "3dfd68c4-0184-49d8-b2a4-0bbb62425f33",
-            "destination_uuid": "425c4757-bead-440f-92aa-a1cc3fcd7d35"
+            "destination_uuid": null
           },
           {
             "uuid": "ae901cf0-f7a1-491c-a56a-1922e242efa0",
@@ -321,7 +321,7 @@
         "exits": [
           {
             "uuid": "99fbc988-714e-4ea8-bf93-5bdaf397b37c",
-            "destination_uuid": "2c60c381-487d-42cd-80be-a31f44c36fd9"
+            "destination_uuid": null
           }
         ]
       },
@@ -651,7 +651,7 @@
           },
           {
             "uuid": "e3314f8b-5598-4592-b5f9-2999c4a28a4f",
-            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
+            "destination_uuid": null
           }
         ]
       },
@@ -700,7 +700,7 @@
         "exits": [
           {
             "uuid": "9285a0af-c70e-4945-9829-e620069830d2",
-            "destination_uuid": "425c4757-bead-440f-92aa-a1cc3fcd7d35"
+            "destination_uuid": null
           },
           {
             "uuid": "3c3cccef-9865-4246-802f-90d9e76af9bf",
@@ -780,7 +780,7 @@
         "exits": [
           {
             "uuid": "2505556e-3c87-4992-91e3-1cedd95dce72",
-            "destination_uuid": "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8"
+            "destination_uuid": null
           },
           {
             "uuid": "4cf706ff-1888-4682-b844-d3ed3386bdbb",
@@ -878,14 +878,14 @@
       "nodes": {
         "145eb3d3-b841-4e66-abac-297ae525c7ad": {
           "position": {
-            "left": 780,
-            "top": 440
+            "left": 760,
+            "top": 400
           },
           "type": "split_by_llm_categorize"
         },
         "a229fa3c-16bb-440b-9ae8-b7ee7a723f44": {
           "position": {
-            "left": 260,
+            "left": 220,
             "top": 0
           },
           "type": "execute_actions"
@@ -893,8 +893,8 @@
         "ef1a5b06-1331-4c0d-9f46-58b1e5baf671": {
           "type": "wait_for_response",
           "position": {
-            "left": 260,
-            "top": 220
+            "left": 220,
+            "top": 200
           },
           "config": {
             "cases": {}
@@ -919,7 +919,7 @@
           "type": "split_by_subflow",
           "position": {
             "left": 480,
-            "top": 680
+            "top": 640
           },
           "config": {}
         },
@@ -959,8 +959,8 @@
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 740,
-            "top": 720
+            "left": 760,
+            "top": 620
           },
           "config": {
             "operand": {
@@ -975,7 +975,7 @@
           "type": "split_by_groups",
           "position": {
             "left": 480,
-            "top": 420
+            "top": 380
           },
           "config": {
             "cases": {}
@@ -985,7 +985,7 @@
           "type": "split_by_scheme",
           "position": {
             "left": 480,
-            "top": 540
+            "top": 500
           },
           "config": {
             "cases": {}
@@ -994,23 +994,23 @@
         "3dfe9cf2-72d1-496f-8d20-d5743af0f9c8": {
           "type": "split_by_llm",
           "position": {
-            "left": 460,
-            "top": 980
+            "left": 480,
+            "top": 800
           },
           "config": {}
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 780,
-            "top": 840
+            "left": 760,
+            "top": 740
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 820,
-            "top": 980
+            "left": 760,
+            "top": 860
           },
           "config": {}
         }

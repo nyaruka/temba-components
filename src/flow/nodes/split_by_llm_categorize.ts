@@ -6,6 +6,53 @@ export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
   name: 'Split by AI Categorize',
   color: COLORS.split,
+  form: {
+    llm: {
+      type: 'select',
+      label: 'LLM',
+      helpText: 'Select the LLM to use for categorization',
+      required: true,
+      endpoint: '/api/v2/classifiers.json?type=llm',
+      valueKey: 'uuid',
+      nameKey: 'name',
+      placeholder: 'Select an LLM...'
+    },
+    input: {
+      type: 'text',
+      label: 'Input',
+      helpText: 'The input to categorize (usually @input)',
+      required: true,
+      evaluated: true,
+      placeholder: '@input'
+    },
+    categories: {
+      type: 'array',
+      label: 'Categories',
+      helpText: 'Define the categories for classification',
+      required: true,
+      itemLabel: 'Category',
+      minItems: 1,
+      maxItems: 20,
+      isEmptyItem: (item: any) => {
+        return !item.name || item.name.trim() === '';
+      },
+      itemConfig: {
+        name: {
+          type: 'text',
+          placeholder: 'Category name',
+          required: true
+        }
+      }
+    },
+    result_name: {
+      type: 'text',
+      label: 'Result Name',
+      helpText: 'The name to save the result as',
+      required: true,
+      placeholder: 'Intent'
+    }
+  },
+  layout: ['llm', 'input', 'categories', 'result_name'],
   toFormData: (node: Node) => {
     // Extract data from the existing node structure
     const callLlmAction = node.actions?.find(

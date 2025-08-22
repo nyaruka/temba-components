@@ -444,4 +444,138 @@ describe('temba-node-editor', () => {
     // Should have arrows for collapsible groups
     expect(arrows.length).to.be.greaterThan(0);
   });
+
+  it('renders split_by_llm_categorize node', async () => {
+    const node = {
+      uuid: 'test-node-uuid',
+      actions: [
+        {
+          uuid: 'call-llm-uuid',
+          type: 'call_llm',
+          llm: { uuid: 'llm-123', name: 'Test LLM' },
+          input: '@input',
+          instructions:
+            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          output_local: '_llm_output'
+        }
+      ],
+      router: {
+        type: 'switch',
+        operand: '@locals._llm_output',
+        result_name: 'Intent',
+        categories: [
+          { uuid: 'cat-1', name: 'Greeting', exit_uuid: 'exit-1' },
+          { uuid: 'cat-2', name: 'Question', exit_uuid: 'exit-2' },
+          { uuid: 'cat-3', name: 'Other', exit_uuid: 'exit-3' },
+          { uuid: 'cat-4', name: 'Failure', exit_uuid: 'exit-4' }
+        ]
+      },
+      exits: [
+        { uuid: 'exit-1', destination_uuid: null },
+        { uuid: 'exit-2', destination_uuid: null },
+        { uuid: 'exit-3', destination_uuid: null },
+        { uuid: 'exit-4', destination_uuid: null }
+      ]
+    };
+
+    const nodeUI = { type: 'split_by_llm_categorize' };
+
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${nodeUI}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+    expect(el.shadowRoot).to.not.be.null;
+    expect(el.node).to.equal(node);
+    expect(el.nodeUI).to.equal(nodeUI);
+
+    // Wait for form data initialization
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await el.updateComplete;
+
+    // Check if the dialog is rendered with correct header
+    const dialog = el.shadowRoot.querySelector('temba-dialog');
+    expect(dialog).to.not.be.null;
+    expect(dialog.getAttribute('header')).to.equal('Split by AI Categorize');
+
+    // Check that the form is rendered
+    const form = el.shadowRoot.querySelector('.node-editor-form');
+    expect(form).to.not.be.null;
+
+    // Check that all expected form components are rendered
+    const selectComponents = el.shadowRoot.querySelectorAll('temba-select');
+    const textComponents = el.shadowRoot.querySelectorAll('temba-textinput');
+    const arrayComponents =
+      el.shadowRoot.querySelectorAll('temba-array-editor');
+    const completionComponents =
+      el.shadowRoot.querySelectorAll('temba-completion');
+
+    // Should have LLM select field
+    expect(selectComponents.length).to.equal(1);
+    expect(selectComponents[0].getAttribute('label')).to.equal('LLM');
+
+    // Should have input completion field
+    expect(completionComponents.length).to.equal(1);
+    expect(completionComponents[0].getAttribute('label')).to.equal('Input');
+
+    // Should have categories array editor
+    expect(arrayComponents.length).to.equal(1);
+
+    // Should have result name text field
+    expect(textComponents.length).to.equal(1);
+    expect(textComponents[0].getAttribute('label')).to.equal('Result Name');
+  });
+
+  it('renders wait_for_response node', async () => {
+    const node = {
+      uuid: 'test-wait-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        wait: {
+          type: 'msg',
+          timeout: 300 // 5 minutes in seconds
+        },
+        result_name: 'response',
+        categories: []
+      },
+      exits: []
+    };
+
+    const nodeUI = { type: 'wait_for_response' };
+
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${nodeUI}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+
+    // Wait for form data initialization
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await el.updateComplete;
+
+    // Check that the dialog is rendered with correct header
+    const dialog = el.shadowRoot.querySelector('temba-dialog');
+    expect(dialog).to.not.be.null;
+    expect(dialog.getAttribute('header')).to.equal('Wait for Response');
+
+    // Check that timeout and result name fields are rendered
+    const textComponents = el.shadowRoot.querySelectorAll('temba-textinput');
+    expect(textComponents.length).to.equal(2);
+
+    // Verify the field labels
+    const labels = Array.from(textComponents).map((comp) =>
+      comp.getAttribute('label')
+    );
+    expect(labels).to.include('Timeout (minutes)');
+    expect(labels).to.include('Result Name');
+  });
 });
