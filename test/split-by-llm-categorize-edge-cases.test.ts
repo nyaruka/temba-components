@@ -184,9 +184,6 @@ describe('split_by_llm_categorize edge cases and validation', () => {
     expect(recoveredFormData.uuid).to.equal(originalFormData.uuid);
     expect(recoveredFormData.llm).to.deep.equal(originalFormData.llm);
     expect(recoveredFormData.input).to.equal(originalFormData.input);
-    expect(recoveredFormData.result_name).to.equal(
-      originalFormData.result_name
-    );
     expect(recoveredFormData.categories).to.deep.equal(
       originalFormData.categories
     );

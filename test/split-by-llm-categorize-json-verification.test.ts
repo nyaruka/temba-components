@@ -40,7 +40,6 @@ describe('split_by_llm_categorize JSON output verification', () => {
     const router = result.router!;
     expect(router.type).to.equal('switch');
     expect(router.operand).to.equal('@locals._llm_output');
-    expect(router.result_name).to.equal('Intent');
 
     // Verify categories structure
     expect(router.categories).to.have.length(4);

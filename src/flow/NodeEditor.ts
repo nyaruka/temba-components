@@ -294,10 +294,21 @@ export class NodeEditor extends RapidElement {
 
   updated(changedProperties: Map<string | number | symbol, unknown>): void {
     super.updated(changedProperties);
-    if (changedProperties.has('node') || changedProperties.has('action')) {
-      if (this.node || this.action) {
+    if (
+      changedProperties.has('node') ||
+      changedProperties.has('action') ||
+      changedProperties.has('nodeUI')
+    ) {
+      // For action editing, we only need the action
+      if (this.action && (!this.node || !this.nodeUI)) {
         this.openDialog();
-      } else {
+      }
+      // For node editing, we need both node and nodeUI
+      else if (this.node && this.nodeUI) {
+        this.openDialog();
+      }
+      // If we don't have the required data, close the dialog
+      else if (!this.action && (!this.node || !this.nodeUI)) {
         this.isOpen = false;
       }
     }
@@ -318,7 +329,9 @@ export class NodeEditor extends RapidElement {
   }
 
   private initializeFormData(): void {
-    if (this.action) {
+    const nodeConfig = this.getNodeConfig();
+
+    if ((!nodeConfig || nodeConfig.type === 'execute_actinos') && this.action) {
       // Action editing mode - use action config
       const actionConfig = ACTION_CONFIG[this.action.type];
 
@@ -391,11 +404,26 @@ export class NodeEditor extends RapidElement {
   }
 
   private getConfig(): ActionConfig | NodeConfig | null {
+    // If we have a node and nodeUI, check if we should use node config
+    if (this.node && this.nodeUI) {
+      const nodeConfig = this.getNodeConfig();
+
+      // For execute_actions nodes, defer to action editing if an action is selected
+      if (this.nodeUI.type === 'execute_actions' && this.action) {
+        return ACTION_CONFIG[this.action.type] || null;
+      }
+
+      // For all other nodes with a config, use the node config
+      if (nodeConfig) {
+        return nodeConfig;
+      }
+    }
+
+    // Fall back to action config if no node config or for pure action editing
     if (this.action) {
       return ACTION_CONFIG[this.action.type] || null;
-    } else if (this.node) {
-      return this.getNodeConfig();
     }
+
     return null;
   }
 
@@ -406,16 +434,8 @@ export class NodeEditor extends RapidElement {
   }
 
   private getHeaderColor(): string {
-    if (this.action) {
-      // Action editing mode
-      const actionConfig = ACTION_CONFIG[this.action.type];
-      return actionConfig?.color || '#666666';
-    } else if (this.node) {
-      // Node editing mode
-      const nodeConfig = this.getNodeConfig();
-      return nodeConfig?.color || '#666666';
-    }
-    return '#666666';
+    const config = this.getConfig();
+    return config?.color || '#666666';
   }
 
   private handleDialogButtonClick(event: CustomEvent): void {
@@ -1428,12 +1448,11 @@ export class NodeEditor extends RapidElement {
     }
 
     const headerColor = this.getHeaderColor();
-    const nodeConfig = this.getNodeConfig();
-    const actionConfig = ACTION_CONFIG[this.action?.type];
+    const config = this.getConfig();
 
     return html`
       <temba-dialog
-        header="${actionConfig?.name || nodeConfig?.name || 'Edit'}"
+        header="${config?.name || 'Edit'}"
         .open="${this.isOpen}"
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"
@@ -1442,7 +1461,7 @@ export class NodeEditor extends RapidElement {
       >
         <div class="node-editor-form">
           ${this.renderFields()}
-          ${nodeConfig?.router?.configurable
+          ${this.getNodeConfig()?.router?.configurable
             ? this.renderRouterSection()
             : null}
         </div>

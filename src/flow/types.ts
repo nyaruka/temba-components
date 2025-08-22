@@ -98,6 +98,7 @@ export interface NodeConfig extends FormConfig {
 
   toFormData?: (node: Node) => FormData;
   fromFormData?: (formData: FormData, originalNode: Node) => Node;
+  render?: (node: Node) => TemplateResult;
 }
 
 // New field configuration system for generic form generation
