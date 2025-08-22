@@ -20,6 +20,7 @@ import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
 import {
   AirtimeTransferredEvent,
+  CallEvent,
   ChannelEvent,
   ContactEvent,
   ContactGroupsEvent,
@@ -28,7 +29,7 @@ import {
   FlowEvent,
   MsgEvent,
   NameChangedEvent,
-  OptinRequestedEvent,
+  OptInEvent,
   RunEvent,
   TicketEvent,
   UpdateFieldEvent,
@@ -70,6 +71,8 @@ export enum Events {
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
   TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
+  OPTIN_STARTED = 'optin_started',
+  OPTIN_STOPPED = 'optin_stopped',
   OPTIN_REQUESTED = 'optin_requested',
   RUN_STARTED = 'run_started',
   RUN_ENDED = 'run_ended',
@@ -110,13 +113,13 @@ const renderChannelEvent = (event: ChannelEvent): string => {
   } else if (event.event.type === 'stop_contact') {
     return 'Stopped';
   } else if (event.event.type === 'mt_call') {
-    return 'Outgoing Phone Call';
+    return 'Outgoing Phone Call'; // deprecated
   } else if (event.event.type == 'mo_call') {
-    return 'Incoming Phone call';
+    return 'Incoming Phone call'; // deprecated
   } else if (event.event.type == 'optin') {
-    return `Opted in to **${event.event.optin?.name}**`;
+    return `Opted in to **${event.event.optin?.name}**`; // deprecated
   } else if (event.event.type == 'optout') {
-    return `Opted out of **${event.event.optin?.name}**`;
+    return `Opted out of **${event.event.optin?.name}**`; // deprecated
   }
 };
 
@@ -216,18 +219,28 @@ export const renderAirtimeTransferredEvent = (
   return `Transferred **${event.amount}** ${event.currency} of airtime`;
 };
 
-export const renderCallEvent = (action: string): string => {
-  return `Call ${action}`;
-};
-
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): string => {
   return `Language updated to **${event.language}**`;
 };
 
-export const renderOptinRequested = (event: OptinRequestedEvent): string => {
-  return `Requested opt-in for ${event.optin.name}`;
+export const renderCallEvent = (event: CallEvent): string => {
+  if (event.type === Events.CALL_CREATED) {
+    return `Call Started`;
+  } else if (event.type === Events.CALL_RECEIVED) {
+    return `Call Answered`;
+  }
+};
+
+export const renderOptInEvent = (event: OptInEvent): string => {
+  if (event.type === Events.OPTIN_REQUESTED) {
+    return `Requested opt-in for ${event.optin.name}`;
+  } else if (event.type === Events.OPTIN_STARTED) {
+    return `Opted in to **${event.optin.name}**`;
+  } else if (event.type === Events.OPTIN_STOPPED) {
+    return `Opted out of **${event.optin.name}**`;
+  }
 };
 
 export class ContactChat extends ContactStoreElement {
@@ -697,16 +710,16 @@ export class ContactChat extends ContactStoreElement {
         };
         break;
       case Events.CALL_CREATED:
-      case Events.CALL_STARTED:
-        message = {
-          type: MessageType.Inline,
-          text: renderCallEvent(`Started`)
-        };
-        break;
       case Events.CALL_RECEIVED:
         message = {
           type: MessageType.Inline,
-          text: renderCallEvent(`Answered`)
+          text: renderCallEvent(event as CallEvent)
+        };
+        break;
+      case Events.CALL_STARTED: // deprecated
+        message = {
+          type: MessageType.Inline,
+          text: `Started Call`
         };
         break;
       case Events.CHANNEL_EVENT:
@@ -724,9 +737,11 @@ export class ContactChat extends ContactStoreElement {
         };
         break;
       case Events.OPTIN_REQUESTED:
+      case Events.OPTIN_STARTED:
+      case Events.OPTIN_STOPPED:
         message = {
           type: MessageType.Inline,
-          text: renderOptinRequested(event as OptinRequestedEvent)
+          text: renderOptInEvent(event as OptInEvent)
         };
         break;
     }
