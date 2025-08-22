@@ -34,10 +34,17 @@ export interface ContactLanguageChangedEvent extends ContactEvent {
   session_uuid: string;
 }
 
-export interface OptinRequestedEvent extends ContactEvent {
+export interface OptInEvent extends ContactEvent {
   optin: {
     uuid: string;
     name: string;
+  };
+}
+
+export interface CallEvent extends ContactEvent {
+  call: {
+    uuid: string;
+    urn: string;
   };
 }
 
