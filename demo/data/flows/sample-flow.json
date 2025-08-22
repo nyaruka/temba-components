@@ -266,15 +266,20 @@
             "category": "Electric"
           },
           {
+            "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472",
             "type": "add_input_labels",
             "labels": [
               {
                 "uuid": "61cae99b-56e1-4f3e-a2b9-07fb5cf2be9e",
-                "name": "Spam",
-                "count": 0
+                "name": "Important",
+                "count": 234
+              },
+              {
+                "uuid": "76e7a094-22ea-441d-91c4-283d8168e8e3",
+                "name": "Follow Up",
+                "count": 128
               }
-            ],
-            "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472"
+            ]
           },
           {
             "uuid": "28c288f3-fb46-4c32-8a47-563132a2e8db",
@@ -873,7 +878,8 @@
         },
         "exits": [
           {
-            "uuid": "33712037-9861-4d61-9dcb-60d7fffef96a"
+            "uuid": "33712037-9861-4d61-9dcb-60d7fffef96a",
+            "destination_uuid": "66171418-2368-44b9-95db-fdf7cd5cf4fe"
           },
           {
             "uuid": "fdd988ba-34c1-45a8-8413-e89b0a36001e"
