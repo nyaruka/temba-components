@@ -16,7 +16,6 @@ import { send_email } from './actions/send_email';
 import { start_session } from './actions/start_session';
 import { call_classifier } from './actions/call_classifier';
 import { call_resthook } from './actions/call_resthook';
-import { call_llm } from './actions/call_llm';
 import { transfer_airtime } from './actions/transfer_airtime';
 import { set_contact_name } from './actions/set_contact_name';
 import { add_contact_groups } from './actions/add_contact_groups';
@@ -37,6 +36,7 @@ import { split_by_scheme } from './nodes/split_by_scheme';
 import { split_by_subflow } from './nodes/split_by_subflow';
 import { split_by_ticket } from './nodes/split_by_ticket';
 import { split_by_webhook } from './nodes/split_by_webhook';
+import { split_by_llm } from './nodes/split_by_llm';
 import { split_by_llm_categorize } from './nodes/split_by_llm_categorize';
 import { wait_for_audio } from './nodes/wait_for_audio';
 import { wait_for_digits } from './nodes/wait_for_digits';
@@ -62,7 +62,6 @@ export const ACTION_CONFIG: {
   start_session,
   call_classifier,
   call_resthook,
-  call_llm,
   transfer_airtime,
   set_contact_name,
   add_contact_groups,
@@ -80,6 +79,7 @@ export const NODE_CONFIG: {
   split_by_contact_field,
   split_by_expression,
   split_by_groups,
+  split_by_llm,
   split_by_llm_categorize,
   split_by_random,
   split_by_run_result,
