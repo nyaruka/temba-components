@@ -1,5 +1,5 @@
 import { TemplateResult, html, css } from 'lit';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
 import { DEFAULT_MEDIA_ENDPOINT, getClasses } from '../utils';
@@ -20,7 +20,7 @@ export interface ComposeValue {
   variables: string[];
 }
 
-export class Compose extends FormElement {
+export class Compose extends FieldElement {
   static get styles() {
     return css`
       :host {
@@ -544,12 +544,12 @@ export class Compose extends FormElement {
   }
 
   public render(): TemplateResult {
+    return this.renderField();
+  }
+
+  protected renderWidget(): TemplateResult {
     return html`
-      <temba-field
-        name=${this.name}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .value=${this.value}
+      <div
         class=${getClasses({
           'active-template':
             !!this.currentTemplate &&
@@ -570,7 +570,7 @@ export class Compose extends FormElement {
         <div class="container">
           <div class="items actions">${this.getActions()}</div>
         </div>
-      </temba-field>
+      </div>
     `;
   }
 

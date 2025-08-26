@@ -1,12 +1,65 @@
-import { TemplateResult, html, css, LitElement } from 'lit';
+import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
+import { RapidElement } from '../RapidElement';
 import { renderMarkdownInline } from '../markdown';
 
 /**
- * A small wrapper to display labels and help text in a smartmin style.
- * This exists so we can display things consistently before restyling.
+ * FieldElement is a base class for form components that provides built-in
+ * field wrapper functionality, eliminating the need for manual temba-field embedding.
+ *
+ * Components extending this class only need to implement renderWidget() with their
+ * specific widget content, and the field wrapper (label, errors, help text) is
+ * automatically handled.
  */
-export class FormField extends LitElement {
+export abstract class FieldElement extends RapidElement {
+  @property({ type: String })
+  name = '';
+
+  @property({ type: String, attribute: 'help_text' })
+  helpText: string;
+
+  @property({ type: Boolean, attribute: 'widget_only' })
+  widgetOnly: boolean;
+
+  @property({ type: Array })
+  errors: string[];
+
+  // Use @property with custom getter/setter to handle both attribute and programmatic access
+  private _value: any = '';
+
+  @property({ type: String })
+  public get value() {
+    return this._value;
+  }
+
+  public set value(value) {
+    this._value = value;
+  }
+
+  @property({ attribute: false })
+  inputRoot: HTMLElement = this;
+
+  @property({ type: Boolean })
+  disabled = false;
+
+  static formAssociated = true;
+
+  protected internals: ElementInternals;
+
+  @property({ type: Boolean })
+  hideErrors = false;
+
+  @property({ type: Boolean, attribute: 'hide_label' })
+  hideLabel: boolean;
+
+  @property({ type: String })
+  label: string;
+
+  constructor() {
+    super();
+    this.internals = this.attachInternals();
+  }
+
   static get styles() {
     return css`
       :host {
@@ -29,19 +82,6 @@ export class FormField extends LitElement {
         line-height: normal;
         color: var(--color-text-help);
         margin-left: var(--help-text-margin-left);
-        margin-top: -16px;
-        opacity: 0;
-        transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
-        pointer-events: none;
-      }
-
-      .help-text.help-always {
-        opacity: 1;
-        margin-top: 6px;
-        margin-left: var(--help-text-margin-left);
-      }
-
-      .field:focus-within .help-text {
         margin-top: 6px;
         opacity: 1;
       }
@@ -151,35 +191,12 @@ export class FormField extends LitElement {
     `;
   }
 
-  @property({ type: Boolean, attribute: 'hide_label' })
-  hideLabel = false;
-
-  @property({ type: Boolean, attribute: 'widget_only' })
-  widgetOnly = false;
-
-  @property({ type: Array, attribute: false })
-  errors: string[] = [];
-
-  @property({ type: Boolean })
-  hideErrors = false;
-
-  @property({ type: String, attribute: 'help_text' })
-  helpText = '';
-
-  @property({ type: Boolean, attribute: 'help_always' })
-  helpAlways = true;
-
-  @property({ type: String })
-  label = '';
-
-  @property({ type: String })
-  name = '';
-
-  @property({ type: Boolean })
-  disabled = false;
-
-  updated(changedProperties: Map<string | number | symbol, unknown>): void {
+  updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
+
+    if (changedProperties.has('value')) {
+      this.internals.setFormValue(this.value);
+    }
 
     if (
       changedProperties.has('errors') ||
@@ -191,7 +208,36 @@ export class FormField extends LitElement {
     }
   }
 
-  public render(): TemplateResult {
+  get form() {
+    return this.internals.form;
+  }
+
+  public setValue(value: any) {
+    this.value = this.serializeValue(value);
+  }
+
+  public getDeserializedValue(): any {
+    if (!this.value || this.value === '') {
+      return null;
+    }
+    return JSON.parse(this.value);
+  }
+
+  public serializeValue(value: any): string {
+    return JSON.stringify(value);
+  }
+
+  /**
+   * Abstract method that components must implement to render their specific widget content.
+   * This replaces the need to manually embed temba-field.
+   */
+  protected abstract renderWidget(): TemplateResult;
+
+  /**
+   * Renders the complete field including label, widget, errors, and help text.
+   * Components can override this for custom layouts, but typically should just implement renderWidget().
+   */
+  protected renderField(): TemplateResult {
     const hasErrors = !this.hideErrors && this.errors && this.errors.length > 0;
     const errors = hasErrors
       ? this.errors.map((error: string) => {
@@ -203,7 +249,9 @@ export class FormField extends LitElement {
 
     if (this.widgetOnly) {
       return html`
-        <div class="${this.disabled ? 'disabled' : ''}"><slot></slot></div>
+        <div class="${this.disabled ? 'disabled' : ''}">
+          ${this.renderWidget()}
+        </div>
         ${errors}
       `;
     }
@@ -221,18 +269,23 @@ export class FormField extends LitElement {
               >
             `
           : null}
-        <div class="widget">
-          <slot></slot>
-          ${errors}
-        </div>
+        <div class="widget">${this.renderWidget()} ${errors}</div>
         ${this.helpText && this.helpText !== 'None'
           ? html`
-              <div class="help-text ${this.helpAlways ? 'help-always' : null}">
+              <div class="help-text">
                 ${renderMarkdownInline(this.helpText)}
               </div>
             `
           : null}
       </div>
     `;
+  }
+
+  /**
+   * Main render method that automatically provides field wrapper functionality.
+   * Components extending FieldElement should not override this unless they need custom field layouts.
+   */
+  public render(): TemplateResult {
+    return this.renderField();
   }
 }

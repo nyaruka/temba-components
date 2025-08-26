@@ -31,13 +31,13 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
 
   // External API uses array format to preserve duplicate keys
   @property({ type: Array })
-  get value(): KeyValueItem[] {
+  get value(): KeyValueItem[] | any[] {
     return this._items.filter(
       ({ key, value }) => key.trim() !== '' || value.trim() !== ''
     );
   }
 
-  set value(newValue: KeyValueItem[] | Record<string, string>) {
+  set value(newValue: KeyValueItem[] | Record<string, string> | any) {
     if (Array.isArray(newValue)) {
       this._items = [...newValue];
     } else {
@@ -206,46 +206,50 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
     return 'key-value-editor';
   }
 
-  static styles = css`
-    .key-value-editor {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+  static get styles() {
+    return css`
+      ${super.styles}
 
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      align-items: center;
-      column-gap: 6px;
-    }
+      .key-value-editor {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
 
-    .remove-btn {
-      width: 32px;
-      height: 32px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background: #f8f8f8;
-      color: #666;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        align-items: center;
+        column-gap: 6px;
+      }
 
-    .remove-btn:hover:not(:disabled) {
-      background: #f0f0f0;
-    }
+      .remove-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f8f8f8;
+        color: #666;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+      }
 
-    .remove-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+      .remove-btn:hover:not(:disabled) {
+        background: #f0f0f0;
+      }
 
-    .remove-btn-spacer {
-      width: 32px;
-      height: 32px;
-    }
-  `;
+      .remove-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .remove-btn-spacer {
+        width: 32px;
+        height: 32px;
+      }
+    `;
+  }
 }

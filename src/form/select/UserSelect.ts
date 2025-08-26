@@ -1,4 +1,4 @@
-import { css, CSSResultArray, html, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { Select, SelectOption } from './Select';
 import { property } from 'lit/decorators.js';
 import { getFullName } from '../../display/TembaUser';
@@ -10,16 +10,15 @@ export interface UserOption extends SelectOption {
 }
 
 export class UserSelect extends Select<UserOption> {
-  static get styles(): CSSResultArray {
-    return [
-      super.styles,
-      css`
-        :host {
-          width: 150px;
-          display: block;
-        }
-      `
-    ];
+  static get styles() {
+    return css`
+      ${super.styles}
+
+      :host {
+        width: 150px;
+        display: block;
+      }
+    `;
   }
 
   @property({ type: String })

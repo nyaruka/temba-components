@@ -1,11 +1,14 @@
 import { TemplateResult, html, css } from 'lit';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../Icons';
+import { renderMarkdownInline } from '../markdown';
 
-export class Checkbox extends FormElement {
+export class Checkbox extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
+
       :host {
         color: var(--color-text);
         display: inline-block;
@@ -24,25 +27,45 @@ export class Checkbox extends FormElement {
         background: var(--checkbox-hover-bg, #f9f9f9);
       }
 
-      temba-field {
-        --help-text-margin-left: 24px;
-        cursor: pointer;
-      }
-
       .checkbox-container {
         cursor: pointer;
         display: flex;
+        align-items: flex-start;
         user-select: none;
         -webkit-user-select: none;
+      }
+
+      .checkbox-container temba-icon {
+        align-self: flex-start;
+        vertical-align: top;
+        line-height: 1;
+      }
+
+      .label-and-help {
+        flex-grow: 1;
+        margin-left: 8px;
       }
 
       .checkbox-label {
         font-family: var(--font-family);
         padding: 0px;
-        margin-left: 8px;
+        margin: 0px;
         font-size: 14px;
         line-height: 19px;
-        flex-grow: 1;
+      }
+
+      .checkbox-help-text {
+        font-family: var(--font-family);
+        font-size: var(--help-text-size, 0.85em);
+        line-height: normal;
+        color: var(--color-text-help);
+        margin-top: 4px;
+        opacity: 1;
+      }
+
+      /* Checkbox help text should align with the checkbox icon, not indented */
+      .help-text {
+        margin-left: 0;
       }
 
       .far {
@@ -123,7 +146,7 @@ export class Checkbox extends FormElement {
     super.click();
   }
 
-  public render(): TemplateResult {
+  protected renderWidget(): TemplateResult {
     const icon = html`<temba-icon
       name="${this.checked
         ? Icon.checkbox_checked
@@ -132,27 +155,61 @@ export class Checkbox extends FormElement {
         : Icon.checkbox}"
       size="${this.size}"
       animatechange="${this.animateChange}"
-    />`;
+    ></temba-icon>`;
 
     return html`
-      <div class="wrapper ${this.label ? 'label' : ''}">
-        <temba-field
-          name=${this.name}
-          .helpText=${this.helpText}
-          .errors=${this.errors}
-          .widgetOnly=${this.widgetOnly}
-          .helpAlways=${true}
-          ?disabled=${this.disabled}
-          @click=${this.handleClick}
-        >
-          <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
-            ${icon}
+      <div
+        class="wrapper ${this.label ? 'label' : ''}"
+        @click=${this.handleClick}
+      >
+        <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
+          ${icon}
+          <div class="label-and-help">
             ${this.label && String(this.label).trim()
               ? html`<div class="checkbox-label">${this.label}</div>`
               : null}
+            ${this.helpText && this.helpText !== 'None'
+              ? html` <div class="checkbox-help-text">${this.helpText}</div> `
+              : null}
           </div>
-        </temba-field>
+        </div>
       </div>
     `;
+  }
+
+  protected renderField(): TemplateResult {
+    // Use standard FieldElement behavior but skip the field label since checkbox renders its own inline
+    const hasErrors = !this.hideErrors && this.errors && this.errors.length > 0;
+    const errors = hasErrors
+      ? this.errors.map((error: string) => {
+          return html`
+            <div class="alert-error">${renderMarkdownInline(error)}</div>
+          `;
+        })
+      : [];
+
+    if (this.widgetOnly) {
+      return html`
+        <div class="${this.disabled ? 'disabled' : ''}">
+          ${this.renderWidget()}
+        </div>
+        ${errors}
+      `;
+    }
+
+    // This matches FieldElement.renderField() but without the field label
+    return html`
+      <div
+        class="field ${this.disabled ? 'disabled' : ''} ${hasErrors
+          ? 'has-error'
+          : ''}"
+      >
+        <div class="widget">${this.renderWidget()} ${errors}</div>
+      </div>
+    `;
+  }
+
+  public render(): TemplateResult {
+    return this.renderField();
   }
 }

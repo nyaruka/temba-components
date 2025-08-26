@@ -3,120 +3,123 @@ import { html, css, PropertyValueMap } from 'lit';
 import { CroppieCSS } from './CroppieCSS';
 import { property } from 'lit/decorators.js';
 import { Icon } from '../Icons';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 
-export class ImagePicker extends FormElement {
-  static styles = css`
-    ${CroppieCSS}
+export class ImagePicker extends FieldElement {
+  static get styles() {
+    return css`
+      ${super.styles}
+      ${CroppieCSS}
 
-    .croppie {
-      max-width: 400px;
-      border: 0px solid #ccc;
-      border-radius: 0.5em;
-      overflow: hidden;
-      background: #fff;
-      margin-top: -20%;
-      box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.1);
-    }
+      .croppie {
+        max-width: 400px;
+        border: 0px solid #ccc;
+        border-radius: 0.5em;
+        overflow: hidden;
+        background: #fff;
+        margin-top: -20%;
+        box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.1);
+      }
 
-    .croppie .controls {
-      display: flex;
-      align-items: center;
-      flex-direction: row;
-      justify-content: center;
-      position: absolute;
-      z-index: 1;
-      width: 400px;
-      margin-top: -42px;
-    }
+      .croppie .controls {
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        justify-content: center;
+        position: absolute;
+        z-index: 1;
+        width: 400px;
+        margin-top: -42px;
+      }
 
-    .toggle {
-      height: 110px;
-      width: 110px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+      .toggle {
+        height: 110px;
+        width: 110px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    .circle .toggle {
-      border-radius: 50%;
-    }
+      .circle .toggle {
+        border-radius: 50%;
+      }
 
-    .toggle.set {
-      box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
-        rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, inset 0 0 0 5px rgba(0, 0, 0, 0.1);
-    }
+      .toggle.set {
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, inset 0 0 0 5px rgba(0, 0, 0, 0.1);
+      }
 
-    .toggle.set:hover {
-      box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
-        rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, inset 0 0 0 5px rgba(0, 0, 0, 0.2);
-    }
+      .toggle.set:hover {
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, inset 0 0 0 5px rgba(0, 0, 0, 0.2);
+      }
 
-    .toggle temba-icon {
-      color: rgba(0, 0, 0, 0.2);
-      padding: 5px;
-    }
+      .toggle temba-icon {
+        color: rgba(0, 0, 0, 0.2);
+        padding: 5px;
+      }
 
-    toggle:hover temba-icon {
-      color: rgba(0, 0, 0, 0.8);
-    }
+      toggle:hover temba-icon {
+        color: rgba(0, 0, 0, 0.8);
+      }
 
-    .toggle.set temba-icon {
-      border-radius: 50%;
-      margin-right: -90%;
-      margin-bottom: -50%;
-      background: rgba(240, 240, 240, 1);
-      box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
-    }
+      .toggle.set temba-icon {
+        border-radius: 50%;
+        margin-right: -90%;
+        margin-bottom: -50%;
+        background: rgba(240, 240, 240, 1);
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
+      }
 
-    .toggle.set:hover temba-icon {
-      background: #fff;
-      color: var(--color-primary-dark);
-    }
+      .toggle.set:hover temba-icon {
+        background: #fff;
+        color: var(--color-primary-dark);
+      }
 
-    .circle .toggle.set temba-icon {
-      margin-right: -70%;
-      margin-bottom: -70%;
-    }
+      .circle .toggle.set temba-icon {
+        margin-right: -70%;
+        margin-bottom: -70%;
+      }
 
-    .hidden {
-      display: none;
-    }
+      .hidden {
+        display: none;
+      }
 
-    .controls temba-icon {
-      margin: 0em 0.75em;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 50%;
-      padding: 6px;
-      transition: all 0.1s ease-in-out;
-    }
+      .controls temba-icon {
+        margin: 0em 0.75em;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        padding: 6px;
+        transition: all 0.1s ease-in-out;
+      }
 
-    .controls {
-      pointer-events: none;
-      display: flex;
-    }
+      .controls {
+        pointer-events: none;
+        display: flex;
+      }
 
-    .controls temba-icon {
-      pointer-events: all;
-    }
+      .controls temba-icon {
+        pointer-events: all;
+      }
 
-    .controls temba-icon.close {
-      color: rgba(0, 0, 0, 0.2);
-      background: rgba(255, 255, 255, 0.2);
-    }
+      .controls temba-icon.close {
+        color: rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.2);
+      }
 
-    .controls temba-icon.submit {
-      color: rgba(0, 0, 0, 0.2);
-      box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1);
-    }
+      .controls temba-icon.submit {
+        color: rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1);
+      }
 
-    .controls temba-icon:hover {
-      color: white;
-      cursor: pointer;
-      background: var(--color-primary-dark);
-    }
-  `;
+      .controls temba-icon:hover {
+        color: white;
+        cursor: pointer;
+        background: var(--color-primary-dark);
+      }
+    `;
+  }
 
   @property({ type: String })
   tempImage: string;
@@ -221,18 +224,9 @@ export class ImagePicker extends FormElement {
     input.value = '';
   }
 
-  protected render() {
+  protected renderWidget() {
     return html`
-    <div class="wrapper ${this.shape} ${this.label ? 'label' : ''}">
-      <temba-field
-        name=${this.name}
-        label=${this.label}
-        .helpText=${this.helpText}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .helpAlways=${true}
-        ?disabled=${this.disabled}
-      >
+      <div class="wrapper ${this.shape} ${this.label ? 'label' : ''}">
         <input class='hidden' type="file" accept="image/*" capture="camera" id="file" name="file" @change=${
           this.handleFileChanged
         }/>
@@ -261,8 +255,11 @@ export class ImagePicker extends FormElement {
     }></temba-icon>
             </div>
         </temba-mask>
-      </temba-field>
-    </div>
+      </div>
     `;
+  }
+
+  public render() {
+    return this.renderField();
   }
 }

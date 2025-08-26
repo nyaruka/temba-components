@@ -1,5 +1,6 @@
-import { LitElement, TemplateResult, html } from 'lit';
+import { TemplateResult, html } from 'lit';
 import { property } from 'lit/decorators.js';
+import { FieldElement } from './FieldElement';
 
 export interface ListItem {
   [key: string]: any;
@@ -22,7 +23,7 @@ export interface ListEditorConfig {
 
 export abstract class BaseListEditor<
   T extends ListItem = ListItem
-> extends LitElement {
+> extends FieldElement {
   @property({ attribute: false })
   protected _items: T[] = [];
 
@@ -60,9 +61,8 @@ export abstract class BaseListEditor<
     return !this.maxItems || this._items.length < this.maxItems;
   }
 
-  render(): TemplateResult {
+  renderWidget(): TemplateResult {
     const items = this.displayItems;
-
     return html`
       <div class=${this.getContainerClass()}>
         <div

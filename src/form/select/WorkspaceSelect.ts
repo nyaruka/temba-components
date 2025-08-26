@@ -1,4 +1,4 @@
-import { css, CSSResultArray, html, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { Select, SelectOption } from './Select';
 import { property } from 'lit/decorators.js';
 import { getScrollParent } from '../../utils';
@@ -10,15 +10,14 @@ export interface WorkspaceOption extends SelectOption {
 }
 
 export class WorkspaceSelect extends Select<WorkspaceOption> {
-  static get styles(): CSSResultArray {
-    return [
-      super.styles,
-      css`
-        :host {
-          border: 0px solid blue;
-        }
-      `
-    ];
+  static get styles() {
+    return css`
+      ${super.styles}
+
+      :host {
+        border: 0px solid blue;
+      }
+    `;
   }
 
   @property({ type: String })

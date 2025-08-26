@@ -1,7 +1,7 @@
 import { TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { Completion } from './Completion';
 import { MediaPicker } from './MediaPicker';
 import { Attachment } from '../interfaces';
@@ -12,9 +12,10 @@ import { Icon } from '../Icons';
  * MessageEditor is a composed component that combines temba-completion and temba-media-picker
  * for editing messages with text completion and file attachments
  */
-export class MessageEditor extends FormElement {
+export class MessageEditor extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
       :host {
         display: block;
       }
@@ -129,9 +130,6 @@ export class MessageEditor extends FormElement {
 
   @property({ type: String })
   name = '';
-
-  @property({ type: String })
-  value = '';
 
   @property({ type: String })
   placeholder = '';
@@ -373,77 +371,73 @@ export class MessageEditor extends FormElement {
   }
 
   public render(): TemplateResult {
+    return this.renderField();
+  }
+
+  protected renderWidget(): TemplateResult {
     const hasAttachments = this.hasStaticAttachments();
 
     return html`
-      <temba-field
-        name=${this.name}
-        .label=${this.label}
-        .helpText=${this.helpText}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
+      <div
+        class=${getClasses({
+          'message-editor-container': true,
+          highlight: this.pendingDrop,
+          'has-attachments': hasAttachments
+        })}
+        @dragenter=${this.handleDragEnter}
+        @dragover=${this.handleDragOver}
+        @dragleave=${this.handleDragLeave}
+        @drop=${this.handleDrop}
       >
-        <div
-          class=${getClasses({
-            'message-editor-container': true,
-            highlight: this.pendingDrop,
-            'has-attachments': hasAttachments
-          })}
-          @dragenter=${this.handleDragEnter}
-          @dragover=${this.handleDragOver}
-          @dragleave=${this.handleDragLeave}
-          @drop=${this.handleDrop}
-        >
-          <div class="completion-wrapper">
-            <temba-completion
-              name=${this.name}
-              .value=${this.value}
-              placeholder=${this.placeholder}
-              ?textarea=${this.textarea}
-              ?autogrow=${this.autogrow}
-              ?session=${this.session}
-              ?submitOnEnter=${this.submitOnEnter}
-              ?gsm=${this.gsm}
-              ?disableCompletion=${this.disableCompletion}
-              maxlength=${ifDefined(this.maxLength)}
-              counter=${ifDefined(this.counter)}
-              minHeight=${ifDefined(this.minHeight)}
-              widgetOnly
-              @change=${this.handleCompletionChange}
-            ></temba-completion>
-          </div>
+        <div class="completion-wrapper">
+          <temba-completion
+            name=${this.name}
+            .value=${this.value}
+            placeholder=${this.placeholder}
+            ?textarea=${this.textarea}
+            ?autogrow=${this.autogrow}
+            ?session=${this.session}
+            ?submitOnEnter=${this.submitOnEnter}
+            ?gsm=${this.gsm}
+            ?disableCompletion=${this.disableCompletion}
+            maxlength=${ifDefined(this.maxLength)}
+            counter=${ifDefined(this.counter)}
+            minHeight=${ifDefined(this.minHeight)}
+            widgetOnly
+            @change=${this.handleCompletionChange}
+          ></temba-completion>
+        </div>
 
-          <div class="media-wrapper ">
-            <temba-media-picker
+        <div class="media-wrapper ">
+          <temba-media-picker
+            .accept=${this.accept}
+            .max=${this.maxAttachments}
+            .endpoint=${this.endpoint}
+            @change=${this.handleMediaChange}
+            ignoreDrops
+          ></temba-media-picker>
+        </div>
+        <temba-icon
+          class="attachment-icon"
+          name=${Icon.attachment}
+          size="1.2"
+          @click=${this.handleAttachmentIconClick}
+        ></temba-icon>
+
+        <div class="drop-overlay"></div>
+
+        <!-- Hidden media picker for handling uploads when no attachments are shown -->
+        ${!hasAttachments
+          ? html`<temba-media-picker
+              style="display: none;"
               .accept=${this.accept}
               .max=${this.maxAttachments}
               .endpoint=${this.endpoint}
               @change=${this.handleMediaChange}
               ignoreDrops
-            ></temba-media-picker>
-          </div>
-          <temba-icon
-            class="attachment-icon"
-            name=${Icon.attachment}
-            size="1.2"
-            @click=${this.handleAttachmentIconClick}
-          ></temba-icon>
-
-          <div class="drop-overlay"></div>
-
-          <!-- Hidden media picker for handling uploads when no attachments are shown -->
-          ${!hasAttachments
-            ? html`<temba-media-picker
-                style="display: none;"
-                .accept=${this.accept}
-                .max=${this.maxAttachments}
-                .endpoint=${this.endpoint}
-                @change=${this.handleMediaChange}
-                ignoreDrops
-              ></temba-media-picker>`
-            : ''}
-        </div>
-      </temba-field>
+            ></temba-media-picker>`
+          : ''}
+      </div>
     `;
   }
 }
