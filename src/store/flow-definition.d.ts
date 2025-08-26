@@ -175,7 +175,8 @@ export interface CallLLM extends Action {
   llm: NamedObject;
   instructions: string;
   input: string;
-  result_name: string;
+  result_name?: string;
+  output_local?: string;
 }
 
 export interface OpenTicket extends Action {

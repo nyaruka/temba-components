@@ -932,3 +932,195 @@ export const getMiddle = (a: DOMRect, b: DOMRect) => {
 
 // Export the UUID function from the uuid package
 export { generateUUID };
+
+// Helper types for router creation
+export interface RouterCategory {
+  uuid: string;
+  name: string;
+  exit_uuid: string;
+}
+
+export interface RouterExit {
+  uuid: string;
+  destination_uuid: string | null;
+}
+
+export interface RouterCase {
+  uuid: string;
+  type: string;
+  arguments: string[];
+  category_uuid: string;
+}
+
+export interface CreateCategoryParams {
+  name: string;
+  existingCategories: any[];
+  existingExits: any[];
+  existingCases?: any[];
+  caseConfig?: {
+    type: string;
+    arguments: string[];
+  };
+}
+
+// Helper function to create or preserve a category with its exit and case
+export const createOrPreserveCategory = (
+  params: CreateCategoryParams
+): {
+  category: RouterCategory;
+  exit: RouterExit;
+  case?: RouterCase;
+} => {
+  const { name, existingCategories, existingExits, existingCases, caseConfig } =
+    params;
+
+  // Find existing category
+  const existingCategory = existingCategories.find((cat) => cat.name === name);
+  const existingExit = existingCategory
+    ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
+    : null;
+  const existingCase =
+    existingCategory && existingCases
+      ? existingCases.find(
+          (case_) => case_.category_uuid === existingCategory.uuid
+        )
+      : null;
+
+  // Use existing UUIDs or generate new ones
+  const categoryUuid = existingCategory?.uuid || generateUUID();
+  const exitUuid = existingExit?.uuid || generateUUID();
+  const caseUuid = existingCase?.uuid || generateUUID();
+
+  const category: RouterCategory = {
+    uuid: categoryUuid,
+    name: name,
+    exit_uuid: exitUuid
+  };
+
+  const exit: RouterExit = {
+    uuid: exitUuid,
+    destination_uuid: existingExit?.destination_uuid || null
+  };
+
+  const result: {
+    category: RouterCategory;
+    exit: RouterExit;
+    case?: RouterCase;
+  } = { category, exit };
+
+  if (caseConfig) {
+    result.case = {
+      uuid: caseUuid,
+      type: caseConfig.type,
+      arguments: caseConfig.arguments,
+      category_uuid: categoryUuid
+    };
+  }
+
+  return result;
+};
+
+// Helper function to create a complete router with standard Success/Failure categories
+export const createSuccessFailureRouter = (
+  operand: string,
+  successCaseConfig: { type: string; arguments: string[] },
+  existingCategories: any[] = [],
+  existingExits: any[] = [],
+  existingCases: any[] = []
+) => {
+  const success = createOrPreserveCategory({
+    name: 'Success',
+    existingCategories,
+    existingExits,
+    existingCases,
+    caseConfig: successCaseConfig
+  });
+
+  const failure = createOrPreserveCategory({
+    name: 'Failure',
+    existingCategories,
+    existingExits
+  });
+
+  return {
+    router: {
+      type: 'switch' as const,
+      categories: [success.category, failure.category],
+      default_category_uuid: failure.category.uuid,
+      operand: operand,
+      cases: success.case ? [success.case] : []
+    },
+    exits: [success.exit, failure.exit]
+  };
+};
+
+// Helper function to create a multi-category router with Other/Failure defaults
+export const createMultiCategoryRouter = (
+  operand: string,
+  userCategories: string[],
+  categoryToCaseMap: (categoryName: string) => {
+    type: string;
+    arguments: string[];
+  },
+  existingCategories: any[] = [],
+  existingExits: any[] = [],
+  existingCases: any[] = []
+) => {
+  const categories: RouterCategory[] = [];
+  const exits: RouterExit[] = [];
+  const cases: RouterCase[] = [];
+
+  // Add user categories
+  userCategories.forEach((categoryName) => {
+    const result = createOrPreserveCategory({
+      name: categoryName,
+      existingCategories,
+      existingExits,
+      existingCases,
+      caseConfig: categoryToCaseMap(categoryName)
+    });
+
+    categories.push(result.category);
+    exits.push(result.exit);
+    if (result.case) {
+      cases.push(result.case);
+    }
+  });
+
+  // Add "Other" category (default)
+  const other = createOrPreserveCategory({
+    name: 'Other',
+    existingCategories,
+    existingExits
+  });
+  categories.push(other.category);
+  exits.push(other.exit);
+
+  // Add "Failure" category
+  const failure = createOrPreserveCategory({
+    name: 'Failure',
+    existingCategories,
+    existingExits,
+    existingCases,
+    caseConfig: {
+      type: 'has_only_text',
+      arguments: ['<ERROR>']
+    }
+  });
+  categories.push(failure.category);
+  exits.push(failure.exit);
+  if (failure.case) {
+    cases.push(failure.case);
+  }
+
+  return {
+    router: {
+      type: 'switch' as const,
+      categories: categories,
+      default_category_uuid: other.category.uuid,
+      operand: operand,
+      cases: cases
+    },
+    exits: exits
+  };
+};
