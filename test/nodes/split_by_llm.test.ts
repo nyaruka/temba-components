@@ -13,7 +13,7 @@ describe('split_by_llm node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(split_by_llm.name).to.equal('Split by AI');
+      expect(split_by_llm.name).to.equal('Call AI');
     });
 
     it('has form configuration', () => {

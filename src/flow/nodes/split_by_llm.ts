@@ -46,11 +46,10 @@ export const split_by_llm: NodeConfig = {
     return html`
       <div
         class="body"
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; max-width: 180px; max-height: 90px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;"
+        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; max-width: 180px; max-height: 90px; margin-bottom:10px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;"
       >
         ${callLlmAction?.instructions || 'Configure AI instructions'}
       </div>
-      <div style="margin-bottom:10px"></div>
     `;
   },
   toFormData: (node: Node) => {
