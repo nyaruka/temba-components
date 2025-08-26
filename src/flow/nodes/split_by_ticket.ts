@@ -1,11 +1,11 @@
 import { COLORS, NodeConfig } from '../types';
-import { Node } from '../../store/flow-definition';
+import { Node, OpenTicket } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
 
 export const split_by_ticket: NodeConfig = {
   type: 'split_by_ticket',
-  name: 'Split by Ticket',
+  name: 'Open Ticket',
   color: COLORS.create,
   form: {
     topic: {
@@ -48,7 +48,7 @@ export const split_by_ticket: NodeConfig = {
   render: (node: Node) => {
     const openTicketAction = node.actions?.find(
       (action) => action.type === 'open_ticket'
-    ) as any;
+    ) as OpenTicket;
     return html`
       <div class="body">
         ${openTicketAction?.topic?.name || 'Configure ticket'}
@@ -90,7 +90,7 @@ export const split_by_ticket: NodeConfig = {
     const openTicketUuid = existingOpenTicketAction?.uuid || generateUUID();
 
     // Create open_ticket action
-    const openTicketAction: any = {
+    const openTicketAction: OpenTicket = {
       type: 'open_ticket',
       uuid: openTicketUuid,
       topic:

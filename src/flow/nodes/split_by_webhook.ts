@@ -18,7 +18,7 @@ const defaultPost = `@(json(object(
 
 export const split_by_webhook: NodeConfig = {
   type: 'split_by_webhook',
-  name: 'Split by Webhook',
+  name: 'Call Webhook',
   color: COLORS.call,
   form: {
     method: {
@@ -118,7 +118,7 @@ export const split_by_webhook: NodeConfig = {
   render: (node: Node) => {
     const callWebhookAction = node.actions?.find(
       (action) => action.type === 'call_webhook'
-    ) as any;
+    ) as CallWebhook;
     return html`
       <div
         class="body"

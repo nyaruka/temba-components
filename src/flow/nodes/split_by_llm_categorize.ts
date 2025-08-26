@@ -1,5 +1,5 @@
 import { COLORS, NodeConfig } from '../types';
-import { Node } from '../../store/flow-definition';
+import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
 
@@ -92,7 +92,7 @@ export const split_by_llm_categorize: NodeConfig = {
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
       (action) => action.type === 'call_llm'
-    ) as any;
+    ) as CallLLM;
     return html`
       <div class="body">Categorize with ${callLlmAction.llm.name}</div>
     `;
@@ -135,7 +135,7 @@ export const split_by_llm_categorize: NodeConfig = {
     const callLlmUuid = existingCallLlmAction?.uuid || generateUUID();
 
     // Create call_llm action (using any type to match the example format)
-    const callLlmAction: any = {
+    const callLlmAction: CallLLM = {
       type: 'call_llm',
       uuid: callLlmUuid,
       llm: llmSelection
