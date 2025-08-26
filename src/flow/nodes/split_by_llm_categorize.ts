@@ -1,6 +1,6 @@
 import { COLORS, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
-import { generateUUID } from '../../utils';
+import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
 
 export const split_by_llm_categorize: NodeConfig = {
@@ -147,124 +147,21 @@ export const split_by_llm_categorize: NodeConfig = {
     };
 
     // Create categories and exits
-    const categories = [];
-    const exits = [];
-    const cases = [];
-
-    // Get existing categories from original node for UUID preservation
     const existingCategories = originalNode.router?.categories || [];
     const existingExits = originalNode.exits || [];
     const existingCases = originalNode.router?.cases || [];
 
-    // Add user categories
-    userCategories.forEach((categoryName: string) => {
-      // Check if this category already exists
-      const existingCategory = existingCategories.find(
-        (cat) => cat.name === categoryName
-      );
-      const existingExit = existingCategory
-        ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
-        : null;
-      const existingCase = existingCategory
-        ? existingCases.find(
-            (case_) => case_.category_uuid === existingCategory.uuid
-          )
-        : null;
-
-      // Use existing UUIDs if category name hasn't changed, otherwise generate new ones
-      const categoryUuid = existingCategory?.uuid || generateUUID();
-      const exitUuid = existingExit?.uuid || generateUUID();
-      const caseUuid = existingCase?.uuid || generateUUID();
-
-      categories.push({
-        uuid: categoryUuid,
-        name: categoryName,
-        exit_uuid: exitUuid
-      });
-
-      exits.push({
-        uuid: exitUuid,
-        destination_uuid: existingExit?.destination_uuid || null
-      });
-
-      cases.push({
-        uuid: caseUuid,
+    const { router, exits } = createMultiCategoryRouter(
+      '@locals._llm_output',
+      userCategories,
+      (categoryName) => ({
         type: 'has_only_text',
-        arguments: [categoryName],
-        category_uuid: categoryUuid
-      });
-    });
-
-    // Add "Other" category (default)
-    const existingOtherCategory = existingCategories.find(
-      (cat) => cat.name === 'Other'
+        arguments: [categoryName]
+      }),
+      existingCategories,
+      existingExits,
+      existingCases
     );
-    const existingOtherExit = existingOtherCategory
-      ? existingExits.find(
-          (exit) => exit.uuid === existingOtherCategory.exit_uuid
-        )
-      : null;
-
-    const otherCategoryUuid = existingOtherCategory?.uuid || generateUUID();
-    const otherExitUuid = existingOtherExit?.uuid || generateUUID();
-
-    categories.push({
-      uuid: otherCategoryUuid,
-      name: 'Other',
-      exit_uuid: otherExitUuid
-    });
-    exits.push({
-      uuid: otherExitUuid,
-      destination_uuid: existingOtherExit?.destination_uuid || null
-    });
-
-    // Add "Failure" category
-    const existingFailureCategory = existingCategories.find(
-      (cat) => cat.name === 'Failure'
-    );
-    const existingFailureExit = existingFailureCategory
-      ? existingExits.find(
-          (exit) => exit.uuid === existingFailureCategory.exit_uuid
-        )
-      : null;
-    const existingFailureCase = existingFailureCategory
-      ? existingCases.find(
-          (case_) =>
-            case_.category_uuid === existingFailureCategory.uuid &&
-            case_.arguments?.[0] === '<ERROR>'
-        )
-      : null;
-
-    const failureCategoryUuid = existingFailureCategory?.uuid || generateUUID();
-    const failureExitUuid = existingFailureExit?.uuid || generateUUID();
-    const failureCaseUuid = existingFailureCase?.uuid || generateUUID();
-
-    categories.push({
-      uuid: failureCategoryUuid,
-      name: 'Failure',
-      exit_uuid: failureExitUuid
-    });
-    exits.push({
-      uuid: failureExitUuid,
-      destination_uuid: existingFailureExit?.destination_uuid || null
-    });
-
-    // Add failure case for <ERROR>
-    cases.push({
-      uuid: failureCaseUuid,
-      type: 'has_only_text',
-      arguments: ['<ERROR>'],
-      category_uuid: failureCategoryUuid
-    });
-
-    // Create the router
-    const router = {
-      type: 'switch' as const,
-      categories: categories,
-      default_category_uuid: otherCategoryUuid,
-      operand: '@locals._llm_output',
-      cases: cases
-    };
 
     // Return the complete node
     return {

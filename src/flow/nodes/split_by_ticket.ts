@@ -1,6 +1,6 @@
 import { COLORS, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
-import { generateUUID } from '../../utils';
+import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
 
 export const split_by_ticket: NodeConfig = {
@@ -120,79 +120,16 @@ export const split_by_ticket: NodeConfig = {
     const existingExits = originalNode.exits || [];
     const existingCases = originalNode.router?.cases || [];
 
-    // Find existing Success category
-    const existingSuccessCategory = existingCategories.find(
-      (cat) => cat.name === 'Success'
-    );
-    const existingSuccessExit = existingSuccessCategory
-      ? existingExits.find(
-          (exit) => exit.uuid === existingSuccessCategory.exit_uuid
-        )
-      : null;
-    const existingSuccessCase = existingSuccessCategory
-      ? existingCases.find(
-          (case_) => case_.category_uuid === existingSuccessCategory.uuid
-        )
-      : null;
-
-    const successCategoryUuid = existingSuccessCategory?.uuid || generateUUID();
-    const successExitUuid = existingSuccessExit?.uuid || generateUUID();
-    const successCaseUuid = existingSuccessCase?.uuid || generateUUID();
-
-    // Find existing Failure category
-    const existingFailureCategory = existingCategories.find(
-      (cat) => cat.name === 'Failure'
-    );
-    const existingFailureExit = existingFailureCategory
-      ? existingExits.find(
-          (exit) => exit.uuid === existingFailureCategory.exit_uuid
-        )
-      : null;
-
-    const failureCategoryUuid = existingFailureCategory?.uuid || generateUUID();
-    const failureExitUuid = existingFailureExit?.uuid || generateUUID();
-
-    const categories = [
+    const { router, exits } = createSuccessFailureRouter(
+      '@locals._new_ticket',
       {
-        uuid: successCategoryUuid,
-        name: 'Success',
-        exit_uuid: successExitUuid
-      },
-      {
-        uuid: failureCategoryUuid,
-        name: 'Failure',
-        exit_uuid: failureExitUuid
-      }
-    ];
-
-    const exits = [
-      {
-        uuid: successExitUuid,
-        destination_uuid: existingSuccessExit?.destination_uuid || null
-      },
-      {
-        uuid: failureExitUuid,
-        destination_uuid: existingFailureExit?.destination_uuid || null
-      }
-    ];
-
-    const cases = [
-      {
-        uuid: successCaseUuid,
         type: 'has_text',
-        arguments: [],
-        category_uuid: successCategoryUuid
-      }
-    ];
-
-    // Create the router
-    const router = {
-      type: 'switch' as const,
-      categories: categories,
-      default_category_uuid: failureCategoryUuid,
-      operand: '@locals._new_ticket',
-      cases: cases
-    };
+        arguments: []
+      },
+      existingCategories,
+      existingExits,
+      existingCases
+    );
 
     // Return the complete node
     return {
