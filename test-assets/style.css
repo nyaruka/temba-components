@@ -1,236 +1,3 @@
-#mocha {
-  display: none;
-}
-
-temba-dialog,
-temba-modax,
-temba-contact-history,
-temba-menu,
-temba-select {
-  --transition-speed: 0ms !important;
-}
-
-body {
-  padding: 20px;
-}
-
-html input {
-
-  caret-color: transparent;
-}
-
-temba-input,
-temba-modax,
-temba-dialog {
-  caret-color: transparent;
-}
-
-/* Disable CSS animations for deterministic screenshots */
-*,
-*::before,
-*::after {
-  animation-duration: 0s !important;
-  animation-delay: 0s !important;
-  transition-duration: 0s !important;
-  transition-delay: 0s !important;
-  animation-iteration-count: 1 !important;
-}
-
-/* Override CSS custom properties for animation control in tests */
-:root {
-  --test-animation-duration: 0s !important;
-  --test-animation-play-state: paused !important;
-}
-
-/* Force disable spin animations by overriding keyframes - this pierces shadow DOM */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(0deg); }
-}
-
-html {
-  --transition-speed: 0ms !important;
-  --input-caret: transparent !important;
-  --font-family: 'Roboto';
-  --primary-rgb: 35, 135, 202;
-  --secondary-rgb: 140, 51, 140;
-  --tertiary-rgb: 135, 202, 35;
-
-  --focus-rgb: 82, 168, 236;
-  --error-rgb: 255, 99, 71;
-  --success-rgb: 102, 186, 104;
-
-  --color-label: #333;
-
-  --selection-light-rgb: 240, 240, 240;
-  --selection-dark-rgb: 180, 180, 180;
-
-  --select-input-height: inherit;
-
-  --curvature: 6px;
-  --curvature-widget: 6px;
-  --color-focus: #a4cafe;
-  --color-widget-bg: #fff;
-  --color-widget-bg-focused: #fff;
-  --color-widget-border: rgb(225, 225, 225);
-
-  /* primary colors, should be dark */
-  --color-selection: #f0f6ff;
-
-  --widget-box-shadow-focused: 0 0 0 3px rgba(164, 202, 254, .45);
-  --widget-box-shadow-focused-error: 0 0 0 3px rgba(var(--error-rgb), 0.3);
-
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-
-  /* page text, borders, widgets */
-  --color-text: #555;
-  --color-widget-text: #555;
-  --color-borders: rgba(0, 0, 0, 0.07);
-  --color-placeholder: #ccc;
-
-  /* light colors, panel backgrounds, selection, etc */
-  --color-primary-light: #eee;
-  --color-secondary-light: #ccc;
-
-  /* dark colors, nav bar, buttons, etc */
-  --color-primary-dark: rgb(var(--primary-rgb));
-  --color-secondary-dark: rgb(var(--secondary-rgb));
-
-  /* light text goes over dark, dark over lights */
-  --color-text-light: rgba(255, 255, 255, 1);
-  --color-text-dark: rgba(0, 0, 0, 0.5);
-  --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
-  --color-text-help: rgba(0, 0, 0, 0.35);
-
-  --color-tertiary: rgb(var(--tertiary-rgb));
-
-  /* solid overlays with text */
-  --color-overlay-dark: rgba(0, 0, 0, 0.2);
-  --color-overlay-dark-text: rgba(255, 255, 255, 0.9);
-  --color-overlay-light: rgba(0, 0, 0, 0.05);
-  --color-overlay-light-text: rgba(0, 0, 0, 0.6);
-
-  /* links, buttons, and label badges */
-  --color-link-primary: rgba(var(--primary-rgb), 0.8);
-  --color-link-primary-hover: rgba(var(--primary-rgb), 0.9);
-  --color-link-secondary: rgba(var(--secondary-rgb), 0.8);
-  --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
-  --color-button-primary: var(--color-primary-dark);
-  --color-button-primary-text: var(--color-text-light);
-  --color-button-light: rgb(246, 248, 250);
-  --color-button-light-text: rgb(36, 41, 47);
-  --color-button-secondary: var(--color-secondary-light);
-  --color-button-secondary-text: var(--color-text-dark);
-
-  --color-button-destructive: rgb(var(--error-rgb));
-  --color-button-destructive-text: var(--color-text-light);
-
-  --color-button-attention: #2ecc71;
-
-  --color-label-primary: var(--color-primary-dark);
-  --color-label-primary-text: var(--color-text-light);
-  --color-label-secondary: rgba(0, 0, 0, 0.2);
-  --color-label-secondary-text: rgba(255, 255, 255, 0.9);
-
-  --color-nav-unselected: #fff;
-  --color-nav-selected-bg: #fff;
-  --color-nav-selected-text: var(--color-primary-dark);
-  --color-info: rgb(238, 246, 255);
-  --color-info-border: rgb(74, 163, 223);
-
-  --color-warning: rgb(255, 253, 218);
-  --color-warning-border: rgb(251, 246, 176);
-  --color-error: rgb(var(--error-rgb));
-  --font-size: 14px;
-  --button-font-size: 1.125rem;
-
-  --header-bg: var(--color-primary-dark);
-  --header-text: var(--color-text-light);
-
-  --temba-textinput-padding: 9px;
-  --temba-textinput-font-size: 13px;
-
-  --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-
-  font-size: var(--font-size);
-  font-weight: 400;
-  font-family: var(--font-family);
-  --dropdown-shadow: rgb(0 0 0 / 30%) 0px 0px 60px, rgb(0 0 0 / 12%) 0px 6px 12px;
-
-  --icon-color: var(--text-color);
-  --icon-color-hover: var(--icon-color);
-  --event-padding: 0.5em 1em;
-  --temba-select-selected-padding: 9px;
-  --temba-select-selected-line-height: 16px;
-  --temba-select-selected-font-size: 13px;
-
-  --help-text-margin-top: 0px;
-  --help-text-margin-left: 0.3em;
-  --help-text-size: 0.85em;
-  --color-text-help: rgb(120, 120, 120);
-  --label-size: 14px;
-
-  --button-y: 6px;
-  --button-x: 14px;
-
-  --menu-padding: 1em;
-  --color-automated: rgb(78, 205, 106);
-}
-
-temba-button {
-  --button-bg: var(--color-primary-dark);
-  --button-text: var(--color-text-light);
-  --button-border: none;
-  --button-shadow: var(--widget-box-shadow);
-}
-
-temba-button:hover {
-  --button-bg-img: linear-gradient(to bottom, rgba(var(--primary-rgb), .1), transparent, transparent);
-}
-
-temba-button.active {
-  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .05));
-}
-
-temba-button.light {
-  --button-bg: #fff;
-  --button-text: #999;
-  --button-border: none;
-  --button-shadow: var(--widget-box-shadow);
-
-}
-
-temba-button.light:hover {
-  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .001));
-}
-
-temba-button.light.active {
-  --button-bg-img: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .02));
-}
-
-temba-contact-history {
-  min-height: 0;
-  display: flex;
-  flex-grow: 1;
-  flex-direction: column;
-}
-
-temba-select:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-temba-datepicker {
-  margin: 1em;
-}
-
-.flatpickr-calendar {
-  margin-top: 28px;
-  margin-bottom: 28px;
-  margin-left: -13px;
-}
-
 @font-face {
   font-family: 'Roboto Mono';
   font-style: normal;
@@ -288,4 +55,39 @@ temba-datepicker {
     /* Chrome 26+, Opera 23+, Firefox 39+ */
     url('./fonts/roboto-v20-latin-500.woff') format('woff');
   /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+/* Force disable spin animations by overriding keyframes - this pierces shadow DOM */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(0deg); }
+}
+
+#mocha {
+  display: none;
+}
+
+/* Disable transitions and carets for deterministic screenshots */
+*,
+*::before,
+*::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  --transition-speed: 0ms !important;
+  --test-animation-duration: 0s !important;
+  --test-animation-play-state: paused !important;
+  caret-color: transparent;
+}
+
+/** 
+  Without this body styling our screenshots don't have the proper dpi, 
+  perhaps triggers a different rendering path for puppeteer? The styling
+  appears like it could be anything.
+  Unsure. 
+**/
+body {
+  padding: 20px;
 }

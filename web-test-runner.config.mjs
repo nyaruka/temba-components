@@ -329,7 +329,7 @@ export default {
           return {
             body: context.body.replace(
               /<head>/,
-              `<head><link rel="stylesheet" href="/test-assets/style.css">`
+              `<head><link rel="stylesheet" href="/test-assets/temba-components.css"/><link rel="stylesheet" href="/test-assets/style.css"/>`
             ),
           };
         }
