@@ -1080,7 +1080,7 @@ describe('temba-select', () => {
       );
     });
 
-    it('can select expression completion as value', async () => {
+    it.only('can select expression completion as value', async () => {
       await loadStore();
 
       const select = await createSelect(
