@@ -29,19 +29,6 @@ export class FormField extends LitElement {
         line-height: normal;
         color: var(--color-text-help);
         margin-left: var(--help-text-margin-left);
-        margin-top: -16px;
-        opacity: 0;
-        transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
-        pointer-events: none;
-      }
-
-      .help-text.help-always {
-        opacity: 1;
-        margin-top: 6px;
-        margin-left: var(--help-text-margin-left);
-      }
-
-      .field:focus-within .help-text {
         margin-top: 6px;
         opacity: 1;
       }
@@ -166,9 +153,6 @@ export class FormField extends LitElement {
   @property({ type: String, attribute: 'help_text' })
   helpText = '';
 
-  @property({ type: Boolean, attribute: 'help_always' })
-  helpAlways = true;
-
   @property({ type: String })
   label = '';
 
@@ -227,7 +211,7 @@ export class FormField extends LitElement {
         </div>
         ${this.helpText && this.helpText !== 'None'
           ? html`
-              <div class="help-text ${this.helpAlways ? 'help-always' : null}">
+              <div class="help-text">
                 ${renderMarkdownInline(this.helpText)}
               </div>
             `

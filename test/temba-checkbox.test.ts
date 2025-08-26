@@ -165,4 +165,30 @@ describe('temba-checkbox', () => {
     data = new FormData(form);
     expect(data.get('my-cb')).to.equal('5');
   });
+
+  it('aligns help text with label when both are present', async () => {
+    const el: Checkbox = await fixture(html`
+      <temba-checkbox
+        label="Checkbox with help"
+        help_text="This help text should align with the label text"
+      >
+      </temba-checkbox>
+    `);
+
+    expect(el.label).to.equal('Checkbox with help');
+    expect(el.helpText).to.equal(
+      'This help text should align with the label text'
+    );
+
+    // Verify help text element exists and has proper alignment styles
+    const helpTextEl = el.shadowRoot.querySelector(
+      '.checkbox-help-text'
+    ) as HTMLElement;
+    expect(helpTextEl).to.not.be.null;
+    expect(helpTextEl.textContent.trim()).to.equal(
+      'This help text should align with the label text'
+    );
+
+    await assertScreenshot('checkbox/checkbox-with-help-text', getClip(el));
+  });
 });

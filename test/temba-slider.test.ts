@@ -15,7 +15,6 @@ describe('temba-slider', () => {
       <temba-slider label="My Slider"></temba-slider>
     `);
 
-    expect(slider.label).to.equal('My Slider');
     await assertScreenshot('slider/default', getClip(slider));
   });
 

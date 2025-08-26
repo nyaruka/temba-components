@@ -16,6 +16,7 @@ export enum InputType {
 export class TextInput extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
       .input-container {
         border-radius: var(--curvature-widget);
         cursor: var(--input-cursor);

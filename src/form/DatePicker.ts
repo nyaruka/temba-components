@@ -1,12 +1,13 @@
 import { TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { getClasses } from '../utils';
 import { DateTime } from 'luxon';
 
-export class DatePicker extends FormElement {
+export class DatePicker extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
       :host {
         display: block;
       }
@@ -205,7 +206,7 @@ export class DatePicker extends FormElement {
     this.shadowRoot.querySelector('input').focus();
   }
 
-  public render(): TemplateResult {
+  protected renderWidget(): TemplateResult {
     const classes = getClasses({ unset: !this.value });
 
     let dateWidgetValue = null;
@@ -216,42 +217,35 @@ export class DatePicker extends FormElement {
     }
 
     return html`
-      <temba-field
-        class=${getClasses({ disabled: this.disabled })}
-        name=${this.name}
-        .label="${this.label}"
-        .helpText="${this.helpText}"
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .hideLabel=${this.hideLabel}
-        .disabled=${this.disabled}
-      >
-        <div class="container" @click=${this.handleClicked}>
-          <slot name="prefix"></slot>
-          <div class="input-wrapper">
-            <input
-              class=${classes}
-              name=${this.label}
-              value=${dateWidgetValue}
-              type="${this.time ? 'datetime-local' : 'date'}"
-              @change=${this.handleChange}
-              min=${this.min || undefined}
-              max=${this.max || undefined}
-            />
-          </div>
-          ${this.time
-            ? html`
-                <div class="tz-wrapper">
-                  <div class="tz">
-                    <div class="label">Time Zone</div>
-                    <div class="zone">${this.timezoneFriendly}</div>
-                  </div>
-                </div>
-              `
-            : null}
-          <slot name="postfix"></slot>
+      <div class="container" @click=${this.handleClicked}>
+        <slot name="prefix"></slot>
+        <div class="input-wrapper">
+          <input
+            class=${classes}
+            name=${this.label}
+            value=${dateWidgetValue}
+            type="${this.time ? 'datetime-local' : 'date'}"
+            @change=${this.handleChange}
+            min=${this.min || undefined}
+            max=${this.max || undefined}
+          />
         </div>
-      </temba-field>
+        ${this.time
+          ? html`
+              <div class="tz-wrapper">
+                <div class="tz">
+                  <div class="label">Time Zone</div>
+                  <div class="zone">${this.timezoneFriendly}</div>
+                </div>
+              </div>
+            `
+          : null}
+        <slot name="postfix"></slot>
+      </div>
     `;
+  }
+
+  public render(): TemplateResult {
+    return this.renderField();
   }
 }

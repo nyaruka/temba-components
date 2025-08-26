@@ -12,23 +12,23 @@ export class FormElement extends RapidElement {
   @property({ type: String, attribute: 'help_text' })
   helpText: string;
 
-  @property({ type: Boolean, attribute: 'help_always' })
-  helpAlways: boolean;
-
   @property({ type: Boolean, attribute: 'widget_only' })
   widgetOnly: boolean;
-
-  @property({ type: Boolean, attribute: 'hide_label' })
-  hideLabel: boolean;
-
-  @property({ type: String })
-  label: string;
 
   @property({ type: Array })
   errors: string[];
 
+  // Use @property with custom getter/setter to handle both attribute and programmatic access
+  private _value: any = '';
+
   @property({ type: String })
-  value = null;
+  public get value() {
+    return this._value;
+  }
+
+  public set value(value) {
+    this._value = value;
+  }
 
   @property({ attribute: false })
   inputRoot: HTMLElement = this;
@@ -60,6 +60,9 @@ export class FormElement extends RapidElement {
   }
 
   public getDeserializedValue(): any {
+    if (!this.value || this.value === '') {
+      return null;
+    }
     return JSON.parse(this.value);
   }
 

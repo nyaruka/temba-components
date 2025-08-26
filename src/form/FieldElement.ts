@@ -15,6 +15,12 @@ export abstract class FieldElement extends FormElement {
   @property({ type: Boolean })
   hideErrors = false;
 
+  @property({ type: Boolean, attribute: 'hide_label' })
+  hideLabel: boolean;
+
+  @property({ type: String })
+  label: string;
+
   static get styles() {
     return css`
       :host {
@@ -37,19 +43,6 @@ export abstract class FieldElement extends FormElement {
         line-height: normal;
         color: var(--color-text-help);
         margin-left: var(--help-text-margin-left);
-        margin-top: -16px;
-        opacity: 0;
-        transition: opacity ease-in-out 100ms, margin-top ease-in-out 200ms;
-        pointer-events: none;
-      }
-
-      .help-text.help-always {
-        opacity: 1;
-        margin-top: 6px;
-        margin-left: var(--help-text-margin-left);
-      }
-
-      .field:focus-within .help-text {
         margin-top: 6px;
         opacity: 1;
       }
@@ -217,7 +210,7 @@ export abstract class FieldElement extends FormElement {
         <div class="widget">${this.renderWidget()} ${errors}</div>
         ${this.helpText && this.helpText !== 'None'
           ? html`
-              <div class="help-text ${this.helpAlways ? 'help-always' : null}">
+              <div class="help-text">
                 ${renderMarkdownInline(this.helpText)}
               </div>
             `

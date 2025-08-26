@@ -8,7 +8,7 @@ import {
   executeCompletionQuery
 } from '../excellent/helpers';
 
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { CompletionOption, Position } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { msg } from '@lit/localize';
@@ -16,9 +16,10 @@ import { msg } from '@lit/localize';
 /**
  * Completion is a text input that handles excellent completion options in a popup
  */
-export class Completion extends FormElement {
+export class Completion extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
       :host {
         display: block;
       }
@@ -69,7 +70,6 @@ export class Completion extends FormElement {
       }
 
       code {
-        background: rgba(0, 0, 0, 0.1);
         padding: 1px 5px;
         border-radius: var(--curvature);
       }
@@ -105,9 +105,6 @@ export class Completion extends FormElement {
 
   @property({ type: String })
   name = '';
-
-  @property({ type: String })
-  value = '';
 
   @property({ type: Boolean })
   textarea: boolean;
@@ -259,7 +256,7 @@ export class Completion extends FormElement {
     }
   }
 
-  public render(): TemplateResult {
+  protected renderWidget(): TemplateResult {
     const anchorStyles = this.anchorPosition
       ? {
           top: `${this.anchorPosition.top}px`,
@@ -270,55 +267,51 @@ export class Completion extends FormElement {
     const visible = this.options && this.options.length > 0;
 
     return html`
-      <temba-field
-        name=${this.name}
-        .label=${this.label}
-        .helpText=${this.helpText}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-      >
-        <div class="comp-container">
-          <div id="anchor" style=${styleMap(anchorStyles)}></div>
-          <temba-textinput
-            name=${this.name}
-            placeholder=${this.placeholder}
-            gsm=${this.gsm}
-            counter=${ifDefined(this.counter)}
-            @keyup=${this.handleKeyUp}
-            @click=${this.handleClick}
-            @input=${this.handleInput}
-            @blur=${this.handleOptionCanceled}
-            maxlength="${ifDefined(this.maxLength)}"
-            .value=${this.value}
-            ?autogrow=${this.autogrow}
-            ?textarea=${this.textarea}
-            ?submitOnEnter=${this.submitOnEnter}
-            style=${this.minHeight
-              ? `--textarea-min-height: ${this.minHeight}px`
-              : ''}
-          >
-          </temba-textinput>
-          <temba-options
-            @temba-selection=${this.handleOptionSelection}
-            @temba-canceled=${this.handleOptionCanceled}
-            .renderOption=${renderCompletionOption}
-            .anchorTo=${this.anchorElement}
-            .options=${this.options}
-            ?visible=${visible}
-          >
-            ${this.currentFunction
-              ? html`
-                  <div class="current-fn">
-                    ${renderCompletionOption(this.currentFunction, true)}
-                  </div>
-                `
-              : null}
-            <div class="footer" style="${!visible ? 'display:none' : null}">
-              ${msg('Tab to complete, enter to select')}
-            </div>
-          </temba-options>
-        </div>
-      </temba-field>
+      <div class="comp-container">
+        <div id="anchor" style=${styleMap(anchorStyles)}></div>
+        <temba-textinput
+          name=${this.name}
+          placeholder=${this.placeholder}
+          gsm=${this.gsm}
+          counter=${ifDefined(this.counter)}
+          @keyup=${this.handleKeyUp}
+          @click=${this.handleClick}
+          @input=${this.handleInput}
+          @blur=${this.handleOptionCanceled}
+          maxlength="${ifDefined(this.maxLength)}"
+          .value=${this.value}
+          ?autogrow=${this.autogrow}
+          ?textarea=${this.textarea}
+          ?submitOnEnter=${this.submitOnEnter}
+          style=${this.minHeight
+            ? `--textarea-min-height: ${this.minHeight}px`
+            : ''}
+        >
+        </temba-textinput>
+        <temba-options
+          @temba-selection=${this.handleOptionSelection}
+          @temba-canceled=${this.handleOptionCanceled}
+          .renderOption=${renderCompletionOption}
+          .anchorTo=${this.anchorElement}
+          .options=${this.options}
+          ?visible=${visible}
+        >
+          ${this.currentFunction
+            ? html`
+                <div class="current-fn">
+                  ${renderCompletionOption(this.currentFunction, true)}
+                </div>
+              `
+            : null}
+          <div class="footer" style="${!visible ? 'display:none' : null}">
+            ${msg('Tab to complete, enter to select')}
+          </div>
+        </temba-options>
+      </div>
     `;
+  }
+
+  public render(): TemplateResult {
+    return this.renderField();
   }
 }

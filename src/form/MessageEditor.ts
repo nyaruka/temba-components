@@ -15,6 +15,7 @@ import { Icon } from '../Icons';
 export class MessageEditor extends FieldElement {
   static get styles() {
     return css`
+      ${super.styles}
       :host {
         display: block;
       }
@@ -129,9 +130,6 @@ export class MessageEditor extends FieldElement {
 
   @property({ type: String })
   name = '';
-
-  @property({ type: String })
-  value = '';
 
   @property({ type: String })
   placeholder = '';

@@ -539,7 +539,6 @@ export class ContactSearch extends FormElement {
         this.advanced
           ? html`<div class="query">
               <temba-textinput
-                .label=${this.label}
                 .helpText=${this.helpText}
                 .widgetOnly=${this.widgetOnly}
                 .errors=${this.errors}

@@ -385,8 +385,9 @@ export class FieldRenderer {
     } = context;
 
     return html`<div class="form-field">
-      ${showLabel ? html`<label>${config.label}</label>` : ''}
       <temba-array-editor
+        name="${fieldName}"
+        .label="${showLabel ? config.label : ''}"
         .value="${value || []}"
         .itemConfig="${config.itemConfig}"
         .sortable="${config.sortable}"

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { TemplateResult, html, css, CSSResult, CSSResultArray } from 'lit';
+import { TemplateResult, html, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
   getUrl,
@@ -11,7 +11,7 @@ import {
 import '../../display/Options';
 import '../../list/SortableList';
 import { EventHandler } from '../../RapidElement';
-import { FormElement } from '../../form/FormElement';
+import { FieldElement } from '../../form/FieldElement';
 
 import { lru } from 'tiny-lru';
 import { CompletionOption, CustomEventType, Position } from '../../interfaces';
@@ -35,11 +35,13 @@ export interface SelectOption {
   arbitrary?: boolean;
 }
 
-export class Select<T extends SelectOption> extends FormElement {
+export class Select<T extends SelectOption> extends FieldElement {
   private hiddenInputs: HTMLInputElement[] = [];
 
-  static get styles(): CSSResult | CSSResultArray {
+  static get styles() {
     return css`
+      ${super.styles}
+
       :host {
         --transition-speed: 0;
         font-family: var(--font-family);
@@ -1660,7 +1662,7 @@ export class Select<T extends SelectOption> extends FormElement {
     }
   }
 
-  public render(): TemplateResult {
+  protected renderWidget(): TemplateResult {
     const placeholder = this.values.length === 0 ? this.placeholder : '';
 
     // Single unified placeholder - shows when empty and (not focused OR not searchable)
@@ -1845,16 +1847,6 @@ export class Select<T extends SelectOption> extends FormElement {
         ${placeholderElement}`}`;
 
     return html`
-            
-      <temba-field
-        name=${this.name}
-        .label=${this.label}
-        .helpText=${this.helpText}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .hideErrors=${this.hideErrors}
-        ?disabled=${this.disabled}
-      >
         <slot></slot>
         <div class="wrapper-bg">
         
@@ -1948,7 +1940,10 @@ export class Select<T extends SelectOption> extends FormElement {
           : null
       }
     </temba-options>
-  </temba-field>
-  `;
+    `;
+  }
+
+  public render(): TemplateResult {
+    return this.renderField();
   }
 }
