@@ -16,10 +16,8 @@ describe('FormElement markdown integration', () => {
 
     await checkbox.updateComplete;
 
-    // Check that errors are rendered with markdown
-    const errorElements = checkbox.shadowRoot
-      .querySelectorAll('temba-field')[0]
-      .shadowRoot.querySelectorAll('.alert-error');
+    // Check that errors are rendered with markdown directly in checkbox shadow root
+    const errorElements = checkbox.shadowRoot.querySelectorAll('.alert-error');
     expect(errorElements.length).to.equal(2);
 
     // First error should have bold text and link

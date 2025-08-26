@@ -1,10 +1,10 @@
 import { html, css, PropertyValueMap } from 'lit';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { getClasses, hslToHex } from '../utils';
 import { TextInput } from './TextInput';
 
-export class ColorPicker extends FormElement {
+export class ColorPicker extends FieldElement {
   @property({ type: Boolean })
   expanded = false;
 
@@ -24,6 +24,8 @@ export class ColorPicker extends FormElement {
 
   static get styles() {
     return css`
+      ${super.styles}
+
       :host {
         color: var(--color-text);
         display: inline-block;
@@ -36,11 +38,6 @@ export class ColorPicker extends FormElement {
       temba-textinput {
         margin-left: 0.3em;
         width: 5em;
-      }
-
-      temba-field {
-        display: block;
-        width: 100%;
       }
 
       .wrapper {
@@ -221,46 +218,37 @@ export class ColorPicker extends FormElement {
     return value;
   }
 
-  public render() {
+  protected renderWidget() {
     return html`
-      <temba-field
-        name=${this.name}
-        .helpText=${this.helpText}
-        .errors=${this.errors}
-        .widgetOnly=${this.widgetOnly}
-        .hideLabel=${this.hideLabel}
-        .disabled=${this.disabled}
-      >
-        <div style="display:flex" tabindex="0">
-          <div class=${getClasses({ wrapper: true, expanded: this.expanded })}>
-            <div class=${getClasses({ 'picker-wrapper': true })}>
-              <div
-                class=${getClasses({
-                  preview: true,
-                  selecting: this.selecting
-                })}
-                style="color:${this.labelColor};background:${this.previewColor}"
-                @click=${this.handlePreviewClick}
-              >
-                ${this.label}
-              </div>
-              <div
-                class="color-picker"
-                tabindex="0"
-                @blur=${this.handleBlur}
-                @mousemove=${this.handleMouseMove}
-                @mouseout=${this.handleMouseOut}
-                @click=${this.handleColorClick}
-              ></div>
+      <div style="display:flex" tabindex="0">
+        <div class=${getClasses({ wrapper: true, expanded: this.expanded })}>
+          <div class=${getClasses({ 'picker-wrapper': true })}>
+            <div
+              class=${getClasses({
+                preview: true,
+                selecting: this.selecting
+              })}
+              style="color:${this.labelColor};background:${this.previewColor}"
+              @click=${this.handlePreviewClick}
+            >
+              ${this.label}
             </div>
-            <temba-textinput
-              value=${this.hex}
-              @input=${this.handleHexInput}
-              placeholder="#000000"
-            ></temba-textinput>
+            <div
+              class="color-picker"
+              tabindex="0"
+              @blur=${this.handleBlur}
+              @mousemove=${this.handleMouseMove}
+              @mouseout=${this.handleMouseOut}
+              @click=${this.handleColorClick}
+            ></div>
           </div>
+          <temba-textinput
+            value=${this.hex}
+            @input=${this.handleHexInput}
+            placeholder="#000000"
+          ></temba-textinput>
         </div>
-      </temba-field>
+      </div>
     `;
   }
 }

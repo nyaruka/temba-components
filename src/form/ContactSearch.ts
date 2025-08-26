@@ -5,7 +5,7 @@ import { getClasses, postJSON, stopEvent, WebResponse } from '../utils';
 import { TextInput } from './TextInput';
 import '../display/Alert';
 import { Contact, CustomEventType } from '../interfaces';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { Checkbox } from './Checkbox';
 import { msg } from '@lit/localize';
 import { OmniOption } from './select/Omnibox';
@@ -23,7 +23,7 @@ interface SummaryResponse {
   blockers: string[];
 }
 
-export class ContactSearch extends FormElement {
+export class ContactSearch extends FieldElement {
   static get styles() {
     return css`
       :host {
@@ -475,7 +475,7 @@ export class ContactSearch extends FormElement {
     }
   }
 
-  public render(): TemplateResult {
+  public renderWidget(): TemplateResult {
     let summary: TemplateResult;
     if (this.summary) {
       if (!this.summary.error) {
@@ -539,7 +539,6 @@ export class ContactSearch extends FormElement {
         this.advanced
           ? html`<div class="query">
               <temba-textinput
-                .label=${this.label}
                 .helpText=${this.helpText}
                 .widgetOnly=${this.widgetOnly}
                 .errors=${this.errors}

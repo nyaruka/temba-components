@@ -1,10 +1,10 @@
 import { css, html, TemplateResult } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property } from 'lit/decorators.js';
-import { FormElement } from './FormElement';
+import { FieldElement } from './FieldElement';
 import { getClasses } from '../utils';
 
-export class TembaSlider extends FormElement {
+export class TembaSlider extends FieldElement {
   static get styles() {
     return css`
       :host {
@@ -142,7 +142,7 @@ export class TembaSlider extends FormElement {
     this.requestUpdate();
   }
 
-  public render(): TemplateResult {
+  public renderWidget(): TemplateResult {
     return html` <div class="${getClasses({ grabbed: this.grabbed })}">
       <div
         style=${styleMap({ left: this.circleX + 'px' })}

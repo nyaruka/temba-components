@@ -126,7 +126,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     return currentValue;
   }
 
-  private renderField(
+  private renderArrayField(
     itemIndex: number,
     fieldName: string,
     config: FieldConfig
@@ -180,7 +180,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
           ${Object.entries(this.itemConfig).map(
             ([fieldName, config]) => html`
               <div class="field">
-                ${this.renderField(index, fieldName, config)}
+                ${this.renderArrayField(index, fieldName, config)}
               </div>
             `
           )}
@@ -203,68 +203,56 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     return 'array-editor';
   }
 
-  protected renderAddButton(): TemplateResult {
-    return html`
-      <button class="add-btn" @click=${() => this.addItem()}>
-        Add ${this.itemLabel}
-      </button>
+  static get styles() {
+    return css`
+      ${super.styles}
+
+      .array-editor {
+      }
+
+      .array-item {
+      }
+
+      .item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .item-title {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .item-fields {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .field {
+        flex: 1;
+      }
+
+      .add-btn,
+      .remove-btn {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .add-btn:hover,
+      .remove-btn:hover {
+        background: #f8f8f8;
+      }
+
+      .remove-btn {
+        background: #fefefe;
+        color: #999;
+      }
     `;
   }
-
-  static styles = css`
-    .array-editor {
-    }
-
-    .array-item {
-    }
-
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .item-title {
-      font-weight: 600;
-      color: #333;
-    }
-
-    .item-fields {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .field {
-      flex: 1;
-    }
-
-    .field label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: 500;
-      color: #555;
-      font-size: 14px;
-    }
-
-    .add-btn,
-    .remove-btn {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background: white;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .add-btn:hover,
-    .remove-btn:hover {
-      background: #f8f8f8;
-    }
-
-    .remove-btn {
-      background: #fefefe;
-      color: #999;
-    }
-  `;
 }
