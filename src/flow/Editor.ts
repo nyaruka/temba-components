@@ -653,7 +653,7 @@ export class Editor extends RapidElement {
     this.definition?.nodes.forEach((node) => {
       const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
       if (nodeElement) {
-        const position = this.definition._ui.nodes[node.uuid]?.position;
+        const position = this.definition._ui?.nodes[node.uuid]?.position;
         if (position) {
           const rect = nodeElement.getBoundingClientRect();
           const canvasRect =
@@ -1085,8 +1085,11 @@ export class Editor extends RapidElement {
                   this.definition.nodes,
                   (node) => node.uuid,
                   (node) => {
-                    const position =
-                      this.definition._ui.nodes[node.uuid].position;
+                    const position = this.definition._ui?.nodes[node.uuid]
+                      ?.position || {
+                      left: 0,
+                      top: 0
+                    };
 
                     const dragging =
                       this.isDragging &&

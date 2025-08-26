@@ -3,7 +3,7 @@ import { ActionConfig, COLORS } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {
-  name: 'Update Contact Channel',
+  name: 'Update Contact',
   color: COLORS.update,
   render: (_node: Node, action: SetContactChannel) => {
     return html`<div>

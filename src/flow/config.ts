@@ -24,7 +24,6 @@ import { remove_contact_groups } from './actions/remove_contact_groups';
 import { request_optin } from './actions/request_optin';
 import { say_msg } from './actions/say_msg';
 import { play_audio } from './actions/play_audio';
-import { enter_flow } from './actions/enter_flow';
 
 // Import all node configurations
 import { execute_actions } from './nodes/execute_actions';
@@ -64,7 +63,6 @@ export const ACTION_CONFIG: {
   call_classifier,
   call_resthook,
   call_llm,
-  enter_flow,
   transfer_airtime,
   set_contact_name,
   add_contact_groups,

@@ -56,6 +56,32 @@ export default {
             context.body = fs.readFileSync(path.resolve(staticFile), 'utf-8');
             return;
           }
+
+          // Handle dynamic flows endpoint
+          if (basePath === '/api/v2/flows.json') {
+            const flowsDir = path.resolve('./demo/data/flows');
+            
+            if (fs.existsSync(flowsDir)) {
+              const files = fs.readdirSync(flowsDir).filter(file => file.endsWith('.json'));
+              const flows = files.map(file => {
+                try {
+                  const filePath = path.join(flowsDir, file);
+                  const flowData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                  return {
+                    uuid: flowData.definition.uuid,
+                    name: flowData.definition.name
+                  };
+                } catch (e) {
+                  console.warn(`Error reading flow file ${file}:`, e.message);
+                  return null;
+                }
+              }).filter(Boolean);
+
+              context.contentType = 'application/json';
+              context.body = JSON.stringify({ results: flows });
+              return;
+            }
+          }
         }
 
         // Handle minio file uploads for media

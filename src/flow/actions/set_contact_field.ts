@@ -3,7 +3,7 @@ import { ActionConfig, COLORS } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
 
 export const set_contact_field: ActionConfig = {
-  name: 'Update Contact Field',
+  name: 'Update Contact',
   color: COLORS.update,
   render: (_node: Node, action: SetContactField) => {
     return html`<div>
