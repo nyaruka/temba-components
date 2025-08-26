@@ -42,10 +42,14 @@ export interface OptInEvent extends ContactEvent {
 }
 
 export interface CallEvent extends ContactEvent {
-  call: {
+  call?: {
     uuid: string;
     urn: string;
   };
+}
+
+export interface ChatStartedEvent extends ContactEvent {
+  params?: object;
 }
 
 export interface MsgEvent extends ContactEvent {
@@ -57,11 +61,6 @@ export interface MsgEvent extends ContactEvent {
   recipient_count?: number;
   created_by?: User;
   optin?: ObjectReference;
-}
-
-export interface FlowEvent extends ContactEvent {
-  flow: ObjectReference;
-  status: string;
 }
 
 export interface RunEvent extends ContactEvent {
