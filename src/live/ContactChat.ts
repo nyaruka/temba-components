@@ -22,11 +22,11 @@ import {
   AirtimeTransferredEvent,
   CallEvent,
   ChannelEvent,
+  ChatStartedEvent,
   ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
   ContactLanguageChangedEvent,
-  FlowEvent,
   MsgEvent,
   NameChangedEvent,
   OptInEvent,
@@ -54,7 +54,9 @@ export enum Events {
   AIRTIME_TRANSFERRED = 'airtime_transferred',
   BROADCAST_CREATED = 'broadcast_created',
   CALL_CREATED = 'call_created',
+  CALL_MISSED = 'call_missed',
   CALL_RECEIVED = 'call_received',
+  CHAT_STARTED = 'chat_started',
   CONTACT_FIELD_CHANGED = 'contact_field_changed',
   CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
   CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
@@ -77,10 +79,7 @@ export enum Events {
   TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
 
   // deprecated
-  CHANNEL_EVENT = 'channel_event',
-  CALL_STARTED = 'call_started',
-  FLOW_ENTERED = 'flow_entered',
-  FLOW_EXITED = 'flow_exited'
+  CHANNEL_EVENT = 'channel_event'
 }
 
 const renderInfoList = (singular: string, plural: string, items: any[]) => {
@@ -123,18 +122,6 @@ const renderChannelEvent = (event: ChannelEvent): string => {
   }
 };
 
-const renderFlowEvent = (event: FlowEvent): string => {
-  let verb = 'Interrupted';
-  if (event.status !== 'I') {
-    if (event.type === Events.FLOW_ENTERED) {
-      verb = 'Started';
-    } else {
-      verb = 'Completed';
-    }
-  }
-  return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
-};
-
 const renderRunEvent = (event: RunEvent): string => {
   let verb = 'Started';
   if (event.type === Events.RUN_ENDED) {
@@ -148,6 +135,14 @@ const renderRunEvent = (event: RunEvent): string => {
   }
 
   return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
+};
+
+const renderChatStartedEvent = (event: ChatStartedEvent): string => {
+  if (event.params) {
+    return `Chat referral`;
+  } else {
+    return `Chat started`;
+  }
 };
 
 const renderUpdateEvent = (event: UpdateFieldEvent): string => {
@@ -227,9 +222,11 @@ export const renderContactLanguageChangedEvent = (
 
 export const renderCallEvent = (event: CallEvent): string => {
   if (event.type === Events.CALL_CREATED) {
-    return `Call Started`;
+    return `Call started`;
+  } else if (event.type === Events.CALL_MISSED) {
+    return `Call missed`;
   } else if (event.type === Events.CALL_RECEIVED) {
-    return `Call Answered`;
+    return `Call answered`;
   }
 };
 
@@ -665,13 +662,6 @@ export class ContactChat extends ContactStoreElement {
           text: `Topic changed to **${(event as TicketEvent).topic.name}**`
         };
         break;
-      case Events.FLOW_ENTERED:
-      case Events.FLOW_EXITED:
-        message = {
-          type: MessageType.Inline,
-          text: renderFlowEvent(event as FlowEvent)
-        };
-        break;
       case Events.RUN_STARTED:
       case Events.RUN_ENDED:
         message = {
@@ -710,22 +700,23 @@ export class ContactChat extends ContactStoreElement {
         };
         break;
       case Events.CALL_CREATED:
+      case Events.CALL_MISSED:
       case Events.CALL_RECEIVED:
         message = {
           type: MessageType.Inline,
           text: renderCallEvent(event as CallEvent)
         };
         break;
-      case Events.CALL_STARTED: // deprecated
-        message = {
-          type: MessageType.Inline,
-          text: `Started Call`
-        };
-        break;
       case Events.CHANNEL_EVENT:
         message = {
           type: MessageType.Inline,
           text: renderChannelEvent(event as ChannelEvent)
+        };
+        break;
+      case Events.CHAT_STARTED:
+        message = {
+          type: MessageType.Inline,
+          text: renderChatStartedEvent(event as ChatStartedEvent)
         };
         break;
       case Events.CONTACT_LANGUAGE_CHANGED:
