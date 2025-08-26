@@ -14,8 +14,6 @@ import { set_run_result } from './actions/set_run_result';
 import { send_msg } from './actions/send_msg';
 import { send_email } from './actions/send_email';
 import { start_session } from './actions/start_session';
-import { open_ticket } from './actions/open_ticket';
-import { call_webhook } from './actions/call_webhook';
 import { call_classifier } from './actions/call_classifier';
 import { call_resthook } from './actions/call_resthook';
 import { call_llm } from './actions/call_llm';
@@ -63,8 +61,6 @@ export const ACTION_CONFIG: {
   send_msg,
   send_email,
   start_session,
-  open_ticket,
-  call_webhook,
   call_classifier,
   call_resthook,
   call_llm,

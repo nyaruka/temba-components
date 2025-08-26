@@ -132,32 +132,20 @@
         "uuid": "e1f22e97-a170-44b4-a79b-98ab916f4c34",
         "actions": [
           {
-            "uuid": "cb497975-a8fb-4d28-a662-277eb7a699f9",
             "type": "call_webhook",
-            "url": "http://google.com",
+            "uuid": "e1f22e97-a170-44b4-a79b-98ab916f4c34",
             "method": "POST",
+            "url": "http://google.com",
             "headers": {
               "Accepts": "application/json",
               "Content-Type": "application/json",
               "Authorization": "Bearer token here"
             },
-            "body": "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"value\", \"category\")\n)))ast"
+            "body": "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"value\", \"category\")\n)))"
           }
         ],
         "router": {
           "type": "switch",
-          "operand": "@webhook.status",
-          "cases": [
-            {
-              "uuid": "024a8d66-be1e-4821-bec4-8c54fd7135c6",
-              "type": "has_number_between",
-              "arguments": [
-                "200",
-                "299"
-              ],
-              "category_uuid": "0bb08076-45e2-4ca1-b321-1506f1779198"
-            }
-          ],
           "categories": [
             {
               "uuid": "1b9100a4-f3f0-410e-8b6f-d339bf58a13a",
@@ -170,8 +158,19 @@
               "exit_uuid": "8087c747-eebc-4f35-8032-33490ba390d6"
             }
           ],
-          "default_category_uuid": "67fc0e41-eeb2-4f54-9f71-abdd64c097f4",
-          "result_name": ""
+          "default_category_uuid": "13915377-5eb1-46c5-8955-78646b75b8ef",
+          "operand": "@webhook.status",
+          "cases": [
+            {
+              "uuid": "8b9201ff-b195-4e18-8124-3362d310a2e5",
+              "type": "has_number_between",
+              "arguments": [
+                "200",
+                "299"
+              ],
+              "category_uuid": "1b9100a4-f3f0-410e-8b6f-d339bf58a13a"
+            }
+          ]
         },
         "exits": [
           {
@@ -738,8 +737,8 @@
         "uuid": "21ff86c2-5276-4448-afb6-54d1f832ba0c",
         "actions": [
           {
-            "uuid": "a7f21fc4-8bf1-47ab-a6c7-3e072f88afe7",
             "type": "open_ticket",
+            "uuid": "21ff86c2-5276-4448-afb6-54d1f832ba0c",
             "topic": {
               "uuid": "1b1cb507-e079-4b30-818c-1898edcbd178",
               "name": "General"
@@ -753,15 +752,6 @@
         ],
         "router": {
           "type": "switch",
-          "operand": "@locals._new_ticket",
-          "cases": [
-            {
-              "uuid": "f32a3e1b-976d-4897-af3b-964041af1361",
-              "type": "has_text",
-              "arguments": [],
-              "category_uuid": "1ec9135f-e670-4bae-a6d7-2f6aa6ce9b59"
-            }
-          ],
           "categories": [
             {
               "uuid": "1ec9135f-e670-4bae-a6d7-2f6aa6ce9b59",
@@ -775,7 +765,15 @@
             }
           ],
           "default_category_uuid": "6c1b355d-7d3e-4c17-abef-7861bac5cf48",
-          "result_name": ""
+          "operand": "@locals._new_ticket",
+          "cases": [
+            {
+              "uuid": "f32a3e1b-976d-4897-af3b-964041af1361",
+              "type": "has_text",
+              "arguments": [],
+              "category_uuid": "1ec9135f-e670-4bae-a6d7-2f6aa6ce9b59"
+            }
+          ]
         },
         "exits": [
           {

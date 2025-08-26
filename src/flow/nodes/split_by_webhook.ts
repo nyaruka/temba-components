@@ -1,19 +1,257 @@
-import { call_webhook } from '../actions/call_webhook';
-import { NodeConfig } from '../types';
+import { COLORS, NodeConfig } from '../types';
+import { CallWebhook, Node } from '../../store/flow-definition';
+import { generateUUID } from '../../utils';
+import { html } from 'lit';
+
+const defaultPost = `@(json(object(
+  "contact", object(
+    "uuid", contact.uuid, 
+    "name", contact.name, 
+    "urn", contact.urn
+  ),
+  "flow", object(
+    "uuid", run.flow.uuid, 
+    "name", run.flow.name
+  ),
+  "results", foreach_value(results, extract_object, "value", "category")
+)))`;
 
 export const split_by_webhook: NodeConfig = {
   type: 'split_by_webhook',
-  action: call_webhook,
-  router: {
-    type: 'switch',
-    defaultCategory: 'Failure',
-    operand: '@webhook.status',
-    rules: [
+  name: 'Split by Webhook',
+  color: COLORS.call,
+  form: {
+    method: {
+      type: 'select',
+      required: true,
+      options: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH'],
+      maxWidth: '120px',
+      searchable: false
+    },
+    url: {
+      type: 'text',
+      required: true,
+      evaluated: true,
+      placeholder: 'https://example.com/webhook'
+    },
+    headers: {
+      type: 'key-value',
+      sortable: true,
+      keyPlaceholder: 'Header name',
+      valuePlaceholder: 'Header value',
+      minRows: 0
+    },
+    body: {
+      type: 'textarea',
+      evaluated: true,
+      placeholder: 'Request body content (JSON, XML, etc.)',
+      minHeight: 200,
+      dependsOn: ['method'],
+      computeValue: (
+        values: Record<string, any>,
+        currentValue: any,
+        originalValues?: Record<string, any>
+      ) => {
+        // Check if method is POST (handle both string and select object formats)
+        const method =
+          Array.isArray(values.method) && values.method.length > 0
+            ? values.method[0].value || values.method[0].name
+            : values.method;
+
+        if (method === 'POST') {
+          // For POST, provide the template if body is empty or was never set by user
+          if (!currentValue || currentValue.trim() === '') {
+            return defaultPost;
+          }
+        } else {
+          // For non-POST methods, clear the body if it was auto-generated or empty
+          // Check if the original body was empty (user never specified a body)
+          const originalBody = originalValues?.body || '';
+          const isOriginallyEmpty = !originalBody || originalBody.trim() === '';
+
+          // Clear if: originally empty, contains default template, or is currently empty
+          if (
+            isOriginallyEmpty ||
+            !currentValue ||
+            currentValue.trim() === '' ||
+            currentValue.trim() === defaultPost.trim()
+          ) {
+            return '';
+          }
+        }
+
+        return currentValue; // Keep existing value if user has customized it
+      }
+    }
+  },
+  layout: [
+    // Row with method and URL side by side
+    { type: 'row', items: ['method', 'url'] },
+    // Advanced group with nested layouts
+    {
+      type: 'group',
+      label: 'Headers',
+      items: ['headers'],
+      collapsible: true,
+      collapsed: true,
+      helpText: 'Configure authentication or custom headers',
+      getGroupValueCount: (formData: any) => {
+        return formData.headers?.length || 0;
+      }
+    },
+    {
+      type: 'group',
+      label: 'Body',
+      items: ['body'],
+      collapsible: true,
+      collapsed: true,
+      helpText: 'Configure the request payload',
+      getGroupValueCount: (formData: any) => {
+        return !!(
+          formData.body &&
+          formData.body.trim() !== '' &&
+          formData.body !== defaultPost
+        );
+      }
+    }
+  ],
+  render: (node: Node) => {
+    const callWebhookAction = node.actions?.find(
+      (action) => action.type === 'call_webhook'
+    ) as any;
+    return html`
+      <div
+        class="body"
+        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+      >
+        ${callWebhookAction?.url || 'Configure webhook'}
+      </div>
+    `;
+  },
+  toFormData: (node: Node) => {
+    // Extract data from the existing node structure
+    const callWebhookAction = node.actions?.find(
+      (action) => action.type === 'call_webhook'
+    ) as any;
+
+    return {
+      uuid: node.uuid,
+      method: callWebhookAction?.method
+        ? [{ value: callWebhookAction.method, name: callWebhookAction.method }]
+        : [{ value: 'GET', name: 'GET' }],
+      url: callWebhookAction?.url || '',
+      headers: callWebhookAction?.headers || [],
+      body: callWebhookAction?.body || ''
+    };
+  },
+  fromFormData: (formData: any, originalNode: Node): Node => {
+    // Get method selection
+    const methodSelection =
+      Array.isArray(formData.method) && formData.method.length > 0
+        ? formData.method[0]
+        : { value: 'GET', name: 'GET' };
+
+    // Find existing call_webhook action to preserve its UUID
+    const existingCallWebhookAction = originalNode.actions?.find(
+      (action) => action.type === 'call_webhook'
+    );
+    const callWebhookUuid = existingCallWebhookAction?.uuid || generateUUID();
+
+    // Create call_webhook action
+    const callWebhookAction: CallWebhook = {
+      type: 'call_webhook',
+      uuid: callWebhookUuid,
+      method: methodSelection.value,
+      url: formData.url || '',
+      headers: formData.headers || [],
+      body: formData.body || ''
+    };
+
+    // Create categories and exits for Success and Failure
+    const existingCategories = originalNode.router?.categories || [];
+    const existingExits = originalNode.exits || [];
+    const existingCases = originalNode.router?.cases || [];
+
+    // Find existing Success category
+    const existingSuccessCategory = existingCategories.find(
+      (cat) => cat.name === 'Success'
+    );
+    const existingSuccessExit = existingSuccessCategory
+      ? existingExits.find(
+          (exit) => exit.uuid === existingSuccessCategory.exit_uuid
+        )
+      : null;
+    const existingSuccessCase = existingSuccessCategory
+      ? existingCases.find(
+          (case_) => case_.category_uuid === existingSuccessCategory.uuid
+        )
+      : null;
+
+    const successCategoryUuid = existingSuccessCategory?.uuid || generateUUID();
+    const successExitUuid = existingSuccessExit?.uuid || generateUUID();
+    const successCaseUuid = existingSuccessCase?.uuid || generateUUID();
+
+    // Find existing Failure category
+    const existingFailureCategory = existingCategories.find(
+      (cat) => cat.name === 'Failure'
+    );
+    const existingFailureExit = existingFailureCategory
+      ? existingExits.find(
+          (exit) => exit.uuid === existingFailureCategory.exit_uuid
+        )
+      : null;
+
+    const failureCategoryUuid = existingFailureCategory?.uuid || generateUUID();
+    const failureExitUuid = existingFailureExit?.uuid || generateUUID();
+
+    const categories = [
       {
+        uuid: successCategoryUuid,
+        name: 'Success',
+        exit_uuid: successExitUuid
+      },
+      {
+        uuid: failureCategoryUuid,
+        name: 'Failure',
+        exit_uuid: failureExitUuid
+      }
+    ];
+
+    const exits = [
+      {
+        uuid: successExitUuid,
+        destination_uuid: existingSuccessExit?.destination_uuid || null
+      },
+      {
+        uuid: failureExitUuid,
+        destination_uuid: existingFailureExit?.destination_uuid || null
+      }
+    ];
+
+    const cases = [
+      {
+        uuid: successCaseUuid,
         type: 'has_number_between',
         arguments: ['200', '299'],
-        categoryName: 'Success'
+        category_uuid: successCategoryUuid
       }
-    ]
+    ];
+
+    // Create the router
+    const router = {
+      type: 'switch' as const,
+      categories: categories,
+      default_category_uuid: failureCategoryUuid,
+      operand: '@webhook.status',
+      cases: cases
+    };
+
+    // Return the complete node
+    return {
+      uuid: originalNode.uuid,
+      actions: [callWebhookAction],
+      router: router,
+      exits: exits
+    };
   }
 };
