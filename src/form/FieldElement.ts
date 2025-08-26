@@ -1,6 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
-import { FormElement } from './FormElement';
+import { RapidElement } from '../RapidElement';
 import { renderMarkdownInline } from '../markdown';
 
 /**
@@ -11,7 +11,41 @@ import { renderMarkdownInline } from '../markdown';
  * specific widget content, and the field wrapper (label, errors, help text) is
  * automatically handled.
  */
-export abstract class FieldElement extends FormElement {
+export abstract class FieldElement extends RapidElement {
+  @property({ type: String })
+  name = '';
+
+  @property({ type: String, attribute: 'help_text' })
+  helpText: string;
+
+  @property({ type: Boolean, attribute: 'widget_only' })
+  widgetOnly: boolean;
+
+  @property({ type: Array })
+  errors: string[];
+
+  // Use @property with custom getter/setter to handle both attribute and programmatic access
+  private _value: any = '';
+
+  @property({ type: String })
+  public get value() {
+    return this._value;
+  }
+
+  public set value(value) {
+    this._value = value;
+  }
+
+  @property({ attribute: false })
+  inputRoot: HTMLElement = this;
+
+  @property({ type: Boolean })
+  disabled = false;
+
+  static formAssociated = true;
+
+  protected internals: ElementInternals;
+
   @property({ type: Boolean })
   hideErrors = false;
 
@@ -20,6 +54,11 @@ export abstract class FieldElement extends FormElement {
 
   @property({ type: String })
   label: string;
+
+  constructor() {
+    super();
+    this.internals = this.attachInternals();
+  }
 
   static get styles() {
     return css`
@@ -155,6 +194,10 @@ export abstract class FieldElement extends FormElement {
   updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
 
+    if (changedProperties.has('value')) {
+      this.internals.setFormValue(this.value);
+    }
+
     if (
       changedProperties.has('errors') ||
       changedProperties.has('hideErrors')
@@ -163,6 +206,25 @@ export abstract class FieldElement extends FormElement {
         !this.hideErrors && this.errors && this.errors.length > 0;
       this.classList.toggle('has-error', hasErrors);
     }
+  }
+
+  get form() {
+    return this.internals.form;
+  }
+
+  public setValue(value: any) {
+    this.value = this.serializeValue(value);
+  }
+
+  public getDeserializedValue(): any {
+    if (!this.value || this.value === '') {
+      return null;
+    }
+    return JSON.parse(this.value);
+  }
+
+  public serializeValue(value: any): string {
+    return JSON.stringify(value);
   }
 
   /**

@@ -6,7 +6,6 @@ import { Completion } from './src/form/Completion';
 import { Modax } from './src/layout/Modax';
 import { Dialog } from './src/layout/Dialog';
 import { Button } from './src/display/Button';
-import { FormField } from './src/form/FormField';
 import { FieldElement } from './src/form/FieldElement';
 import { Loading } from './src/display/Loading';
 import { CharCount } from './src/display/CharCount';
@@ -104,7 +103,6 @@ addCustomElement('temba-field-manager', FieldManager);
 addCustomElement('temba-urn', ContactUrn);
 addCustomElement('temba-content-menu', ContentMenu);
 
-addCustomElement('temba-field', FormField);
 // Note: FieldElement is a base class and not directly instantiated as a custom element
 export { FieldElement };
 addCustomElement('temba-dialog', Dialog);

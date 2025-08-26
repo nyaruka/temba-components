@@ -1,12 +1,12 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { FormElement } from '../form/FormElement';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { InputType, TextInput } from '../form/TextInput';
 import { Icon } from '../Icons';
 import { getClasses, WebResponse } from '../utils';
 import { Select } from '../form/select/Select';
+import { FieldElement } from '../form/FieldElement';
 
 enum Status {
   Success = 'success',
@@ -380,7 +380,7 @@ export class ContactFieldEditor extends RapidElement {
   public handleSubmit() {
     const input = this.shadowRoot.querySelector(
       'temba-textinput, temba-datepicker'
-    ) as FormElement;
+    ) as FieldElement;
 
     if (input.value !== this.value) {
       this.dirty = true;

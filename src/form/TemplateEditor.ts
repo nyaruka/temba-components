@@ -1,9 +1,9 @@
 import { property } from 'lit/decorators.js';
-import { FormElement } from './FormElement';
 import { TemplateResult, html, css, LitElement } from 'lit';
 import { CustomEventType } from '../interfaces';
 import { MediaPicker } from './MediaPicker';
 import { getClasses } from '../utils';
+import { FieldElement } from './FieldElement';
 
 interface Component {
   name: string;
@@ -28,7 +28,7 @@ interface Template {
   base_translation: Translation;
 }
 
-export class TemplateEditor extends FormElement {
+export class TemplateEditor extends FieldElement {
   static shadowRootOptions = {
     ...LitElement.shadowRootOptions,
     delegatesFocus: true
@@ -457,7 +457,7 @@ export class TemplateEditor extends FormElement {
     </div>`;
   }
 
-  public render(): TemplateResult {
+  public renderWidget(): TemplateResult {
     let content = null;
     if (this.translation) {
       content = this.renderComponents(this.translation.components);
