@@ -142,6 +142,26 @@ export const mockAPI = () => {
       mockGET(url, key);
     }
   }
+  
+  // Add mock data for contact form endpoints
+  mockGET(/\/api\/v2\/channels\.json/, {
+    results: [
+      { uuid: 'chan-1', name: 'WhatsApp Channel' },
+      { uuid: 'chan-2', name: 'Telegram Channel' },
+      { uuid: 'chan-3', name: 'SMS Channel' },
+      { uuid: 'chan-4', name: 'Facebook Messenger' }
+    ]
+  });
+  
+  mockGET(/\/api\/v2\/languages\.json/, {
+    results: [
+      { iso: 'eng', name: 'English' },
+      { iso: 'spa', name: 'Spanish' },
+      { iso: 'fra', name: 'French' },
+      { iso: 'por', name: 'Portuguese' },
+      { iso: 'deu', name: 'German' }
+    ]
+  });
 };
 
 export const mockGET = (
