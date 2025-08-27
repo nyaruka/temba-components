@@ -142,7 +142,7 @@ export const mockAPI = () => {
       mockGET(url, key);
     }
   }
-  
+
   // Add mock data for contact form endpoints
   mockGET(/\/api\/v2\/channels\.json/, {
     results: [
@@ -152,7 +152,7 @@ export const mockAPI = () => {
       { uuid: 'chan-4', name: 'Facebook Messenger' }
     ]
   });
-  
+
   mockGET(/\/api\/v2\/languages\.json/, {
     results: [
       { iso: 'eng', name: 'English' },

@@ -10,13 +10,13 @@ export const set_contact_language: ActionConfig = {
   render: (_node: Node, action: SetContactLanguage) => {
     return html`<div>Set contact language to <b>${action.language}</b></div>`;
   },
-  
+
   // Use unified form configuration
   form: set_contact.form,
   layout: set_contact.layout,
   validate: set_contact.validate,
   sanitize: set_contact.sanitize,
-  
+
   // Transform to/from unified form data
   toFormData: (action: SetContactLanguage) => {
     return ContactFormAdapter.actionToFormData(action);

@@ -12,13 +12,13 @@ export const set_contact_field: ActionConfig = {
       Set <b>${action.field.name}</b> to <b>${action.value}</b>
     </div>`;
   },
-  
+
   // Use unified form configuration
   form: set_contact.form,
   layout: set_contact.layout,
   validate: set_contact.validate,
   sanitize: set_contact.sanitize,
-  
+
   // Transform to/from unified form data
   toFormData: (action: SetContactField) => {
     return ContactFormAdapter.actionToFormData(action);

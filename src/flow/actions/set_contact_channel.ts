@@ -12,13 +12,13 @@ export const set_contact_channel: ActionConfig = {
       Set contact channel to <b>${action.channel.name}</b>
     </div>`;
   },
-  
+
   // Use unified form configuration
   form: set_contact.form,
   layout: set_contact.layout,
   validate: set_contact.validate,
   sanitize: set_contact.sanitize,
-  
+
   // Transform to/from unified form data
   toFormData: (action: SetContactChannel) => {
     return ContactFormAdapter.actionToFormData(action);

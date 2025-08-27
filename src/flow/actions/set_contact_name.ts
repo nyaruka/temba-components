@@ -10,13 +10,13 @@ export const set_contact_name: ActionConfig = {
   render: (_node: Node, action: SetContactName) => {
     return html`<div>Set contact name to <b>${action.name}</b></div>`;
   },
-  
+
   // Use unified form configuration
   form: set_contact.form,
   layout: set_contact.layout,
   validate: set_contact.validate,
   sanitize: set_contact.sanitize,
-  
+
   // Transform to/from unified form data
   toFormData: (action: SetContactName) => {
     return ContactFormAdapter.actionToFormData(action);

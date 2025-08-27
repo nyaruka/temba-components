@@ -1,6 +1,9 @@
-import { assert, expect } from '@open-wc/testing';
+import { expect } from '@open-wc/testing';
 import { ContactFormAdapter } from '../src/flow/forms/set_contact_adapter';
-import { set_contact, ContactUpdateFormData } from '../src/flow/forms/set_contact';
+import {
+  set_contact,
+  ContactUpdateFormData
+} from '../src/flow/forms/set_contact';
 import {
   SetContactName,
   SetContactLanguage,
@@ -8,9 +11,6 @@ import {
   SetContactStatus,
   SetContactField
 } from '../src/store/flow-definition';
-import { assertScreenshot, getClip, getComponent, loadStore } from './utils.test';
-
-const TAG = 'temba-set-contact-form';
 
 describe('Contact Form Adapter', () => {
   describe('actionToFormData', () => {
@@ -22,7 +22,7 @@ describe('Contact Form Adapter', () => {
       };
 
       const formData = ContactFormAdapter.actionToFormData(action);
-      
+
       expect(formData.uuid).to.equal('test-1');
       expect(formData.property).to.equal('name');
       expect(formData.value).to.equal('John Doe');
@@ -36,7 +36,7 @@ describe('Contact Form Adapter', () => {
       };
 
       const formData = ContactFormAdapter.actionToFormData(action);
-      
+
       expect(formData.uuid).to.equal('test-2');
       expect(formData.property).to.equal('language');
       expect(formData.language).to.equal('eng');
@@ -50,10 +50,13 @@ describe('Contact Form Adapter', () => {
       };
 
       const formData = ContactFormAdapter.actionToFormData(action);
-      
+
       expect(formData.uuid).to.equal('test-3');
       expect(formData.property).to.equal('channel');
-      expect(formData.channel).to.deep.equal({ uuid: 'chan-1', name: 'WhatsApp Channel' });
+      expect(formData.channel).to.deep.equal({
+        uuid: 'chan-1',
+        name: 'WhatsApp Channel'
+      });
     });
 
     it('converts SetContactStatus to form data', () => {
@@ -64,7 +67,7 @@ describe('Contact Form Adapter', () => {
       };
 
       const formData = ContactFormAdapter.actionToFormData(action);
-      
+
       expect(formData.uuid).to.equal('test-4');
       expect(formData.property).to.equal('status');
       expect(formData.status).to.equal('active');
@@ -79,7 +82,7 @@ describe('Contact Form Adapter', () => {
       };
 
       const formData = ContactFormAdapter.actionToFormData(action);
-      
+
       expect(formData.uuid).to.equal('test-5');
       expect(formData.property).to.equal('field');
       expect(formData.field).to.deep.equal({ uuid: 'field-1', name: 'Age' });
@@ -92,7 +95,9 @@ describe('Contact Form Adapter', () => {
         type: 'unsupported_action'
       } as any;
 
-      expect(() => ContactFormAdapter.actionToFormData(action)).to.throw('Unsupported action type: unsupported_action');
+      expect(() => ContactFormAdapter.actionToFormData(action)).to.throw(
+        'Unsupported action type: unsupported_action'
+      );
     });
   });
 
@@ -104,8 +109,10 @@ describe('Contact Form Adapter', () => {
         value: 'Jane Doe'
       };
 
-      const action = ContactFormAdapter.formDataToAction(formData) as SetContactName;
-      
+      const action = ContactFormAdapter.formDataToAction(
+        formData
+      ) as SetContactName;
+
       expect(action.uuid).to.equal('test-1');
       expect(action.type).to.equal('set_contact_name');
       expect(action.name).to.equal('Jane Doe');
@@ -118,8 +125,10 @@ describe('Contact Form Adapter', () => {
         language: 'spa'
       };
 
-      const action = ContactFormAdapter.formDataToAction(formData) as SetContactLanguage;
-      
+      const action = ContactFormAdapter.formDataToAction(
+        formData
+      ) as SetContactLanguage;
+
       expect(action.uuid).to.equal('test-2');
       expect(action.type).to.equal('set_contact_language');
       expect(action.language).to.equal('spa');
@@ -132,11 +141,16 @@ describe('Contact Form Adapter', () => {
         channel: { uuid: 'chan-2', name: 'SMS Channel' }
       };
 
-      const action = ContactFormAdapter.formDataToAction(formData) as SetContactChannel;
-      
+      const action = ContactFormAdapter.formDataToAction(
+        formData
+      ) as SetContactChannel;
+
       expect(action.uuid).to.equal('test-3');
       expect(action.type).to.equal('set_contact_channel');
-      expect(action.channel).to.deep.equal({ uuid: 'chan-2', name: 'SMS Channel' });
+      expect(action.channel).to.deep.equal({
+        uuid: 'chan-2',
+        name: 'SMS Channel'
+      });
     });
 
     it('converts status form data to SetContactStatus', () => {
@@ -146,8 +160,10 @@ describe('Contact Form Adapter', () => {
         status: 'blocked'
       };
 
-      const action = ContactFormAdapter.formDataToAction(formData) as SetContactStatus;
-      
+      const action = ContactFormAdapter.formDataToAction(
+        formData
+      ) as SetContactStatus;
+
       expect(action.uuid).to.equal('test-4');
       expect(action.type).to.equal('set_contact_status');
       expect(action.status).to.equal('blocked');
@@ -161,8 +177,10 @@ describe('Contact Form Adapter', () => {
         field_value: 'Female'
       };
 
-      const action = ContactFormAdapter.formDataToAction(formData) as SetContactField;
-      
+      const action = ContactFormAdapter.formDataToAction(
+        formData
+      ) as SetContactField;
+
       expect(action.uuid).to.equal('test-5');
       expect(action.type).to.equal('set_contact_field');
       expect(action.field).to.deep.equal({ uuid: 'field-2', name: 'Gender' });
@@ -175,7 +193,9 @@ describe('Contact Form Adapter', () => {
         property: 'channel'
       };
 
-      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw('Channel is required for channel property');
+      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw(
+        'Channel is required for channel property'
+      );
     });
 
     it('throws error for missing status', () => {
@@ -184,7 +204,9 @@ describe('Contact Form Adapter', () => {
         property: 'status'
       };
 
-      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw('Status is required for status property');
+      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw(
+        'Status is required for status property'
+      );
     });
 
     it('throws error for missing field', () => {
@@ -193,7 +215,9 @@ describe('Contact Form Adapter', () => {
         property: 'field'
       };
 
-      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw('Field is required for field property');
+      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw(
+        'Field is required for field property'
+      );
     });
 
     it('throws error for unsupported property type', () => {
@@ -202,7 +226,9 @@ describe('Contact Form Adapter', () => {
         property: 'unsupported'
       } as any;
 
-      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw('Unsupported property type: unsupported');
+      expect(() => ContactFormAdapter.formDataToAction(formData)).to.throw(
+        'Unsupported property type: unsupported'
+      );
     });
   });
 

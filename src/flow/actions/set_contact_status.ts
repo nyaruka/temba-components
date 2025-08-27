@@ -10,13 +10,13 @@ export const set_contact_status: ActionConfig = {
   render: (_node: Node, action: SetContactStatus) => {
     return html`<div>Set contact status to <b>${action.status}</b></div>`;
   },
-  
+
   // Use unified form configuration
   form: set_contact.form,
   layout: set_contact.layout,
   validate: set_contact.validate,
   sanitize: set_contact.sanitize,
-  
+
   // Transform to/from unified form data
   toFormData: (action: SetContactStatus) => {
     return ContactFormAdapter.actionToFormData(action);

@@ -1,10 +1,10 @@
-import { 
-  Action, 
-  SetContactName, 
-  SetContactLanguage, 
-  SetContactChannel, 
-  SetContactStatus, 
-  SetContactField 
+import {
+  Action,
+  SetContactName,
+  SetContactLanguage,
+  SetContactChannel,
+  SetContactStatus,
+  SetContactField
 } from '../../store/flow-definition';
 import { ContactUpdateFormData } from './set_contact';
 

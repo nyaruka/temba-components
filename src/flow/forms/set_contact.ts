@@ -7,7 +7,7 @@ export interface ContactUpdateFormData {
   property: 'name' | 'language' | 'channel' | 'status' | 'field';
   value?: string;
   field?: NamedObject;
-  field_value?: string;  // Value for field property
+  field_value?: string; // Value for field property
   channel?: NamedObject;
   language?: string;
   status?: 'active' | 'archived' | 'stopped' | 'blocked';
@@ -50,7 +50,7 @@ export const set_contact: ActionConfig = {
       required: true,
       evaluated: true,
       conditions: {
-        visible: (formData: ContactUpdateFormData) => 
+        visible: (formData: ContactUpdateFormData) =>
           formData.property === 'name'
       }
     },
@@ -62,7 +62,7 @@ export const set_contact: ActionConfig = {
       clearable: false,
       options: getContactFields(),
       conditions: {
-        visible: (formData: ContactUpdateFormData) => 
+        visible: (formData: ContactUpdateFormData) =>
           formData.property === 'field'
       }
     },
@@ -73,7 +73,7 @@ export const set_contact: ActionConfig = {
       required: true,
       evaluated: true,
       conditions: {
-        visible: (formData: ContactUpdateFormData) => 
+        visible: (formData: ContactUpdateFormData) =>
           formData.property === 'field'
       }
     },
@@ -90,7 +90,7 @@ export const set_contact: ActionConfig = {
         { value: 'blocked', label: 'Blocked' }
       ],
       conditions: {
-        visible: (formData: ContactUpdateFormData) => 
+        visible: (formData: ContactUpdateFormData) =>
           formData.property === 'status'
       }
     },
@@ -104,7 +104,7 @@ export const set_contact: ActionConfig = {
       valueKey: 'uuid',
       nameKey: 'name',
       conditions: {
-        visible: (formData: ContactUpdateFormData) => 
+        visible: (formData: ContactUpdateFormData) =>
           formData.property === 'channel'
       }
     },
@@ -118,7 +118,7 @@ export const set_contact: ActionConfig = {
       valueKey: 'iso',
       nameKey: 'name',
       conditions: {
-        visible: (formData: ContactUpdateFormData) => 
+        visible: (formData: ContactUpdateFormData) =>
           formData.property === 'language'
       }
     }
