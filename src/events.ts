@@ -30,8 +30,10 @@ export interface ChannelEvent extends ContactEvent {
 
 export interface ContactLanguageChangedEvent extends ContactEvent {
   language: string;
-  step_uuid: string;
-  session_uuid: string;
+}
+
+export interface ContactStatusChangedEvent extends ContactEvent {
+  status: string;
 }
 
 export interface OptInEvent extends ContactEvent {
