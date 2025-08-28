@@ -97,28 +97,10 @@ const renderInfoList = (singular: string, plural: string, items: any[]) => {
 };
 
 const renderChannelEvent = (event: ChannelEvent): string => {
-  if (event.event.type === 'mt_miss') {
-    return 'Missed outgoing call';
-  } else if (event.event.type === 'mo_miss') {
-    return 'Missed incoming call';
-  } else if (event.event.type === 'new_conversation') {
-    return 'Started conversation';
-  } else if (event.channel_event_type === 'welcome_message') {
-    return 'Welcome Message Sent';
-  } else if (event.event.type === 'referral') {
-    return 'Referred';
-  } else if (event.event.type === 'follow') {
-    return 'Followed';
+  if (event.channel_event_type === 'welcome_message') {
+    return 'Welcome message sent';
   } else if (event.event.type === 'stop_contact') {
     return 'Stopped';
-  } else if (event.event.type === 'mt_call') {
-    return 'Outgoing Phone Call'; // deprecated
-  } else if (event.event.type == 'mo_call') {
-    return 'Incoming Phone call'; // deprecated
-  } else if (event.event.type == 'optin') {
-    return `Opted in to **${event.event.optin?.name}**`; // deprecated
-  } else if (event.event.type == 'optout') {
-    return `Opted out of **${event.event.optin?.name}**`; // deprecated
   }
 };
 
@@ -232,7 +214,7 @@ export const renderCallEvent = (event: CallEvent): string => {
 
 export const renderOptInEvent = (event: OptInEvent): string => {
   if (event.type === Events.OPTIN_REQUESTED) {
-    return `Requested opt-in for ${event.optin.name}`;
+    return `Requested opt-in for **${event.optin.name}**`;
   } else if (event.type === Events.OPTIN_STARTED) {
     return `Opted in to **${event.optin.name}**`;
   } else if (event.type === Events.OPTIN_STOPPED) {
