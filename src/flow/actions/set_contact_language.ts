@@ -1,8 +1,6 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
-import { set_contact } from '../forms/set_contact';
-import { ContactFormAdapter } from '../forms/set_contact_adapter';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Contact',
@@ -10,18 +8,34 @@ export const set_contact_language: ActionConfig = {
   render: (_node: Node, action: SetContactLanguage) => {
     return html`<div>Set contact language to <b>${action.language}</b></div>`;
   },
-
-  // Use unified form configuration
-  form: set_contact.form,
-  layout: set_contact.layout,
-  validate: set_contact.validate,
-  sanitize: set_contact.sanitize,
-
-  // Transform to/from unified form data
-  toFormData: (action: SetContactLanguage) => {
-    return ContactFormAdapter.actionToFormData(action);
+  form: {
+    language: {
+      type: 'select',
+      label: 'Language',
+      required: true,
+      searchable: true,
+      clearable: false,
+      endpoint: '/api/v2/languages.json',
+      valueKey: 'iso',
+      nameKey: 'name',
+      helpText: 'Select the language to set for the contact'
+    }
   },
-  fromFormData: (formData: any) => {
-    return ContactFormAdapter.formDataToAction(formData) as SetContactLanguage;
+  validate: (formData: SetContactLanguage): ValidationResult => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.language || formData.language.trim() === '') {
+      errors.language = 'Language is required';
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  },
+  sanitize: (formData: SetContactLanguage): void => {
+    if (formData.language && typeof formData.language === 'string') {
+      formData.language = formData.language.trim();
+    }
   }
 };

@@ -1,8 +1,18 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
-import { set_contact } from '../forms/set_contact';
-import { ContactFormAdapter } from '../forms/set_contact_adapter';
+
+// Get contact fields from workspace configuration
+const getContactFields = (): Array<{ value: string; label: string }> => {
+  // TODO: This should dynamically load from workspace configuration
+  // For now, return a basic set for testing
+  return [
+    { value: 'age', label: 'Age' },
+    { value: 'gender', label: 'Gender' },
+    { value: 'occupation', label: 'Occupation' },
+    { value: 'location', label: 'Location' }
+  ];
+};
 
 export const set_contact_field: ActionConfig = {
   name: 'Update Contact',
@@ -12,18 +22,44 @@ export const set_contact_field: ActionConfig = {
       Set <b>${action.field.name}</b> to <b>${action.value}</b>
     </div>`;
   },
-
-  // Use unified form configuration
-  form: set_contact.form,
-  layout: set_contact.layout,
-  validate: set_contact.validate,
-  sanitize: set_contact.sanitize,
-
-  // Transform to/from unified form data
-  toFormData: (action: SetContactField) => {
-    return ContactFormAdapter.actionToFormData(action);
+  form: {
+    field: {
+      type: 'select',
+      label: 'Field',
+      required: true,
+      searchable: true,
+      clearable: false,
+      options: getContactFields(),
+      helpText: 'Select the contact field to update'
+    },
+    value: {
+      type: 'text',
+      label: 'Value',
+      placeholder: 'Enter field value...',
+      required: true,
+      evaluated: true,
+      helpText: 'The new value for the contact field. You can use expressions like @contact.name'
+    }
   },
-  fromFormData: (formData: any) => {
-    return ContactFormAdapter.formDataToAction(formData) as SetContactField;
+  validate: (formData: SetContactField): ValidationResult => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.field) {
+      errors.field = 'Field is required';
+    }
+
+    if (!formData.value || formData.value.trim() === '') {
+      errors.value = 'Field value is required';
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  },
+  sanitize: (formData: SetContactField): void => {
+    if (formData.value && typeof formData.value === 'string') {
+      formData.value = formData.value.trim();
+    }
   }
 };

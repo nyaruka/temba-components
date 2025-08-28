@@ -1,8 +1,6 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
-import { set_contact } from '../forms/set_contact';
-import { ContactFormAdapter } from '../forms/set_contact_adapter';
 
 export const set_contact_status: ActionConfig = {
   name: 'Update Contact',
@@ -10,18 +8,34 @@ export const set_contact_status: ActionConfig = {
   render: (_node: Node, action: SetContactStatus) => {
     return html`<div>Set contact status to <b>${action.status}</b></div>`;
   },
-
-  // Use unified form configuration
-  form: set_contact.form,
-  layout: set_contact.layout,
-  validate: set_contact.validate,
-  sanitize: set_contact.sanitize,
-
-  // Transform to/from unified form data
-  toFormData: (action: SetContactStatus) => {
-    return ContactFormAdapter.actionToFormData(action);
+  form: {
+    status: {
+      type: 'select',
+      label: 'Status',
+      required: true,
+      searchable: false,
+      clearable: false,
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'archived', label: 'Archived' },
+        { value: 'stopped', label: 'Stopped' },
+        { value: 'blocked', label: 'Blocked' }
+      ],
+      helpText: 'Select the status to set for the contact'
+    }
   },
-  fromFormData: (formData: any) => {
-    return ContactFormAdapter.formDataToAction(formData) as SetContactStatus;
+  validate: (formData: SetContactStatus): ValidationResult => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.status) {
+      errors.status = 'Status is required';
+    } else if (!['active', 'archived', 'stopped', 'blocked'].includes(formData.status)) {
+      errors.status = 'Invalid status selected';
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
   }
 };

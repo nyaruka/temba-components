@@ -1,8 +1,6 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactName } from '../../store/flow-definition';
-import { set_contact } from '../forms/set_contact';
-import { ContactFormAdapter } from '../forms/set_contact_adapter';
 
 export const set_contact_name: ActionConfig = {
   name: 'Update Contact',
@@ -10,18 +8,31 @@ export const set_contact_name: ActionConfig = {
   render: (_node: Node, action: SetContactName) => {
     return html`<div>Set contact name to <b>${action.name}</b></div>`;
   },
-
-  // Use unified form configuration
-  form: set_contact.form,
-  layout: set_contact.layout,
-  validate: set_contact.validate,
-  sanitize: set_contact.sanitize,
-
-  // Transform to/from unified form data
-  toFormData: (action: SetContactName) => {
-    return ContactFormAdapter.actionToFormData(action);
+  form: {
+    name: {
+      type: 'text',
+      label: 'Name',
+      placeholder: 'Enter contact name...',
+      required: true,
+      evaluated: true,
+      helpText: 'The new name for the contact. You can use expressions like @contact.name'
+    }
   },
-  fromFormData: (formData: any) => {
-    return ContactFormAdapter.formDataToAction(formData) as SetContactName;
+  validate: (formData: SetContactName): ValidationResult => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.name || formData.name.trim() === '') {
+      errors.name = 'Name is required';
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  },
+  sanitize: (formData: SetContactName): void => {
+    if (formData.name && typeof formData.name === 'string') {
+      formData.name = formData.name.trim();
+    }
   }
 };
