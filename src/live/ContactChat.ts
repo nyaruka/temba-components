@@ -27,6 +27,7 @@ import {
   ContactGroupsEvent,
   ContactHistoryPage,
   ContactLanguageChangedEvent,
+  ContactStatusChangedEvent,
   MsgEvent,
   NameChangedEvent,
   OptInEvent,
@@ -61,6 +62,7 @@ export enum Events {
   CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
   CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
   CONTACT_NAME_CHANGED = 'contact_name_changed',
+  CONTACT_STATUS_CHANGED = 'contact_status_changed',
   CONTACT_URNS_CHANGED = 'contact_urns_changed',
   IVR_CREATED = 'ivr_created',
   MSG_CREATED = 'msg_created',
@@ -200,6 +202,12 @@ export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): string => {
   return `Language updated to **${event.language}**`;
+};
+
+export const renderContactStatusChangedEvent = (
+  event: ContactStatusChangedEvent
+): string => {
+  return `Status updated to **${event.status}**`;
 };
 
 export const renderCallEvent = (event: CallEvent): string => {
@@ -706,6 +714,14 @@ export class ContactChat extends ContactStoreElement {
           type: MessageType.Inline,
           text: renderContactLanguageChangedEvent(
             event as ContactLanguageChangedEvent
+          )
+        };
+        break;
+      case Events.CONTACT_STATUS_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderContactStatusChangedEvent(
+            event as ContactStatusChangedEvent
           )
         };
         break;
