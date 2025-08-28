@@ -36,7 +36,11 @@
     </style>
   </head>
   <body>
-    <temba-store completion="/api/v2/completion.json"></temba-store>
+    <temba-store
+      completion="/api/v2/completion.json"
+      workspace="/api/v2/workspace.json"
+    >
+    </temba-store>
     <temba-flow-editor id="flow-editor"></temba-flow-editor>
 
     <script type="module">

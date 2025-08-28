@@ -17,10 +17,10 @@ export const set_contact_status: ActionConfig = {
       searchable: false,
       clearable: false,
       options: [
-        { value: 'active', label: 'Active' },
-        { value: 'archived', label: 'Archived' },
-        { value: 'stopped', label: 'Stopped' },
-        { value: 'blocked', label: 'Blocked' }
+        { value: 'active', name: 'Active' },
+        { value: 'archived', name: 'Archived' },
+        { value: 'stopped', name: 'Stopped' },
+        { value: 'blocked', name: 'Blocked' }
       ],
       helpText: 'Select the status to set for the contact'
     }

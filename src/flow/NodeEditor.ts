@@ -867,6 +867,8 @@ export class NodeEditor extends RapidElement {
       value = target.value;
     }
 
+    // console.log('change', value);
+
     this.formData = {
       ...this.formData,
       [propertyName]: value

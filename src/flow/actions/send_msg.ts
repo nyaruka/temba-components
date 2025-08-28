@@ -65,10 +65,10 @@ export const send_msg: ActionConfig = {
         type: {
           type: 'select',
           options: [
-            { value: 'image', label: 'Image' },
-            { value: 'audio', label: 'Audio' },
-            { value: 'video', label: 'Video' },
-            { value: 'document', label: 'Document' }
+            { value: 'image', name: 'Image' },
+            { value: 'audio', name: 'Audio' },
+            { value: 'video', name: 'Video' },
+            { value: 'document', name: 'Document' }
           ],
           required: true,
           searchable: false

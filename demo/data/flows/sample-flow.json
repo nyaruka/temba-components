@@ -41,7 +41,7 @@
           {
             "uuid": "2de0b3d2-8b84-43f7-8716-640c879b6730",
             "type": "set_contact_language",
-            "language": "eng"
+            "language": "ita"
           }
         ],
         "exits": [
@@ -317,7 +317,7 @@
           {
             "uuid": "730ae625-6535-467b-98af-ea83e9d27884",
             "type": "set_contact_language",
-            "language": "eng"
+            "language": "spa"
           },
           {
             "uuid": "773fa48f-7341-4f57-bf74-2afed2e4b763",

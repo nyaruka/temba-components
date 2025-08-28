@@ -3,14 +3,14 @@ import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
 
 // Get contact fields from workspace configuration
-const getContactFields = (): Array<{ value: string; label: string }> => {
+const getContactFields = (): Array<{ value: string; name: string }> => {
   // TODO: This should dynamically load from workspace configuration
   // For now, return a basic set for testing
   return [
-    { value: 'age', label: 'Age' },
-    { value: 'gender', label: 'Gender' },
-    { value: 'occupation', label: 'Occupation' },
-    { value: 'location', label: 'Location' }
+    { value: 'age', name: 'Age' },
+    { value: 'gender', name: 'Gender' },
+    { value: 'occupation', name: 'Occupation' },
+    { value: 'location', name: 'Location' }
   ];
 };
 

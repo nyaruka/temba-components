@@ -1,5 +1,6 @@
 import { TemplateResult } from 'lit-html';
 import { Action, Node } from '../store/flow-definition';
+import { WebResponse } from '../utils';
 
 export interface ValidationResult {
   valid: boolean;
@@ -143,7 +144,7 @@ export interface TextareaFieldConfig extends BaseFieldConfig {
 
 export interface SelectFieldConfig extends BaseFieldConfig {
   type: 'select';
-  options?: string[] | { value: string; label: string }[];
+  options?: string[] | { value: string; name: string }[];
   multi?: boolean;
   clearable?: boolean;
   searchable?: boolean;
@@ -158,6 +159,8 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   flavor?: 'small' | 'large';
   createArbitraryOption?: (input: string, options: any[]) => any;
   allowCreate?: boolean;
+  getOptions?: (response: WebResponse) => any[];
+  getDynamicOptions?: () => Array<{ value: string; name: string }>;
 }
 
 export interface KeyValueFieldConfig extends BaseFieldConfig {
