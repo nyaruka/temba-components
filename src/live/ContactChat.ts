@@ -622,67 +622,6 @@ export class ContactChat extends ContactStoreElement {
   public getEventMessage(event: ContactEvent): ChatEvent {
     let message = null;
     switch (event.type) {
-      case Events.TICKET_OPENED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'opened')
-        };
-        break;
-      case Events.TICKET_ASSIGNED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAssigned(event as TicketEvent)
-        };
-        break;
-      case Events.TICKET_REOPENED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'reopened')
-        };
-        break;
-      case Events.TICKET_CLOSED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'closed')
-        };
-        break;
-      case Events.TICKET_TOPIC_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: `Topic changed to **${(event as TicketEvent).topic.name}**`
-        };
-        break;
-      case Events.RUN_STARTED:
-      case Events.RUN_ENDED:
-        message = {
-          type: MessageType.Inline,
-          text: renderRunEvent(event as RunEvent)
-        };
-        break;
-      case Events.CONTACT_FIELD_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderUpdateEvent(event as UpdateFieldEvent)
-        };
-        break;
-      case Events.CONTACT_NAME_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderNameChanged(event as NameChangedEvent)
-        };
-        break;
-      case Events.CONTACT_URNS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactURNsChanged(event as URNsChangedEvent)
-        };
-        break;
-      case Events.CONTACT_GROUPS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactGroupsEvent(event as ContactGroupsEvent)
-        };
-        break;
       case Events.AIRTIME_TRANSFERRED:
         message = {
           type: MessageType.Inline,
@@ -697,16 +636,22 @@ export class ContactChat extends ContactStoreElement {
           text: renderCallEvent(event as CallEvent)
         };
         break;
-      case Events.CHANNEL_EVENT:
-        message = {
-          type: MessageType.Inline,
-          text: renderChannelEvent(event as ChannelEvent)
-        };
-        break;
       case Events.CHAT_STARTED:
         message = {
           type: MessageType.Inline,
           text: renderChatStartedEvent(event as ChatStartedEvent)
+        };
+        break;
+      case Events.CONTACT_FIELD_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderUpdateEvent(event as UpdateFieldEvent)
+        };
+        break;
+      case Events.CONTACT_GROUPS_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderContactGroupsEvent(event as ContactGroupsEvent)
         };
         break;
       case Events.CONTACT_LANGUAGE_CHANGED:
@@ -717,6 +662,12 @@ export class ContactChat extends ContactStoreElement {
           )
         };
         break;
+      case Events.CONTACT_NAME_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderNameChanged(event as NameChangedEvent)
+        };
+        break;
       case Events.CONTACT_STATUS_CHANGED:
         message = {
           type: MessageType.Inline,
@@ -725,12 +676,61 @@ export class ContactChat extends ContactStoreElement {
           )
         };
         break;
+      case Events.CONTACT_URNS_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderContactURNsChanged(event as URNsChangedEvent)
+        };
+        break;
       case Events.OPTIN_REQUESTED:
       case Events.OPTIN_STARTED:
       case Events.OPTIN_STOPPED:
         message = {
           type: MessageType.Inline,
           text: renderOptInEvent(event as OptInEvent)
+        };
+        break;
+      case Events.RUN_STARTED:
+      case Events.RUN_ENDED:
+        message = {
+          type: MessageType.Inline,
+          text: renderRunEvent(event as RunEvent)
+        };
+        break;
+      case Events.TICKET_ASSIGNED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAssigned(event as TicketEvent)
+        };
+        break;
+      case Events.TICKET_CLOSED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAction(event as TicketEvent, 'closed')
+        };
+        break;
+      case Events.TICKET_OPENED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAction(event as TicketEvent, 'opened')
+        };
+        break;
+      case Events.TICKET_REOPENED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAction(event as TicketEvent, 'reopened')
+        };
+        break;
+      case Events.TICKET_TOPIC_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: `Topic changed to **${(event as TicketEvent).topic.name}**`
+        };
+        break;
+      case Events.CHANNEL_EVENT: // deprecated
+        message = {
+          type: MessageType.Inline,
+          text: renderChannelEvent(event as ChannelEvent)
         };
         break;
     }
