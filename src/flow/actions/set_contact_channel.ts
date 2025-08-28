@@ -3,12 +3,10 @@ import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {
-  name: 'Update Contact',
+  name: 'Update Channel',
   color: COLORS.update,
   render: (_node: Node, action: SetContactChannel) => {
-    return html`<div>
-      Set contact channel to <b>${action.channel.name}</b>
-    </div>`;
+    return html`<div>Set to <b>${action.channel.name}</b></div>`;
   },
   form: {
     channel: {

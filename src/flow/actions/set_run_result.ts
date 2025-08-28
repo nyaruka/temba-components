@@ -7,7 +7,9 @@ export const set_run_result: ActionConfig = {
   name: 'Save Flow Result',
   color: COLORS.save,
   render: (_node: Node, action: SetRunResult) => {
-    return html`<div>Save ${action.value} as <b>${action.name}</b></div>`;
+    return html`<div>
+      Save <b>${action.value}</b> as <b>${action.name}</b>
+    </div>`;
   },
   form: {
     name: {

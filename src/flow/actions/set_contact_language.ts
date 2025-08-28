@@ -3,10 +3,13 @@ import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 
 export const set_contact_language: ActionConfig = {
-  name: 'Update Contact',
+  name: 'Update Language',
   color: COLORS.update,
   render: (_node: Node, action: SetContactLanguage) => {
-    return html`<div>Set contact language to <b>${action.language}</b></div>`;
+    const languageNames = new Intl.DisplayNames(['eng'], {
+      type: 'language'
+    });
+    return html`<div>Set to <b>${languageNames.of(action.language)}</b></div>`;
   },
   form: {
     language: {

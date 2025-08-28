@@ -15,7 +15,7 @@ const getContactFields = (): Array<{ value: string; label: string }> => {
 };
 
 export const set_contact_field: ActionConfig = {
-  name: 'Update Contact',
+  name: 'Update Field',
   color: COLORS.update,
   render: (_node: Node, action: SetContactField) => {
     return html`<div>
@@ -38,7 +38,8 @@ export const set_contact_field: ActionConfig = {
       placeholder: 'Enter field value...',
       required: true,
       evaluated: true,
-      helpText: 'The new value for the contact field. You can use expressions like @contact.name'
+      helpText:
+        'The new value for the contact field. You can use expressions like @contact.name'
     }
   },
   validate: (formData: SetContactField): ValidationResult => {

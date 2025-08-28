@@ -5,7 +5,7 @@ import { renderNamedObjects } from '../utils';
 
 export const add_input_labels: ActionConfig = {
   name: 'Add Input Labels',
-  color: COLORS.update,
+  color: COLORS.save,
   render: (_node: Node, action: AddInputLabels) => {
     return html`<div>${renderNamedObjects(action.labels, 'label')}</div>`;
   },

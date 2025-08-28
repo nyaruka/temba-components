@@ -1,12 +1,13 @@
 import { html } from 'lit-html';
 import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
+import { titleCase } from '../../utils';
 
 export const set_contact_status: ActionConfig = {
-  name: 'Update Contact',
+  name: 'Update Status',
   color: COLORS.update,
   render: (_node: Node, action: SetContactStatus) => {
-    return html`<div>Set contact status to <b>${action.status}</b></div>`;
+    return html`<div>Set to <b>${titleCase(action.status)}</b></div>`;
   },
   form: {
     status: {
@@ -29,7 +30,9 @@ export const set_contact_status: ActionConfig = {
 
     if (!formData.status) {
       errors.status = 'Status is required';
-    } else if (!['active', 'archived', 'stopped', 'blocked'].includes(formData.status)) {
+    } else if (
+      !['active', 'archived', 'stopped', 'blocked'].includes(formData.status)
+    ) {
       errors.status = 'Invalid status selected';
     }
 

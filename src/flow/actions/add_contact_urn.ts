@@ -4,7 +4,7 @@ import { Node, AddContactUrn } from '../../store/flow-definition';
 import { urnSchemeMap } from '../utils';
 
 export const add_contact_urn: ActionConfig = {
-  name: 'Add Contact URN',
+  name: 'Add URN',
   color: COLORS.update,
   render: (_node: Node, action: AddContactUrn) => {
     const friendlyScheme = urnSchemeMap[action.scheme] || action.scheme;
