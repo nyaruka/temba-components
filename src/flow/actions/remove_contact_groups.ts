@@ -5,7 +5,7 @@ import { renderNamedObjects } from '../utils';
 
 export const remove_contact_groups: ActionConfig = {
   name: 'Remove from Group',
-  color: COLORS.remove,
+  color: COLORS.update,
   render: (_node: Node, action: RemoveFromGroup) => {
     if (action.all_groups) {
       return html`<div>Remove from all groups</div>`;

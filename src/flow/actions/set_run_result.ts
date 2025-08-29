@@ -7,7 +7,9 @@ export const set_run_result: ActionConfig = {
   name: 'Save Flow Result',
   color: COLORS.save,
   render: (_node: Node, action: SetRunResult) => {
-    return html`<div>Save ${action.value} as <b>${action.name}</b></div>`;
+    return html`<div>
+      Save <b>${action.value}</b> as <b>${action.name}</b>
+    </div>`;
   },
   form: {
     name: {
@@ -28,7 +30,15 @@ export const set_run_result: ActionConfig = {
       },
       searchable: true,
       clearable: false,
-      options: []
+      getDynamicOptions: () => {
+        const store = getStore();
+        return store
+          ? store
+              .getState()
+              .getFlowResults()
+              .map((r) => ({ value: r.name, name: r.name }))
+          : [];
+      }
     },
     value: {
       type: 'text',
@@ -48,21 +58,9 @@ export const set_run_result: ActionConfig = {
   },
   layout: ['name', 'value', 'category'],
   toFormData: (action: SetRunResult) => {
-    // Get existing flow results to populate the select options
-    const store = getStore();
-    const flowResults = store ? store.getState().getFlowResults() : [];
-
-    // Update the form configuration with dynamic options
-    const config = set_run_result;
-    if (config.form && config.form.name && config.form.name.type === 'select') {
-      (config.form.name as any).options = flowResults.map(
-        (result) => result.name
-      );
-    }
-
     return {
       uuid: action.uuid,
-      name: action.name || '',
+      name: action.name ? [{ name: action.name, value: action.name }] : [],
       value: action.value || '',
       category: action.category || ''
     };

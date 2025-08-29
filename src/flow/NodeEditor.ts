@@ -856,11 +856,6 @@ export class NodeEditor extends RapidElement {
     // Handle different component types like ActionEditor does
     if (target.tagName === 'TEMBA-CHECKBOX') {
       value = target.checked;
-    } else if (
-      target.tagName === 'TEMBA-SELECT' &&
-      (target.multi || target.emails || target.tags)
-    ) {
-      value = target.values || [];
     } else if (target.values !== undefined) {
       value = target.values;
     } else {

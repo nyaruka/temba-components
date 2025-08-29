@@ -323,6 +323,43 @@ export default {
       'process.env.NODE_ENV': JSON.stringify('test'),
     }),
     {
+      name: 'api-mock-server',
+      serve(context) {
+        // Handle API endpoints by serving static files
+        if (context.request.method === 'GET' && context.path.startsWith('/api/')) {
+          // Map API endpoints to static files
+          const apiMappings = {
+            '/api/v2/groups.json': './static/api/groups.json',
+            '/api/v2/labels.json': './static/api/labels.json',
+            '/api/v2/fields.json': './static/api/fields.json', 
+            '/api/v2/globals.json': './static/api/globals.json',
+            '/api/v2/completion.json': './static/mr/docs/en-us/editor.json',
+            '/api/v2/functions.json': './static/api/functions.json',
+            '/api/internal/templates.json': './static/api/templates.json',
+            '/api/v2/media.json': './static/api/media.json',
+            '/api/v2/users.json': './static/api/users.json',
+            '/api/v2/contacts.json': './static/api/contacts.json',
+            '/api/v2/optins.json': './static/api/optins.json',
+            '/api/v2/topics.json': './static/api/topics.json',
+            '/api/v2/languages.json': './static/api/languages.json',
+            '/api/v2/workspace.json': './static/api/workspace.json',
+            '/api/internal/locations.json': './static/api/locations.json',
+            '/api/internal/orgs.json': './static/api/orgs.json'
+          };
+
+          // Handle base path without query parameters
+          const basePath = context.path.split('?')[0];
+          const staticFile = apiMappings[basePath];
+          
+          if (staticFile && fs.existsSync(path.resolve(staticFile))) {
+            context.contentType = 'application/json';
+            context.body = fs.readFileSync(path.resolve(staticFile), 'utf-8');
+            return;
+          }
+        }
+      }
+    },
+    {
       name: 'add-style',
       transform(context) {
         if (context.response.is('html')) {

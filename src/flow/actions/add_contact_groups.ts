@@ -5,7 +5,7 @@ import { renderNamedObjects } from '../utils';
 
 export const add_contact_groups: ActionConfig = {
   name: 'Add to Group',
-  color: COLORS.add,
+  color: COLORS.update,
   render: (_node: Node, action: AddToGroup) => {
     return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
   },

@@ -36,10 +36,10 @@ export const split_by_expression: ActionConfig = {
           label: 'Operator',
           required: true,
           options: [
-            { value: 'contains', label: 'contains' },
-            { value: 'equals', label: 'equals' },
-            { value: 'starts_with', label: 'starts with' },
-            { value: 'regex', label: 'regex' }
+            { value: 'contains', name: 'contains' },
+            { value: 'equals', name: 'equals' },
+            { value: 'starts_with', name: 'starts with' },
+            { value: 'regex', name: 'regex' }
           ]
         },
         operand: {

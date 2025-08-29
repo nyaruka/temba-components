@@ -50,6 +50,10 @@ export class FieldRenderer {
         );
 
       case 'select':
+        if (typeof value === 'string' && value.length > 0) {
+          value = [{ name: value, value: value }];
+        }
+
         return FieldRenderer.renderSelect(
           fieldName,
           config as SelectFieldConfig,
@@ -208,7 +212,7 @@ export class FieldRenderer {
     } = context;
 
     // Ensure proper value handling for multi vs single select
-    const normalizedValue = (() => {
+    let normalizedValue = (() => {
       if (config.multi) {
         // Multi-select: ensure we have an array and convert strings to option objects
         const valueArray = Array.isArray(value) ? value : value ? [value] : [];
@@ -225,47 +229,17 @@ export class FieldRenderer {
       }
     })();
 
-    if (typeof normalizedValue === 'string') {
-      return html`<temba-select
-        name="${fieldName}"
-        ?required="${config.required}"
-        .errors="${errors}"
-        value="${config.multi ? '' : normalizedValue}"
-        .values="${config.multi ? normalizedValue : undefined}"
-        ?multi="${config.multi}"
-        ?searchable="${config.searchable}"
-        ?tags="${config.tags}"
-        ?emails="${config.emails}"
-        ?clearable="${config.clearable || false}"
-        label="${showLabel ? config.label : ''}"
-        placeholder="${config.placeholder || ''}"
-        maxItems="${config.maxItems || 0}"
-        valueKey="${config.valueKey || 'value'}"
-        nameKey="${config.nameKey || 'name'}"
-        endpoint="${config.endpoint || ''}"
-        .helpText="${config.helpText || ''}"
-        flavor="${flavor || config.flavor || 'small'}"
-        class="${extraClasses}"
-        style="${style}"
-        .getName=${config.getName}
-        .createArbitraryOption=${config.createArbitraryOption}
-        ?allowCreate="${config.allowCreate || false}"
-        @change="${onChange || (() => {})}"
-      >
-        ${config.options?.map((option: any) => {
-          if (typeof option === 'string') {
-            return html`<temba-option
-              name="${option}"
-              value="${option}"
-            ></temba-option>`;
-          } else {
-            return html`<temba-option
-              name="${option.label || option.name}"
-              value="${option.value}"
-            ></temba-option>`;
-          }
-        })}
-      </temba-select>`;
+    // Get options - use dynamic options if available, otherwise use static options
+    const optionsToRender = config.getDynamicOptions
+      ? config.getDynamicOptions()
+      : config.options;
+
+    if (
+      normalizedValue &&
+      typeof normalizedValue !== 'string' &&
+      !Array.isArray(normalizedValue)
+    ) {
+      normalizedValue = [normalizedValue];
     }
 
     return html`<temba-select
@@ -273,7 +247,7 @@ export class FieldRenderer {
       label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
-      .values="${normalizedValue}"
+      .values=${normalizedValue}
       ?multi="${config.multi}"
       ?searchable="${config.searchable}"
       ?tags="${config.tags}"
@@ -293,7 +267,7 @@ export class FieldRenderer {
       ?allowCreate="${config.allowCreate || false}"
       @change="${onChange || (() => {})}"
     >
-      ${config.options?.map((option: any) => {
+      ${optionsToRender?.map((option: any) => {
         if (typeof option === 'string') {
           return html`<temba-option
             name="${option}"
@@ -445,9 +419,6 @@ export class FieldRenderer {
   }
 }
 
-/**
- * Context object for field rendering that provides additional options
- */
 export interface FieldRenderContext {
   /** Array of error messages for the field */
   errors?: string[];
