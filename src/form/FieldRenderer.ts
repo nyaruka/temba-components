@@ -50,6 +50,10 @@ export class FieldRenderer {
         );
 
       case 'select':
+        if (typeof value === 'string' && value.length > 0) {
+          value = [{ name: value, value: value }];
+        }
+
         return FieldRenderer.renderSelect(
           fieldName,
           config as SelectFieldConfig,
@@ -238,14 +242,12 @@ export class FieldRenderer {
       normalizedValue = [normalizedValue];
     }
 
-    const isArray = Array.isArray(value);
     return html`<temba-select
       name="${fieldName}"
       label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
-      value="${isArray ? '' : normalizedValue}"
-      .values="${!isArray ? normalizedValue : undefined}"
+      .values=${normalizedValue}
       ?multi="${config.multi}"
       ?searchable="${config.searchable}"
       ?tags="${config.tags}"
@@ -262,7 +264,6 @@ export class FieldRenderer {
       style="${style}"
       .getName=${config.getName}
       .createArbitraryOption=${config.createArbitraryOption}
-      .getOptions=${config.getOptions}
       ?allowCreate="${config.allowCreate || false}"
       @change="${onChange || (() => {})}"
     >
@@ -418,9 +419,6 @@ export class FieldRenderer {
   }
 }
 
-/**
- * Context object for field rendering that provides additional options
- */
 export interface FieldRenderContext {
   /** Array of error messages for the field */
   errors?: string[];

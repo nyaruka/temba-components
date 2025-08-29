@@ -41,7 +41,7 @@
           {
             "uuid": "2de0b3d2-8b84-43f7-8716-640c879b6730",
             "type": "set_contact_language",
-            "language": "ita"
+            "language": "fra"
           }
         ],
         "exits": [
@@ -179,14 +179,14 @@
           {
             "type": "call_webhook",
             "uuid": "e1f22e97-a170-44b4-a79b-98ab916f4c34",
-            "method": "POST",
+            "method": "GET",
             "url": "http://google.com",
             "headers": {
               "Accepts": "application/json",
               "Content-Type": "application/json",
               "Authorization": "Bearer token here"
             },
-            "body": "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"value\", \"category\")\n)))"
+            "body": ""
           }
         ],
         "router": {
@@ -781,8 +781,8 @@
               "name": "General"
             },
             "assignee": {
-              "uuid": "ae79dd5b-8c34-4602-a2c1-1e4db2419f0f",
-              "name": "Eric Newcomer"
+              "uuid": "c0f5b431-35e9-429c-9d57-5fee2fac46a3",
+              "name": "Marion Berry"
             },
             "note": ""
           }
@@ -852,9 +852,9 @@
               "exit_uuid": "abbdcff7-4296-4f01-907f-f709fa4a1444"
             },
             {
-              "uuid": "7091cae1-2677-494a-967c-d9502476d4e4",
+              "uuid": "faa4fc1c-c4ba-47fc-8a93-a9bf8bd5818c",
               "name": "Oyster",
-              "exit_uuid": "377e720a-4815-4fa5-83cc-b6471765a9b4"
+              "exit_uuid": "c38c4c0e-cb1e-4305-a008-908aa9f01850"
             },
             {
               "uuid": "8e4624ee-57fe-43cd-8fa3-fa630c22cd72",
@@ -887,12 +887,12 @@
               "category_uuid": "4632b796-f8ab-4a35-80d1-a1b53a6db803"
             },
             {
-              "uuid": "87a8ccff-c153-4ff6-8a59-4d164b8bb2a8",
+              "uuid": "62a7fc70-ffbf-4925-9f9a-ca6ef531942a",
               "type": "has_only_text",
               "arguments": [
                 "Oyster"
               ],
-              "category_uuid": "7091cae1-2677-494a-967c-d9502476d4e4"
+              "category_uuid": "faa4fc1c-c4ba-47fc-8a93-a9bf8bd5818c"
             },
             {
               "uuid": "8fd5f13b-0398-4286-b18a-a92b5a2ea19d",
@@ -914,7 +914,7 @@
             "destination_uuid": null
           },
           {
-            "uuid": "377e720a-4815-4fa5-83cc-b6471765a9b4",
+            "uuid": "c38c4c0e-cb1e-4305-a008-908aa9f01850",
             "destination_uuid": null
           },
           {

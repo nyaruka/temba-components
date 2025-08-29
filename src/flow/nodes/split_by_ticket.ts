@@ -24,7 +24,6 @@ export const split_by_ticket: NodeConfig = {
       label: 'Assignee',
       required: false,
       placeholder: 'Select an agent (optional)',
-      options: [],
       endpoint: '/api/v2/users.json',
       valueKey: 'uuid',
       getName: (item: {

@@ -144,23 +144,8 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
         // Handle different field types and their change events
         if (config.type === 'select') {
-          // For temba-select, extract the correct value
-          if (target.tagName === 'TEMBA-SELECT') {
-            if (target.multi || target.emails || target.tags) {
-              value = target.values || [];
-            } else {
-              // Single select: extract value from first selected option
-              const values = target.values || [];
-              value =
-                values.length > 0 && values[0]
-                  ? values[0].value !== undefined
-                    ? values[0].value
-                    : values[0]
-                  : '';
-            }
-          } else {
-            value = target.value;
-          }
+          // Use consistent temba-select value normalization
+          value = target.values;
         } else {
           // For other field types, use the target value directly
           value = target.value;

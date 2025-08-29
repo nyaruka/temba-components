@@ -45,10 +45,12 @@ export const set_contact_language: ActionConfig = {
         type: 'language'
       });
       return {
-        language: {
-          value: action.language,
-          name: languageNames.of(action.language) || action.language
-        },
+        language: [
+          {
+            value: action.language,
+            name: languageNames.of(action.language) || action.language
+          }
+        ],
         uuid: action.uuid
       };
     }
