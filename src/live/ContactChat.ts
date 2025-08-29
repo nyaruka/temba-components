@@ -21,7 +21,6 @@ import { Compose, ComposeValue } from '../form/Compose';
 import {
   AirtimeTransferredEvent,
   CallEvent,
-  ChannelEvent,
   ChatStartedEvent,
   ContactEvent,
   ContactGroupsEvent,
@@ -78,10 +77,7 @@ export enum Events {
   TICKET_NOTE_ADDED = 'ticket_note_added',
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
-  TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
-
-  // deprecated
-  CHANNEL_EVENT = 'channel_event'
+  TICKET_TOPIC_CHANGED = 'ticket_topic_changed'
 }
 
 const renderInfoList = (singular: string, plural: string, items: any[]) => {
@@ -95,14 +91,6 @@ const renderInfoList = (singular: string, plural: string, items: any[]) => {
       const last = list.pop();
       return `${plural} ${list.join(', ')}, and ${last}`;
     }
-  }
-};
-
-const renderChannelEvent = (event: ChannelEvent): string => {
-  if (event.channel_event_type === 'welcome_message') {
-    return 'Welcome message sent';
-  } else if (event.event.type === 'stop_contact') {
-    return 'Stopped';
   }
 };
 
@@ -725,12 +713,6 @@ export class ContactChat extends ContactStoreElement {
         message = {
           type: MessageType.Inline,
           text: `Topic changed to **${(event as TicketEvent).topic.name}**`
-        };
-        break;
-      case Events.CHANNEL_EVENT: // deprecated
-        message = {
-          type: MessageType.Inline,
-          text: renderChannelEvent(event as ChannelEvent)
         };
         break;
     }

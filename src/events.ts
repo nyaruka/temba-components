@@ -13,21 +13,6 @@ export interface ContactEvent {
   created_by?: User;
 }
 
-export interface ChannelEvent extends ContactEvent {
-  channel_event_type: string;
-  duration: number;
-
-  event: {
-    type: string;
-    channel: { uuid: string; name: string };
-    duration?: number;
-    optin?: {
-      uuid: string;
-      name: string;
-    };
-  };
-}
-
 export interface ContactLanguageChangedEvent extends ContactEvent {
   language: string;
 }
