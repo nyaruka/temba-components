@@ -17,6 +17,9 @@
 <trans-unit id="s73b4d70c02f4b4e0">
   <source>No options</source>
 </trans-unit>
+<trans-unit id="sd113c3aa42418fba">
+  <source>There was a problem creating your selection.</source>
+</trans-unit>
 </body>
 </file>
 </xliff>
