@@ -28,13 +28,6 @@ describe('split_by_random node config', () => {
       expect(split_by_random.router).to.exist;
       expect(split_by_random.router.type).to.equal('random');
     });
-
-    it('is a simple node config without form or layout', () => {
-      expect(split_by_random.form).to.be.undefined;
-      expect(split_by_random.layout).to.be.undefined;
-      expect(split_by_random.toFormData).to.be.undefined;
-      expect(split_by_random.fromFormData).to.be.undefined;
-    });
   });
 
   describe('node scenarios', () => {

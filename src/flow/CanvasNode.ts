@@ -873,30 +873,7 @@ export class CanvasNode extends RapidElement {
   private renderRouter(router: Router, ui: NodeUI) {
     const nodeConfig = NODE_CONFIG[ui.type];
     if (nodeConfig) {
-      // For tests that call renderRouter directly without setting this.node
-      const hasActions = this.node ? this.node.actions.length > 0 : false;
-      const isRemoving =
-        this.node &&
-        this.node.actions.length === 0 &&
-        this.actionRemovingState.has(this.node.uuid);
-
       return html`<div class="router" style="position: relative;">
-        ${!hasActions
-          ? html` <button
-                class="remove-button"
-                @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
-                title="Remove node"
-              >
-                ✕
-              </button>
-              <div
-                @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
-                @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
-                style="cursor: pointer;"
-              >
-                ${this.renderNodeTitle(nodeConfig, isRemoving)}
-              </div>`
-          : ''}
         ${router.result_name
           ? html`<div
               class="body"
@@ -969,7 +946,7 @@ export class CanvasNode extends RapidElement {
           : ''}"
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
-        ${nodeConfig && nodeConfig.render
+        ${nodeConfig && nodeConfig.type !== 'execute_actions'
           ? html`<div class="router" style="position: relative;">
               <button
                 class="remove-button"
@@ -987,7 +964,7 @@ export class CanvasNode extends RapidElement {
                   nodeConfig,
                   this.actionRemovingState.has(this.node.uuid)
                 )}
-                ${nodeConfig.render(this.node)}
+                ${nodeConfig.render ? nodeConfig.render(this.node) : null}
               </div>
             </div>`
           : this.node.actions.length > 0
@@ -1007,20 +984,6 @@ export class CanvasNode extends RapidElement {
                 (action) => action.uuid,
                 (action, index) => this.renderAction(this.node, action, index)
               )}`
-          : !this.node.router && nodeConfig && nodeConfig.name
-          ? html`<div class="router" style="position: relative;">
-              <button
-                class="remove-button"
-                @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
-                title="Remove node"
-              >
-                ✕
-              </button>
-              ${this.renderNodeTitle(
-                nodeConfig,
-                this.actionRemovingState.has(this.node.uuid)
-              )}
-            </div>`
           : ''}
         ${this.node.router
           ? html` ${this.renderRouter(this.node.router, this.ui)}
