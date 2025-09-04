@@ -226,7 +226,7 @@ describe('EditorNode', () => {
       const result = (editorNode as any).renderTitle(config);
       const container = await fixture(html`<div>${result}</div>`);
 
-      const title = container.querySelector('.title');
+      const title = container.querySelector('.cn-title');
       expect(title).to.exist;
       expect(title?.textContent?.trim()).to.equal('Test Action');
       expect(title?.getAttribute('style')).to.contain('background:#ff0000');
@@ -1046,7 +1046,7 @@ describe('EditorNode', () => {
       expect(actionElement?.classList.contains('removing')).to.be.true;
 
       // Check that title shows "Remove?"
-      const titleElement = container.querySelector('.title .name');
+      const titleElement = container.querySelector('.cn-title .name');
       expect(titleElement?.textContent?.trim()).to.equal('Remove?');
     });
 
