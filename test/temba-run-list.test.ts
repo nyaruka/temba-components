@@ -572,7 +572,7 @@ describe('temba-run-list', () => {
       contact: {
         name: 'John Doe',
         urn: 'tel:+1234567890',
-        anon_display: '1234567890'
+        ref: 'E2E6MX'
       },
       modified_on: '2023-12-01T10:30:00.000Z',
       exited_on: '2023-12-01T10:30:00.000Z',
@@ -591,7 +591,7 @@ describe('temba-run-list', () => {
       contact: {
         name: null,
         urn: 'tel:+1234567890',
-        anon_display: '1234567890'
+        ref: 'E2E6MX'
       },
       modified_on: '2023-12-01T10:30:00.000Z',
       exited_on: null,

@@ -181,7 +181,7 @@ export interface Contact {
   last_seen_on: string;
   status: string;
 
-  anon_display?: string;
+  ref?: string; // only returned for anon workspaces
   flow?: ObjectReference;
   last_msg?: Msg;
   direction?: string;

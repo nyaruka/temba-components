@@ -9,7 +9,7 @@
         "uuid": "contact-uuid-1",
         "name": "John Doe",
         "urn": "tel:+1234567890",
-        "anon_display": "1234567890"
+        "ref": "E2E6MX"
       },
       "flow": {
         "uuid": "flow-uuid-1",
@@ -23,7 +23,7 @@
       "values": {
         "name": {
           "name": "Name",
-          "key": "name", 
+          "key": "name",
           "value": "John Doe",
           "category": "Text"
         },
@@ -37,12 +37,12 @@
     },
     {
       "id": 2,
-      "uuid": "run-uuid-2", 
+      "uuid": "run-uuid-2",
       "contact": {
         "uuid": "contact-uuid-2",
         "name": "Jane Smith",
         "urn": "tel:+1987654321",
-        "anon_display": "1987654321"
+        "ref": "3MWB69"
       },
       "flow": {
         "uuid": "flow-uuid-1",
@@ -59,10 +59,10 @@
       "id": 3,
       "uuid": "run-uuid-3",
       "contact": {
-        "uuid": "contact-uuid-3", 
+        "uuid": "contact-uuid-3",
         "name": null,
         "urn": "tel:+1122334455",
-        "anon_display": "1122334455"
+        "ref": "Q3GP9G"
       },
       "flow": {
         "uuid": "flow-uuid-1",
@@ -89,7 +89,7 @@
         "uuid": "contact-uuid-4",
         "name": "Active User",
         "urn": "tel:+1555666777",
-        "anon_display": "1555666777"
+        "ref": "U6Y6T5"
       },
       "flow": {
         "uuid": "flow-uuid-1",
@@ -109,7 +109,7 @@
         "uuid": "contact-uuid-5",
         "name": "Pending User",
         "urn": "tel:+1888999000",
-        "anon_display": "1888999000"
+        "ref": "SJPWLU"
       },
       "flow": {
         "uuid": "flow-uuid-1",
