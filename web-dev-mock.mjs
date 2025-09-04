@@ -440,8 +440,63 @@ export function handleMinioUpload(context) {
   });
 }
 
-// Handle label creation for the labels API
-export function handleLabelCreation(context) {
+// Entity creation configurations
+const ENTITY_CONFIGS = {
+  labels: {
+    filePath: './static/api/labels.json',
+    createEntity: (name) => ({
+      uuid: uuidv4(),
+      name: name.trim(),
+      count: 0
+    }),
+    nameField: 'name',
+    entityType: 'Label'
+  },
+  fields: {
+    filePath: './static/api/fields.json',
+    createEntity: (name) => ({
+      key: name.trim().toLowerCase().replace(/\s+/g, '_'),
+      name: name.trim(),
+      type: 'text',
+      featured: false,
+      priority: 0,
+      usages: {
+        flows: 0,
+        groups: 0,
+        campaign_events: 0
+      },
+      agent_access: 'view',
+      label: name.trim(),
+      value_type: 'text'
+    }),
+    nameField: 'name',
+    uniqueField: 'key', // check uniqueness by key for fields
+    entityType: 'Field'
+  },
+  groups: {
+    filePath: './static/api/groups.json',
+    createEntity: (name) => ({
+      uuid: uuidv4(),
+      name: name.trim(),
+      query: null,
+      status: 'ready',
+      count: 0
+    }),
+    nameField: 'name',
+    entityType: 'Group'
+  }
+};
+
+// Generic entity creation handler for labels, fields, and groups
+export function handleEntityCreation(entityType, context) {
+  const config = ENTITY_CONFIGS[entityType];
+  
+  if (!config) {
+    context.status = 400;
+    context.body = JSON.stringify({ error: `Unsupported entity type: ${entityType}` });
+    return Promise.resolve();
+  }
+
   return new Promise((resolve) => {
     let body = '';
     
@@ -452,67 +507,67 @@ export function handleLabelCreation(context) {
     context.req.on('end', () => {
       try {
         const requestData = JSON.parse(body);
-        const labelName = requestData.name || '';
+        const entityName = requestData[config.nameField] || '';
         
-        if (!labelName.trim()) {
+        if (!entityName.trim()) {
           context.status = 400;
-          context.body = JSON.stringify({ error: 'Label name is required' });
+          context.body = JSON.stringify({ error: `${config.entityType} name is required` });
           resolve();
           return;
         }
         
-        // Read existing labels file
-        const labelsPath = './static/api/labels.json';
-        let labelsData;
+        // Read existing data file
+        let entityData;
         
         try {
-          labelsData = JSON.parse(fs.readFileSync(labelsPath, 'utf-8'));
+          entityData = JSON.parse(fs.readFileSync(config.filePath, 'utf-8'));
         } catch (error) {
           // If file doesn't exist, create basic structure
-          labelsData = {
+          entityData = {
             next: null,
             previous: null,
             results: []
           };
         }
         
-        // Check if label already exists
-        const existingLabel = labelsData.results.find(
-          label => label.name.toLowerCase() === labelName.trim().toLowerCase()
+        // Check if entity already exists
+        const uniqueField = config.uniqueField || config.nameField;
+        const checkValue = uniqueField === 'key' 
+          ? entityName.trim().toLowerCase().replace(/\s+/g, '_')
+          : entityName.trim().toLowerCase();
+          
+        const existingEntity = entityData.results.find(
+          entity => entity[uniqueField].toLowerCase() === checkValue
         );
         
-        if (existingLabel) {
-          // Return existing label
+        if (existingEntity) {
+          // Return existing entity
           context.contentType = 'application/json';
-          context.body = JSON.stringify(existingLabel);
+          context.body = JSON.stringify(existingEntity);
           resolve();
           return;
         }
         
-        // Create new label with UUID
-        const newLabel = {
-          uuid: uuidv4(),
-          name: labelName.trim(),
-          count: 0
-        };
+        // Create new entity
+        const newEntity = config.createEntity(entityName);
         
-        // Add to labels data
-        labelsData.results.push(newLabel);
+        // Add to entity data
+        entityData.results.push(newEntity);
         
         // Write back to file
-        fs.writeFileSync(labelsPath, JSON.stringify(labelsData, null, 2));
+        fs.writeFileSync(config.filePath, JSON.stringify(entityData, null, 2));
         
-        // Return the new label
+        // Return the new entity
         context.contentType = 'application/json';
-        context.body = JSON.stringify(newLabel);
+        context.body = JSON.stringify(newEntity);
         
-        console.log('📝 Label created:', newLabel);
+        console.log(`📝 ${config.entityType} created:`, newEntity);
         
       } catch (error) {
-        console.error('Label creation error:', error);
+        console.error(`${config.entityType} creation error:`, error);
         context.status = 500;
         context.body = JSON.stringify({ 
-          error: 'Label creation failed',
+          error: `${config.entityType} creation failed`,
           details: error.message 
         });
       }
@@ -521,3 +576,4 @@ export function handleLabelCreation(context) {
     });
   });
 }
+
