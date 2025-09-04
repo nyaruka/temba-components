@@ -29,7 +29,22 @@ export const add_contact_groups: ActionConfig = {
       endpoint: '/api/v2/groups.json',
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Search for groups...'
+      placeholder: 'Search for groups...',
+      allowCreate: true,
+      createArbitraryOption: (input: string, options: any[]) => {
+        // Check if a label with this name already exists
+        const existing = options.find(
+          (option) =>
+            option.name.toLowerCase().trim() === input.toLowerCase().trim()
+        );
+        if (!existing && input.trim()) {
+          return {
+            name: input.trim(),
+            arbitrary: true
+          };
+        }
+        return null;
+      }
     }
   },
   fromFormData: (formData: any): AddToGroup => {

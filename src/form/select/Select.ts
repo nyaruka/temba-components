@@ -592,10 +592,7 @@ export class Select<T extends SelectOption> extends FieldElement {
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
     this.handleOrderChanged = this.handleOrderChanged.bind(this);
-
-    this.createArbitraryOption = (
-      this.createArbitraryOption || this.createArbitraryOptionDefault
-    ).bind(this);
+    this.createArbitraryOption = this.createArbitraryOptionDefault.bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -707,6 +704,13 @@ export class Select<T extends SelectOption> extends FieldElement {
 
   public updated(changes: Map<string, any>) {
     super.updated(changes);
+
+    if (changes.has('createArbitraryOption')) {
+      if (!this.createArbitraryOption) {
+        this.createArbitraryOption =
+          this.createArbitraryOptionDefault.bind(this);
+      }
+    }
 
     if (changes.has('sorted')) {
       this.sortFunction = this.sorted ? this.alphaSort : null;
