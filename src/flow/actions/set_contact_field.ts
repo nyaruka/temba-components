@@ -2,18 +2,6 @@ import { html } from 'lit-html';
 import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
 
-// Get contact fields from workspace configuration
-const getContactFields = (): Array<{ value: string; name: string }> => {
-  // TODO: This should dynamically load from workspace configuration
-  // For now, return a basic set for testing
-  return [
-    { value: 'age', name: 'Age' },
-    { value: 'gender', name: 'Gender' },
-    { value: 'occupation', name: 'Occupation' },
-    { value: 'location', name: 'Location' }
-  ];
-};
-
 export const set_contact_field: ActionConfig = {
   name: 'Update Field',
   color: COLORS.update,
@@ -29,8 +17,12 @@ export const set_contact_field: ActionConfig = {
       required: true,
       searchable: true,
       clearable: false,
-      options: getContactFields(),
-      helpText: 'Select the contact field to update'
+      nameKey: 'name',
+      valueKey: 'key',
+      endpoint: '/api/v2/fields.json',
+      helpText: 'Select the contact field to update',
+      allowCreate: true,
+      createArbitraryOption: (input: string) => ({ key: input, name: input })
     },
     value: {
       type: 'text',
@@ -41,6 +33,15 @@ export const set_contact_field: ActionConfig = {
       helpText:
         'The new value for the contact field. You can use expressions like @contact.name'
     }
+  },
+  fromFormData: (formData: SetContactField): SetContactField => {
+    const field = formData.field[0];
+    return {
+      uuid: formData.uuid,
+      type: 'set_contact_field',
+      field: { name: field.name, key: field.key },
+      value: formData.value
+    };
   },
   validate: (formData: SetContactField): ValidationResult => {
     const errors: { [key: string]: string } = {};

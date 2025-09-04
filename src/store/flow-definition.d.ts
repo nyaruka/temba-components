@@ -68,6 +68,11 @@ export interface NamedObject {
   name: string;
 }
 
+export interface FieldReference {
+  key: string;
+  name: string;
+}
+
 export interface Group extends NamedObject {
   status?: string;
   system?: boolean;
@@ -111,7 +116,7 @@ export interface RemoveFromGroup extends Action {
 }
 
 export interface SetContactField extends Action {
-  field: NamedObject;
+  field: FieldReference;
   value: string;
 }
 

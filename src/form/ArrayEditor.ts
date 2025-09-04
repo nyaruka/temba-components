@@ -1,6 +1,6 @@
 import { html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { FieldConfig, SelectFieldConfig } from '../flow/types';
+import { FieldConfig } from '../flow/types';
 import { BaseListEditor, ListItem } from './BaseListEditor';
 import { FieldRenderer } from './FieldRenderer';
 
@@ -116,12 +116,13 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     }
 
     // For select fields, ensure we return the right type
-    if (config.type === 'select') {
+    /*if (config.type === 'select') {
+      console.log('computeFieldValue select', currentValue, config);
       const selectConfig = config as SelectFieldConfig;
       if (currentValue === undefined || currentValue === null) {
         return selectConfig.multi ? [] : '';
       }
-    }
+    }*/
 
     return currentValue;
   }

@@ -592,6 +592,10 @@ export class Select<T extends SelectOption> extends FieldElement {
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
     this.handleOrderChanged = this.handleOrderChanged.bind(this);
+
+    this.createArbitraryOption = (
+      this.createArbitraryOption || this.createArbitraryOptionDefault
+    ).bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -880,7 +884,6 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   public handleOptionSelection(event: CustomEvent) {
-    const previous = [...this.values];
     if (
       this.isMultiMode &&
       this.maxItems > 0 &&
@@ -893,20 +896,31 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
 
     const selected = event.detail.selected;
+
     // check if we should post it
     if (selected.arbitrary && this.allowCreate && this.endpoint) {
+      this.resolving = true;
       postJSON(this.endpoint, selected).then((response) => {
         if (response.status >= 200 && response.status < 300) {
           this.setSelectedOption(response.json);
           this.lruCache = lru(20, 60000);
+          this.errors = [];
         } else {
-          this.values = previous;
-          this.errors = [msg('There was a problem creating your selection.')];
+          this.setSelectedOption(selected);
+          setTimeout(() => {
+            this.errors = [
+              'There was an error creating "' +
+                this.getNameInternal(selected) +
+                '"'
+            ];
+          }, 0);
           this.blur();
         }
+        this.resolving = false;
       });
     } else {
       this.setSelectedOption(selected);
+      this.errors = [];
     }
   }
 
@@ -948,6 +962,21 @@ export class Select<T extends SelectOption> extends FieldElement {
   public handleRemoveSelection(selectionToRemove: any): void {
     this.removeValue(selectionToRemove);
     this.visibleOptions = [];
+    this.errors = [];
+
+    // if we allow create, double check our values
+    if (this.allowCreate) {
+      const arbitrary = this.values.find((v) => v.arbitrary);
+      if (arbitrary) {
+        setTimeout(() => {
+          this.errors = [
+            'There was an error creating "' +
+              this.getNameInternal(arbitrary) +
+              '"'
+          ];
+        }, 0);
+      }
+    }
   }
 
   private createArbitraryOptionDefault(input: string, _options: any[]): any {

@@ -63,13 +63,11 @@
           {
             "uuid": "0020495f-f919-41bc-b0a7-5e109e72a6ac",
             "type": "set_contact_field",
-            "field": [
-              {
-                "name": "Age",
-                "value": "age"
-              }
-            ],
-            "value": "Male"
+            "field": {
+              "name": "Profile Pic",
+              "key": "profile_pic"
+            },
+            "value": "Malea"
           },
           {
             "uuid": "cc5c9892-4ba0-450a-a9d6-8567381eab1c",
@@ -79,7 +77,7 @@
           {
             "uuid": "2de0b3d2-8b84-43f7-8716-640c879b6730",
             "type": "set_contact_language",
-            "language": "fra"
+            "language": "eng"
           }
         ],
         "exits": [
@@ -101,7 +99,9 @@
               "image/jpeg:http://localhost:9000/temba-attachments/e7d4d3cd-ec89-45c2-bc0b-4f652f1f7fde-IMG_3262.jpeg",
               "image/jpeg:http://localhost:9000/temba-attachments/ae831575-0d23-40b7-ae0c-531b8775a6bc-IMG_3282.jpeg",
               "image/png:http://localhost:9000/temba-attachments/d7b04feb-c74e-43a4-a6de-6a4516a4de59-Screenshot 2025-08-19 at 10.23.24â¯AM.png",
-              "image/jpeg:http://localhost:9000/temba-attachments/d3bdb082-6dab-48ed-9598-f3a7f6b6b06d-IMG_3262.jpeg"
+              "image/jpeg:http://localhost:9000/temba-attachments/d3bdb082-6dab-48ed-9598-f3a7f6b6b06d-IMG_3262.jpeg",
+              "video:@fields.video",
+              "image:@fields.image"
             ],
             "quick_replies": [
               "Red",

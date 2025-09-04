@@ -320,14 +320,6 @@ export class NodeEditor extends RapidElement {
     this.isOpen = true;
   }
 
-  private closeDialog(): void {
-    this.isOpen = false;
-    this.formData = {};
-    this.errors = {};
-    this.groupCollapseState = {};
-    this.groupHoverState = {};
-  }
-
   private initializeFormData(): void {
     const nodeConfig = this.getNodeConfig();
 
@@ -393,7 +385,49 @@ export class NodeEditor extends RapidElement {
       }
     });
 
+    // Convert select fields to array format
+    const config = this.getConfig();
+    if (config?.form) {
+      this.processSelectFields(processed, config.form);
+    }
+
     this.formData = processed;
+  }
+
+  private processSelectFields(data: any, formConfig: any): void {
+    Object.entries(formConfig).forEach(
+      ([fieldName, fieldConfig]: [string, any]) => {
+        const value = data[fieldName];
+
+        // Handle top-level select fields
+        if (fieldConfig.type === 'select' && value) {
+          data[fieldName] = this.convertToSelectArray(value);
+        }
+
+        // Handle select fields within array items
+        if (
+          fieldConfig.type === 'array' &&
+          Array.isArray(value) &&
+          fieldConfig.itemConfig
+        ) {
+          value.forEach((item: any) => {
+            this.processSelectFields(item, fieldConfig.itemConfig);
+          });
+        }
+      }
+    );
+  }
+
+  private convertToSelectArray(value: any): any[] {
+    if (Array.isArray(value)) {
+      return value.map((v) =>
+        typeof v === 'string' ? { name: v, value: v } : v
+      );
+    } else if (typeof value === 'string') {
+      return [{ name: value, value: value }];
+    } else {
+      return [value];
+    }
   }
 
   private isKeyValueField(fieldName: string): boolean {
@@ -533,6 +567,18 @@ export class NodeEditor extends RapidElement {
       if (config.form) {
         Object.entries(config.form).forEach(([fieldName, fieldConfig]) => {
           const value = this.formData[fieldName];
+          if (fieldConfig.type === 'select' && fieldConfig.allowCreate) {
+            // check our values to see if any have arbitrary set
+            let selected = this.formData[fieldName];
+            selected = Array.isArray(selected)
+              ? selected.find((v: any) => v.arbitrary)
+              : null;
+
+            if (selected && selected.arbitrary) {
+              errors[fieldName] =
+                'There was an error creating' + ' "' + selected.name + '"';
+            }
+          }
 
           // Check required fields
           if (
