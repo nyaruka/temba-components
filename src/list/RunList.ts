@@ -155,7 +155,7 @@ export class RunList extends TembaList {
             style="width:16em;white-space:nowrap;overflow: hidden; text-overflow: ellipsis;"
           >
             <temba-contact-name
-              name=${run.contact?.name || run.contact?.anon_display || ''}
+              name=${run.contact?.name || run.contact?.ref || ''}
               urn=${run.contact?.urn || ''}
               icon-size="15"
             />
@@ -269,7 +269,7 @@ export class RunList extends TembaList {
             <temba-contact-name
               style="cursor:pointer"
               name=${this.selectedRun.contact?.name ||
-              this.selectedRun.contact?.anon_display ||
+              this.selectedRun.contact?.ref ||
               ''}
               urn=${this.selectedRun.contact?.urn || ''}
               onclick="goto(event, this)"
