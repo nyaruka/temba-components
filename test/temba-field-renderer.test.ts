@@ -192,11 +192,16 @@ describe('FieldRenderer', () => {
         searchable: true
       };
 
-      const template = FieldRenderer.renderField('country', config, 'Canada', {
-        errors: [],
-        showLabel: true,
-        onChange: () => {}
-      });
+      const template = FieldRenderer.renderField(
+        'country',
+        config,
+        [{ name: 'Canada', value: 'Canada' }],
+        {
+          errors: [],
+          showLabel: true,
+          onChange: () => {}
+        }
+      );
 
       const container = await fixture(
         html`<div style="width: 400px; padding: 20px;">${template}</div>`
@@ -219,7 +224,10 @@ describe('FieldRenderer', () => {
       const template = FieldRenderer.renderField(
         'skills',
         config,
-        ['JavaScript', 'TypeScript'],
+        [
+          { name: 'JavaScript', value: 'JavaScript' },
+          { name: 'TypeScript', value: 'TypeScript' }
+        ],
         {
           errors: [],
           showLabel: true,
@@ -243,13 +251,18 @@ describe('FieldRenderer', () => {
         options: ['Active', 'Inactive', 'Pending']
       };
 
-      const template = FieldRenderer.renderField('status', config, 'Active', {
-        errors: [],
-        showLabel: false,
-        flavor: 'small',
-        extraClasses: 'form-control',
-        onChange: () => {}
-      });
+      const template = FieldRenderer.renderField(
+        'status',
+        config,
+        [{ name: 'Active', value: 'Active' }],
+        {
+          errors: [],
+          showLabel: false,
+          flavor: 'small',
+          extraClasses: 'form-control',
+          onChange: () => {}
+        }
+      );
 
       const container = await fixture(
         html`<div style="width: 200px; padding: 10px;">${template}</div>`

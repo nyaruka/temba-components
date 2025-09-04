@@ -50,10 +50,6 @@ export class FieldRenderer {
         );
 
       case 'select':
-        if (typeof value === 'string' && value.length > 0) {
-          value = [{ name: value, value: value }];
-        }
-
         return FieldRenderer.renderSelect(
           fieldName,
           config as SelectFieldConfig,
@@ -211,43 +207,17 @@ export class FieldRenderer {
       style
     } = context;
 
-    // Ensure proper value handling for multi vs single select
-    let normalizedValue = (() => {
-      if (config.multi) {
-        // Multi-select: ensure we have an array and convert strings to option objects
-        const valueArray = Array.isArray(value) ? value : value ? [value] : [];
-        return valueArray.map((val) => {
-          if (typeof val === 'string') {
-            // Convert string values to option objects
-            return { name: val, value: val };
-          }
-          return val;
-        });
-      } else {
-        // Single select: use the value as-is
-        return value || '';
-      }
-    })();
-
     // Get options - use dynamic options if available, otherwise use static options
     const optionsToRender = config.getDynamicOptions
       ? config.getDynamicOptions()
       : config.options;
-
-    if (
-      normalizedValue &&
-      typeof normalizedValue !== 'string' &&
-      !Array.isArray(normalizedValue)
-    ) {
-      normalizedValue = [normalizedValue];
-    }
 
     return html`<temba-select
       name="${fieldName}"
       label="${showLabel ? config.label : ''}"
       ?required="${config.required}"
       .errors="${errors}"
-      .values=${normalizedValue}
+      .values=${value}
       ?multi="${config.multi}"
       ?searchable="${config.searchable}"
       ?tags="${config.tags}"

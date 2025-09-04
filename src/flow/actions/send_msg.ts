@@ -2,6 +2,7 @@ import { html } from 'lit-html';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { ActionConfig, COLORS, ValidationResult } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
+import { titleCase } from '../../utils';
 
 export const send_msg: ActionConfig = {
   name: 'Send Message',
@@ -116,7 +117,10 @@ export const send_msg: ActionConfig = {
   ],
   toFormData: (action: SendMsg) => {
     // Extract runtime attachments from the text field attachments
-    const runtimeAttachments: { type: string; expression: string }[] = [];
+    const runtimeAttachments: {
+      type: { name: string; value: string };
+      expression: string;
+    }[] = [];
     const staticAttachments: string[] = [];
 
     if (action.attachments && Array.isArray(action.attachments)) {
@@ -127,13 +131,11 @@ export const send_msg: ActionConfig = {
           const value = attachment.substring(colonIndex + 1);
 
           if (!contentType.includes('/')) {
-            // This is a runtime attachment
             runtimeAttachments.push({
-              type: contentType,
+              type: { name: titleCase(contentType), value: contentType },
               expression: value
             });
           } else {
-            // This is a static attachment
             staticAttachments.push(attachment);
           }
         }
@@ -165,10 +167,17 @@ export const send_msg: ActionConfig = {
     // Combine static attachments from text field with runtime attachments
     const staticAttachments = data.attachments || [];
     const runtimeAttachments = (data.runtime_attachments || [])
-      .filter((item: any) => item && item.type && item.expression) // Filter out invalid items
+      .filter(
+        (item: {
+          type: [{ name: string; value: string }];
+          expression: string;
+        }) => item && item.type && item.expression
+      ) // Filter out invalid items
       .map(
-        (item: { type: string; expression: string }) =>
-          `${item.type}:${item.expression}`
+        (item: {
+          type: [{ name: string; value: string }];
+          expression: string;
+        }) => `${item.type[0].value}:${item.expression}`
       );
 
     result.attachments = [...staticAttachments, ...runtimeAttachments];

@@ -136,9 +136,7 @@ export const split_by_webhook: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      method: callWebhookAction?.method
-        ? [{ value: callWebhookAction.method, name: callWebhookAction.method }]
-        : [{ value: 'GET', name: 'GET' }],
+      method: callWebhookAction?.method || 'GET',
       url: callWebhookAction?.url || '',
       headers: callWebhookAction?.headers || [],
       body: callWebhookAction?.body || ''

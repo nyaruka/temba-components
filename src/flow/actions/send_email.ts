@@ -19,7 +19,6 @@ export const send_email: ActionConfig = {
       </div>
     </div>`;
   },
-
   form: {
     addresses: {
       type: 'select',
@@ -43,6 +42,17 @@ export const send_email: ActionConfig = {
       evaluated: true,
       minHeight: 175
     }
+  },
+  fromFormData: (formData: any): SendEmail => {
+    return {
+      uuid: formData.uuid,
+      type: 'send_email',
+      addresses: formData.addresses.map(
+        (addr: { name: string; value: string }) => addr.value
+      ),
+      subject: formData.subject,
+      body: formData.body
+    };
   },
   validate: (action: SendEmail): ValidationResult => {
     const errors: { [key: string]: string } = {};

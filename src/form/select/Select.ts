@@ -592,6 +592,10 @@ export class Select<T extends SelectOption> extends FieldElement {
     this.prepareOptionsDefault = this.prepareOptionsDefault.bind(this);
     this.isMatchDefault = this.isMatchDefault.bind(this);
     this.handleOrderChanged = this.handleOrderChanged.bind(this);
+
+    this.createArbitraryOption = (
+      this.createArbitraryOption || this.createArbitraryOptionDefault
+    ).bind(this);
   }
 
   public prepareOptionsDefault(options: T[]): T[] {
@@ -701,17 +705,6 @@ export class Select<T extends SelectOption> extends FieldElement {
     );
   }
 
-  public async createOptionPost(payload: any) {
-    return postJSON(this.endpoint, payload).then((response) => {
-      if (response.status >= 200 && response.status < 300) {
-        return {
-          json: response.json,
-          payload
-        };
-      }
-    });
-  }
-
   public updated(changes: Map<string, any>) {
     super.updated(changes);
 
@@ -727,60 +720,8 @@ export class Select<T extends SelectOption> extends FieldElement {
 
     if (changes.has('values')) {
       this.updateInputs();
-
       if (this.hasChanges(changes.get('values'))) {
-        const materialized = [];
-
-        // see if we need to materialize anything
-        if (this.allowCreate) {
-          // arbitrary values need to be posted
-          const arbitraryValues = this.values.filter((value) => {
-            return (value as any).arbitrary;
-          });
-
-          for (const value of arbitraryValues) {
-            if ((value as any).arbitrary) {
-              materialized.push(this.createOptionPost(value));
-            }
-          }
-
-          // update our created values
-          Promise.all(materialized).then((responses) => {
-            for (const response of responses) {
-              if (response) {
-                // find the value that matches our payload
-                const original = arbitraryValues.find((value) => {
-                  return value === response.payload;
-                }) as any;
-
-                if (original) {
-                  // remove our arbitrary flag
-                  delete original.arbitrary;
-
-                  // add in the new values from our respones.json
-                  if (response.json) {
-                    for (const key in response.json) {
-                      original[key] = response.json[key];
-                    }
-                  }
-                }
-              }
-            }
-
-            // remove any arbitrary values
-            for (let i = this.values.length - 1; i >= 0; i--) {
-              if ((this.values[i] as any).arbitrary) {
-                this.values.splice(i, 1);
-              }
-            }
-
-            // reset our cache
-            this.cacheKey = new Date().getTime().toString();
-            this.fireEvent('change');
-          });
-        } else {
-          this.fireEvent('change');
-        }
+        this.fireEvent('change');
       }
     }
 
@@ -955,19 +896,31 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
 
     const selected = event.detail.selected;
+
     // check if we should post it
-    if (selected.post && this.endpoint) {
+    if (selected.arbitrary && this.allowCreate && this.endpoint) {
+      this.resolving = true;
       postJSON(this.endpoint, selected).then((response) => {
         if (response.status >= 200 && response.status < 300) {
           this.setSelectedOption(response.json);
           this.lruCache = lru(20, 60000);
+          this.errors = [];
         } else {
-          // TODO: find a way to share inline errors
+          this.setSelectedOption(selected);
+          setTimeout(() => {
+            this.errors = [
+              'There was an error creating "' +
+                this.getNameInternal(selected) +
+                '"'
+            ];
+          }, 0);
           this.blur();
         }
+        this.resolving = false;
       });
     } else {
       this.setSelectedOption(selected);
+      this.errors = [];
     }
   }
 
@@ -1009,6 +962,21 @@ export class Select<T extends SelectOption> extends FieldElement {
   public handleRemoveSelection(selectionToRemove: any): void {
     this.removeValue(selectionToRemove);
     this.visibleOptions = [];
+    this.errors = [];
+
+    // if we allow create, double check our values
+    if (this.allowCreate) {
+      const arbitrary = this.values.find((v) => v.arbitrary);
+      if (arbitrary) {
+        setTimeout(() => {
+          this.errors = [
+            'There was an error creating "' +
+              this.getNameInternal(arbitrary) +
+              '"'
+          ];
+        }, 0);
+      }
+    }
   }
 
   private createArbitraryOptionDefault(input: string, _options: any[]): any {
