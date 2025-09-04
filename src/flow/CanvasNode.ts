@@ -105,13 +105,13 @@ export class CanvasNode extends RapidElement {
         display: flex;
       }
 
-      .action.removing .title,
-      .router .title.removing {
+      .action.removing .cn-title,
+      .router .cn-title.removing {
         background-color: var(--color-error, #dc3545) !important;
       }
 
-      .action.removing .title .name,
-      .router .title.removing .name {
+      .action.removing .cn-title .name,
+      .router .cn-title.removing .name {
         color: white;
       }
 
@@ -180,8 +180,8 @@ export class CanvasNode extends RapidElement {
         
       }
 
-      .action .title,
-      .router .title {
+      .action .cn-title,
+      .router .cn-title {
         display: flex;
         color: #fff;
         padding: 5px 1px;
@@ -191,7 +191,7 @@ export class CanvasNode extends RapidElement {
 
       }
 
-      .title .name {
+      .cn-title .name {
         flex-grow: 1;
         }
 
@@ -230,7 +230,7 @@ export class CanvasNode extends RapidElement {
         margin-top: -0.8em;
       }
 
-      .category .title {
+      .category .cn-title {
         font-weight: normal;
         font-size: 1em;
         max-width: 150px;
@@ -320,7 +320,7 @@ export class CanvasNode extends RapidElement {
         border-bottom-right-radius: var(--curvature);
       }
 
-      .router .title {
+      .router .cn-title {
         border-top-left-radius: var(--curvature);
         border-top-right-radius: var(--curvature);
       }
@@ -329,7 +329,7 @@ export class CanvasNode extends RapidElement {
         overflow: hidden;
       }
 
-      .action:first-child .title {
+      .action:first-child .cn-title {
         border-top-left-radius: var(--curvature);
         border-top-right-radius: var(--curvature);
       }
@@ -804,7 +804,7 @@ export class CanvasNode extends RapidElement {
   }
 
   private renderTitle(config: ActionConfig, isRemoving: boolean = false) {
-    return html`<div class="title" style="background:${config.color}">
+    return html`<div class="cn-title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : null}
@@ -815,7 +815,7 @@ export class CanvasNode extends RapidElement {
 
   private renderNodeTitle(config: NodeConfig, isRemoving: boolean = false) {
     return html`<div
-      class="title ${isRemoving ? 'removing' : ''}"
+      class="cn-title ${isRemoving ? 'removing' : ''}"
       style="background:${config.color}"
     >
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
@@ -909,7 +909,7 @@ export class CanvasNode extends RapidElement {
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
             style="cursor: pointer;"
           >
-            <div class="title">${category.name}</div>
+            <div class="cn-title">${category.name}</div>
             ${this.renderExit(exit)}
           </div>`;
         }

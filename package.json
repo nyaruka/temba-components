@@ -30,7 +30,11 @@
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
     "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
     "locale:extract": "lit-localize extract --config localize.config.json",
-    "locale:build": "echo 'Building localizations..' && lit-localize build --config localize.config.json > dist/locale.out 2>&1"
+    "locale:build": "echo 'Building localizations..' && lit-localize build --config localize.config.json > dist/locale.out 2>&1",
+    "dev-data:sync": "node scripts/dev-data-sync.mjs copy",
+    "dev-data:reset": "node scripts/dev-data-sync.mjs reset",
+    "dev-data:wipe": "node scripts/dev-data-sync.mjs reset",
+    "dev-data:status": "node scripts/dev-data-sync.mjs status"
   },
   "dependencies": {
     "@jsplumb/browser-ui": "^6.2.10",
