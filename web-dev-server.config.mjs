@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Import the shared flow info generator and Minio functionality
-import { generateFlowInfo, handleMinioUpload, handleLabelCreation } from './web-dev-mock.mjs';
+import { generateFlowInfo, handleMinioUpload, handleLabelCreation, handleEntityCreation } from './web-dev-mock.mjs';
 
 const replacePlugin = fromRollup(replace);
 
@@ -93,7 +93,17 @@ export default {
 
         // Handle label creation
         if (context.request.method === 'POST' && context.path === '/api/v2/labels.json') {
-          return handleLabelCreation(context);
+          return handleEntityCreation('labels', context);
+        }
+
+        // Handle field creation
+        if (context.request.method === 'POST' && context.path === '/api/v2/fields.json') {
+          return handleEntityCreation('fields', context);
+        }
+
+        // Handle group creation
+        if (context.request.method === 'POST' && context.path === '/api/v2/groups.json') {
+          return handleEntityCreation('groups', context);
         }
       }
     },

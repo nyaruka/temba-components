@@ -53,6 +53,11 @@
             "status": "active"
           },
           {
+            "uuid": "2de0b3d2-8b84-43f7-8716-640c879b6730",
+            "type": "set_contact_language",
+            "language": "eng"
+          },
+          {
             "uuid": "1c68d488-7ce7-4c7d-ae05-f767589e00ff",
             "type": "set_contact_channel",
             "channel": {
@@ -73,11 +78,6 @@
             "uuid": "cc5c9892-4ba0-450a-a9d6-8567381eab1c",
             "type": "set_contact_name",
             "name": "Rowan"
-          },
-          {
-            "uuid": "2de0b3d2-8b84-43f7-8716-640c879b6730",
-            "type": "set_contact_language",
-            "language": "eng"
           }
         ],
         "exits": [
@@ -331,6 +331,13 @@
               {
                 "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
                 "name": "Reporters",
+                "query": null,
+                "status": "ready",
+                "count": 0
+              },
+              {
+                "uuid": "ff870b65-e6ea-4db1-8045-86b9e2c8d04e",
+                "name": "My New Group",
                 "query": null,
                 "status": "ready",
                 "count": 0
@@ -993,7 +1000,7 @@
         },
         "145eb3d3-b841-4e66-abac-297ae525c7ad": {
           "position": {
-            "left": 700,
+            "left": 720,
             "top": 500
           },
           "type": "split_by_llm_categorize"

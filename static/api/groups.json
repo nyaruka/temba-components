@@ -34,6 +34,13 @@
       "query": "age <= 18",
       "status": "ready",
       "count": 174
+    },
+    {
+      "uuid": "ff870b65-e6ea-4db1-8045-86b9e2c8d04e",
+      "name": "My New Group",
+      "query": null,
+      "status": "ready",
+      "count": 0
     }
   ]
 }
