@@ -7,44 +7,6 @@
     "type": "messaging",
     "nodes": [
       {
-        "uuid": "56a6ddd3-42d4-4ec2-b8ee-546b4ceb06f1",
-        "actions": [],
-        "router": {
-          "type": "random",
-          "categories": [
-            {
-              "uuid": "2325c455-92bd-4776-958c-367b4c318881",
-              "name": "Bucket 1",
-              "exit_uuid": "4b9759ae-ab8e-4957-bc7b-01516cc0e0c5"
-            },
-            {
-              "uuid": "12cdc990-86a5-46ec-8242-7193d85c2413",
-              "name": "Bucket 2",
-              "exit_uuid": "7610a57d-53e6-426f-93bf-d85161b11297"
-            },
-            {
-              "uuid": "9e6db7e6-cf13-4809-8a3b-ea01e0a861d9",
-              "name": "Bucket 3",
-              "exit_uuid": "cb6f46db-d129-4fb3-9684-007d600a9eac"
-            }
-          ]
-        },
-        "exits": [
-          {
-            "uuid": "4b9759ae-ab8e-4957-bc7b-01516cc0e0c5",
-            "destination_uuid": null
-          },
-          {
-            "uuid": "7610a57d-53e6-426f-93bf-d85161b11297",
-            "destination_uuid": null
-          },
-          {
-            "uuid": "cb6f46db-d129-4fb3-9684-007d600a9eac",
-            "destination_uuid": null
-          }
-        ]
-      },
-      {
         "uuid": "fb7bbf99-65cd-4e08-825a-68fc7293cc05",
         "actions": [
           {
@@ -262,7 +224,7 @@
           },
           {
             "uuid": "8087c747-eebc-4f35-8032-33490ba390d6",
-            "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
+            "destination_uuid": "f115fdb0-d92d-47a2-96f3-e03e36767b14"
           }
         ]
       },
@@ -331,13 +293,6 @@
               {
                 "uuid": "f80ed7b6-5e6a-49eb-94b6-4631a9677cd8",
                 "name": "Reporters",
-                "query": null,
-                "status": "ready",
-                "count": 0
-              },
-              {
-                "uuid": "ff870b65-e6ea-4db1-8045-86b9e2c8d04e",
-                "name": "My New Group",
                 "query": null,
                 "status": "ready",
                 "count": 0
@@ -454,7 +409,7 @@
         "exits": [
           {
             "uuid": "4654d1d0-f6d8-45ee-b941-0d61846b7da0",
-            "destination_uuid": "8ecec688-f154-4b80-a0b3-3cbff0fac892"
+            "destination_uuid": "b85000c4-1990-4d86-807a-1318ea512708"
           },
           {
             "uuid": "e7161b36-544c-4b0e-814f-1e3784f8e1b5",
@@ -518,11 +473,6 @@
               "uuid": "b2f0dd39-553e-4651-96ef-95cac79867f3",
               "name": "Bucket 2",
               "exit_uuid": "bdf64af3-8585-45ce-a3ba-10aab8dcc4fd"
-            },
-            {
-              "uuid": "edcaf2fd-34bb-46ea-bbc1-d23044b303d4",
-              "name": "My Other Buckets",
-              "exit_uuid": "df832c64-57f9-4468-b055-9b66a4e3b9bf"
             }
           ]
         },
@@ -533,10 +483,6 @@
           },
           {
             "uuid": "bdf64af3-8585-45ce-a3ba-10aab8dcc4fd",
-            "destination_uuid": "56a6ddd3-42d4-4ec2-b8ee-546b4ceb06f1"
-          },
-          {
-            "uuid": "df832c64-57f9-4468-b055-9b66a4e3b9bf",
             "destination_uuid": null
           }
         ]
@@ -1001,7 +947,7 @@
         "145eb3d3-b841-4e66-abac-297ae525c7ad": {
           "position": {
             "left": 720,
-            "top": 500
+            "top": 380
           },
           "type": "split_by_llm_categorize"
         },
@@ -1025,8 +971,8 @@
         "e1f22e97-a170-44b4-a79b-98ab916f4c34": {
           "type": "split_by_webhook",
           "position": {
-            "left": 640,
-            "top": 40
+            "left": 500,
+            "top": 20
           },
           "config": {}
         },
@@ -1048,8 +994,8 @@
         "f115fdb0-d92d-47a2-96f3-e03e36767b14": {
           "type": "split_by_contact_field",
           "position": {
-            "left": 1020,
-            "top": 140
+            "left": 800,
+            "top": 40
           },
           "config": {
             "operand": {
@@ -1063,8 +1009,8 @@
         "b85000c4-1990-4d86-807a-1318ea512708": {
           "type": "split_by_expression",
           "position": {
-            "left": 740,
-            "top": 200
+            "left": 720,
+            "top": 160
           },
           "config": {
             "cases": {}
@@ -1073,16 +1019,16 @@
         "8ecec688-f154-4b80-a0b3-3cbff0fac892": {
           "type": "split_by_random",
           "position": {
-            "left": 1000,
-            "top": 300
+            "left": 760,
+            "top": 260
           },
           "config": null
         },
         "66171418-2368-44b9-95db-fdf7cd5cf4fe": {
           "type": "split_by_run_result",
           "position": {
-            "left": 780,
-            "top": 660
+            "left": 760,
+            "top": 580
           },
           "config": {
             "operand": {
@@ -1123,26 +1069,18 @@
         },
         "425c4757-bead-440f-92aa-a1cc3fcd7d35": {
           "position": {
-            "left": 780,
-            "top": 800
+            "left": 760,
+            "top": 700
           },
           "type": "execute_actions"
         },
         "21ff86c2-5276-4448-afb6-54d1f832ba0c": {
           "type": "split_by_ticket",
           "position": {
-            "left": 780,
-            "top": 920
+            "left": 760,
+            "top": 820
           },
           "config": {}
-        },
-        "56a6ddd3-42d4-4ec2-b8ee-546b4ceb06f1": {
-          "type": "split_by_random",
-          "position": {
-            "left": 1080,
-            "top": 440
-          },
-          "config": null
         }
       },
       "stickies": {

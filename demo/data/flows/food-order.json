@@ -12,8 +12,8 @@
         "3b28a90f-27be-4753-b0c0-3e98b83f0627": {
           "type": "wait_for_response",
           "position": {
-            "left": 80,
-            "top": 240
+            "left": 60,
+            "top": 180
           },
           "config": {
             "cases": {}
@@ -23,8 +23,8 @@
       "stickies": {
         "b1cb8cfa-8432-444c-bd48-3fd2cb3a014f": {
           "position": {
-            "left": 340,
-            "top": 120
+            "left": 60,
+            "top": 340
           },
           "title": "Long awaited note",
           "body": "This is the body of a note that I have been waiting to write for a very long time. Now I am able to add it to my flow and that makes me very happy.",
