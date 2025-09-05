@@ -223,12 +223,19 @@ describe('EditorNode', () => {
         color: '#ff0000'
       };
 
-      const result = (editorNode as any).renderTitle(config);
+      const mockAction: Action = {
+        type: 'send_msg',
+        uuid: 'test-action'
+      };
+
+      const result = (editorNode as any).renderTitle(config, mockAction, 0);
       const container = await fixture(html`<div>${result}</div>`);
 
       const title = container.querySelector('.cn-title');
       expect(title).to.exist;
-      expect(title?.textContent?.trim()).to.equal('Test Action');
+
+      const nameElement = title?.querySelector('.name');
+      expect(nameElement?.textContent?.trim()).to.equal('Test Action');
       expect(title?.getAttribute('style')).to.contain('background:#ff0000');
     });
   });

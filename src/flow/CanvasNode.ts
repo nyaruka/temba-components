@@ -110,6 +110,7 @@ export class CanvasNode extends RapidElement {
         padding:0.25em;
         border: 0px solid red;
         width: 1em;
+        pointer-events: auto; /* Ensure remove button can receive events */
       }
 
       .remove-button:hover {
@@ -150,6 +151,7 @@ export class CanvasNode extends RapidElement {
         width: 1em;
         padding: 0.25em;
         border: 0px solid red;
+        pointer-events: auto; /* Ensure drag handle can receive events */
       }
       .title-spacer {
         width: 2em;
@@ -605,10 +607,11 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
-    // Don't handle clicks on the remove button or when action is in removing state
+    // Don't handle clicks on the remove button, drag handle, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
+      target.closest('.drag-handle') ||
       this.actionRemovingState.has(action.uuid)
     ) {
       return;
@@ -631,10 +634,11 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button or when action is in removing state
+    // Don't handle clicks on the remove button, drag handle, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
+      target.closest('.drag-handle') ||
       this.actionRemovingState.has(action.uuid)
     ) {
       this.actionClickStartPos = null;
@@ -722,12 +726,13 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleNodeMouseDown(event: MouseEvent): void {
-    // Don't handle clicks on the remove button, exits, or when node is in removing state
+    // Don't handle clicks on the remove button, exits, drag handle, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
+      target.closest('.drag-handle') ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       return;
@@ -747,12 +752,13 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button, exits, or when node is in removing state
+    // Don't handle clicks on the remove button, exits, drag handle, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
+      target.closest('.drag-handle') ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       this.nodeClickStartPos = null;
