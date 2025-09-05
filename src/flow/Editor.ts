@@ -143,6 +143,7 @@ export class Editor extends RapidElement {
       #editor {
         overflow: scroll;
         flex: 1;
+        -webkit-font-smoothing: antialiased;
       }
 
       #grid {
