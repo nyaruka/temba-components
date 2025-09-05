@@ -78,31 +78,12 @@ export class CanvasNode extends RapidElement {
 
       .action {
         position: relative;
-        font-size: 13px;
       }
 
-      .action .remove-button {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--color-error, #dc3545);
-        color: white;
-        border: none;
-        cursor: pointer;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        line-height: 1;
-        z-index: 10;
-      }
 
-      .action:hover .remove-button,
+      .action .cn-title:hover .remove-button,
       .router:hover .remove-button {
-        display: flex;
+        opacity: 0.7;
       }
 
       .action.removing .cn-title,
@@ -115,23 +96,24 @@ export class CanvasNode extends RapidElement {
         color: white;
       }
 
-      .router .remove-button {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--color-error, #dc3545);
+      .remove-button {
+        background: transparent;
         color: white;
-        border: none;
+        opacity: 0;
         cursor: pointer;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
+        font-size: 1em;
+        font-weight: 600;
         line-height: 1;
         z-index: 10;
+        transition: all 100ms ease-in-out;
+        align-self: center;
+        padding:0.25em;
+        border: 0px solid red;
+        width: 1em;
+      }
+
+      .remove-button:hover {
+        opacity: 1;
       }
 
       .action.sortable {
@@ -165,14 +147,19 @@ export class CanvasNode extends RapidElement {
         transition: all 200ms ease-in-out;
         cursor: move;
         background: rgba(0, 0, 0, 0.02);
-        max-width:0px;
-        position: absolute;
+        width: 1em;
+        padding: 0.25em;
+        border: 0px solid red;
+      }
+      .title-spacer {
+        width: 2em;
+        
       }
 
       .action:hover .drag-handle {
-        opacity: 0.5;
-        padding: 0.25em;
-        max-width: 20px;
+        opacity: 0.7;
+        
+        
       }
 
       .action .drag-handle:hover {
@@ -184,16 +171,24 @@ export class CanvasNode extends RapidElement {
       .router .cn-title {
         display: flex;
         color: #fff;
-        padding: 5px 1px;
         text-align: center;
         font-size: 1em;
         font-weight: normal;
+        font-weight: 500;
+      }
+
+      .cn-title .name {
+      padding: 0.3em 0;
+
+      }
+
+      .router .cn-title {
 
       }
 
       .cn-title .name {
         flex-grow: 1;
-        }
+      }
 
       .quick-replies {
         margin-top: 0.5em;
@@ -803,13 +798,26 @@ export class CanvasNode extends RapidElement {
     this.pendingNodeClick = null;
   }
 
-  private renderTitle(config: ActionConfig, isRemoving: boolean = false) {
+  private renderTitle(
+    config: ActionConfig,
+    action: Action,
+    index: number,
+    isRemoving: boolean = false
+  ) {
     return html`<div class="cn-title" style="background:${config.color}">
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : null}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
+      <div
+        class="remove-button"
+        @click=${(e: MouseEvent) =>
+          this.handleActionRemoveClick(e, action, index)}
+        title="Remove action"
+      >
+        ✕
+      </div>
     </div>`;
   }
 
@@ -818,7 +826,15 @@ export class CanvasNode extends RapidElement {
       class="cn-title ${isRemoving ? 'removing' : ''}"
       style="background:${config.color}"
     >
+      <div class="title-spacer"></div>
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
+      <div
+        class="remove-button"
+        @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+        title="Remove node"
+      >
+        ✕
+      </div>
     </div>`;
   }
 
@@ -831,21 +847,13 @@ export class CanvasNode extends RapidElement {
         class="action sortable ${action.type} ${isRemoving ? 'removing' : ''}"
         id="action-${index}"
       >
-        <button
-          class="remove-button"
-          @click=${(e: MouseEvent) =>
-            this.handleActionRemoveClick(e, action, index)}
-          title="Remove action"
-        >
-          ✕
-        </button>
         <div
           class="action-content"
           @mousedown=${(e: MouseEvent) => this.handleActionMouseDown(e, action)}
           @mouseup=${(e: MouseEvent) => this.handleActionMouseUp(e, action)}
           style="cursor: pointer;"
         >
-          ${this.renderTitle(config, isRemoving)}
+          ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
             ${config.render
               ? config.render(node, action)
@@ -858,14 +866,14 @@ export class CanvasNode extends RapidElement {
       class="action sortable ${isRemoving ? 'removing' : ''}"
       id="action-${index}"
     >
-      <button
+      <div
         class="remove-button"
         @click=${(e: MouseEvent) =>
           this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
       >
         ✕
-      </button>
+      </div>
       ${action.type}
     </div>`;
   }
@@ -948,13 +956,6 @@ export class CanvasNode extends RapidElement {
       >
         ${nodeConfig && nodeConfig.type !== 'execute_actions'
           ? html`<div class="router" style="position: relative;">
-              <button
-                class="remove-button"
-                @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
-                title="Remove node"
-              >
-                ✕
-              </button>
               <div
                 @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
                 @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
