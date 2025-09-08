@@ -8,7 +8,7 @@ export const set_run_result: ActionConfig = {
   color: COLORS.save,
   render: (_node: Node, action: SetRunResult) => {
     return html`<div>
-      Save <b>${action.value}</b> as <b>${action.name}</b>
+      Save <strong>${action.value}</strong> as <strong>${action.name}</strong>
     </div>`;
   },
   form: {

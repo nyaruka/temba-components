@@ -7,6 +7,20 @@ export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
   name: 'Call AI',
   color: COLORS.call,
+  render: (node: Node) => {
+    const callLlmAction = node.actions?.find(
+      (action) => action.type === 'call_llm'
+    ) as CallLLM;
+    return html`
+      <div
+        class="body"
+        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; max-width: 180px; max-height: 6.2em; margin-bottom:10px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;"
+      >
+        ${callLlmAction?.instructions || 'Configure AI instructions'}
+      </div>
+    `;
+  },
+
   form: {
     llm: {
       type: 'select',
@@ -39,19 +53,6 @@ export const split_by_llm: NodeConfig = {
     }
   },
   layout: ['llm', 'input', 'instructions'],
-  render: (node: Node) => {
-    const callLlmAction = node.actions?.find(
-      (action) => action.type === 'call_llm'
-    ) as CallLLM;
-    return html`
-      <div
-        class="body"
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; max-width: 180px; max-height: 90px; margin-bottom:10px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;"
-      >
-        ${callLlmAction?.instructions || 'Configure AI instructions'}
-      </div>
-    `;
-  },
   toFormData: (node: Node) => {
     // Extract data from the existing node structure
     const callLlmAction = node.actions?.find(

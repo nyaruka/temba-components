@@ -10,7 +10,9 @@ export const set_contact_language: ActionConfig = {
     const languageNames = new Intl.DisplayNames(['en'], {
       type: 'language'
     });
-    return html`<div>Set to <b>${languageNames.of(action.language)}</b></div>`;
+    return html`<div>
+      Set to <strong>${languageNames.of(action.language)}</strong>
+    </div>`;
   },
   form: {
     language: {

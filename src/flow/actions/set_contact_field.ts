@@ -7,7 +7,8 @@ export const set_contact_field: ActionConfig = {
   color: COLORS.update,
   render: (_node: Node, action: SetContactField) => {
     return html`<div>
-      Set <b>${action.field.name}</b> to <b>${action.value}</b>
+      Set <strong>${action.field.name}</strong> to
+      <strong>${action.value}</strong>
     </div>`;
   },
   form: {

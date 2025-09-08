@@ -6,7 +6,7 @@ export const set_contact_name: ActionConfig = {
   name: 'Update Name',
   color: COLORS.update,
   render: (_node: Node, action: SetContactName) => {
-    return html`<div>Set to <b>${action.name}</b></div>`;
+    return html`<div>Set to <strong>${action.name}</strong></div>`;
   },
   form: {
     name: {

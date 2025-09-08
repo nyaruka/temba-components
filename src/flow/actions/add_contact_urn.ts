@@ -11,7 +11,7 @@ export const add_contact_urn: ActionConfig = {
     return html`<div
       style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
     >
-      Add ${friendlyScheme} <b>${action.path}</b>
+      Add ${friendlyScheme} <strong>${action.path}</strong>
     </div>`;
   }
 };
