@@ -6,7 +6,7 @@ export const set_contact_channel: ActionConfig = {
   name: 'Update Channel',
   color: COLORS.update,
   render: (_node: Node, action: SetContactChannel) => {
-    return html`<div>Set to <b>${action.channel.name}</b></div>`;
+    return html`<div>Set to <strong>${action.channel.name}</strong></div>`;
   },
   form: {
     channel: {

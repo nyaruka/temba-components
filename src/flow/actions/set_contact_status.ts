@@ -7,7 +7,7 @@ export const set_contact_status: ActionConfig = {
   name: 'Update Status',
   color: COLORS.update,
   render: (_node: Node, action: SetContactStatus) => {
-    return html`<div>Set to <b>${titleCase(action.status)}</b></div>`;
+    return html`<div>Set to <strong>${titleCase(action.status)}</strong></div>`;
   },
   form: {
     status: {

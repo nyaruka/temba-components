@@ -164,6 +164,10 @@ export class CanvasNode extends RapidElement {
         
       }
 
+      strong {
+        font-weight: 500;
+      }
+
       .action .drag-handle:hover {
         opacity: 1;
         
@@ -175,7 +179,6 @@ export class CanvasNode extends RapidElement {
         color: #fff;
         text-align: center;
         font-size: 1em;
-        font-weight: normal;
         font-weight: 500;
       }
 
@@ -241,7 +244,7 @@ export class CanvasNode extends RapidElement {
       }
 
       .result-name {
-        font-weight: bold;
+        font-weight: 500;
         display: inline-block;
       }
       
