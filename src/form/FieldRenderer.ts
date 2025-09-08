@@ -338,6 +338,7 @@ export class FieldRenderer {
         .itemLabel="${config.itemLabel || 'Item'}"
         .minItems="${config.minItems || 0}"
         .maxItems="${config.maxItems || 0}"
+        ?maintainEmptyItem="${config.maintainEmptyItem !== false}"
         .onItemChange="${config.onItemChange}"
         .isEmptyItemFn="${config.isEmptyItem}"
         class="${extraClasses}"

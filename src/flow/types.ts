@@ -176,6 +176,7 @@ export interface ArrayFieldConfig extends BaseFieldConfig {
   minItems?: number;
   maxItems?: number;
   itemLabel?: string;
+  maintainEmptyItem?: boolean;
   onItemChange?: (
     itemIndex: number,
     field: string,
