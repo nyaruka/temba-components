@@ -191,16 +191,13 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
               </div>
             `
           )}
-          ${canRemove
-            ? html`
-                <button
-                  @click=${() => this.removeItem(index)}
-                  class="remove-btn"
-                >
-                  <temba-icon name="x"></temba-icon>
-                </button>
-              `
-            : ''}
+          <button
+            @click=${canRemove ? () => this.removeItem(index) : undefined}
+            class="remove-btn ${canRemove ? '' : 'invisible'}"
+            ?disabled=${!canRemove}
+          >
+            <temba-icon name="x"></temba-icon>
+          </button>
         </div>
       </div>
     `;
@@ -259,6 +256,11 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       .remove-btn {
         background: #fefefe;
         color: #999;
+      }
+
+      .remove-btn.invisible {
+        visibility: hidden;
+        cursor: default;
       }
     `;
   }
