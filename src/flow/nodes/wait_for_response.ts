@@ -213,8 +213,8 @@ export const wait_for_response: NodeConfig = {
         // Check if value is required based on operator configuration
         const operatorConfig = getOperatorConfig(operatorValue);
         if (operatorConfig && operatorConfig.operands === 1) {
-          // Single value is required for this operator
-          return !item.value || item.value.trim() === '';
+          // value1 is required for this operator
+          return !item.value1 || item.value1.trim() === '';
         } else if (operatorConfig && operatorConfig.operands === 2) {
           // Both value1 and value2 are required for this operator
           return (
@@ -237,45 +237,8 @@ export const wait_for_response: NodeConfig = {
           flavor: 'xsmall',
           width: '200px'
         },
-        value: {
-          type: 'text',
-          placeholder: 'Value to match',
-          flavor: 'xsmall',
-          conditions: {
-            visible: (formData: Record<string, any>) => {
-              // Helper function to get operator value from various formats
-              const getOperatorValue = (operator: any): string => {
-                if (typeof operator === 'string') {
-                  return operator.trim();
-                } else if (Array.isArray(operator) && operator.length > 0) {
-                  const firstOperator = operator[0];
-                  if (
-                    firstOperator &&
-                    typeof firstOperator === 'object' &&
-                    firstOperator.value
-                  ) {
-                    return firstOperator.value.trim();
-                  }
-                } else if (
-                  operator &&
-                  typeof operator === 'object' &&
-                  operator.value
-                ) {
-                  return operator.value.trim();
-                }
-                return '';
-              };
-
-              // Show value field only if operator requires exactly 1 operand
-              const operatorValue = getOperatorValue(formData.operator);
-              const operatorConfig = getOperatorConfig(operatorValue);
-              return operatorConfig ? operatorConfig.operands === 1 : true;
-            }
-          }
-        },
         value1: {
           type: 'text',
-          placeholder: 'From',
           flavor: 'xsmall',
           conditions: {
             visible: (formData: Record<string, any>) => {
@@ -302,16 +265,15 @@ export const wait_for_response: NodeConfig = {
                 return '';
               };
 
-              // Show value1 field only if operator requires 2 operands
+              // Show value1 field for operators that require 1 or 2 operands
               const operatorValue = getOperatorValue(formData.operator);
               const operatorConfig = getOperatorConfig(operatorValue);
-              return operatorConfig ? operatorConfig.operands === 2 : false;
+              return operatorConfig ? operatorConfig.operands >= 1 : true;
             }
           }
         },
         value2: {
           type: 'text',
-          placeholder: 'To',
           flavor: 'xsmall',
           conditions: {
             visible: (formData: Record<string, any>) => {
@@ -338,7 +300,7 @@ export const wait_for_response: NodeConfig = {
                 return '';
               };
 
-              // Show value2 field only if operator requires 2 operands
+              // Show value2 field only if operator requires exactly 2 operands
               const operatorValue = getOperatorValue(formData.operator);
               const operatorConfig = getOperatorConfig(operatorValue);
               return operatorConfig ? operatorConfig.operands === 2 : false;
@@ -347,7 +309,7 @@ export const wait_for_response: NodeConfig = {
         },
         category: {
           type: 'text',
-          placeholder: 'Category name',
+          placeholder: 'Category',
           required: true,
           maxWidth: '120px',
           flavor: 'xsmall'
@@ -454,28 +416,29 @@ export const wait_for_response: NodeConfig = {
           const operatorDisplayName = operatorConfig
             ? operatorConfig.name
             : case_.type;
-          let value = '';
           let value1 = '';
           let value2 = '';
 
           if (operatorConfig && operatorConfig.operands === 0) {
             // No value needed for operators like has_text, has_number
-            value = '';
+            value1 = '';
+            value2 = '';
           } else if (operatorConfig && operatorConfig.operands === 1) {
-            // Single value for operators like has_number_lt
-            value = case_.arguments.join(' ');
+            // Single value for operators like has_number_lt - use value1
+            value1 = case_.arguments.join(' ');
+            value2 = '';
           } else if (operatorConfig && operatorConfig.operands === 2) {
             // Two separate values for operators like has_number_between
             value1 = case_.arguments[0] || '';
             value2 = case_.arguments[1] || '';
           } else {
-            // Fallback: join arguments for unknown operators
-            value = case_.arguments.join(' ');
+            // Fallback: use first argument for unknown operators
+            value1 = case_.arguments.join(' ');
+            value2 = '';
           }
 
           rules.push({
             operator: { value: case_.type, name: operatorDisplayName },
-            value: value,
             value1: value1,
             value2: value2,
             category: category.name
@@ -541,8 +504,8 @@ export const wait_for_response: NodeConfig = {
         // Check if value is required based on operator
         const operatorConfig = getOperatorConfig(operatorValue);
         if (operatorConfig && operatorConfig.operands === 1) {
-          // Single value is required for this operator
-          return rule?.value && rule.value.trim() !== '';
+          // value1 is required for this operator
+          return rule?.value1 && rule.value1.trim() !== '';
         } else if (operatorConfig && operatorConfig.operands === 2) {
           // Both value1 and value2 are required for this operator
           return (
@@ -563,16 +526,16 @@ export const wait_for_response: NodeConfig = {
         let value = '';
 
         if (operatorConfig && operatorConfig.operands === 1) {
-          // Single value
-          value = rule.value ? rule.value.trim() : '';
+          // Single value from value1
+          value = rule.value1 ? rule.value1.trim() : '';
         } else if (operatorConfig && operatorConfig.operands === 2) {
           // Two values - combine them with space
           const val1 = rule.value1 ? rule.value1.trim() : '';
           const val2 = rule.value2 ? rule.value2.trim() : '';
           value = `${val1} ${val2}`.trim();
         } else {
-          // Fallback for other cases
-          value = rule.value ? rule.value.trim() : '';
+          // No value needed for 0-operand operators
+          value = '';
         }
 
         return {

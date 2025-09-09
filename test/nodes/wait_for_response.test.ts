@@ -211,12 +211,14 @@ describe('wait_for_response node config', () => {
       expect(formData.rules).to.have.length(2);
       expect(formData.rules[0]).to.deep.equal({
         operator: createOperatorOption('has_any_word'),
-        value: 'red',
+        value1: 'red',
+        value2: '',
         category: 'Red'
       });
       expect(formData.rules[1]).to.deep.equal({
         operator: createOperatorOption('has_phrase'),
-        value: 'green',
+        value1: 'green',
+        value2: '',
         category: 'Green'
       });
     });
@@ -252,12 +254,14 @@ describe('wait_for_response node config', () => {
         rules: [
           {
             operator: 'has_any_word',
-            value: 'red',
+            value1: 'red',
+            value2: '',
             category: 'Red'
           },
           {
             operator: 'has_phrase',
-            value: 'blue',
+            value1: 'blue',
+            value2: '',
             category: 'Blue'
           }
         ]
