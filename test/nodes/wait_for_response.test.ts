@@ -30,7 +30,7 @@ describe('wait_for_response node config', () => {
       expect(wait_for_response.layout).to.exist;
       expect(wait_for_response.layout).to.deep.equal([
         'rules',
-        'timeout',
+        { type: 'row', items: ['timeout_enabled', 'timeout_duration'] },
         'result_name'
       ]);
     });
@@ -391,6 +391,8 @@ describe('wait_for_response node config', () => {
       const formData = {
         uuid: 'test-node',
         result_name: 'response',
+        timeout_enabled: true,
+        timeout_duration: [{ value: '300', name: '5 minutes' }],
         rules: [
           {
             operator: 'has_text',

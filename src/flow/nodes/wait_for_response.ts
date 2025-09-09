@@ -7,6 +7,27 @@ import {
   getOperatorConfig
 } from '../operators';
 
+const TIMEOUT_OPTIONS = [
+  { value: '60', name: '1 minute' },
+  { value: '120', name: '2 minutes' },
+  { value: '180', name: '3 minutes' },
+  { value: '240', name: '4 minutes' },
+  { value: '300', name: '5 minutes' },
+  { value: '600', name: '10 minutes' },
+  { value: '900', name: '15 minutes' },
+  { value: '1800', name: '30 minutes' },
+  { value: '3600', name: '1 hour' },
+  { value: '7200', name: '2 hours' },
+  { value: '10800', name: '3 hours' },
+  { value: '21600', name: '6 hours' },
+  { value: '43200', name: '12 hours' },
+  { value: '64800', name: '18 hours' },
+  { value: '86400', name: '1 day' },
+  { value: '172800', name: '2 days' },
+  { value: '259200', name: '3 days' },
+  { value: '604800', name: '1 week' }
+];
+
 // Helper function to create a wait_for_response router with user rules
 const createWaitForResponseRouter = (
   userRules: any[],
@@ -224,6 +245,23 @@ export const wait_for_response: NodeConfig = {
         }
       }
     },
+    timeout_enabled: {
+      type: 'checkbox',
+      label: 'Continue when there is no response for',
+      maxWidth: '290px'
+    },
+    timeout_duration: {
+      type: 'select',
+      placeholder: '5 minutes',
+      multi: false,
+
+      options: TIMEOUT_OPTIONS,
+      conditions: {
+        visible: (formData: Record<string, any>) => {
+          return formData.timeout_enabled === true;
+        }
+      }
+    },
     result_name: {
       type: 'text',
       label: 'Result Name',
@@ -231,7 +269,11 @@ export const wait_for_response: NodeConfig = {
       placeholder: 'response'
     }
   },
-  layout: ['rules', 'timeout', 'result_name'],
+  layout: [
+    'rules',
+    { type: 'row', items: ['timeout_enabled', 'timeout_duration'] },
+    'result_name'
+  ],
   validate: (formData: any) => {
     const errors: { [key: string]: string } = {};
 
@@ -314,9 +356,21 @@ export const wait_for_response: NodeConfig = {
       });
     }
 
+    // Extract timeout configuration
+    const timeoutSeconds = node.router?.wait?.timeout?.seconds;
+    let timeoutOption = TIMEOUT_OPTIONS.find(
+      (opt) => opt.value === String(timeoutSeconds)
+    );
+
+    if (!timeoutOption) {
+      timeoutOption = { value: '300', name: '5 minutes' };
+    }
+
     return {
       uuid: node.uuid,
       rules: rules,
+      timeout_enabled: !!timeoutSeconds,
+      timeout_duration: timeoutOption,
       result_name: node.router?.result_name || 'response'
     };
   },
@@ -379,9 +433,76 @@ export const wait_for_response: NodeConfig = {
     if (userRules.length === 0) {
       const router: any = {
         ...originalNode.router,
-        cases: [], // Clear all cases when no rules
         result_name: formData.result_name || 'response'
       };
+
+      // Only set cases to empty if the original node had cases
+      if (originalNode.router?.cases !== undefined) {
+        router.cases = []; // Clear all cases when no rules
+      }
+
+      // Build wait configuration based on form data
+      const waitConfig: any = {
+        type: 'msg'
+      };
+
+      // Add timeout if enabled
+      if (formData.timeout_enabled) {
+        // Extract timeout value (handle both string and object formats)
+        let timeoutSeconds;
+
+        if (formData.timeout_duration) {
+          if (
+            Array.isArray(formData.timeout_duration) &&
+            formData.timeout_duration.length > 0
+          ) {
+            // Handle array of selected options (multi-select behavior)
+            timeoutSeconds = parseInt(formData.timeout_duration[0].value, 10);
+          } else if (typeof formData.timeout_duration === 'string') {
+            timeoutSeconds = parseInt(formData.timeout_duration, 10);
+          } else if (
+            formData.timeout_duration &&
+            typeof formData.timeout_duration === 'object' &&
+            formData.timeout_duration.value
+          ) {
+            timeoutSeconds = parseInt(formData.timeout_duration.value, 10);
+          } else {
+            timeoutSeconds = 300; // Default to 5 minutes
+          }
+        } else {
+          // No duration selected, use default
+          timeoutSeconds = 300; // Default to 5 minutes
+        }
+
+        // Validate that we got a valid number
+        if (isNaN(timeoutSeconds) || timeoutSeconds <= 0) {
+          timeoutSeconds = 300; // Default to 5 minutes
+        }
+
+        // Find or create the "No Response" category
+        let noResponseCategory = originalNode.router?.categories?.find(
+          (cat: any) => cat.name === 'No Response'
+        );
+
+        if (!noResponseCategory) {
+          noResponseCategory = {
+            uuid: generateUUID(),
+            name: 'No Response',
+            exit_uuid: generateUUID()
+          };
+
+          // Add to router categories
+          router.categories = router.categories || [];
+          router.categories.push(noResponseCategory);
+        }
+
+        waitConfig.timeout = {
+          seconds: timeoutSeconds,
+          category_uuid: noResponseCategory.uuid
+        };
+      }
+
+      router.wait = waitConfig;
 
       return {
         ...originalNode,
@@ -408,11 +529,95 @@ export const wait_for_response: NodeConfig = {
       result_name: formData.result_name || 'response'
     };
 
-    // Preserve existing wait configuration
-    if (originalNode.router?.wait) {
-      finalRouter.wait = originalNode.router.wait;
+    // Build wait configuration based on form data
+    const waitConfig: any = {
+      type: 'msg'
+    };
+
+    try {
+      // Handle timeout configuration
+      if (formData.timeout_enabled) {
+        // Extract timeout value (handle both string and object formats)
+        let timeoutSeconds;
+
+        if (formData.timeout_duration) {
+          try {
+            timeoutSeconds = parseInt(formData.timeout_duration[0].value, 10);
+          } catch (e) {
+            timeoutSeconds = 300; // Default to 5 minutes
+          }
+        }
+
+        // Find or create the "No Response" category
+        const existingNoResponseCategory =
+          originalNode.router?.categories?.find(
+            (cat: any) => cat.name === 'No Response'
+          );
+
+        const noResponseCategory = existingNoResponseCategory || {
+          uuid: generateUUID(),
+          name: 'No Response',
+          exit_uuid: generateUUID()
+        };
+
+        waitConfig.timeout = {
+          seconds: timeoutSeconds,
+          category_uuid: noResponseCategory.uuid
+        };
+
+        // Ensure No Response category and exit exist
+        if (
+          !router.categories?.some((cat: any) => cat.name === 'No Response')
+        ) {
+          router.categories = router.categories || [];
+          router.categories.push(noResponseCategory);
+
+          // Add corresponding exit if it doesn't exist
+          if (
+            !exits.some(
+              (exit: any) => exit.uuid === noResponseCategory.exit_uuid
+            )
+          ) {
+            const noResponseExit = {
+              uuid: noResponseCategory.exit_uuid,
+              destination_uuid: existingNoResponseCategory?.exit_uuid
+                ? originalNode.exits?.find(
+                    (exit) => exit.uuid === existingNoResponseCategory.exit_uuid
+                  )?.destination_uuid || null
+                : null
+            };
+            exits.push(noResponseExit);
+          }
+        }
+      } else {
+        // Remove "No Response" category if timeout is disabled
+        if (router.categories) {
+          const noResponseCategoryIndex = router.categories.findIndex(
+            (cat: any) => cat.name === 'No Response'
+          );
+          if (noResponseCategoryIndex !== -1) {
+            const noResponseCategory =
+              router.categories[noResponseCategoryIndex];
+
+            // Remove the category
+            router.categories.splice(noResponseCategoryIndex, 1);
+
+            // Remove corresponding exit
+            const exitIndex = exits.findIndex(
+              (exit: any) => exit.uuid === noResponseCategory.exit_uuid
+            );
+            if (exitIndex !== -1) {
+              exits.splice(exitIndex, 1);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error processing timeout configuration:', error);
+      // Continue without timeout in case of error
     }
 
+    finalRouter.wait = waitConfig;
     return {
       ...originalNode,
       router: finalRouter,
