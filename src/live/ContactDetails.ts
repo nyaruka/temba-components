@@ -94,6 +94,13 @@ export class ContactDetails extends ContactStoreElement {
             disabled
           ></temba-contact-field>`;
         })}
+        ${this.data.ref
+          ? html`<temba-contact-field
+              name="Ref"
+              value=${this.data.ref}
+              disabled
+            ></temba-contact-field>`
+          : null}
 
         <temba-contact-field
           name="Status"
