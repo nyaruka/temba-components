@@ -133,6 +133,7 @@ export class FieldRenderer {
       .value="${value || ''}"
       placeholder="${config.placeholder || ''}"
       .helpText="${config.helpText || ''}"
+      flavor="${config.flavor || 'default'}"
       class="${extraClasses}"
       style="${style}"
       @input="${onChange || (() => {})}"

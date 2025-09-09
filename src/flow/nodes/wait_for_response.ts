@@ -226,11 +226,13 @@ export const wait_for_response: NodeConfig = {
           type: 'select',
           required: true,
           multi: false, // Explicitly set as single-select
-          options: operatorsToSelectOptions(getWaitForResponseOperators())
+          options: operatorsToSelectOptions(getWaitForResponseOperators()),
+          flavor: 'xsmall'
         },
         value: {
           type: 'text',
           placeholder: 'Value to match',
+          flavor: 'xsmall',
           conditions: {
             visible: (formData: Record<string, any>) => {
               // Show value field only if operator requires operands
@@ -242,7 +244,8 @@ export const wait_for_response: NodeConfig = {
         category: {
           type: 'text',
           placeholder: 'Category name',
-          required: true
+          required: true,
+          flavor: 'xsmall'
         }
       }
     },

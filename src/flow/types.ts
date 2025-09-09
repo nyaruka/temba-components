@@ -134,6 +134,7 @@ export interface BaseFieldConfig {
 export interface TextFieldConfig extends BaseFieldConfig {
   type: 'text';
   placeholder?: string;
+  flavor?: 'xsmall' | 'small' | 'large';
 }
 
 export interface TextareaFieldConfig extends BaseFieldConfig {

@@ -134,27 +134,48 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   ): TemplateResult {
     const computedValue = this.computeFieldValue(itemIndex, fieldName, config);
 
+    // Extract flavor from select config if available
+    const flavor =
+      config.type === 'select' ? (config as any).flavor || 'small' : 'small';
+
+    // Build container style with maxWidth if specified
+    const containerStyle = config.maxWidth
+      ? `max-width: ${config.maxWidth};`
+      : '';
+
     // Use FieldRenderer for consistent field rendering
-    return FieldRenderer.renderField(fieldName, config, computedValue, {
-      showLabel: false, // ArrayEditor doesn't show labels for individual fields
-      flavor: 'small', // ArrayEditor uses small flavor
-      extraClasses: 'form-control',
-      onChange: (e: Event) => {
-        let value: any;
-        const target = e.target as any;
+    const fieldContent = FieldRenderer.renderField(
+      fieldName,
+      config,
+      computedValue,
+      {
+        showLabel: false, // ArrayEditor doesn't show labels for individual fields
+        flavor: flavor,
+        extraClasses: 'form-control',
+        onChange: (e: Event) => {
+          let value: any;
+          const target = e.target as any;
 
-        // Handle different field types and their change events
-        if (config.type === 'select') {
-          // Use consistent temba-select value normalization
-          value = target.values;
-        } else {
-          // For other field types, use the target value directly
-          value = target.value;
+          // Handle different field types and their change events
+          if (config.type === 'select') {
+            // Use consistent temba-select value normalization
+            value = target.values;
+          } else {
+            // For other field types, use the target value directly
+            value = target.value;
+          }
+
+          this.handleFieldChange(itemIndex, fieldName, value);
         }
-
-        this.handleFieldChange(itemIndex, fieldName, value);
       }
-    });
+    );
+
+    // Wrap in container with style if maxWidth is specified
+    if (containerStyle) {
+      return html`<div style="${containerStyle}">${fieldContent}</div>`;
+    }
+
+    return fieldContent;
   }
 
   renderItem(item: ListItem, index: number): TemplateResult {
@@ -222,7 +243,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
       .add-btn,
       .remove-btn {
-        padding: 8px;
+        padding: 4px;
         border: 1px solid #ccc;
         border-radius: 4px;
         background: white;
