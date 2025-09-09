@@ -138,10 +138,13 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     const flavor =
       config.type === 'select' ? (config as any).flavor || 'small' : 'small';
 
-    // Build container style with maxWidth if specified
-    const containerStyle = config.maxWidth
-      ? `max-width: ${config.maxWidth};`
-      : '';
+    // Build container style with width/maxWidth if specified
+    let containerStyle = '';
+    if (config.width) {
+      containerStyle = `width: ${config.width};`;
+    } else if (config.maxWidth) {
+      containerStyle = `max-width: ${config.maxWidth};`;
+    }
 
     // Use FieldRenderer for consistent field rendering
     const fieldContent = FieldRenderer.renderField(
@@ -181,16 +184,58 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   renderItem(item: ListItem, index: number): TemplateResult {
     const canRemove = this.canRemoveItem(index);
 
+    // Render fields and track if any value fields are visible
+    const fieldElements: TemplateResult[] = [];
+    let hasVisibleValueField = false;
+
+    Object.entries(this.itemConfig).forEach(([fieldName, config]) => {
+      // Check visibility condition
+      let isVisible = true;
+      if (config.conditions?.visible) {
+        try {
+          const currentItem = this._items[index] || {};
+          isVisible = config.conditions.visible(currentItem);
+        } catch (error) {
+          console.error(`Error checking visibility for ${fieldName}:`, error);
+        }
+      }
+
+      if (isVisible) {
+        // Check if this is a value field (text input without fixed sizing)
+        const isValueField =
+          !config.width && !config.maxWidth && config.type === 'text';
+        if (isValueField) {
+          hasVisibleValueField = true;
+        }
+
+        fieldElements.push(html`
+          <div
+            class="field ${config.width ||
+            config.maxWidth ||
+            config.type === 'select'
+              ? 'field-fixed'
+              : 'field-flex'}"
+          >
+            ${this.renderArrayField(index, fieldName, config)}
+          </div>
+        `);
+      }
+    });
+
+    // If no value fields are visible, add a spacer to maintain alignment
+    if (!hasVisibleValueField) {
+      // Insert spacer after operator (first field) and before category (last field)
+      fieldElements.splice(
+        -1,
+        0,
+        html`<div class="field field-flex spacer"></div>`
+      );
+    }
+
     return html`
       <div class="array-item">
         <div class="item-fields">
-          ${Object.entries(this.itemConfig).map(
-            ([fieldName, config]) => html`
-              <div class="field">
-                ${this.renderArrayField(index, fieldName, config)}
-              </div>
-            `
-          )}
+          ${fieldElements}
           <button
             @click=${canRemove ? () => this.removeItem(index) : undefined}
             class="remove-btn ${canRemove ? '' : 'invisible'}"
@@ -235,7 +280,19 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       }
 
       .field {
-        flex: 1;
+        /* Base field styles */
+      }
+
+      .field-flex {
+        flex: 1; /* Grow to fill remaining space */
+      }
+
+      .field-fixed {
+        flex: none; /* Don't grow, use content/maxWidth size */
+      }
+
+      .spacer {
+        /* Empty spacer to maintain layout alignment */
       }
 
       .add-btn,

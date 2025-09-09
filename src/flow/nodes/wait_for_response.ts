@@ -173,7 +173,6 @@ export const wait_for_response: NodeConfig = {
   form: {
     rules: {
       type: 'array',
-      label: 'Rules',
       helpText: 'Define rules to categorize responses',
       itemLabel: 'Rule',
       minItems: 0,
@@ -213,9 +212,17 @@ export const wait_for_response: NodeConfig = {
 
         // Check if value is required based on operator configuration
         const operatorConfig = getOperatorConfig(operatorValue);
-        if (operatorConfig && operatorConfig.operands > 0) {
-          // Value is required for this operator
+        if (operatorConfig && operatorConfig.operands === 1) {
+          // Single value is required for this operator
           return !item.value || item.value.trim() === '';
+        } else if (operatorConfig && operatorConfig.operands === 2) {
+          // Both value1 and value2 are required for this operator
+          return (
+            !item.value1 ||
+            item.value1.trim() === '' ||
+            !item.value2 ||
+            item.value2.trim() === ''
+          );
         }
 
         // No value required for this operator
@@ -227,7 +234,8 @@ export const wait_for_response: NodeConfig = {
           required: true,
           multi: false, // Explicitly set as single-select
           options: operatorsToSelectOptions(getWaitForResponseOperators()),
-          flavor: 'xsmall'
+          flavor: 'xsmall',
+          width: '200px'
         },
         value: {
           type: 'text',
@@ -235,9 +243,105 @@ export const wait_for_response: NodeConfig = {
           flavor: 'xsmall',
           conditions: {
             visible: (formData: Record<string, any>) => {
-              // Show value field only if operator requires operands
-              const operatorConfig = getOperatorConfig(formData.operator);
-              return operatorConfig ? operatorConfig.operands > 0 : true;
+              // Helper function to get operator value from various formats
+              const getOperatorValue = (operator: any): string => {
+                if (typeof operator === 'string') {
+                  return operator.trim();
+                } else if (Array.isArray(operator) && operator.length > 0) {
+                  const firstOperator = operator[0];
+                  if (
+                    firstOperator &&
+                    typeof firstOperator === 'object' &&
+                    firstOperator.value
+                  ) {
+                    return firstOperator.value.trim();
+                  }
+                } else if (
+                  operator &&
+                  typeof operator === 'object' &&
+                  operator.value
+                ) {
+                  return operator.value.trim();
+                }
+                return '';
+              };
+
+              // Show value field only if operator requires exactly 1 operand
+              const operatorValue = getOperatorValue(formData.operator);
+              const operatorConfig = getOperatorConfig(operatorValue);
+              return operatorConfig ? operatorConfig.operands === 1 : true;
+            }
+          }
+        },
+        value1: {
+          type: 'text',
+          placeholder: 'From',
+          flavor: 'xsmall',
+          conditions: {
+            visible: (formData: Record<string, any>) => {
+              // Helper function to get operator value from various formats
+              const getOperatorValue = (operator: any): string => {
+                if (typeof operator === 'string') {
+                  return operator.trim();
+                } else if (Array.isArray(operator) && operator.length > 0) {
+                  const firstOperator = operator[0];
+                  if (
+                    firstOperator &&
+                    typeof firstOperator === 'object' &&
+                    firstOperator.value
+                  ) {
+                    return firstOperator.value.trim();
+                  }
+                } else if (
+                  operator &&
+                  typeof operator === 'object' &&
+                  operator.value
+                ) {
+                  return operator.value.trim();
+                }
+                return '';
+              };
+
+              // Show value1 field only if operator requires 2 operands
+              const operatorValue = getOperatorValue(formData.operator);
+              const operatorConfig = getOperatorConfig(operatorValue);
+              return operatorConfig ? operatorConfig.operands === 2 : false;
+            }
+          }
+        },
+        value2: {
+          type: 'text',
+          placeholder: 'To',
+          flavor: 'xsmall',
+          conditions: {
+            visible: (formData: Record<string, any>) => {
+              // Helper function to get operator value from various formats
+              const getOperatorValue = (operator: any): string => {
+                if (typeof operator === 'string') {
+                  return operator.trim();
+                } else if (Array.isArray(operator) && operator.length > 0) {
+                  const firstOperator = operator[0];
+                  if (
+                    firstOperator &&
+                    typeof firstOperator === 'object' &&
+                    firstOperator.value
+                  ) {
+                    return firstOperator.value.trim();
+                  }
+                } else if (
+                  operator &&
+                  typeof operator === 'object' &&
+                  operator.value
+                ) {
+                  return operator.value.trim();
+                }
+                return '';
+              };
+
+              // Show value2 field only if operator requires 2 operands
+              const operatorValue = getOperatorValue(formData.operator);
+              const operatorConfig = getOperatorConfig(operatorValue);
+              return operatorConfig ? operatorConfig.operands === 2 : false;
             }
           }
         },
@@ -245,6 +349,7 @@ export const wait_for_response: NodeConfig = {
           type: 'text',
           placeholder: 'Category name',
           required: true,
+          maxWidth: '120px',
           flavor: 'xsmall'
         }
       }
@@ -350,18 +455,29 @@ export const wait_for_response: NodeConfig = {
             ? operatorConfig.name
             : case_.type;
           let value = '';
+          let value1 = '';
+          let value2 = '';
 
           if (operatorConfig && operatorConfig.operands === 0) {
             // No value needed for operators like has_text, has_number
             value = '';
+          } else if (operatorConfig && operatorConfig.operands === 1) {
+            // Single value for operators like has_number_lt
+            value = case_.arguments.join(' ');
+          } else if (operatorConfig && operatorConfig.operands === 2) {
+            // Two separate values for operators like has_number_between
+            value1 = case_.arguments[0] || '';
+            value2 = case_.arguments[1] || '';
           } else {
-            // Join arguments for operators that require values
+            // Fallback: join arguments for unknown operators
             value = case_.arguments.join(' ');
           }
 
           rules.push({
             operator: { value: case_.type, name: operatorDisplayName },
             value: value,
+            value1: value1,
+            value2: value2,
             category: category.name
           });
         }
@@ -424,9 +540,17 @@ export const wait_for_response: NodeConfig = {
 
         // Check if value is required based on operator
         const operatorConfig = getOperatorConfig(operatorValue);
-        if (operatorConfig && operatorConfig.operands > 0) {
-          // Value is required for this operator
+        if (operatorConfig && operatorConfig.operands === 1) {
+          // Single value is required for this operator
           return rule?.value && rule.value.trim() !== '';
+        } else if (operatorConfig && operatorConfig.operands === 2) {
+          // Both value1 and value2 are required for this operator
+          return (
+            rule?.value1 &&
+            rule.value1.trim() !== '' &&
+            rule?.value2 &&
+            rule.value2.trim() !== ''
+          );
         }
 
         // No value required for this operator
@@ -434,9 +558,26 @@ export const wait_for_response: NodeConfig = {
       })
       .map((rule: any) => {
         const operatorValue = getOperatorValue(rule.operator);
+        const operatorConfig = getOperatorConfig(operatorValue);
+
+        let value = '';
+
+        if (operatorConfig && operatorConfig.operands === 1) {
+          // Single value
+          value = rule.value ? rule.value.trim() : '';
+        } else if (operatorConfig && operatorConfig.operands === 2) {
+          // Two values - combine them with space
+          const val1 = rule.value1 ? rule.value1.trim() : '';
+          const val2 = rule.value2 ? rule.value2.trim() : '';
+          value = `${val1} ${val2}`.trim();
+        } else {
+          // Fallback for other cases
+          value = rule.value ? rule.value.trim() : '';
+        }
+
         return {
           operator: operatorValue,
-          value: rule.value ? rule.value.trim() : '',
+          value: value,
           category: rule.category.trim()
         };
       });

@@ -123,6 +123,7 @@ export interface BaseFieldConfig {
 
   // Layout properties
   maxWidth?: string;
+  width?: string;
 
   // Conditional rendering
   conditions?: {
