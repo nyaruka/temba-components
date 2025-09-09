@@ -341,6 +341,13 @@ export class Select<T extends SelectOption> extends FieldElement {
         --temba-select-min-height: 2.28em;
       }
 
+      .xsmall {
+        --temba-select-selected-padding: 4px 6px;
+        --temba-select-selected-line-height: 13px;
+        --temba-select-selected-font-size: 13px;
+        --temba-select-min-height: 0em;
+      }
+
       .info-text {
         opacity: 1;
         transition: padding-top var(--transition-speed) ease-in-out,

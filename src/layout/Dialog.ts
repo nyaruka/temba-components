@@ -24,7 +24,8 @@ export class Dialog extends ResizeElement {
     return {
       small: '400px',
       medium: '600px',
-      large: '655px'
+      large: '655px',
+      xlarge: '800px'
     };
   }
 
@@ -413,10 +414,9 @@ export class Dialog extends ResizeElement {
 
   public render(): TemplateResult {
     const dialogStyle = {
-      width: this.width,
-      minWidth: '250px',
-      maxWidth: '600px'
+      width: this.width
     };
+
     if (!this.width) {
       dialogStyle['width'] = Dialog.widths[this.size];
     }

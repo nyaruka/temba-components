@@ -259,12 +259,29 @@ export class FieldRenderer {
     value: any,
     context: FieldRenderContext
   ): TemplateResult {
-    const { errors = [], onChange, extraClasses, style } = context;
+    const {
+      errors = [],
+      onChange,
+      extraClasses,
+      style,
+      formData = {}
+    } = context;
+
+    // Handle dynamic labels
+    const label =
+      typeof config.label === 'function'
+        ? config.label(formData)
+        : config.label;
+
+    // Build custom style including labelPadding
+    const customStyle = config.labelPadding
+      ? `--checkbox-padding: ${config.labelPadding}; ${style || ''}`
+      : style || '';
 
     return html`<div class="form-field">
       <temba-checkbox
         name="${fieldName}"
-        label="${config.label}"
+        label="${label}"
         .helpText="${config.helpText || ''}"
         ?required="${config.required}"
         .errors="${errors}"
@@ -272,7 +289,7 @@ export class FieldRenderer {
         size="${config.size || 1.2}"
         animateChange="${config.animateChange || 'pulse'}"
         class="${extraClasses}"
-        style="${style}"
+        style="${customStyle}"
         @change="${onChange || (() => {})}"
       ></temba-checkbox>
       ${errors.length
@@ -405,4 +422,6 @@ export interface FieldRenderContext {
   style?: string;
   /** Additional data needed for specific field types */
   additionalData?: Record<string, any>;
+  /** Form data for dynamic field configurations */
+  formData?: Record<string, any>;
 }

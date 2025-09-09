@@ -70,6 +70,7 @@ export interface FormData extends Record<string, any> {}
 export interface FormConfig {
   form?: Record<string, FieldConfig>;
   layout?: LayoutItem[];
+  gutter?: LayoutItem[];
   sanitize?: (formData: FormData) => void;
   validate?: (formData: FormData) => ValidationResult;
 }
@@ -78,6 +79,7 @@ export interface NodeConfig extends FormConfig {
   type: string;
   name?: string;
   color?: string;
+  dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
   router?: {
     type: 'switch' | 'random';
@@ -103,7 +105,7 @@ export interface NodeConfig extends FormConfig {
 
 // New field configuration system for generic form generation
 export interface BaseFieldConfig {
-  label?: string;
+  label?: string | ((formData: Record<string, any>) => string);
   required?: boolean;
   evaluated?: boolean;
   dependsOn?: string[];
@@ -155,7 +157,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   endpoint?: string;
   emails?: boolean;
   getName?: (item: any) => string;
-  flavor?: 'small' | 'large';
+  flavor?: 'xsmall' | 'small' | 'large';
   createArbitraryOption?: (input: string, options: any[]) => any;
   allowCreate?: boolean;
   getDynamicOptions?: () => Array<{ value: string; name: string }>;
@@ -190,6 +192,7 @@ export interface CheckboxFieldConfig extends BaseFieldConfig {
   type: 'checkbox';
   size?: number;
   animateChange?: string;
+  labelPadding?: string;
 }
 
 export interface MessageEditorFieldConfig extends BaseFieldConfig {
@@ -247,11 +250,13 @@ export type LayoutItem =
 export interface ActionConfig extends FormConfig {
   name: string;
   color: string;
+  dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;
   layout?: LayoutItem[]; // optional layout configuration - array of layout items
+  gutter?: LayoutItem[]; // fields to render in the dialog gutter (left side of buttons)
 
   toFormData?: (action: Action) => any;
   fromFormData?: (formData: any) => Action;

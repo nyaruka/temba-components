@@ -169,6 +169,7 @@ export const wait_for_response: NodeConfig = {
   type: 'wait_for_response',
   name: 'Wait for Response',
   color: COLORS.wait,
+  dialogSize: 'large',
   form: {
     rules: {
       type: 'array',
@@ -247,14 +248,19 @@ export const wait_for_response: NodeConfig = {
     },
     timeout_enabled: {
       type: 'checkbox',
-      label: 'Continue when there is no response for',
-      maxWidth: '290px'
+      label: (formData: Record<string, any>) => {
+        return formData.timeout_enabled
+          ? 'Continue when there is no response for'
+          : 'Continue when there is no response..';
+      },
+      labelPadding: '4px 8px'
     },
     timeout_duration: {
       type: 'select',
       placeholder: '5 minutes',
       multi: false,
-
+      maxWidth: '150px',
+      flavor: 'xsmall',
       options: TIMEOUT_OPTIONS,
       conditions: {
         visible: (formData: Record<string, any>) => {
@@ -269,10 +275,13 @@ export const wait_for_response: NodeConfig = {
       placeholder: 'response'
     }
   },
-  layout: [
-    'rules',
-    { type: 'row', items: ['timeout_enabled', 'timeout_duration'] },
-    'result_name'
+  layout: ['rules', 'result_name'],
+  gutter: [
+    {
+      type: 'row',
+      items: ['timeout_enabled', 'timeout_duration'],
+      gap: '0.5rem'
+    }
   ],
   validate: (formData: any) => {
     const errors: { [key: string]: string } = {};

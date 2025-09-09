@@ -28,11 +28,7 @@ describe('wait_for_response node config', () => {
 
     it('has layout configuration', () => {
       expect(wait_for_response.layout).to.exist;
-      expect(wait_for_response.layout).to.deep.equal([
-        'rules',
-        { type: 'row', items: ['timeout_enabled', 'timeout_duration'] },
-        'result_name'
-      ]);
+      expect(wait_for_response.layout).to.deep.equal(['rules', 'result_name']);
     });
   });
 
