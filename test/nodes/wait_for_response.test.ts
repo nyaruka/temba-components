@@ -33,108 +33,116 @@ describe('wait_for_response node config', () => {
   });
 
   describe('node scenarios', () => {
-    helper.testNode(
-      {
-        uuid: 'test-wait-node-1',
-        actions: [],
-        router: {
-          type: 'switch',
-          wait: {
-            type: 'msg',
-            timeout: {
-              category_uuid: 'timeout-cat-1',
-              seconds: 300
-            }
+    it('renders basic wait', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-wait-node-1',
+          actions: [],
+          router: {
+            type: 'switch',
+            wait: {
+              type: 'msg',
+              timeout: {
+                category_uuid: 'timeout-cat-1',
+                seconds: 300
+              }
+            },
+            result_name: 'response',
+            categories: [
+              {
+                uuid: 'timeout-cat-1',
+                name: 'No Response',
+                exit_uuid: 'timeout-exit-1'
+              }
+            ]
           },
-          result_name: 'response',
-          categories: [
-            {
-              uuid: 'timeout-cat-1',
-              name: 'No Response',
-              exit_uuid: 'timeout-exit-1'
-            }
-          ]
-        },
-        exits: [{ uuid: 'timeout-exit-1', destination_uuid: null }]
-      } as Node,
-      { type: 'wait_for_response' },
-      'basic-wait'
-    );
+          exits: [{ uuid: 'timeout-exit-1', destination_uuid: null }]
+        } as Node,
+        { type: 'wait_for_response' },
+        'basic-wait'
+      );
+    });
 
-    helper.testNode(
-      {
-        uuid: 'test-wait-node-2',
-        actions: [],
-        router: {
-          type: 'switch',
-          wait: {
-            type: 'msg',
-            timeout: {
-              category_uuid: 'timeout-cat-2',
-              seconds: 1800
-            }
+    it('renders custom result name', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-wait-node-2',
+          actions: [],
+          router: {
+            type: 'switch',
+            wait: {
+              type: 'msg',
+              timeout: {
+                category_uuid: 'timeout-cat-2',
+                seconds: 1800
+              }
+            },
+            result_name: 'user_input',
+            categories: [
+              {
+                uuid: 'timeout-cat-2',
+                name: 'No Response',
+                exit_uuid: 'timeout-exit-2'
+              }
+            ]
           },
-          result_name: 'user_input',
-          categories: [
-            {
-              uuid: 'timeout-cat-2',
-              name: 'No Response',
-              exit_uuid: 'timeout-exit-2'
-            }
-          ]
-        },
-        exits: [{ uuid: 'timeout-exit-2', destination_uuid: null }]
-      } as Node,
-      { type: 'wait_for_response' },
-      'custom-result-name'
-    );
+          exits: [{ uuid: 'timeout-exit-2', destination_uuid: null }]
+        } as Node,
+        { type: 'wait_for_response' },
+        'custom-result-name'
+      );
+    });
 
-    helper.testNode(
-      {
-        uuid: 'test-wait-node-3',
-        actions: [],
-        router: {
-          type: 'switch',
-          wait: {
-            type: 'msg',
-            timeout: {
-              category_uuid: 'timeout-cat-3',
-              seconds: 60
-            }
+    it('renders short timeout', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-wait-node-3',
+          actions: [],
+          router: {
+            type: 'switch',
+            wait: {
+              type: 'msg',
+              timeout: {
+                category_uuid: 'timeout-cat-3',
+                seconds: 60
+              }
+            },
+            result_name: 'quick_response',
+            categories: [
+              {
+                uuid: 'timeout-cat-3',
+                name: 'No Response',
+                exit_uuid: 'timeout-exit-3'
+              }
+            ]
           },
-          result_name: 'quick_response',
-          categories: [
-            {
-              uuid: 'timeout-cat-3',
-              name: 'No Response',
-              exit_uuid: 'timeout-exit-3'
-            }
-          ]
-        },
-        exits: [{ uuid: 'timeout-exit-3', destination_uuid: null }]
-      } as Node,
-      { type: 'wait_for_response' },
-      'short-timeout'
-    );
+          exits: [{ uuid: 'timeout-exit-3', destination_uuid: null }]
+        } as Node,
+        { type: 'wait_for_response' },
+        'short-timeout'
+      );
+    });
 
-    helper.testNode(
-      {
-        uuid: 'test-wait-node-4',
-        actions: [],
-        router: {
-          type: 'switch',
-          wait: {
-            type: 'msg'
-            // No timeout specified
+    it('renders no timeout', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-wait-node-4',
+          actions: [],
+          router: {
+            type: 'switch',
+            wait: {
+              type: 'msg'
+              // No timeout specified
+            },
+            result_name: 'response',
+            categories: []
           },
-          result_name: 'response',
-          categories: []
-        },
-        exits: []
-      } as Node,
-      { type: 'wait_for_response' },
-      'no-timeout'
-    );
+          exits: []
+        } as Node,
+        { type: 'wait_for_response' },
+        'no-timeout'
+      );
+    });
   });
 
   describe('data transformation', () => {

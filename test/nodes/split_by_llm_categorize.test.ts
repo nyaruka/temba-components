@@ -107,126 +107,136 @@ describe('split_by_llm_categorize node config', () => {
   });
 
   describe('node scenarios', () => {
-    const basicRouter = createSplitRouter(['Greeting', 'Question']);
-    helper.testNode(
-      {
-        uuid: 'test-node-1',
-        actions: [
-          {
-            uuid: 'call-llm-uuid',
-            type: 'call_llm',
-            llm: { uuid: 'llm-123', name: 'Claude' },
-            input: '@input',
-            instructions:
-              '@(prompt("categorize", slice(node.categories, 0, -2)))',
-            output_local: '_llm_output'
-          } as any
-        ],
-        router: basicRouter.router,
-        exits: basicRouter.exits
-      } as Node,
-      { type: 'split_by_llm_categorize' },
-      'basic-categorization'
-    );
+    it('renders basic categorization', async () => {
+      const basicRouter = createSplitRouter(['Greeting', 'Question']);
+      await helper.testNode(
+        {
+          uuid: 'test-node-1',
+          actions: [
+            {
+              uuid: 'call-llm-uuid',
+              type: 'call_llm',
+              llm: { uuid: 'llm-123', name: 'Claude' },
+              input: '@input',
+              instructions:
+                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              output_local: '_llm_output'
+            } as any
+          ],
+          router: basicRouter.router,
+          exits: basicRouter.exits
+        } as Node,
+        { type: 'split_by_llm_categorize' },
+        'basic-categorization'
+      );
+    });
 
-    const premiumRouter = createSplitRouter(['Premium', 'Regular', 'VIP']);
-    helper.testNode(
-      {
-        uuid: 'test-node-2',
-        actions: [
-          {
-            uuid: 'call-llm-uuid-2',
-            type: 'call_llm',
-            llm: { uuid: 'llm-456', name: 'GPT-4' },
-            input: '@contact.name',
-            instructions:
-              '@(prompt("categorize", slice(node.categories, 0, -2)))',
-            output_local: '_llm_output'
-          } as any
-        ],
-        router: premiumRouter.router,
-        exits: premiumRouter.exits
-      } as Node,
-      { type: 'split_by_llm_categorize' },
-      'custom-input-and-result-name'
-    );
+    it('renders custom input and result name', async () => {
+      const premiumRouter = createSplitRouter(['Premium', 'Regular', 'VIP']);
+      await helper.testNode(
+        {
+          uuid: 'test-node-2',
+          actions: [
+            {
+              uuid: 'call-llm-uuid-2',
+              type: 'call_llm',
+              llm: { uuid: 'llm-456', name: 'GPT-4' },
+              input: '@contact.name',
+              instructions:
+                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              output_local: '_llm_output'
+            } as any
+          ],
+          router: premiumRouter.router,
+          exits: premiumRouter.exits
+        } as Node,
+        { type: 'split_by_llm_categorize' },
+        'custom-input-and-result-name'
+      );
+    });
 
-    const priorityRouter = createSplitRouter([
-      'High',
-      'Medium',
-      'Low',
-      'Critical',
-      'Urgent'
-    ]);
-    helper.testNode(
-      {
-        uuid: 'test-node-3',
-        actions: [
-          {
-            uuid: 'call-llm-uuid-3',
-            type: 'call_llm',
-            llm: { uuid: 'llm-789', name: 'Gemini' },
-            input: '@fields.priority',
-            instructions:
-              '@(prompt("categorize", slice(node.categories, 0, -2)))',
-            output_local: '_llm_output'
-          } as any
-        ],
-        router: priorityRouter.router,
-        exits: priorityRouter.exits
-      } as Node,
-      { type: 'split_by_llm_categorize' },
-      'many-categories'
-    );
+    it('renders many categories', async () => {
+      const priorityRouter = createSplitRouter([
+        'High',
+        'Medium',
+        'Low',
+        'Critical',
+        'Urgent'
+      ]);
+      await helper.testNode(
+        {
+          uuid: 'test-node-3',
+          actions: [
+            {
+              uuid: 'call-llm-uuid-3',
+              type: 'call_llm',
+              llm: { uuid: 'llm-789', name: 'Gemini' },
+              input: '@fields.priority',
+              instructions:
+                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              output_local: '_llm_output'
+            } as any
+          ],
+          router: priorityRouter.router,
+          exits: priorityRouter.exits
+        } as Node,
+        { type: 'split_by_llm_categorize' },
+        'many-categories'
+      );
+    });
 
-    const minimalRouter = createSplitRouter(['Yes']);
-    helper.testNode(
-      {
-        uuid: 'test-node-4',
-        actions: [
-          {
-            uuid: 'call-llm-uuid-4',
-            type: 'call_llm',
-            llm: { uuid: 'llm-minimal', name: 'Basic LLM' },
-            input: '@input',
-            instructions:
-              '@(prompt("categorize", slice(node.categories, 0, -2)))',
-            output_local: '_llm_output'
-          } as any
-        ],
-        router: minimalRouter.router,
-        exits: minimalRouter.exits
-      } as Node,
-      { type: 'split_by_llm_categorize' },
-      'minimal-categories'
-    );
+    it('renders minimal categories', async () => {
+      const minimalRouter = createSplitRouter(['Yes']);
+      await helper.testNode(
+        {
+          uuid: 'test-node-4',
+          actions: [
+            {
+              uuid: 'call-llm-uuid-4',
+              type: 'call_llm',
+              llm: { uuid: 'llm-minimal', name: 'Basic LLM' },
+              input: '@input',
+              instructions:
+                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              output_local: '_llm_output'
+            } as any
+          ],
+          router: minimalRouter.router,
+          exits: minimalRouter.exits
+        } as Node,
+        { type: 'split_by_llm_categorize' },
+        'minimal-categories'
+      );
+    });
 
-    const feedbackRouter = createSplitRouter([
-      'Bug Report',
-      'Feature Request',
-      'General Feedback',
-      'Support Request'
-    ]);
-    helper.testNode(
-      {
-        uuid: 'test-node-5',
-        actions: [
-          {
-            uuid: 'call-llm-uuid-5',
-            type: 'call_llm',
-            llm: { uuid: 'llm-special', name: 'Special Characters LLM' },
-            input: '@contact.fields.feedback',
-            instructions:
-              '@(prompt("categorize", slice(node.categories, 0, -2)))',
-            output_local: '_llm_output'
-          } as any
-        ],
-        router: feedbackRouter.router,
-        exits: feedbackRouter.exits
-      } as Node,
-      { type: 'split_by_llm_categorize' },
-      'feedback-categorization'
-    );
+    it('renders feedback categorization', async () => {
+      const feedbackRouter = createSplitRouter([
+        'Bug Report',
+        'Feature Request',
+        'General Feedback',
+        'Support Request'
+      ]);
+      await helper.testNode(
+        {
+          uuid: 'test-node-5',
+          actions: [
+            {
+              uuid: 'call-llm-uuid-5',
+              type: 'call_llm',
+              llm: { uuid: 'llm-special', name: 'Special Characters LLM' },
+              input: '@contact.fields.feedback',
+              instructions:
+                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              output_local: '_llm_output'
+            } as any
+          ],
+          router: feedbackRouter.router,
+          exits: feedbackRouter.exits
+        } as Node,
+        { type: 'split_by_llm_categorize' },
+        'feedback-categorization'
+      );
+    });
   });
 
   describe('round-trip conversion validation', () => {
