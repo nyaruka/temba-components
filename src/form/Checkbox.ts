@@ -18,6 +18,16 @@ export class Checkbox extends FieldElement {
         width: 100%;
       }
 
+      .checkbox-background {
+        position: absolute;
+        margin-top: 2px;
+        margin-left: 2px;
+        width: 12px;
+        height: 12px;
+        background: var(--checkbox-background, rgba(255, 255, 255, 0.8));
+        border-radius: 2px;
+      }
+
       .wrapper.label {
         padding: var(--checkbox-padding, 10px);
         border-radius: var(--curvature);
@@ -163,7 +173,9 @@ export class Checkbox extends FieldElement {
         @click=${this.handleClick}
       >
         <div class="checkbox-container ${this.disabled ? 'disabled' : ''}">
+          <div class="checkbox-background"></div>
           ${icon}
+
           <div class="label-and-help">
             ${this.label && String(this.label).trim()
               ? html`<div class="checkbox-label">${this.label}</div>`

@@ -85,7 +85,7 @@ export class NodeEditor extends RapidElement {
       .form-row {
         display: grid;
         gap: 1rem;
-        align-items: end;
+        align-items: center;
       }
 
       .form-group {
@@ -256,6 +256,25 @@ export class NodeEditor extends RapidElement {
         position: relative;
         display: flex;
         align-items: center;
+      }
+
+      .gutter-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .gutter-fields .form-row {
+        margin: 0;
+      }
+
+      .gutter-fields temba-checkbox {
+        align-self: flex-start;
+      }
+
+      .gutter-fields temba-select {
+        min-width: 120px;
       }
     `;
   }
@@ -1059,6 +1078,7 @@ export class NodeEditor extends RapidElement {
         }
       },
       showLabel: true,
+      formData: this.formData,
       additionalData: {
         attachments: this.formData.attachments || []
       }
@@ -1420,14 +1440,24 @@ export class NodeEditor extends RapidElement {
       if (config.layout) {
         const renderedFields = new Set<string>();
 
+        // Also collect fields from gutter to avoid rendering them in main form
+        const gutterFields = new Set<string>();
+        if (config.gutter) {
+          const gutterFieldNames = this.collectFieldsFromItems(config.gutter);
+          gutterFieldNames.forEach((field) => gutterFields.add(field));
+        }
+
         return html`
           ${config.layout.map((item) =>
             this.renderLayoutItem(item, config, renderedFields)
           )}
           ${
-            /* Render any fields not explicitly placed in layout */
+            /* Render any fields not explicitly placed in layout or gutter */
             Object.entries(config.form).map(([fieldName, fieldConfig]) => {
-              if (!renderedFields.has(fieldName)) {
+              if (
+                !renderedFields.has(fieldName) &&
+                !gutterFields.has(fieldName)
+              ) {
                 return this.renderNewField(
                   fieldName,
                   fieldConfig as FieldConfig,
@@ -1458,6 +1488,24 @@ export class NodeEditor extends RapidElement {
     } else {
       return html` <div>No form configuration available for this node</div> `;
     }
+  }
+
+  private renderGutter(): TemplateResult {
+    const config = this.getConfig();
+    if (!config?.gutter || config.gutter.length === 0) {
+      return html``;
+    }
+
+    // Use the same layout rendering system for gutter fields
+    const renderedFields = new Set<string>();
+
+    return html`
+      <div class="gutter-fields">
+        ${config.gutter.map((item) =>
+          this.renderLayoutItem(item, config, renderedFields)
+        )}
+      </div>
+    `;
   }
 
   private renderActionSection(): TemplateResult {
@@ -1531,6 +1579,7 @@ export class NodeEditor extends RapidElement {
 
     const headerColor = this.getHeaderColor();
     const config = this.getConfig();
+    const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
     return html`
       <temba-dialog
@@ -1540,6 +1589,7 @@ export class NodeEditor extends RapidElement {
         primaryButtonName="Save"
         cancelButtonName="Cancel"
         style="--header-bg: ${headerColor}"
+        size="${dialogSize}"
       >
         <div class="node-editor-form">
           ${this.renderFields()}
@@ -1547,6 +1597,8 @@ export class NodeEditor extends RapidElement {
             ? this.renderRouterSection()
             : null}
         </div>
+
+        <div slot="gutter">${this.renderGutter()}</div>
       </temba-dialog>
     `;
   }

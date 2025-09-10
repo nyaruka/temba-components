@@ -26,6 +26,11 @@
       "uuid": "a3f2990b-4096-452e-a586-dc06a9434dde",
       "name": "Feedback",
       "count": 42
+    },
+    {
+      "uuid": "6dc62526-c334-4869-84fa-8b2d73b4cdfd",
+      "name": "This is a label",
+      "count": 0
     }
   ]
 }

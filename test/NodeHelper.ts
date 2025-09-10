@@ -92,46 +92,44 @@ export class NodeTest<T extends Node> {
    * 3. Simulates save and validates round-trip conversion
    */
   async testNode(node: T, nodeUI: any, testName: string) {
-    it(`${testName}`, async () => {
-      // Step 1: Render node in flow node
-      const flowNode = await this.renderNode(node, nodeUI);
+    // Step 1: Render node in flow node
+    const flowNode = await this.renderNode(node, nodeUI);
 
-      // For execute_actions nodes, check for .body, for router nodes check for .router or .categories
-      const hasContent =
-        flowNode.querySelector('.body') ||
-        flowNode.querySelector('.router') ||
-        flowNode.querySelector('.categories') ||
-        flowNode.querySelector('.action') ||
-        flowNode.textContent?.trim();
+    // For execute_actions nodes, check for .body, for router nodes check for .router or .categories
+    const hasContent =
+      flowNode.querySelector('.body') ||
+      flowNode.querySelector('.router') ||
+      flowNode.querySelector('.categories') ||
+      flowNode.querySelector('.action') ||
+      flowNode.textContent?.trim();
 
-      expect(hasContent).to.exist;
-      await assertScreenshot(
-        `nodes/${this.nodeName}/render/${testName}`,
-        getClip(flowNode)
-      );
+    expect(hasContent).to.exist;
+    await assertScreenshot(
+      `nodes/${this.nodeName}/render/${testName}`,
+      getClip(flowNode)
+    );
 
-      // Step 2: Open node editor
-      const nodeEditor = await this.openNodeEditor(node, nodeUI);
-      await this.assertDialogScreenshot(
-        nodeEditor,
-        `nodes/${this.nodeName}/editor/${testName}`
-      );
+    // Step 2: Open node editor
+    const nodeEditor = await this.openNodeEditor(node, nodeUI);
+    await this.assertDialogScreenshot(
+      nodeEditor,
+      `nodes/${this.nodeName}/editor/${testName}`
+    );
 
-      // Step 3: Test round-trip conversion (simulates save workflow)
-      if (this.nodeConfig.toFormData && this.nodeConfig.fromFormData) {
-        const formData = this.nodeConfig.toFormData(node);
-        const convertedNode = this.nodeConfig.fromFormData(formData, node) as T;
+    // Step 3: Test round-trip conversion (simulates save workflow)
+    if (this.nodeConfig.toFormData && this.nodeConfig.fromFormData) {
+      const formData = this.nodeConfig.toFormData(node);
+      const convertedNode = this.nodeConfig.fromFormData(formData, node) as T;
 
-        // Validate the round trip worked
-        expect(convertedNode.uuid).to.equal(node.uuid);
+      // Validate the round trip worked
+      expect(convertedNode.uuid).to.equal(node.uuid);
 
-        // Validate the converted node has expected structure
-        expect(convertedNode).to.have.property('actions');
-        expect(convertedNode).to.have.property('exits');
+      // Validate the converted node has expected structure
+      expect(convertedNode).to.have.property('actions');
+      expect(convertedNode).to.have.property('exits');
 
-        expect(convertedNode).to.deep.equal(node);
-      }
-    });
+      expect(convertedNode).to.deep.equal(node);
+    }
   }
 
   /**

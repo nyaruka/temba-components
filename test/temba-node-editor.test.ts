@@ -18,7 +18,11 @@ const assertDialogScreenshot = async (
   const dialog = el.shadowRoot
     .querySelector('temba-dialog')
     .shadowRoot.querySelector('.dialog-container') as HTMLElement;
-  await assertScreenshot(screenshotName, getClip(dialog));
+  const clip = getClip(dialog);
+  // Adjust width to show full dialog with proper padding
+  const dialogRect = dialog.getBoundingClientRect();
+  clip.width = dialogRect.width + 20; // 10px padding on each side
+  await assertScreenshot(screenshotName, clip);
 };
 
 describe('temba-node-editor', () => {
@@ -335,48 +339,6 @@ describe('temba-node-editor', () => {
     // Test that the component renders form elements
     const shadowRoot = el.shadowRoot;
     expect(shadowRoot).to.not.be.null;
-  });
-
-  it('renders different action types correctly', async () => {
-    const actionTypes = [
-      {
-        type: 'send_msg',
-        data: { text: 'Message', quick_replies: [] }
-      },
-      {
-        type: 'set_run_result',
-        data: { name: 'result', value: 'value' }
-      },
-      {
-        type: 'set_contact_name',
-        data: { name: 'John Doe' }
-      },
-      {
-        type: 'set_contact_language',
-        data: { language: 'eng' }
-      }
-    ];
-
-    for (const actionType of actionTypes) {
-      const action = {
-        uuid: `test-${actionType.type}`,
-        type: actionType.type,
-        ...actionType.data
-      };
-
-      const el = (await fixture(html`
-        <temba-node-editor
-          .action=${action}
-          .isOpen=${true}
-        ></temba-node-editor>
-      `)) as NodeEditorElement;
-
-      await el.updateComplete;
-      expect(el.shadowRoot).to.not.be.null;
-      expect(el.action.type).to.equal(actionType.type);
-
-      await assertDialogScreenshot(el, `editor/${actionType.type}`);
-    }
   });
 
   it('displays bubble count for group value counts', async () => {

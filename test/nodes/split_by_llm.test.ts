@@ -196,37 +196,48 @@ describe('split_by_llm node config', () => {
       position: { left: 50, top: 50 }
     };
 
-    helper.testNode(
-      createTestNode({ uuid: 'gpt-4', name: 'GPT 4.1' }, 'Translate to French'),
-      nodeUI,
-      'translation-task'
-    );
+    it('renders translation task', async () => {
+      await helper.testNode(
+        createTestNode(
+          { uuid: 'gpt-4', name: 'GPT 4.1' },
+          'Translate to French'
+        ),
+        nodeUI,
+        'translation-task'
+      );
+    });
 
-    helper.testNode(
-      createTestNode(
-        { uuid: 'gpt-5', name: 'GPT 5' },
-        'Analyze the sentiment of the following message and classify it as positive, negative, or neutral. Provide a brief explanation for your classification.'
-      ),
-      nodeUI,
-      'sentiment-analysis'
-    );
+    it('renders sentiment analysis', async () => {
+      await helper.testNode(
+        createTestNode(
+          { uuid: 'gpt-5', name: 'GPT 5' },
+          'Analyze the sentiment of the following message and classify it as positive, negative, or neutral. Provide a brief explanation for your classification.'
+        ),
+        nodeUI,
+        'sentiment-analysis'
+      );
+    });
 
-    helper.testNode(
-      createTestNode(
-        { uuid: 'gpt-4', name: 'GPT 4.1' },
-        'Summarize the key points from the conversation above in bullet format.'
-      ),
-      nodeUI,
-      'summarization'
-    );
+    it('renders summarization', async () => {
+      await helper.testNode(
+        createTestNode(
+          { uuid: 'gpt-4', name: 'GPT 4.1' },
+          'Summarize the key points from the conversation above in bullet format.'
+        ),
+        nodeUI,
+        'summarization'
+      );
+    });
 
-    helper.testNode(
-      createTestNode(
-        { uuid: 'gpt-5', name: 'GPT 5' },
-        'Extract any contact information (phone numbers, email addresses) from the text and format them as a JSON object.'
-      ),
-      nodeUI,
-      'information-extraction'
-    );
+    it('renders information extraction', async () => {
+      await helper.testNode(
+        createTestNode(
+          { uuid: 'gpt-5', name: 'GPT 5' },
+          'Extract any contact information (phone numbers, email addresses) from the text and format them as a JSON object.'
+        ),
+        nodeUI,
+        'information-extraction'
+      );
+    });
   });
 });

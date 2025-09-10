@@ -31,140 +31,148 @@ describe('split_by_random node config', () => {
   });
 
   describe('node scenarios', () => {
-    helper.testNode(
-      {
-        uuid: 'test-random-node-1',
-        actions: [],
-        router: {
-          type: 'random',
-          categories: [
-            {
-              uuid: 'random-cat-1',
-              name: 'Bucket A',
-              exit_uuid: 'random-exit-1'
-            },
-            {
-              uuid: 'random-cat-2',
-              name: 'Bucket B',
-              exit_uuid: 'random-exit-2'
-            }
+    it('renders two bucket split', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-random-node-1',
+          actions: [],
+          router: {
+            type: 'random',
+            categories: [
+              {
+                uuid: 'random-cat-1',
+                name: 'Bucket A',
+                exit_uuid: 'random-exit-1'
+              },
+              {
+                uuid: 'random-cat-2',
+                name: 'Bucket B',
+                exit_uuid: 'random-exit-2'
+              }
+            ]
+          },
+          exits: [
+            { uuid: 'random-exit-1', destination_uuid: null },
+            { uuid: 'random-exit-2', destination_uuid: null }
           ]
-        },
-        exits: [
-          { uuid: 'random-exit-1', destination_uuid: null },
-          { uuid: 'random-exit-2', destination_uuid: null }
-        ]
-      } as Node,
-      { type: 'split_by_random' },
-      'two-bucket-split'
-    );
+        } as Node,
+        { type: 'split_by_random' },
+        'two-bucket-split'
+      );
+    });
 
-    helper.testNode(
-      {
-        uuid: 'test-random-node-2',
-        actions: [],
-        router: {
-          type: 'random',
-          categories: [
-            {
-              uuid: 'random-cat-1',
-              name: 'Group A',
-              exit_uuid: 'random-exit-1'
-            },
-            {
-              uuid: 'random-cat-2',
-              name: 'Group B',
-              exit_uuid: 'random-exit-2'
-            },
-            {
-              uuid: 'random-cat-3',
-              name: 'Group C',
-              exit_uuid: 'random-exit-3'
-            }
+    it('renders three way split', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-random-node-2',
+          actions: [],
+          router: {
+            type: 'random',
+            categories: [
+              {
+                uuid: 'random-cat-1',
+                name: 'Group A',
+                exit_uuid: 'random-exit-1'
+              },
+              {
+                uuid: 'random-cat-2',
+                name: 'Group B',
+                exit_uuid: 'random-exit-2'
+              },
+              {
+                uuid: 'random-cat-3',
+                name: 'Group C',
+                exit_uuid: 'random-exit-3'
+              }
+            ]
+          },
+          exits: [
+            { uuid: 'random-exit-1', destination_uuid: null },
+            { uuid: 'random-exit-2', destination_uuid: null },
+            { uuid: 'random-exit-3', destination_uuid: null }
           ]
-        },
-        exits: [
-          { uuid: 'random-exit-1', destination_uuid: null },
-          { uuid: 'random-exit-2', destination_uuid: null },
-          { uuid: 'random-exit-3', destination_uuid: null }
-        ]
-      } as Node,
-      { type: 'split_by_random' },
-      'three-way-split'
-    );
+        } as Node,
+        { type: 'split_by_random' },
+        'three-way-split'
+      );
+    });
 
-    helper.testNode(
-      {
-        uuid: 'test-random-node-3',
-        actions: [],
-        router: {
-          type: 'random',
-          categories: [
-            {
-              uuid: 'random-cat-1',
-              name: 'Treatment',
-              exit_uuid: 'random-exit-1'
-            },
-            {
-              uuid: 'random-cat-2',
-              name: 'Control',
-              exit_uuid: 'random-exit-2'
-            },
-            {
-              uuid: 'random-cat-3',
-              name: 'Variant A',
-              exit_uuid: 'random-exit-3'
-            },
-            {
-              uuid: 'random-cat-4',
-              name: 'Variant B',
-              exit_uuid: 'random-exit-4'
-            },
-            {
-              uuid: 'random-cat-5',
-              name: 'Holdout',
-              exit_uuid: 'random-exit-5'
-            }
+    it('renders ab test multiple variants', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-random-node-3',
+          actions: [],
+          router: {
+            type: 'random',
+            categories: [
+              {
+                uuid: 'random-cat-1',
+                name: 'Treatment',
+                exit_uuid: 'random-exit-1'
+              },
+              {
+                uuid: 'random-cat-2',
+                name: 'Control',
+                exit_uuid: 'random-exit-2'
+              },
+              {
+                uuid: 'random-cat-3',
+                name: 'Variant A',
+                exit_uuid: 'random-exit-3'
+              },
+              {
+                uuid: 'random-cat-4',
+                name: 'Variant B',
+                exit_uuid: 'random-exit-4'
+              },
+              {
+                uuid: 'random-cat-5',
+                name: 'Holdout',
+                exit_uuid: 'random-exit-5'
+              }
+            ]
+          },
+          exits: [
+            { uuid: 'random-exit-1', destination_uuid: null },
+            { uuid: 'random-exit-2', destination_uuid: null },
+            { uuid: 'random-exit-3', destination_uuid: null },
+            { uuid: 'random-exit-4', destination_uuid: null },
+            { uuid: 'random-exit-5', destination_uuid: null }
           ]
-        },
-        exits: [
-          { uuid: 'random-exit-1', destination_uuid: null },
-          { uuid: 'random-exit-2', destination_uuid: null },
-          { uuid: 'random-exit-3', destination_uuid: null },
-          { uuid: 'random-exit-4', destination_uuid: null },
-          { uuid: 'random-exit-5', destination_uuid: null }
-        ]
-      } as Node,
-      { type: 'split_by_random' },
-      'ab-test-multiple-variants'
-    );
+        } as Node,
+        { type: 'split_by_random' },
+        'ab-test-multiple-variants'
+      );
+    });
 
-    helper.testNode(
-      {
-        uuid: 'test-random-node-4',
-        actions: [],
-        router: {
-          type: 'random',
-          categories: [
-            {
-              uuid: 'random-cat-1',
-              name: 'Sample Group',
-              exit_uuid: 'random-exit-1'
-            },
-            {
-              uuid: 'random-cat-2',
-              name: 'Remaining Population',
-              exit_uuid: 'random-exit-2'
-            }
+    it('renders sampling split', async () => {
+      await helper.testNode(
+        {
+          uuid: 'test-random-node-4',
+          actions: [],
+          router: {
+            type: 'random',
+            categories: [
+              {
+                uuid: 'random-cat-1',
+                name: 'Sample Group',
+                exit_uuid: 'random-exit-1'
+              },
+              {
+                uuid: 'random-cat-2',
+                name: 'Remaining Population',
+                exit_uuid: 'random-exit-2'
+              }
+            ]
+          },
+          exits: [
+            { uuid: 'random-exit-1', destination_uuid: null },
+            { uuid: 'random-exit-2', destination_uuid: null }
           ]
-        },
-        exits: [
-          { uuid: 'random-exit-1', destination_uuid: null },
-          { uuid: 'random-exit-2', destination_uuid: null }
-        ]
-      } as Node,
-      { type: 'split_by_random' },
-      'sampling-split'
-    );
+        } as Node,
+        { type: 'split_by_random' },
+        'sampling-split'
+      );
+    });
   });
 });

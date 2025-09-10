@@ -134,52 +134,115 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   ): TemplateResult {
     const computedValue = this.computeFieldValue(itemIndex, fieldName, config);
 
+    // Extract flavor from select config if available
+    const flavor =
+      config.type === 'select' ? (config as any).flavor || 'small' : 'small';
+
+    // Build container style with width/maxWidth if specified
+    let containerStyle = '';
+    if (config.width) {
+      containerStyle = `width: ${config.width};`;
+    } else if (config.maxWidth) {
+      containerStyle = `max-width: ${config.maxWidth};`;
+    }
+
     // Use FieldRenderer for consistent field rendering
-    return FieldRenderer.renderField(fieldName, config, computedValue, {
-      showLabel: false, // ArrayEditor doesn't show labels for individual fields
-      flavor: 'small', // ArrayEditor uses small flavor
-      extraClasses: 'form-control',
-      onChange: (e: Event) => {
-        let value: any;
-        const target = e.target as any;
+    const fieldContent = FieldRenderer.renderField(
+      fieldName,
+      config,
+      computedValue,
+      {
+        showLabel: false, // ArrayEditor doesn't show labels for individual fields
+        flavor: flavor,
+        extraClasses: 'form-control',
+        onChange: (e: Event) => {
+          let value: any;
+          const target = e.target as any;
 
-        // Handle different field types and their change events
-        if (config.type === 'select') {
-          // Use consistent temba-select value normalization
-          value = target.values;
-        } else {
-          // For other field types, use the target value directly
-          value = target.value;
+          // Handle different field types and their change events
+          if (config.type === 'select') {
+            // Use consistent temba-select value normalization
+            value = target.values;
+          } else {
+            // For other field types, use the target value directly
+            value = target.value;
+          }
+
+          this.handleFieldChange(itemIndex, fieldName, value);
         }
-
-        this.handleFieldChange(itemIndex, fieldName, value);
       }
-    });
+    );
+
+    // Wrap in container with style if maxWidth is specified
+    if (containerStyle) {
+      return html`<div style="${containerStyle}">${fieldContent}</div>`;
+    }
+
+    return fieldContent;
   }
 
   renderItem(item: ListItem, index: number): TemplateResult {
     const canRemove = this.canRemoveItem(index);
 
+    // Render fields and track if any value fields are visible
+    const fieldElements: TemplateResult[] = [];
+    let hasVisibleValueField = false;
+
+    Object.entries(this.itemConfig).forEach(([fieldName, config]) => {
+      // Check visibility condition
+      let isVisible = true;
+      if (config.conditions?.visible) {
+        try {
+          const currentItem = this._items[index] || {};
+          isVisible = config.conditions.visible(currentItem);
+        } catch (error) {
+          console.error(`Error checking visibility for ${fieldName}:`, error);
+        }
+      }
+
+      if (isVisible) {
+        // Check if this is a value field (text input without fixed sizing)
+        const isValueField =
+          !config.width && !config.maxWidth && config.type === 'text';
+        if (isValueField) {
+          hasVisibleValueField = true;
+        }
+
+        fieldElements.push(html`
+          <div
+            class="field ${config.width ||
+            config.maxWidth ||
+            config.type === 'select'
+              ? 'field-fixed'
+              : 'field-flex'}"
+          >
+            ${this.renderArrayField(index, fieldName, config)}
+          </div>
+        `);
+      }
+    });
+
+    // If no value fields are visible, add a spacer to maintain alignment
+    if (!hasVisibleValueField) {
+      // Insert spacer after operator (first field) and before category (last field)
+      fieldElements.splice(
+        -1,
+        0,
+        html`<div class="field field-flex spacer"></div>`
+      );
+    }
+
     return html`
       <div class="array-item">
         <div class="item-fields">
-          ${Object.entries(this.itemConfig).map(
-            ([fieldName, config]) => html`
-              <div class="field">
-                ${this.renderArrayField(index, fieldName, config)}
-              </div>
-            `
-          )}
-          ${canRemove
-            ? html`
-                <button
-                  @click=${() => this.removeItem(index)}
-                  class="remove-btn"
-                >
-                  <temba-icon name="x"></temba-icon>
-                </button>
-              `
-            : ''}
+          ${fieldElements}
+          <button
+            @click=${canRemove ? () => this.removeItem(index) : undefined}
+            class="remove-btn ${canRemove ? '' : 'invisible'}"
+            ?disabled=${!canRemove}
+          >
+            <temba-icon name="x"></temba-icon>
+          </button>
         </div>
       </div>
     `;
@@ -217,12 +280,24 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       }
 
       .field {
-        flex: 1;
+        /* Base field styles */
+      }
+
+      .field-flex {
+        flex: 1; /* Grow to fill remaining space */
+      }
+
+      .field-fixed {
+        flex: none; /* Don't grow, use content/maxWidth size */
+      }
+
+      .spacer {
+        /* Empty spacer to maintain layout alignment */
       }
 
       .add-btn,
       .remove-btn {
-        padding: 8px;
+        padding: 4px;
         border: 1px solid #ccc;
         border-radius: 4px;
         background: white;
@@ -238,6 +313,11 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       .remove-btn {
         background: #fefefe;
         color: #999;
+      }
+
+      .remove-btn.invisible {
+        visibility: hidden;
+        cursor: default;
       }
     `;
   }
