@@ -1,23 +1,22 @@
-import { html, fixture, expect } from '@open-wc/testing';
-import { Checkbox } from '../src/form/Checkbox';
-import { assertScreenshot, getClip } from './utils.test';
+import { expect } from '@open-wc/testing';
+import { assertScreenshot, getClip, getComponent } from './utils.test';
+import { TextInput } from '../src/form/TextInput';
 
 describe('FormElement markdown integration', () => {
-  it('renders checkbox with markdown errors', async () => {
-    const checkbox: Checkbox = await fixture(html`
-      <temba-checkbox
-        label="Accept Terms"
-        .errors=${[
-          'Please read the **terms and conditions** at [this link](https://example.com)',
-          'This field *requires* acceptance'
-        ]}
-      ></temba-checkbox>
-    `);
+  it('renders textinput with markdown errors', async () => {
+    const el: TextInput = (await getComponent('temba-textinput', {
+      name: 'my_textinput'
+    })) as TextInput;
 
-    await checkbox.updateComplete;
+    el.errors = [
+      'You must agree to the **terms and conditions** at [this link](https://example.com)',
+      'This field *requires* a value'
+    ];
+
+    await el.updateComplete;
 
     // Check that errors are rendered with markdown directly in checkbox shadow root
-    const errorElements = checkbox.shadowRoot.querySelectorAll('.alert-error');
+    const errorElements = el.shadowRoot.querySelectorAll('.alert-error');
     expect(errorElements.length).to.equal(2);
 
     // First error should have bold text and link
@@ -36,8 +35,8 @@ describe('FormElement markdown integration', () => {
     expect(italicElement.textContent).to.equal('requires');
 
     await assertScreenshot(
-      'integration/checkbox-markdown-errors',
-      getClip(checkbox)
+      'integration/textinput-markdown-errors',
+      getClip(el)
     );
   });
 });
