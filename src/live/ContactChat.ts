@@ -73,7 +73,7 @@ export enum Events {
   OPTIN_STOPPED = 'optin_stopped',
   RUN_ENDED = 'run_ended',
   RUN_STARTED = 'run_started',
-  TICKET_ASSIGNED = 'ticket_assigned',
+  TICKET_ASSIGNEE_CHANGED = 'ticket_assignee_changed',
   TICKET_CLOSED = 'ticket_closed',
   TICKET_NOTE_ADDED = 'ticket_note_added',
   TICKET_OPENED = 'ticket_opened',
@@ -81,7 +81,8 @@ export enum Events {
   TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
 
   // deprecated
-  CHANNEL_EVENT = 'channel_event'
+  CHANNEL_EVENT = 'channel_event',
+  TICKET_ASSIGNED = 'ticket_assigned'
 }
 
 const renderInfoList = (singular: string, plural: string, items: any[]) => {
@@ -136,7 +137,7 @@ const renderUpdateEvent = (event: UpdateFieldEvent): string => {
 };
 
 const renderNameChanged = (event: NameChangedEvent): string => {
-  return `Updated **Contact Name** to **${event.name}**`;
+  return `Updated **name** to **${event.name}**`;
 };
 
 const renderContactURNsChanged = (event: URNsChangedEvent): string => {
@@ -150,12 +151,31 @@ export const renderTicketAction = (
   event: TicketEvent,
   action: string
 ): string => {
-  if (event.created_by) {
-    return `**${getUserDisplay(
-      event.created_by
-    )}** ${action} a **[ticket](/ticket/all/closed/${event.ticket.uuid}/)**`;
+  const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
+  const userDisplay = event.created_by
+    ? getUserDisplay(event.created_by)
+    : event._user?.name;
+
+  if (userDisplay) {
+    return `**${userDisplay}** ${action} a **[ticket](/ticket/all/closed/${ticketUUID}/)**`;
   }
-  return `A **[ticket](/ticket/all/closed/${event.ticket.uuid}/)** was **${action}**`;
+  return `A **[ticket](/ticket/all/closed/${ticketUUID}/)** was **${action}**`;
+};
+
+export const renderTicketAssigneeChanged = (event: TicketEvent): string => {
+  if (event._user) {
+    if (event.assignee) {
+      return `**${event._user.name}** assigned this ticket to **${event.assignee.name}**`;
+    } else {
+      return `**${event._user.name}** unassigned this ticket`;
+    }
+  } else {
+    if (event.assignee) {
+      return `This ticket was assigned to **${event.assignee.name}**`;
+    } else {
+      return `This ticket was unassigned`;
+    }
+  }
 };
 
 export const renderTicketAssigned = (event: TicketEvent): string => {
@@ -166,6 +186,10 @@ export const renderTicketAssigned = (event: TicketEvent): string => {
           event.created_by
         )} assigned this ticket to **${getDisplayName(event.assignee)}**`
     : `**${getDisplayName(event.created_by)}** unassigned this ticket`;
+};
+
+export const renderTicketOpened = (event: TicketEvent): string => {
+  return `${event.ticket.topic.name} ticket was opened`;
 };
 
 export const renderContactGroupsEvent = (event: ContactGroupsEvent): string => {
@@ -183,10 +207,6 @@ export const renderContactGroupsEvent = (event: ContactGroupsEvent): string => {
       groupsEvent.groups_removed
     );
   }
-};
-
-export const renderTicketOpened = (event: TicketEvent): string => {
-  return `${event.ticket.topic.name} ticket was opened`;
 };
 
 export const renderAirtimeTransferredEvent = (
@@ -701,6 +721,12 @@ export class ContactChat extends ContactStoreElement {
         message = {
           type: MessageType.Inline,
           text: renderTicketAssigned(event as TicketEvent)
+        };
+        break;
+      case Events.TICKET_ASSIGNEE_CHANGED:
+        message = {
+          type: MessageType.Inline,
+          text: renderTicketAssigneeChanged(event as TicketEvent)
         };
         break;
       case Events.TICKET_CLOSED:
