@@ -75,16 +75,17 @@ export interface URNsChangedEvent extends ContactEvent {
 }
 
 export interface TicketEvent extends ContactEvent {
-  note?: string;
-  assignee?: User;
   ticket: {
+    // ticket_opened
     uuid: string;
     topic?: ObjectReference;
-    closed_on?: string;
-    opened_on?: string;
   };
+  ticket_uuid?: string; // all other event types
+  assignee?: User;
+  note?: string;
   topic?: ObjectReference;
-  created_by?: User;
+  created_by?: User; // legacy events
+  _user?: ObjectReference;
 }
 
 export interface NameChangedEvent extends ContactEvent {
