@@ -39,12 +39,18 @@ const createWaitForResponseRouter = (
   const exits: Exit[] = [];
   const cases: Case[] = [];
 
+  // Filter existing categories to get only user-defined rules (exclude system categories)
+  const existingUserCategories = existingCategories.filter(
+    (cat) =>
+      cat.name !== 'No Response' &&
+      cat.name !== 'Other' &&
+      cat.name !== 'Timeout'
+  );
+
   // Create categories, exits, and cases for user-defined rules
-  userRules.forEach((rule) => {
-    // Try to find existing category by name
-    const existingCategory = existingCategories.find(
-      (cat) => cat.name === rule.category
-    );
+  userRules.forEach((rule, index) => {
+    // Try to find existing category by position/index to preserve UUIDs when names change
+    const existingCategory = existingUserCategories[index];
     const existingExit = existingCategory
       ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
       : null;

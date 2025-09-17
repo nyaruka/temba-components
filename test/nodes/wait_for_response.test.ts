@@ -510,5 +510,115 @@ describe('wait_for_response node config', () => {
       expect(validation.valid).to.be.true;
       expect(validation.errors).to.be.empty;
     });
+
+    it('preserves category UUIDs when names are updated', () => {
+      // Create original node with specific UUIDs
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [
+            {
+              uuid: 'category-1-uuid',
+              name: 'Old Name 1',
+              exit_uuid: 'exit-1-uuid'
+            },
+            {
+              uuid: 'category-2-uuid',
+              name: 'Old Name 2',
+              exit_uuid: 'exit-2-uuid'
+            },
+            {
+              uuid: 'other-category-uuid',
+              name: 'Other',
+              exit_uuid: 'other-exit-uuid'
+            }
+          ],
+          cases: [
+            {
+              uuid: 'case-1-uuid',
+              type: 'has_phrase',
+              arguments: ['yes'],
+              category_uuid: 'category-1-uuid'
+            },
+            {
+              uuid: 'case-2-uuid',
+              type: 'has_phrase',
+              arguments: ['no'],
+              category_uuid: 'category-2-uuid'
+            }
+          ]
+        },
+        exits: [
+          { uuid: 'exit-1-uuid', destination_uuid: null },
+          { uuid: 'exit-2-uuid', destination_uuid: null },
+          { uuid: 'other-exit-uuid', destination_uuid: null }
+        ]
+      };
+
+      // Update category names but keep same rules in same order
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'yes',
+            category: 'New Name 1' // Changed from "Old Name 1"
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'no',
+            category: 'New Name 2' // Changed from "Old Name 2"
+          }
+        ]
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Verify that UUIDs are preserved despite name changes
+      expect(result.router?.categories).to.have.length(3); // Two rules + Other
+
+      const category1 = result.router!.categories.find(
+        (cat) => cat.name === 'New Name 1'
+      );
+      const category2 = result.router!.categories.find(
+        (cat) => cat.name === 'New Name 2'
+      );
+      const otherCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Other'
+      );
+
+      // Verify UUIDs are preserved
+      expect(category1?.uuid).to.equal('category-1-uuid');
+      expect(category1?.exit_uuid).to.equal('exit-1-uuid');
+
+      expect(category2?.uuid).to.equal('category-2-uuid');
+      expect(category2?.exit_uuid).to.equal('exit-2-uuid');
+
+      expect(otherCategory?.uuid).to.equal('other-category-uuid');
+      expect(otherCategory?.exit_uuid).to.equal('other-exit-uuid');
+
+      // Verify case UUIDs are also preserved
+      const case1 = result.router!.cases.find(
+        (c) => c.category_uuid === 'category-1-uuid'
+      );
+      const case2 = result.router!.cases.find(
+        (c) => c.category_uuid === 'category-2-uuid'
+      );
+
+      expect(case1?.uuid).to.equal('case-1-uuid');
+      expect(case2?.uuid).to.equal('case-2-uuid');
+
+      // Verify exits are preserved
+      expect(result.exits).to.have.length(3);
+      expect(result.exits.map((e) => e.uuid)).to.include.members([
+        'exit-1-uuid',
+        'exit-2-uuid',
+        'other-exit-uuid'
+      ]);
+    });
   });
 });

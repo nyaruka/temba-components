@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, ValidationResult } from '../types';
+import { ActionConfig, COLORS } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 
@@ -8,6 +8,22 @@ export const set_contact_status: ActionConfig = {
   color: COLORS.update,
   render: (_node: Node, action: SetContactStatus) => {
     return html`<div>Set to <strong>${titleCase(action.status)}</strong></div>`;
+  },
+  toFormData: (action: SetContactStatus) => {
+    return {
+      ...action,
+      status: {
+        name: titleCase(action.status || 'active'),
+        value: action.status || 'active'
+      }
+    };
+  },
+  fromFormData: (formData: any): SetContactStatus => {
+    return {
+      status: formData.status[0].value,
+      type: 'set_contact_status',
+      uuid: formData.uuid
+    };
   },
   form: {
     status: {
@@ -24,21 +40,5 @@ export const set_contact_status: ActionConfig = {
       ],
       helpText: 'Select the status to set for the contact'
     }
-  },
-  validate: (formData: SetContactStatus): ValidationResult => {
-    const errors: { [key: string]: string } = {};
-
-    if (!formData.status) {
-      errors.status = 'Status is required';
-    } else if (
-      !['active', 'archived', 'stopped', 'blocked'].includes(formData.status)
-    ) {
-      errors.status = 'Invalid status selected';
-    }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
   }
 };
