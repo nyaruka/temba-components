@@ -85,29 +85,39 @@ export enum Events {
   TICKET_ASSIGNED = 'ticket_assigned'
 }
 
-const renderInfoList = (singular: string, plural: string, items: any[]) => {
+const renderInfoList = (
+  singular: string,
+  plural: string,
+  items: any[]
+): TemplateResult => {
   if (items.length === 1) {
-    return `${singular} **${items[0].name}**`;
+    return html`<div>${singular} <strong>${items[0].name}</strong></div>`;
   } else {
-    const list = items.map((item) => `**${item.name}**`);
+    const list = items.map((item) => item.name);
     if (list.length === 2) {
-      return `${plural} ${list.join(' and ')}`;
+      return html`<div>
+        ${plural} <strong>${list[0]}</strong> and <strong>${list[1]}</strong>
+      </div>`;
     } else {
       const last = list.pop();
-      return `${plural} ${list.join(', ')}, and ${last}`;
+      const middle = list.map(
+        (name, index) =>
+          html`<strong>${name}</strong>${index < list.length - 1 ? ', ' : ''}`
+      );
+      return html`<div>${plural} ${middle}, and <strong>${last}</strong></div>`;
     }
   }
 };
 
-const renderChannelEvent = (event: ChannelEvent): string => {
+const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
   if (event.channel_event_type === 'welcome_message') {
-    return 'Welcome message sent';
+    return html`<div>Welcome message sent</div>`;
   } else if (event.event.type === 'stop_contact') {
-    return 'Stopped';
+    return html`<div>Stopped</div>`;
   }
 };
 
-const renderRunEvent = (event: RunEvent): string => {
+const renderRunEvent = (event: RunEvent): TemplateResult => {
   let verb = 'Started';
   if (event.type === Events.RUN_ENDED) {
     if (event.status === 'completed') {
@@ -119,80 +129,117 @@ const renderRunEvent = (event: RunEvent): string => {
     }
   }
 
-  return `${verb} [**${event.flow.name}**](/flow/editor/${event.flow.uuid}/)`;
+  return html`<div>
+    ${verb}
+    <a href="/flow/editor/${event.flow.uuid}/"
+      ><strong>${event.flow.name}</strong></a
+    >
+  </div>`;
 };
 
-const renderChatStartedEvent = (event: ChatStartedEvent): string => {
+const renderChatStartedEvent = (event: ChatStartedEvent): TemplateResult => {
   if (event.params) {
-    return `Chat referral`;
+    return html`<div>Chat referral</div>`;
   } else {
-    return `Chat started`;
+    return html`<div>Chat started</div>`;
   }
 };
 
-const renderUpdateEvent = (event: UpdateFieldEvent): string => {
+const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
   return event.value
-    ? `Updated **${event.field.name}** to **${event.value.text}**`
-    : `Cleared **${event.field.name}**`;
+    ? html`<div>
+        Updated <strong>${event.field.name}</strong> to
+        <strong>${event.value.text}</strong>
+      </div>`
+    : html`<div>Cleared <strong>${event.field.name}</strong></div>`;
 };
 
-const renderNameChanged = (event: NameChangedEvent): string => {
-  return `Updated **name** to **${event.name}**`;
+const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
+  return html`<div>
+    Updated <strong>name</strong> to <strong>${event.name}</strong>
+  </div>`;
 };
 
-const renderContactURNsChanged = (event: URNsChangedEvent): string => {
-  return `Updated **URNs** to ${oxfordFn(
-    event.urns,
-    (urn: string) => `**${urn.split(':')[1].split('?')[0]}**`
-  )}`;
+const renderContactURNsChanged = (event: URNsChangedEvent): TemplateResult => {
+  return html`<div>
+    Updated <strong>URNs</strong> to
+    ${oxfordFn(
+      event.urns,
+      (urn: string) => html`<strong>${urn.split(':')[1].split('?')[0]}</strong>`
+    )}
+  </div>`;
 };
 
 export const renderTicketAction = (
   event: TicketEvent,
   action: string
-): string => {
+): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
   const userDisplay = event.created_by
     ? getUserDisplay(event.created_by)
     : event._user?.name;
 
   if (userDisplay) {
-    return `**${userDisplay}** ${action} a **[ticket](/ticket/all/closed/${ticketUUID}/)**`;
+    return html`<div>
+      <strong>${userDisplay}</strong> ${action} a
+      <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
+    </div>`;
   }
-  return `A **[ticket](/ticket/all/closed/${ticketUUID}/)** was **${action}**`;
+  return html`<div>
+    A
+    <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong> was
+    <strong>${action}</strong>
+  </div>`;
 };
 
-export const renderTicketAssigneeChanged = (event: TicketEvent): string => {
+export const renderTicketAssigneeChanged = (
+  event: TicketEvent
+): TemplateResult => {
   if (event._user) {
     if (event.assignee) {
-      return `**${event._user.name}** assigned this ticket to **${event.assignee.name}**`;
+      return html`<div>
+        <strong>${event._user.name}</strong> assigned this ticket to
+        <strong>${event.assignee.name}</strong>
+      </div>`;
     } else {
-      return `**${event._user.name}** unassigned this ticket`;
+      return html`<div>
+        <strong>${event._user.name}</strong> unassigned this ticket
+      </div>`;
     }
   } else {
     if (event.assignee) {
-      return `This ticket was assigned to **${event.assignee.name}**`;
+      return html`<div>
+        This ticket was assigned to <strong>${event.assignee.name}</strong>
+      </div>`;
     } else {
-      return `This ticket was unassigned`;
+      return html`<div>This ticket was unassigned</div>`;
     }
   }
 };
 
-export const renderTicketAssigned = (event: TicketEvent): string => {
+export const renderTicketAssigned = (event: TicketEvent): TemplateResult => {
   return event.assignee
     ? event.assignee.id === event.created_by.id
-      ? `**${getDisplayName(event.created_by)}** took this ticket`
-      : `${getDisplayName(
-          event.created_by
-        )} assigned this ticket to **${getDisplayName(event.assignee)}**`
-    : `**${getDisplayName(event.created_by)}** unassigned this ticket`;
+      ? html`<div>
+          <strong>${getDisplayName(event.created_by)}</strong> took this ticket
+        </div>`
+      : html`<div>
+          ${getDisplayName(event.created_by)} assigned this ticket to
+          <strong>${getDisplayName(event.assignee)}</strong>
+        </div>`
+    : html`<div>
+        <strong>${getDisplayName(event.created_by)}</strong> unassigned this
+        ticket
+      </div>`;
 };
 
-export const renderTicketOpened = (event: TicketEvent): string => {
-  return `${event.ticket.topic.name} ticket was opened`;
+export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
+  return html`<div>${event.ticket.topic.name} ticket was opened</div>`;
 };
 
-export const renderContactGroupsEvent = (event: ContactGroupsEvent): string => {
+export const renderContactGroupsEvent = (
+  event: ContactGroupsEvent
+): TemplateResult => {
   const groupsEvent = event as ContactGroupsEvent;
   if (groupsEvent.groups_added) {
     return renderInfoList(
@@ -211,42 +258,48 @@ export const renderContactGroupsEvent = (event: ContactGroupsEvent): string => {
 
 export const renderAirtimeTransferredEvent = (
   event: AirtimeTransferredEvent
-): string => {
+): TemplateResult => {
   if (parseFloat(event.amount) === 0) {
-    return `Airtime transfer failed`;
+    return html`<div>Airtime transfer failed</div>`;
   }
-  return `Transferred **${event.amount}** ${event.currency} of airtime`;
+  return html`<div>
+    Transferred <strong>${event.amount}</strong> ${event.currency} of airtime
+  </div>`;
 };
 
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
-): string => {
-  return `Language updated to **${event.language}**`;
+): TemplateResult => {
+  return html`<div>
+    Language updated to <strong>${event.language}</strong>
+  </div>`;
 };
 
 export const renderContactStatusChangedEvent = (
   event: ContactStatusChangedEvent
-): string => {
-  return `Status updated to **${event.status}**`;
+): TemplateResult => {
+  return html`<div>Status updated to <strong>${event.status}</strong></div>`;
 };
 
-export const renderCallEvent = (event: CallEvent): string => {
+export const renderCallEvent = (event: CallEvent): TemplateResult => {
   if (event.type === Events.CALL_CREATED) {
-    return `Call started`;
+    return html`<div>Call started</div>`;
   } else if (event.type === Events.CALL_MISSED) {
-    return `Call missed`;
+    return html`<div>Call missed</div>`;
   } else if (event.type === Events.CALL_RECEIVED) {
-    return `Call answered`;
+    return html`<div>Call answered</div>`;
   }
 };
 
-export const renderOptInEvent = (event: OptInEvent): string => {
+export const renderOptInEvent = (event: OptInEvent): TemplateResult => {
   if (event.type === Events.OPTIN_REQUESTED) {
-    return `Requested opt-in for **${event.optin.name}**`;
+    return html`<div>
+      Requested opt-in for <strong>${event.optin.name}</strong>
+    </div>`;
   } else if (event.type === Events.OPTIN_STARTED) {
-    return `Opted in to **${event.optin.name}**`;
+    return html`<div>Opted in to <strong>${event.optin.name}</strong></div>`;
   } else if (event.type === Events.OPTIN_STOPPED) {
-    return `Opted out of **${event.optin.name}**`;
+    return html`<div>Opted out of <strong>${event.optin.name}</strong></div>`;
   }
 };
 
@@ -750,7 +803,10 @@ export class ContactChat extends ContactStoreElement {
       case Events.TICKET_TOPIC_CHANGED:
         message = {
           type: MessageType.Inline,
-          text: `Topic changed to **${(event as TicketEvent).topic.name}**`
+          text: html`<div>
+            Topic changed to
+            <strong>${(event as TicketEvent).topic.name}</strong>
+          </div>`
         };
         break;
       case Events.CHANNEL_EVENT: // deprecated
@@ -765,6 +821,10 @@ export class ContactChat extends ContactStoreElement {
       message.date = new Date(event.created_on);
     } else {
       console.error('Unknown event type', event);
+    }
+
+    if (!message.id) {
+      message.id = event.uuid || event.type + '@' + event.created_on;
     }
 
     return message;
