@@ -466,21 +466,18 @@ describe('wait_for_response node config', () => {
       expect(validation.errors).to.be.empty;
     });
 
-    it('detects duplicate category names', () => {
+    it('allows same category names for multiple rules', () => {
       const formData = {
         rules: [
           { operator: 'has_text', value: 'yes', category: 'Positive' },
-          { operator: 'has_text', value: 'ok', category: 'positive' }, // case insensitive duplicate
+          { operator: 'has_text', value: 'ok', category: 'positive' }, // case insensitive same category
           { operator: 'has_text', value: 'no', category: 'Negative' }
         ]
       };
 
       const validation = wait_for_response.validate!(formData);
-      expect(validation.valid).to.be.false;
-      expect(validation.errors.rules).to.contain(
-        'Duplicate category names found'
-      );
-      expect(validation.errors.rules).to.contain('Positive');
+      expect(validation.valid).to.be.true;
+      expect(validation.errors).to.be.empty;
     });
 
     it('allows rules with operators that need no values', () => {
@@ -619,6 +616,144 @@ describe('wait_for_response node config', () => {
         'exit-2-uuid',
         'other-exit-uuid'
       ]);
+    });
+
+    it('merges rules with same category name into single category', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'yes',
+            category: 'Positive'
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'ok',
+            category: 'Positive' // Same category name
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'no',
+            category: 'Negative'
+          }
+        ]
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [],
+          cases: []
+        },
+        exits: []
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Should have 3 categories: Positive, Negative, Other
+      expect(result.router?.categories).to.have.length(3);
+
+      const categoryNames = result.router!.categories.map((cat) => cat.name);
+      expect(categoryNames).to.include.members([
+        'Positive',
+        'Negative',
+        'Other'
+      ]);
+
+      // Should have 3 cases but only 2 user categories (+ Other)
+      expect(result.router?.cases).to.have.length(3);
+
+      // Both "yes" and "ok" rules should reference the same Positive category
+      const positiveCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Positive'
+      );
+      expect(positiveCategory).to.exist;
+
+      const positiveCases = result.router!.cases.filter(
+        (case_) => case_.category_uuid === positiveCategory!.uuid
+      );
+      expect(positiveCases).to.have.length(2);
+
+      // Verify the cases have the correct arguments
+      const yesCase = positiveCases.find((case_) =>
+        case_.arguments.includes('yes')
+      );
+      const okCase = positiveCases.find((case_) =>
+        case_.arguments.includes('ok')
+      );
+
+      expect(yesCase).to.exist;
+      expect(okCase).to.exist;
+
+      // Should have 3 exits: Positive, Negative, Other
+      expect(result.exits).to.have.length(3);
+    });
+
+    it('preserves category order when merging same category names', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'yes',
+            category: 'First'
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'maybe',
+            category: 'Second'
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'ok',
+            category: 'First' // Same as first rule
+          }
+        ]
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [],
+          cases: []
+        },
+        exits: []
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Should have 3 categories: First, Second, Other (in that order)
+      expect(result.router?.categories).to.have.length(3);
+
+      const categoryNames = result.router!.categories.map((cat) => cat.name);
+      expect(categoryNames).to.deep.equal(['First', 'Second', 'Other']);
+
+      // First category should have 2 cases (yes and ok)
+      const firstCategory = result.router!.categories.find(
+        (cat) => cat.name === 'First'
+      );
+      const firstCases = result.router!.cases.filter(
+        (case_) => case_.category_uuid === firstCategory!.uuid
+      );
+      expect(firstCases).to.have.length(2);
+
+      // Second category should have 1 case (maybe)
+      const secondCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Second'
+      );
+      const secondCases = result.router!.cases.filter(
+        (case_) => case_.category_uuid === secondCategory!.uuid
+      );
+      expect(secondCases).to.have.length(1);
     });
   });
 });
