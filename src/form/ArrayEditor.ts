@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { FieldConfig } from '../flow/types';
 import { BaseListEditor, ListItem } from './BaseListEditor';
 import { FieldRenderer } from './FieldRenderer';
+import '../list/SortableList';
 
 @customElement('temba-array-editor')
 export class TembaArrayEditor extends BaseListEditor<ListItem> {
@@ -22,6 +23,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
   @property({ type: Function })
   isEmptyItemFn?: (item: any) => boolean;
+
+  @property({ type: Boolean })
+  sortable = false;
 
   @property({ type: Boolean })
   maintainEmptyItem = true; // Enable by default for better UX
@@ -101,6 +105,72 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     }
 
     this.updateValue(updatedItems);
+  }
+
+  private handleOrderChanged(event: CustomEvent): void {
+    const detail = event.detail;
+
+    // Handle swap-based logic from SortableList
+    if (detail.swap && Array.isArray(detail.swap) && detail.swap.length === 2) {
+      const [fromIdx, toIdx] = detail.swap;
+
+      // Only reorder if the indexes are different and valid
+      if (
+        fromIdx !== toIdx &&
+        fromIdx >= 0 &&
+        toIdx >= 0 &&
+        fromIdx < this._items.length &&
+        toIdx < this._items.length
+      ) {
+        const updatedItems = [...this._items];
+        // Move the item using splice operations
+        const movedItem = updatedItems.splice(fromIdx, 1)[0];
+        updatedItems.splice(toIdx, 0, movedItem);
+        this.updateValue(updatedItems);
+      }
+    }
+  }
+
+  renderWidget(): TemplateResult {
+    const items = this.displayItems;
+
+    const itemsContent = items.map((item, index) => {
+      const renderedItem = this.renderItem(item, index);
+
+      if (this.sortable && !this.isEmptyItem(item)) {
+        // Wrap non-empty items with sortable class and unique ID for drag-and-drop
+        return html`
+          <div class="sortable" id="array-item-${index}">${renderedItem}</div>
+        `;
+      } else {
+        // Non-sortable items or empty items don't get the sortable wrapper
+        return renderedItem;
+      }
+    });
+
+    if (this.sortable) {
+      return html`
+        <div class=${this.getContainerClass()}>
+          <temba-sortable-list @temba-order-changed=${this.handleOrderChanged}>
+            ${itemsContent}
+          </temba-sortable-list>
+          ${this.shouldShowAddButton() ? this.renderAddButton() : ''}
+        </div>
+      `;
+    } else {
+      // Non-sortable rendering (original behavior)
+      return html`
+        <div class=${this.getContainerClass()}>
+          <div
+            class="list-items"
+            style="display: grid; grid-template-columns: 1fr; gap: 8px;"
+          >
+            ${itemsContent}
+          </div>
+          ${this.shouldShowAddButton() ? this.renderAddButton() : ''}
+        </div>
+      `;
+    }
   }
 
   private computeFieldValue(

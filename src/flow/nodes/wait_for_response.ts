@@ -71,8 +71,16 @@ const createWaitForResponseRouter = (
     const rulesForCategory = rulesByCategory.get(categoryKey)!;
     const categoryName = rulesForCategory[0].category.trim(); // Use the first occurrence's casing
 
-    // Try to find existing category by position/index to preserve UUIDs when names change
-    const existingCategory = existingUserCategories[categoryIndex];
+    // Smart category matching: try by name first, then fall back to position
+    let existingCategory = existingUserCategories.find(
+      (cat) => cat.name.toLowerCase() === categoryKey
+    );
+
+    // If no match by name, try by position (for category rename scenarios)
+    if (!existingCategory && categoryIndex < existingUserCategories.length) {
+      existingCategory = existingUserCategories[categoryIndex];
+    }
+
     const existingExit = existingCategory
       ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
       : null;
@@ -94,9 +102,26 @@ const createWaitForResponseRouter = (
 
     // Create a case for each rule in this category
     rulesForCategory.forEach((rule) => {
-      // Try to find existing case for this rule by looking at the original rule order
+      // Try to find existing case for this rule by matching rule content
       const originalRuleIndex = userRules.findIndex((r) => r === rule);
-      const existingCase = existingCases[originalRuleIndex];
+      let existingCase = existingCases[originalRuleIndex];
+
+      // If we can't find by position, try to find by matching rule content
+      if (!existingCase && existingCases.length > 0) {
+        existingCase = existingCases.find((case_) => {
+          // Find the category for this case
+          const caseCategory = existingCategories.find(
+            (cat) => cat.uuid === case_.category_uuid
+          );
+
+          // Match by operator type and category name
+          return (
+            case_.type === rule.operator &&
+            caseCategory?.name.toLowerCase() ===
+              rule.category.trim().toLowerCase()
+          );
+        });
+      }
 
       const caseUuid = existingCase?.uuid || generateUUID();
 
@@ -211,6 +236,7 @@ export const wait_for_response: NodeConfig = {
       itemLabel: 'Rule',
       minItems: 0,
       maxItems: 100,
+      sortable: true,
       maintainEmptyItem: true, // Explicitly enable empty item maintenance
       isEmptyItem: (item: any) => {
         // Helper function to get operator value from various formats
