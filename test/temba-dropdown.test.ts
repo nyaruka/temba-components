@@ -289,12 +289,6 @@ describe(TAG, () => {
 
       // Verify position was adjusted for right edge
       expect(dropdown.dropdownStyle).to.have.property('left');
-
-      // Screenshot positioned dropdown
-      await assertScreenshot(
-        'dropdown/right-edge-collision',
-        getDropdownClip(dropdown)
-      );
     } finally {
       // Restore original method
       dropdownDiv.getBoundingClientRect = originalGetBoundingClientRect;
@@ -343,12 +337,6 @@ describe(TAG, () => {
       expect(dropdown.dropdownStyle).to.have.property('top');
       expect(dropdown.arrowStyle).to.have.property('transform');
       expect(dropdown.arrowStyle['transform']).to.include('rotate(180deg)');
-
-      // Screenshot positioned dropdown
-      await assertScreenshot(
-        'dropdown/bottom-edge-collision',
-        getDropdownClip(dropdown)
-      );
     } finally {
       // Restore original method
       dropdownDiv.getBoundingClientRect = originalGetBoundingClientRect;

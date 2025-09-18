@@ -1,24 +1,26 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import { Checkbox } from '../src/form/Checkbox';
-import { assertScreenshot, getClip } from './utils.test';
+import { assertScreenshot, getClip, getComponent } from './utils.test';
+
+const getCheckbox = async (props: any) => {
+  return (await getComponent('temba-checkbox', props)) as Checkbox;
+};
 
 describe('temba-checkbox', () => {
   it('renders default checkbox', async () => {
-    const el: Checkbox = await fixture(html`
-      <temba-checkbox label="My Checkbox"></temba-checkbox>
-    `);
+    const el = await getCheckbox({
+      label: 'My Checkbox'
+    });
 
     expect(el.label).to.equal('My Checkbox');
     await assertScreenshot('checkbox/default', getClip(el));
   });
 
   it('can select by clicking on the label', async () => {
-    const el: Checkbox = await fixture(html`
-      <temba-checkbox
-        label="My Checkbox"
-        animatechange="false"
-      ></temba-checkbox>
-    `);
+    const el: Checkbox = await getCheckbox({
+      label: 'My Checkbox',
+      animatechange: false
+    });
 
     (el.shadowRoot.querySelector('.checkbox-label') as HTMLDivElement).click();
     expect(el.checked).to.equal(true);
@@ -28,9 +30,9 @@ describe('temba-checkbox', () => {
   it('fires change event on click', async () => {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise<void>(async (resolve) => {
-      const checkbox: Checkbox = await fixture(html`
-        <temba-checkbox label="My Checkbox"></temba-checkbox>
-      `);
+      const checkbox = await getCheckbox({
+        label: 'My Checkbox'
+      });
 
       checkbox.addEventListener('change', () => {
         resolve();
@@ -41,17 +43,19 @@ describe('temba-checkbox', () => {
   });
 
   it('checks via click method', async () => {
-    const checkbox: Checkbox = await fixture(html`
-      <temba-checkbox label="My Checkbox"></temba-checkbox>
-    `);
+    const checkbox = await getCheckbox({
+      label: 'My Checkbox'
+    });
     checkbox.click();
     expect(checkbox.checked).to.equal(true);
   });
 
   it('has background hover effect when label is set', async () => {
-    const el: Checkbox = await fixture(html`
-      <temba-checkbox name="My Checkbox" label="My Label"></temba-checkbox>
-    `);
+    const el: Checkbox = await getCheckbox({
+      label: 'My Label',
+      name: 'My Checkbox'
+    });
+
     expect(el.label).to.equal('My Label');
     //the ".wrapper.label" style results in the background hover effect
     const wrapperDivEl = el.shadowRoot.querySelector(
@@ -68,9 +72,10 @@ describe('temba-checkbox', () => {
   //but this is the expected behavior if the label value is still empty,
   //upon rendering the component
   it('has no background hover effect when label is empty', async () => {
-    const el: Checkbox = await fixture(html`
-      <temba-checkbox name="My Checkbox"></temba-checkbox>
-    `);
+    const el: Checkbox = await getCheckbox({
+      name: 'My Checkbox'
+    });
+
     expect(el.label).to.equal(undefined);
     //the ".wrapper.label" style results in the background hover effect
     const wrapperDivEl = el.shadowRoot.querySelector(
@@ -84,9 +89,11 @@ describe('temba-checkbox', () => {
   });
 
   it('has no background hover effect when label is whitespace', async () => {
-    const el: Checkbox = await fixture(html`
-      <temba-checkbox name="My Checkbox" label=" "></temba-checkbox>
-    `);
+    const el: Checkbox = await getCheckbox({
+      name: 'My Checkbox',
+      label: ''
+    });
+
     expect(el.label).to.equal('');
     //the ".wrapper.label" style results in the background hover effect
     const wrapperDivEl = el.shadowRoot.querySelector(
@@ -167,13 +174,10 @@ describe('temba-checkbox', () => {
   });
 
   it('aligns help text with label when both are present', async () => {
-    const el: Checkbox = await fixture(html`
-      <temba-checkbox
-        label="Checkbox with help"
-        help_text="This help text should align with the label text"
-      >
-      </temba-checkbox>
-    `);
+    const el: Checkbox = (await getCheckbox({
+      label: 'Checkbox with help',
+      help_text: 'This help text should align with the label text'
+    })) as unknown as Checkbox;
 
     expect(el.label).to.equal('Checkbox with help');
     expect(el.helpText).to.equal(

@@ -30,6 +30,21 @@ export class TextInput extends FieldElement {
         caret-color: var(--input-caret);
       }
 
+      .xsmall {
+        --temba-textinput-padding: 6px 8px;
+        --temba-textinput-font-size: 13px;
+      }
+
+      .small {
+        --temba-textinput-padding: 6px 8px;
+        --temba-textinput-font-size: 14px;
+      }
+
+      .large {
+        --temba-textinput-padding: 10px 12px;
+        --temba-textinput-font-size: 16px;
+      }
+
       .clear-icon {
         --icon-color: var(--color-text-dark-secondary);
         cursor: pointer;
@@ -180,6 +195,9 @@ export class TextInput extends FieldElement {
 
   @property({ type: String })
   type = InputType.Text;
+
+  @property({ type: String })
+  flavor = 'default';
 
   counterElement: CharCount = null;
   cursorStart = -1;
@@ -482,7 +500,7 @@ export class TextInput extends FieldElement {
 
     return html`
       <div
-        class="input-container"
+        class="input-container ${this.flavor !== 'default' ? this.flavor : ''}"
         style=${styleMap(containerStyle)}
         @click=${this.handleContainerClick}
       >
