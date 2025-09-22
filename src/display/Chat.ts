@@ -4,7 +4,6 @@ import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { hashCode } from '../utils';
-import { renderMarkdown } from '../markdown';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 0.05;
@@ -28,7 +27,7 @@ interface User {
 export interface ChatEvent {
   id?: string;
   type: MessageType;
-  text: string;
+  text: TemplateResult;
   date: Date;
   user?: User;
   popup?: TemplateResult;
@@ -534,7 +533,10 @@ export class Chat extends RapidElement {
     // make sure our messages have ids
     messages.forEach((m) => {
       if (!m.id) {
-        m.id = hashCode(m.text) + '_' + m.date.toISOString();
+        m.id =
+          hashCode((m.text.strings || []).join('')) +
+          '_' +
+          m.date.toISOString();
       }
     });
 
@@ -764,7 +766,7 @@ export class Chat extends RapidElement {
       event.type === MessageType.Collapse ||
       event.type === MessageType.Inline
     ) {
-      return html`<div class="event">${renderMarkdown(event.text)}</div>`;
+      return html`<div class="event">${event.text}</div>`;
     }
 
     const message = event as Message;
