@@ -19,6 +19,9 @@ export class SortableList extends RapidElement {
       .container {
         user-select: none;
         position: relative;
+        gap: 0.4em;
+        display: grid;
+        grid-template-columns: 1fr;
       }
 
       .container.horizontal {

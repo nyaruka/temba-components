@@ -151,7 +151,10 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     if (this.sortable) {
       return html`
         <div class=${this.getContainerClass()}>
-          <temba-sortable-list @temba-order-changed=${this.handleOrderChanged}>
+          <temba-sortable-list
+            @temba-order-changed=${this.handleOrderChanged}
+            style="display: grid; grid-template-columns: 1fr; gap: 8px;"
+          >
             ${itemsContent}
           </temba-sortable-list>
           ${this.shouldShowAddButton() ? this.renderAddButton() : ''}
@@ -304,7 +307,10 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
     return html`
       <div class="array-item">
-        <div class="item-fields">
+        <div
+          class="item-fields"
+          style="display: flex; gap: 12px; align-items: center;"
+        >
           ${fieldElements}
           <button
             @click=${canRemove ? () => this.removeItem(index) : undefined}
@@ -326,6 +332,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     return css`
       ${super.styles}
 
+      temba-sortable-list {
+      }
+
       .array-editor {
       }
 
@@ -344,9 +353,6 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       }
 
       .item-fields {
-        display: flex;
-        gap: 12px;
-        align-items: center;
       }
 
       .field {
