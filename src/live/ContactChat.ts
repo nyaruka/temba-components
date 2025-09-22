@@ -37,7 +37,6 @@ import {
   URNsChangedEvent
 } from '../events';
 import { Chat, ChatEvent, MessageType } from '../display/Chat';
-import { getUserDisplay } from '../webchat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
@@ -175,13 +174,10 @@ export const renderTicketAction = (
   action: string
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
-  const userDisplay = event.created_by
-    ? getUserDisplay(event.created_by)
-    : event._user?.name;
 
-  if (userDisplay) {
+  if (event._user) {
     return html`<div>
-      <strong>${userDisplay}</strong> ${action} a
+      <strong>${event._user.name}</strong> ${action} a
       <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
     </div>`;
   }
@@ -215,22 +211,6 @@ export const renderTicketAssigneeChanged = (
       return html`<div>This ticket was unassigned</div>`;
     }
   }
-};
-
-export const renderTicketAssigned = (event: TicketEvent): TemplateResult => {
-  return event.assignee
-    ? event.assignee.id === event.created_by.id
-      ? html`<div>
-          <strong>${getDisplayName(event.created_by)}</strong> took this ticket
-        </div>`
-      : html`<div>
-          ${getDisplayName(event.created_by)} assigned this ticket to
-          <strong>${getDisplayName(event.assignee)}</strong>
-        </div>`
-    : html`<div>
-        <strong>${getDisplayName(event.created_by)}</strong> unassigned this
-        ticket
-      </div>`;
 };
 
 export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
@@ -770,12 +750,6 @@ export class ContactChat extends ContactStoreElement {
           text: renderRunEvent(event as RunEvent)
         };
         break;
-      case Events.TICKET_ASSIGNED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAssigned(event as TicketEvent)
-        };
-        break;
       case Events.TICKET_ASSIGNEE_CHANGED:
         message = {
           type: MessageType.Inline,
@@ -831,19 +805,20 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private getUserForEvent(event: MsgEvent | TicketEvent) {
-    let user = null;
     if (event.type === 'msg_received') {
-      user = {
+      return {
         name: this.currentContact.name
       };
+    } else if (event._user) {
+      return event._user;
     } else if (event.created_by) {
-      user = {
+      return {
         email: event.created_by.email,
         name: `${event.created_by.first_name} ${event.created_by.last_name}`.trim(),
         avatar: event.created_by.avatar
       };
     }
-    return user;
+    return null;
   }
 
   private createMessages(page: ContactHistoryPage): ChatEvent[] {
