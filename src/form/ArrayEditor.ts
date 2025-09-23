@@ -4,6 +4,7 @@ import { FieldConfig } from '../flow/types';
 import { BaseListEditor, ListItem } from './BaseListEditor';
 import { FieldRenderer } from './FieldRenderer';
 import '../list/SortableList';
+import { Icon } from '../Icons';
 
 @customElement('temba-array-editor')
 export class TembaArrayEditor extends BaseListEditor<ListItem> {
@@ -152,6 +153,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       return html`
         <div class=${this.getContainerClass()}>
           <temba-sortable-list
+            dragHandle="drag-handle"
             @temba-order-changed=${this.handleOrderChanged}
             style="display: grid; grid-template-columns: 1fr; gap: 8px;"
           >
@@ -283,11 +285,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
         fieldElements.push(html`
           <div
-            class="field ${config.width ||
-            config.maxWidth ||
-            config.type === 'select'
-              ? 'field-fixed'
-              : 'field-flex'}"
+            style="${config.width || config.maxWidth || config.type === 'select'
+              ? 'flex:none'
+              : 'flex:1'}"
           >
             ${this.renderArrayField(index, fieldName, config)}
           </div>
@@ -308,13 +308,29 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     return html`
       <div class="array-item">
         <div
-          class="item-fields"
+          class="item-fields  ${canRemove ? '' : 'removable'}"
           style="display: flex; gap: 12px; align-items: center;"
         >
+          <temba-icon
+            name=${Icon.sort}
+            style="margin-right: -6px;"
+            class="drag-handle"
+            style=""
+          ></temba-icon>
           ${fieldElements}
           <button
             @click=${canRemove ? () => this.removeItem(index) : undefined}
-            class="remove-btn ${canRemove ? '' : 'invisible'}"
+            class="remove-btn"
+            style="
+              padding: 4px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              background: white;
+              cursor: pointer;
+              background: #fefefe;
+              color: #999;
+              font-size: 14px;
+            "
             ?disabled=${!canRemove}
           >
             <temba-icon name="x"></temba-icon>
@@ -332,15 +348,6 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     return css`
       ${super.styles}
 
-      temba-sortable-list {
-      }
-
-      .array-editor {
-      }
-
-      .array-item {
-      }
-
       .item-header {
         display: flex;
         justify-content: space-between;
@@ -352,19 +359,8 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         color: #333;
       }
 
-      .item-fields {
-      }
-
       .field {
         /* Base field styles */
-      }
-
-      .field-flex {
-        flex: 1; /* Grow to fill remaining space */
-      }
-
-      .field-fixed {
-        flex: none; /* Don't grow, use content/maxWidth size */
       }
 
       .spacer {
@@ -391,9 +387,19 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         color: #999;
       }
 
-      .remove-btn.invisible {
+      .removable .remove-btn {
         visibility: hidden;
         cursor: default;
+      }
+
+      .removable .drag-handle {
+        visibility: hidden;
+        cursor: default;
+      }
+
+      .drag-handle {
+        cursor: grab;
+        color: #ccc;
       }
     `;
   }

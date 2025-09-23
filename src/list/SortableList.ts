@@ -79,7 +79,6 @@ export class SortableList extends RapidElement {
         opacity: 0.7;
         transition: none;
         background: var(--color-background, white);
-        border: 1px solid var(--color-primary, #1c7cd6);
         border-radius: 4px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         pointer-events: none;
@@ -278,7 +277,6 @@ export class SortableList extends RapidElement {
     if (ele) {
       event.preventDefault();
       event.stopPropagation();
-
       this.downEle = ele;
       this.draggingId = ele.id;
       this.draggingIdx = this.getRowIndex(ele.id);
@@ -323,12 +321,9 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
       this.ghostElement.style.pointerEvents = 'none';
-      this.ghostElement.style.border =
-        '1px solid var(--color-primary, #1c7cd6)';
       this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.background = '#fff';
-      this.ghostElement.style.opacity = '0.7';
-      this.ghostElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+      this.ghostElement.style.opacity = '0.8';
       this.ghostElement.style.borderRadius = 'var(--curvature)';
 
       // allow component to customize the ghost node
