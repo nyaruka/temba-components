@@ -10,7 +10,8 @@ export interface ContactEvent {
   uuid?: string;
   type: string;
   created_on: string;
-  created_by?: User;
+  created_by?: User; // deprecated
+  _user?: ObjectReference;
 }
 
 export interface ChannelEvent extends ContactEvent {
@@ -84,8 +85,6 @@ export interface TicketEvent extends ContactEvent {
   assignee?: User;
   note?: string;
   topic?: ObjectReference;
-  created_by?: User; // legacy events
-  _user?: ObjectReference;
 }
 
 export interface NameChangedEvent extends ContactEvent {

@@ -19,8 +19,7 @@
         "subject": "Open ticket",
         "body": ""
       },
-      "created_on": "2021-03-31T00:30:00.585471+00:00",
-      "created_by": null
+      "created_on": "2021-03-31T00:30:00.585471+00:00"
     },
     {
       "type": "ticket_closed",
@@ -37,11 +36,9 @@
         "body": ""
       },
       "created_on": "2021-03-31T00:30:00.585471+00:00",
-      "created_by": {
-        "id": 3,
-        "first_name": "Enrique",
-        "last_name": "Newcomers",
-        "email": "admin1@nyaruka.com"
+      "_user": {
+        "uuid": "21ec6c16-b822-4134-9b2d-268f8a340634",
+        "name": "Enrique Newcomers"
       }
     },
     {
