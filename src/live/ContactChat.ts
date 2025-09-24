@@ -789,16 +789,13 @@ export class ContactChat extends ContactStoreElement {
           text: renderChannelEvent(event as ChannelEvent)
         };
         break;
+      default:
+        console.error('Unknown event type', event);
     }
 
-    if (message && event.created_on) {
+    if (message) {
+      message.id = event.uuid;
       message.date = new Date(event.created_on);
-    } else {
-      console.error('Unknown event type', event);
-    }
-
-    if (!message.id) {
-      message.id = event.uuid || event.type + '@' + event.created_on;
     }
 
     return message;
@@ -855,6 +852,7 @@ export class ContactChat extends ContactStoreElement {
         } else if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
+          event.type === 'ivr_created' ||
           event.type === 'broadcast_created'
         ) {
           const msgEvent = event as MsgEvent;
@@ -898,7 +896,10 @@ export class ContactChat extends ContactStoreElement {
             </div> `
           });
         } else {
-          messages.push(this.getEventMessage(event));
+          const msg = this.getEventMessage(event);
+          if (msg) {
+            messages.push(msg);
+          }
         }
       });
 
