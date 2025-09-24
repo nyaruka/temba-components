@@ -232,8 +232,8 @@ export class CanvasNode extends RapidElement {
       }
 
       .action-exits {
-        padding-bottom: 0.6em;
-        margin-top: -0.8em;
+        padding-bottom: 0.7em;
+        margin-top: -0.7em;
       }
 
       .category .cn-title {
