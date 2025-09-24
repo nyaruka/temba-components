@@ -154,6 +154,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         <div class=${this.getContainerClass()}>
           <temba-sortable-list
             dragHandle="drag-handle"
+            gap="0.4em"
             @temba-order-changed=${this.handleOrderChanged}
             style="display: grid; grid-template-columns: 1fr; gap: 8px;"
           >
@@ -309,14 +310,16 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       <div class="array-item">
         <div
           class="item-fields  ${canRemove ? '' : 'removable'}"
-          style="display: flex; gap: 12px; align-items: center;"
+          style="display: flex; gap: 12px; align-items: center"
         >
-          <temba-icon
-            name=${Icon.sort}
-            style="margin-right: -6px;"
-            class="drag-handle"
-            style=""
-          ></temba-icon>
+          ${this.sortable
+            ? html`<temba-icon
+                name=${Icon.sort}
+                style="margin-right: -6px;"
+                class="drag-handle"
+                style=""
+              ></temba-icon>`
+            : null}
           ${fieldElements}
           <button
             @click=${canRemove ? () => this.removeItem(index) : undefined}

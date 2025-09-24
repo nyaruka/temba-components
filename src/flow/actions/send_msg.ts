@@ -58,6 +58,7 @@ export const send_msg: ActionConfig = {
       type: 'array',
       helpText: 'Add dynamic attachments using expressions',
       itemLabel: 'Attachment',
+      sortable: true,
       maxItems: 10,
       isEmptyItem: (item: any) => {
         return !item.expression || item.expression.trim() === '';

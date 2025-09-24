@@ -371,10 +371,6 @@ export class Select<T extends SelectOption> extends FieldElement {
         pointer-events: none;
         padding: 0px;
       }
-
-      .ghost .remove-item {
-        display: none !important;
-      }
     `;
   }
 
@@ -1706,7 +1702,6 @@ export class Select<T extends SelectOption> extends FieldElement {
             @temba-order-changed=${this.handleOrderChanged}
             .prepareGhost=${(item: any) => {
               item.style.transform = 'scale(1)';
-              item.querySelector('.remove-item').style.display = 'none';
             }}
           >
             ${this.values.map(
