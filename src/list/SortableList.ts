@@ -38,63 +38,6 @@ export class SortableList extends RapidElement {
         pointer-events: none;
       }
 
-      .sortable {
-        transition: transform 300ms ease-in-out;
-        display: flex;
-        padding: 0.4em 0;
-        border: 5px solid purple;
-      }
-
-      .sortable.translating {
-        transform: translateY(var(--translate-distance, 0));
-      }
-
-      .container.horizontal .sortable.translating {
-        transform: translateX(var(--translate-distance, 0));
-      }
-
-      .container.horizontal .sortable {
-        padding: 0;
-        margin-right: 0.25em;
-        margin-bottom: 0.25em;
-      }
-
-      .drop-placeholder {
-        background: red !important;
-        border: 2px dashed var(--color-primary-dark, #1c7cd6);
-        border-radius: 4px;
-        opacity: 0.6;
-        pointer-events: none;
-        box-sizing: border-box;
-        transition: all 200ms ease-in-out;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.4em 0;
-      }
-
-      .container.horizontal .drop-placeholder {
-        padding: 0;
-        margin-right: 0.25em;
-        margin-bottom: 0.25em;
-      }
-
-      .sortable:hover temba-icon {
-        opacity: 1;
-        cursor: move;
-      }
-
-      .ghost {
-        position: absolute;
-        opacity: 0.7;
-        transition: none;
-        background: var(--color-background, white);
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        pointer-events: none;
-        z-index: 999;
-      }
-
       .slot {
         flex-grow: 1;
       }
