@@ -6,7 +6,9 @@
   "start_date": "2019-09-22",
   "events": [
     {
+      "uuid": "01997d74-bf67-749a-8440-688a41c3b275",
       "type": "ticket_reopened",
+      "created_on": "2025-09-24T20:40:27.239439+00:00",
       "note": null,
       "topic": null,
       "assignee": null,
@@ -18,11 +20,12 @@
         "status": "O",
         "subject": "Open ticket",
         "body": ""
-      },
-      "created_on": "2021-03-31T00:30:00.585471+00:00"
+      }
     },
     {
+      "uuid": "01997d74-bf67-76d5-a447-db5e048c62b5",
       "type": "ticket_closed",
+      "created_on": "2025-09-24T20:40:27.239438+00:00",
       "note": null,
       "topic": null,
       "assignee": null,
@@ -35,16 +38,15 @@
         "subject": "Open ticket",
         "body": ""
       },
-      "created_on": "2021-03-31T00:30:00.585471+00:00",
       "_user": {
         "uuid": "21ec6c16-b822-4134-9b2d-268f8a340634",
         "name": "Enrique Newcomers"
       }
     },
     {
-      "uuid": "01988a70-075b-74e4-b738-3be521174d83",
+      "uuid": "01997d74-bf67-7165-b9e4-e5529d9f6712",
       "type": "msg_created",
-      "created_on": "2021-03-31T00:30:00.585471+00:00",
+      "created_on": "2025-09-24T20:40:27.239437+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "Hey John, just checking in on you",
@@ -59,8 +61,9 @@
       "logs_url": null
     },
     {
+      "uuid": "01997d74-bf67-7305-b5f7-017c6eb04cf7",
       "type": "run_ended",
-      "created_on": "2021-03-30T22:20:26.704467+00:00",
+      "created_on": "2025-09-23T20:40:27.239436+00:00",
       "run_uuid": "0198c846-da2b-799f-8af9-aaf8857f947f",
       "flow": {
         "uuid": "d076d716-8071-417e-b188-d9746db223a1",
@@ -69,18 +72,18 @@
       "status": "completed"
     },
     {
-      "uuid": "01988a70-3e8f-7890-b1d2-7418db7a575e",
+      "uuid": "01997d74-bf67-7332-9623-f387dc0aeb09",
       "type": "airtime_transferred",
-      "created_on": "2021-03-30T22:20:35.573511+00:00",
+      "created_on": "2025-09-23T20:40:27.239435+00:00",
       "sender": "tel:123456",
       "recipient": "tel:+250788123123?channel=8a81e9e0-10a0-4319-9b00-ce723cfa8303&id=9951&priority=1000",
       "currency": null,
       "amount": "0.00"
     },
     {
-      "uuid": "01988a70-6cd1-738d-b5d6-ef9f9a0c529f",
+      "uuid": "01997d74-bf67-77d4-9c9b-458abb7bf993",
       "type": "msg_created",
-      "created_on": "2021-03-30T22:20:33.924847+00:00",
+      "created_on": "2025-09-23T20:40:27.239434+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "No problem, we are all done then!",
@@ -93,9 +96,9 @@
       "logs_url": "/channels/channellog/read/1478/"
     },
     {
-      "uuid": "01988a71-045a-7902-8734-84311a7569de",
+      "uuid": "01997d74-bf67-74a1-97db-faaf45bbff53",
       "type": "msg_received",
-      "created_on": "2021-03-30T22:20:33.801814+00:00",
+      "created_on": "2025-09-23T20:40:27.239433+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "no",
@@ -108,9 +111,9 @@
       "logs_url": "/channels/channellog/read/1477/"
     },
     {
-      "uuid": "01988a71-6736-7948-9517-32971fcba1cb",
+      "uuid": "01997d74-bf67-70c2-bfae-14c661955736",
       "type": "msg_created",
-      "created_on": "2021-03-30T22:20:31.933653+00:00",
+      "created_on": "2025-09-23T20:40:27.239432+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "Mmmmm... delicious Primus. If only they made blue Primus! Do you want to set your name?",
@@ -123,9 +126,9 @@
       "logs_url": "/channels/channellog/read/1476/"
     },
     {
-      "uuid": "01988a75-60cc-7681-bf4b-2b0b42347fc4",
+      "uuid": "01997d74-bf67-7199-8e8a-200e41a90d71",
       "type": "msg_received",
-      "created_on": "2021-03-30T22:20:31.656303+00:00",
+      "created_on": "2025-09-23T20:40:27.239431+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "primus",
@@ -138,9 +141,9 @@
       "logs_url": "/channels/channellog/read/1475/"
     },
     {
-      "uuid": "01988a76-58fb-7252-9fac-3c6a385e8af1",
+      "uuid": "01997d74-bf67-7768-9b3e-1a2dd9b90aa4",
       "type": "msg_created",
-      "created_on": "2021-03-30T22:20:29.397529+00:00",
+      "created_on": "2025-09-23T20:40:27.239430+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "Good choice, I like Blue too! What is your favorite beer?",
@@ -153,9 +156,9 @@
       "logs_url": "/channels/channellog/read/1474/"
     },
     {
-      "uuid": "01988a76-afe4-7958-bea8-51683d99f665",
+      "uuid": "01997d74-bf67-74c6-86d6-a9398ee1f5f4",
       "type": "msg_received",
-      "created_on": "2021-03-30T22:20:29.277186+00:00",
+      "created_on": "2025-09-23T20:40:27.239429+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "blue",
@@ -168,33 +171,31 @@
       "logs_url": "/channels/channellog/read/1473/"
     },
     {
+      "uuid": "01997d74-bf67-75c9-bd59-36a465fc0c88",
       "type": "contact_groups_changed",
-      "created_on": "2021-03-30T15:20:26.704497-07:00",
-      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
+      "created_on": "2025-09-23T20:40:27.239428+00:00",
       "groups_removed": [
         {
           "uuid": "b13e01ec-6c83-4349-b153-a2e48d0fd394",
           "name": "aaaa"
         }
-      ],
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+      ]
     },
     {
+      "uuid": "01997d74-bf67-703c-a223-85da4b048994",
       "type": "contact_groups_changed",
-      "created_on": "2021-03-30T15:20:26.704495-07:00",
-      "step_uuid": "83cbe193-29d8-40ce-a820-0b06d719932a",
+      "created_on": "2025-09-23T20:40:27.239427+00:00",
       "groups_added": [
         {
           "uuid": "b13e01ec-6c83-4349-b153-a2e48d0fd394",
           "name": "aaaa"
         }
-      ],
-      "session_uuid": "885a9736-88fd-4676-b124-2577e1eaabd9"
+      ]
     },
     {
-      "uuid": "01988a76-febd-7157-b2cd-4bc0c1663173",
+      "uuid": "01997d74-bf67-74f0-951f-726f573ac18d",
       "type": "msg_created",
-      "created_on": "2021-03-30T22:20:26.704491+00:00",
+      "created_on": "2025-09-23T20:40:27.239426+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "What is your favorite color?",
@@ -207,13 +208,14 @@
       "logs_url": "/channels/channellog/read/1472/"
     },
     {
-      "uuid": "0198e7b8-fe00-76e6-91e4-1253dd9a6230",
+      "uuid": "01997d74-bf67-70a9-a0fc-6543b4d0b3d1",
       "type": "call_missed",
-      "created_on": "2021-03-30T22:20:26.704467+00:00"
+      "created_on": "2025-09-23T20:40:27.239425+00:00"
     },
     {
+      "uuid": "01997d74-bf67-7632-908a-555c328137cd",
       "type": "run_started",
-      "created_on": "2021-03-30T22:20:26.704467+00:00",
+      "created_on": "2025-09-23T20:40:27.239424+00:00",
       "run_uuid": "0198c846-2cf4-7992-9bd0-9b6581e42358",
       "flow": {
         "uuid": "d076d716-8071-417e-b188-d9746db223a1",
@@ -221,9 +223,9 @@
       }
     },
     {
-      "uuid": "01988a77-979e-7768-a940-8d9c348e24fe",
+      "uuid": "01997d74-bf67-7684-bc3b-99ebdaf16e7e",
       "type": "msg_received",
-      "created_on": "2021-03-30T22:20:26.557388+00:00",
+      "created_on": "2025-09-23T20:40:27.239423+00:00",
       "msg": {
         "urn": "tel:+250788123123",
         "text": "fav",
