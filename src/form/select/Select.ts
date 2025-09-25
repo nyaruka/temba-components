@@ -1850,7 +1850,9 @@ export class Select<T extends SelectOption> extends FieldElement {
 
           ${clear}
 
-          <slot name="right"></slot>
+          <slot name="right">${
+            this.fetching ? html`<temba-loading></temba-loading>` : null
+          }</slot>
           ${
             !this.tags && !this.emails
               ? html`<div
