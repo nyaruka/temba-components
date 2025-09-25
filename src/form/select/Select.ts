@@ -247,13 +247,14 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       .input-wrapper:focus-within {
         min-width: 1px;
+        display: flex;
       }
 
       .input-wrapper {
         min-width: 1px;
         margin-left: 6px;
         margin-right: -6px;
-        display: flex;
+        display: none;
       }
 
       .multi .input-wrapper {
@@ -1679,10 +1680,15 @@ export class Select<T extends SelectOption> extends FieldElement {
 
     const input = this.searchable
       ? html`
-          <div class="input-wrapper">
+          <div
+            class="input-wrapper"
+            style="${this.focused ? 'display:flex;' : ''}"
+          >
             <input
               class="searchbox"
-              style=${this.inputStyle ? styleMap(this.inputStyle) : ''}
+              style="${this.inputStyle
+                ? styleMap(this.inputStyle)
+                : ''}; min-width:30px;"
               @input=${this.handleInput}
               @keydown=${this.handleKeyDown}
               @click=${this.handleClick}
@@ -1765,7 +1771,7 @@ export class Select<T extends SelectOption> extends FieldElement {
                 </div>
               `
             )}
-            ${this.searchable && this.focused ? input : null}
+            ${input}
           </temba-sortable-list>
         `
       : html`${this.values.map(
@@ -1831,7 +1837,7 @@ export class Select<T extends SelectOption> extends FieldElement {
         > 
           <div class="left-side" >
           <slot name="prefix"></slot>
-            <div class="selected" >
+            <div class="selected">
               ${
                 this.resolving
                   ? html`<temba-loading
