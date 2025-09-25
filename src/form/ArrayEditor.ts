@@ -317,7 +317,6 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
                 name=${Icon.sort}
                 style="margin-right: -6px;"
                 class="drag-handle"
-                style=""
               ></temba-icon>`
             : null}
           ${fieldElements}
