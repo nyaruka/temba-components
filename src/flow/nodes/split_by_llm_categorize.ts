@@ -31,6 +31,7 @@ export const split_by_llm_categorize: NodeConfig = {
       label: 'Categories',
       helpText: 'Define the categories for classification',
       required: true,
+      sortable: true,
       itemLabel: 'Category',
       minItems: 1,
       maxItems: 10,

@@ -19,6 +19,8 @@ export class SortableList extends RapidElement {
       .container {
         user-select: none;
         position: relative;
+        display: grid;
+        grid-template-columns: 1fr;
       }
 
       .container.horizontal {
@@ -34,53 +36,6 @@ export class SortableList extends RapidElement {
       .dragged-item {
         opacity: 0;
         pointer-events: none;
-      }
-
-      .sortable {
-        transition: all 300ms ease-in-out;
-        display: flex;
-        padding: 0.4em 0;
-      }
-
-      .container.horizontal .sortable {
-        padding: 0;
-        margin-right: 0.25em;
-        margin-bottom: 0.25em;
-      }
-
-      .drop-indicator {
-        position: absolute;
-        background: var(--color-primary-dark, #1c7cd6);
-        z-index: 1000;
-        pointer-events: none;
-      }
-
-      .container.horizontal .drop-indicator {
-        width: 2px;
-        margin-top: -5px;
-        padding-bottom: 10px;
-      }
-
-      .container:not(.horizontal) .drop-indicator {
-        height: 2px;
-        left: 0;
-      }
-
-      .sortable:hover temba-icon {
-        opacity: 1;
-        cursor: move;
-      }
-
-      .ghost {
-        position: absolute;
-        opacity: 0.7;
-        transition: none;
-        background: var(--color-background, white);
-        border: 1px solid var(--color-primary, #1c7cd6);
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        pointer-events: none;
-        z-index: 999;
       }
 
       .slot {
@@ -111,6 +66,9 @@ export class SortableList extends RapidElement {
   @property({ type: String })
   dragHandle: string;
 
+  @property({ type: String })
+  gap: string = '0em';
+
   /**
    * Optional callback to allow parent components to customize the ghost node.
    * Called after the ghost node is cloned but before it is appended to the DOM.
@@ -120,6 +78,10 @@ export class SortableList extends RapidElement {
 
   ghostElement: HTMLDivElement = null;
   downEle: HTMLDivElement = null;
+  originalElementRect: DOMRect = null; // Store original dimensions
+  originalParent: Element = null; // Store original parent for restoration
+  originalNextSibling: Element = null; // Store original next sibling for restoration
+  originalDragIndex: number = -1; // Store original index before moving element
   xOffset = 0;
   yOffset = 0;
   yDown = 0;
@@ -127,7 +89,7 @@ export class SortableList extends RapidElement {
 
   draggingIdx = -1;
   draggingEle = null;
-  dropIndicator: HTMLDivElement = null;
+  dropPlaceholder: HTMLDivElement = null;
   pendingDropIndex = -1;
   pendingTargetElement: HTMLElement = null;
 
@@ -150,7 +112,11 @@ export class SortableList extends RapidElement {
     return this.shadowRoot
       .querySelector('slot')
       .assignedElements()
-      .filter((ele) => ele.classList.contains('sortable'));
+      .filter(
+        (ele) =>
+          ele.classList.contains('sortable') &&
+          !ele.classList.contains('drop-placeholder')
+      );
   }
 
   public getIds() {
@@ -208,56 +174,44 @@ export class SortableList extends RapidElement {
     }
   }
 
-  private showDropIndicator(targetElement: HTMLElement, insertAfter: boolean) {
-    this.hideDropIndicator();
+  private showDropPlaceholder(
+    targetElement: HTMLElement,
+    insertAfter: boolean
+  ) {
+    this.hideDropPlaceholder();
 
-    if (!targetElement) return;
+    if (!targetElement || !this.draggingEle) return;
 
-    const container = this.shadowRoot.querySelector('.container');
-    this.dropIndicator = document.createElement('div');
-    this.dropIndicator.className = 'drop-indicator';
+    // Don't show placeholder if we're targeting the dragging element itself
+    if (targetElement === this.draggingEle) return;
 
-    const targetRect = targetElement.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
+    this.dropPlaceholder = document.createElement('div');
 
-    if (this.horizontal) {
-      // For horizontal layout, show vertical line
-      this.dropIndicator.style.height = targetRect.height + 'px';
-      this.dropIndicator.style.top = targetRect.top - containerRect.top + 'px';
+    this.dropPlaceholder.className = 'drop-placeholder sortable';
 
-      if (insertAfter) {
-        // Show line after target
-        this.dropIndicator.style.left =
-          targetRect.right - containerRect.left + 'px';
-      } else {
-        // Show line before target
-        this.dropIndicator.style.left =
-          targetRect.left - containerRect.left + 'px';
-      }
-    } else {
-      // For vertical layout, show horizontal line
-      this.dropIndicator.style.width = targetRect.width + 'px';
-      this.dropIndicator.style.left =
-        targetRect.left - containerRect.left + 'px';
-
-      if (insertAfter) {
-        // Show line after target
-        this.dropIndicator.style.top =
-          targetRect.bottom - containerRect.top + 'px';
-      } else {
-        // Show line before target
-        this.dropIndicator.style.top =
-          targetRect.top - containerRect.top + 'px';
-      }
+    // Copy dimensions from the original element (before it was hidden)
+    if (this.originalElementRect) {
+      const rect = this.originalElementRect;
+      this.dropPlaceholder.style.width = rect.width + 'px';
+      this.dropPlaceholder.style.height = rect.height + 'px';
+      this.dropPlaceholder.style.minHeight = rect.height + 'px';
+      this.dropPlaceholder.style.background = 'var(--color-selection)';
+      this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
+      this.dropPlaceholder.style.flexShrink = '0';
     }
 
-    container.appendChild(this.dropIndicator);
+    // Insert the placeholder in the correct position in the DOM
+    if (insertAfter) {
+      targetElement.insertAdjacentElement('afterend', this.dropPlaceholder);
+    } else {
+      targetElement.insertAdjacentElement('beforebegin', this.dropPlaceholder);
+    }
   }
 
-  private hideDropIndicator() {
-    if (this.dropIndicator) {
-      this.dropIndicator.remove();
-      this.dropIndicator = null;
+  private hideDropPlaceholder() {
+    if (this.dropPlaceholder) {
+      this.dropPlaceholder.remove();
+      this.dropPlaceholder = null;
     }
   }
 
@@ -275,14 +229,14 @@ export class SortableList extends RapidElement {
     if (ele) {
       event.preventDefault();
       event.stopPropagation();
-
       this.downEle = ele;
       this.draggingId = ele.id;
       this.draggingIdx = this.getRowIndex(ele.id);
       this.draggingEle = ele;
 
-      // Use getBoundingClientRect for accurate offsets
+      // Use getBoundingClientRect for accurate offsets and store original dimensions
       const rect = ele.getBoundingClientRect();
+      this.originalElementRect = rect; // Store the original rect before hiding
       this.xOffset = event.clientX - rect.left;
       this.yOffset = event.clientY - rect.top;
       this.yDown = event.clientY;
@@ -304,28 +258,30 @@ export class SortableList extends RapidElement {
         id: this.downEle.id
       });
 
-      this.ghostElement = this.downEle.cloneNode(true) as HTMLDivElement;
+      // Capture the original index BEFORE moving the element
+      this.originalDragIndex = this.getRowIndex(this.downEle.id);
+
+      // Instead of cloning, let's move the actual element and style it as ghost
+      this.ghostElement = this.downEle;
+
+      // Store the original parent so we can restore it later
+      this.originalParent = this.ghostElement.parentElement;
+      this.originalNextSibling = this.ghostElement.nextElementSibling;
+
+      // Move the element to document.body and style it as a ghost
       this.ghostElement.classList.add('ghost');
 
-      // dim the original element while dragging
-      this.downEle.style.pointerEvents = 'none';
-      this.downEle.style.opacity = '0.5';
+      // Use the stored original dimensions for positioning
+      const rect = this.originalElementRect;
 
-      const rect = this.downEle.getBoundingClientRect();
-      this.ghostElement.style.transition = 'transform 300ms linear';
-
-      this.ghostElement.style.width = rect.width + 'px';
-      this.ghostElement.style.height = rect.height + 'px';
       this.ghostElement.style.position = 'fixed';
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
+      this.ghostElement.style.width = rect.width + 'px';
+      this.ghostElement.style.height = rect.height + 'px';
       this.ghostElement.style.pointerEvents = 'none';
-      this.ghostElement.style.border =
-        '1px solid var(--color-primary, #1c7cd6)';
       this.ghostElement.style.zIndex = '99999';
-      this.ghostElement.style.background = '#fff';
-      this.ghostElement.style.opacity = '0.7';
-      this.ghostElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+      this.ghostElement.style.opacity = '0.8';
       this.ghostElement.style.borderRadius = 'var(--curvature)';
 
       // allow component to customize the ghost node
@@ -333,9 +289,8 @@ export class SortableList extends RapidElement {
         this.prepareGhost(this.ghostElement);
       }
 
+      // Move to document.body for dragging
       document.body.appendChild(this.ghostElement);
-
-      // this.downEle = null;
 
       // Add global click blocker when drag starts
       if (!this.clickBlocker) {
@@ -356,17 +311,21 @@ export class SortableList extends RapidElement {
       if (targetInfo) {
         const { element: targetElement, insertAfter } = targetInfo;
         const targetIdx = this.getRowIndex(targetElement.id);
-        const originalDragIdx = this.getRowIndex(this.draggingEle.id);
 
-        // Calculate the intended drop index
-        let dropIdx = targetIdx;
-        if (insertAfter) {
-          dropIdx += 1;
-        }
+        // Use the original drag index we captured before moving the element
+        const originalDragIdx = this.originalDragIndex;
 
-        // Adjust dropIdx if dragging forward in the list
-        if (originalDragIdx < dropIdx) {
-          dropIdx -= 1;
+        // Calculate where the dragged element will end up in the final array
+        // targetIdx is the position of target element in current DOM (missing dragged element)
+
+        let dropIdx;
+        if (targetIdx < originalDragIdx) {
+          // Target is before the original drag position
+          dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
+        } else {
+          // Target was originally after the drag position
+          // Its original position was targetIdx + 1
+          dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
         }
 
         // Store pending drop info but don't fire event yet
@@ -374,10 +333,10 @@ export class SortableList extends RapidElement {
         this.pendingDropIndex = dropIdx;
         this.pendingTargetElement = targetElement;
 
-        // Show drop indicator
-        this.showDropIndicator(targetElement, insertAfter);
+        // Show drop placeholder
+        this.showDropPlaceholder(targetElement, insertAfter);
       } else {
-        this.hideDropIndicator();
+        this.hideDropPlaceholder();
         this.dropTargetId = null;
         this.pendingDropIndex = -1;
         this.pendingTargetElement = null;
@@ -390,16 +349,40 @@ export class SortableList extends RapidElement {
       evt.preventDefault();
       evt.stopPropagation();
 
-      // restore visibility of the dragged item
+      // Restore the element to its original position and styling
+      if (this.ghostElement && this.originalParent) {
+        // Clear ghost styling
+        this.ghostElement.classList.remove('ghost');
+        this.ghostElement.style.position = '';
+        this.ghostElement.style.left = '';
+        this.ghostElement.style.top = '';
+        this.ghostElement.style.width = '';
+        this.ghostElement.style.height = '';
+        this.ghostElement.style.pointerEvents = '';
+        this.ghostElement.style.zIndex = '';
+        this.ghostElement.style.background = '';
+        this.ghostElement.style.opacity = '';
+        this.ghostElement.style.borderRadius = '';
+        this.ghostElement.style.boxShadow = '';
 
-      if (this.downEle) {
-        this.downEle.style.pointerEvents = '';
-        this.downEle.style.opacity = '1';
+        // Restore to original position in the DOM
+        if (this.originalNextSibling) {
+          this.originalParent.insertBefore(
+            this.ghostElement,
+            this.originalNextSibling
+          );
+        } else {
+          this.originalParent.appendChild(this.ghostElement);
+        }
       }
+
+      // Clear visual effects before firing events
+      this.hideDropPlaceholder();
 
       // fire the order changed event only when dropped if we have a valid drop position
       if (this.pendingDropIndex >= 0 && this.pendingTargetElement) {
-        const originalDragIdx = this.getRowIndex(this.draggingEle.id);
+        // Use the original drag index we captured before moving the element
+        const originalDragIdx = this.originalDragIndex;
 
         // use swap-based logic - report which indexes need to be swapped
         const fromIdx = originalDragIdx;
@@ -420,18 +403,17 @@ export class SortableList extends RapidElement {
       this.draggingId = null;
       this.dropTargetId = null;
       this.downEle = null;
+      this.originalElementRect = null; // Clean up stored rect
+      this.originalParent = null; // Clean up stored parent
+      this.originalNextSibling = null; // Clean up stored sibling
+      this.originalDragIndex = -1; // Clean up stored index
       this.pendingDropIndex = -1;
       this.pendingTargetElement = null;
 
-      if (this.ghostElement) {
-        // Remove from body if present
-        if (this.ghostElement.parentNode) {
-          this.ghostElement.parentNode.removeChild(this.ghostElement);
-        }
-        this.ghostElement = null;
-      }
+      // Ghost element is now restored to its original position, so just clear the reference
+      this.ghostElement = null;
 
-      this.hideDropIndicator();
+      this.hideDropPlaceholder();
 
       // Keep the click blocker active for a short time after drop
       if (this.clickBlocker) {
@@ -451,7 +433,10 @@ export class SortableList extends RapidElement {
 
   public render(): TemplateResult {
     return html`
-      <div class="container ${this.horizontal ? 'horizontal' : ''}">
+      <div
+        class="container ${this.horizontal ? 'horizontal' : ''}"
+        style="gap: ${this.gap}"
+      >
         <slot @mousedown=${this.handleMouseDown}></slot>
       </div>
     `;

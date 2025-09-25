@@ -47,87 +47,100 @@ const createWaitForResponseRouter = (
       cat.name !== 'Timeout'
   );
 
-  // Group rules by category name (case-insensitive) to merge them
-  const rulesByCategory = new Map<string, any[]>();
-  userRules.forEach((rule) => {
+  // Track categories as we create them (case-insensitive lookup)
+  const createdCategories = new Map<
+    string,
+    { uuid: string; name: string; exit_uuid: string }
+  >();
+
+  // Process rules in their original order to preserve rule order
+  userRules.forEach((rule, ruleIndex) => {
     const categoryKey = rule.category.trim().toLowerCase();
-    if (!rulesByCategory.has(categoryKey)) {
-      rulesByCategory.set(categoryKey, []);
+    const categoryName = rule.category.trim(); // Use original casing
+
+    let categoryInfo = createdCategories.get(categoryKey);
+
+    if (!categoryInfo) {
+      // First time seeing this category - create it
+
+      // Smart category matching: try by name first, then fall back to position
+      let existingCategory = existingUserCategories.find(
+        (cat) => cat.name.toLowerCase() === categoryKey
+      );
+
+      // If no match by name, try by position (for category rename scenarios)
+      const categoryCreationOrder = Array.from(createdCategories.keys()).length;
+      if (
+        !existingCategory &&
+        categoryCreationOrder < existingUserCategories.length
+      ) {
+        existingCategory = existingUserCategories[categoryCreationOrder];
+      }
+
+      const existingExit = existingCategory
+        ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
+        : null;
+
+      const exitUuid = existingExit?.uuid || generateUUID();
+      const categoryUuid = existingCategory?.uuid || generateUUID();
+
+      categoryInfo = {
+        uuid: categoryUuid,
+        name: categoryName,
+        exit_uuid: exitUuid
+      };
+
+      createdCategories.set(categoryKey, categoryInfo);
+
+      // Add category and exit
+      categories.push({
+        uuid: categoryUuid,
+        name: categoryName,
+        exit_uuid: exitUuid
+      });
+
+      exits.push({
+        uuid: exitUuid,
+        destination_uuid: existingExit?.destination_uuid || null
+      });
     }
-    rulesByCategory.get(categoryKey)!.push(rule);
-  });
 
-  // Track category creation order to preserve UUID mapping
-  const categoryOrder: string[] = [];
-  userRules.forEach((rule) => {
-    const categoryKey = rule.category.trim().toLowerCase();
-    if (!categoryOrder.includes(categoryKey)) {
-      categoryOrder.push(categoryKey);
+    // Create case for this rule
+    let existingCase = existingCases[ruleIndex];
+
+    // If we can't find by position, try to find by matching rule content
+    if (!existingCase && existingCases.length > 0) {
+      existingCase = existingCases.find((case_) => {
+        // Find the category for this case
+        const caseCategory = existingCategories.find(
+          (cat) => cat.uuid === case_.category_uuid
+        );
+
+        // Match by operator type and category name
+        return (
+          case_.type === rule.operator &&
+          caseCategory?.name.toLowerCase() === categoryKey
+        );
+      });
     }
-  });
 
-  // Create categories, exits, and cases for each unique category
-  categoryOrder.forEach((categoryKey, categoryIndex) => {
-    const rulesForCategory = rulesByCategory.get(categoryKey)!;
-    const categoryName = rulesForCategory[0].category.trim(); // Use the first occurrence's casing
+    const caseUuid = existingCase?.uuid || generateUUID();
 
-    // Try to find existing category by position/index to preserve UUIDs when names change
-    const existingCategory = existingUserCategories[categoryIndex];
-    const existingExit = existingCategory
-      ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
-      : null;
+    // Parse rule value based on operator configuration
+    const operatorConfig = getOperatorConfig(rule.operator);
+    let arguments_: string[] = [];
 
-    const exitUuid = existingExit?.uuid || generateUUID();
-    const categoryUuid = existingCategory?.uuid || generateUUID();
-
-    // Create single category for all rules with this category name
-    categories.push({
-      uuid: categoryUuid,
-      name: categoryName,
-      exit_uuid: exitUuid
-    });
-
-    exits.push({
-      uuid: exitUuid,
-      destination_uuid: existingExit?.destination_uuid || null
-    });
-
-    // Create a case for each rule in this category
-    rulesForCategory.forEach((rule) => {
-      // Try to find existing case for this rule by looking at the original rule order
-      const originalRuleIndex = userRules.findIndex((r) => r === rule);
-      const existingCase = existingCases[originalRuleIndex];
-
-      const caseUuid = existingCase?.uuid || generateUUID();
-
-      // Parse rule value based on operator configuration
-      const operatorConfig = getOperatorConfig(rule.operator);
-      let arguments_: string[] = [];
-
-      if (operatorConfig) {
-        if (operatorConfig.operands === 0) {
-          // No operands needed
-          arguments_ = [];
-        } else if (operatorConfig.operands === 2) {
-          // Split value for two operands (e.g., "1 10" for between)
-          arguments_ = rule.value
-            .split(' ')
-            .filter((arg: string) => arg.trim());
-        } else {
-          // Single operand - but split words for operators that expect multiple words
-          if (rule.value && rule.value.trim()) {
-            // Split on spaces and filter out empty strings
-            arguments_ = rule.value
-              .trim()
-              .split(/\s+/)
-              .filter((arg: string) => arg.length > 0);
-          } else {
-            arguments_ = [];
-          }
-        }
+    if (operatorConfig) {
+      if (operatorConfig.operands === 0) {
+        // No operands needed
+        arguments_ = [];
+      } else if (operatorConfig.operands === 2) {
+        // Split value for two operands (e.g., "1 10" for between)
+        arguments_ = rule.value.split(' ').filter((arg: string) => arg.trim());
       } else {
-        // Fallback for unknown operators - split on spaces if value exists
+        // Single operand - but split words for operators that expect multiple words
         if (rule.value && rule.value.trim()) {
+          // Split on spaces and filter out empty strings
           arguments_ = rule.value
             .trim()
             .split(/\s+/)
@@ -136,13 +149,23 @@ const createWaitForResponseRouter = (
           arguments_ = [];
         }
       }
+    } else {
+      // Fallback for unknown operators - split on spaces if value exists
+      if (rule.value && rule.value.trim()) {
+        arguments_ = rule.value
+          .trim()
+          .split(/\s+/)
+          .filter((arg: string) => arg.length > 0);
+      } else {
+        arguments_ = [];
+      }
+    }
 
-      cases.push({
-        uuid: caseUuid,
-        type: rule.operator,
-        arguments: arguments_,
-        category_uuid: categoryUuid
-      });
+    cases.push({
+      uuid: caseUuid,
+      type: rule.operator,
+      arguments: arguments_,
+      category_uuid: categoryInfo.uuid
     });
   });
 
@@ -211,6 +234,7 @@ export const wait_for_response: NodeConfig = {
       itemLabel: 'Rule',
       minItems: 0,
       maxItems: 100,
+      sortable: true,
       maintainEmptyItem: true, // Explicitly enable empty item maintenance
       isEmptyItem: (item: any) => {
         // Helper function to get operator value from various formats

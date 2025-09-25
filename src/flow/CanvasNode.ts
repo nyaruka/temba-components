@@ -66,8 +66,14 @@ export class CanvasNode extends RapidElement {
         max-width: 200px;
       }
 
-      .node:hover {
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      .node .action:last-child {
+        border-bottom-left-radius: var(--curvature);
+        border-bottom-right-radius: var(--curvature);
+      }
+
+      .node .action:first-child {
+        border-top-left-radius: var(--curvature);
+        border-top-right-radius: var(--curvature);
       }
 
       .node.dragging {
@@ -226,8 +232,8 @@ export class CanvasNode extends RapidElement {
       }
 
       .action-exits {
-        padding-bottom: 0.6em;
-        margin-top: -0.8em;
+        padding-bottom: 0.7em;
+        margin-top: -0.7em;
       }
 
       .category .cn-title {
@@ -860,7 +866,7 @@ export class CanvasNode extends RapidElement {
           class="action-content"
           @mousedown=${(e: MouseEvent) => this.handleActionMouseDown(e, action)}
           @mouseup=${(e: MouseEvent) => this.handleActionMouseUp(e, action)}
-          style="cursor: pointer;"
+          style="cursor: pointer; background: #fff"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
@@ -983,16 +989,12 @@ export class CanvasNode extends RapidElement {
                 dragHandle="drag-handle"
                 @temba-order-changed="${this.handleActionOrderChanged}"
               >
-                ${repeat(
-                  this.node.actions,
-                  (action) => action.uuid,
-                  (action, index) => this.renderAction(this.node, action, index)
+                ${this.node.actions.map((action, index) =>
+                  this.renderAction(this.node, action, index)
                 )}
               </temba-sortable-list>`
-            : html`${repeat(
-                this.node.actions,
-                (action) => action.uuid,
-                (action, index) => this.renderAction(this.node, action, index)
+            : html`${this.node.actions.map((action, index) =>
+                this.renderAction(this.node, action, index)
               )}`
           : ''}
         ${this.node.router

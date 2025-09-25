@@ -755,5 +755,187 @@ describe('wait_for_response node config', () => {
       );
       expect(secondCases).to.have.length(1);
     });
+
+    it('preserves category UUIDs when rules are reordered', () => {
+      const originalNode = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch' as const,
+          operand: '@input.text',
+          categories: [
+            {
+              uuid: 'yes-category-uuid',
+              name: 'Yes',
+              exit_uuid: 'yes-exit-uuid'
+            },
+            {
+              uuid: 'no-category-uuid',
+              name: 'No',
+              exit_uuid: 'no-exit-uuid'
+            },
+            {
+              uuid: 'other-category-uuid',
+              name: 'Other',
+              exit_uuid: 'other-exit-uuid'
+            }
+          ],
+          cases: [
+            {
+              uuid: 'yes-case-uuid',
+              type: 'has_phrase',
+              arguments: ['yes'],
+              category_uuid: 'yes-category-uuid'
+            },
+            {
+              uuid: 'no-case-uuid',
+              type: 'has_phrase',
+              arguments: ['no'],
+              category_uuid: 'no-category-uuid'
+            }
+          ]
+        },
+        exits: [
+          { uuid: 'yes-exit-uuid', destination_uuid: null },
+          { uuid: 'no-exit-uuid', destination_uuid: null },
+          { uuid: 'other-exit-uuid', destination_uuid: null }
+        ]
+      };
+
+      // Reorder the rules - put "No" first, "Yes" second
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'no',
+            category: 'No' // This rule was originally second
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'yes',
+            category: 'Yes' // This rule was originally first
+          }
+        ]
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Verify that categories keep their original UUIDs despite reordering
+      expect(result.router?.categories).to.have.length(3); // Two rules + Other
+
+      const yesCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Yes'
+      );
+      const noCategory = result.router!.categories.find(
+        (cat) => cat.name === 'No'
+      );
+      const otherCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Other'
+      );
+
+      // Categories should preserve their original UUIDs
+      expect(yesCategory?.uuid).to.equal('yes-category-uuid');
+      expect(yesCategory?.exit_uuid).to.equal('yes-exit-uuid');
+
+      expect(noCategory?.uuid).to.equal('no-category-uuid');
+      expect(noCategory?.exit_uuid).to.equal('no-exit-uuid');
+
+      expect(otherCategory?.uuid).to.equal('other-category-uuid');
+      expect(otherCategory?.exit_uuid).to.equal('other-exit-uuid');
+
+      // Verify the cases are created in the new order but reference correct categories
+      expect(result.router?.cases).to.have.length(2);
+
+      const firstCase = result.router!.cases[0];
+      const secondCase = result.router!.cases[1];
+
+      // First case should be "no" and reference the No category
+      expect(firstCase.arguments).to.deep.equal(['no']);
+      expect(firstCase.category_uuid).to.equal('no-category-uuid');
+
+      // Second case should be "yes" and reference the Yes category
+      expect(secondCase.arguments).to.deep.equal(['yes']);
+      expect(secondCase.category_uuid).to.equal('yes-category-uuid');
+    });
+
+    it('preserves rule order when rules have duplicate categories', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'first',
+            category: 'Shared'
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'middle',
+            category: 'Different'
+          },
+          {
+            operator: { value: 'has_phrase', name: 'contains phrase' },
+            value1: 'last',
+            category: 'Shared' // Same as first rule
+          }
+        ]
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [],
+          cases: []
+        },
+        exits: []
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Should have 3 cases in the same order as the input rules
+      expect(result.router?.cases).to.have.length(3);
+
+      const cases = result.router!.cases;
+
+      // First case should be "first"
+      expect(cases[0].arguments).to.deep.equal(['first']);
+      expect(cases[0].type).to.equal('has_phrase');
+
+      // Second case should be "middle"
+      expect(cases[1].arguments).to.deep.equal(['middle']);
+      expect(cases[1].type).to.equal('has_phrase');
+
+      // Third case should be "last"
+      expect(cases[2].arguments).to.deep.equal(['last']);
+      expect(cases[2].type).to.equal('has_phrase');
+
+      // Find the shared category
+      const sharedCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Shared'
+      );
+      const differentCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Different'
+      );
+
+      expect(sharedCategory).to.exist;
+      expect(differentCategory).to.exist;
+
+      // First and third cases should reference the same "Shared" category
+      expect(cases[0].category_uuid).to.equal(sharedCategory!.uuid);
+      expect(cases[2].category_uuid).to.equal(sharedCategory!.uuid);
+
+      // Second case should reference the "Different" category
+      expect(cases[1].category_uuid).to.equal(differentCategory!.uuid);
+
+      // Should have 3 categories: Shared, Different, Other
+      expect(result.router?.categories).to.have.length(3);
+      const categoryNames = result.router!.categories.map((cat) => cat.name);
+      expect(categoryNames).to.deep.equal(['Shared', 'Different', 'Other']);
+    });
   });
 });

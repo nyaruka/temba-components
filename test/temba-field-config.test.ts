@@ -150,5 +150,74 @@ describe('Field Configuration System', () => {
       // Expects 3 items: 2 initial items + 1 auto-generated empty item
       expect(items?.length).to.equal(3);
     });
+
+    it('should render with sortable list when sortable=true', async () => {
+      const itemConfig = {
+        operator: { type: 'text', label: 'Operator' },
+        value: { type: 'text', label: 'Value' }
+      };
+
+      const initialValue = [
+        { operator: 'equals', value: 'test' },
+        { operator: 'contains', value: 'example' }
+      ];
+
+      const el = await fixture(html`
+        <temba-array-editor
+          .value=${initialValue}
+          .itemConfig=${itemConfig}
+          .sortable=${true}
+          itemLabel="Rule"
+        ></temba-array-editor>
+      `);
+
+      await (el as any).updateComplete;
+
+      expect(el).to.exist;
+
+      // Should have a sortable list component
+      const sortableList = el.shadowRoot?.querySelector('temba-sortable-list');
+      expect(sortableList).to.exist;
+
+      // Should have sortable items with proper classes and IDs
+      const sortableItems = el.shadowRoot?.querySelectorAll('.sortable');
+      expect(sortableItems?.length).to.equal(2); // Only non-empty items should be sortable
+
+      // Each sortable item should have a unique ID
+      const firstItem = sortableItems?.[0] as HTMLElement;
+      const secondItem = sortableItems?.[1] as HTMLElement;
+      expect(firstItem?.id).to.equal('array-item-0');
+      expect(secondItem?.id).to.equal('array-item-1');
+    });
+
+    it('should not render sortable list when sortable=false', async () => {
+      const itemConfig = {
+        operator: { type: 'text', label: 'Operator' },
+        value: { type: 'text', label: 'Value' }
+      };
+
+      const initialValue = [{ operator: 'equals', value: 'test' }];
+
+      const el = await fixture(html`
+        <temba-array-editor
+          .value=${initialValue}
+          .itemConfig=${itemConfig}
+          .sortable=${false}
+          itemLabel="Rule"
+        ></temba-array-editor>
+      `);
+
+      await (el as any).updateComplete;
+
+      expect(el).to.exist;
+
+      // Should not have a sortable list component
+      const sortableList = el.shadowRoot?.querySelector('temba-sortable-list');
+      expect(sortableList).to.not.exist;
+
+      // Should have regular list container instead
+      const listContainer = el.shadowRoot?.querySelector('.list-items');
+      expect(listContainer).to.exist;
+    });
   });
 });
