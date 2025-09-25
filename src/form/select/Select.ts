@@ -1686,9 +1686,7 @@ export class Select<T extends SelectOption> extends FieldElement {
           >
             <input
               class="searchbox"
-              style="${this.inputStyle
-                ? styleMap(this.inputStyle)
-                : ''}; min-width:30px;"
+              style="${this.inputStyle ? styleMap(this.inputStyle) : ''};"
               @input=${this.handleInput}
               @keydown=${this.handleKeyDown}
               @click=${this.handleClick}

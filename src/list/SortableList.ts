@@ -195,7 +195,6 @@ export class SortableList extends RapidElement {
       this.dropPlaceholder.style.width = rect.width + 'px';
       this.dropPlaceholder.style.height = rect.height + 'px';
       this.dropPlaceholder.style.minHeight = rect.height + 'px';
-      this.dropPlaceholder.style.background = 'var(--color-selection)';
       this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
       this.dropPlaceholder.style.flexShrink = '0';
     }
@@ -282,6 +281,7 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.pointerEvents = 'none';
       this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.opacity = '0.8';
+      this.ghostElement.style.transform = 'scale(1.03)';
       this.ghostElement.style.borderRadius = 'var(--curvature)';
 
       // allow component to customize the ghost node
@@ -364,6 +364,7 @@ export class SortableList extends RapidElement {
         this.ghostElement.style.opacity = '';
         this.ghostElement.style.borderRadius = '';
         this.ghostElement.style.boxShadow = '';
+        this.ghostElement.style.transform = '';
 
         // Restore to original position in the DOM
         if (this.originalNextSibling) {
