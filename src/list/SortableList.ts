@@ -431,7 +431,9 @@ export class SortableList extends RapidElement {
           dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
         } else {
           // Target was originally after the drag position - moving forward
-          // Reduce by 1 to compensate for the off-by-one issue
+          // When moving the dragged element forward (i.e., to a higher index), the targetIdx is based on the current DOM,
+          // which no longer includes the dragged element. This means all elements after the original position have shifted left by one,
+          // so we need to subtract 1 from targetIdx to get the correct insertion index. If inserting after the target, we use targetIdx as is.
           dropIdx = insertAfter ? targetIdx : targetIdx - 1;
         }
 
