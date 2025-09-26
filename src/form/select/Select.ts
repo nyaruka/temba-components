@@ -1711,7 +1711,7 @@ export class Select<T extends SelectOption> extends FieldElement {
             ${this.values.map(
               (selected: any, index: number) => html`
                 <div
-                  class="selected-item sortable ${index === this.selectedIndex
+                  class="sortable selected-item ${index === this.selectedIndex
                     ? 'focused'
                     : ''} ${this.draggingId === `selected-${index}`
                     ? 'dragging'
