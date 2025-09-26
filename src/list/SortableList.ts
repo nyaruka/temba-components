@@ -410,7 +410,6 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
       this.ghostElement.style.width = rect.width + 'px';
       this.ghostElement.style.height = rect.height + 'px';
-      this.ghostElement.style.pointerEvents = 'none';
       this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.opacity = '0.8';
       this.ghostElement.style.transform = 'scale(1.03)';
