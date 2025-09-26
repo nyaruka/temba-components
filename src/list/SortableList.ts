@@ -10,6 +10,7 @@ import { RapidElement } from '../RapidElement';
 // how far we have to drag before it starts
 const DRAG_THRESHOLD = 2;
 export class SortableList extends RapidElement {
+  originalDownDisplay: string;
   static get styles() {
     return css`
       :host {
@@ -321,6 +322,28 @@ export class SortableList extends RapidElement {
     }
   }
 
+  private showInitialPlaceholder() {
+    if (!this.downEle || !this.originalElementRect) return;
+
+    this.dropPlaceholder = document.createElement('div');
+    this.dropPlaceholder.className = 'drop-placeholder sortable';
+
+    // Copy dimensions from the original element
+    const rect = this.originalElementRect;
+    this.dropPlaceholder.style.width = rect.width + 'px';
+    this.dropPlaceholder.style.height = rect.height + 'px';
+    this.dropPlaceholder.style.minHeight = rect.height + 'px';
+    this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
+    this.dropPlaceholder.style.flexShrink = '0';
+    this.dropPlaceholder.style.background =
+      'rgba(var(--color-primary-rgb), 0.1)';
+    this.dropPlaceholder.style.border =
+      '2px dashed rgba(var(--color-primary-rgb), 0.3)';
+
+    // Insert the placeholder right after the hidden original element
+    this.downEle.insertAdjacentElement('afterend', this.dropPlaceholder);
+  }
+
   private handleMouseDown(event: MouseEvent) {
     let ele = event.target as HTMLDivElement;
 
@@ -373,6 +396,7 @@ export class SortableList extends RapidElement {
       ) as HTMLDivElement;
 
       // Hide the original element during dragging using inline styles
+      this.originalDownDisplay = this.downEle.style.display;
       this.downEle.style.display = 'none';
 
       // Style the clone as a ghost
@@ -398,6 +422,9 @@ export class SortableList extends RapidElement {
 
       // Add the clone to document.body for dragging
       document.body.appendChild(this.ghostElement);
+
+      // Show initial placeholder in the original position to maintain layout
+      this.showInitialPlaceholder();
 
       // Add global click blocker when drag starts
       if (!this.clickBlocker) {
@@ -465,7 +492,7 @@ export class SortableList extends RapidElement {
 
       // Restore visibility of the original element by clearing inline styles
       if (this.downEle) {
-        this.downEle.style.display = '';
+        this.downEle.style.display = this.originalDownDisplay;
       }
 
       // Clear visual effects before firing events
