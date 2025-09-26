@@ -56,6 +56,7 @@ export const split_by_random: NodeConfig = {
       helpText: 'Define the buckets to randomly split contacts into',
       required: true,
       itemLabel: 'Bucket',
+      sortable: true,
       minItems: 2,
       maxItems: 10,
       isEmptyItem: (item: any) => {
