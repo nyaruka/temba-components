@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -31,11 +31,6 @@ export class SortableList extends RapidElement {
 
       .dragging {
         background: var(--color-selection);
-      }
-
-      .dragged-item {
-        opacity: 0;
-        pointer-events: none;
       }
 
       .slot {
@@ -79,8 +74,6 @@ export class SortableList extends RapidElement {
   ghostElement: HTMLDivElement = null;
   downEle: HTMLDivElement = null;
   originalElementRect: DOMRect = null; // Store original dimensions
-  originalParent: Element = null; // Store original parent for restoration
-  originalNextSibling: Element = null; // Store original next sibling for restoration
   originalDragIndex: number = -1; // Store original index before moving element
   xOffset = 0;
   yOffset = 0;
@@ -102,14 +95,8 @@ export class SortableList extends RapidElement {
     this.handleMouseDown = this.handleMouseDown.bind(this);
   }
 
-  protected firstUpdated(
-    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(_changedProperties);
-  }
-
   private getSortableElements(): Element[] {
-    return this.shadowRoot
+    const eles = this.shadowRoot
       .querySelector('slot')
       .assignedElements()
       .filter(
@@ -117,6 +104,126 @@ export class SortableList extends RapidElement {
           ele.classList.contains('sortable') &&
           !ele.classList.contains('drop-placeholder')
       );
+    return eles;
+  }
+
+  private cloneElementWithState(element: HTMLElement): HTMLElement {
+    // First create a basic clone
+    const clone = element.cloneNode(true) as HTMLElement;
+
+    // Helper function to copy form element values recursively
+    const copyFormValues = (original: HTMLElement, cloned: HTMLElement) => {
+      try {
+        // Copy input values
+        const originalInputs = original.querySelectorAll(
+          'input, textarea, select'
+        );
+        const clonedInputs = cloned.querySelectorAll('input, textarea, select');
+
+        originalInputs.forEach((originalInput, index) => {
+          const clonedInput = clonedInputs[index] as
+            | HTMLInputElement
+            | HTMLTextAreaElement
+            | HTMLSelectElement;
+          if (clonedInput) {
+            if (originalInput instanceof HTMLInputElement) {
+              const originalHtmlInput = originalInput as HTMLInputElement;
+              const clonedHtmlInput = clonedInput as HTMLInputElement;
+
+              if (
+                originalHtmlInput.type === 'checkbox' ||
+                originalHtmlInput.type === 'radio'
+              ) {
+                clonedHtmlInput.checked = originalHtmlInput.checked;
+              } else {
+                clonedHtmlInput.value = originalHtmlInput.value;
+              }
+            } else if (originalInput instanceof HTMLTextAreaElement) {
+              (clonedInput as HTMLTextAreaElement).value = originalInput.value;
+            } else if (originalInput instanceof HTMLSelectElement) {
+              (clonedInput as HTMLSelectElement).selectedIndex =
+                originalInput.selectedIndex;
+            }
+          }
+        });
+
+        // Copy properties from all custom elements that might have a value property
+        const allOriginalElements = Array.from(original.querySelectorAll('*'));
+        const allClonedElements = Array.from(cloned.querySelectorAll('*'));
+
+        allOriginalElements.forEach((originalEl, index) => {
+          const clonedEl = allClonedElements[index];
+          if (clonedEl && originalEl) {
+            // Special handling for temba components
+            if (
+              originalEl.tagName &&
+              originalEl.tagName.toLowerCase().startsWith('temba-')
+            ) {
+              try {
+                // Copy common temba component properties
+                const tembaProps = [
+                  'value',
+                  'values',
+                  'selectedValue',
+                  'checked',
+                  'selected',
+                  'textContent'
+                ];
+                tembaProps.forEach((prop) => {
+                  if (
+                    prop in originalEl &&
+                    (originalEl as any)[prop] !== undefined
+                  ) {
+                    (clonedEl as any)[prop] = (originalEl as any)[prop];
+                  }
+                });
+
+                // Copy all attributes for temba components to preserve state
+                Array.from(originalEl.attributes).forEach((attr) => {
+                  clonedEl.setAttribute(attr.name, attr.value);
+                });
+              } catch (e) {
+                // Ignore errors when copying temba properties
+              }
+            } else {
+              // Try to copy value property for other elements
+              try {
+                if (
+                  'value' in originalEl &&
+                  (originalEl as any).value !== undefined
+                ) {
+                  (clonedEl as any).value = (originalEl as any).value;
+                }
+              } catch (e) {
+                // Ignore errors when copying properties
+              }
+
+              // Copy data attributes that might contain state
+              try {
+                Array.from(originalEl.attributes).forEach((attr) => {
+                  if (
+                    attr.name.startsWith('data-') ||
+                    attr.name.startsWith('aria-')
+                  ) {
+                    clonedEl.setAttribute(attr.name, attr.value);
+                  }
+                });
+              } catch (e) {
+                // Ignore errors when copying attributes
+              }
+            }
+          }
+        });
+      } catch (e) {
+        // If anything fails, just return the basic clone
+        console.warn('Failed to copy form values in cloneElementWithState:', e);
+      }
+    };
+
+    // Copy form values for the root element and all descendants
+    copyFormValues(element, clone);
+
+    return clone;
   }
 
   public getIds() {
@@ -257,17 +364,18 @@ export class SortableList extends RapidElement {
         id: this.downEle.id
       });
 
-      // Capture the original index BEFORE moving the element
+      // Capture the original index BEFORE hiding the element
       this.originalDragIndex = this.getRowIndex(this.downEle.id);
 
-      // Instead of cloning, let's move the actual element and style it as ghost
-      this.ghostElement = this.downEle;
+      // Create a clone of the element to use as the ghost
+      this.ghostElement = this.cloneElementWithState(
+        this.downEle
+      ) as HTMLDivElement;
 
-      // Store the original parent so we can restore it later
-      this.originalParent = this.ghostElement.parentElement;
-      this.originalNextSibling = this.ghostElement.nextElementSibling;
+      // Hide the original element during dragging using inline styles
+      this.downEle.style.display = 'none';
 
-      // Move the element to document.body and style it as a ghost
+      // Style the clone as a ghost
       this.ghostElement.classList.add('ghost');
 
       // Use the stored original dimensions for positioning
@@ -282,14 +390,13 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.opacity = '0.8';
       this.ghostElement.style.transform = 'scale(1.03)';
-      this.ghostElement.style.borderRadius = 'var(--curvature)';
 
       // allow component to customize the ghost node
       if (this.prepareGhost) {
         this.prepareGhost(this.ghostElement);
       }
 
-      // Move to document.body for dragging
+      // Add the clone to document.body for dragging
       document.body.appendChild(this.ghostElement);
 
       // Add global click blocker when drag starts
@@ -320,12 +427,12 @@ export class SortableList extends RapidElement {
 
         let dropIdx;
         if (targetIdx < originalDragIdx) {
-          // Target is before the original drag position
+          // Target is before the original drag position - moving backward
           dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
         } else {
-          // Target was originally after the drag position
-          // Its original position was targetIdx + 1
-          dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
+          // Target was originally after the drag position - moving forward
+          // Reduce by 1 to compensate for the off-by-one issue
+          dropIdx = insertAfter ? targetIdx : targetIdx - 1;
         }
 
         // Store pending drop info but don't fire event yet
@@ -349,32 +456,14 @@ export class SortableList extends RapidElement {
       evt.preventDefault();
       evt.stopPropagation();
 
-      // Restore the element to its original position and styling
-      if (this.ghostElement && this.originalParent) {
-        // Clear ghost styling
-        this.ghostElement.classList.remove('ghost');
-        this.ghostElement.style.position = '';
-        this.ghostElement.style.left = '';
-        this.ghostElement.style.top = '';
-        this.ghostElement.style.width = '';
-        this.ghostElement.style.height = '';
-        this.ghostElement.style.pointerEvents = '';
-        this.ghostElement.style.zIndex = '';
-        this.ghostElement.style.background = '';
-        this.ghostElement.style.opacity = '';
-        this.ghostElement.style.borderRadius = '';
-        this.ghostElement.style.boxShadow = '';
-        this.ghostElement.style.transform = '';
+      // Remove the ghost clone from document.body
+      if (this.ghostElement) {
+        this.ghostElement.remove();
+      }
 
-        // Restore to original position in the DOM
-        if (this.originalNextSibling) {
-          this.originalParent.insertBefore(
-            this.ghostElement,
-            this.originalNextSibling
-          );
-        } else {
-          this.originalParent.appendChild(this.ghostElement);
-        }
+      // Restore visibility of the original element by clearing inline styles
+      if (this.downEle) {
+        this.downEle.style.display = '';
       }
 
       // Clear visual effects before firing events
@@ -382,7 +471,7 @@ export class SortableList extends RapidElement {
 
       // fire the order changed event only when dropped if we have a valid drop position
       if (this.pendingDropIndex >= 0 && this.pendingTargetElement) {
-        // Use the original drag index we captured before moving the element
+        // Use the original drag index we captured before hiding the element
         const originalDragIdx = this.originalDragIndex;
 
         // use swap-based logic - report which indexes need to be swapped
@@ -404,14 +493,12 @@ export class SortableList extends RapidElement {
       this.draggingId = null;
       this.dropTargetId = null;
       this.downEle = null;
-      this.originalElementRect = null; // Clean up stored rect
-      this.originalParent = null; // Clean up stored parent
-      this.originalNextSibling = null; // Clean up stored sibling
-      this.originalDragIndex = -1; // Clean up stored index
+      this.originalElementRect = null;
+      this.originalDragIndex = -1;
       this.pendingDropIndex = -1;
       this.pendingTargetElement = null;
 
-      // Ghost element is now restored to its original position, so just clear the reference
+      // Clear the ghost reference since we removed it
       this.ghostElement = null;
 
       this.hideDropPlaceholder();

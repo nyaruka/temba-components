@@ -255,6 +255,7 @@ export class Select<T extends SelectOption> extends FieldElement {
         margin-left: 6px;
         margin-right: -6px;
         display: none;
+        pointer-events: none;
       }
 
       .multi .input-wrapper {
@@ -313,6 +314,7 @@ export class Select<T extends SelectOption> extends FieldElement {
         display: none;
         line-height: var(--temba-select-selected-line-height);
         margin-left: 6px;
+        pointer-events: none;
       }
 
       .empty .placeholder {
@@ -1563,6 +1565,7 @@ export class Select<T extends SelectOption> extends FieldElement {
   public removeValue(valueToRemove: any) {
     const oldValues = [...this.values];
     const idx = this.values.indexOf(valueToRemove);
+
     if (idx > -1) {
       this.values.splice(idx, 1);
 
@@ -1704,9 +1707,6 @@ export class Select<T extends SelectOption> extends FieldElement {
           <temba-sortable-list
             horizontal
             @temba-order-changed=${this.handleOrderChanged}
-            .prepareGhost=${(item: any) => {
-              item.style.transform = 'scale(1)';
-            }}
           >
             ${this.values.map(
               (selected: any, index: number) => html`
@@ -1793,15 +1793,9 @@ export class Select<T extends SelectOption> extends FieldElement {
                 ? html`
                     <div
                       class="remove-item"
-                      style="
-                                    cursor: pointer;
-                                    display: inline-block;
-                                    padding: 3px 6px;
-                                    border-right: 1px solid rgba(100,100,100,0.2);
-                                    margin: 0;
-                                    background: rgba(100,100,100,0.05);
-                                    margin-top:1px;
-                                  "
+                      style="cursor: pointer; display: inline-block; padding: 3px 6px;
+                             border-right: 1px solid rgba(100,100,100,0.2);
+                             margin: 0; background: rgba(100,100,100,0.05); margin-top:1px;"
                       @click=${(evt: MouseEvent) => {
                         evt.preventDefault();
                         evt.stopPropagation();
@@ -1833,7 +1827,7 @@ export class Select<T extends SelectOption> extends FieldElement {
           class="select-container ${classes}"
           @click=${this.handleContainerClick}
         > 
-          <div class="left-side" >
+          <div class="left-side">
           <slot name="prefix"></slot>
             <div class="selected">
               ${
@@ -1851,7 +1845,11 @@ export class Select<T extends SelectOption> extends FieldElement {
           ${clear}
 
           <slot name="right">${
-            this.fetching ? html`<temba-loading></temba-loading>` : null
+            this.fetching
+              ? html`<temba-loading
+                  style="position:absolute;background:rgba(255,255,255,0.7);padding:2px;border-radius:var(--curvature);right:25px"
+                ></temba-loading>`
+              : null
           }</slot>
           ${
             !this.tags && !this.emails
