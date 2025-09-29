@@ -57,13 +57,13 @@ export interface ChatStartedEvent extends ContactEvent {
 
 export interface MsgEvent extends ContactEvent {
   msg: Msg;
-  status: string;
-  failed_reason?: string;
-  failed_reason_display?: string;
-  logs_url: string;
-  recipient_count?: number;
-  created_by?: User;
   optin?: ObjectReference;
+  _status?: string;
+  _failed_reason?: string;
+  _logs_url?: string;
+  status?: string; // deprecated
+  failed_reason_display?: string; // deprecated
+  logs_url?: string; // deprecated
 }
 
 export interface RunEvent extends ContactEvent {

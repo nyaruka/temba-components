@@ -856,6 +856,10 @@ export class ContactChat extends ContactStoreElement {
           event.type === 'broadcast_created'
         ) {
           const msgEvent = event as MsgEvent;
+          const status = msgEvent.status || msgEvent._status;
+          const failedReason =
+            msgEvent.failed_reason_display || msgEvent._failed_reason;
+
           messages.push({
             id: event.uuid,
             type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
@@ -863,7 +867,7 @@ export class ContactChat extends ContactStoreElement {
             date: new Date(msgEvent.created_on),
             attachments: msgEvent.msg.attachments,
             text: msgEvent.msg.text,
-            sendError: msgEvent.status === 'E' || msgEvent.status === 'F',
+            sendError: status === 'E' || status === 'F',
             popup: html`<div
               style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
             >
@@ -878,18 +882,20 @@ export class ContactChat extends ContactStoreElement {
                       ${msgEvent.optin.name}
                     </div>`
                   : null}
-                ${msgEvent.failed_reason_display
+                ${failedReason
                   ? html`
                       <div
                         style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
                       >
-                        ${msgEvent.failed_reason_display}
+                        ${failedReason}
                       </div>
                     `
                   : null}
               </div>
-              ${msgEvent.logs_url
-                ? html`<a style="margin-left:0.5em" href="${msgEvent.logs_url}"
+              ${msgEvent.logs_url || msgEvent._logs_url
+                ? html`<a
+                    style="margin-left:0.5em"
+                    href="${msgEvent.logs_url || msgEvent._logs_url}"
                     ><temba-icon name="log"></temba-icon
                   ></a>`
                 : null}
