@@ -603,7 +603,7 @@ export class ContactSearch extends FieldElement {
                               >
                               </temba-checkbox>
 
-                              <div style="margin-left:0.5em">
+                              <div>
                                 ${msg('Have sent a message in the last')}
                               </div>
 
