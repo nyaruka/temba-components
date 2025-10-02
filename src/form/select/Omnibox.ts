@@ -42,6 +42,9 @@ export class Omnibox extends Select<OmniOption> {
   multi = true;
 
   @property({ type: Boolean })
+  jsonValue = true;
+
+  @property({ type: Boolean })
   searchable = true;
 
   @property({ type: Boolean })
