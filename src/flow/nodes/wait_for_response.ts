@@ -28,6 +28,129 @@ const TIMEOUT_OPTIONS = [
   { value: '604800', name: '1 week' }
 ];
 
+// Helper function to check if a category is a system category
+const isSystemCategory = (categoryName: string): boolean => {
+  return ['No Response', 'Other', 'All Responses', 'Timeout'].includes(
+    categoryName
+  );
+};
+
+// Helper function to check if a UUID belongs to a system category
+const isSystemCategoryUuid = (
+  uuid: string,
+  categories: Category[]
+): boolean => {
+  const category = categories.find((cat) => cat.uuid === uuid);
+  return category ? isSystemCategory(category.name) : false;
+};
+
+// Helper function to generate default category name based on operator and operands
+const generateDefaultCategoryName = (
+  operator: string,
+  value1?: string,
+  value2?: string
+): string => {
+  const operatorConfig = getOperatorConfig(operator);
+  if (!operatorConfig) return '';
+
+  // Fixed category names (no operands)
+  if (operatorConfig.operands === 0) {
+    return operatorConfig.categoryName || '';
+  }
+
+  // Dynamic category names based on operands
+  const cleanValue1 = (value1 || '').trim();
+  const cleanValue2 = (value2 || '').trim();
+
+  // Helper to capitalize first letter
+  const capitalize = (str: string) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Handle different operator types
+  switch (operator) {
+    // Word/phrase operators - capitalize first letter of value
+    case 'has_any_word':
+    case 'has_all_words':
+    case 'has_phrase':
+    case 'has_only_phrase':
+    case 'has_beginning':
+      return cleanValue1 ? capitalize(cleanValue1) : '';
+
+    // Pattern operators - show as-is
+    case 'has_pattern':
+      return cleanValue1;
+
+    // Number comparison operators - include symbol
+    case 'has_number_eq':
+      return cleanValue1 ? `= ${cleanValue1}` : '';
+    case 'has_number_lt':
+      return cleanValue1 ? `< ${cleanValue1}` : '';
+    case 'has_number_lte':
+      return cleanValue1 ? `≤ ${cleanValue1}` : '';
+    case 'has_number_gt':
+      return cleanValue1 ? `> ${cleanValue1}` : '';
+    case 'has_number_gte':
+      return cleanValue1 ? `≥ ${cleanValue1}` : '';
+
+    // Number between - range format
+    case 'has_number_between':
+      if (cleanValue1 && cleanValue2) {
+        return `${cleanValue1} - ${cleanValue2}`;
+      }
+      return '';
+
+    // Date operators - format with relative expressions
+    case 'has_date_lt':
+    case 'has_date_lte':
+      if (cleanValue1) {
+        // Parse relative date expression (e.g., "today + 5" or "today - 3")
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `Before ${base} ${operator} ${days} ${dayWord}`;
+        }
+        // Fallback for other date formats
+        return `Before ${cleanValue1}`;
+      }
+      return '';
+
+    case 'has_date_gt':
+    case 'has_date_gte':
+      if (cleanValue1) {
+        // Parse relative date expression
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `After ${base} ${operator} ${days} ${dayWord}`;
+        }
+        // Fallback for other date formats
+        return `After ${cleanValue1}`;
+      }
+      return '';
+
+    case 'has_date_eq':
+      if (cleanValue1) {
+        // Parse relative date expression
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `${base} ${operator} ${days} ${dayWord}`;
+        }
+        return cleanValue1;
+      }
+      return '';
+
+    default:
+      // Fallback - capitalize first value
+      return cleanValue1 ? capitalize(cleanValue1) : '';
+  }
+};
+
 // Helper function to create a wait_for_response router with user rules
 const createWaitForResponseRouter = (
   userRules: any[],
@@ -41,10 +164,7 @@ const createWaitForResponseRouter = (
 
   // Filter existing categories to get only user-defined rules (exclude system categories)
   const existingUserCategories = existingCategories.filter(
-    (cat) =>
-      cat.name !== 'No Response' &&
-      cat.name !== 'Other' &&
-      cat.name !== 'Timeout'
+    (cat) => !isSystemCategory(cat.name)
   );
 
   // Track categories as we create them (case-insensitive lookup)
@@ -74,15 +194,29 @@ const createWaitForResponseRouter = (
         !existingCategory &&
         categoryCreationOrder < existingUserCategories.length
       ) {
-        existingCategory = existingUserCategories[categoryCreationOrder];
+        const candidateCategory = existingUserCategories[categoryCreationOrder];
+        // Double-check that this candidate is not a system category UUID
+        if (
+          candidateCategory &&
+          !isSystemCategoryUuid(candidateCategory.uuid, existingCategories)
+        ) {
+          existingCategory = candidateCategory;
+        }
       }
 
       const existingExit = existingCategory
         ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
         : null;
 
-      const exitUuid = existingExit?.uuid || generateUUID();
-      const categoryUuid = existingCategory?.uuid || generateUUID();
+      // Generate UUIDs, ensuring we don't reuse system category UUIDs
+      let exitUuid = existingExit?.uuid || generateUUID();
+      let categoryUuid = existingCategory?.uuid || generateUUID();
+
+      // Additional safety check: if somehow we got a system category UUID, generate new ones
+      if (isSystemCategoryUuid(categoryUuid, existingCategories)) {
+        categoryUuid = generateUUID();
+        exitUuid = generateUUID();
+      }
 
       categoryInfo = {
         uuid: categoryUuid,
@@ -169,52 +303,69 @@ const createWaitForResponseRouter = (
     });
   });
 
-  // Preserve existing timeout categories like "No Response"
-  existingCategories.forEach((category) => {
-    if (category.name === 'No Response' || category.name === 'Timeout') {
-      const existingExit = existingExits.find(
-        (exit) => exit.uuid === category.exit_uuid
-      );
+  // Add default category (always present)
+  // Name is "Other" if there are user rules, "All Responses" if there are no user rules
+  const defaultCategoryName = userRules.length > 0 ? 'Other' : 'All Responses';
 
-      if (existingExit) {
-        categories.push(category);
-        exits.push(existingExit);
-      }
-    }
+  // Try to find existing default category by name (prefer exact match)
+  let existingDefaultCategory = existingCategories.find(
+    (cat) => cat.name === defaultCategoryName
+  );
+
+  // If no exact match, try to find the other possible default category name
+  if (!existingDefaultCategory) {
+    const alternateName = userRules.length > 0 ? 'All Responses' : 'Other';
+    existingDefaultCategory = existingCategories.find(
+      (cat) => cat.name === alternateName
+    );
+  }
+
+  const existingDefaultExit = existingDefaultCategory
+    ? existingExits.find(
+        (exit) => exit.uuid === existingDefaultCategory.exit_uuid
+      )
+    : null;
+
+  const defaultExitUuid = existingDefaultExit?.uuid || generateUUID();
+  const defaultCategoryUuid = existingDefaultCategory?.uuid || generateUUID();
+
+  categories.push({
+    uuid: defaultCategoryUuid,
+    name: defaultCategoryName,
+    exit_uuid: defaultExitUuid
   });
 
-  // Add "Other" category (default) only if there are user rules
-  if (userRules.length > 0) {
-    const existingOtherCategory = existingCategories.find(
-      (cat) => cat.name === 'Other'
+  exits.push({
+    uuid: defaultExitUuid,
+    destination_uuid: existingDefaultExit?.destination_uuid || null
+  });
+
+  // Add "No Response" category last (if it exists in the original)
+  const existingNoResponseCategory = existingCategories.find(
+    (cat) => cat.name === 'No Response' || cat.name === 'Timeout'
+  );
+
+  if (existingNoResponseCategory) {
+    const existingNoResponseExit = existingExits.find(
+      (exit) => exit.uuid === existingNoResponseCategory.exit_uuid
     );
-    const existingOtherExit = existingOtherCategory
-      ? existingExits.find(
-          (exit) => exit.uuid === existingOtherCategory.exit_uuid
-        )
-      : null;
 
-    const otherExitUuid = existingOtherExit?.uuid || generateUUID();
-    const otherCategoryUuid = existingOtherCategory?.uuid || generateUUID();
-
-    categories.push({
-      uuid: otherCategoryUuid,
-      name: 'Other',
-      exit_uuid: otherExitUuid
-    });
-
-    exits.push({
-      uuid: otherExitUuid,
-      destination_uuid: existingOtherExit?.destination_uuid || null
-    });
+    if (existingNoResponseExit) {
+      categories.push(existingNoResponseCategory);
+      exits.push(existingNoResponseExit);
+    }
   }
+
+  // Find the default category (either "Other" or "All Responses")
+  const defaultCategory = categories.find(
+    (cat) => cat.name === 'Other' || cat.name === 'All Responses'
+  );
 
   return {
     router: {
       type: 'switch' as const,
       categories: categories,
-      default_category_uuid: categories.find((cat) => cat.name === 'Other')
-        ?.uuid,
+      default_category_uuid: defaultCategory?.uuid,
       operand: '@input.text',
       cases: cases
     },
@@ -285,6 +436,79 @@ export const wait_for_response: NodeConfig = {
 
         // No value required for this operator
         return false;
+      },
+      onItemChange: (
+        itemIndex: number,
+        field: string,
+        value: any,
+        allItems: any[]
+      ) => {
+        const updatedItems = [...allItems];
+        const item = { ...updatedItems[itemIndex] };
+
+        // Helper to get operator value from various formats
+        const getOperatorValue = (operator: any): string => {
+          if (typeof operator === 'string') {
+            return operator.trim();
+          } else if (Array.isArray(operator) && operator.length > 0) {
+            const firstOperator = operator[0];
+            if (
+              firstOperator &&
+              typeof firstOperator === 'object' &&
+              firstOperator.value
+            ) {
+              return firstOperator.value.trim();
+            }
+          } else if (
+            operator &&
+            typeof operator === 'object' &&
+            operator.value
+          ) {
+            return operator.value.trim();
+          }
+          return '';
+        };
+
+        // Update the changed field
+        item[field] = value;
+
+        // Get operator values (before and after the change)
+        const oldItem = allItems[itemIndex] || {};
+        const oldOperatorValue =
+          field === 'operator'
+            ? getOperatorValue(oldItem.operator)
+            : getOperatorValue(item.operator);
+        const newOperatorValue = getOperatorValue(item.operator);
+
+        // Calculate what the default category name should be before the change
+        const oldDefaultCategory = generateDefaultCategoryName(
+          oldOperatorValue,
+          field === 'value1' ? oldItem.value1 : item.value1,
+          field === 'value2' ? oldItem.value2 : item.value2
+        );
+
+        // Calculate what the new default category name should be after the change
+        const newDefaultCategory = generateDefaultCategoryName(
+          newOperatorValue,
+          item.value1,
+          item.value2
+        );
+
+        // Determine if we should auto-update the category
+        const shouldUpdateCategory =
+          // Category is empty
+          !item.category ||
+          item.category.trim() === '' ||
+          // Category matches the old default (user hasn't customized it)
+          item.category === oldDefaultCategory;
+
+        // Auto-populate or update category if conditions are met
+        if (shouldUpdateCategory && newDefaultCategory) {
+          item.category = newDefaultCategory;
+        }
+
+        updatedItems[itemIndex] = item;
+        return updatedItems;
       },
       itemConfig: {
         operator: {
@@ -432,12 +656,8 @@ export const wait_for_response: NodeConfig = {
           (cat) => cat.uuid === case_.category_uuid
         );
 
-        // Skip timeout/system categories like "No Response"
-        if (
-          category &&
-          category.name !== 'No Response' &&
-          category.name !== 'Other'
-        ) {
+        // Skip system categories
+        if (category && !isSystemCategory(category.name)) {
           // Handle different operator types
           const operatorConfig = getOperatorConfig(case_.type);
           const operatorDisplayName = operatorConfig
@@ -574,15 +794,59 @@ export const wait_for_response: NodeConfig = {
 
     // If no user rules, clear cases but preserve other router config
     if (userRules.length === 0) {
-      const router: any = {
-        ...originalNode.router,
-        result_name: formData.result_name || 'response'
-      };
+      // Get existing router data for preservation
+      let existingCategories = originalNode.router?.categories || [];
+      const existingExits = [...(originalNode.exits || [])]; // Create a copy to avoid extensibility issues
 
-      // Only set cases to empty if the original node had cases
-      if (originalNode.router?.cases !== undefined) {
-        router.cases = []; // Clear all cases when no rules
+      // Handle timeout: ensure "No Response" category exists if timeout is enabled,
+      // or remove it if timeout is disabled
+      if (formData.timeout_enabled) {
+        let noResponseCategory = existingCategories.find(
+          (cat: any) => cat.name === 'No Response'
+        );
+
+        if (!noResponseCategory) {
+          // Create new "No Response" category and exit
+          const noResponseExitUuid = generateUUID();
+          noResponseCategory = {
+            uuid: generateUUID(),
+            name: 'No Response',
+            exit_uuid: noResponseExitUuid
+          };
+
+          // Add to existing categories for processing
+          existingCategories = [...existingCategories, noResponseCategory];
+
+          // Add corresponding exit if it doesn't exist
+          if (!existingExits.find((exit) => exit.uuid === noResponseExitUuid)) {
+            existingExits.push({
+              uuid: noResponseExitUuid,
+              destination_uuid: null
+            });
+          }
+        }
+      } else {
+        // If timeout is disabled, remove "No Response" category from existing categories
+        existingCategories = existingCategories.filter(
+          (cat: any) => cat.name !== 'No Response'
+        );
       }
+
+      // Create router with "All Responses" as default category
+      // This will now properly handle the "No Response" category if it exists
+      const { router: noRulesRouter, exits: noRulesExits } =
+        createWaitForResponseRouter(
+          [], // No user rules
+          existingCategories,
+          existingExits,
+          [] // No cases
+        );
+
+      const router: any = {
+        ...noRulesRouter,
+        result_name: formData.result_name || 'response',
+        cases: [] // Clear all cases when no rules
+      };
 
       // Build wait configuration based on form data
       const waitConfig: any = {
@@ -622,34 +886,25 @@ export const wait_for_response: NodeConfig = {
           timeoutSeconds = 300; // Default to 5 minutes
         }
 
-        // Find or create the "No Response" category
-        let noResponseCategory = originalNode.router?.categories?.find(
+        // Find the "No Response" category (should exist now)
+        const noResponseCategory = router.categories.find(
           (cat: any) => cat.name === 'No Response'
         );
 
-        if (!noResponseCategory) {
-          noResponseCategory = {
-            uuid: generateUUID(),
-            name: 'No Response',
-            exit_uuid: generateUUID()
+        if (noResponseCategory) {
+          waitConfig.timeout = {
+            seconds: timeoutSeconds,
+            category_uuid: noResponseCategory.uuid
           };
-
-          // Add to router categories
-          router.categories = router.categories || [];
-          router.categories.push(noResponseCategory);
         }
-
-        waitConfig.timeout = {
-          seconds: timeoutSeconds,
-          category_uuid: noResponseCategory.uuid
-        };
       }
 
       router.wait = waitConfig;
 
       return {
         ...originalNode,
-        router
+        router,
+        exits: noRulesExits
       };
     }
 

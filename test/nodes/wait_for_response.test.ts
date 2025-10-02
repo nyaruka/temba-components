@@ -50,13 +50,24 @@ describe('wait_for_response node config', () => {
             result_name: 'response',
             categories: [
               {
+                uuid: 'all-responses-cat-1',
+                name: 'All Responses',
+                exit_uuid: 'all-responses-exit-1'
+              },
+              {
                 uuid: 'timeout-cat-1',
                 name: 'No Response',
                 exit_uuid: 'timeout-exit-1'
               }
-            ]
+            ],
+            cases: [],
+            operand: '@input.text',
+            default_category_uuid: 'all-responses-cat-1'
           },
-          exits: [{ uuid: 'timeout-exit-1', destination_uuid: null }]
+          exits: [
+            { uuid: 'all-responses-exit-1', destination_uuid: null },
+            { uuid: 'timeout-exit-1', destination_uuid: null }
+          ]
         } as Node,
         { type: 'wait_for_response' },
         'basic-wait'
@@ -80,13 +91,24 @@ describe('wait_for_response node config', () => {
             result_name: 'user_input',
             categories: [
               {
+                uuid: 'all-responses-cat-2',
+                name: 'All Responses',
+                exit_uuid: 'all-responses-exit-2'
+              },
+              {
                 uuid: 'timeout-cat-2',
                 name: 'No Response',
                 exit_uuid: 'timeout-exit-2'
               }
-            ]
+            ],
+            cases: [],
+            operand: '@input.text',
+            default_category_uuid: 'all-responses-cat-2'
           },
-          exits: [{ uuid: 'timeout-exit-2', destination_uuid: null }]
+          exits: [
+            { uuid: 'all-responses-exit-2', destination_uuid: null },
+            { uuid: 'timeout-exit-2', destination_uuid: null }
+          ]
         } as Node,
         { type: 'wait_for_response' },
         'custom-result-name'
@@ -110,13 +132,24 @@ describe('wait_for_response node config', () => {
             result_name: 'quick_response',
             categories: [
               {
+                uuid: 'all-responses-cat-3',
+                name: 'All Responses',
+                exit_uuid: 'all-responses-exit-3'
+              },
+              {
                 uuid: 'timeout-cat-3',
                 name: 'No Response',
                 exit_uuid: 'timeout-exit-3'
               }
-            ]
+            ],
+            cases: [],
+            operand: '@input.text',
+            default_category_uuid: 'all-responses-cat-3'
           },
-          exits: [{ uuid: 'timeout-exit-3', destination_uuid: null }]
+          exits: [
+            { uuid: 'all-responses-exit-3', destination_uuid: null },
+            { uuid: 'timeout-exit-3', destination_uuid: null }
+          ]
         } as Node,
         { type: 'wait_for_response' },
         'short-timeout'
@@ -135,9 +168,18 @@ describe('wait_for_response node config', () => {
               // No timeout specified
             },
             result_name: 'response',
-            categories: []
+            categories: [
+              {
+                uuid: 'all-responses-cat-4',
+                name: 'All Responses',
+                exit_uuid: 'all-responses-exit-4'
+              }
+            ],
+            cases: [],
+            operand: '@input.text',
+            default_category_uuid: 'all-responses-cat-4'
           },
-          exits: []
+          exits: [{ uuid: 'all-responses-exit-4', destination_uuid: null }]
         } as Node,
         { type: 'wait_for_response' },
         'no-timeout'
@@ -449,6 +491,247 @@ describe('wait_for_response node config', () => {
       expect(result.router?.wait?.timeout?.category_uuid).to.equal(
         'timeout-cat'
       );
+    });
+
+    it('ensures user categories never share UUIDs with system categories', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [
+          {
+            operator: 'has_any_word',
+            value1: 'hello',
+            value2: '',
+            category: 'Greeting'
+          }
+        ]
+      };
+
+      // Original node with existing system categories
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [
+          { uuid: 'system-other-exit', destination_uuid: null },
+          { uuid: 'system-all-responses-exit', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [
+            {
+              uuid: 'system-other-uuid',
+              name: 'Other',
+              exit_uuid: 'system-other-exit'
+            },
+            {
+              uuid: 'system-all-responses-uuid',
+              name: 'All Responses',
+              exit_uuid: 'system-all-responses-exit'
+            }
+          ]
+        }
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Get all category UUIDs
+      const categoryUUIDs = result.router!.categories.map((cat) => cat.uuid);
+      const exitUUIDs = result.exits.map((exit) => exit.uuid);
+
+      // Find user category (Greeting)
+      const userCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Greeting'
+      );
+      const systemOtherCategory = result.router!.categories.find(
+        (cat) => cat.name === 'Other'
+      );
+
+      expect(userCategory).to.exist;
+      expect(systemOtherCategory).to.exist;
+
+      // Verify that user category UUID is different from any system category UUID
+      expect(userCategory!.uuid).to.not.equal('system-other-uuid');
+      expect(userCategory!.uuid).to.not.equal('system-all-responses-uuid');
+      expect(userCategory!.exit_uuid).to.not.equal('system-other-exit');
+      expect(userCategory!.exit_uuid).to.not.equal('system-all-responses-exit');
+
+      // Verify all UUIDs are unique
+      expect(new Set(categoryUUIDs)).to.have.lengthOf(categoryUUIDs.length);
+      expect(new Set(exitUUIDs)).to.have.lengthOf(exitUUIDs.length);
+    });
+
+    it('removes No Response category when timeout is disabled and no user rules', () => {
+      // Start with a node that has timeout enabled and No Response category
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [
+          { uuid: 'all-responses-exit', destination_uuid: null },
+          { uuid: 'no-response-exit', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [
+            {
+              uuid: 'all-responses-cat',
+              name: 'All Responses',
+              exit_uuid: 'all-responses-exit'
+            },
+            {
+              uuid: 'no-response-cat',
+              name: 'No Response',
+              exit_uuid: 'no-response-exit'
+            }
+          ],
+          cases: [],
+          operand: '@input.text',
+          default_category_uuid: 'all-responses-cat',
+          wait: {
+            type: 'msg',
+            timeout: {
+              seconds: 300,
+              category_uuid: 'no-response-cat'
+            }
+          }
+        }
+      };
+
+      // Form data with timeout disabled and no user rules
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [], // No user rules
+        timeout_enabled: false, // Timeout disabled
+        timeout_duration: null
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Should only have "All Responses" category, not "No Response"
+      expect(result.router?.categories).to.have.length(1);
+      expect(result.router?.categories[0].name).to.equal('All Responses');
+      expect(result.exits).to.have.length(1);
+      expect(result.exits[0].uuid).to.equal('all-responses-exit');
+
+      // Should not have timeout configuration
+      expect(result.router?.wait?.timeout).to.be.undefined;
+    });
+
+    it('adds No Response category when timeout is enabled and no user rules', () => {
+      // Start with a node that has no timeout and only "All Responses"
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [{ uuid: 'all-responses-exit', destination_uuid: null }],
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [
+            {
+              uuid: 'all-responses-cat',
+              name: 'All Responses',
+              exit_uuid: 'all-responses-exit'
+            }
+          ],
+          cases: [],
+          operand: '@input.text',
+          default_category_uuid: 'all-responses-cat',
+          wait: {
+            type: 'msg'
+          }
+        }
+      };
+
+      // Form data with timeout enabled and no user rules
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [], // No user rules
+        timeout_enabled: true, // Timeout enabled
+        timeout_duration: { value: '300', name: '5 minutes' }
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      // Should have both "All Responses" and "No Response" categories
+      expect(result.router?.categories).to.have.length(2);
+      const categoryNames = result.router!.categories.map((cat) => cat.name);
+      expect(categoryNames).to.include.members([
+        'All Responses',
+        'No Response'
+      ]);
+
+      // Should have 2 exits
+      expect(result.exits).to.have.length(2);
+
+      // Should have timeout configuration
+      expect(result.router?.wait?.timeout).to.exist;
+      expect(result.router?.wait?.timeout?.seconds).to.equal(300);
+
+      // Timeout should point to "No Response" category
+      const noResponseCategory = result.router!.categories.find(
+        (cat) => cat.name === 'No Response'
+      );
+      expect(result.router?.wait?.timeout?.category_uuid).to.equal(
+        noResponseCategory?.uuid
+      );
+    });
+
+    it('handles enabling timeout on node with non-extensible exits array', () => {
+      // Create a node with a frozen/sealed exits array to simulate the error condition
+      const exitArray = [
+        { uuid: 'all-responses-exit', destination_uuid: null }
+      ];
+      Object.freeze(exitArray); // This makes the array non-extensible
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: exitArray, // This array is now frozen
+        router: {
+          type: 'switch',
+          result_name: 'response',
+          categories: [
+            {
+              uuid: 'all-responses-cat',
+              name: 'All Responses',
+              exit_uuid: 'all-responses-exit'
+            }
+          ],
+          cases: [],
+          operand: '@input.text',
+          default_category_uuid: 'all-responses-cat',
+          wait: {
+            type: 'msg'
+          }
+        }
+      };
+
+      // Form data with timeout being enabled (this should trigger the error)
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        rules: [], // No user rules
+        timeout_enabled: true, // Enable timeout (this is the key change)
+        timeout_duration: { value: '300', name: '5 minutes' }
+      };
+
+      // This should not throw an error even with a frozen exits array
+      expect(() => {
+        const result = wait_for_response.fromFormData!(formData, originalNode);
+
+        // Verify the result is correct
+        expect(result.router?.categories).to.have.length(2);
+        const categoryNames = result.router!.categories.map((cat) => cat.name);
+        expect(categoryNames).to.include.members([
+          'All Responses',
+          'No Response'
+        ]);
+        expect(result.exits).to.have.length(2);
+        expect(result.router?.wait?.timeout).to.exist;
+      }).to.not.throw();
     });
   });
 
@@ -936,6 +1219,141 @@ describe('wait_for_response node config', () => {
       expect(result.router?.categories).to.have.length(3);
       const categoryNames = result.router!.categories.map((cat) => cat.name);
       expect(categoryNames).to.deep.equal(['Shared', 'Different', 'Other']);
+    });
+  });
+
+  describe('category auto-population', () => {
+    it('auto-populates fixed category names for operators with no operands', () => {
+      // Test with has_text operator (0 operands)
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      const items = [
+        { operator: 'has_text', value1: '', value2: '', category: '' }
+      ];
+      const result = onItemChange(0, 'operator', 'has_text', items);
+
+      expect(result[0].category).to.equal('Has Text');
+    });
+
+    it('auto-populates category name for single operand operators', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Test has_any_word - should capitalize first letter
+      const items = [
+        { operator: 'has_any_word', value1: '', value2: '', category: '' }
+      ];
+      let result = onItemChange(0, 'value1', 'red', items);
+      expect(result[0].category).to.equal('Red');
+
+      // Test has_number_lt - should include < symbol
+      const items2 = [
+        { operator: 'has_number_lt', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', '5', items2);
+      expect(result[0].category).to.equal('< 5');
+
+      // Test has_number_eq - should include = symbol
+      const items3 = [
+        { operator: 'has_number_eq', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', '10', items3);
+      expect(result[0].category).to.equal('= 10');
+    });
+
+    it('auto-populates category name for two operand operators', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Test has_number_between - should format as range
+      const items = [
+        { operator: 'has_number_between', value1: '', value2: '', category: '' }
+      ];
+      let result = onItemChange(0, 'value1', '45', items);
+      // Should not populate yet (need both values)
+      expect(result[0].category).to.equal('');
+
+      result = onItemChange(0, 'value2', '85', result);
+      expect(result[0].category).to.equal('45 - 85');
+    });
+
+    it('auto-populates category name for date operators with relative expressions', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Test has_date_gt - should format as "After today + X days"
+      let items = [
+        { operator: 'has_date_gt', value1: '', value2: '', category: '' }
+      ];
+      let result = onItemChange(0, 'value1', 'today + 5', items);
+      expect(result[0].category).to.equal('After today + 5 days');
+
+      // Test has_date_lt with single day - should use "day" not "days"
+      items = [
+        { operator: 'has_date_lt', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', 'today + 1', items);
+      expect(result[0].category).to.equal('Before today + 1 day');
+
+      // Test has_date_eq
+      items = [
+        { operator: 'has_date_eq', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', 'today - 3', items);
+      expect(result[0].category).to.equal('today - 3 days');
+    });
+
+    it('updates category name when value changes if category matches old default', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Start with "red"
+      const items = [
+        { operator: 'has_any_word', value1: 'red', value2: '', category: 'Red' }
+      ];
+
+      // Change to "blue" - category should update since it matches old default
+      const result = onItemChange(0, 'value1', 'blue', items);
+      expect(result[0].category).to.equal('Blue');
+    });
+
+    it('does not update category name when value changes if user customized it', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Start with "red" but custom category "Color"
+      const items = [
+        {
+          operator: 'has_any_word',
+          value1: 'red',
+          value2: '',
+          category: 'Color'
+        }
+      ];
+
+      // Change to "blue" - category should NOT update (user customized it)
+      const result = onItemChange(0, 'value1', 'blue', items);
+      expect(result[0].category).to.equal('Color');
+    });
+
+    it('updates category when operator changes', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Start with has_any_word
+      const items = [
+        {
+          operator: 'has_any_word',
+          value1: 'test',
+          value2: '',
+          category: 'Test'
+        }
+      ];
+
+      // Change to has_text (0 operands) - category should update to fixed name
+      const result = onItemChange(0, 'operator', 'has_text', items);
+      expect(result[0].category).to.equal('Has Text');
     });
   });
 });

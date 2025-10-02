@@ -31,6 +31,14 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   @property({ type: Boolean })
   maintainEmptyItem = true; // Enable by default for better UX
 
+  // Focus preservation properties
+  private focusInfo: {
+    itemIndex: number;
+    fieldName: string;
+    selectionStart?: number;
+    selectionEnd?: number;
+  } | null = null;
+
   constructor() {
     super();
     this._items = [];
@@ -79,6 +87,236 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     });
   }
 
+  // Capture focus information before update
+  private captureFocus(): void {
+    const activeElement = this.shadowRoot?.activeElement as HTMLElement;
+
+    // Also try document.activeElement as a fallback
+    const globalActive = document.activeElement as HTMLElement;
+    let targetElement = activeElement || globalActive;
+
+    // If active element is within this component's shadow root, use it
+    if (globalActive && this.shadowRoot?.contains(globalActive)) {
+      targetElement = globalActive;
+    }
+
+    if (!targetElement) {
+      this.focusInfo = null;
+      return;
+    }
+
+    // Find the array item container by traversing up the DOM
+    let currentElement = targetElement;
+    let arrayItemElement: HTMLElement | null = null;
+
+    // Traverse up through shadow DOM boundaries
+    while (currentElement) {
+      if (currentElement.classList?.contains('array-item')) {
+        arrayItemElement = currentElement;
+        break;
+      }
+
+      // Move up to parent, or cross shadow boundaries
+      if (currentElement.parentElement) {
+        currentElement = currentElement.parentElement;
+      } else if (
+        currentElement.parentNode &&
+        (currentElement.parentNode as any).host
+      ) {
+        // Cross shadow boundary
+        currentElement = (currentElement.parentNode as any).host;
+      } else {
+        break;
+      }
+    }
+
+    if (!arrayItemElement) {
+      this.focusInfo = null;
+      return;
+    }
+
+    // Find the item index by looking at the item ID
+    const itemIdMatch = arrayItemElement.id?.match(/array-item-(\d+)/);
+    if (!itemIdMatch) {
+      this.focusInfo = null;
+      return;
+    }
+
+    const itemIndex = parseInt(itemIdMatch[1], 10);
+
+    // Determine the field name by examining the input element and its containers
+    let fieldName = '';
+
+    // First, check if it's a temba component with a name attribute
+    if (targetElement.tagName?.toLowerCase().startsWith('temba-')) {
+      fieldName =
+        (targetElement as any).name || targetElement.getAttribute('name') || '';
+    }
+
+    // If not found, check regular HTML elements
+    if (
+      !fieldName &&
+      targetElement.hasAttribute &&
+      targetElement.hasAttribute('name')
+    ) {
+      fieldName = targetElement.getAttribute('name') || '';
+    }
+
+    // If still not found, look for data-field-name in parent containers
+    if (!fieldName) {
+      let searchElement = targetElement;
+      while (searchElement && searchElement !== arrayItemElement) {
+        if (
+          searchElement.hasAttribute &&
+          searchElement.hasAttribute('data-field-name')
+        ) {
+          fieldName = searchElement.getAttribute('data-field-name') || '';
+          break;
+        }
+        searchElement = searchElement.parentElement;
+      }
+    }
+
+    if (!fieldName) {
+      this.focusInfo = null;
+      return;
+    }
+
+    // Capture selection for text inputs (try the actual input element inside temba components)
+    let inputForSelection = targetElement;
+    if (targetElement.tagName?.toLowerCase().startsWith('temba-')) {
+      // Look for the actual input element inside the temba component
+      const innerInput =
+        targetElement.shadowRoot?.querySelector('input, textarea') ||
+        targetElement.querySelector('input, textarea');
+      if (innerInput) {
+        inputForSelection = innerInput as HTMLElement;
+      }
+    }
+
+    const selectionStart = (inputForSelection as any).selectionStart;
+    const selectionEnd = (inputForSelection as any).selectionEnd;
+
+    this.focusInfo = {
+      itemIndex,
+      fieldName,
+      selectionStart,
+      selectionEnd
+    };
+  }
+
+  // Restore focus after update
+  private restoreFocus(): void {
+    if (!this.focusInfo) {
+      return;
+    }
+
+    const { itemIndex, fieldName, selectionStart, selectionEnd } =
+      this.focusInfo;
+
+    // Find the target element by array item index
+    const arrayItemId = `array-item-${itemIndex}`;
+    const arrayItemElement = this.shadowRoot?.getElementById(arrayItemId);
+
+    if (!arrayItemElement) {
+      // If the exact item doesn't exist (e.g., due to reordering), try to find by field name
+      const allItems = this.shadowRoot?.querySelectorAll('.array-item');
+      if (allItems && allItems.length > itemIndex) {
+        const fallbackItem = allItems[itemIndex];
+        if (fallbackItem) {
+          this.attemptFocusRestore(
+            fallbackItem as HTMLElement,
+            fieldName,
+            selectionStart,
+            selectionEnd
+          );
+        }
+      }
+      this.focusInfo = null;
+      return;
+    }
+
+    this.attemptFocusRestore(
+      arrayItemElement,
+      fieldName,
+      selectionStart,
+      selectionEnd
+    );
+    this.focusInfo = null;
+  }
+
+  private attemptFocusRestore(
+    container: HTMLElement,
+    fieldName: string,
+    selectionStart?: number,
+    selectionEnd?: number
+  ): void {
+    // Look for the field container first
+    const fieldContainer = container.querySelector(
+      `[data-field-name="${fieldName}"]`
+    );
+
+    let targetElement: HTMLElement | null = null;
+
+    if (fieldContainer) {
+      // Look for temba components or input elements within the field container
+      targetElement = fieldContainer.querySelector(
+        'temba-textinput, temba-completion, input, textarea'
+      ) as HTMLElement;
+    }
+
+    // Fallback: search entire container
+    if (!targetElement) {
+      const selectors = [
+        `temba-textinput[name="${fieldName}"]`,
+        `temba-completion[name="${fieldName}"]`,
+        `input[name="${fieldName}"]`,
+        `textarea[name="${fieldName}"]`,
+        `[name="${fieldName}"]`
+      ];
+
+      for (const selector of selectors) {
+        targetElement = container.querySelector(selector) as HTMLElement;
+        if (targetElement) break;
+      }
+    }
+
+    if (targetElement) {
+      // Use multiple animation frames to ensure DOM is fully settled
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            targetElement.focus();
+
+            // Restore selection if it's a text input
+            if (selectionStart !== undefined && selectionEnd !== undefined) {
+              // For temba components, we need to focus the inner input
+              let inputForSelection = targetElement;
+              if (targetElement.tagName?.toLowerCase().startsWith('temba-')) {
+                const innerInput =
+                  targetElement.shadowRoot?.querySelector('input, textarea') ||
+                  targetElement.querySelector('input, textarea');
+                if (innerInput && 'setSelectionRange' in innerInput) {
+                  inputForSelection = innerInput as any;
+                }
+              }
+
+              if ('setSelectionRange' in inputForSelection) {
+                (inputForSelection as any).setSelectionRange(
+                  selectionStart,
+                  selectionEnd
+                );
+              }
+            }
+          } catch (error) {
+            // Ignore focus errors - element might not be focusable
+            // Focus restoration failed, silently continue
+          }
+        });
+      });
+    }
+  }
+
   createEmptyItem(): ListItem {
     return {};
   }
@@ -106,6 +344,25 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     }
 
     this.updateValue(updatedItems);
+  }
+
+  // Override Lit's update lifecycle methods for focus preservation
+  protected willUpdate(changedProperties: Map<string, any>): void {
+    super.willUpdate(changedProperties);
+
+    // Capture focus before update if items are changing
+    if (changedProperties.has('_items') || changedProperties.has('value')) {
+      this.captureFocus();
+    }
+  }
+
+  updated(changedProperties: Map<string, any>): void {
+    super.updated(changedProperties);
+
+    // Restore focus after update if items changed
+    if (changedProperties.has('_items') || changedProperties.has('value')) {
+      this.restoreFocus();
+    }
   }
 
   private handleOrderChanged(event: CustomEvent): void {
@@ -286,6 +543,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
 
         fieldElements.push(html`
           <div
+            data-field-name="${fieldName}"
             style="${config.width || config.maxWidth || config.type === 'select'
               ? 'flex:none'
               : 'flex:1'}"
@@ -302,12 +560,12 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       fieldElements.splice(
         -1,
         0,
-        html`<div class="field field-flex spacer"></div>`
+        html`<div class="field field-flex spacer" style="flex-grow:1"></div>`
       );
     }
 
     return html`
-      <div class="array-item">
+      <div class="array-item" id="array-item-${index}">
         <div
           class="item-fields  ${canRemove ? '' : 'removable'}"
           style="display: flex; gap: 12px; align-items: center"
