@@ -560,7 +560,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       fieldElements.splice(
         -1,
         0,
-        html`<div class="field field-flex spacer"></div>`
+        html`<div class="field field-flex spacer" style="flex-grow:1"></div>`
       );
     }
 

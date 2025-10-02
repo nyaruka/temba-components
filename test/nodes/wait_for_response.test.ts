@@ -1221,4 +1221,139 @@ describe('wait_for_response node config', () => {
       expect(categoryNames).to.deep.equal(['Shared', 'Different', 'Other']);
     });
   });
+
+  describe('category auto-population', () => {
+    it('auto-populates fixed category names for operators with no operands', () => {
+      // Test with has_text operator (0 operands)
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      const items = [
+        { operator: 'has_text', value1: '', value2: '', category: '' }
+      ];
+      const result = onItemChange(0, 'operator', 'has_text', items);
+
+      expect(result[0].category).to.equal('Has Text');
+    });
+
+    it('auto-populates category name for single operand operators', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Test has_any_word - should capitalize first letter
+      const items = [
+        { operator: 'has_any_word', value1: '', value2: '', category: '' }
+      ];
+      let result = onItemChange(0, 'value1', 'red', items);
+      expect(result[0].category).to.equal('Red');
+
+      // Test has_number_lt - should include < symbol
+      const items2 = [
+        { operator: 'has_number_lt', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', '5', items2);
+      expect(result[0].category).to.equal('< 5');
+
+      // Test has_number_eq - should include = symbol
+      const items3 = [
+        { operator: 'has_number_eq', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', '10', items3);
+      expect(result[0].category).to.equal('= 10');
+    });
+
+    it('auto-populates category name for two operand operators', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Test has_number_between - should format as range
+      const items = [
+        { operator: 'has_number_between', value1: '', value2: '', category: '' }
+      ];
+      let result = onItemChange(0, 'value1', '45', items);
+      // Should not populate yet (need both values)
+      expect(result[0].category).to.equal('');
+
+      result = onItemChange(0, 'value2', '85', result);
+      expect(result[0].category).to.equal('45 - 85');
+    });
+
+    it('auto-populates category name for date operators with relative expressions', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Test has_date_gt - should format as "After today + X days"
+      let items = [
+        { operator: 'has_date_gt', value1: '', value2: '', category: '' }
+      ];
+      let result = onItemChange(0, 'value1', 'today + 5', items);
+      expect(result[0].category).to.equal('After today + 5 days');
+
+      // Test has_date_lt with single day - should use "day" not "days"
+      items = [
+        { operator: 'has_date_lt', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', 'today + 1', items);
+      expect(result[0].category).to.equal('Before today + 1 day');
+
+      // Test has_date_eq
+      items = [
+        { operator: 'has_date_eq', value1: '', value2: '', category: '' }
+      ];
+      result = onItemChange(0, 'value1', 'today - 3', items);
+      expect(result[0].category).to.equal('today - 3 days');
+    });
+
+    it('updates category name when value changes if category matches old default', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Start with "red"
+      const items = [
+        { operator: 'has_any_word', value1: 'red', value2: '', category: 'Red' }
+      ];
+
+      // Change to "blue" - category should update since it matches old default
+      const result = onItemChange(0, 'value1', 'blue', items);
+      expect(result[0].category).to.equal('Blue');
+    });
+
+    it('does not update category name when value changes if user customized it', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Start with "red" but custom category "Color"
+      const items = [
+        {
+          operator: 'has_any_word',
+          value1: 'red',
+          value2: '',
+          category: 'Color'
+        }
+      ];
+
+      // Change to "blue" - category should NOT update (user customized it)
+      const result = onItemChange(0, 'value1', 'blue', items);
+      expect(result[0].category).to.equal('Color');
+    });
+
+    it('updates category when operator changes', () => {
+      const rulesConfig = wait_for_response.form.rules as any;
+      const onItemChange = rulesConfig.onItemChange;
+
+      // Start with has_any_word
+      const items = [
+        {
+          operator: 'has_any_word',
+          value1: 'test',
+          value2: '',
+          category: 'Test'
+        }
+      ];
+
+      // Change to has_text (0 operands) - category should update to fixed name
+      const result = onItemChange(0, 'operator', 'has_text', items);
+      expect(result[0].category).to.equal('Has Text');
+    });
+  });
 });

@@ -44,6 +44,113 @@ const isSystemCategoryUuid = (
   return category ? isSystemCategory(category.name) : false;
 };
 
+// Helper function to generate default category name based on operator and operands
+const generateDefaultCategoryName = (
+  operator: string,
+  value1?: string,
+  value2?: string
+): string => {
+  const operatorConfig = getOperatorConfig(operator);
+  if (!operatorConfig) return '';
+
+  // Fixed category names (no operands)
+  if (operatorConfig.operands === 0) {
+    return operatorConfig.categoryName || '';
+  }
+
+  // Dynamic category names based on operands
+  const cleanValue1 = (value1 || '').trim();
+  const cleanValue2 = (value2 || '').trim();
+
+  // Helper to capitalize first letter
+  const capitalize = (str: string) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Handle different operator types
+  switch (operator) {
+    // Word/phrase operators - capitalize first letter of value
+    case 'has_any_word':
+    case 'has_all_words':
+    case 'has_phrase':
+    case 'has_only_phrase':
+    case 'has_beginning':
+      return cleanValue1 ? capitalize(cleanValue1) : '';
+
+    // Pattern operators - show as-is
+    case 'has_pattern':
+      return cleanValue1;
+
+    // Number comparison operators - include symbol
+    case 'has_number_eq':
+      return cleanValue1 ? `= ${cleanValue1}` : '';
+    case 'has_number_lt':
+      return cleanValue1 ? `< ${cleanValue1}` : '';
+    case 'has_number_lte':
+      return cleanValue1 ? `≤ ${cleanValue1}` : '';
+    case 'has_number_gt':
+      return cleanValue1 ? `> ${cleanValue1}` : '';
+    case 'has_number_gte':
+      return cleanValue1 ? `≥ ${cleanValue1}` : '';
+
+    // Number between - range format
+    case 'has_number_between':
+      if (cleanValue1 && cleanValue2) {
+        return `${cleanValue1} - ${cleanValue2}`;
+      }
+      return '';
+
+    // Date operators - format with relative expressions
+    case 'has_date_lt':
+    case 'has_date_lte':
+      if (cleanValue1) {
+        // Parse relative date expression (e.g., "today + 5" or "today - 3")
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `Before ${base} ${operator} ${days} ${dayWord}`;
+        }
+        // Fallback for other date formats
+        return `Before ${cleanValue1}`;
+      }
+      return '';
+
+    case 'has_date_gt':
+    case 'has_date_gte':
+      if (cleanValue1) {
+        // Parse relative date expression
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `After ${base} ${operator} ${days} ${dayWord}`;
+        }
+        // Fallback for other date formats
+        return `After ${cleanValue1}`;
+      }
+      return '';
+
+    case 'has_date_eq':
+      if (cleanValue1) {
+        // Parse relative date expression
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `${base} ${operator} ${days} ${dayWord}`;
+        }
+        return cleanValue1;
+      }
+      return '';
+
+    default:
+      // Fallback - capitalize first value
+      return cleanValue1 ? capitalize(cleanValue1) : '';
+  }
+};
+
 // Helper function to create a wait_for_response router with user rules
 const createWaitForResponseRouter = (
   userRules: any[],
@@ -329,6 +436,79 @@ export const wait_for_response: NodeConfig = {
 
         // No value required for this operator
         return false;
+      },
+      onItemChange: (
+        itemIndex: number,
+        field: string,
+        value: any,
+        allItems: any[]
+      ) => {
+        const updatedItems = [...allItems];
+        const item = { ...updatedItems[itemIndex] };
+
+        // Helper to get operator value from various formats
+        const getOperatorValue = (operator: any): string => {
+          if (typeof operator === 'string') {
+            return operator.trim();
+          } else if (Array.isArray(operator) && operator.length > 0) {
+            const firstOperator = operator[0];
+            if (
+              firstOperator &&
+              typeof firstOperator === 'object' &&
+              firstOperator.value
+            ) {
+              return firstOperator.value.trim();
+            }
+          } else if (
+            operator &&
+            typeof operator === 'object' &&
+            operator.value
+          ) {
+            return operator.value.trim();
+          }
+          return '';
+        };
+
+        // Update the changed field
+        item[field] = value;
+
+        // Get operator values (before and after the change)
+        const oldItem = allItems[itemIndex] || {};
+        const oldOperatorValue =
+          field === 'operator'
+            ? getOperatorValue(oldItem.operator)
+            : getOperatorValue(item.operator);
+        const newOperatorValue = getOperatorValue(item.operator);
+
+        // Calculate what the default category name should be before the change
+        const oldDefaultCategory = generateDefaultCategoryName(
+          oldOperatorValue,
+          field === 'value1' ? oldItem.value1 : item.value1,
+          field === 'value2' ? oldItem.value2 : item.value2
+        );
+
+        // Calculate what the new default category name should be after the change
+        const newDefaultCategory = generateDefaultCategoryName(
+          newOperatorValue,
+          item.value1,
+          item.value2
+        );
+
+        // Determine if we should auto-update the category
+        const shouldUpdateCategory =
+          // Category is empty
+          !item.category ||
+          item.category.trim() === '' ||
+          // Category matches the old default (user hasn't customized it)
+          item.category === oldDefaultCategory;
+
+        // Auto-populate or update category if conditions are met
+        if (shouldUpdateCategory && newDefaultCategory) {
+          item.category = newDefaultCategory;
+        }
+
+        updatedItems[itemIndex] = item;
+        return updatedItems;
       },
       itemConfig: {
         operator: {
