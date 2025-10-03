@@ -55,10 +55,9 @@
           "name": "SMS Channel"
         }
       },
-      "status": "F",
-      "failed_reason": "D",
-      "failed_reason_display": "No suitable channel found",
-      "logs_url": null
+      "_status": "F",
+      "_failed_reason": "No suitable channel found",
+      "_logs_url": null
     },
     {
       "uuid": "01997d74-bf67-7305-b5f7-017c6eb04cf7",
@@ -92,8 +91,8 @@
           "name": "SMS Channel"
         }
       },
-      "status": "W",
-      "logs_url": "/channels/channellog/read/1478/"
+      "_status": "W",
+      "_logs_url": "/channels/channellog/read/1478/"
     },
     {
       "uuid": "01997d74-bf67-74a1-97db-faaf45bbff53",
@@ -107,8 +106,7 @@
           "name": "SMS Channel"
         }
       },
-      "msg_type": "F",
-      "logs_url": "/channels/channellog/read/1477/"
+      "_logs_url": "/channels/channellog/read/1477/"
     },
     {
       "uuid": "01997d74-bf67-70c2-bfae-14c661955736",
@@ -122,8 +120,8 @@
           "name": "SMS Channel"
         }
       },
-      "status": "W",
-      "logs_url": "/channels/channellog/read/1476/"
+      "_status": "W",
+      "_logs_url": "/channels/channellog/read/1476/"
     },
     {
       "uuid": "01997d74-bf67-7199-8e8a-200e41a90d71",
@@ -137,8 +135,7 @@
           "name": "SMS Channel"
         }
       },
-      "msg_type": "F",
-      "logs_url": "/channels/channellog/read/1475/"
+      "_logs_url": "/channels/channellog/read/1475/"
     },
     {
       "uuid": "01997d74-bf67-7768-9b3e-1a2dd9b90aa4",
@@ -152,8 +149,8 @@
           "name": "SMS Channel"
         }
       },
-      "status": "W",
-      "logs_url": "/channels/channellog/read/1474/"
+      "_status": "W",
+      "_logs_url": "/channels/channellog/read/1474/"
     },
     {
       "uuid": "01997d74-bf67-74c6-86d6-a9398ee1f5f4",
@@ -167,8 +164,7 @@
           "name": "SMS Channel"
         }
       },
-      "msg_type": "F",
-      "logs_url": "/channels/channellog/read/1473/"
+      "_logs_url": "/channels/channellog/read/1473/"
     },
     {
       "uuid": "01997d74-bf67-75c9-bd59-36a465fc0c88",
@@ -204,8 +200,8 @@
           "name": "SMS Channel"
         }
       },
-      "status": "W",
-      "logs_url": "/channels/channellog/read/1472/"
+      "_status": "W",
+      "_logs_url": "/channels/channellog/read/1472/"
     },
     {
       "uuid": "01997d74-bf67-70a9-a0fc-6543b4d0b3d1",
@@ -234,8 +230,7 @@
           "name": "SMS Channel"
         }
       },
-      "msg_type": "F",
-      "logs_url": "/channels/channellog/read/1471/"
+      "_logs_url": "/channels/channellog/read/1471/"
     }
   ]
 }

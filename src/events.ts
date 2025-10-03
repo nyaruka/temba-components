@@ -10,7 +10,6 @@ export interface ContactEvent {
   uuid?: string;
   type: string;
   created_on: string;
-  created_by?: User; // deprecated
   _user?: ObjectReference;
 }
 
@@ -61,9 +60,6 @@ export interface MsgEvent extends ContactEvent {
   _status?: string;
   _failed_reason?: string;
   _logs_url?: string;
-  status?: string; // deprecated
-  failed_reason_display?: string; // deprecated
-  logs_url?: string; // deprecated
 }
 
 export interface RunEvent extends ContactEvent {

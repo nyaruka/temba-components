@@ -808,12 +808,6 @@ export class ContactChat extends ContactStoreElement {
       };
     } else if (event._user) {
       return event._user;
-    } else if (event.created_by) {
-      return {
-        email: event.created_by.email,
-        name: `${event.created_by.first_name} ${event.created_by.last_name}`.trim(),
-        avatar: event.created_by.avatar
-      };
     }
     return null;
   }
@@ -852,13 +846,9 @@ export class ContactChat extends ContactStoreElement {
         } else if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
-          event.type === 'ivr_created' ||
-          event.type === 'broadcast_created'
+          event.type === 'ivr_created'
         ) {
           const msgEvent = event as MsgEvent;
-          const status = msgEvent.status || msgEvent._status;
-          const failedReason =
-            msgEvent.failed_reason_display || msgEvent._failed_reason;
 
           messages.push({
             id: event.uuid,
@@ -867,7 +857,7 @@ export class ContactChat extends ContactStoreElement {
             date: new Date(msgEvent.created_on),
             attachments: msgEvent.msg.attachments,
             text: msgEvent.msg.text,
-            sendError: status === 'E' || status === 'F',
+            sendError: msgEvent._status === 'E' || msgEvent._status === 'F',
             popup: html`<div
               style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
             >
@@ -882,20 +872,18 @@ export class ContactChat extends ContactStoreElement {
                       ${msgEvent.optin.name}
                     </div>`
                   : null}
-                ${failedReason
+                ${msgEvent._failed_reason
                   ? html`
                       <div
                         style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
                       >
-                        ${failedReason}
+                        ${msgEvent._failed_reason}
                       </div>
                     `
                   : null}
               </div>
-              ${msgEvent.logs_url || msgEvent._logs_url
-                ? html`<a
-                    style="margin-left:0.5em"
-                    href="${msgEvent.logs_url || msgEvent._logs_url}"
+              ${msgEvent._logs_url
+                ? html`<a style="margin-left:0.5em" href="${msgEvent._logs_url}"
                     ><temba-icon name="log"></temba-icon
                   ></a>`
                 : null}
