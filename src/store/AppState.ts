@@ -73,6 +73,7 @@ export interface AppState {
   languageNames: { [code: string]: Language };
   workspace: Workspace;
   isTranslating: boolean;
+  features: string[]; // feature flags like 'HAS_LOCATIONS'
 
   dirtyDate: Date | null;
 
@@ -88,6 +89,7 @@ export interface AppState {
   setFlowContents: (flow: FlowContents) => void;
   setFlowInfo: (info: FlowInfo) => void;
   setLanguageCode: (languageCode: string) => void;
+  setFeatures: (features: string[]) => void;
   setDirtyDate: (date: Date) => void;
   expandCanvas: (width: number, height: number) => void;
 
@@ -117,11 +119,18 @@ export const zustand = createStore<AppState>()(
       flowDefinition: null,
       flowInfo: null,
       isTranslating: false,
+      features: [],
       dirtyDate: null,
 
       setDirtyDate: (date: Date) => {
         set((state: AppState) => {
           state.dirtyDate = date;
+        });
+      },
+
+      setFeatures: (features: string[]) => {
+        set((state: AppState) => {
+          state.features = features;
         });
       },
 

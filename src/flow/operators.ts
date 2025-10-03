@@ -184,10 +184,22 @@ export const OPERATORS: OperatorConfig[] = [
 ];
 
 // Get operators suitable for wait_for_response rules
-export const getWaitForResponseOperators = (): OperatorConfig[] => {
-  return OPERATORS.filter(
-    (op) => op.visibility !== 'hidden' && !op.filter // For now, exclude location operators unless we support feature detection
-  );
+export const getWaitForResponseOperators = (
+  features: string[] = []
+): OperatorConfig[] => {
+  return OPERATORS.filter((op) => {
+    // exclude hidden operators
+    if (op.visibility === 'hidden') {
+      return false;
+    }
+
+    // if operator has a filter requirement, check if feature is enabled
+    if (op.filter && !features.includes(op.filter)) {
+      return false;
+    }
+
+    return true;
+  });
 };
 
 // Get operator configuration by type

@@ -6,6 +6,7 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
+import { getStore } from '../../store/Store';
 
 const TIMEOUT_OPTIONS = [
   { value: '60', name: '1 minute' },
@@ -515,7 +516,13 @@ export const wait_for_response: NodeConfig = {
           type: 'select',
           required: true,
           multi: false, // Explicitly set as single-select
-          options: operatorsToSelectOptions(getWaitForResponseOperators()),
+          getDynamicOptions: () => {
+            const appState = getStore().getState();
+            const features = appState.features || [];
+            return operatorsToSelectOptions(
+              getWaitForResponseOperators(features)
+            );
+          },
           flavor: 'xsmall',
           width: '200px'
         },

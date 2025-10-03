@@ -49,6 +49,20 @@ describe('Editor', () => {
       expect(editor.flow).to.equal('test-flow-uuid');
       expect(editor.version).to.equal('1.0');
     });
+
+    it('accepts features property', async () => {
+      editor = document.createElement('temba-flow-editor') as Editor;
+      editor.features = ['HAS_LOCATIONS'];
+
+      expect(editor.features).to.deep.equal(['HAS_LOCATIONS']);
+    });
+
+    it('initializes with empty features array by default', async () => {
+      editor = document.createElement('temba-flow-editor') as Editor;
+
+      expect(editor.features).to.be.an('array');
+      expect(editor.features).to.have.lengthOf(0);
+    });
   });
 
   describe('lifecycle methods', () => {

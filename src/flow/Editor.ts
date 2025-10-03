@@ -73,6 +73,9 @@ export class Editor extends RapidElement {
   @property({ type: String })
   public version: string;
 
+  @property({ type: Array })
+  public features: string[] = [];
+
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private definition!: FlowDefinition;
 
@@ -359,6 +362,15 @@ export class Editor extends RapidElement {
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
         this.debouncedSave();
+      }
+    }
+
+    if (changes.has('features')) {
+      // Sync features to AppState when they change
+      const store = getStore();
+      if (store) {
+        const appState = store.getState();
+        appState.setFeatures(this.features);
       }
     }
   }
