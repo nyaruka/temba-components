@@ -81,7 +81,6 @@
         },
         "exits": [
           {
-            "destination_uuid": "259d68eb-7dd3-4e5b-96bb-44f3898f9f2c",
             "uuid": "affc04ee-3565-4cbf-a65d-e7e4f41ef043"
           },
           {
@@ -94,7 +93,6 @@
             "uuid": "a172fecc-139b-4121-9140-fe982ff2b1f9"
           },
           {
-            "destination_uuid": "d7ef1df7-1f4c-4d9b-b058-397fc17295fe",
             "uuid": "5ede8cf6-d137-4d08-a8fa-0a7201398869"
           },
           {
