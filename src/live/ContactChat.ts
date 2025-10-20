@@ -520,6 +520,9 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   errorMessage: string;
 
+  // track if we're changing topic to preserve assignee
+  private changingTopic = false;
+
   // http promise to monitor for completeness
   public httpComplete: Promise<void>;
   private chat: Chat;
@@ -1043,6 +1046,7 @@ export class ContactChat extends ContactStoreElement {
     const topic = select.values[0];
 
     if (this.currentTicket.topic.uuid !== topic.uuid) {
+      this.changingTopic = true;
       postJSON(`/api/v2/ticket_actions.json`, {
         tickets: [this.currentTicket.uuid],
         action: 'change_topic',
@@ -1053,6 +1057,7 @@ export class ContactChat extends ContactStoreElement {
         })
         .catch((response: any) => {
           console.error(response);
+          this.changingTopic = false;
         });
     }
   }
@@ -1083,15 +1088,29 @@ export class ContactChat extends ContactStoreElement {
 
   public refreshTicket() {
     if (this.currentTicket) {
+      // preserve the current assignee if we're changing topic
+      const preservedAssignee = this.changingTopic
+        ? this.currentTicket.assignee
+        : undefined;
+
       fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
         (values) => {
           this.store.resolveUsers(values, ['assignee']).then(() => {
             if (values.length > 0) {
+              const updatedTicket = values[0];
+
+              // if we were changing topic, restore the original assignee
+              // to prevent auto-assignment from server-side rules
+              if (this.changingTopic && preservedAssignee !== undefined) {
+                updatedTicket.assignee = preservedAssignee;
+                this.changingTopic = false;
+              }
+
               this.fireCustomEvent(CustomEventType.TicketUpdated, {
-                ticket: values[0],
+                ticket: updatedTicket,
                 previous: this.currentTicket
               });
-              this.currentTicket = values[0];
+              this.currentTicket = updatedTicket;
             }
           });
         }
