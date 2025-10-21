@@ -375,7 +375,8 @@ describe('wait_for_response node config', () => {
       const result = wait_for_response.fromFormData!(formData, originalNode);
 
       expect(result.uuid).to.equal('test-node');
-      expect(result.router?.result_name).to.equal('response');
+      // When no result_name is provided, it should not be set
+      expect(result.router?.result_name).to.be.undefined;
     });
 
     it('handles operators with no operands correctly', () => {

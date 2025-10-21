@@ -2,6 +2,7 @@ import { COLORS, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import { urnSchemeMap } from '../utils';
+import { resultNameField } from './shared';
 
 // Helper function to get scheme options for the select dropdown
 const getSchemeOptions = () => {
@@ -114,14 +115,7 @@ export const split_by_scheme: NodeConfig = {
       searchable: true,
       placeholder: 'Select the channels to split by...'
     },
-    result_name: {
-      type: 'text',
-      label: 'Result Name',
-      required: false,
-      placeholder: 'Result name (optional)',
-      flavor: 'small',
-      helpText: 'The name to use to reference this result in the flow'
-    }
+    result_name: resultNameField
   },
   layout: ['schemes', 'result_name'],
   validate: (formData: any) => {
