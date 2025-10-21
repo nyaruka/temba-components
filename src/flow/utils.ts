@@ -62,15 +62,20 @@ export const renderStringList = (items: string[], icon?: string) => {
 
 // URN scheme mapping for user-friendly display
 export const urnSchemeMap: Record<string, string> = {
-  tel: 'Phone Number',
-  email: 'Email',
-  twitter: 'Twitter',
+  tel: 'Phone',
+  whatsapp: 'WhatsApp',
   facebook: 'Facebook',
   telegram: 'Telegram',
-  whatsapp: 'WhatsApp',
+  twitter: 'Twitter',
+  email: 'Email',
   viber: 'Viber',
   line: 'Line',
   discord: 'Discord',
   slack: 'Slack',
-  external: 'External ID'
+  external: 'External ID',
+  fcm: 'Firebase Cloud Messaging',
+  jiochat: 'JioChat',
+  wechat: 'WeChat',
+  freshchat: 'Freshchat',
+  instagram: 'Instagram'
 };
