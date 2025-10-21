@@ -7,102 +7,6 @@
     "type": "messaging",
     "nodes": [
       {
-        "uuid": "8475045b-ecb2-44a7-b511-ee4a74703108",
-        "actions": [],
-        "router": {
-          "type": "switch",
-          "default_category_uuid": "e7f89d67-9e24-4161-9c15-cdb057674089",
-          "cases": [
-            {
-              "arguments": ["red"],
-              "type": "has_any_word",
-              "uuid": "1a3b3a53-3c16-4ae6-a1cc-ec018e6f64ac",
-              "category_uuid": "42a6ff3a-1e72-494e-8a6d-064c39dd66ba"
-            },
-            {
-              "arguments": ["green"],
-              "type": "has_any_word",
-              "uuid": "87dc3de5-8f5e-4437-9101-3953589f07e3",
-              "category_uuid": "98d75eb1-2371-42f6-ab9f-0ed62c589eaa"
-            },
-            {
-              "arguments": ["blue"],
-              "type": "has_any_word",
-              "uuid": "80309f3a-cd1a-4f19-a197-ca65253970a3",
-              "category_uuid": "6cdd692a-8871-4a08-9b53-5c87727e303b"
-            },
-            {
-              "arguments": ["10", "50"],
-              "type": "has_number_between",
-              "uuid": "4bcf4da2-39a5-4da8-8ced-046353a8f066",
-              "category_uuid": "0927dfd9-f4ff-4f81-95e1-965c5b6c9e7c"
-            }
-          ],
-          "categories": [
-            {
-              "exit_uuid": "affc04ee-3565-4cbf-a65d-e7e4f41ef043",
-              "name": "Red",
-              "uuid": "42a6ff3a-1e72-494e-8a6d-064c39dd66ba"
-            },
-            {
-              "uuid": "98d75eb1-2371-42f6-ab9f-0ed62c589eaa",
-              "name": "Green",
-              "exit_uuid": "b12038ab-d607-4bce-b70e-860f8e0738f1"
-            },
-            {
-              "uuid": "6cdd692a-8871-4a08-9b53-5c87727e303b",
-              "name": "Blue but longer so it hits the max w",
-              "exit_uuid": "5fde9128-0dde-438c-acec-dc77f4140fc7"
-            },
-            {
-              "uuid": "0927dfd9-f4ff-4f81-95e1-965c5b6c9e7c",
-              "name": "10 - 50",
-              "exit_uuid": "a172fecc-139b-4121-9140-fe982ff2b1f9"
-            },
-            {
-              "exit_uuid": "5ede8cf6-d137-4d08-a8fa-0a7201398869",
-              "name": "Other",
-              "uuid": "e7f89d67-9e24-4161-9c15-cdb057674089"
-            },
-            {
-              "uuid": "ab8e3b1f-c177-4224-b343-a249a704388b",
-              "name": "No Response",
-              "exit_uuid": "705714da-1231-4919-87ea-88d4ae434ca1"
-            }
-          ],
-          "operand": "@input.text",
-          "wait": {
-            "type": "msg",
-            "timeout": {
-              "seconds": 300,
-              "category_uuid": "ab8e3b1f-c177-4224-b343-a249a704388b"
-            }
-          }
-        },
-        "exits": [
-          {
-            "destination_uuid": "259d68eb-7dd3-4e5b-96bb-44f3898f9f2c",
-            "uuid": "affc04ee-3565-4cbf-a65d-e7e4f41ef043"
-          },
-          {
-            "uuid": "b12038ab-d607-4bce-b70e-860f8e0738f1"
-          },
-          {
-            "uuid": "5fde9128-0dde-438c-acec-dc77f4140fc7"
-          },
-          {
-            "uuid": "a172fecc-139b-4121-9140-fe982ff2b1f9"
-          },
-          {
-            "destination_uuid": "d7ef1df7-1f4c-4d9b-b058-397fc17295fe",
-            "uuid": "5ede8cf6-d137-4d08-a8fa-0a7201398869"
-          },
-          {
-            "uuid": "705714da-1231-4919-87ea-88d4ae434ca1"
-          }
-        ]
-      },
-      {
         "uuid": "fb7bbf99-65cd-4e08-825a-68fc7293cc05",
         "actions": [
           {
@@ -161,7 +65,13 @@
               "video:@fields.video",
               "image:@fields.image"
             ],
-            "quick_replies": ["Red", "Green", "Blue", "Yellow", "Purple"]
+            "quick_replies": [
+              "Red",
+              "Green",
+              "Blue",
+              "Yellow",
+              "Purple"
+            ]
           }
         ],
         "exits": [
@@ -179,19 +89,25 @@
           "default_category_uuid": "e6a9f714-6f2a-4884-b850-f79ff397ee63",
           "cases": [
             {
-              "arguments": ["red"],
+              "arguments": [
+                "red"
+              ],
               "type": "has_any_word",
               "uuid": "2040ff07-f509-416d-b150-15abc27a9dfd",
               "category_uuid": "4ceb8f3b-05a2-4d75-950e-fa4934ab24fb"
             },
             {
-              "arguments": ["green"],
+              "arguments": [
+                "green"
+              ],
               "type": "has_any_word",
               "uuid": "b7b142d8-2434-41d9-9e5c-4e0335841972",
               "category_uuid": "153aa4a6-553c-4adf-9773-1f44596c33fb"
             },
             {
-              "arguments": ["blue"],
+              "arguments": [
+                "blue"
+              ],
               "type": "has_any_word",
               "uuid": "e2ccc4e7-c379-43e3-8115-48e8fe7ef4de",
               "category_uuid": "ee972b45-3bfe-4e93-9d4e-e9c8f8ffc587"
@@ -293,7 +209,10 @@
             {
               "uuid": "8b9201ff-b195-4e18-8124-3362d310a2e5",
               "type": "has_number_between",
-              "arguments": ["200", "299"],
+              "arguments": [
+                "200",
+                "299"
+              ],
               "category_uuid": "1b9100a4-f3f0-410e-8b6f-d339bf58a13a"
             }
           ]
@@ -316,8 +235,14 @@
             "uuid": "9963160a-a007-4c7b-8c9e-7325e1b69ed8",
             "type": "send_msg",
             "text": "Excellent choices.",
-            "attachments": ["image:@contact.profile_url"],
-            "quick_replies": ["Red", "Green", "Blue"]
+            "attachments": [
+              "image:@contact.profile_url"
+            ],
+            "quick_replies": [
+              "Red",
+              "Green",
+              "Blue"
+            ]
           },
           {
             "uuid": "d0d1571c-bf9e-4156-ac7c-984789c71472",
@@ -425,7 +350,10 @@
           {
             "uuid": "a0f3f1f2-1869-4ad6-9fb0-e610a3e00ae7",
             "type": "send_email",
-            "addresses": ["mistermeowface@whiskers.com", "name@domain.com"],
+            "addresses": [
+              "mistermeowface@whiskers.com",
+              "name@domain.com"
+            ],
             "subject": "Did you get this?",
             "body": "I hope it arrived! But this message is a bit longer."
           }
@@ -445,7 +373,9 @@
           "default_category_uuid": "50ededa6-7dd3-4f4f-81d2-e3011ea1cc05",
           "cases": [
             {
-              "arguments": ["Archived"],
+              "arguments": [
+                "Archived"
+              ],
               "type": "has_any_word",
               "uuid": "bc2e884d-9740-4028-a6bb-72f0c263336c",
               "category_uuid": "8032da05-1778-4d0c-9b7d-d218a7fb561d"
@@ -496,7 +426,9 @@
           ],
           "cases": [
             {
-              "arguments": ["bleep"],
+              "arguments": [
+                "bleep"
+              ],
               "type": "has_any_word",
               "uuid": "5fcb78ba-245d-40e5-986a-a9cbafb3e527",
               "category_uuid": "5a9d7012-02c3-46ac-a926-7b6d9c503fde"
@@ -564,7 +496,9 @@
           ],
           "cases": [
             {
-              "arguments": ["red"],
+              "arguments": [
+                "red"
+              ],
               "type": "has_any_word",
               "uuid": "44f4d027-f904-4c38-8cad-e01aae9b4faf",
               "category_uuid": "c8ba0faf-cf72-447a-84fe-5dc63775c0f5"
@@ -592,13 +526,19 @@
             {
               "uuid": "e1c0d59e-1810-4677-ad3b-69c4d1d645e8",
               "type": "has_group",
-              "arguments": ["269e8abf-e81b-404c-82ce-45ff42d13769", "Empty"],
+              "arguments": [
+                "269e8abf-e81b-404c-82ce-45ff42d13769",
+                "Empty"
+              ],
               "category_uuid": "d7ae9a33-357f-445f-84f0-ac11da786602"
             },
             {
               "uuid": "90ab3ac3-bc46-402a-a569-5739aa8a590d",
               "type": "has_group",
-              "arguments": ["4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c", "Drivers"],
+              "arguments": [
+                "4b4ad0a2-0be6-4edd-8d6f-f6fa40ce695c",
+                "Drivers"
+              ],
               "category_uuid": "92e8677a-8070-4a98-901d-8247ac8e1898"
             }
           ],
@@ -647,13 +587,17 @@
             {
               "uuid": "93312571-e686-4561-8bfd-5bc00c0cd442",
               "type": "has_only_phrase",
-              "arguments": ["tel"],
+              "arguments": [
+                "tel"
+              ],
               "category_uuid": "8334572c-c31d-422a-8a95-2cb3d55e733b"
             },
             {
               "uuid": "03ce9105-dd9f-41b7-adc3-56b0547e031b",
               "type": "has_only_phrase",
-              "arguments": ["facebook"],
+              "arguments": [
+                "facebook"
+              ],
               "category_uuid": "23e7a079-3f2c-406b-9acc-dbbf388b3b79"
             }
           ],
@@ -725,7 +669,9 @@
             {
               "uuid": "625daede-4c37-45d4-9af6-5607ad4b1ce0",
               "type": "has_only_text",
-              "arguments": ["completed"],
+              "arguments": [
+                "completed"
+              ],
               "category_uuid": "894652f9-cc6c-4192-827d-3c5543778478"
             }
           ]
@@ -762,7 +708,9 @@
             {
               "uuid": "ac40cb14-6886-4f4e-b309-bcf4ef92b26d",
               "type": "has_only_text",
-              "arguments": ["<ERROR>"],
+              "arguments": [
+                "<ERROR>"
+              ],
               "category_uuid": "00685353-2326-4150-a403-58f006e50885"
             }
           ],
@@ -921,25 +869,33 @@
             {
               "uuid": "055e63a4-5eae-4325-b436-ca013e20ae17",
               "type": "has_only_text",
-              "arguments": ["Cat"],
+              "arguments": [
+                "Cat"
+              ],
               "category_uuid": "96d0d4c4-5830-4a6d-b20b-6730b1e10679"
             },
             {
               "uuid": "f0795c37-977e-4d0f-9136-378626a40173",
               "type": "has_only_text",
-              "arguments": ["Dog"],
+              "arguments": [
+                "Dog"
+              ],
               "category_uuid": "4632b796-f8ab-4a35-80d1-a1b53a6db803"
             },
             {
               "uuid": "62a7fc70-ffbf-4925-9f9a-ca6ef531942a",
               "type": "has_only_text",
-              "arguments": ["Oyster"],
+              "arguments": [
+                "Oyster"
+              ],
               "category_uuid": "faa4fc1c-c4ba-47fc-8a93-a9bf8bd5818c"
             },
             {
               "uuid": "8fd5f13b-0398-4286-b18a-a92b5a2ea19d",
               "type": "has_only_text",
-              "arguments": ["<ERROR>"],
+              "arguments": [
+                "<ERROR>"
+              ],
               "category_uuid": "b3a625e7-97f2-461d-a481-20dec52bd609"
             }
           ]
@@ -970,13 +926,6 @@
     ],
     "_ui": {
       "nodes": {
-        "8475045b-ecb2-44a7-b511-ee4a74703108": {
-          "position": {
-            "left": 0,
-            "top": 220
-          },
-          "type": "wait_for_response"
-        },
         "fb7bbf99-65cd-4e08-825a-68fc7293cc05": {
           "position": {
             "left": 0,

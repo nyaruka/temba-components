@@ -45,8 +45,8 @@
             "type": "send_msg",
             "text": "Would you like chicken or fish?",
             "attachments": [
-              "image/jpeg:http://localhost:9000/temba-attachments/816f8797-c929-47a8-a1ad-9a33f0123406-IMG_0917.jpeg",
-              "image/jpeg:http://localhost:9000/temba-attachments/de0f23fc-2d71-4a93-90d3-729b1ad65cd2-IMG_3208.jpeg"
+              "image/jpeg:http://localhost:9000/temba-attachments/0b7acdd2-8563-4991-b3b4-abcb83aa4540-00001.jpg",
+              "image/jpeg:http://localhost:9000/temba-attachments/760f4437-e1b7-4de2-a728-1cbd35a59d35-2021-07-23 09.07.13.jpg"
             ],
             "quick_replies": [
               "Fish",
