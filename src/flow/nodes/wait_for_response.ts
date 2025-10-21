@@ -1,17 +1,19 @@
 import { COLORS, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
-import {
-  generateUUID,
-  isSystemCategory,
-  generateDefaultCategoryName,
-  createRulesRouter
-} from '../../utils';
+import { generateUUID, createRulesRouter } from '../../utils';
 import {
   getWaitForResponseOperators,
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
 import { resultNameField } from './shared';
+import {
+  isEmptyRuleItem,
+  createRuleItemChangeHandler,
+  createRulesItemConfig,
+  extractUserRules,
+  casesToFormRules
+} from './shared-rules';
 
 const TIMEOUT_OPTIONS = [
   { value: '60', name: '1 minute' },
@@ -86,217 +88,14 @@ export const wait_for_response: NodeConfig = {
       minItems: 0,
       maxItems: 100,
       sortable: true,
-      maintainEmptyItem: true, // Explicitly enable empty item maintenance
-      isEmptyItem: (item: any) => {
-        // Helper function to get operator value from various formats
-        const getOperatorValue = (operator: any): string => {
-          if (typeof operator === 'string') {
-            return operator.trim();
-          } else if (Array.isArray(operator) && operator.length > 0) {
-            // Handle array format: [{value: "has_any_word", name: "..."}]
-            const firstOperator = operator[0];
-            if (
-              firstOperator &&
-              typeof firstOperator === 'object' &&
-              firstOperator.value
-            ) {
-              return firstOperator.value.trim();
-            }
-          } else if (
-            operator &&
-            typeof operator === 'object' &&
-            operator.value
-          ) {
-            // Handle object format: {value: "has_any_word", name: "..."}
-            return operator.value.trim();
-          }
-          return '';
-        };
-
-        // Check if operator and category are provided
-        const operatorValue = getOperatorValue(item.operator);
-        if (!operatorValue || !item.category || item.category.trim() === '') {
-          return true;
-        }
-
-        // Check if value is required based on operator configuration
-        const operatorConfig = getOperatorConfig(operatorValue);
-        if (operatorConfig && operatorConfig.operands === 1) {
-          // value1 is required for this operator
-          return !item.value1 || item.value1.trim() === '';
-        } else if (operatorConfig && operatorConfig.operands === 2) {
-          // Both value1 and value2 are required for this operator
-          return (
-            !item.value1 ||
-            item.value1.trim() === '' ||
-            !item.value2 ||
-            item.value2.trim() === ''
-          );
-        }
-
-        // No value required for this operator
-        return false;
-      },
-      onItemChange: (
-        itemIndex: number,
-        field: string,
-        value: any,
-        allItems: any[]
-      ) => {
-        const updatedItems = [...allItems];
-        const item = { ...updatedItems[itemIndex] };
-
-        // Helper to get operator value from various formats
-        const getOperatorValue = (operator: any): string => {
-          if (typeof operator === 'string') {
-            return operator.trim();
-          } else if (Array.isArray(operator) && operator.length > 0) {
-            const firstOperator = operator[0];
-            if (
-              firstOperator &&
-              typeof firstOperator === 'object' &&
-              firstOperator.value
-            ) {
-              return firstOperator.value.trim();
-            }
-          } else if (
-            operator &&
-            typeof operator === 'object' &&
-            operator.value
-          ) {
-            return operator.value.trim();
-          }
-          return '';
-        };
-
-        // Update the changed field
-        item[field] = value;
-
-        // Get operator values (before and after the change)
-        const oldItem = allItems[itemIndex] || {};
-        const oldOperatorValue =
-          field === 'operator'
-            ? getOperatorValue(oldItem.operator)
-            : getOperatorValue(item.operator);
-        const newOperatorValue = getOperatorValue(item.operator);
-
-        // Calculate what the default category name should be before the change
-        const oldDefaultCategory = generateDefaultCategoryName(
-          oldOperatorValue,
-          getOperatorConfig,
-          field === 'value1' ? oldItem.value1 : item.value1,
-          field === 'value2' ? oldItem.value2 : item.value2
-        );
-
-        // Calculate what the new default category name should be after the change
-        const newDefaultCategory = generateDefaultCategoryName(
-          newOperatorValue,
-          getOperatorConfig,
-          item.value1,
-          item.value2
-        );
-
-        // Determine if we should auto-update the category
-        const shouldUpdateCategory =
-          // Category is empty
-          !item.category ||
-          item.category.trim() === '' ||
-          // Category matches the old default (user hasn't customized it)
-          item.category === oldDefaultCategory;
-
-        // Auto-populate or update category if conditions are met
-        if (shouldUpdateCategory && newDefaultCategory) {
-          item.category = newDefaultCategory;
-        }
-
-        updatedItems[itemIndex] = item;
-        return updatedItems;
-      },
+      maintainEmptyItem: true,
+      isEmptyItem: isEmptyRuleItem,
+      onItemChange: createRuleItemChangeHandler(),
       itemConfig: {
+        ...createRulesItemConfig(),
         operator: {
-          type: 'select',
-          required: true,
-          multi: false, // Explicitly set as single-select
-          options: operatorsToSelectOptions(getWaitForResponseOperators()),
-          flavor: 'xsmall',
-          width: '200px'
-        },
-        value1: {
-          type: 'text',
-          flavor: 'xsmall',
-          conditions: {
-            visible: (formData: Record<string, any>) => {
-              // Helper function to get operator value from various formats
-              const getOperatorValue = (operator: any): string => {
-                if (typeof operator === 'string') {
-                  return operator.trim();
-                } else if (Array.isArray(operator) && operator.length > 0) {
-                  const firstOperator = operator[0];
-                  if (
-                    firstOperator &&
-                    typeof firstOperator === 'object' &&
-                    firstOperator.value
-                  ) {
-                    return firstOperator.value.trim();
-                  }
-                } else if (
-                  operator &&
-                  typeof operator === 'object' &&
-                  operator.value
-                ) {
-                  return operator.value.trim();
-                }
-                return '';
-              };
-
-              // Show value1 field for operators that require 1 or 2 operands
-              const operatorValue = getOperatorValue(formData.operator);
-              const operatorConfig = getOperatorConfig(operatorValue);
-              return operatorConfig ? operatorConfig.operands >= 1 : true;
-            }
-          }
-        },
-        value2: {
-          type: 'text',
-          flavor: 'xsmall',
-          conditions: {
-            visible: (formData: Record<string, any>) => {
-              // Helper function to get operator value from various formats
-              const getOperatorValue = (operator: any): string => {
-                if (typeof operator === 'string') {
-                  return operator.trim();
-                } else if (Array.isArray(operator) && operator.length > 0) {
-                  const firstOperator = operator[0];
-                  if (
-                    firstOperator &&
-                    typeof firstOperator === 'object' &&
-                    firstOperator.value
-                  ) {
-                    return firstOperator.value.trim();
-                  }
-                } else if (
-                  operator &&
-                  typeof operator === 'object' &&
-                  operator.value
-                ) {
-                  return operator.value.trim();
-                }
-                return '';
-              };
-
-              // Show value2 field only if operator requires exactly 2 operands
-              const operatorValue = getOperatorValue(formData.operator);
-              const operatorConfig = getOperatorConfig(operatorValue);
-              return operatorConfig ? operatorConfig.operands === 2 : false;
-            }
-          }
-        },
-        category: {
-          type: 'text',
-          placeholder: 'Category',
-          required: true,
-          maxWidth: '120px',
-          flavor: 'xsmall'
+          ...createRulesItemConfig().operator,
+          options: operatorsToSelectOptions(getWaitForResponseOperators())
         }
       }
     },
@@ -344,52 +143,8 @@ export const wait_for_response: NodeConfig = {
     };
   },
   toFormData: (node: Node) => {
-    // Extract rules from router cases
-    const rules = [];
-    if (node.router?.cases && node.router?.categories) {
-      node.router.cases.forEach((case_) => {
-        // Find the category for this case
-        const category = node.router!.categories.find(
-          (cat) => cat.uuid === case_.category_uuid
-        );
-
-        // Skip system categories
-        if (category && !isSystemCategory(category.name)) {
-          // Handle different operator types
-          const operatorConfig = getOperatorConfig(case_.type);
-          const operatorDisplayName = operatorConfig
-            ? operatorConfig.name
-            : case_.type;
-          let value1 = '';
-          let value2 = '';
-
-          if (operatorConfig && operatorConfig.operands === 0) {
-            // No value needed for operators like has_text, has_number
-            value1 = '';
-            value2 = '';
-          } else if (operatorConfig && operatorConfig.operands === 1) {
-            // Single value for operators like has_number_lt - use value1
-            value1 = case_.arguments.join(' ');
-            value2 = '';
-          } else if (operatorConfig && operatorConfig.operands === 2) {
-            // Two separate values for operators like has_number_between
-            value1 = case_.arguments[0] || '';
-            value2 = case_.arguments[1] || '';
-          } else {
-            // Fallback: use first argument for unknown operators
-            value1 = case_.arguments.join(' ');
-            value2 = '';
-          }
-
-          rules.push({
-            operator: { value: case_.type, name: operatorDisplayName },
-            value1: value1,
-            value2: value2,
-            category: category.name
-          });
-        }
-      });
-    }
+    // Extract rules from router cases using shared function
+    const rules = casesToFormRules(node);
 
     // Extract timeout configuration
     const timeoutSeconds = node.router?.wait?.timeout?.seconds;
@@ -410,84 +165,8 @@ export const wait_for_response: NodeConfig = {
     };
   },
   fromFormData: (formData: any, originalNode: Node): Node => {
-    // Helper function to get operator value from various formats
-    const getOperatorValue = (operator: any): string => {
-      if (typeof operator === 'string') {
-        return operator.trim();
-      } else if (Array.isArray(operator) && operator.length > 0) {
-        // Handle array format: [{value: "has_any_word", name: "..."}]
-        const firstOperator = operator[0];
-        if (
-          firstOperator &&
-          typeof firstOperator === 'object' &&
-          firstOperator.value
-        ) {
-          return firstOperator.value.trim();
-        }
-      } else if (operator && typeof operator === 'object' && operator.value) {
-        // Handle object format: {value: "has_any_word", name: "..."}
-        return operator.value.trim();
-      }
-      return '';
-    };
-
-    // Get user rules
-    const userRules = (formData.rules || [])
-      .filter((rule: any) => {
-        // Always need operator and category
-        const operatorValue = getOperatorValue(rule?.operator);
-        if (
-          !operatorValue ||
-          !rule?.category ||
-          operatorValue === '' ||
-          rule.category.trim() === ''
-        ) {
-          return false;
-        }
-
-        // Check if value is required based on operator
-        const operatorConfig = getOperatorConfig(operatorValue);
-        if (operatorConfig && operatorConfig.operands === 1) {
-          // value1 is required for this operator
-          return rule?.value1 && rule.value1.trim() !== '';
-        } else if (operatorConfig && operatorConfig.operands === 2) {
-          // Both value1 and value2 are required for this operator
-          return (
-            rule?.value1 &&
-            rule.value1.trim() !== '' &&
-            rule?.value2 &&
-            rule.value2.trim() !== ''
-          );
-        }
-
-        // No value required for this operator
-        return true;
-      })
-      .map((rule: any) => {
-        const operatorValue = getOperatorValue(rule.operator);
-        const operatorConfig = getOperatorConfig(operatorValue);
-
-        let value = '';
-
-        if (operatorConfig && operatorConfig.operands === 1) {
-          // Single value from value1
-          value = rule.value1 ? rule.value1.trim() : '';
-        } else if (operatorConfig && operatorConfig.operands === 2) {
-          // Two values - combine them with space
-          const val1 = rule.value1 ? rule.value1.trim() : '';
-          const val2 = rule.value2 ? rule.value2.trim() : '';
-          value = `${val1} ${val2}`.trim();
-        } else {
-          // No value needed for 0-operand operators
-          value = '';
-        }
-
-        return {
-          operator: operatorValue,
-          value: value,
-          category: rule.category.trim()
-        };
-      });
+    // Get user rules using shared extraction function
+    const userRules = extractUserRules(formData);
 
     // If no user rules, clear cases but preserve other router config
     if (userRules.length === 0) {
