@@ -1,13 +1,15 @@
 import { COLORS, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
+import { resultNameField } from './shared';
 
 // Helper function to create a switch router with group cases
 const createGroupRouter = (
   userGroups: { uuid: string; name: string }[],
   existingCategories: Category[] = [],
   existingExits: Exit[] = [],
-  existingCases: Case[] = []
+  existingCases: Case[] = [],
+  resultName: string = ''
 ) => {
   const categories: Category[] = [];
   const exits: Exit[] = [];
@@ -82,7 +84,7 @@ const createGroupRouter = (
       categories: categories,
       default_category_uuid: otherCategoryUuid,
       operand: '@contact.groups',
-      result_name: ''
+      result_name: resultName
     },
     exits: exits
   };
@@ -121,9 +123,10 @@ export const split_by_groups: NodeConfig = {
         }
         return null;
       }
-    }
+    },
+    result_name: resultNameField
   },
-  layout: ['groups'],
+  layout: ['groups', 'result_name'],
   validate: (formData: any) => {
     const errors: { [key: string]: string } = {};
 
@@ -157,7 +160,8 @@ export const split_by_groups: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      groups: groups
+      groups: groups,
+      result_name: node.router?.result_name || ''
     };
   },
   fromFormData: (formData: any, originalNode: Node): Node => {
@@ -178,7 +182,8 @@ export const split_by_groups: NodeConfig = {
       selectedGroups,
       existingCategories,
       existingExits,
-      existingCases
+      existingCases,
+      formData.result_name || ''
     );
 
     // Return the complete node

@@ -130,6 +130,11 @@ export interface BaseFieldConfig {
     visible?: (formData: Record<string, any>) => boolean;
     disabled?: (formData: Record<string, any>) => boolean;
   };
+
+  // Optional field with reveal link
+  // When set, the field is hidden by default and a link with this text is shown
+  // Clicking the link reveals the field permanently (can't be hidden again)
+  optionalLink?: string;
 }
 
 export interface TextFieldConfig extends BaseFieldConfig {

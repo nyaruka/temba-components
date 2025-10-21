@@ -25,7 +25,6 @@ export class NodeEditor extends RapidElement {
         flex-direction: column;
         gap: 15px;
         min-width: 400px;
-        padding-bottom: 40px;
 
         --color-bubble-bg: rgba(var(--primary-rgb), 0.7);
         --color-bubble-border: rgba(0, 0, 0, 0.2);
@@ -276,6 +275,21 @@ export class NodeEditor extends RapidElement {
       .gutter-fields temba-select {
         min-width: 120px;
       }
+
+      .optional-field-link {
+        margin: 10px 0;
+      }
+
+      .optional-field-link a {
+        color: var(--color-link-primary, #0066cc);
+        text-decoration: none;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .optional-field-link a:hover {
+        text-decoration: underline;
+      }
     `;
   }
 
@@ -305,6 +319,9 @@ export class NodeEditor extends RapidElement {
 
   @state()
   private groupHoverState: { [key: string]: boolean } = {};
+
+  @state()
+  private revealedOptionalFields: Set<string> = new Set();
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -1049,6 +1066,43 @@ export class NodeEditor extends RapidElement {
     return fieldContent;
   }
 
+  private renderOptionalField(
+    fieldName: string,
+    config: FieldConfig,
+    value: any
+  ): TemplateResult {
+    // If the field has a value or has been revealed, show it
+    const hasValue = value && value.toString().trim() !== '';
+    const isRevealed = this.revealedOptionalFields.has(fieldName);
+
+    if (hasValue || isRevealed) {
+      // Render the field normally
+      return this.renderNewField(fieldName, config, value);
+    }
+
+    // Show the "Save as..." link
+    return html`
+      <div class="optional-field-link">
+        <a
+          href="#"
+          @click="${(e: Event) => {
+            e.preventDefault();
+            this.revealOptionalField(fieldName);
+          }}"
+        >
+          ${config.optionalLink}
+        </a>
+      </div>
+    `;
+  }
+
+  private revealOptionalField(fieldName: string): void {
+    this.revealedOptionalFields = new Set([
+      ...this.revealedOptionalFields,
+      fieldName
+    ]);
+  }
+
   private renderFieldContent(
     fieldName: string,
     config: FieldConfig,
@@ -1160,9 +1214,20 @@ export class NodeEditor extends RapidElement {
       case 'field':
         if (config.form![item.field] && !renderedFields.has(item.field)) {
           renderedFields.add(item.field);
+          const fieldConfig = config.form![item.field] as FieldConfig;
+
+          // Handle optional link fields
+          if (fieldConfig.optionalLink) {
+            return this.renderOptionalField(
+              item.field,
+              fieldConfig,
+              this.formData[item.field]
+            );
+          }
+
           return this.renderNewField(
             item.field,
-            config.form![item.field] as FieldConfig,
+            fieldConfig,
             this.formData[item.field]
           );
         }

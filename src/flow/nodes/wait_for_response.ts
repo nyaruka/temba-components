@@ -6,6 +6,7 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
+import { resultNameField } from './shared';
 
 const TIMEOUT_OPTIONS = [
   { value: '60', name: '1 minute' },
@@ -620,12 +621,7 @@ export const wait_for_response: NodeConfig = {
         }
       }
     },
-    result_name: {
-      type: 'text',
-      label: 'Result Name',
-      helpText: 'The name to save the response as',
-      placeholder: 'response'
-    }
+    result_name: resultNameField
   },
   layout: ['rules', 'result_name'],
   gutter: [
@@ -709,7 +705,7 @@ export const wait_for_response: NodeConfig = {
       rules: rules,
       timeout_enabled: !!timeoutSeconds,
       timeout_duration: timeoutOption,
-      result_name: node.router?.result_name || 'response'
+      result_name: node.router?.result_name || ''
     };
   },
   fromFormData: (formData: any, originalNode: Node): Node => {
@@ -844,9 +840,13 @@ export const wait_for_response: NodeConfig = {
 
       const router: any = {
         ...noRulesRouter,
-        result_name: formData.result_name || 'response',
         cases: [] // Clear all cases when no rules
       };
+
+      // Only set result_name if provided
+      if (formData.result_name && formData.result_name.trim() !== '') {
+        router.result_name = formData.result_name.trim();
+      }
 
       // Build wait configuration based on form data
       const waitConfig: any = {
@@ -923,9 +923,13 @@ export const wait_for_response: NodeConfig = {
 
     // Build final router with wait configuration and result_name
     const finalRouter: any = {
-      ...router,
-      result_name: formData.result_name || 'response'
+      ...router
     };
+
+    // Only set result_name if provided
+    if (formData.result_name && formData.result_name.trim() !== '') {
+      finalRouter.result_name = formData.result_name.trim();
+    }
 
     // Build wait configuration based on form data
     const waitConfig: any = {
