@@ -8,9 +8,7 @@ import {
 } from '../operators';
 import { resultNameField } from './shared';
 import {
-  isEmptyRuleItem,
-  createRuleItemChangeHandler,
-  createRulesItemConfig,
+  createRulesArrayConfig,
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
@@ -29,24 +27,10 @@ export const split_by_expression: NodeConfig = {
       evaluated: true,
       placeholder: '@fields.age'
     },
-    rules: {
-      type: 'array',
-      helpText: 'Define rules to categorize the expression result',
-      itemLabel: 'Rule',
-      minItems: 0,
-      maxItems: 100,
-      sortable: true,
-      maintainEmptyItem: true,
-      isEmptyItem: isEmptyRuleItem,
-      onItemChange: createRuleItemChangeHandler(),
-      itemConfig: {
-        ...createRulesItemConfig(),
-        operator: {
-          ...createRulesItemConfig().operator,
-          options: operatorsToSelectOptions(getWaitForResponseOperators())
-        }
-      }
-    },
+    rules: createRulesArrayConfig(
+      operatorsToSelectOptions(getWaitForResponseOperators()),
+      'Define rules to categorize the expression result'
+    ),
     result_name: resultNameField
   },
   layout: ['operand', 'rules', 'result_name'],

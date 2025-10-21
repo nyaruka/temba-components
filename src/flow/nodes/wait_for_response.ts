@@ -8,9 +8,7 @@ import {
 } from '../operators';
 import { resultNameField } from './shared';
 import {
-  isEmptyRuleItem,
-  createRuleItemChangeHandler,
-  createRulesItemConfig,
+  createRulesArrayConfig,
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
@@ -81,24 +79,10 @@ export const wait_for_response: NodeConfig = {
   color: COLORS.wait,
   dialogSize: 'large',
   form: {
-    rules: {
-      type: 'array',
-      helpText: 'Define rules to categorize responses',
-      itemLabel: 'Rule',
-      minItems: 0,
-      maxItems: 100,
-      sortable: true,
-      maintainEmptyItem: true,
-      isEmptyItem: isEmptyRuleItem,
-      onItemChange: createRuleItemChangeHandler(),
-      itemConfig: {
-        ...createRulesItemConfig(),
-        operator: {
-          ...createRulesItemConfig().operator,
-          options: operatorsToSelectOptions(getWaitForResponseOperators())
-        }
-      }
-    },
+    rules: createRulesArrayConfig(
+      operatorsToSelectOptions(getWaitForResponseOperators()),
+      'Define rules to categorize responses'
+    ),
     timeout_enabled: {
       type: 'checkbox',
       label: (formData: Record<string, any>) => {

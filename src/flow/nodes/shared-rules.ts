@@ -268,3 +268,33 @@ function isSystemCategory(categoryName: string): boolean {
     categoryName
   );
 }
+
+/**
+ * Creates a complete rules array configuration for forms.
+ * This is the shared configuration used by both wait_for_response and split_by_expression.
+ *
+ * @param operatorOptions - The operator options to use (from operatorsToSelectOptions)
+ * @param helpText - The help text to display for the rules array
+ * @returns A complete array field configuration object
+ */
+export const createRulesArrayConfig = (
+  operatorOptions: any[],
+  helpText: string = 'Define rules to categorize responses'
+) => ({
+  type: 'array' as const,
+  helpText,
+  itemLabel: 'Rule',
+  minItems: 0,
+  maxItems: 100,
+  sortable: true,
+  maintainEmptyItem: true,
+  isEmptyItem: isEmptyRuleItem,
+  onItemChange: createRuleItemChangeHandler(),
+  itemConfig: {
+    ...createRulesItemConfig(),
+    operator: {
+      ...createRulesItemConfig().operator,
+      options: operatorOptions
+    }
+  }
+});
