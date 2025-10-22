@@ -378,7 +378,7 @@ export class NodeEditor extends RapidElement {
       // Node editing mode - use node config
       const nodeConfig = this.getNodeConfig();
       if (nodeConfig?.toFormData) {
-        this.formData = nodeConfig.toFormData(this.node);
+        this.formData = nodeConfig.toFormData(this.node, this.nodeUI);
       } else {
         this.formData = { ...this.node };
       }
@@ -539,8 +539,16 @@ export class NodeEditor extends RapidElement {
     if (this.node && this.node.router) {
       // Node editing mode with router - use formDataToNode
       const updatedNode = this.formDataToNode(processedFormData);
+
+      // Generate UI config if the node config provides a toUIConfig function
+      const nodeConfig = this.getNodeConfig();
+      const uiConfig = nodeConfig?.toUIConfig
+        ? nodeConfig.toUIConfig(processedFormData)
+        : undefined;
+
       this.fireCustomEvent(CustomEventType.NodeSaved, {
-        node: updatedNode
+        node: updatedNode,
+        uiConfig
       });
     } else if (this.action) {
       // Pure action editing mode (no router)
@@ -551,8 +559,16 @@ export class NodeEditor extends RapidElement {
     } else if (this.node) {
       // Node editing mode without router
       const updatedNode = this.formDataToNode(processedFormData);
+
+      // Generate UI config if the node config provides a toUIConfig function
+      const nodeConfig = this.getNodeConfig();
+      const uiConfig = nodeConfig?.toUIConfig
+        ? nodeConfig.toUIConfig(processedFormData)
+        : undefined;
+
       this.fireCustomEvent(CustomEventType.NodeSaved, {
-        node: updatedNode
+        node: updatedNode,
+        uiConfig
       });
     }
   }

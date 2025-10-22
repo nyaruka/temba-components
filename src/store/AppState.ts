@@ -95,6 +95,7 @@ export interface AppState {
     uuid: string,
     node: { actions: Action[]; uuid: string; exits: Exit[]; router?: Router }
   ): unknown;
+  updateNodeUIConfig(uuid: string, config: Record<string, any>): unknown;
   updateConnection(
     nodeUuid: string,
     exitUuid: string,
@@ -285,6 +286,18 @@ export const zustand = createStore<AppState>()(
             node.uuid = newNode.uuid;
             node.exits = newNode.exits;
             node.router = newNode.router;
+          }
+          state.dirtyDate = new Date();
+        });
+      },
+
+      updateNodeUIConfig: (uuid: string, config: Record<string, any>) => {
+        set((state: AppState) => {
+          if (state.flowDefinition._ui.nodes[uuid]) {
+            if (!state.flowDefinition._ui.nodes[uuid].config) {
+              state.flowDefinition._ui.nodes[uuid].config = {};
+            }
+            Object.assign(state.flowDefinition._ui.nodes[uuid].config, config);
           }
           state.dirtyDate = new Date();
         });
