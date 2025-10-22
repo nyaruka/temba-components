@@ -21,7 +21,9 @@ const assertDialogScreenshot = async (
   const clip = getClip(dialog);
   // Adjust width to show full dialog with proper padding
   const dialogRect = dialog.getBoundingClientRect();
-  clip.width = dialogRect.width + 20; // 10px padding on each side
+  // Use scrollWidth to get the actual content width (including overflow)
+  const contentWidth = Math.max(dialogRect.width, dialog.scrollWidth);
+  clip.width = contentWidth + 20; // 10px padding on each side
   await assertScreenshot(screenshotName, clip);
 };
 

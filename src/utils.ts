@@ -1125,6 +1125,338 @@ export const createMultiCategoryRouter = (
   };
 };
 
+// Helper function to check if a category is a system category
+export const isSystemCategory = (categoryName: string): boolean => {
+  return ['No Response', 'Other', 'All Responses', 'Timeout'].includes(
+    categoryName
+  );
+};
+
+// Helper function to check if a UUID belongs to a system category
+export const isSystemCategoryUuid = (
+  uuid: string,
+  categories: any[]
+): boolean => {
+  const category = categories.find((cat) => cat.uuid === uuid);
+  return category ? isSystemCategory(category.name) : false;
+};
+
+// Helper function to generate default category name based on operator and operands
+export const generateDefaultCategoryName = (
+  operator: string,
+  getOperatorConfig: (type: string) => any | undefined,
+  value1?: string,
+  value2?: string
+): string => {
+  const operatorConfig = getOperatorConfig(operator);
+  if (!operatorConfig) return '';
+
+  // Fixed category names (no operands)
+  if (operatorConfig.operands === 0) {
+    return operatorConfig.categoryName || '';
+  }
+
+  // Dynamic category names based on operands
+  const cleanValue1 = (value1 || '').trim();
+  const cleanValue2 = (value2 || '').trim();
+
+  // Helper to capitalize first letter
+  const capitalize = (str: string) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Handle different operator types
+  switch (operator) {
+    // Word/phrase operators - capitalize first letter of value
+    case 'has_any_word':
+    case 'has_all_words':
+    case 'has_phrase':
+    case 'has_only_phrase':
+    case 'has_beginning':
+      return cleanValue1 ? capitalize(cleanValue1) : '';
+
+    // Pattern operators - show as-is
+    case 'has_pattern':
+      return cleanValue1;
+
+    // Number comparison operators - include symbol
+    case 'has_number_eq':
+      return cleanValue1 ? `= ${cleanValue1}` : '';
+    case 'has_number_lt':
+      return cleanValue1 ? `< ${cleanValue1}` : '';
+    case 'has_number_lte':
+      return cleanValue1 ? `≤ ${cleanValue1}` : '';
+    case 'has_number_gt':
+      return cleanValue1 ? `> ${cleanValue1}` : '';
+    case 'has_number_gte':
+      return cleanValue1 ? `≥ ${cleanValue1}` : '';
+
+    // Number between - range format
+    case 'has_number_between':
+      if (cleanValue1 && cleanValue2) {
+        return `${cleanValue1} - ${cleanValue2}`;
+      }
+      return '';
+
+    // Date operators - format with relative expressions
+    case 'has_date_lt':
+    case 'has_date_lte':
+      if (cleanValue1) {
+        // Parse relative date expression (e.g., "today + 5" or "today - 3")
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `Before ${base} ${operator} ${days} ${dayWord}`;
+        }
+        // Fallback for other date formats
+        return `Before ${cleanValue1}`;
+      }
+      return '';
+
+    case 'has_date_gt':
+    case 'has_date_gte':
+      if (cleanValue1) {
+        // Parse relative date expression
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `After ${base} ${operator} ${days} ${dayWord}`;
+        }
+        // Fallback for other date formats
+        return `After ${cleanValue1}`;
+      }
+      return '';
+
+    case 'has_date_eq':
+      if (cleanValue1) {
+        // Parse relative date expression
+        const match = cleanValue1.match(/^(today)\s*([+-])\s*(\d+)$/i);
+        if (match) {
+          const [, base, operator, days] = match;
+          const dayWord = days === '1' ? 'day' : 'days';
+          return `${base} ${operator} ${days} ${dayWord}`;
+        }
+        return cleanValue1;
+      }
+      return '';
+
+    default:
+      // Fallback - capitalize first value
+      return cleanValue1 ? capitalize(cleanValue1) : '';
+  }
+};
+
+// Helper function to create a rules-based router (used by wait_for_response and split_by_expression)
+export const createRulesRouter = (
+  operand: string,
+  userRules: any[],
+  getOperatorConfig: (type: string) => any | undefined,
+  existingCategories: any[] = [],
+  existingExits: any[] = [],
+  existingCases: any[] = []
+) => {
+  const categories: RouterCategory[] = [];
+  const exits: RouterExit[] = [];
+  const cases: RouterCase[] = [];
+
+  // Filter existing categories to get only user-defined rules (exclude system categories)
+  const existingUserCategories = existingCategories.filter(
+    (cat) => !isSystemCategory(cat.name)
+  );
+
+  // Track categories as we create them (case-insensitive lookup)
+  const createdCategories = new Map<
+    string,
+    { uuid: string; name: string; exit_uuid: string }
+  >();
+
+  // Process rules in their original order to preserve rule order
+  userRules.forEach((rule, ruleIndex) => {
+    const categoryKey = rule.category.trim().toLowerCase();
+    const categoryName = rule.category.trim(); // Use original casing
+
+    let categoryInfo = createdCategories.get(categoryKey);
+
+    if (!categoryInfo) {
+      // First time seeing this category - create it
+
+      // Smart category matching: try by name first, then fall back to position
+      let existingCategory = existingUserCategories.find(
+        (cat) => cat.name.toLowerCase() === categoryKey
+      );
+
+      // If no match by name, try by position (for category rename scenarios)
+      const categoryCreationOrder = Array.from(createdCategories.keys()).length;
+      if (
+        !existingCategory &&
+        categoryCreationOrder < existingUserCategories.length
+      ) {
+        const candidateCategory = existingUserCategories[categoryCreationOrder];
+        // Double-check that this candidate is not a system category UUID
+        if (
+          candidateCategory &&
+          !isSystemCategoryUuid(candidateCategory.uuid, existingCategories)
+        ) {
+          existingCategory = candidateCategory;
+        }
+      }
+
+      const existingExit = existingCategory
+        ? existingExits.find((exit) => exit.uuid === existingCategory.exit_uuid)
+        : null;
+
+      // Generate UUIDs, ensuring we don't reuse system category UUIDs
+      let exitUuid = existingExit?.uuid || generateUUID();
+      let categoryUuid = existingCategory?.uuid || generateUUID();
+
+      // Additional safety check: if somehow we got a system category UUID, generate new ones
+      if (isSystemCategoryUuid(categoryUuid, existingCategories)) {
+        categoryUuid = generateUUID();
+        exitUuid = generateUUID();
+      }
+
+      categoryInfo = {
+        uuid: categoryUuid,
+        name: categoryName,
+        exit_uuid: exitUuid
+      };
+
+      createdCategories.set(categoryKey, categoryInfo);
+
+      // Add category and exit
+      categories.push({
+        uuid: categoryUuid,
+        name: categoryName,
+        exit_uuid: exitUuid
+      });
+
+      exits.push({
+        uuid: exitUuid,
+        destination_uuid: existingExit?.destination_uuid || null
+      });
+    }
+
+    // Create case for this rule
+    let existingCase = existingCases[ruleIndex];
+
+    // If we can't find by position, try to find by matching rule content
+    if (!existingCase && existingCases.length > 0) {
+      existingCase = existingCases.find((case_) => {
+        // Find the category for this case
+        const caseCategory = existingCategories.find(
+          (cat) => cat.uuid === case_.category_uuid
+        );
+
+        // Match by operator type and category name
+        return (
+          case_.type === rule.operator &&
+          caseCategory?.name.toLowerCase() === categoryKey
+        );
+      });
+    }
+
+    const caseUuid = existingCase?.uuid || generateUUID();
+
+    // Parse rule value based on operator configuration
+    const operatorConfig = getOperatorConfig(rule.operator);
+    let arguments_: string[] = [];
+
+    if (operatorConfig) {
+      if (operatorConfig.operands === 0) {
+        // No operands needed
+        arguments_ = [];
+      } else if (operatorConfig.operands === 2) {
+        // Split value for two operands (e.g., "1 10" for between)
+        arguments_ = rule.value.split(' ').filter((arg: string) => arg.trim());
+      } else {
+        // Single operand - but split words for operators that expect multiple words
+        if (rule.value && rule.value.trim()) {
+          // Split on spaces and filter out empty strings
+          arguments_ = rule.value
+            .trim()
+            .split(/\s+/)
+            .filter((arg: string) => arg.length > 0);
+        } else {
+          arguments_ = [];
+        }
+      }
+    } else {
+      // Fallback for unknown operators - split on spaces if value exists
+      if (rule.value && rule.value.trim()) {
+        arguments_ = rule.value
+          .trim()
+          .split(/\s+/)
+          .filter((arg: string) => arg.length > 0);
+      } else {
+        arguments_ = [];
+      }
+    }
+
+    cases.push({
+      uuid: caseUuid,
+      type: rule.operator,
+      arguments: arguments_,
+      category_uuid: categoryInfo.uuid
+    });
+  });
+
+  // Add default category (always present)
+  // Name is "Other" if there are user rules, "All Responses" if there are no user rules
+  const defaultCategoryName = userRules.length > 0 ? 'Other' : 'All Responses';
+
+  // Try to find existing default category by name (prefer exact match)
+  let existingDefaultCategory = existingCategories.find(
+    (cat) => cat.name === defaultCategoryName
+  );
+
+  // If no exact match, try to find the other possible default category name
+  if (!existingDefaultCategory) {
+    const alternateName = userRules.length > 0 ? 'All Responses' : 'Other';
+    existingDefaultCategory = existingCategories.find(
+      (cat) => cat.name === alternateName
+    );
+  }
+
+  const existingDefaultExit = existingDefaultCategory
+    ? existingExits.find(
+        (exit) => exit.uuid === existingDefaultCategory.exit_uuid
+      )
+    : null;
+
+  const defaultExitUuid = existingDefaultExit?.uuid || generateUUID();
+  const defaultCategoryUuid = existingDefaultCategory?.uuid || generateUUID();
+
+  categories.push({
+    uuid: defaultCategoryUuid,
+    name: defaultCategoryName,
+    exit_uuid: defaultExitUuid
+  });
+
+  exits.push({
+    uuid: defaultExitUuid,
+    destination_uuid: existingDefaultExit?.destination_uuid || null
+  });
+
+  // Find the default category (either "Other" or "All Responses")
+  const defaultCategory = categories.find(
+    (cat) => cat.name === 'Other' || cat.name === 'All Responses'
+  );
+
+  return {
+    router: {
+      type: 'switch' as const,
+      categories: categories,
+      default_category_uuid: defaultCategory?.uuid,
+      operand: operand,
+      cases: cases
+    },
+    exits: exits
+  };
+};
+
 export const titleCase = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };

@@ -108,7 +108,7 @@ export const split_by_scheme: NodeConfig = {
       type: 'select',
       label: 'Channel Types',
       helpText:
-        "The contact's URN is the address they used to reach you such as their phone number or a Facebook ID. Select which URN types to split by below.",
+        "The contact's URN is the address they used to reach you such as their phone number or a Facebook ID. Select which URN types to split by.",
       required: true,
       options: getSchemeOptions(),
       multi: true,
