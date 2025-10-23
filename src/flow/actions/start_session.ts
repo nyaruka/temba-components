@@ -112,7 +112,7 @@ export const start_session: ActionConfig = {
       nameKey: 'name',
       placeholder: 'Search for contacts or groups...',
       conditions: {
-        visible: (formData: any) => {
+        visible: (formData: FormData) => {
           const startType = formData.startType?.[0]?.value;
           return startType === 'manual';
         }
@@ -125,7 +125,7 @@ export const start_session: ActionConfig = {
       helpText: 'Only one matching contact will be started',
       placeholder: 'household_id = @fields.household_id',
       conditions: {
-        visible: (formData: any) => {
+        visible: (formData: FormData) => {
           const startType = formData.startType?.[0]?.value;
           return startType === 'query';
         }
@@ -173,7 +173,7 @@ export const start_session: ActionConfig = {
     };
   },
 
-  fromFormData: (formData: any): StartSession => {
+  fromFormData: (formData: FormData): StartSession => {
     const action: StartSession & {
       contact_query?: string;
       exclusions?: { in_a_flow: boolean };
