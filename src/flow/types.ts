@@ -1,5 +1,5 @@
 import { TemplateResult } from 'lit-html';
-import { Action, Node } from '../store/flow-definition';
+import { Action, Node, NodeUI } from '../store/flow-definition';
 
 export interface ValidationResult {
   valid: boolean;
@@ -101,7 +101,8 @@ export interface NodeConfig extends FormConfig {
   toFormData?: (node: Node, nodeUI?: any) => FormData;
   fromFormData?: (formData: FormData, originalNode: Node) => Node;
   toUIConfig?: (formData: FormData) => Record<string, any>;
-  render?: (node: Node) => TemplateResult;
+  render?: (node: Node, nodeUI?: any) => TemplateResult;
+  renderTitle?: (node: Node, nodeUI?: NodeUI) => TemplateResult;
 }
 
 // New field configuration system for generic form generation

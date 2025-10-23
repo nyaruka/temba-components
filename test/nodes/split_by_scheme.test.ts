@@ -45,7 +45,7 @@ describe('temba-split-by-scheme', () => {
     expect(formData.schemes).to.have.lengthOf(2);
     expect(formData.schemes[0]).to.deep.equal({
       value: 'tel',
-      name: 'Phone'
+      name: 'SMS'
     });
     expect(formData.schemes[1]).to.deep.equal({
       value: 'facebook',
@@ -131,7 +131,7 @@ describe('temba-split-by-scheme', () => {
 
     // Check categories match scheme names
     const telCategory = resultNode.router!.categories!.find(
-      (cat) => cat.name === 'Phone'
+      (cat) => cat.name === 'SMS'
     );
     expect(telCategory).to.exist;
 
@@ -239,7 +239,7 @@ describe('temba-split-by-scheme', () => {
         categories: [
           {
             uuid: 'existing-cat-uuid',
-            name: 'Phone',
+            name: 'SMS',
             exit_uuid: 'existing-exit-uuid'
           },
           {
@@ -264,7 +264,7 @@ describe('temba-split-by-scheme', () => {
     // Re-save with same scheme
     const formData = {
       uuid: 'test-node-uuid',
-      schemes: [{ value: 'tel', name: 'Phone' }],
+      schemes: [{ value: 'tel', name: 'SMS' }],
       result_name: ''
     };
 

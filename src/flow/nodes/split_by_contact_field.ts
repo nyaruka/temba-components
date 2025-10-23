@@ -12,6 +12,8 @@ import {
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
+import { SCHEMES } from '../utils';
+import { html } from 'lit';
 
 // System contact properties that can be split on
 export const CONTACT_PROPERTIES = {
@@ -23,16 +25,19 @@ export const CONTACT_PROPERTIES = {
 
 // Helper to get operand for the selected field
 const getOperandForField = (field: any): string => {
-  // For custom fields, use the key
-  if (field.key) {
-    return `@fields.${field.key}`;
+  // For URN schemes, split on the URN path (the actual ID value like Facebook ID)
+  // Note: This is different from split_by_scheme which splits on the scheme type itself
+  if (field.type === 'scheme') {
+    // field.id or field.value will be the scheme name like 'facebook', 'whatsapp', etc
+    const schemeId = field.id || field.value;
+    return `@(default(urn_parts(urns.${schemeId}).path, ""))`;
   }
   // For system properties, use the id
   if (field.type === 'property') {
     return `@contact.${field.id}`;
   }
-  // Fallback to id
-  return `@contact.${field.id}`;
+  // Fallback to key
+  return `@fields.${field.key}`;
 };
 
 export const split_by_contact_field: NodeConfig = {
@@ -43,9 +48,6 @@ export const split_by_contact_field: NodeConfig = {
   form: {
     field: {
       type: 'select',
-      label: 'Field',
-      helpText:
-        'Select the contact field or property to split on. You can split on custom fields or system properties like Name, Language, etc.',
       required: true,
       searchable: true,
       clearable: false,
@@ -54,11 +56,21 @@ export const split_by_contact_field: NodeConfig = {
       nameKey: 'name',
       placeholder: 'Select a field...',
       // Provide system properties as fixed options at the top
-      options: Object.values(CONTACT_PROPERTIES).map((prop) => ({
-        value: prop.id,
-        name: prop.name,
-        type: prop.type
-      }))
+      options: [
+        ...Object.values(CONTACT_PROPERTIES).map((prop) => ({
+          value: prop.id,
+          name: prop.name,
+          type: prop.type
+        })),
+        // Add all URN scheme options (they represent splitting on the URN value, like Facebook ID)
+        ...SCHEMES.filter((scheme) => !scheme.excludeFromSplit).map(
+          (scheme) => ({
+            value: scheme.scheme,
+            name: scheme.path,
+            type: 'scheme'
+          })
+        )
+      ]
     },
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),
@@ -146,14 +158,32 @@ export const split_by_contact_field: NodeConfig = {
       return {};
     }
 
+    // For scheme types, the id should be the scheme name (facebook, whatsapp, etc)
+    // For custom fields, the id should be the field key
+    // For system properties, the id should be the property id
+    let operandId =
+      selectedField.id || selectedField.value || selectedField.key;
+
+    // If this is a scheme type, ensure we use the scheme name as the id
+    if (selectedField.type === 'scheme') {
+      operandId = selectedField.value || selectedField.id;
+    }
+
+    let type = selectedField.type;
+    if (type !== 'property' && type !== 'scheme') {
+      type = 'field';
+    }
+
     // Return UI config with operand information for persistence
     return {
       operand: {
-        id: selectedField.id || selectedField.value || selectedField.key,
-        type: selectedField.type || 'field',
-        name: selectedField.name
-      },
-      cases: {} // Placeholder for cases config if needed
+        id: operandId,
+        name: selectedField.name || selectedField.label,
+        type
+      }
     };
+  },
+  renderTitle: (node: Node, nodeUI?: any) => {
+    return html`<div>Split by ${nodeUI.config.operand.name}</div>`;
   }
 };

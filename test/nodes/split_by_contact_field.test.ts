@@ -18,12 +18,14 @@ describe('split_by_contact_field', () => {
     expect(fieldConfig.endpoint).to.equal('/api/v2/fields.json');
   });
 
-  it('should provide system properties as options', () => {
+  it('should provide system properties and URN schemes as options', () => {
     const fieldConfig = split_by_contact_field.form!.field as any;
     const options = fieldConfig.options;
     expect(options).to.exist;
     expect(Array.isArray(options)).to.be.true;
-    expect(options.length).to.equal(4);
+
+    // Should have 4 system properties + multiple URN schemes
+    expect(options.length).to.be.greaterThan(4);
 
     // Check that system properties are present
     const names = options.map((opt: any) => opt.name);
@@ -31,6 +33,10 @@ describe('split_by_contact_field', () => {
     expect(names).to.include('Language');
     expect(names).to.include('Status');
     expect(names).to.include('Channel');
+
+    // Check that some URN schemes are present
+    expect(names).to.include('WhatsApp Number');
+    expect(names).to.include('Facebook ID');
   });
 
   it('should have rules configuration', () => {
@@ -333,5 +339,113 @@ describe('split_by_contact_field', () => {
     expect(uiConfig.operand.id).to.equal('favorite_color');
     expect(uiConfig.operand.name).to.equal('Favorite Color');
     expect(uiConfig.operand.type).to.equal('field');
+  });
+
+  it('should transform from form data to flow definition for URN scheme', () => {
+    const originalNode: Node = {
+      uuid: 'test-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        cases: [],
+        categories: [],
+        default_category_uuid: '',
+        operand: '@input.text'
+      },
+      exits: []
+    };
+
+    const formData = {
+      uuid: 'test-node-uuid',
+      field: [{ value: 'facebook', name: 'Facebook', type: 'scheme' }],
+      rules: [
+        {
+          operator: { value: 'has_only_phrase', name: 'has only the phrase' },
+          value1: '123456789',
+          value2: '',
+          category: 'Valid Facebook ID'
+        }
+      ],
+      result_name: 'facebook_id'
+    };
+
+    const updatedNode = split_by_contact_field.fromFormData!(
+      formData,
+      originalNode
+    );
+
+    // The operand should be splitting on the Facebook URN path (the ID)
+    expect(updatedNode.router!.operand).to.equal(
+      '@(default(urn_parts(urns.facebook).path, ""))'
+    );
+    expect(updatedNode.router!.result_name).to.equal('facebook_id');
+    expect(updatedNode.router!.cases.length).to.equal(1);
+    expect(updatedNode.router!.cases[0].type).to.equal('has_only_phrase');
+    expect(updatedNode.router!.cases[0].arguments).to.deep.equal(['123456789']);
+  });
+
+  it('should transform from flow definition to form data for URN scheme', () => {
+    const node: Node = {
+      uuid: 'test-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        cases: [
+          {
+            uuid: 'case-1',
+            type: 'has_only_phrase',
+            arguments: ['987654321'],
+            category_uuid: 'cat-1'
+          }
+        ],
+        categories: [
+          { uuid: 'cat-1', name: 'Valid WhatsApp', exit_uuid: 'exit-1' },
+          { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+        ],
+        default_category_uuid: 'cat-other',
+        operand: '@(default(urn_parts(urns.whatsapp).path, ""))',
+        result_name: 'whatsapp_number'
+      },
+      exits: [
+        { uuid: 'exit-1', destination_uuid: null },
+        { uuid: 'exit-other', destination_uuid: null }
+      ]
+    };
+
+    const nodeUI = {
+      type: 'split_by_contact_field',
+      position: { left: 0, top: 0 },
+      config: {
+        operand: {
+          id: 'whatsapp',
+          name: 'WhatsApp',
+          type: 'scheme'
+        }
+      }
+    };
+
+    const formData = split_by_contact_field.toFormData!(node, nodeUI);
+
+    expect(formData.uuid).to.equal('test-node-uuid');
+    expect(formData.field).to.have.lengthOf(1);
+    expect(formData.field[0].id).to.equal('whatsapp');
+    expect(formData.field[0].name).to.equal('WhatsApp');
+    expect(formData.field[0].type).to.equal('scheme');
+    expect(formData.result_name).to.equal('whatsapp_number');
+  });
+
+  it('should generate UI config from form data for URN scheme', () => {
+    const formData = {
+      field: [{ value: 'facebook', name: 'Facebook', type: 'scheme' }],
+      rules: [],
+      result_name: ''
+    };
+
+    const uiConfig = split_by_contact_field.toUIConfig!(formData);
+
+    expect(uiConfig.operand).to.exist;
+    expect(uiConfig.operand.id).to.equal('facebook');
+    expect(uiConfig.operand.name).to.equal('Facebook');
+    expect(uiConfig.operand.type).to.equal('scheme');
   });
 });

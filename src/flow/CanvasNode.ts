@@ -836,13 +836,24 @@ export class CanvasNode extends RapidElement {
     </div>`;
   }
 
-  private renderNodeTitle(config: NodeConfig, isRemoving: boolean = false) {
+  private renderNodeTitle(
+    config: NodeConfig,
+    node: Node,
+    ui: NodeUI,
+    isRemoving: boolean = false
+  ) {
     return html`<div
       class="cn-title ${isRemoving ? 'removing' : ''}"
       style="background:${config.color}"
     >
       <div class="title-spacer"></div>
-      <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
+      <div class="name">
+        ${isRemoving
+          ? 'Remove?'
+          : config.renderTitle
+          ? config.renderTitle(node, ui)
+          : html`${config.name}`}
+      </div>
       <div
         class="remove-button"
         @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
@@ -978,9 +989,13 @@ export class CanvasNode extends RapidElement {
               >
                 ${this.renderNodeTitle(
                   nodeConfig,
+                  this.node,
+                  this.ui,
                   this.actionRemovingState.has(this.node.uuid)
                 )}
-                ${nodeConfig.render ? nodeConfig.render(this.node) : null}
+                ${nodeConfig.render
+                  ? nodeConfig.render(this.node, this.ui)
+                  : null}
               </div>
             </div>`
           : this.node.actions.length > 0

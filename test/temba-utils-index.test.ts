@@ -35,7 +35,6 @@ import {
   stubbable,
   renderAvatar,
   fillTemplate,
-  spreadAttributes,
   getUrl,
   postUrl,
   postJSON,
@@ -1095,40 +1094,6 @@ describe('utils/index', () => {
       const result = fillTemplate(template, {});
 
       expect(result.strings).to.exist;
-    });
-  });
-
-  describe('spreadAttributes', () => {
-    it('spreads regular attributes', () => {
-      const attrs = { id: 'test', class: 'example' };
-      const result = spreadAttributes(attrs);
-
-      expect(Array.isArray(result)).to.be.true;
-      expect(result.length).to.equal(2);
-    });
-
-    it('handles event attributes with @', () => {
-      const attrs = { '@click': 'handleClick' };
-      const result = spreadAttributes(attrs);
-
-      expect(Array.isArray(result)).to.be.true;
-      expect(result.length).to.equal(1);
-    });
-
-    it('handles property attributes with .', () => {
-      const attrs = { '.value': 'test' };
-      const result = spreadAttributes(attrs);
-
-      expect(Array.isArray(result)).to.be.true;
-      expect(result.length).to.equal(1);
-    });
-
-    it('handles mixed attribute types', () => {
-      const attrs = { id: 'test', '@click': 'handler', '.prop': 'value' };
-      const result = spreadAttributes(attrs);
-
-      expect(Array.isArray(result)).to.be.true;
-      expect(result.length).to.equal(3);
     });
   });
 

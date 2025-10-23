@@ -514,18 +514,6 @@ export class Stubbable {
 
 export const stubbable = new Stubbable();
 
-export const spreadAttributes = (obj): TemplateResult[] => {
-  return Object.entries(obj).map(([key, value]) => {
-    if (key.startsWith('@')) {
-      return html`@${key.slice(1)}=${value}`;
-    } else if (key.startsWith('.')) {
-      return html`.${key.slice(1)}=${value}`;
-    } else {
-      return html`${key}=${value}`;
-    }
-  });
-};
-
 export const timeSince = (
   date: Date,
   options: { compareDate?: Date; hideRecentText?: boolean; suffix?: string } = {
