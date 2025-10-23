@@ -2,6 +2,7 @@ import { COLORS, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
+import { renderNamedObjects } from '../utils';
 
 export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
@@ -26,7 +27,7 @@ export const split_by_subflow: NodeConfig = {
     ) as any;
     return html`
       <div class="body">
-        ${enterFlowAction?.flow?.name || 'Configure subflow'}
+        ${renderNamedObjects([enterFlowAction?.flow], 'flow')}
       </div>
     `;
   },
