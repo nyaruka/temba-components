@@ -1025,7 +1025,10 @@ export class Editor extends RapidElement {
     this.closeNodeEditor();
   }
 
-  private handleNodeSaved(updatedNode: Node): void {
+  private handleNodeSaved(
+    updatedNode: Node,
+    uiConfig?: Record<string, any>
+  ): void {
     if (this.editingNode) {
       // Clean up jsPlumb connections for removed exits before updating the node
       if (this.plumber) {
@@ -1048,6 +1051,11 @@ export class Editor extends RapidElement {
 
       // Update the node in the store
       getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+
+      // Update the UI config if provided
+      if (uiConfig) {
+        getStore()?.getState().updateNodeUIConfig(updatedNode.uuid, uiConfig);
+      }
 
       // Repaint jsplumb connections in case node size changed
       if (this.plumber) {
@@ -1148,7 +1156,7 @@ export class Editor extends RapidElement {
             .nodeUI=${this.editingNodeUI}
             .action=${this.editingAction}
             @temba-node-saved=${(e: CustomEvent) =>
-              this.handleNodeSaved(e.detail.node)}
+              this.handleNodeSaved(e.detail.node, e.detail.uiConfig)}
             @temba-action-saved=${(e: CustomEvent) =>
               this.handleActionSaved(e.detail.action)}
             @temba-node-edit-cancelled=${this.handleNodeEditCanceled}

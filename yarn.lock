@@ -1948,6 +1948,11 @@
     eslint-plugin-no-only-tests "^3.1.0"
     eslint-plugin-wc "^1.2.0"
 
+"@open-wc/lit-helpers@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@open-wc/lit-helpers/-/lit-helpers-0.7.0.tgz#69899f7554424a1ed7d2e12b4328f3d194bc1d82"
+  integrity sha512-4NBlx5ve0EvZplCRJbESm0MdMbRCw16alP2y76KAAAwzmFFXXrUj5hFwhw55+sSg5qaRRx6sY+s7usKgnNo3TQ==
+
 "@open-wc/scoped-elements@^3.0.2":
   version "3.0.5"
   resolved "https://registry.yarnpkg.com/@open-wc/scoped-elements/-/scoped-elements-3.0.5.tgz#c1121d7d59edcfcd8560716d7239003a4302fce3"

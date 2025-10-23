@@ -1,14 +1,14 @@
 import { COLORS, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
-import { urnSchemeMap } from '../utils';
+import { SCHEMES } from '../utils';
 import { resultNameField } from './shared';
 
 // Helper function to get scheme options for the select dropdown
 const getSchemeOptions = () => {
-  return Object.entries(urnSchemeMap).map(([value, name]) => ({
-    value,
-    name
+  return SCHEMES.map((scheme) => ({
+    value: scheme.scheme,
+    name: scheme.name
   }));
 };
 
@@ -26,7 +26,8 @@ const createSchemeRouter = (
 
   // Create categories, exits, and cases for each selected scheme
   selectedSchemes.forEach((scheme) => {
-    const schemeName = urnSchemeMap[scheme] || scheme;
+    const schemeObj = SCHEMES.find((s) => s.scheme === scheme);
+    const schemeName = schemeObj?.name || scheme;
 
     // Try to find existing category by scheme name
     const existingCategory = existingCategories.find(
@@ -61,11 +62,13 @@ const createSchemeRouter = (
   });
 
   // Add default "Other" category for schemes not in the selected list
-  const existingOtherCategory = existingCategories.find(
-    (cat) =>
-      cat.name === 'Other' &&
-      !selectedSchemes.some((scheme) => urnSchemeMap[scheme] === cat.name)
-  );
+  const existingOtherCategory = existingCategories.find((cat) => {
+    const matchesSelected = selectedSchemes.some((scheme) => {
+      const schemeObj = SCHEMES.find((s) => s.scheme === scheme);
+      return schemeObj?.name === cat.name;
+    });
+    return cat.name === 'Other' && !matchesSelected;
+  });
   const existingOtherExit = existingOtherCategory
     ? existingExits.find(
         (exit) => exit.uuid === existingOtherCategory.exit_uuid
@@ -148,10 +151,13 @@ export const split_by_scheme: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      schemes: schemes.map((scheme) => ({
-        value: scheme,
-        name: urnSchemeMap[scheme] || scheme
-      })),
+      schemes: schemes.map((scheme) => {
+        const schemeObj = SCHEMES.find((s) => s.scheme === scheme);
+        return {
+          value: scheme,
+          name: schemeObj?.name || scheme
+        };
+      }),
       result_name: node.router?.result_name || ''
     };
   },

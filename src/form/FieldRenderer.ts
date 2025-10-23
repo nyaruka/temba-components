@@ -1,4 +1,5 @@
 import { html, TemplateResult } from 'lit';
+import { spread } from '@open-wc/lit-helpers';
 import {
   FieldConfig,
   TextFieldConfig,
@@ -245,10 +246,7 @@ export class FieldRenderer {
             value="${option}"
           ></temba-option>`;
         } else {
-          return html`<temba-option
-            name="${option.label || option.name}"
-            value="${option.value}"
-          ></temba-option>`;
+          return html`<temba-option ${spread(option)}></temba-option>`;
         }
       })}
     </temba-select>`;

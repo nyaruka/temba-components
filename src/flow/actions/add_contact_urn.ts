@@ -1,13 +1,14 @@
 import { html } from 'lit-html';
 import { ActionConfig, COLORS } from '../types';
 import { Node, AddContactUrn } from '../../store/flow-definition';
-import { urnSchemeMap } from '../utils';
+import { SCHEMES } from '../utils';
 
 export const add_contact_urn: ActionConfig = {
   name: 'Add URN',
   color: COLORS.update,
   render: (_node: Node, action: AddContactUrn) => {
-    const friendlyScheme = urnSchemeMap[action.scheme] || action.scheme;
+    const schemeObj = SCHEMES.find((s) => s.scheme === action.scheme);
+    const friendlyScheme = schemeObj?.name || action.scheme;
     return html`<div
       style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
     >
