@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -68,7 +68,7 @@ export const split_by_llm: NodeConfig = {
       instructions: callLlmAction?.instructions || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get LLM selection
     const llmSelection =
       Array.isArray(formData.llm) && formData.llm.length > 0

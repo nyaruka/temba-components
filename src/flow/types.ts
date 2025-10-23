@@ -245,9 +245,9 @@ export interface GroupLayoutConfig {
   label: string;
   items: LayoutItem[]; // can contain fields, rows, or other groups
   collapsible?: boolean;
-  collapsed?: boolean | ((formData: any) => boolean); // initial state if collapsible - can be a function
+  collapsed?: boolean | ((formData: FormData) => boolean); // initial state if collapsible - can be a function
   helpText?: string;
-  getGroupValueCount?: (formData: any) => number; // optional function to get count for bubble display
+  getGroupValueCount?: (formData: FormData) => number; // optional function to get count for bubble display
 }
 
 export type LayoutItem =
@@ -267,8 +267,8 @@ export interface ActionConfig extends FormConfig {
   layout?: LayoutItem[]; // optional layout configuration - array of layout items
   gutter?: LayoutItem[]; // fields to render in the dialog gutter (left side of buttons)
 
-  toFormData?: (action: Action) => any;
-  fromFormData?: (formData: any) => Action;
+  toFormData?: (action: Action) => FormData;
+  fromFormData?: (formData: FormData) => Action;
 }
 
 export const COLORS = {

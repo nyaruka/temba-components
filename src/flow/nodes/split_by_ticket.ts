@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node, OpenTicket } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -81,7 +81,7 @@ export const split_by_ticket: NodeConfig = {
       note: openTicketAction?.note || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Find existing open_ticket action to preserve its UUID
     const existingOpenTicketAction = originalNode.actions?.find(
       (action) => action.type === 'open_ticket'

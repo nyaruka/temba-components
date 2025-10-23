@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -34,7 +34,7 @@ export const split_by_expression: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['operand', 'rules', 'result_name'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     // Validate operand is provided
@@ -58,7 +58,7 @@ export const split_by_expression: NodeConfig = {
       result_name: node.router?.result_name || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get user rules using shared extraction function
     const userRules = extractUserRules(formData);
 

@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
@@ -44,7 +44,7 @@ export const split_by_subflow: NodeConfig = {
         : []
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get flow selection
     const flowSelection =
       Array.isArray(formData.flow) && formData.flow.length > 0

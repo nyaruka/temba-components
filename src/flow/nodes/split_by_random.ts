@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 
@@ -72,7 +72,7 @@ export const split_by_random: NodeConfig = {
     }
   },
   layout: ['categories'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     // Check for duplicate category names
@@ -129,7 +129,7 @@ export const split_by_random: NodeConfig = {
       categories: categories
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get user categories
     const userCategories = (formData.categories || [])
       .filter((item: any) => item?.name?.trim())

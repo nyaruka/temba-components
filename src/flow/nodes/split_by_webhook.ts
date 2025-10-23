@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { CallWebhook, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -95,7 +95,7 @@ export const split_by_webhook: NodeConfig = {
       collapsible: true,
       collapsed: true,
       helpText: 'Configure authentication or custom headers',
-      getGroupValueCount: (formData: any) => {
+      getGroupValueCount: (formData: FormData) => {
         return formData.headers?.length || 0;
       }
     },
@@ -106,7 +106,7 @@ export const split_by_webhook: NodeConfig = {
       collapsible: true,
       collapsed: true,
       helpText: 'Configure the request payload',
-      getGroupValueCount: (formData: any) => {
+      getGroupValueCount: (formData: FormData) => {
         return !!(
           formData.body &&
           formData.body.trim() !== '' &&
@@ -142,7 +142,7 @@ export const split_by_webhook: NodeConfig = {
       body: callWebhookAction?.body || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get method selection
     const methodSelection =
       Array.isArray(formData.method) && formData.method.length > 0

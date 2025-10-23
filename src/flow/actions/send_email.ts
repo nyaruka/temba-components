@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, ValidationResult } from '../types';
+import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
 import { Icon } from '../../Icons';
@@ -43,7 +43,7 @@ export const send_email: ActionConfig = {
       minHeight: 175
     }
   },
-  fromFormData: (formData: any): SendEmail => {
+  fromFormData: (formData: FormData): SendEmail => {
     return {
       uuid: formData.uuid,
       type: 'send_email',

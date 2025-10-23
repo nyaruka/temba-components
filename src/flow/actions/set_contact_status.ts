@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, FormData } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 
@@ -18,7 +18,7 @@ export const set_contact_status: ActionConfig = {
       }
     };
   },
-  fromFormData: (formData: any): SetContactStatus => {
+  fromFormData: (formData: FormData): SetContactStatus => {
     return {
       status: formData.status[0].value,
       type: 'set_contact_status',

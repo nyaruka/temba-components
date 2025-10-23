@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -47,7 +47,7 @@ export const split_by_run_result: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['result', 'rules', 'result_name'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     // Validate result is provided
@@ -74,7 +74,7 @@ export const split_by_run_result: NodeConfig = {
       result_name: node.router?.result_name || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get selected result (it's an array from the select component)
     const selectedResult = formData.result?.[0];
 
@@ -119,7 +119,7 @@ export const split_by_run_result: NodeConfig = {
       exits: exits
     };
   },
-  toUIConfig: (formData: any) => {
+  toUIConfig: (formData: FormData) => {
     // Get selected result (it's an array from the select component)
     const selectedResult = formData.result?.[0];
 

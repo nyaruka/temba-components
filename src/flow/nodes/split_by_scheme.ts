@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import { SCHEMES } from '../utils';
@@ -121,7 +121,7 @@ export const split_by_scheme: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['schemes', 'result_name'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     if (
@@ -161,7 +161,7 @@ export const split_by_scheme: NodeConfig = {
       result_name: node.router?.result_name || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get selected schemes (handle both array of objects and array of strings)
     const selectedSchemes = (formData.schemes || [])
       .filter((scheme: any) => scheme)

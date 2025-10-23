@@ -1,6 +1,6 @@
 import { html } from 'lit-html';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
-import { ActionConfig, COLORS, ValidationResult } from '../types';
+import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 
@@ -91,11 +91,11 @@ export const send_msg: ActionConfig = {
       label: 'Quick Replies',
       items: ['quick_replies'],
       collapsible: true,
-      collapsed: (formData: any) => {
+      collapsed: (formData: FormData) => {
         // Collapse only if there are no quick replies
         return !formData.quick_replies || formData.quick_replies.length === 0;
       },
-      getGroupValueCount: (formData: any) => {
+      getGroupValueCount: (formData: FormData) => {
         return formData.quick_replies?.length || 0;
       }
     },
@@ -106,7 +106,7 @@ export const send_msg: ActionConfig = {
       collapsible: true,
       collapsed: true,
       helpText: 'Add dynamic attachments that are evaluated at runtime',
-      getGroupValueCount: (formData: any) => {
+      getGroupValueCount: (formData: FormData) => {
         return (
           formData.runtime_attachments?.filter(
             (item: any) =>
@@ -154,7 +154,7 @@ export const send_msg: ActionConfig = {
       }))
     };
   },
-  fromFormData: (data: Record<string, any>) => {
+  fromFormData: (data: FormData) => {
     const result = {
       uuid: data.uuid,
       type: 'send_msg',
@@ -190,7 +190,7 @@ export const send_msg: ActionConfig = {
 
     return result as SendMsg;
   },
-  sanitize: (formData: any): void => {
+  sanitize: (formData: FormData): void => {
     if (formData.text && typeof formData.text === 'string') {
       formData.text = formData.text.trim();
     }

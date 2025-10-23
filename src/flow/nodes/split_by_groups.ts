@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import { resultNameField } from './shared';
@@ -127,7 +127,7 @@ export const split_by_groups: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['groups', 'result_name'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     if (
@@ -164,7 +164,7 @@ export const split_by_groups: NodeConfig = {
       result_name: node.router?.result_name || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get selected groups
     const selectedGroups = (formData.groups || [])
       .filter((group: any) => group?.uuid || group?.arbitrary)

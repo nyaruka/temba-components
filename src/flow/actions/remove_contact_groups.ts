@@ -58,7 +58,7 @@ export const remove_contact_groups: ActionConfig = {
       errors
     };
   },
-  fromFormData: (formData: any): RemoveFromGroup => {
+  fromFormData: (formData: FormData): RemoveFromGroup => {
     return {
       uuid: formData.uuid,
       type: 'remove_contact_groups',
