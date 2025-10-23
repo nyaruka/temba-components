@@ -13,7 +13,7 @@ describe('start_session action config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(start_session.name).to.equal('Start Session');
+      expect(start_session.name).to.equal('Start Somebody Else');
     });
   });
 
@@ -107,5 +107,45 @@ describe('start_session action config', () => {
       } as StartSession,
       'many-recipients'
     );
+  });
+
+  it('validates manual selection requires recipients', async () => {
+    const formData = {
+      uuid: 'start-uuid',
+      flow: [{ uuid: 'flow-uuid', name: 'Registration Flow' }],
+      startType: [{ value: 'manual', name: 'Select contacts and groups' }],
+      recipients: []
+    };
+
+    const result = start_session.validate(formData);
+    expect(result.valid).to.be.false;
+    expect(result.errors.recipients).to.equal(
+      'At least one contact or group must be selected'
+    );
+  });
+
+  it('validates query requires contact_query value', async () => {
+    const formData = {
+      uuid: 'start-uuid',
+      flow: [{ uuid: 'flow-uuid', name: 'Registration Flow' }],
+      startType: [{ value: 'query', name: 'Query for a contact' }],
+      contactQuery: ''
+    };
+
+    const result = start_session.validate(formData);
+    expect(result.valid).to.be.false;
+    expect(result.errors.contactQuery).to.equal('Contact query is required');
+  });
+
+  it('validates create_contact requires no additional fields', async () => {
+    const formData = {
+      uuid: 'start-uuid',
+      flow: [{ uuid: 'flow-uuid', name: 'Registration Flow' }],
+      startType: [{ value: 'create', name: 'Create a new contact' }]
+    };
+
+    const result = start_session.validate(formData);
+    expect(result.valid).to.be.true;
+    expect(Object.keys(result.errors).length).to.equal(0);
   });
 });

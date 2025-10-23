@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, ValidationResult } from '../types';
+import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
 import { Node, RemoveFromGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
@@ -42,10 +42,13 @@ export const remove_contact_groups: ActionConfig = {
         'Check this to remove the contact from all groups instead of specific ones'
     }
   },
-  validate: (action: RemoveFromGroup): ValidationResult => {
+  validate: (formData: FormData): ValidationResult => {
     const errors: { [key: string]: string } = {};
 
-    if (!action.all_groups && (!action.groups || action.groups.length === 0)) {
+    if (
+      !formData.all_groups &&
+      (!formData.groups || formData.groups.length === 0)
+    ) {
       errors.groups =
         'At least one group must be selected or check "Remove from All Groups"';
     }
