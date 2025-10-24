@@ -1,5 +1,6 @@
 import { getOperatorConfig } from '../operators';
 import { generateDefaultCategoryName } from '../../utils';
+import { FormData } from '../types';
 
 /**
  * Shared helper function to get operator value from various formats.
@@ -160,7 +161,7 @@ export const createRulesItemConfig = () => ({
  * Shared function to extract rules from form data.
  * Filters and transforms form rules into the format expected by createRulesRouter.
  */
-export const extractUserRules = (formData: any) => {
+export const extractUserRules = (formData: FormData) => {
   return (formData.rules || [])
     .filter((rule: any) => {
       const operatorValue = getOperatorValue(rule?.operator);

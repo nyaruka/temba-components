@@ -10,7 +10,12 @@ import {
   FieldConfig,
   ActionConfig
 } from './config';
-import { LayoutItem, RowLayoutConfig, GroupLayoutConfig } from './types';
+import {
+  LayoutItem,
+  RowLayoutConfig,
+  GroupLayoutConfig,
+  FormData
+} from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
@@ -306,10 +311,10 @@ export class NodeEditor extends RapidElement {
   isOpen: boolean = false;
 
   @state()
-  private formData: any = {};
+  private formData: FormData = {};
 
   @state()
-  private originalFormData: any = {};
+  private originalFormData: FormData = {};
 
   @state()
   private errors: { [key: string]: string } = {};
@@ -573,7 +578,7 @@ export class NodeEditor extends RapidElement {
     }
   }
 
-  private processFormDataForSave(): any {
+  private processFormDataForSave(): FormData {
     const processed = { ...this.formData };
 
     // Convert key-value arrays to Records
@@ -776,7 +781,7 @@ export class NodeEditor extends RapidElement {
     });
   }
 
-  private formDataToNode(formData: any = this.formData): Node {
+  private formDataToNode(formData: FormData = this.formData): Node {
     if (!this.node) throw new Error('No node to update');
     let updatedNode: Node = { ...this.node };
 
@@ -934,7 +939,7 @@ export class NodeEditor extends RapidElement {
     return updatedNode;
   }
 
-  private formDataToAction(formData: any = this.formData): Action {
+  private formDataToAction(formData: FormData = this.formData): Action {
     if (!this.action) throw new Error('No action to update');
 
     // Use action config transformation if available

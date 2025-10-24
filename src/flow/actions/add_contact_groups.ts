@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, FormData } from '../types';
 import { Node, AddToGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
@@ -47,7 +47,7 @@ export const add_contact_groups: ActionConfig = {
       }
     }
   },
-  fromFormData: (formData: any): AddToGroup => {
+  fromFormData: (formData: FormData): AddToGroup => {
     return {
       uuid: formData.uuid,
       type: 'add_contact_groups',

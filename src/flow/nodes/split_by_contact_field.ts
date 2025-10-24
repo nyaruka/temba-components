@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -79,7 +79,7 @@ export const split_by_contact_field: NodeConfig = {
     result_name: resultNameField
   },
   layout: ['field', 'rules', 'result_name'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     if (!formData.field || formData.field.length === 0) {
@@ -105,7 +105,7 @@ export const split_by_contact_field: NodeConfig = {
       result_name: node.router?.result_name || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get selected field (it's an array from the select component)
     const selectedField = formData.field?.[0];
 
@@ -150,7 +150,7 @@ export const split_by_contact_field: NodeConfig = {
       exits: exits
     };
   },
-  toUIConfig: (formData: any) => {
+  toUIConfig: (formData: FormData) => {
     // Get selected field (it's an array from the select component)
     const selectedField = formData.field?.[0];
 

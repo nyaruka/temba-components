@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, FormData } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 
@@ -65,7 +65,7 @@ export const set_run_result: ActionConfig = {
       category: action.category || ''
     };
   },
-  fromFormData: (formData: any): SetRunResult => {
+  fromFormData: (formData: FormData): SetRunResult => {
     // Ensure name is a simple string, handling both direct values and select option objects
     let name = formData.name || '';
     if (Array.isArray(name) && name.length > 0) {

@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, COLORS, FormData } from '../types';
 import { Node, AddInputLabels } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
@@ -48,7 +48,7 @@ export const add_input_labels: ActionConfig = {
       }
     }
   },
-  fromFormData: (formData: any): AddInputLabels => {
+  fromFormData: (formData: FormData): AddInputLabels => {
     return {
       uuid: formData.uuid,
       type: 'add_input_labels',

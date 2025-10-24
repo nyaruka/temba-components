@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
@@ -48,7 +48,7 @@ export const split_by_llm_categorize: NodeConfig = {
     }
   },
   layout: ['llm', 'input', 'categories'],
-  validate: (formData: any) => {
+  validate: (formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     // Check for duplicate category names
@@ -117,7 +117,7 @@ export const split_by_llm_categorize: NodeConfig = {
       categories: categories
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get LLM selection
     const llmSelection =
       Array.isArray(formData.llm) && formData.llm.length > 0

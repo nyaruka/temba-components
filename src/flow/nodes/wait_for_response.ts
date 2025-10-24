@@ -1,4 +1,4 @@
-import { COLORS, NodeConfig } from '../types';
+import { COLORS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { generateUUID, createRulesRouter } from '../../utils';
 import {
@@ -115,7 +115,7 @@ export const wait_for_response: NodeConfig = {
       gap: '0.5rem'
     }
   ],
-  validate: (_formData: any) => {
+  validate: (_formData: FormData) => {
     const errors: { [key: string]: string } = {};
 
     // No validation needed - allow multiple rules to use same category name
@@ -148,7 +148,7 @@ export const wait_for_response: NodeConfig = {
       result_name: node.router?.result_name || ''
     };
   },
-  fromFormData: (formData: any, originalNode: Node): Node => {
+  fromFormData: (formData: FormData, originalNode: Node): Node => {
     // Get user rules using shared extraction function
     const userRules = extractUserRules(formData);
 

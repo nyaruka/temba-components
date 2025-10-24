@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, ValidationResult } from '../types';
+import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 
@@ -61,7 +61,7 @@ export const set_contact_language: ActionConfig = {
       uuid: action.uuid
     };
   },
-  fromFormData: (formData: any): SetContactLanguage => {
+  fromFormData: (formData: FormData): SetContactLanguage => {
     return {
       uuid: formData.uuid,
       type: 'set_contact_language',
@@ -69,7 +69,7 @@ export const set_contact_language: ActionConfig = {
     };
   },
 
-  validate: (formData: any): ValidationResult => {
+  validate: (formData: FormData): ValidationResult => {
     const errors: { [key: string]: string } = {};
 
     if (!formData.language) {
