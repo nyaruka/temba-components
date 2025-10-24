@@ -106,6 +106,7 @@ export interface AppState {
   removeStickyNotes: (uuids: string[]) => void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
   createStickyNote(position: FlowPosition): string;
+  createNode(nodeType: string, position: FlowPosition): string;
 }
 
 export const zustand = createStore<AppState>()(
@@ -350,6 +351,43 @@ export const zustand = createStore<AppState>()(
           state.flowDefinition._ui.stickies[uuid] = newSticky;
           state.dirtyDate = new Date();
         });
+        return uuid;
+      },
+
+      createNode: (nodeType: string, position: FlowPosition): string => {
+        const uuid = generateUUID();
+        const exitUuid = generateUUID();
+
+        set((state: AppState) => {
+          // Create a basic node with a single exit
+          const newNode: Node = {
+            uuid,
+            actions: [],
+            exits: [
+              {
+                uuid: exitUuid,
+                destination_uuid: null
+              }
+            ]
+          };
+
+          // Add the node to the flow definition
+          state.flowDefinition.nodes.push(newNode);
+
+          // Set up UI for the node
+          if (!state.flowDefinition._ui.nodes) {
+            state.flowDefinition._ui.nodes = {};
+          }
+
+          state.flowDefinition._ui.nodes[uuid] = {
+            position,
+            type: nodeType as any,
+            config: {}
+          };
+
+          state.dirtyDate = new Date();
+        });
+
         return uuid;
       }
     }))

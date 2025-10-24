@@ -18,6 +18,8 @@ import { Plumber } from './Plumber';
 import { CanvasNode } from './CanvasNode';
 import { Dialog } from '../layout/Dialog';
 import { Connection } from '@jsplumb/browser-ui';
+import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
+import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
@@ -136,7 +138,7 @@ export class Editor extends RapidElement {
   private boundMouseUp = this.handleMouseUp.bind(this);
   private boundGlobalMouseDown = this.handleGlobalMouseDown.bind(this);
   private boundKeyDown = this.handleKeyDown.bind(this);
-  private boundCanvasDoubleClick = this.handleCanvasDoubleClick.bind(this);
+  private boundCanvasContextMenu = this.handleCanvasContextMenu.bind(this);
 
   static get styles() {
     return css`
@@ -412,7 +414,7 @@ export class Editor extends RapidElement {
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
-      canvas.removeEventListener('dblclick', this.boundCanvasDoubleClick);
+      canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
     }
   }
 
@@ -424,7 +426,7 @@ export class Editor extends RapidElement {
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
-      canvas.addEventListener('dblclick', this.boundCanvasDoubleClick);
+      canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
     }
 
     // Listen for action edit requests from flow nodes
@@ -438,6 +440,16 @@ export class Editor extends RapidElement {
       CustomEventType.NodeEditRequested,
       this.handleNodeEditRequested.bind(this)
     );
+
+    // Listen for canvas menu selections
+    this.addEventListener(CustomEventType.Selection, (event: CustomEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'TEMBA-CANVAS-MENU') {
+        this.handleCanvasMenuSelection(event);
+      } else if (target.tagName === 'TEMBA-NODE-TYPE-SELECTOR') {
+        this.handleNodeTypeSelection(event);
+      }
+    });
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -943,12 +955,16 @@ export class Editor extends RapidElement {
     store.getState().expandCanvas(maxWidth, maxHeight);
   }
 
-  private handleCanvasDoubleClick(event: MouseEvent): void {
-    // Check if we double-clicked on empty canvas space
+  private handleCanvasContextMenu(event: MouseEvent): void {
+    // Check if we right-clicked on empty canvas space
     const target = event.target as HTMLElement;
     if (target.id !== 'canvas') {
       return;
     }
+
+    // Prevent the default browser context menu
+    event.preventDefault();
+    event.stopPropagation();
 
     // Get canvas position
     const canvas = this.querySelector('#canvas');
@@ -964,15 +980,55 @@ export class Editor extends RapidElement {
     const snappedLeft = snapToGrid(relativeX);
     const snappedTop = snapToGrid(relativeY);
 
-    // Create new sticky note
+    // Show the canvas menu at the mouse position (use viewport coordinates)
+    const canvasMenu = this.querySelector('temba-canvas-menu') as CanvasMenu;
+    if (canvasMenu) {
+      canvasMenu.show(event.clientX, event.clientY, {
+        x: snappedLeft,
+        y: snappedTop
+      });
+    }
+  }
+
+  private handleCanvasMenuSelection(event: CustomEvent): void {
+    const selection = event.detail as CanvasMenuSelection;
     const store = getStore();
-    store.getState().createStickyNote({
-      left: snappedLeft,
-      top: snappedTop
+
+    if (selection.action === 'sticky') {
+      // Create new sticky note
+      store.getState().createStickyNote({
+        left: selection.position.x,
+        top: selection.position.y
+      });
+    } else {
+      // Show node type selector
+      const selector = this.querySelector(
+        'temba-node-type-selector'
+      ) as NodeTypeSelector;
+      if (selector) {
+        selector.show(selection.action, selection.position);
+      }
+    }
+  }
+
+  private handleNodeTypeSelection(event: CustomEvent): void {
+    const selection = event.detail as NodeTypeSelection;
+    const store = getStore();
+
+    // Create new node
+    const nodeUuid = store.getState().createNode(selection.nodeType, {
+      left: selection.position.x,
+      top: selection.position.y
     });
 
-    event.preventDefault();
-    event.stopPropagation();
+    // Open the node editor for the new node
+    setTimeout(() => {
+      const node = this.definition.nodes.find((n) => n.uuid === nodeUuid);
+      if (node) {
+        this.editingNode = node;
+        this.editingNodeUI = this.definition._ui.nodes[nodeUuid];
+      }
+    }, 100);
   }
 
   private handleActionEditRequested(event: CustomEvent): void {
@@ -1161,6 +1217,9 @@ export class Editor extends RapidElement {
               this.handleActionSaved(e.detail.action)}
             @temba-node-edit-cancelled=${this.handleNodeEditCanceled}
           ></temba-node-editor>`
-        : ''} `;
+        : ''}
+
+      <temba-canvas-menu></temba-canvas-menu>
+      <temba-node-type-selector></temba-node-type-selector> `;
   }
 }
