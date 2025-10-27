@@ -1024,35 +1024,37 @@ export class Editor extends RapidElement {
 
     // Create a temporary node structure for editing (not added to store yet)
     const nodeUuid = generateUUID();
-    const exitUuid = generateUUID();
 
     // Determine if this is an action type or a node type
     // Actions need to be wrapped in an execute_actions node
     const isActionType = selection.nodeType in ACTION_CONFIG;
     const nodeType = isActionType ? 'execute_actions' : selection.nodeType;
 
-    const tempNode: Node = {
-      uuid: nodeUuid,
-      actions: [],
-      exits: [
-        {
-          uuid: exitUuid,
-          destination_uuid: null
-        }
-      ]
-    };
-
     // For nodes with routers, initialize an empty router to ensure fromFormData works correctly
     const nodeConfig = NODE_CONFIG[nodeType];
-    if (
+    const hasRouter =
       nodeConfig?.form &&
       Object.keys(nodeConfig.form).some(
         (key) =>
           ['rules', 'categories', 'cases'].includes(key) ||
           nodeConfig.form[key]?.type === 'array'
-      )
-    ) {
-      // This node likely uses a router - initialize it with empty structure
+      );
+
+    const tempNode: Node = {
+      uuid: nodeUuid,
+      actions: [],
+      exits: hasRouter
+        ? [] // Router-based nodes will generate their own exits
+        : [
+            {
+              uuid: generateUUID(),
+              destination_uuid: null
+            }
+          ]
+    };
+
+    if (hasRouter) {
+      // This node uses a router - initialize it with empty structure
       tempNode.router = {
         type: 'switch',
         categories: [],
