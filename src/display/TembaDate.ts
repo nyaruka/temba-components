@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Store } from '../store/Store';
 import { DateTime } from 'luxon';
+import { timeSince } from '../utils';
 
 export const Display = {
   date: DateTime.DATE_SHORT,
@@ -97,7 +98,7 @@ export class TembaDate extends RapidElement {
             >just now</span
           >`;
         }
-        formatted = this.store.getShortDuration(this.datetime);
+        formatted = timeSince(this.datetime.toJSDate());
       } else if (this.display === Display.countdown) {
         formatted = this.store.getCountdown(this.datetime);
       } else if (this.display === Display.day) {
