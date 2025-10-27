@@ -227,4 +227,180 @@ describe('temba-contact-chat', () => {
 
     await assertScreenshot('contacts/chat-failure', getClip(chat));
   });
+
+  it('should not change assignee when topic changes and server auto-assigns', async () => {
+    await loadStore();
+
+    // Create a ticket with no assignee
+    const unassignedTicket = {
+      uuid: 'test-ticket-uuid',
+      contact: {
+        uuid: 'contact-dave-active',
+        name: 'Dave Matthews'
+      },
+      status: 'open',
+      subject: 'Test Ticket',
+      topic: {
+        uuid: 'topic-1',
+        name: 'Support'
+      },
+      assignee: null,
+      opened_on: '2021-03-31T00:00:00.000Z',
+      closed_on: null
+    };
+
+    // After topic change, server auto-assigns the ticket
+    const autoAssignedTicket = {
+      ...unassignedTicket,
+      topic: {
+        uuid: 'topic-2',
+        name: 'Billing'
+      },
+      assignee: {
+        email: 'admin1@nyaruka.com',
+        name: 'Adam McAdmin'
+      }
+    };
+
+    // Mock the ticket endpoint to return assigned ticket after refresh
+    mockGET(
+      /\/api\/v2\/tickets\.json\?uuid=test-ticket-uuid/,
+      '/test-assets/api/tickets.json',
+      { results: [autoAssignedTicket] }
+    );
+
+    // Mock topic change action
+    mockPOST(/\/api\/v2\/ticket_actions\.json/, {}, {});
+
+    // Create chat with the ticket
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    chat.currentTicket = unassignedTicket;
+    await chat.requestUpdate();
+    await clock.tick(0);
+
+    // Get the user select component
+    const userSelect = chat.shadowRoot.querySelector('temba-user-select');
+    expect(userSelect).to.exist;
+
+    // Verify it starts empty (no assignee)
+    expect((userSelect as any).values.length).to.equal(0);
+
+    // Listen for ticket updated event
+    const ticketUpdatedPromise = oneEvent(
+      chat,
+      CustomEventType.TicketUpdated,
+      false
+    );
+
+    // Simulate topic change
+    const topicSelect = chat.shadowRoot.querySelector('temba-select');
+    expect(topicSelect).to.exist;
+
+    // Change to a new topic
+    const newTopic = { uuid: 'topic-2', name: 'Billing' };
+    (topicSelect as any).values = [newTopic];
+
+    // Fire change event - this triggers handleTopicChanged
+    topicSelect.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+
+    // Wait for the ticket to be updated
+    await ticketUpdatedPromise;
+    await chat.requestUpdate();
+    await clock.tick(100);
+
+    // After the fix, the assignee widget should remain empty
+    // even though the server auto-assigned the ticket
+    expect((userSelect as any).values.length).to.equal(
+      0,
+      'Assignee should remain null after topic change'
+    );
+    expect(chat.currentTicket.assignee).to.be.null;
+  });
+
+  it('should preserve existing assignee when topic changes', async () => {
+    await loadStore();
+
+    // Create a ticket with an existing assignee
+    const assignedTicket = {
+      uuid: 'test-ticket-uuid-2',
+      contact: {
+        uuid: 'contact-dave-active',
+        name: 'Dave Matthews'
+      },
+      status: 'open',
+      subject: 'Test Ticket 2',
+      topic: {
+        uuid: 'topic-1',
+        name: 'Support'
+      },
+      assignee: {
+        email: 'agent1@nyaruka.com',
+        name: 'Agnes McAgent'
+      },
+      opened_on: '2021-03-31T00:00:00.000Z',
+      closed_on: null
+    };
+
+    // After topic change, server tries to auto-assign to different user
+    const serverAssignedTicket = {
+      ...assignedTicket,
+      topic: {
+        uuid: 'topic-2',
+        name: 'Billing'
+      },
+      assignee: {
+        email: 'admin1@nyaruka.com',
+        name: 'Adam McAdmin'
+      }
+    };
+
+    // Mock the ticket endpoint
+    mockGET(
+      /\/api\/v2\/tickets\.json\?uuid=test-ticket-uuid-2/,
+      '/test-assets/api/tickets.json',
+      { results: [serverAssignedTicket] }
+    );
+
+    mockPOST(/\/api\/v2\/ticket_actions\.json/, {}, {});
+
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    chat.currentTicket = assignedTicket;
+    await chat.requestUpdate();
+    await clock.tick(0);
+
+    const userSelect = chat.shadowRoot.querySelector('temba-user-select');
+    expect(userSelect).to.exist;
+
+    // Verify it starts with the original assignee
+    expect((userSelect as any).values.length).to.equal(1);
+    expect((userSelect as any).values[0].email).to.equal('agent1@nyaruka.com');
+
+    const ticketUpdatedPromise = oneEvent(
+      chat,
+      CustomEventType.TicketUpdated,
+      false
+    );
+
+    // Change topic
+    const topicSelect = chat.shadowRoot.querySelector('temba-select');
+    const newTopic = { uuid: 'topic-2', name: 'Billing' };
+    (topicSelect as any).values = [newTopic];
+    topicSelect.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+
+    await ticketUpdatedPromise;
+    await chat.requestUpdate();
+    await clock.tick(100);
+
+    // Assignee should still be the original one
+    expect((userSelect as any).values.length).to.equal(1);
+    expect((userSelect as any).values[0].email).to.equal(
+      'agent1@nyaruka.com',
+      'Original assignee should be preserved'
+    );
+    expect(chat.currentTicket.assignee.email).to.equal('agent1@nyaruka.com');
+  });
 });
