@@ -115,12 +115,28 @@ export class NodeTypeSelector extends RapidElement {
         cursor: pointer;
         transition: all 0.15s ease;
         background: white;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .node-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--item-color, rgba(0, 0, 0, 0.1));
       }
 
       .node-item:hover {
-        border-color: var(--color-primary);
+        border-color: var(--item-color, var(--color-primary));
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transform: translateY(-1px);
+      }
+
+      .node-item:hover::before {
+        width: 6px;
       }
 
       .node-item-title {
@@ -238,6 +254,8 @@ export class NodeTypeSelector extends RapidElement {
                     (item) => html`
                       <div
                         class="node-item"
+                        style="--item-color: ${item.config.color ||
+                        'rgba(0, 0, 0, 0.1)'}"
                         @click=${() => this.handleNodeTypeClick(item.type)}
                       >
                         <div class="node-item-title">${item.config.name}</div>
