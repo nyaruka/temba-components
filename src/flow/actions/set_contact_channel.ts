@@ -21,6 +21,12 @@ export const set_contact_channel: ActionConfig = {
       helpText: 'Select the channel to set for the contact'
     }
   },
+  toFormData: (action: SetContactChannel) => {
+    return {
+      uuid: action.uuid,
+      channel: action.channel ? [action.channel] : null
+    };
+  },
   validate: (formData: SetContactChannel): ValidationResult => {
     const errors: { [key: string]: string } = {};
 

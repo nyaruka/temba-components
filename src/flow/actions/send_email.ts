@@ -23,7 +23,6 @@ export const send_email: ActionConfig = {
     addresses: {
       type: 'select',
       label: 'Recipients',
-      options: [],
       multi: true,
       searchable: true,
       placeholder: 'Search for contacts...',

@@ -6,6 +6,7 @@ import {
   FlowDefinition,
   FlowPosition,
   Node,
+  NodeUI,
   Router,
   StickyNote
 } from './flow-definition';
@@ -107,6 +108,7 @@ export interface AppState {
   updateStickyNote(uuid: string, sticky: StickyNote): void;
   createStickyNote(position: FlowPosition): string;
   createNode(nodeType: string, position: FlowPosition): string;
+  addNode(node: Node, nodeUI: NodeUI): void;
 }
 
 export const zustand = createStore<AppState>()(
@@ -389,6 +391,22 @@ export const zustand = createStore<AppState>()(
         });
 
         return uuid;
+      },
+
+      addNode: (node: Node, nodeUI: NodeUI) => {
+        set((state: AppState) => {
+          // Add the node to the flow definition
+          state.flowDefinition.nodes.push(node);
+
+          // Set up UI for the node
+          if (!state.flowDefinition._ui.nodes) {
+            state.flowDefinition._ui.nodes = {};
+          }
+
+          state.flowDefinition._ui.nodes[node.uuid] = nodeUI;
+
+          state.dirtyDate = new Date();
+        });
       }
     }))
   )

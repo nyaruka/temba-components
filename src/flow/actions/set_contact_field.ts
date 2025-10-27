@@ -18,6 +18,7 @@ export const set_contact_field: ActionConfig = {
       required: true,
       searchable: true,
       clearable: false,
+      placeholder: 'Search for contact fields...',
       nameKey: 'name',
       valueKey: 'key',
       endpoint: '/api/v2/fields.json',
@@ -34,6 +35,13 @@ export const set_contact_field: ActionConfig = {
       helpText:
         'The new value for the contact field. You can use expressions like @contact.name'
     }
+  },
+  toFormData: (action: SetContactField) => {
+    return {
+      uuid: action.uuid,
+      field: action.field ? [action.field] : null,
+      value: action.value
+    };
   },
   fromFormData: (formData: SetContactField): SetContactField => {
     const field = formData.field[0];

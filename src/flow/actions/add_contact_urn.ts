@@ -22,7 +22,7 @@ export const add_contact_urn: ActionConfig = {
       uuid: action.uuid,
       scheme: schemeObj
         ? [{ name: schemeObj.path, value: action.scheme }]
-        : [{ name: action.scheme, value: action.scheme }],
+        : null,
       path: action.path || ''
     };
   },

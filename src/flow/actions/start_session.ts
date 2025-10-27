@@ -67,7 +67,7 @@ export const start_session: ActionConfig = {
       startTypeOptions[0];
 
     return {
-      flow: [action.flow],
+      flow: action.flow ? [action.flow] : null,
       recipients: [...(action.contacts || []), ...(action.groups || [])],
       startType: [startType],
       contactQuery: extendedAction.contact_query || '',
@@ -82,7 +82,6 @@ export const start_session: ActionConfig = {
       label: 'Flow',
       helpText: 'Select the flow to start',
       required: true,
-      options: [],
       searchable: true,
       endpoint: '/api/v2/flows.json',
       valueKey: 'uuid',

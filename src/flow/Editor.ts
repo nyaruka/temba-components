@@ -13,6 +13,8 @@ import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType } from '../interfaces';
+import { generateUUID } from '../utils';
+import { ACTION_CONFIG, NODE_CONFIG } from './config';
 
 import { Plumber } from './Plumber';
 import { CanvasNode } from './CanvasNode';
@@ -130,6 +132,12 @@ export class Editor extends RapidElement {
 
   @state()
   private editingAction: Action | null = null;
+
+  @state()
+  private isCreatingNewNode = false;
+
+  @state()
+  private pendingNodePosition: FlowPosition | null = null;
 
   private canvasMouseDown = false;
 
@@ -1013,22 +1021,75 @@ export class Editor extends RapidElement {
 
   private handleNodeTypeSelection(event: CustomEvent): void {
     const selection = event.detail as NodeTypeSelection;
-    const store = getStore();
 
-    // Create new node
-    const nodeUuid = store.getState().createNode(selection.nodeType, {
+    // Create a temporary node structure for editing (not added to store yet)
+    const nodeUuid = generateUUID();
+    const exitUuid = generateUUID();
+
+    // Determine if this is an action type or a node type
+    // Actions need to be wrapped in an execute_actions node
+    const isActionType = selection.nodeType in ACTION_CONFIG;
+    const nodeType = isActionType ? 'execute_actions' : selection.nodeType;
+
+    const tempNode: Node = {
+      uuid: nodeUuid,
+      actions: [],
+      exits: [
+        {
+          uuid: exitUuid,
+          destination_uuid: null
+        }
+      ]
+    };
+
+    // For nodes with routers, initialize an empty router to ensure fromFormData works correctly
+    const nodeConfig = NODE_CONFIG[nodeType];
+    if (
+      nodeConfig?.form &&
+      Object.keys(nodeConfig.form).some(
+        (key) =>
+          ['rules', 'categories', 'cases'].includes(key) ||
+          nodeConfig.form[key]?.type === 'array'
+      )
+    ) {
+      // This node likely uses a router - initialize it with empty structure
+      tempNode.router = {
+        type: 'switch',
+        categories: [],
+        cases: [],
+        operand: '@input.text',
+        default_category_uuid: undefined
+      };
+    }
+
+    const tempNodeUI: NodeUI = {
+      position: {
+        left: selection.position.x,
+        top: selection.position.y
+      },
+      type: nodeType as any,
+      config: {}
+    };
+
+    // Mark that we're creating a new node and store the position
+    this.isCreatingNewNode = true;
+    this.pendingNodePosition = {
       left: selection.position.x,
       top: selection.position.y
-    });
+    };
 
-    // Open the node editor for the new node
-    setTimeout(() => {
-      const node = this.definition.nodes.find((n) => n.uuid === nodeUuid);
-      if (node) {
-        this.editingNode = node;
-        this.editingNodeUI = this.definition._ui.nodes[nodeUuid];
-      }
-    }, 100);
+    // Open the node editor with the temporary node
+    this.editingNode = tempNode;
+    this.editingNodeUI = tempNodeUI;
+
+    // If this is an action type, we also need to set up an editing action
+    if (isActionType) {
+      const actionUuid = generateUUID();
+      this.editingAction = {
+        uuid: actionUuid,
+        type: selection.nodeType as any
+      } as Action;
+    }
   }
 
   private handleActionEditRequested(event: CustomEvent): void {
@@ -1051,21 +1112,60 @@ export class Editor extends RapidElement {
 
   private handleActionSaved(updatedAction: Action): void {
     if (this.editingNode && this.editingAction) {
-      // Update the specific action in the node
-      const updatedActions = this.editingNode.actions.map((action) =>
-        action.uuid === this.editingAction.uuid ? updatedAction : action
+      let updatedActions: Action[];
+
+      // Check if this action already exists in the node
+      const existingActionIndex = this.editingNode.actions.findIndex(
+        (action) => action.uuid === this.editingAction.uuid
       );
+
+      if (existingActionIndex >= 0) {
+        // Update existing action
+        updatedActions = this.editingNode.actions.map((action) =>
+          action.uuid === this.editingAction.uuid ? updatedAction : action
+        );
+      } else {
+        // Add new action
+        updatedActions = [...this.editingNode.actions, updatedAction];
+      }
+
       const updatedNode = { ...this.editingNode, actions: updatedActions };
 
-      // Update the node in the store
-      getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+      // Check if we're creating a new node or updating an existing one
+      if (this.isCreatingNewNode) {
+        // This is a new node with a new action - add it to the store
+        const store = getStore();
 
-      // Repaint jsplumb connections in case node size changed
-      if (this.plumber) {
-        // Use requestAnimationFrame to ensure DOM has been updated first
-        requestAnimationFrame(() => {
-          this.plumber.repaintEverything();
-        });
+        const nodeUI: NodeUI = {
+          position: this.pendingNodePosition || { left: 0, top: 0 },
+          type: this.editingNodeUI?.type,
+          config: {}
+        };
+
+        // Add the node to the store
+        store.getState().addNode(updatedNode, nodeUI);
+
+        // Reset the creation flags
+        this.isCreatingNewNode = false;
+        this.pendingNodePosition = null;
+
+        // Repaint jsplumb connections
+        if (this.plumber) {
+          requestAnimationFrame(() => {
+            this.plumber.repaintEverything();
+          });
+        }
+      } else {
+        // Update existing node in the store
+        getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+
+        // Repaint jsplumb connections in case node size changed
+        if (this.plumber) {
+          // Use requestAnimationFrame to ensure DOM has been updated first
+          requestAnimationFrame(() => {
+            this.plumber.repaintEverything();
+          });
+        }
       }
     }
     this.closeNodeEditor();
@@ -1078,6 +1178,11 @@ export class Editor extends RapidElement {
   }
 
   private handleActionEditCanceled(): void {
+    // If we were creating a new node, just discard it
+    if (this.isCreatingNewNode) {
+      this.isCreatingNewNode = false;
+      this.pendingNodePosition = null;
+    }
     this.closeNodeEditor();
   }
 
@@ -1086,31 +1191,50 @@ export class Editor extends RapidElement {
     uiConfig?: Record<string, any>
   ): void {
     if (this.editingNode) {
-      // Clean up jsPlumb connections for removed exits before updating the node
-      if (this.plumber) {
-        const oldExits = this.editingNode.exits || [];
-        const newExits = updatedNode.exits || [];
+      if (this.isCreatingNewNode) {
+        // This is a new node - add it to the store for the first time
+        const store = getStore();
 
-        // Find exits that were removed
-        const removedExits = oldExits.filter(
-          (oldExit) =>
-            !newExits.find((newExit) => newExit.uuid === oldExit.uuid)
-        );
+        const nodeUI: NodeUI = {
+          position: this.pendingNodePosition || { left: 0, top: 0 },
+          type: this.editingNodeUI?.type,
+          config: uiConfig || {}
+        };
 
-        // Remove jsPlumb connections for removed exits
-        removedExits.forEach((exit) => {
-          this.plumber.removeExitConnection(exit.uuid);
-        });
-      }
+        // Add the node to the store
+        store.getState().addNode(updatedNode, nodeUI);
 
-      this.plumber.revalidate([updatedNode.uuid]);
+        // Reset the creation flags
+        this.isCreatingNewNode = false;
+        this.pendingNodePosition = null;
+      } else {
+        // This is an existing node - update it
+        // Clean up jsPlumb connections for removed exits before updating the node
+        if (this.plumber) {
+          const oldExits = this.editingNode.exits || [];
+          const newExits = updatedNode.exits || [];
 
-      // Update the node in the store
-      getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+          // Find exits that were removed
+          const removedExits = oldExits.filter(
+            (oldExit) =>
+              !newExits.find((newExit) => newExit.uuid === oldExit.uuid)
+          );
 
-      // Update the UI config if provided
-      if (uiConfig) {
-        getStore()?.getState().updateNodeUIConfig(updatedNode.uuid, uiConfig);
+          // Remove jsPlumb connections for removed exits
+          removedExits.forEach((exit) => {
+            this.plumber.removeExitConnection(exit.uuid);
+          });
+        }
+
+        this.plumber.revalidate([updatedNode.uuid]);
+
+        // Update the node in the store
+        getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+
+        // Update the UI config if provided
+        if (uiConfig) {
+          getStore()?.getState().updateNodeUIConfig(updatedNode.uuid, uiConfig);
+        }
       }
 
       // Repaint jsplumb connections in case node size changed
@@ -1125,6 +1249,11 @@ export class Editor extends RapidElement {
   }
 
   private handleNodeEditCanceled(): void {
+    // If we were creating a new node, just discard it
+    if (this.isCreatingNewNode) {
+      this.isCreatingNewNode = false;
+      this.pendingNodePosition = null;
+    }
     this.closeNodeEditor();
   }
 

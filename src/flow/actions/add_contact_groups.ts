@@ -13,7 +13,7 @@ export const add_contact_groups: ActionConfig = {
   // Form-level transformations - default 1:1 mapping for this case
   toFormData: (action: AddToGroup) => {
     return {
-      groups: action.groups || [],
+      groups: action.groups || null,
       uuid: action.uuid
     };
   },

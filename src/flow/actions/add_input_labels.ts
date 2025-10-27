@@ -13,7 +13,7 @@ export const add_input_labels: ActionConfig = {
   // Form-level transformations
   toFormData: (action: AddInputLabels) => {
     return {
-      labels: action.labels || [],
+      labels: action.labels || null,
       uuid: action.uuid
     };
   },

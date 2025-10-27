@@ -412,12 +412,12 @@ describe('Editor', () => {
     });
   });
 
-  describe('double-click functionality', () => {
+  describe('canvas menu functionality', () => {
     afterEach(() => {
       restore();
     });
 
-    it('creates sticky note on canvas double-click', async () => {
+    it('has context menu handler set up', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="grid">
@@ -436,10 +436,9 @@ describe('Editor', () => {
       const canvas = editor.querySelector('#canvas') as HTMLElement;
       expect(canvas).to.exist;
 
-      // Check that the double-click event listener is set up
-      // We'll test this by checking if the boundCanvasDoubleClick method exists
-      expect((editor as any).boundCanvasDoubleClick).to.exist;
-      expect(typeof (editor as any).boundCanvasDoubleClick).to.equal(
+      // Check that the context menu event listener is set up
+      expect((editor as any).boundCanvasContextMenu).to.exist;
+      expect(typeof (editor as any).boundCanvasContextMenu).to.equal(
         'function'
       );
 
@@ -456,8 +455,8 @@ describe('Editor', () => {
       expect(snapToGrid(-10)).to.equal(0); // Should not go negative
     });
 
-    it('tests double-click handler logic independently', () => {
-      // Test the logic that would be in handleCanvasDoubleClick without the problematic getStore call
+    it('tests context menu handler logic independently', () => {
+      // Test the logic that would be in handleCanvasContextMenu
 
       // Mock event with canvas target
       const canvasTarget = { id: 'canvas' };

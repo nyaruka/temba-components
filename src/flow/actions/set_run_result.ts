@@ -60,7 +60,7 @@ export const set_run_result: ActionConfig = {
   toFormData: (action: SetRunResult) => {
     return {
       uuid: action.uuid,
-      name: action.name ? [{ name: action.name, value: action.name }] : [],
+      name: action.name ? [{ name: action.name, value: action.name }] : null,
       value: action.value || '',
       category: action.category || ''
     };
