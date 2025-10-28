@@ -20,6 +20,7 @@ export const split_by_webhook: NodeConfig = {
   type: 'split_by_webhook',
   name: 'Call Webhook',
   editorType: EDITOR_TYPES.call,
+  showAsAction: true,
   form: {
     method: {
       type: 'select',

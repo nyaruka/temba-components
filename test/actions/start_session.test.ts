@@ -13,7 +13,7 @@ describe('start_session action config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(start_session.name).to.equal('Start Somebody Else');
+      expect(start_session.name).to.equal('Start Others in Flow');
     });
   });
 

@@ -210,32 +210,91 @@ export class NodeTypeSelector extends RapidElement {
   private getCategories(): NodeCategory[] {
     if (this.mode === 'action') {
       // Group actions by editor type
-      const itemsByType = new Map<
+      const actionsByType = new Map<
         string,
         Array<{ type: string; config: ActionConfig }>
       >();
+      const splitsByType = new Map<
+        string,
+        Array<{ type: string; config: NodeConfig }>
+      >();
 
+      // Collect regular actions (from ACTION_CONFIG, unless hideFromActions is true)
       Object.entries(ACTION_CONFIG)
-        .filter(([_, config]) => config.name) // only show actions with names
+        .filter(([_, config]) => {
+          return config.name && !config.hideFromActions && config.editorType;
+        })
         .forEach(([type, config]) => {
           const editorType = config.editorType;
-          const key = editorType.title; // use title as the key for grouping
-          if (!itemsByType.has(key)) {
-            itemsByType.set(key, []);
+          const key = editorType.title;
+          if (!actionsByType.has(key)) {
+            actionsByType.set(key, []);
           }
-          itemsByType.get(key)!.push({ type, config });
+          actionsByType.get(key)!.push({ type, config });
         });
 
-      // Convert to categories using editor type metadata
-      return Array.from(itemsByType.entries()).map(([_, items]) => {
+      // Collect nodes that have showAsAction=true (these appear as "with split" actions)
+      Object.entries(NODE_CONFIG)
+        .filter(([type, config]) => {
+          return (
+            type !== 'execute_actions' &&
+            config.name &&
+            config.showAsAction &&
+            config.editorType
+          );
+        })
+        .forEach(([type, config]) => {
+          const editorType = config.editorType!;
+          const key = editorType.title;
+          if (!splitsByType.has(key)) {
+            splitsByType.set(key, []);
+          }
+          splitsByType.get(key)!.push({ type, config });
+        });
+
+      // Build categories - first regular actions, then splitting actions
+      const categories: NodeCategory[] = [];
+
+      // Add regular action categories sorted by order
+      const sortedActionCategories = Array.from(actionsByType.entries()).sort(
+        ([_keyA, itemsA], [_keyB, itemsB]) => {
+          const orderA = itemsA[0].config.editorType.order ?? 999;
+          const orderB = itemsB[0].config.editorType.order ?? 999;
+          return orderA - orderB;
+        }
+      );
+
+      sortedActionCategories.forEach(([_, items]) => {
         const editorType = items[0].config.editorType;
-        return {
+        categories.push({
           name: editorType.title,
           description: editorType.description,
           color: editorType.color,
           items
-        };
+        });
       });
+
+      // Add splitting action categories (with modified description to indicate they split)
+      // Also sorted by order
+      const sortedSplitCategories = Array.from(splitsByType.entries()).sort(
+        ([_keyA, itemsA], [_keyB, itemsB]) => {
+          const orderA = itemsA[0].config.editorType!.order ?? 999;
+          const orderB = itemsB[0].config.editorType!.order ?? 999;
+          return orderA - orderB;
+        }
+      );
+
+      sortedSplitCategories.forEach(([_, items]) => {
+        const editorType = items[0].config.editorType!;
+        categories.push({
+          name: `${editorType.title} (with split)`,
+          description: `${editorType.description} and split the flow`,
+          color: editorType.color,
+          items
+        });
+      });
+
+      return categories;
     } else {
       // Group splits by editor type
       const itemsByType = new Map<
@@ -246,7 +305,10 @@ export class NodeTypeSelector extends RapidElement {
       Object.entries(NODE_CONFIG)
         .filter(([type, config]) => {
           // exclude execute_actions (it's the default action-only node)
-          return type !== 'execute_actions' && config.name;
+          // exclude nodes that have showAsAction=true (they appear in action mode)
+          return (
+            type !== 'execute_actions' && config.name && !config.showAsAction
+          );
         })
         .forEach(([type, config]) => {
           const editorType = config.editorType || EDITOR_TYPES.split;
@@ -257,16 +319,26 @@ export class NodeTypeSelector extends RapidElement {
           itemsByType.get(key)!.push({ type, config });
         });
 
-      // Convert to categories using editor type metadata
-      return Array.from(itemsByType.entries()).map(([_, items]) => {
-        const editorType = items[0].config.editorType || EDITOR_TYPES.split;
-        return {
-          name: editorType.title,
-          description: editorType.description,
-          color: editorType.color,
-          items
-        };
-      });
+      // Convert to categories using editor type metadata, sorted by splitOrder
+      return Array.from(itemsByType.entries())
+        .map(([_, items]) => {
+          const editorType = items[0].config.editorType || EDITOR_TYPES.split;
+          return {
+            name: editorType.title,
+            description: editorType.description,
+            color: editorType.color,
+            items
+          };
+        })
+        .sort((a, b) => {
+          const orderA =
+            Object.values(EDITOR_TYPES).find((et) => et.title === a.name)
+              ?.splitOrder ?? 999;
+          const orderB =
+            Object.values(EDITOR_TYPES).find((et) => et.title === b.name)
+              ?.splitOrder ?? 999;
+          return orderA - orderB;
+        });
     }
   }
 

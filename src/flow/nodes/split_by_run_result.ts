@@ -16,7 +16,7 @@ import { getStore } from '../../store/Store';
 
 export const split_by_run_result: NodeConfig = {
   type: 'split_by_run_result',
-  name: 'Split by Flow Result',
+  name: 'Split by Result',
   editorType: EDITOR_TYPES.split,
   dialogSize: 'large',
   form: {

@@ -13,7 +13,7 @@ describe('split_by_random node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(split_by_random.name).to.equal('Split by Random');
+      expect(split_by_random.name).to.equal('Random Split');
     });
 
     it('has correct type', () => {

@@ -7,6 +7,7 @@ export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
   name: 'Call AI',
   editorType: EDITOR_TYPES.call,
+  showAsAction: true,
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
       (action) => action.type === 'call_llm'

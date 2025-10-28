@@ -47,7 +47,7 @@ const createRandomRouter = (
 
 export const split_by_random: NodeConfig = {
   type: 'split_by_random',
-  name: 'Split by Random',
+  name: 'Random Split',
   editorType: EDITOR_TYPES.split,
   form: {
     categories: {

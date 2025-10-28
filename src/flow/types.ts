@@ -81,6 +81,7 @@ export interface NodeConfig extends FormConfig {
   editorType?: EditorType;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
+  showAsAction?: boolean; // if true, show in action dialog instead of splits (default: false - nodes show in splits)
   router?: {
     type: 'switch' | 'random';
     defaultCategory?: string;
@@ -261,6 +262,7 @@ export interface ActionConfig extends FormConfig {
   editorType: EditorType;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];
+  hideFromActions?: boolean; // if true, don't show in action dialog (default: false - actions show in actions)
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;
@@ -278,6 +280,8 @@ export interface EditorType {
   color: string;
   title: string;
   description: string;
+  order?: number; // display order in action selector (lower numbers first)
+  splitOrder?: number; // display order in split selector (lower numbers first, defaults to order if not specified)
 }
 
 /**
@@ -288,56 +292,70 @@ export const EDITOR_TYPES: { [key: string]: EditorType } = {
   send: {
     color: '#3498db',
     title: 'Send',
-    description: 'Actions that send messages or content to contacts'
+    description: 'Actions that send messages or content to contacts',
+    order: 1
   },
   update: {
     color: '#01c1af',
-    title: 'Update',
-    description: 'Actions that update contact information'
-  },
-  broadcast: {
-    color: '#8e5ea7',
-    title: 'Broadcast',
-    description: 'Actions that send messages to multiple contacts'
-  },
-  call: {
-    color: '#e68628',
-    title: 'Call',
-    description: 'Actions that call external services or APIs'
-  },
-  create: {
-    color: '#df419f',
-    title: 'Create',
-    description: 'Actions that create new resources'
+    title: 'Contact',
+    description: 'Actions that update contact information',
+    order: 2
   },
   save: {
     color: '#1a777c',
     title: 'Save',
-    description: 'Actions that save or store data'
+    description: 'Actions that save or store data',
+    order: 3
   },
-  split: {
-    color: '#aaaaaa',
-    title: 'Split',
-    description: 'Split the flow based on conditions'
+  services: {
+    color: '#56ac56',
+    title: 'Services',
+    description: 'Call external services and APIs',
+    order: 4,
+    splitOrder: 3
+  },
+  broadcast: {
+    color: '#8e5ea7',
+    title: 'Others',
+    description: 'Actions that apply to other contacts or people',
+    order: 5
+  },
+  create: {
+    color: '#df419f',
+    title: 'Create',
+    description: 'Actions that create new resources',
+    order: 6
   },
   execute: {
     color: '#666666',
     title: 'Execute',
-    description: 'Execute other flows or actions'
-  },
-  wait: {
-    color: '#4d7dad',
-    title: 'Wait',
-    description: 'Wait for user input or responses'
+    description: 'Execute other flows or actions',
+    order: 7
   },
   add: {
     color: '#309c42',
     title: 'Add',
-    description: 'Add items or resources'
+    description: 'Add items or resources',
+    order: 8
   },
   remove: {
     color: '#e74c3c',
     title: 'Remove',
-    description: 'Remove items or resources'
+    description: 'Remove items or resources',
+    order: 9
+  },
+  wait: {
+    color: '#4d7dad',
+    title: 'Wait',
+    description: 'Wait for user input or responses',
+    order: 10,
+    splitOrder: 1
+  },
+  split: {
+    color: '#aaaaaa',
+    title: 'Split',
+    description: 'Split the flow based on conditions',
+    order: 11,
+    splitOrder: 2
   }
 };

@@ -8,6 +8,7 @@ export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
   name: 'Enter a Flow',
   editorType: EDITOR_TYPES.execute,
+  showAsAction: true,
   form: {
     flow: {
       type: 'select',

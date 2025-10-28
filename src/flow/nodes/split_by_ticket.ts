@@ -7,6 +7,7 @@ export const split_by_ticket: NodeConfig = {
   type: 'split_by_ticket',
   name: 'Open Ticket',
   editorType: EDITOR_TYPES.create,
+  showAsAction: true,
   form: {
     topic: {
       type: 'select',

@@ -11,7 +11,7 @@ import { Icon } from '../../Icons';
 
 export const send_email: ActionConfig = {
   name: 'Send Email',
-  editorType: EDITOR_TYPES.send,
+  editorType: EDITOR_TYPES.broadcast,
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email)}</div>

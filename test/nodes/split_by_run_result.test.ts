@@ -40,7 +40,7 @@ describe('split_by_run_result node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(split_by_run_result.name).to.equal('Split by Flow Result');
+      expect(split_by_run_result.name).to.equal('Split by Result');
     });
 
     it('has correct type', () => {

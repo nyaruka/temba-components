@@ -9,8 +9,8 @@ import { Node, StartSession } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const start_session: ActionConfig = {
-  name: 'Start Somebody Else',
-  editorType: EDITOR_TYPES.execute,
+  name: 'Start Others in Flow',
+  editorType: EDITOR_TYPES.broadcast,
   render: (_node: Node, action: StartSession) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;
