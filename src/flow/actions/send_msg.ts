@@ -1,12 +1,17 @@
 import { html } from 'lit-html';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
-import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
+import {
+  ActionConfig,
+  EDITOR_TYPES,
+  FormData,
+  ValidationResult
+} from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 
 export const send_msg: ActionConfig = {
   name: 'Send Message',
-  color: COLORS.send,
+  editorType: EDITOR_TYPES.send,
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`

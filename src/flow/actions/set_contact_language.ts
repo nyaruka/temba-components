@@ -1,11 +1,16 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
+import {
+  ActionConfig,
+  EDITOR_TYPES,
+  FormData,
+  ValidationResult
+} from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
-  color: COLORS.update,
+  editorType: EDITOR_TYPES.update,
   render: (_node: Node, action: SetContactLanguage) => {
     const languageNames = new Intl.DisplayNames(['en'], {
       type: 'language'

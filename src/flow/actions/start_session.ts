@@ -1,11 +1,16 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
+import {
+  ActionConfig,
+  EDITOR_TYPES,
+  FormData,
+  ValidationResult
+} from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const start_session: ActionConfig = {
   name: 'Start Somebody Else',
-  color: COLORS.execute,
+  editorType: EDITOR_TYPES.execute,
   render: (_node: Node, action: StartSession) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;

@@ -1,11 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData } from '../types';
+import { ActionConfig, EDITOR_TYPES, FormData } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 
 export const set_contact_status: ActionConfig = {
   name: 'Update Status',
-  color: COLORS.update,
+  editorType: EDITOR_TYPES.update,
   render: (_node: Node, action: SetContactStatus) => {
     return html`<div>Set to <strong>${titleCase(action.status)}</strong></div>`;
   },

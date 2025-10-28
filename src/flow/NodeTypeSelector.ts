@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { NODE_CONFIG, ACTION_CONFIG } from './config';
-import { NodeConfig, ActionConfig } from './types';
+import { NodeConfig, ActionConfig, EDITOR_TYPES } from './types';
 
 /**
  * Event detail for node type selection
@@ -18,6 +18,8 @@ export interface NodeTypeSelection {
  */
 interface NodeCategory {
   name: string;
+  description: string;
+  color: string;
   items: Array<{ type: string; config: NodeConfig | ActionConfig }>;
 }
 
@@ -95,11 +97,19 @@ export class NodeTypeSelector extends RapidElement {
         font-size: 1.1rem;
         font-weight: 600;
         color: var(--color-text-dark);
-        margin-bottom: 0.75em;
+        margin-bottom: 0.5em;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         font-size: 0.9rem;
         opacity: 0.7;
+      }
+
+      .category-description {
+        font-size: 0.85rem;
+        color: var(--color-text);
+        opacity: 0.6;
+        margin-bottom: 0.75em;
+        line-height: 1.4;
       }
 
       .items-grid {
@@ -200,32 +210,64 @@ export class NodeTypeSelector extends RapidElement {
 
   private getCategories(): NodeCategory[] {
     if (this.mode === 'action') {
-      // Group actions by category
-      const items = Object.entries(ACTION_CONFIG)
-        .filter(([_, config]) => config.name) // only show actions with names
-        .map(([type, config]) => ({ type, config }));
+      // Group actions by editor type
+      const itemsByType = new Map<
+        string,
+        Array<{ type: string; config: ActionConfig }>
+      >();
 
-      return [
-        {
-          name: 'Actions',
+      Object.entries(ACTION_CONFIG)
+        .filter(([_, config]) => config.name) // only show actions with names
+        .forEach(([type, config]) => {
+          const editorType = config.editorType;
+          const key = editorType.title; // use title as the key for grouping
+          if (!itemsByType.has(key)) {
+            itemsByType.set(key, []);
+          }
+          itemsByType.get(key)!.push({ type, config });
+        });
+
+      // Convert to categories using editor type metadata
+      return Array.from(itemsByType.entries()).map(([_, items]) => {
+        const editorType = items[0].config.editorType;
+        return {
+          name: editorType.title,
+          description: editorType.description,
+          color: editorType.color,
           items
-        }
-      ];
+        };
+      });
     } else {
-      // Group splits by category
-      const items = Object.entries(NODE_CONFIG)
+      // Group splits by editor type
+      const itemsByType = new Map<
+        string,
+        Array<{ type: string; config: NodeConfig }>
+      >();
+
+      Object.entries(NODE_CONFIG)
         .filter(([type, config]) => {
           // exclude execute_actions (it's the default action-only node)
           return type !== 'execute_actions' && config.name;
         })
-        .map(([type, config]) => ({ type, config }));
+        .forEach(([type, config]) => {
+          const editorType = config.editorType || EDITOR_TYPES.split;
+          const key = editorType.title;
+          if (!itemsByType.has(key)) {
+            itemsByType.set(key, []);
+          }
+          itemsByType.get(key)!.push({ type, config });
+        });
 
-      return [
-        {
-          name: 'Splits',
+      // Convert to categories using editor type metadata
+      return Array.from(itemsByType.entries()).map(([_, items]) => {
+        const editorType = items[0].config.editorType || EDITOR_TYPES.split;
+        return {
+          name: editorType.title,
+          description: editorType.description,
+          color: editorType.color,
           items
-        }
-      ];
+        };
+      });
     }
   }
 
@@ -249,12 +291,13 @@ export class NodeTypeSelector extends RapidElement {
             (category) => html`
               <div class="category">
                 <div class="category-title">${category.name}</div>
+                <div class="category-description">${category.description}</div>
                 <div class="items-grid">
                   ${category.items.map(
                     (item) => html`
                       <div
                         class="node-item"
-                        style="--item-color: ${item.config.color ||
+                        style="--item-color: ${item.config.editorType?.color ||
                         'rgba(0, 0, 0, 0.1)'}"
                         @click=${() => this.handleNodeTypeClick(item.type)}
                       >

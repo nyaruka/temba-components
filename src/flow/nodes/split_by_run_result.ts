@@ -1,4 +1,4 @@
-import { COLORS, FormData, NodeConfig } from '../types';
+import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -17,7 +17,7 @@ import { getStore } from '../../store/Store';
 export const split_by_run_result: NodeConfig = {
   type: 'split_by_run_result',
   name: 'Split by Flow Result',
-  color: COLORS.split,
+  editorType: EDITOR_TYPES.split,
   dialogSize: 'large',
   form: {
     result: {

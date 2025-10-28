@@ -1,11 +1,16 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
+import {
+  ActionConfig,
+  EDITOR_TYPES,
+  FormData,
+  ValidationResult
+} from '../types';
 import { Node, RemoveFromGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const remove_contact_groups: ActionConfig = {
   name: 'Remove from Group',
-  color: COLORS.update,
+  editorType: EDITOR_TYPES.update,
   render: (_node: Node, action: RemoveFromGroup) => {
     if (action.all_groups) {
       return html`<div>Remove from all groups</div>`;

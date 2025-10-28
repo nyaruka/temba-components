@@ -1,4 +1,4 @@
-import { COLORS, FormData, NodeConfig } from '../types';
+import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
 import { Node, OpenTicket } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -6,7 +6,7 @@ import { html } from 'lit';
 export const split_by_ticket: NodeConfig = {
   type: 'split_by_ticket',
   name: 'Open Ticket',
-  color: COLORS.create,
+  editorType: EDITOR_TYPES.create,
   form: {
     topic: {
       type: 'select',

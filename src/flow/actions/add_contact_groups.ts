@@ -1,11 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData } from '../types';
+import { ActionConfig, EDITOR_TYPES, FormData } from '../types';
 import { Node, AddToGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const add_contact_groups: ActionConfig = {
   name: 'Add to Group',
-  color: COLORS.update,
+  editorType: EDITOR_TYPES.update,
   render: (_node: Node, action: AddToGroup) => {
     return html`<div>${renderNamedObjects(action.groups, 'group')}</div>`;
   },

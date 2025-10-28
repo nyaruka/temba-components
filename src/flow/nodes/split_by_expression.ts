@@ -1,4 +1,4 @@
-import { COLORS, FormData, NodeConfig } from '../types';
+import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -16,7 +16,7 @@ import {
 export const split_by_expression: NodeConfig = {
   type: 'split_by_expression',
   name: 'Split by Expression',
-  color: COLORS.split,
+  editorType: EDITOR_TYPES.split,
   dialogSize: 'large',
   form: {
     operand: {

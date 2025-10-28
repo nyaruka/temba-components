@@ -819,7 +819,10 @@ export class CanvasNode extends RapidElement {
     index: number,
     isRemoving: boolean = false
   ) {
-    return html`<div class="cn-title" style="background:${config.color}">
+    return html`<div
+      class="cn-title"
+      style="background:${config.editorType.color}"
+    >
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : null}
@@ -844,7 +847,7 @@ export class CanvasNode extends RapidElement {
   ) {
     return html`<div
       class="cn-title ${isRemoving ? 'removing' : ''}"
-      style="background:${config.color}"
+      style="background:${config.editorType?.color || '#aaaaaa'}"
     >
       <div class="title-spacer"></div>
       <div class="name">

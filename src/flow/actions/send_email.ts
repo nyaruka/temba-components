@@ -1,12 +1,17 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
+import {
+  ActionConfig,
+  EDITOR_TYPES,
+  FormData,
+  ValidationResult
+} from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
 import { Icon } from '../../Icons';
 
 export const send_email: ActionConfig = {
   name: 'Send Email',
-  color: COLORS.send,
+  editorType: EDITOR_TYPES.send,
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email)}</div>

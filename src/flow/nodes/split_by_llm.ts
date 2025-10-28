@@ -1,4 +1,4 @@
-import { COLORS, FormData, NodeConfig } from '../types';
+import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -6,7 +6,7 @@ import { html } from 'lit';
 export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
   name: 'Call AI',
-  color: COLORS.call,
+  editorType: EDITOR_TYPES.call,
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
       (action) => action.type === 'call_llm'

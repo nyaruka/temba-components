@@ -1,11 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS } from '../types';
+import { ActionConfig, EDITOR_TYPES } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const send_broadcast: ActionConfig = {
   name: 'Send Broadcast',
-  color: COLORS.broadcast,
+  editorType: EDITOR_TYPES.broadcast,
   render: (_node: Node, action: SendBroadcast) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;

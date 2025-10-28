@@ -1,4 +1,4 @@
-import { COLORS, FormData, NodeConfig } from '../types';
+import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 
@@ -48,7 +48,7 @@ const createRandomRouter = (
 export const split_by_random: NodeConfig = {
   type: 'split_by_random',
   name: 'Split by Random',
-  color: COLORS.split,
+  editorType: EDITOR_TYPES.split,
   form: {
     categories: {
       type: 'array',

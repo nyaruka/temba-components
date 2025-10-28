@@ -144,9 +144,12 @@ export class NodeTest<T extends Node> {
         expect(this.nodeConfig.name).to.be.a('string');
       }
 
-      // Color is optional
-      if (this.nodeConfig.color) {
-        expect(this.nodeConfig.color).to.be.a('string');
+      // EditorType is optional but recommended
+      if (this.nodeConfig.editorType) {
+        expect(this.nodeConfig.editorType).to.be.an('object');
+        expect(this.nodeConfig.editorType.color).to.be.a('string');
+        expect(this.nodeConfig.editorType.title).to.be.a('string');
+        expect(this.nodeConfig.editorType.description).to.be.a('string');
       }
 
       // toFormData and fromFormData are optional - only needed for complex data transformations
