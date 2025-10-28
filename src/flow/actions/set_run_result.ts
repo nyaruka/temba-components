@@ -1,11 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData } from '../types';
+import { ActionConfig, EDITOR_TYPES, FormData } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 
 export const set_run_result: ActionConfig = {
   name: 'Save Flow Result',
-  color: COLORS.save,
+  editorType: EDITOR_TYPES.save,
   render: (_node: Node, action: SetRunResult) => {
     return html`<div>
       Save <strong>${action.value}</strong> as <strong>${action.name}</strong>
@@ -60,7 +60,7 @@ export const set_run_result: ActionConfig = {
   toFormData: (action: SetRunResult) => {
     return {
       uuid: action.uuid,
-      name: action.name ? [{ name: action.name, value: action.name }] : [],
+      name: action.name ? [{ name: action.name, value: action.name }] : null,
       value: action.value || '',
       category: action.category || ''
     };

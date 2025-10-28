@@ -1,4 +1,4 @@
-import { COLORS, FormData, NodeConfig } from '../types';
+import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
@@ -7,7 +7,7 @@ import { renderNamedObjects } from '../utils';
 export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
   name: 'Enter a Flow',
-  color: COLORS.execute,
+  editorType: EDITOR_TYPES.execute,
   form: {
     flow: {
       type: 'select',

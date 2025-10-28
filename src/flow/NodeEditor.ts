@@ -510,7 +510,7 @@ export class NodeEditor extends RapidElement {
 
   private getHeaderColor(): string {
     const config = this.getConfig();
-    return config?.color || '#666666';
+    return config?.editorType?.color || '#666666';
   }
 
   private handleDialogButtonClick(event: CustomEvent): void {

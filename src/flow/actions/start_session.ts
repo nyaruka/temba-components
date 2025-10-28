@@ -1,11 +1,16 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, FormData, ValidationResult } from '../types';
+import {
+  ActionConfig,
+  EDITOR_TYPES,
+  FormData,
+  ValidationResult
+} from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const start_session: ActionConfig = {
   name: 'Start Somebody Else',
-  color: COLORS.execute,
+  editorType: EDITOR_TYPES.execute,
   render: (_node: Node, action: StartSession) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;
@@ -67,7 +72,7 @@ export const start_session: ActionConfig = {
       startTypeOptions[0];
 
     return {
-      flow: [action.flow],
+      flow: action.flow ? [action.flow] : null,
       recipients: [...(action.contacts || []), ...(action.groups || [])],
       startType: [startType],
       contactQuery: extendedAction.contact_query || '',
@@ -82,7 +87,6 @@ export const start_session: ActionConfig = {
       label: 'Flow',
       helpText: 'Select the flow to start',
       required: true,
-      options: [],
       searchable: true,
       endpoint: '/api/v2/flows.json',
       valueKey: 'uuid',

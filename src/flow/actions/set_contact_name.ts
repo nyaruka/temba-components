@@ -1,10 +1,10 @@
 import { html } from 'lit-html';
-import { ActionConfig, COLORS, ValidationResult } from '../types';
+import { ActionConfig, EDITOR_TYPES, ValidationResult } from '../types';
 import { Node, SetContactName } from '../../store/flow-definition';
 
 export const set_contact_name: ActionConfig = {
   name: 'Update Name',
-  color: COLORS.update,
+  editorType: EDITOR_TYPES.update,
   render: (_node: Node, action: SetContactName) => {
     return html`<div>Set to <strong>${action.name}</strong></div>`;
   },

@@ -6,6 +6,7 @@ import {
   FlowDefinition,
   FlowPosition,
   Node,
+  NodeUI,
   Router,
   StickyNote
 } from './flow-definition';
@@ -106,6 +107,8 @@ export interface AppState {
   removeStickyNotes: (uuids: string[]) => void;
   updateStickyNote(uuid: string, sticky: StickyNote): void;
   createStickyNote(position: FlowPosition): string;
+  createNode(nodeType: string, position: FlowPosition): string;
+  addNode(node: Node, nodeUI: NodeUI): void;
 }
 
 export const zustand = createStore<AppState>()(
@@ -351,6 +354,59 @@ export const zustand = createStore<AppState>()(
           state.dirtyDate = new Date();
         });
         return uuid;
+      },
+
+      createNode: (nodeType: string, position: FlowPosition): string => {
+        const uuid = generateUUID();
+        const exitUuid = generateUUID();
+
+        set((state: AppState) => {
+          // Create a basic node with a single exit
+          const newNode: Node = {
+            uuid,
+            actions: [],
+            exits: [
+              {
+                uuid: exitUuid,
+                destination_uuid: null
+              }
+            ]
+          };
+
+          // Add the node to the flow definition
+          state.flowDefinition.nodes.push(newNode);
+
+          // Set up UI for the node
+          if (!state.flowDefinition._ui.nodes) {
+            state.flowDefinition._ui.nodes = {};
+          }
+
+          state.flowDefinition._ui.nodes[uuid] = {
+            position,
+            type: nodeType as any,
+            config: {}
+          };
+
+          state.dirtyDate = new Date();
+        });
+
+        return uuid;
+      },
+
+      addNode: (node: Node, nodeUI: NodeUI) => {
+        set((state: AppState) => {
+          // Add the node to the flow definition
+          state.flowDefinition.nodes.push(node);
+
+          // Set up UI for the node
+          if (!state.flowDefinition._ui.nodes) {
+            state.flowDefinition._ui.nodes = {};
+          }
+
+          state.flowDefinition._ui.nodes[node.uuid] = nodeUI;
+
+          state.dirtyDate = new Date();
+        });
       }
     }))
   )

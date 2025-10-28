@@ -281,10 +281,7 @@ describe('add_contact_urn action config', () => {
 
       const formData = add_contact_urn.toFormData!(action);
 
-      expect(formData.scheme[0]).to.deep.include({
-        name: 'unknown_scheme',
-        value: 'unknown_scheme'
-      });
+      expect(formData.scheme).to.be.null;
     });
   });
 });

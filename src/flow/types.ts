@@ -78,7 +78,7 @@ export interface FormConfig {
 export interface NodeConfig extends FormConfig {
   type: string;
   name?: string;
-  color?: string;
+  editorType?: EditorType;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
   router?: {
@@ -258,7 +258,7 @@ export type LayoutItem =
 
 export interface ActionConfig extends FormConfig {
   name: string;
-  color: string;
+  editorType: EditorType;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];
   render?: (node: any, action: any) => TemplateResult;
@@ -271,16 +271,73 @@ export interface ActionConfig extends FormConfig {
   fromFormData?: (formData: FormData) => Action;
 }
 
-export const COLORS = {
-  send: '#3498db',
-  update: '#01c1af',
-  broadcast: '#8e5ea7',
-  call: '#e68628',
-  create: '#df419f',
-  save: '#1a777c',
-  split: '#aaaaaa',
-  execute: '#666666',
-  wait: '#4d7dad',
-  add: '#309c42',
-  remove: '#e74c3c'
+/**
+ * Metadata for editor type groupings
+ */
+export interface EditorType {
+  color: string;
+  title: string;
+  description: string;
+}
+
+/**
+ * Editor type definitions - single source of truth for action/node categorization
+ * Use as: EDITOR_TYPES.send.color, EDITOR_TYPES.send.title, etc.
+ */
+export const EDITOR_TYPES: { [key: string]: EditorType } = {
+  send: {
+    color: '#3498db',
+    title: 'Send',
+    description: 'Actions that send messages or content to contacts'
+  },
+  update: {
+    color: '#01c1af',
+    title: 'Update',
+    description: 'Actions that update contact information'
+  },
+  broadcast: {
+    color: '#8e5ea7',
+    title: 'Broadcast',
+    description: 'Actions that send messages to multiple contacts'
+  },
+  call: {
+    color: '#e68628',
+    title: 'Call',
+    description: 'Actions that call external services or APIs'
+  },
+  create: {
+    color: '#df419f',
+    title: 'Create',
+    description: 'Actions that create new resources'
+  },
+  save: {
+    color: '#1a777c',
+    title: 'Save',
+    description: 'Actions that save or store data'
+  },
+  split: {
+    color: '#aaaaaa',
+    title: 'Split',
+    description: 'Split the flow based on conditions'
+  },
+  execute: {
+    color: '#666666',
+    title: 'Execute',
+    description: 'Execute other flows or actions'
+  },
+  wait: {
+    color: '#4d7dad',
+    title: 'Wait',
+    description: 'Wait for user input or responses'
+  },
+  add: {
+    color: '#309c42',
+    title: 'Add',
+    description: 'Add items or resources'
+  },
+  remove: {
+    color: '#e74c3c',
+    title: 'Remove',
+    description: 'Remove items or resources'
+  }
 };

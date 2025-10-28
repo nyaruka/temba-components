@@ -220,7 +220,7 @@ describe('EditorNode', () => {
     it('renders title with config color and name', async () => {
       const config = {
         name: 'Test Action',
-        color: '#ff0000'
+        editorType: { color: '#ff0000' }
       };
 
       const mockAction: Action = {
