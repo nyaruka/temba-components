@@ -94,7 +94,6 @@ export class NodeTypeSelector extends RapidElement {
       }
 
       .category-title {
-        font-size: 1.1rem;
         font-weight: 600;
         color: var(--color-text-dark);
         margin-bottom: 0.5em;
