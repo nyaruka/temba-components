@@ -61,9 +61,9 @@ describe('temba-canvas-menu', () => {
       (item) => item.querySelector('.menu-item-title')?.textContent
     );
     expect(titles).to.deep.equal([
-      'Add Sticky Note',
       'Add Action',
-      'Add Split'
+      'Add Split',
+      'Add Sticky Note'
     ]);
   });
 
@@ -93,10 +93,9 @@ describe('temba-canvas-menu', () => {
       selectionDetail = event.detail;
     });
 
-    // click on sticky note option
-    const stickyItem = menu.shadowRoot?.querySelector(
-      '.menu-item'
-    ) as HTMLElement;
+    // click on sticky note option (now the third item)
+    const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
+    const stickyItem = menuItems?.[2] as HTMLElement;
     stickyItem.click();
     await menu.updateComplete;
 

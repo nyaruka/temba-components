@@ -39,7 +39,7 @@ export class CanvasMenu extends RapidElement {
         padding: 0.75em 1.5em;
         cursor: pointer;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 0.75em;
         transition: background-color 0.15s ease;
       }
@@ -50,6 +50,7 @@ export class CanvasMenu extends RapidElement {
 
       .menu-item temba-icon {
         --icon-color: var(--color-text);
+        margin-top: 0.15em;
       }
 
       .menu-item-content {
@@ -142,19 +143,6 @@ export class CanvasMenu extends RapidElement {
       <div class="menu" style="left: ${this.x}px; top: ${this.y}px;">
         <div
           class="menu-item"
-          @click=${() => this.handleMenuItemClick('sticky')}
-        >
-          <temba-icon name="note" size="1.25"></temba-icon>
-          <div class="menu-item-content">
-            <div class="menu-item-title">Add Sticky Note</div>
-            <div class="menu-item-description">Add a note to the canvas</div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div
-          class="menu-item"
           @click=${() => this.handleMenuItemClick('action')}
         >
           <temba-icon name="action" size="1.25"></temba-icon>
@@ -174,6 +162,19 @@ export class CanvasMenu extends RapidElement {
           <div class="menu-item-content">
             <div class="menu-item-title">Add Split</div>
             <div class="menu-item-description">Branch based on conditions</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div
+          class="menu-item"
+          @click=${() => this.handleMenuItemClick('sticky')}
+        >
+          <temba-icon name="note" size="1.25"></temba-icon>
+          <div class="menu-item-content">
+            <div class="menu-item-title">Add Sticky Note</div>
+            <div class="menu-item-description">Add a note to the canvas</div>
           </div>
         </div>
       </div>
