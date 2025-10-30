@@ -6,7 +6,7 @@ import { html } from 'lit';
 export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
   name: 'Call AI',
-  editorType: EDITOR_TYPES.call,
+  editorType: EDITOR_TYPES.services,
   showAsAction: true,
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
