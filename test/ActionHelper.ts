@@ -126,10 +126,7 @@ export class ActionTest<T extends Action> {
   testBasicProperties() {
     it('has correct basic properties', () => {
       expect(this.actionConfig.name).to.be.a('string');
-      expect(this.actionConfig.editorType).to.exist;
-      expect(this.actionConfig.editorType.color).to.be.a('string');
-      expect(this.actionConfig.editorType.title).to.be.a('string');
-      expect(this.actionConfig.editorType.description).to.be.a('string');
+      expect(this.actionConfig.group).to.exist;
 
       // toFormData and fromFormData are optional - only needed for complex data transformations
       if (this.actionConfig.toFormData) {

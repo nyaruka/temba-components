@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import {
   ActionConfig,
-  EDITOR_TYPES,
+  ACTION_GROUPS,
   FormData,
   ValidationResult
 } from '../types';
@@ -11,7 +11,7 @@ import { Icon } from '../../Icons';
 
 export const send_email: ActionConfig = {
   name: 'Send Email',
-  editorType: EDITOR_TYPES.send,
+  group: ACTION_GROUPS.broadcast,
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email)}</div>

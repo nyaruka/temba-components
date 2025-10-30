@@ -14,7 +14,9 @@ import {
   LayoutItem,
   RowLayoutConfig,
   GroupLayoutConfig,
-  FormData
+  FormData,
+  ACTION_GROUP_METADATA,
+  SPLIT_GROUP_METADATA
 } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
@@ -510,7 +512,10 @@ export class NodeEditor extends RapidElement {
 
   private getHeaderColor(): string {
     const config = this.getConfig();
-    return config?.editorType?.color || '#666666';
+    return config?.group
+      ? ACTION_GROUP_METADATA[config.group]?.color ||
+          SPLIT_GROUP_METADATA[config.group]?.color
+      : '#aaaaaa';
   }
 
   private handleDialogButtonClick(event: CustomEvent): void {

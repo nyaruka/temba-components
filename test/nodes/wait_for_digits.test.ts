@@ -20,8 +20,8 @@ describe('wait_for_digits node config', () => {
       expect(wait_for_digits.type).to.equal('wait_for_digits');
     });
 
-    it('has correct editorType', () => {
-      expect(wait_for_digits.editorType).to.exist;
+    it('has correct group', () => {
+      expect(wait_for_digits.group).to.exist;
     });
 
     it('is a simple node config without form or layout', () => {

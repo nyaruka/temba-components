@@ -1,11 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, EDITOR_TYPES, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 
 export const set_run_result: ActionConfig = {
   name: 'Save Flow Result',
-  editorType: EDITOR_TYPES.save,
+  group: ACTION_GROUPS.save,
   render: (_node: Node, action: SetRunResult) => {
     return html`<div>
       Save <strong>${action.value}</strong> as <strong>${action.name}</strong>

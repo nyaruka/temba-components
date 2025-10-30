@@ -1,9 +1,8 @@
-import { transfer_airtime } from '../actions/transfer_airtime';
-import { EDITOR_TYPES, NodeConfig } from '../types';
+import { ACTION_GROUPS, NodeConfig } from '../types';
 
 export const split_by_airtime: NodeConfig = {
   type: 'split_by_airtime',
-  name: 'Split by Airtime Transfer',
-  editorType: EDITOR_TYPES.send,
-  action: transfer_airtime
+  name: 'Send Airtime',
+  group: ACTION_GROUPS.services,
+  showAsAction: true
 };

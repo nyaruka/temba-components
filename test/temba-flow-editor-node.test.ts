@@ -10,6 +10,7 @@ import {
 } from '../src/store/flow-definition.d';
 import { stub, restore, useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
+import { ACTION_GROUPS } from '../src/flow/types';
 
 describe('EditorNode', () => {
   let editorNode: CanvasNode;
@@ -220,7 +221,7 @@ describe('EditorNode', () => {
     it('renders title with config color and name', async () => {
       const config = {
         name: 'Test Action',
-        editorType: { color: '#ff0000' }
+        group: ACTION_GROUPS.send // Uses 'send' group which has color '#3498db'
       };
 
       const mockAction: Action = {
@@ -236,7 +237,8 @@ describe('EditorNode', () => {
 
       const nameElement = title?.querySelector('.name');
       expect(nameElement?.textContent?.trim()).to.equal('Test Action');
-      expect(title?.getAttribute('style')).to.contain('background:#ff0000');
+      // The 'send' group has color '#3498db' from ACTION_GROUP_METADATA
+      expect(title?.getAttribute('style')).to.contain('background:#3498db');
     });
   });
 

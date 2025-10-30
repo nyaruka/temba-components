@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import {
   ActionConfig,
-  EDITOR_TYPES,
+  ACTION_GROUPS,
   FormData,
   ValidationResult
 } from '../types';
@@ -10,7 +10,7 @@ import { renderNamedObjects } from '../utils';
 
 export const remove_contact_groups: ActionConfig = {
   name: 'Remove from Group',
-  editorType: EDITOR_TYPES.update,
+  group: ACTION_GROUPS.contacts,
   render: (_node: Node, action: RemoveFromGroup) => {
     if (action.all_groups) {
       return html`<div>Remove from all groups</div>`;

@@ -13,15 +13,15 @@ describe('split_by_random node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(split_by_random.name).to.equal('Split by Random');
+      expect(split_by_random.name).to.equal('Random Split');
     });
 
     it('has correct type', () => {
       expect(split_by_random.type).to.equal('split_by_random');
     });
 
-    it('has correct editorType', () => {
-      expect(split_by_random.editorType).to.exist;
+    it('has correct group', () => {
+      expect(split_by_random.group).to.exist;
     });
 
     it('has router configuration', () => {

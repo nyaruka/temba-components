@@ -78,9 +78,10 @@ export interface FormConfig {
 export interface NodeConfig extends FormConfig {
   type: string;
   name?: string;
-  editorType?: EditorType;
+  group?: ActionGroup | SplitGroup; // Nodes can use either when showAsAction is true
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
+  showAsAction?: boolean; // if true, show in action dialog instead of splits (default: false - nodes show in splits)
   router?: {
     type: 'switch' | 'random';
     defaultCategory?: string;
@@ -256,11 +257,101 @@ export type LayoutItem =
   | GroupLayoutConfig
   | string; // string is shorthand for field
 
+/**
+ * Action group constants - single source of truth for action categorization
+ * Use as const for compile-time type checking
+ */
+export const ACTION_GROUPS = {
+  send: 'send',
+  contacts: 'contacts',
+  save: 'save',
+  services: 'services',
+  broadcast: 'broadcast',
+  trigger: 'trigger'
+} as const;
+
+/**
+ * Split group constants - single source of truth for split categorization
+ * Use as const for compile-time type checking
+ */
+export const SPLIT_GROUPS = {
+  wait: 'wait',
+  split: 'split'
+} as const;
+
+// Extract types from const objects for compile-time checking
+export type ActionGroup = (typeof ACTION_GROUPS)[keyof typeof ACTION_GROUPS];
+export type SplitGroup = (typeof SPLIT_GROUPS)[keyof typeof SPLIT_GROUPS];
+
+/**
+ * Metadata for group display
+ */
+export interface GroupMetadata {
+  color: string;
+  title: string;
+  description: string;
+}
+
+/**
+ * Action group metadata - defines display properties for each action group
+ * Order in this object determines display order in action selector (top to bottom)
+ */
+export const ACTION_GROUP_METADATA: Record<ActionGroup, GroupMetadata> = {
+  [ACTION_GROUPS.send]: {
+    color: '#3498db',
+    title: 'Send',
+    description: 'Actions that send messages or content to contacts'
+  },
+  [ACTION_GROUPS.contacts]: {
+    color: '#01c1af',
+    title: 'Contact',
+    description: 'Actions that update contact information'
+  },
+  [ACTION_GROUPS.save]: {
+    color: '#1a777c',
+    title: 'Save',
+    description: 'Actions that save or store data'
+  },
+  [ACTION_GROUPS.services]: {
+    color: '#f79035ff',
+    title: 'Services',
+    description: 'Call external services and APIs'
+  },
+  [ACTION_GROUPS.broadcast]: {
+    color: '#8e5ea7',
+    title: 'Other People',
+    description: 'Actions that apply to others instead of the contact'
+  },
+  [ACTION_GROUPS.trigger]: {
+    color: '#df419f',
+    title: 'Trigger',
+    description: 'Actions that trigger other behavior'
+  }
+};
+
+/**
+ * Split group metadata - defines display properties for each split group
+ * Order in this object determines display order in split selector (top to bottom)
+ */
+export const SPLIT_GROUP_METADATA: Record<SplitGroup, GroupMetadata> = {
+  [SPLIT_GROUPS.wait]: {
+    color: '#4d7dad',
+    title: 'Wait',
+    description: 'Wait for user and split on their response'
+  },
+  [SPLIT_GROUPS.split]: {
+    color: '#aaaaaa',
+    title: 'Split',
+    description: 'Split the flow based on conditions'
+  }
+};
+
 export interface ActionConfig extends FormConfig {
   name: string;
-  editorType: EditorType;
+  group: ActionGroup;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];
+  hideFromActions?: boolean; // if true, don't show in action dialog (default: false - actions show in actions)
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;
@@ -270,74 +361,3 @@ export interface ActionConfig extends FormConfig {
   toFormData?: (action: Action) => FormData;
   fromFormData?: (formData: FormData) => Action;
 }
-
-/**
- * Metadata for editor type groupings
- */
-export interface EditorType {
-  color: string;
-  title: string;
-  description: string;
-}
-
-/**
- * Editor type definitions - single source of truth for action/node categorization
- * Use as: EDITOR_TYPES.send.color, EDITOR_TYPES.send.title, etc.
- */
-export const EDITOR_TYPES: { [key: string]: EditorType } = {
-  send: {
-    color: '#3498db',
-    title: 'Send',
-    description: 'Actions that send messages or content to contacts'
-  },
-  update: {
-    color: '#01c1af',
-    title: 'Update',
-    description: 'Actions that update contact information'
-  },
-  broadcast: {
-    color: '#8e5ea7',
-    title: 'Broadcast',
-    description: 'Actions that send messages to multiple contacts'
-  },
-  call: {
-    color: '#e68628',
-    title: 'Call',
-    description: 'Actions that call external services or APIs'
-  },
-  create: {
-    color: '#df419f',
-    title: 'Create',
-    description: 'Actions that create new resources'
-  },
-  save: {
-    color: '#1a777c',
-    title: 'Save',
-    description: 'Actions that save or store data'
-  },
-  split: {
-    color: '#aaaaaa',
-    title: 'Split',
-    description: 'Split the flow based on conditions'
-  },
-  execute: {
-    color: '#666666',
-    title: 'Execute',
-    description: 'Execute other flows or actions'
-  },
-  wait: {
-    color: '#4d7dad',
-    title: 'Wait',
-    description: 'Wait for user input or responses'
-  },
-  add: {
-    color: '#309c42',
-    title: 'Add',
-    description: 'Add items or resources'
-  },
-  remove: {
-    color: '#e74c3c',
-    title: 'Remove',
-    description: 'Remove items or resources'
-  }
-};
