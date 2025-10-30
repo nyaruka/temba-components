@@ -7,7 +7,7 @@ import { renderNamedObjects } from '../utils';
 export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
   name: 'Enter a Flow',
-  editorType: EDITOR_TYPES.execute,
+  editorType: EDITOR_TYPES.trigger,
   showAsAction: true,
   form: {
     flow: {

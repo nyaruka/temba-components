@@ -16,7 +16,6 @@ import { send_email } from './actions/send_email';
 import { start_session } from './actions/start_session';
 import { call_classifier } from './actions/call_classifier';
 import { call_resthook } from './actions/call_resthook';
-import { transfer_airtime } from './actions/transfer_airtime';
 import { set_contact_name } from './actions/set_contact_name';
 import { add_contact_groups } from './actions/add_contact_groups';
 import { remove_contact_groups } from './actions/remove_contact_groups';
@@ -62,7 +61,6 @@ export const ACTION_CONFIG: {
   start_session,
   call_classifier,
   call_resthook,
-  transfer_airtime,
   set_contact_name,
   add_contact_groups,
   remove_contact_groups,

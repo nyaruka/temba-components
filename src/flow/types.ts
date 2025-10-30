@@ -280,82 +280,72 @@ export interface EditorType {
   color: string;
   title: string;
   description: string;
-  order?: number; // display order in action selector (lower numbers first)
-  splitOrder?: number; // display order in split selector (lower numbers first, defaults to order if not specified)
 }
 
 /**
  * Editor type definitions - single source of truth for action/node categorization
  * Use as: EDITOR_TYPES.send.color, EDITOR_TYPES.send.title, etc.
+ *
+ * ACTION_EDITOR_TYPES: Order for action selector (top to bottom)
+ * SPLIT_EDITOR_TYPES: Order for split selector (top to bottom)
  */
-export const EDITOR_TYPES: { [key: string]: EditorType } = {
+export const ACTION_EDITOR_TYPES: { [key: string]: EditorType } = {
   send: {
     color: '#3498db',
     title: 'Send',
-    description: 'Actions that send messages or content to contacts',
-    order: 1
+    description: 'Actions that send messages or content to contacts'
   },
   update: {
     color: '#01c1af',
     title: 'Contact',
-    description: 'Actions that update contact information',
-    order: 2
+    description: 'Actions that update contact information'
   },
   save: {
     color: '#1a777c',
     title: 'Save',
-    description: 'Actions that save or store data',
-    order: 3
+    description: 'Actions that save or store data'
   },
   services: {
-    color: '#56ac56',
+    color: '#f79035ff',
     title: 'Services',
-    description: 'Call external services and APIs',
-    order: 4,
-    splitOrder: 3
+    description: 'Call external services and APIs'
   },
   broadcast: {
     color: '#8e5ea7',
     title: 'Others',
-    description: 'Actions that apply to other contacts or people',
-    order: 5
+    description: 'Actions that apply to other contacts or people'
   },
-  create: {
+  trigger: {
     color: '#df419f',
-    title: 'Create',
-    description: 'Actions that create new resources',
-    order: 6
-  },
-  execute: {
-    color: '#666666',
-    title: 'Execute',
-    description: 'Execute other flows or actions',
-    order: 7
+    title: 'Trigger',
+    description: 'Actions that trigger other behavior'
   },
   add: {
     color: '#309c42',
     title: 'Add',
-    description: 'Add items or resources',
-    order: 8
+    description: 'Add items or resources'
   },
   remove: {
     color: '#e74c3c',
     title: 'Remove',
-    description: 'Remove items or resources',
-    order: 9
-  },
+    description: 'Remove items or resources'
+  }
+};
+
+export const SPLIT_EDITOR_TYPES: { [key: string]: EditorType } = {
   wait: {
     color: '#4d7dad',
     title: 'Wait',
-    description: 'Wait for user input or responses',
-    order: 10,
-    splitOrder: 1
+    description: 'Wait for user and split on their response'
   },
   split: {
     color: '#aaaaaa',
     title: 'Split',
-    description: 'Split the flow based on conditions',
-    order: 11,
-    splitOrder: 2
+    description: 'Split the flow based on conditions'
   }
+};
+
+export const EDITOR_TYPES = {
+  ...ACTION_EDITOR_TYPES,
+  ...SPLIT_EDITOR_TYPES
 };

@@ -6,7 +6,7 @@ import { html } from 'lit';
 export const split_by_ticket: NodeConfig = {
   type: 'split_by_ticket',
   name: 'Open Ticket',
-  editorType: EDITOR_TYPES.create,
+  editorType: EDITOR_TYPES.trigger,
   showAsAction: true,
   form: {
     topic: {

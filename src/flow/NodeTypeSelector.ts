@@ -3,7 +3,13 @@ import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { NODE_CONFIG, ACTION_CONFIG } from './config';
-import { NodeConfig, ActionConfig, EDITOR_TYPES } from './types';
+import {
+  NodeConfig,
+  ActionConfig,
+  EDITOR_TYPES,
+  ACTION_EDITOR_TYPES,
+  SPLIT_EDITOR_TYPES
+} from './types';
 
 /**
  * Event detail for node type selection
@@ -21,6 +27,7 @@ interface NodeCategory {
   description: string;
   color: string;
   items: Array<{ type: string; config: NodeConfig | ActionConfig }>;
+  isBranching?: boolean; // true if this category contains actions that branch/split
 }
 
 /**
@@ -82,7 +89,57 @@ export class NodeTypeSelector extends RapidElement {
       .content {
         overflow-y: auto;
         flex: 1;
+        padding: 0;
+      }
+
+      .section-regular {
         padding: 1.5em;
+      }
+
+      .section-branching {
+        background: linear-gradient(
+          135deg,
+          rgba(170, 170, 170, 0.12),
+          rgba(170, 170, 170, 0.08)
+        );
+        padding: 1.5em;
+        margin: 0 -1.5em;
+        padding-left: 3em;
+        padding-right: 3em;
+      }
+
+      .section-header {
+        margin-bottom: 1.5em;
+        padding-top: 1em;
+      }
+
+      .section-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--color-text-dark);
+        margin-bottom: 0.35em;
+        display: flex;
+        align-items: center;
+      }
+
+      .section-title::before {
+        content: '';
+        display: inline-block;
+        height: 1.2em;
+        background: linear-gradient(
+          135deg,
+          var(--color-primary-dark),
+          var(--color-primary)
+        );
+        border-radius: 2px;
+      }
+
+      .section-description {
+        font-size: 0.9rem;
+        color: var(--color-text);
+        opacity: 0.7;
+        margin-left: 0em;
+        padding-bottom: 1em;
       }
 
       .category {
@@ -255,12 +312,23 @@ export class NodeTypeSelector extends RapidElement {
       // Build categories - first regular actions, then splitting actions
       const categories: NodeCategory[] = [];
 
-      // Add regular action categories sorted by order
+      // Get the implicit order from ACTION_EDITOR_TYPES object
+      const actionEditorOrder = Object.keys(ACTION_EDITOR_TYPES);
+
+      // Add regular action categories sorted by implicit order
       const sortedActionCategories = Array.from(actionsByType.entries()).sort(
         ([_keyA, itemsA], [_keyB, itemsB]) => {
-          const orderA = itemsA[0].config.editorType.order ?? 999;
-          const orderB = itemsB[0].config.editorType.order ?? 999;
-          return orderA - orderB;
+          const titleA = itemsA[0].config.editorType.title;
+          const titleB = itemsB[0].config.editorType.title;
+          const orderA = actionEditorOrder.findIndex(
+            (key) => ACTION_EDITOR_TYPES[key].title === titleA
+          );
+          const orderB = actionEditorOrder.findIndex(
+            (key) => ACTION_EDITOR_TYPES[key].title === titleB
+          );
+          return (
+            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
+          );
         }
       );
 
@@ -270,27 +338,37 @@ export class NodeTypeSelector extends RapidElement {
           name: editorType.title,
           description: editorType.description,
           color: editorType.color,
-          items
+          items,
+          isBranching: false
         });
       });
 
       // Add splitting action categories (with modified description to indicate they split)
-      // Also sorted by order
+      // Also sorted by implicit order
       const sortedSplitCategories = Array.from(splitsByType.entries()).sort(
         ([_keyA, itemsA], [_keyB, itemsB]) => {
-          const orderA = itemsA[0].config.editorType!.order ?? 999;
-          const orderB = itemsB[0].config.editorType!.order ?? 999;
-          return orderA - orderB;
+          const titleA = itemsA[0].config.editorType!.title;
+          const titleB = itemsB[0].config.editorType!.title;
+          const orderA = actionEditorOrder.findIndex(
+            (key) => ACTION_EDITOR_TYPES[key].title === titleA
+          );
+          const orderB = actionEditorOrder.findIndex(
+            (key) => ACTION_EDITOR_TYPES[key].title === titleB
+          );
+          return (
+            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
+          );
         }
       );
 
       sortedSplitCategories.forEach(([_, items]) => {
         const editorType = items[0].config.editorType!;
         categories.push({
-          name: `${editorType.title} (with split)`,
-          description: `${editorType.description} and split the flow`,
+          name: editorType.title,
+          description: editorType.description,
           color: editorType.color,
-          items
+          items,
+          isBranching: true
         });
       });
 
@@ -319,7 +397,9 @@ export class NodeTypeSelector extends RapidElement {
           itemsByType.get(key)!.push({ type, config });
         });
 
-      // Convert to categories using editor type metadata, sorted by splitOrder
+      // Convert to categories using editor type metadata, sorted by implicit order from SPLIT_EDITOR_TYPES
+      const splitEditorOrder = Object.keys(SPLIT_EDITOR_TYPES);
+
       return Array.from(itemsByType.entries())
         .map(([_, items]) => {
           const editorType = items[0].config.editorType || EDITOR_TYPES.split;
@@ -331,13 +411,15 @@ export class NodeTypeSelector extends RapidElement {
           };
         })
         .sort((a, b) => {
-          const orderA =
-            Object.values(EDITOR_TYPES).find((et) => et.title === a.name)
-              ?.splitOrder ?? 999;
-          const orderB =
-            Object.values(EDITOR_TYPES).find((et) => et.title === b.name)
-              ?.splitOrder ?? 999;
-          return orderA - orderB;
+          const orderA = splitEditorOrder.findIndex(
+            (key) => SPLIT_EDITOR_TYPES[key].title === a.name
+          );
+          const orderB = splitEditorOrder.findIndex(
+            (key) => SPLIT_EDITOR_TYPES[key].title === b.name
+          );
+          return (
+            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
+          );
         });
     }
   }
@@ -351,6 +433,11 @@ export class NodeTypeSelector extends RapidElement {
     const title =
       this.mode === 'action' ? 'Select an Action' : 'Select a Split';
 
+    // Separate regular and branching categories for action mode
+    const regularCategories = categories.filter((c) => !c.isBranching);
+    const branchingCategories = categories.filter((c) => c.isBranching);
+    const hasBranchingSection = branchingCategories.length > 0;
+
     return html`
       <div class="overlay" @click=${this.handleOverlayClick}></div>
       <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
@@ -358,29 +445,115 @@ export class NodeTypeSelector extends RapidElement {
           <h2>${title}</h2>
         </div>
         <div class="content">
-          ${categories.map(
-            (category) => html`
-              <div class="category">
-                <div class="category-title">${category.name}</div>
-                <div class="category-description">${category.description}</div>
-                <div class="items-grid">
-                  ${category.items.map(
-                    (item) => html`
-                      <div
-                        class="node-item"
-                        style="--item-color: ${item.config.editorType?.color ||
-                        'rgba(0, 0, 0, 0.1)'}"
-                        @click=${() => this.handleNodeTypeClick(item.type)}
-                      >
-                        <div class="node-item-title">${item.config.name}</div>
-                        <div class="node-item-type">${item.type}</div>
+          ${this.mode === 'action'
+            ? html`
+                <div class="section-regular">
+                  ${regularCategories.map(
+                    (category) => html`
+                      <div class="category">
+                        <div class="category-title">${category.name}</div>
+                        <div class="category-description">
+                          ${category.description}
+                        </div>
+                        <div class="items-grid">
+                          ${category.items.map(
+                            (item) => html`
+                              <div
+                                class="node-item"
+                                style="--item-color: ${item.config.editorType
+                                  ?.color || 'rgba(0, 0, 0, 0.1)'}"
+                                @click=${() =>
+                                  this.handleNodeTypeClick(item.type)}
+                              >
+                                <div class="node-item-title">
+                                  ${item.config.name}
+                                </div>
+                                <div class="node-item-type">${item.type}</div>
+                              </div>
+                            `
+                          )}
+                        </div>
                       </div>
                     `
                   )}
                 </div>
-              </div>
-            `
-          )}
+                ${hasBranchingSection
+                  ? html`
+                      <div class="section-branching">
+                        <div class="section-header">
+                          <div class="section-title">Actions that Branch</div>
+                          <div class="section-description">
+                            These actions also split the flow based on their
+                            outcome
+                          </div>
+                        </div>
+                        ${branchingCategories.map(
+                          (category) => html`
+                            <div class="category">
+                              <div class="category-title">${category.name}</div>
+                              <div class="category-description">
+                                ${category.description}
+                              </div>
+                              <div class="items-grid">
+                                ${category.items.map(
+                                  (item) => html`
+                                    <div
+                                      class="node-item"
+                                      style="--item-color: ${item.config
+                                        .editorType?.color ||
+                                      'rgba(0, 0, 0, 0.1)'}"
+                                      @click=${() =>
+                                        this.handleNodeTypeClick(item.type)}
+                                    >
+                                      <div class="node-item-title">
+                                        ${item.config.name}
+                                      </div>
+                                      <div class="node-item-type">
+                                        ${item.type}
+                                      </div>
+                                    </div>
+                                  `
+                                )}
+                              </div>
+                            </div>
+                          `
+                        )}
+                      </div>
+                    `
+                  : ''}
+              `
+            : html`
+                <div class="section-regular">
+                  ${categories.map(
+                    (category) => html`
+                      <div class="category">
+                        <div class="category-title">${category.name}</div>
+                        <div class="category-description">
+                          ${category.description}
+                        </div>
+                        <div class="items-grid">
+                          ${category.items.map(
+                            (item) => html`
+                              <div
+                                class="node-item"
+                                style="--item-color: ${item.config.editorType
+                                  ?.color || 'rgba(0, 0, 0, 0.1)'}"
+                                @click=${() =>
+                                  this.handleNodeTypeClick(item.type)}
+                              >
+                                <div class="node-item-title">
+                                  ${item.config.name}
+                                </div>
+                                <div class="node-item-type">${item.type}</div>
+                              </div>
+                            `
+                          )}
+                        </div>
+                      </div>
+                    `
+                  )}
+                </div>
+              `}
         </div>
         <div class="footer">
           <temba-button @click=${this.close} secondary>Cancel</temba-button>

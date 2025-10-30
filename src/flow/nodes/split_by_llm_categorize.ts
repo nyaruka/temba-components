@@ -6,7 +6,7 @@ import { html } from 'lit';
 export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
   name: 'Split by AI',
-  editorType: EDITOR_TYPES.call,
+  editorType: EDITOR_TYPES.services,
   form: {
     llm: {
       type: 'select',

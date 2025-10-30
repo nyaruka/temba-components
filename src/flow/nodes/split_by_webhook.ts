@@ -19,7 +19,7 @@ const defaultPost = `@(json(object(
 export const split_by_webhook: NodeConfig = {
   type: 'split_by_webhook',
   name: 'Call Webhook',
-  editorType: EDITOR_TYPES.call,
+  editorType: EDITOR_TYPES.services,
   showAsAction: true,
   form: {
     method: {
