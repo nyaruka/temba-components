@@ -88,6 +88,7 @@ export class NodeTypeSelector extends RapidElement {
 
       .content {
         overflow-y: auto;
+        overflow-x: hidden;
         flex: 1;
         padding: 0;
       }
@@ -314,6 +315,8 @@ export class NodeTypeSelector extends RapidElement {
 
       // Get the implicit order from ACTION_EDITOR_TYPES object
       const actionEditorOrder = Object.keys(ACTION_EDITOR_TYPES);
+      // Get the implicit order of actions from ACTION_CONFIG
+      const actionConfigOrder = Object.keys(ACTION_CONFIG);
 
       // Add regular action categories sorted by implicit order
       const sortedActionCategories = Array.from(actionsByType.entries()).sort(
@@ -334,17 +337,28 @@ export class NodeTypeSelector extends RapidElement {
 
       sortedActionCategories.forEach(([_, items]) => {
         const editorType = items[0].config.editorType;
+        // Sort items within the category by their order in ACTION_CONFIG
+        const sortedItems = items.sort((a, b) => {
+          const orderA = actionConfigOrder.indexOf(a.type);
+          const orderB = actionConfigOrder.indexOf(b.type);
+          return (
+            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
+          );
+        });
         categories.push({
           name: editorType.title,
           description: editorType.description,
           color: editorType.color,
-          items,
+          items: sortedItems,
           isBranching: false
         });
       });
 
       // Add splitting action categories (with modified description to indicate they split)
       // Also sorted by implicit order
+      // Get the implicit order of nodes from NODE_CONFIG
+      const nodeConfigOrder = Object.keys(NODE_CONFIG);
+
       const sortedSplitCategories = Array.from(splitsByType.entries()).sort(
         ([_keyA, itemsA], [_keyB, itemsB]) => {
           const titleA = itemsA[0].config.editorType!.title;
@@ -363,11 +377,19 @@ export class NodeTypeSelector extends RapidElement {
 
       sortedSplitCategories.forEach(([_, items]) => {
         const editorType = items[0].config.editorType!;
+        // Sort items within the category by their order in NODE_CONFIG
+        const sortedItems = items.sort((a, b) => {
+          const orderA = nodeConfigOrder.indexOf(a.type);
+          const orderB = nodeConfigOrder.indexOf(b.type);
+          return (
+            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
+          );
+        });
         categories.push({
           name: editorType.title,
           description: editorType.description,
           color: editorType.color,
-          items,
+          items: sortedItems,
           isBranching: true
         });
       });
@@ -399,15 +421,25 @@ export class NodeTypeSelector extends RapidElement {
 
       // Convert to categories using editor type metadata, sorted by implicit order from SPLIT_EDITOR_TYPES
       const splitEditorOrder = Object.keys(SPLIT_EDITOR_TYPES);
+      // Get the implicit order of nodes from NODE_CONFIG
+      const nodeConfigOrder = Object.keys(NODE_CONFIG);
 
       return Array.from(itemsByType.entries())
         .map(([_, items]) => {
           const editorType = items[0].config.editorType || EDITOR_TYPES.split;
+          // Sort items within the category by their order in NODE_CONFIG
+          const sortedItems = items.sort((a, b) => {
+            const orderA = nodeConfigOrder.indexOf(a.type);
+            const orderB = nodeConfigOrder.indexOf(b.type);
+            return (
+              (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
+            );
+          });
           return {
             name: editorType.title,
             description: editorType.description,
             color: editorType.color,
-            items
+            items: sortedItems
           };
         })
         .sort((a, b) => {

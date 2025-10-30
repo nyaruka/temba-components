@@ -48,12 +48,8 @@ import { wait_for_video } from './nodes/wait_for_video';
 export const ACTION_CONFIG: {
   [key: string]: ActionConfig;
 } = {
-  add_input_labels,
-  add_contact_urn,
   set_contact_field,
-  set_contact_channel,
-  set_contact_language,
-  set_contact_status,
+
   send_broadcast,
   set_run_result,
   send_msg,
@@ -64,16 +60,21 @@ export const ACTION_CONFIG: {
   set_contact_name,
   add_contact_groups,
   remove_contact_groups,
-  request_optin,
+  set_contact_channel,
+  set_contact_language,
+  set_contact_status,
   say_msg,
-  play_audio
+  play_audio,
+  add_contact_urn,
+  add_input_labels,
+  request_optin
 };
 
 export const NODE_CONFIG: {
   [key: string]: NodeConfig;
 } = {
   execute_actions,
-  split_by_airtime,
+
   split_by_contact_field,
   split_by_expression,
   split_by_groups,
@@ -91,5 +92,6 @@ export const NODE_CONFIG: {
   wait_for_location,
   wait_for_menu,
   wait_for_response,
-  wait_for_video
+  wait_for_video,
+  split_by_airtime
 };

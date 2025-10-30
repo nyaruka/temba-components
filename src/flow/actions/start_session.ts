@@ -9,7 +9,7 @@ import { Node, StartSession } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const start_session: ActionConfig = {
-  name: 'Start Others in Flow',
+  name: 'Start Flow',
   editorType: EDITOR_TYPES.broadcast,
   render: (_node: Node, action: StartSession) => {
     const hasGroups = action.groups && action.groups.length > 0;
@@ -36,7 +36,7 @@ export const start_session: ActionConfig = {
     return html`
       <div>
         <div
-          style="padding: 3px 10px; background: #f5f5f5; font-size: 11px; border-radius: var(--curvature); margin-bottom: 10px;"
+          style="padding: 3px 10px; background: #f5f5f5; padding-bottom: 0px; font-size: 11px; border-radius: var(--curvature); margin-bottom: 10px;"
         >
           ${recipientsDisplay}
         </div>

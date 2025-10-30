@@ -160,7 +160,7 @@ export class CanvasNode extends RapidElement {
         pointer-events: auto; /* Ensure drag handle can receive events */
       }
       .title-spacer {
-        width: 2em;
+        width: 1.8em;
         
       }
 
@@ -825,7 +825,7 @@ export class CanvasNode extends RapidElement {
     >
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
-        : null}
+        : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div

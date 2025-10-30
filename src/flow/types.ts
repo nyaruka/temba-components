@@ -312,8 +312,8 @@ export const ACTION_EDITOR_TYPES: { [key: string]: EditorType } = {
   },
   broadcast: {
     color: '#8e5ea7',
-    title: 'Others',
-    description: 'Actions that apply to other contacts or people'
+    title: 'Other People',
+    description: 'Actions that apply to others instead of the contact'
   },
   trigger: {
     color: '#df419f',
