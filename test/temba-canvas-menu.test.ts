@@ -106,4 +106,51 @@ describe('temba-canvas-menu', () => {
     });
     expect(menu.open).to.be.false;
   });
+
+  it('adjusts position to stay within viewport bounds', async () => {
+    const menu = await createCanvasMenu();
+
+    // open menu at position that would go off screen
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const margin = 10; // matches the margin in CanvasMenu
+
+    // position that would go off the right and bottom edges
+    menu.show(viewportWidth - 50, viewportHeight - 50, {
+      x: 100,
+      y: 100
+    });
+    await menu.updateComplete;
+
+    // wait for position adjustment
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await menu.updateComplete;
+
+    const menuElement = menu.shadowRoot?.querySelector('.menu') as HTMLElement;
+    expect(menuElement).to.not.be.null;
+
+    const menuRect = menuElement.getBoundingClientRect();
+
+    // verify menu stays within viewport with margin
+    expect(menuRect.right).to.be.at.most(viewportWidth - margin);
+    expect(menuRect.bottom).to.be.at.most(viewportHeight - margin);
+
+    // verify click position is preserved (not adjusted)
+    let selectionFired = false;
+    let selectionDetail = null;
+
+    menu.addEventListener('temba-selection', (event: any) => {
+      selectionFired = true;
+      selectionDetail = event.detail;
+    });
+
+    const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
+    const actionItem = menuItems?.[0] as HTMLElement;
+    actionItem.click();
+    await menu.updateComplete;
+
+    expect(selectionFired).to.be.true;
+    // click position should remain unchanged
+    expect(selectionDetail.position).to.deep.equal({ x: 100, y: 100 });
+  });
 });
