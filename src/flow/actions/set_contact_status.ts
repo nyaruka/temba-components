@@ -5,7 +5,7 @@ import { titleCase } from '../../utils';
 
 export const set_contact_status: ActionConfig = {
   name: 'Update Status',
-  group: ACTION_GROUPS.update,
+  group: ACTION_GROUPS.contacts,
   render: (_node: Node, action: SetContactStatus) => {
     return html`<div>Set to <strong>${titleCase(action.status)}</strong></div>`;
   },

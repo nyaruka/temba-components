@@ -4,7 +4,7 @@ import { Node, SetContactField } from '../../store/flow-definition';
 
 export const set_contact_field: ActionConfig = {
   name: 'Update Field',
-  group: ACTION_GROUPS.update,
+  group: ACTION_GROUPS.contacts,
   render: (_node: Node, action: SetContactField) => {
     return html`<div>
       Set <strong>${action.field.name}</strong> to

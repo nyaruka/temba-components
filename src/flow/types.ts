@@ -263,13 +263,11 @@ export type LayoutItem =
  */
 export const ACTION_GROUPS = {
   send: 'send',
-  update: 'update',
+  contacts: 'contacts',
   save: 'save',
   services: 'services',
   broadcast: 'broadcast',
-  trigger: 'trigger',
-  add: 'add',
-  remove: 'remove'
+  trigger: 'trigger'
 } as const;
 
 /**
@@ -304,7 +302,7 @@ export const ACTION_GROUP_METADATA: Record<ActionGroup, GroupMetadata> = {
     title: 'Send',
     description: 'Actions that send messages or content to contacts'
   },
-  [ACTION_GROUPS.update]: {
+  [ACTION_GROUPS.contacts]: {
     color: '#01c1af',
     title: 'Contact',
     description: 'Actions that update contact information'
@@ -328,16 +326,6 @@ export const ACTION_GROUP_METADATA: Record<ActionGroup, GroupMetadata> = {
     color: '#df419f',
     title: 'Trigger',
     description: 'Actions that trigger other behavior'
-  },
-  [ACTION_GROUPS.add]: {
-    color: '#309c42',
-    title: 'Add',
-    description: 'Add items or resources'
-  },
-  [ACTION_GROUPS.remove]: {
-    color: '#e74c3c',
-    title: 'Remove',
-    description: 'Remove items or resources'
   }
 };
 

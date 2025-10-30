@@ -4,7 +4,7 @@ import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {
   name: 'Update Channel',
-  group: ACTION_GROUPS.update,
+  group: ACTION_GROUPS.contacts,
   render: (_node: Node, action: SetContactChannel) => {
     return html`<div>Set to <strong>${action.channel.name}</strong></div>`;
   },

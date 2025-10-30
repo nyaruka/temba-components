@@ -10,7 +10,7 @@ import { getStore } from '../../store/Store';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
-  group: ACTION_GROUPS.update,
+  group: ACTION_GROUPS.contacts,
   render: (_node: Node, action: SetContactLanguage) => {
     const languageNames = new Intl.DisplayNames(['en'], {
       type: 'language'
