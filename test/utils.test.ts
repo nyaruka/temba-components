@@ -330,6 +330,7 @@ export const clickOption = async (
   );
   if (!existingOption) {
     try {
+      // Increased wait time to handle slower CI environments
       await waitForCondition(
         () => {
           const option = options.shadowRoot?.querySelector(
@@ -337,8 +338,8 @@ export const clickOption = async (
           );
           return !!option;
         },
-        10,
-        25
+        40,
+        50
       );
     } catch (e) {
       throw new Error(`Option at index ${index} not found after waiting`);
@@ -376,6 +377,7 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
   if (hasEndpoint) {
     try {
       // Wait for options to be properly rendered and visible (but only for endpoint selects)
+      // Increased max attempts to handle slower CI environments
       await waitForCondition(
         () => {
           const options = select.shadowRoot.querySelector(
@@ -383,8 +385,8 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
           );
           return options && options.isConnected;
         },
-        10,
-        25
+        40,
+        50
       );
     } catch (e) {
       // If condition fails, continue - some tests might not need options to be visible immediately
