@@ -385,8 +385,8 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
           );
           return options && options.isConnected;
         },
-        40,
-        50
+        10,
+        25
       );
     } catch (e) {
       // If condition fails, continue - some tests might not need options to be visible immediately
