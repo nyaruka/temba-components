@@ -31,7 +31,7 @@ export class CanvasMenu extends RapidElement {
         border-radius: var(--curvature);
         box-shadow: var(--dropdown-shadow);
         padding: 0.5em 0;
-        min-width: 200px;
+        width: 280px;
         pointer-events: auto;
       }
 
@@ -120,6 +120,40 @@ export class CanvasMenu extends RapidElement {
     this.y = y;
     this.clickPosition = clickPosition;
     this.open = true;
+
+    // Adjust position after menu renders to ensure it fits on screen
+    requestAnimationFrame(() => {
+      this.adjustPosition();
+    });
+  }
+
+  private adjustPosition(): void {
+    const menuElement = this.shadowRoot?.querySelector('.menu') as HTMLElement;
+    if (!menuElement) return;
+
+    const menuRect = menuElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const margin = 10; // margin from viewport edges
+
+    let adjustedX = this.x;
+    let adjustedY = this.y;
+
+    // Check if menu goes off the right edge
+    if (this.x + menuRect.width + margin > viewportWidth) {
+      adjustedX = viewportWidth - menuRect.width - margin;
+    }
+
+    // Check if menu goes off the bottom edge
+    if (this.y + menuRect.height + margin > viewportHeight) {
+      adjustedY = viewportHeight - menuRect.height - margin;
+    }
+
+    // Update position if needed
+    if (adjustedX !== this.x || adjustedY !== this.y) {
+      this.x = adjustedX;
+      this.y = adjustedY;
+    }
   }
 
   public close() {
