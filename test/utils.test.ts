@@ -330,6 +330,7 @@ export const clickOption = async (
   );
   if (!existingOption) {
     try {
+      // Increased wait time to handle slower CI environments
       await waitForCondition(
         () => {
           const option = options.shadowRoot?.querySelector(
@@ -376,6 +377,7 @@ export const openSelect = async (clock: any, select: Select<SelectOption>) => {
   if (hasEndpoint) {
     try {
       // Wait for options to be properly rendered and visible (but only for endpoint selects)
+      // Increased max attempts to handle slower CI environments
       await waitForCondition(
         () => {
           const options = select.shadowRoot.querySelector(
