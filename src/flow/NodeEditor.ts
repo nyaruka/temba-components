@@ -790,8 +790,17 @@ export class NodeEditor extends RapidElement {
     if (!this.node) throw new Error('No node to update');
     let updatedNode: Node = { ...this.node };
 
+    // Check if node config has fromFormData - if so, it handles the entire transformation
+    const nodeConfig = this.getNodeConfig();
+    const nodeHasFromFormData = nodeConfig?.fromFormData !== undefined;
+
     // Handle actions using action config transformations if available
-    if (this.node.actions && this.node.actions.length > 0) {
+    // Skip this if the node has its own fromFormData (which handles actions itself)
+    if (
+      !nodeHasFromFormData &&
+      this.node.actions &&
+      this.node.actions.length > 0
+    ) {
       updatedNode.actions = this.node.actions.map((action) => {
         // If we're editing a specific action, only transform that one
         if (this.action && action.uuid === this.action.uuid) {
@@ -811,66 +820,105 @@ export class NodeEditor extends RapidElement {
     }
 
     // Handle router configuration using node config
-    if (this.node.router) {
-      const nodeConfig = this.getNodeConfig();
+    if (nodeHasFromFormData) {
+      // Use node-specific form data transformation
+      // When a node has fromFormData, it's responsible for creating the entire
+      // node structure including actions and router (regardless of whether router exists yet)
+      updatedNode = nodeConfig.fromFormData!(formData, updatedNode);
+    } else if (this.node.router) {
+      // Default router handling when no nodeConfig.fromFormData
+      updatedNode.router = { ...this.node.router };
 
-      if (nodeConfig?.fromFormData) {
-        // Use node-specific form data transformation
-        updatedNode = nodeConfig.fromFormData(formData, updatedNode);
-      } else {
-        // Default router handling
-        updatedNode.router = { ...this.node.router };
+      // Apply form data to router fields if they exist
+      if (formData.result_name !== undefined) {
+        updatedNode.router.result_name = formData.result_name;
+      }
 
-        // Apply form data to router fields if they exist
-        if (formData.result_name !== undefined) {
-          updatedNode.router.result_name = formData.result_name;
-        }
+      // Handle preconfigured rules from node config
+      if (nodeConfig?.router?.rules) {
+        // Build a complete new set of categories and exits based on node config
+        const existingCategories = updatedNode.router.categories || [];
+        const existingExits = updatedNode.exits || [];
 
-        // Handle preconfigured rules from node config
-        if (nodeConfig?.router?.rules) {
-          // Build a complete new set of categories and exits based on node config
-          const existingCategories = updatedNode.router.categories || [];
-          const existingExits = updatedNode.exits || [];
+        const newCategories: any[] = [];
+        const newExits: any[] = [];
 
-          const newCategories: any[] = [];
-          const newExits: any[] = [];
+        // Group rules by category name to handle multiple rules pointing to the same category
+        const categoryNameToRules = new Map<
+          string,
+          typeof nodeConfig.router.rules
+        >();
+        nodeConfig.router.rules.forEach((rule) => {
+          if (!categoryNameToRules.has(rule.categoryName)) {
+            categoryNameToRules.set(rule.categoryName, []);
+          }
+          categoryNameToRules.get(rule.categoryName)!.push(rule);
+        });
 
-          // Group rules by category name to handle multiple rules pointing to the same category
-          const categoryNameToRules = new Map<
-            string,
-            typeof nodeConfig.router.rules
-          >();
-          nodeConfig.router.rules.forEach((rule) => {
-            if (!categoryNameToRules.has(rule.categoryName)) {
-              categoryNameToRules.set(rule.categoryName, []);
+        // Create categories for all unique category names
+        categoryNameToRules.forEach((rules, categoryName) => {
+          // Check if category already exists to preserve its UUID and exit_uuid
+          const existingCategory = existingCategories.find(
+            (cat) => cat.name === categoryName
+          );
+
+          if (existingCategory) {
+            // Preserve existing category and its associated exit
+            newCategories.push(existingCategory);
+            const associatedExit = existingExits.find(
+              (exit) => exit.uuid === existingCategory.exit_uuid
+            );
+            if (associatedExit) {
+              newExits.push(associatedExit);
             }
-            categoryNameToRules.get(rule.categoryName)!.push(rule);
-          });
+          } else {
+            // Create new category and exit
+            const categoryUuid = generateUUID();
+            const exitUuid = generateUUID();
 
-          // Create categories for all unique category names
-          categoryNameToRules.forEach((rules, categoryName) => {
-            // Check if category already exists to preserve its UUID and exit_uuid
-            const existingCategory = existingCategories.find(
-              (cat) => cat.name === categoryName
+            newCategories.push({
+              uuid: categoryUuid,
+              name: categoryName,
+              exit_uuid: exitUuid
+            });
+
+            newExits.push({
+              uuid: exitUuid,
+              destination_uuid: null
+            });
+          }
+        });
+
+        // Add default category if specified
+        if (nodeConfig.router.defaultCategory) {
+          // Check if default category already exists in our new list
+          const existingDefault = newCategories.find(
+            (cat) => cat.name === nodeConfig.router.defaultCategory
+          );
+
+          if (!existingDefault) {
+            // Check if it exists in the original categories
+            const originalDefault = existingCategories.find(
+              (cat) => cat.name === nodeConfig.router.defaultCategory
             );
 
-            if (existingCategory) {
-              // Preserve existing category and its associated exit
-              newCategories.push(existingCategory);
+            if (originalDefault) {
+              // Preserve existing default category and its exit
+              newCategories.push(originalDefault);
               const associatedExit = existingExits.find(
-                (exit) => exit.uuid === existingCategory.exit_uuid
+                (exit) => exit.uuid === originalDefault.exit_uuid
               );
               if (associatedExit) {
                 newExits.push(associatedExit);
               }
             } else {
-              // Create new category and exit
+              // Create new default category and exit
               const categoryUuid = generateUUID();
               const exitUuid = generateUUID();
 
               newCategories.push({
                 uuid: categoryUuid,
-                name: categoryName,
+                name: nodeConfig.router.defaultCategory,
                 exit_uuid: exitUuid
               });
 
@@ -879,53 +927,12 @@ export class NodeEditor extends RapidElement {
                 destination_uuid: null
               });
             }
-          });
-
-          // Add default category if specified
-          if (nodeConfig.router.defaultCategory) {
-            // Check if default category already exists in our new list
-            const existingDefault = newCategories.find(
-              (cat) => cat.name === nodeConfig.router.defaultCategory
-            );
-
-            if (!existingDefault) {
-              // Check if it exists in the original categories
-              const originalDefault = existingCategories.find(
-                (cat) => cat.name === nodeConfig.router.defaultCategory
-              );
-
-              if (originalDefault) {
-                // Preserve existing default category and its exit
-                newCategories.push(originalDefault);
-                const associatedExit = existingExits.find(
-                  (exit) => exit.uuid === originalDefault.exit_uuid
-                );
-                if (associatedExit) {
-                  newExits.push(associatedExit);
-                }
-              } else {
-                // Create new default category and exit
-                const categoryUuid = generateUUID();
-                const exitUuid = generateUUID();
-
-                newCategories.push({
-                  uuid: categoryUuid,
-                  name: nodeConfig.router.defaultCategory,
-                  exit_uuid: exitUuid
-                });
-
-                newExits.push({
-                  uuid: exitUuid,
-                  destination_uuid: null
-                });
-              }
-            }
           }
-
-          // Replace the entire categories and exits lists with our complete new sets
-          updatedNode.router.categories = newCategories;
-          updatedNode.exits = newExits;
         }
+
+        // Replace the entire categories and exits lists with our complete new sets
+        updatedNode.router.categories = newCategories;
+        updatedNode.exits = newExits;
       }
     } else {
       // If no router, just apply form data to node properties
