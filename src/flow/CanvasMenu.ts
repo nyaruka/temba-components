@@ -31,7 +31,7 @@ export class CanvasMenu extends RapidElement {
         border-radius: var(--curvature);
         box-shadow: var(--dropdown-shadow);
         padding: 0.5em 0;
-        width: 280px;
+        width: 265px;
         pointer-events: auto;
       }
 
