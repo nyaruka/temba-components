@@ -338,8 +338,8 @@ export const clickOption = async (
           );
           return !!option;
         },
-        40,
-        50
+        10,
+        25
       );
     } catch (e) {
       throw new Error(`Option at index ${index} not found after waiting`);
