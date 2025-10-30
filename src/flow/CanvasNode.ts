@@ -1,6 +1,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { ACTION_CONFIG, ActionConfig, NODE_CONFIG, NodeConfig } from './config';
+import { ACTION_GROUP_METADATA, SPLIT_GROUP_METADATA } from './types';
 import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
@@ -819,10 +820,10 @@ export class CanvasNode extends RapidElement {
     index: number,
     isRemoving: boolean = false
   ) {
-    return html`<div
-      class="cn-title"
-      style="background:${config.editorType.color}"
-    >
+    const color = config.group
+      ? ACTION_GROUP_METADATA[config.group]?.color
+      : '#aaaaaa';
+    return html`<div class="cn-title" style="background:${color}">
       ${this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : html`<div class="title-spacer"></div>`}
@@ -845,9 +846,14 @@ export class CanvasNode extends RapidElement {
     ui: NodeUI,
     isRemoving: boolean = false
   ) {
+    // Get color from the appropriate metadata (either ACTION or SPLIT)
+    const color = config.group
+      ? ACTION_GROUP_METADATA[config.group]?.color ||
+        SPLIT_GROUP_METADATA[config.group]?.color
+      : '#aaaaaa';
     return html`<div
       class="cn-title ${isRemoving ? 'removing' : ''}"
-      style="background:${config.editorType?.color || '#aaaaaa'}"
+      style="background:${color}"
     >
       <div class="title-spacer"></div>
       <div class="name">

@@ -1,4 +1,4 @@
-import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import { SCHEMES } from '../utils';
@@ -105,7 +105,7 @@ const createSchemeRouter = (
 export const split_by_scheme: NodeConfig = {
   type: 'split_by_scheme',
   name: 'Split by URN Type',
-  editorType: EDITOR_TYPES.split,
+  group: SPLIT_GROUPS.split,
   form: {
     schemes: {
       type: 'select',

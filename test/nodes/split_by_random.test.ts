@@ -20,8 +20,8 @@ describe('split_by_random node config', () => {
       expect(split_by_random.type).to.equal('split_by_random');
     });
 
-    it('has correct editorType', () => {
-      expect(split_by_random.editorType).to.exist;
+    it('has correct group', () => {
+      expect(split_by_random.group).to.exist;
     });
 
     it('has router configuration', () => {

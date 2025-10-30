@@ -2,7 +2,7 @@ import { html } from 'lit-html';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import {
   ActionConfig,
-  EDITOR_TYPES,
+  ACTION_GROUPS,
   FormData,
   ValidationResult
 } from '../types';
@@ -11,7 +11,7 @@ import { titleCase } from '../../utils';
 
 export const send_msg: ActionConfig = {
   name: 'Send Message',
-  editorType: EDITOR_TYPES.send,
+  group: ACTION_GROUPS.send,
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`

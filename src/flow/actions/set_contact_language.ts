@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import {
   ActionConfig,
-  EDITOR_TYPES,
+  ACTION_GROUPS,
   FormData,
   ValidationResult
 } from '../types';
@@ -10,7 +10,7 @@ import { getStore } from '../../store/Store';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
-  editorType: EDITOR_TYPES.update,
+  group: ACTION_GROUPS.update,
   render: (_node: Node, action: SetContactLanguage) => {
     const languageNames = new Intl.DisplayNames(['en'], {
       type: 'language'

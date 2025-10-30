@@ -1,4 +1,4 @@
-import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
 import { CallWebhook, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -19,7 +19,7 @@ const defaultPost = `@(json(object(
 export const split_by_webhook: NodeConfig = {
   type: 'split_by_webhook',
   name: 'Call Webhook',
-  editorType: EDITOR_TYPES.services,
+  group: ACTION_GROUPS.services,
   showAsAction: true,
   form: {
     method: {

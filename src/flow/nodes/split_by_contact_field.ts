@@ -1,4 +1,4 @@
-import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -43,7 +43,7 @@ const getOperandForField = (field: any): string => {
 export const split_by_contact_field: NodeConfig = {
   type: 'split_by_contact_field',
   name: 'Split by Contact Field',
-  editorType: EDITOR_TYPES.split,
+  group: SPLIT_GROUPS.split,
   dialogSize: 'large',
   form: {
     field: {

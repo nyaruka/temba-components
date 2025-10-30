@@ -1,4 +1,4 @@
-import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { generateUUID, createRulesRouter } from '../../utils';
 import {
@@ -76,7 +76,7 @@ const createWaitForResponseRouter = (
 export const wait_for_response: NodeConfig = {
   type: 'wait_for_response',
   name: 'Wait for Response',
-  editorType: EDITOR_TYPES.wait,
+  group: SPLIT_GROUPS.wait,
   dialogSize: 'large',
   form: {
     rules: createRulesArrayConfig(

@@ -1,4 +1,4 @@
-import { EDITOR_TYPES, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import { resultNameField } from './shared';
@@ -93,7 +93,7 @@ const createGroupRouter = (
 export const split_by_groups: NodeConfig = {
   type: 'split_by_groups',
   name: 'Split by Group',
-  editorType: EDITOR_TYPES.split,
+  group: SPLIT_GROUPS.split,
   form: {
     groups: {
       type: 'select',

@@ -6,9 +6,10 @@ import { NODE_CONFIG, ACTION_CONFIG } from './config';
 import {
   NodeConfig,
   ActionConfig,
-  EDITOR_TYPES,
-  ACTION_EDITOR_TYPES,
-  SPLIT_EDITOR_TYPES
+  ACTION_GROUPS,
+  SPLIT_GROUPS,
+  ACTION_GROUP_METADATA,
+  SPLIT_GROUP_METADATA
 } from './types';
 
 /**
@@ -267,12 +268,12 @@ export class NodeTypeSelector extends RapidElement {
 
   private getCategories(): NodeCategory[] {
     if (this.mode === 'action') {
-      // Group actions by editor type
-      const actionsByType = new Map<
+      // Group actions by group
+      const actionsByGroup = new Map<
         string,
         Array<{ type: string; config: ActionConfig }>
       >();
-      const splitsByType = new Map<
+      const splitsByGroup = new Map<
         string,
         Array<{ type: string; config: NodeConfig }>
       >();
@@ -280,15 +281,14 @@ export class NodeTypeSelector extends RapidElement {
       // Collect regular actions (from ACTION_CONFIG, unless hideFromActions is true)
       Object.entries(ACTION_CONFIG)
         .filter(([_, config]) => {
-          return config.name && !config.hideFromActions && config.editorType;
+          return config.name && !config.hideFromActions && config.group;
         })
         .forEach(([type, config]) => {
-          const editorType = config.editorType;
-          const key = editorType.title;
-          if (!actionsByType.has(key)) {
-            actionsByType.set(key, []);
+          const group = config.group;
+          if (!actionsByGroup.has(group)) {
+            actionsByGroup.set(group, []);
           }
-          actionsByType.get(key)!.push({ type, config });
+          actionsByGroup.get(group)!.push({ type, config });
         });
 
       // Collect nodes that have showAsAction=true (these appear as "with split" actions)
@@ -298,45 +298,38 @@ export class NodeTypeSelector extends RapidElement {
             type !== 'execute_actions' &&
             config.name &&
             config.showAsAction &&
-            config.editorType
+            config.group
           );
         })
         .forEach(([type, config]) => {
-          const editorType = config.editorType!;
-          const key = editorType.title;
-          if (!splitsByType.has(key)) {
-            splitsByType.set(key, []);
+          const group = config.group!;
+          if (!splitsByGroup.has(group)) {
+            splitsByGroup.set(group, []);
           }
-          splitsByType.get(key)!.push({ type, config });
+          splitsByGroup.get(group)!.push({ type, config });
         });
 
       // Build categories - first regular actions, then splitting actions
       const categories: NodeCategory[] = [];
 
-      // Get the implicit order from ACTION_EDITOR_TYPES object
-      const actionEditorOrder = Object.keys(ACTION_EDITOR_TYPES);
+      // Get the implicit order from ACTION_GROUPS object
+      const actionGroupOrder = Object.keys(ACTION_GROUPS);
       // Get the implicit order of actions from ACTION_CONFIG
       const actionConfigOrder = Object.keys(ACTION_CONFIG);
 
       // Add regular action categories sorted by implicit order
-      const sortedActionCategories = Array.from(actionsByType.entries()).sort(
-        ([_keyA, itemsA], [_keyB, itemsB]) => {
-          const titleA = itemsA[0].config.editorType.title;
-          const titleB = itemsB[0].config.editorType.title;
-          const orderA = actionEditorOrder.findIndex(
-            (key) => ACTION_EDITOR_TYPES[key].title === titleA
-          );
-          const orderB = actionEditorOrder.findIndex(
-            (key) => ACTION_EDITOR_TYPES[key].title === titleB
-          );
+      const sortedActionCategories = Array.from(actionsByGroup.entries()).sort(
+        ([groupA], [groupB]) => {
+          const orderA = actionGroupOrder.indexOf(groupA);
+          const orderB = actionGroupOrder.indexOf(groupB);
           return (
             (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
           );
         }
       );
 
-      sortedActionCategories.forEach(([_, items]) => {
-        const editorType = items[0].config.editorType;
+      sortedActionCategories.forEach(([group, items]) => {
+        const metadata = ACTION_GROUP_METADATA[group];
         // Sort items within the category by their order in ACTION_CONFIG
         const sortedItems = items.sort((a, b) => {
           const orderA = actionConfigOrder.indexOf(a.type);
@@ -346,9 +339,9 @@ export class NodeTypeSelector extends RapidElement {
           );
         });
         categories.push({
-          name: editorType.title,
-          description: editorType.description,
-          color: editorType.color,
+          name: metadata.title,
+          description: metadata.description,
+          color: metadata.color,
           items: sortedItems,
           isBranching: false
         });
@@ -359,24 +352,18 @@ export class NodeTypeSelector extends RapidElement {
       // Get the implicit order of nodes from NODE_CONFIG
       const nodeConfigOrder = Object.keys(NODE_CONFIG);
 
-      const sortedSplitCategories = Array.from(splitsByType.entries()).sort(
-        ([_keyA, itemsA], [_keyB, itemsB]) => {
-          const titleA = itemsA[0].config.editorType!.title;
-          const titleB = itemsB[0].config.editorType!.title;
-          const orderA = actionEditorOrder.findIndex(
-            (key) => ACTION_EDITOR_TYPES[key].title === titleA
-          );
-          const orderB = actionEditorOrder.findIndex(
-            (key) => ACTION_EDITOR_TYPES[key].title === titleB
-          );
+      const sortedSplitCategories = Array.from(splitsByGroup.entries()).sort(
+        ([groupA], [groupB]) => {
+          const orderA = actionGroupOrder.indexOf(groupA);
+          const orderB = actionGroupOrder.indexOf(groupB);
           return (
             (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
           );
         }
       );
 
-      sortedSplitCategories.forEach(([_, items]) => {
-        const editorType = items[0].config.editorType!;
+      sortedSplitCategories.forEach(([group, items]) => {
+        const metadata = ACTION_GROUP_METADATA[group];
         // Sort items within the category by their order in NODE_CONFIG
         const sortedItems = items.sort((a, b) => {
           const orderA = nodeConfigOrder.indexOf(a.type);
@@ -386,9 +373,9 @@ export class NodeTypeSelector extends RapidElement {
           );
         });
         categories.push({
-          name: editorType.title,
-          description: editorType.description,
-          color: editorType.color,
+          name: metadata.title,
+          description: metadata.description,
+          color: metadata.color,
           items: sortedItems,
           isBranching: true
         });
@@ -396,8 +383,8 @@ export class NodeTypeSelector extends RapidElement {
 
       return categories;
     } else {
-      // Group splits by editor type
-      const itemsByType = new Map<
+      // Group splits by group
+      const itemsByGroup = new Map<
         string,
         Array<{ type: string; config: NodeConfig }>
       >();
@@ -411,22 +398,22 @@ export class NodeTypeSelector extends RapidElement {
           );
         })
         .forEach(([type, config]) => {
-          const editorType = config.editorType || EDITOR_TYPES.split;
-          const key = editorType.title;
-          if (!itemsByType.has(key)) {
-            itemsByType.set(key, []);
+          const group = config.group || SPLIT_GROUPS.split;
+          if (!itemsByGroup.has(group)) {
+            itemsByGroup.set(group, []);
           }
-          itemsByType.get(key)!.push({ type, config });
+          itemsByGroup.get(group)!.push({ type, config });
         });
 
-      // Convert to categories using editor type metadata, sorted by implicit order from SPLIT_EDITOR_TYPES
-      const splitEditorOrder = Object.keys(SPLIT_EDITOR_TYPES);
+      // Convert to categories using group metadata, sorted by implicit order from SPLIT_GROUPS
+      const splitGroupOrder = Object.keys(SPLIT_GROUPS);
       // Get the implicit order of nodes from NODE_CONFIG
       const nodeConfigOrder = Object.keys(NODE_CONFIG);
 
-      return Array.from(itemsByType.entries())
-        .map(([_, items]) => {
-          const editorType = items[0].config.editorType || EDITOR_TYPES.split;
+      return Array.from(itemsByGroup.entries())
+        .map(([group, items]) => {
+          const metadata =
+            SPLIT_GROUP_METADATA[group] || ACTION_GROUP_METADATA[group];
           // Sort items within the category by their order in NODE_CONFIG
           const sortedItems = items.sort((a, b) => {
             const orderA = nodeConfigOrder.indexOf(a.type);
@@ -436,19 +423,22 @@ export class NodeTypeSelector extends RapidElement {
             );
           });
           return {
-            name: editorType.title,
-            description: editorType.description,
-            color: editorType.color,
+            name: metadata.title,
+            description: metadata.description,
+            color: metadata.color,
             items: sortedItems
           };
         })
         .sort((a, b) => {
-          const orderA = splitEditorOrder.findIndex(
-            (key) => SPLIT_EDITOR_TYPES[key].title === a.name
-          );
-          const orderB = splitEditorOrder.findIndex(
-            (key) => SPLIT_EDITOR_TYPES[key].title === b.name
-          );
+          // Find the group key by looking up metadata by title
+          const groupA = Object.keys(SPLIT_GROUP_METADATA).find(
+            (key) => SPLIT_GROUP_METADATA[key].title === a.name
+          )!;
+          const groupB = Object.keys(SPLIT_GROUP_METADATA).find(
+            (key) => SPLIT_GROUP_METADATA[key].title === b.name
+          )!;
+          const orderA = splitGroupOrder.indexOf(groupA);
+          const orderB = splitGroupOrder.indexOf(groupB);
           return (
             (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
           );
@@ -492,8 +482,7 @@ export class NodeTypeSelector extends RapidElement {
                             (item) => html`
                               <div
                                 class="node-item"
-                                style="--item-color: ${item.config.editorType
-                                  ?.color || 'rgba(0, 0, 0, 0.1)'}"
+                                style="--item-color: ${category.color}"
                                 @click=${() =>
                                   this.handleNodeTypeClick(item.type)}
                               >
@@ -531,9 +520,7 @@ export class NodeTypeSelector extends RapidElement {
                                   (item) => html`
                                     <div
                                       class="node-item"
-                                      style="--item-color: ${item.config
-                                        .editorType?.color ||
-                                      'rgba(0, 0, 0, 0.1)'}"
+                                      style="--item-color: ${category.color}"
                                       @click=${() =>
                                         this.handleNodeTypeClick(item.type)}
                                     >
@@ -568,8 +555,7 @@ export class NodeTypeSelector extends RapidElement {
                             (item) => html`
                               <div
                                 class="node-item"
-                                style="--item-color: ${item.config.editorType
-                                  ?.color || 'rgba(0, 0, 0, 0.1)'}"
+                                style="--item-color: ${category.color}"
                                 @click=${() =>
                                   this.handleNodeTypeClick(item.type)}
                               >

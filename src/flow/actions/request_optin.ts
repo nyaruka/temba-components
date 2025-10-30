@@ -1,10 +1,10 @@
 import { html } from 'lit-html';
-import { ActionConfig, EDITOR_TYPES } from '../types';
+import { ActionConfig, ACTION_GROUPS } from '../types';
 import { Node, RequestOptin } from '../../store/flow-definition';
 
 export const request_optin: ActionConfig = {
   name: 'Request Opt-in',
-  editorType: EDITOR_TYPES.send,
+  group: ACTION_GROUPS.send,
   render: (_node: Node, _action: RequestOptin) => {
     // This will need to be implemented based on the actual render logic
     return html`<div>Request Opt-in</div>`;

@@ -1,10 +1,10 @@
 import { html } from 'lit-html';
-import { ActionConfig, EDITOR_TYPES, ValidationResult } from '../types';
+import { ActionConfig, ACTION_GROUPS, ValidationResult } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {
   name: 'Update Channel',
-  editorType: EDITOR_TYPES.update,
+  group: ACTION_GROUPS.update,
   render: (_node: Node, action: SetContactChannel) => {
     return html`<div>Set to <strong>${action.channel.name}</strong></div>`;
   },

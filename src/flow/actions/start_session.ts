@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import {
   ActionConfig,
-  EDITOR_TYPES,
+  ACTION_GROUPS,
   FormData,
   ValidationResult
 } from '../types';
@@ -10,7 +10,7 @@ import { renderNamedObjects } from '../utils';
 
 export const start_session: ActionConfig = {
   name: 'Start Flow',
-  editorType: EDITOR_TYPES.broadcast,
+  group: ACTION_GROUPS.broadcast,
   render: (_node: Node, action: StartSession) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;
