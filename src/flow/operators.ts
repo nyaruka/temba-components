@@ -204,7 +204,9 @@ export const getWaitForResponseOperators = (): OperatorConfig[] => {
 
 // Get operators suitable for intent classification
 export const getIntentOperators = (): OperatorConfig[] => {
-  return OPERATORS.filter((op) => op.type === 'has_intent' || op.type === 'has_top_intent');
+  return OPERATORS.filter(
+    (op) => op.type === 'has_intent' || op.type === 'has_top_intent'
+  );
 };
 
 // Get operator configuration by type

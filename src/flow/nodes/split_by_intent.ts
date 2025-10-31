@@ -54,15 +54,15 @@ const getIntentValue = (intent: any): string => {
 const isEmptyRuleItem = (item: any): boolean => {
   const operatorValue = getOperatorValue(item.operator);
   const intentValue = getIntentValue(item.intent);
-  
+
   if (!operatorValue || !item.category || item.category.trim() === '') {
     return true;
   }
-  
+
   if (!intentValue || intentValue === '') {
     return true;
   }
-  
+
   // threshold is optional, defaults to 0.9
   return false;
 };
@@ -82,10 +82,14 @@ const createRuleItemChangeHandler = () => {
     if (field === 'intent' && value) {
       const intentValue = getIntentValue(value);
       const oldCategory = item.category || '';
-      
+
       // Only auto-update if category is empty or matches the old intent value
       const oldIntentValue = getIntentValue(allItems[itemIndex]?.intent);
-      if (!oldCategory || oldCategory.trim() === '' || oldCategory === oldIntentValue) {
+      if (
+        !oldCategory ||
+        oldCategory.trim() === '' ||
+        oldCategory === oldIntentValue
+      ) {
         item.category = intentValue;
       }
     }
@@ -184,14 +188,18 @@ export const split_by_intent: NodeConfig = {
 
     // Validate threshold values in rules
     if (formData.rules && Array.isArray(formData.rules)) {
-      const rules = formData.rules.filter((item: any) => !isEmptyRuleItem(item));
-      
+      const rules = formData.rules.filter(
+        (item: any) => !isEmptyRuleItem(item)
+      );
+
       rules.forEach((rule: any, index: number) => {
         const threshold = rule.threshold || '0.9';
         const thresholdNum = parseFloat(threshold);
-        
+
         if (isNaN(thresholdNum) || thresholdNum < 0 || thresholdNum > 1) {
-          errors.rules = `Invalid threshold in rule ${index + 1}. Must be between 0 and 1.`;
+          errors.rules = `Invalid threshold in rule ${
+            index + 1
+          }. Must be between 0 and 1.`;
         }
       });
     }
@@ -206,7 +214,9 @@ export const split_by_intent: NodeConfig = {
       (action) => action.type === 'call_classifier'
     ) as CallClassifier;
     return html`
-      <div class="body">Classify with ${callClassifierAction.classifier.name}</div>
+      <div class="body">
+        Classify with ${callClassifierAction.classifier.name}
+      </div>
     `;
   },
   toFormData: (node: Node) => {
@@ -214,7 +224,7 @@ export const split_by_intent: NodeConfig = {
     const callClassifierAction = node.actions?.find(
       (action) => action.type === 'call_classifier'
     ) as any;
-    
+
     // Extract rules from router cases
     const rules = [];
     if (node.router?.cases && node.router?.categories) {
@@ -223,17 +233,21 @@ export const split_by_intent: NodeConfig = {
         const category = node.router!.categories.find(
           (cat: any) => cat.uuid === case_.category_uuid
         );
-        
-        if (category && category.name !== 'No Response' && category.name !== 'Other') {
+
+        if (
+          category &&
+          category.name !== 'No Response' &&
+          category.name !== 'Other'
+        ) {
           const operatorConfig = getOperatorConfig(case_.type);
           const operatorDisplayName = operatorConfig
             ? operatorConfig.name
             : case_.type;
-          
+
           // For intent operators, arguments are [intent_name, threshold]
           const intentValue = case_.arguments[0] || '';
           const thresholdValue = case_.arguments[1] || '0.9';
-          
+
           rules.push({
             operator: { value: case_.type, name: operatorDisplayName },
             intent: [{ value: intentValue, name: intentValue }],
@@ -247,7 +261,12 @@ export const split_by_intent: NodeConfig = {
     return {
       uuid: node.uuid,
       classifier: callClassifierAction?.classifier
-        ? [{ value: callClassifierAction.classifier.uuid, name: callClassifierAction.classifier.name }]
+        ? [
+            {
+              value: callClassifierAction.classifier.uuid,
+              name: callClassifierAction.classifier.name
+            }
+          ]
         : [],
       input: callClassifierAction?.input || '@input.text',
       rules: rules
@@ -261,15 +280,17 @@ export const split_by_intent: NodeConfig = {
         : null;
 
     // Get input, default to @input.text
-    const input = formData.input && formData.input.trim() !== '' 
-      ? formData.input 
-      : '@input.text';
+    const input =
+      formData.input && formData.input.trim() !== ''
+        ? formData.input
+        : '@input.text';
 
     // Find existing call_classifier action to preserve its UUID
     const existingCallClassifierAction = originalNode.actions?.find(
       (action) => action.type === 'call_classifier'
     );
-    const callClassifierUuid = existingCallClassifierAction?.uuid || generateUUID();
+    const callClassifierUuid =
+      existingCallClassifierAction?.uuid || generateUUID();
 
     // Create call_classifier action
     const callClassifierAction: CallClassifier = {
@@ -288,7 +309,7 @@ export const split_by_intent: NodeConfig = {
         const operatorValue = getOperatorValue(rule.operator);
         const intentValue = getIntentValue(rule.intent);
         const thresholdValue = rule.threshold || '0.9';
-        
+
         return {
           operator: operatorValue,
           value: `${intentValue} ${thresholdValue}`.trim(),
@@ -320,4 +341,3 @@ export const split_by_intent: NodeConfig = {
     };
   }
 };
-

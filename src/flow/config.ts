@@ -36,6 +36,7 @@ import { split_by_webhook } from './nodes/split_by_webhook';
 import { split_by_resthook } from './nodes/split_by_resthook';
 import { split_by_llm } from './nodes/split_by_llm';
 import { split_by_llm_categorize } from './nodes/split_by_llm_categorize';
+import { split_by_intent } from './nodes/split_by_intent';
 import { wait_for_audio } from './nodes/wait_for_audio';
 import { wait_for_digits } from './nodes/wait_for_digits';
 import { wait_for_image } from './nodes/wait_for_image';
@@ -75,6 +76,7 @@ export const NODE_CONFIG: {
   split_by_contact_field,
   split_by_expression,
   split_by_groups,
+  split_by_intent,
   split_by_llm,
   split_by_llm_categorize,
   split_by_random,
