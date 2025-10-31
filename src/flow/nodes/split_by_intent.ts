@@ -1,4 +1,4 @@
-import { FormData, NodeConfig, SPLIT_GROUPS } from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
 import { CallClassifier, Node } from '../../store/flow-definition';
 import { generateUUID, createRulesRouter } from '../../utils';
 import { html } from 'lit';
@@ -107,8 +107,8 @@ const createRuleItemChangeHandler = () => {
 
 export const split_by_intent: NodeConfig = {
   type: 'split_by_intent',
-  name: 'Call classifier',
-  group: SPLIT_GROUPS.split,
+  name: 'Split by Classifier',
+  group: ACTION_GROUPS.services,
   dialogSize: 'large',
   form: {
     classifier: {

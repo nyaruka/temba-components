@@ -34,9 +34,9 @@ import { split_by_subflow } from './nodes/split_by_subflow';
 import { split_by_ticket } from './nodes/split_by_ticket';
 import { split_by_webhook } from './nodes/split_by_webhook';
 import { split_by_resthook } from './nodes/split_by_resthook';
+import { split_by_intent } from './nodes/split_by_intent';
 import { split_by_llm } from './nodes/split_by_llm';
 import { split_by_llm_categorize } from './nodes/split_by_llm_categorize';
-import { split_by_intent } from './nodes/split_by_intent';
 import { wait_for_audio } from './nodes/wait_for_audio';
 import { wait_for_digits } from './nodes/wait_for_digits';
 import { wait_for_image } from './nodes/wait_for_image';
@@ -72,11 +72,9 @@ export const NODE_CONFIG: {
   [key: string]: NodeConfig;
 } = {
   execute_actions,
-
   split_by_contact_field,
   split_by_expression,
   split_by_groups,
-  split_by_intent,
   split_by_llm,
   split_by_llm_categorize,
   split_by_random,
@@ -86,6 +84,7 @@ export const NODE_CONFIG: {
   split_by_ticket,
   split_by_webhook,
   split_by_resthook,
+  split_by_intent,
   wait_for_audio,
   wait_for_digits,
   wait_for_image,
