@@ -162,25 +162,21 @@ export interface StartSession extends Action {
 
 export interface TransferAirtime extends Action {
   amounts: number[];
-  result_name: string;
 }
 
 export interface CallClassifier extends Action {
   classifier: NamedObject;
   input: string;
-  result_name: string;
 }
 
 export interface CallResthook extends Action {
   resthook: string;
-  result_name: string;
 }
 
 export interface CallLLM extends Action {
   llm: NamedObject;
   instructions: string;
   input: string;
-  result_name?: string;
   output_local?: string;
 }
 

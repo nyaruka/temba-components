@@ -17,7 +17,7 @@ export const split_by_resthook: NodeConfig = {
       searchable: true,
       clearable: false,
       placeholder: 'Select a resthook...',
-      endpoint: '/api/resthooks.json',
+      endpoint: '/api/v2/resthooks.json',
       valueKey: 'resthook',
       nameKey: 'resthook',
       helpText: 'Select the resthook to call'
@@ -62,12 +62,11 @@ export const split_by_resthook: NodeConfig = {
       resthook: callResthookAction?.resthook
         ? [
             {
-              value: callResthookAction.resthook,
-              name: callResthookAction.resthook
+              resthook: callResthookAction.resthook
             }
           ]
         : [],
-      result_name: callResthookAction?.result_name || ''
+      result_name: node.router?.result_name || ''
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -91,8 +90,7 @@ export const split_by_resthook: NodeConfig = {
     const callResthookAction: CallResthook = {
       type: 'call_resthook',
       uuid: callResthookUuid,
-      resthook: resthookSelection.value,
-      result_name: formData.result_name?.trim() || ''
+      resthook: resthookSelection.resthook
     };
 
     // create categories and exits for Success and Failure
@@ -111,11 +109,21 @@ export const split_by_resthook: NodeConfig = {
       existingCases
     );
 
+    // Build final router with result_name
+    const finalRouter: any = {
+      ...router
+    };
+
+    // Only set result_name if provided
+    if (formData.result_name && formData.result_name.trim() !== '') {
+      finalRouter.result_name = formData.result_name.trim();
+    }
+
     // return the complete node
     return {
       uuid: originalNode.uuid,
       actions: [callResthookAction],
-      router: router,
+      router: finalRouter,
       exits: exits
     };
   }
