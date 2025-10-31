@@ -148,4 +148,68 @@ describe('temba-sortable-list', () => {
     const changeEvent = await updated;
     expect(changeEvent.type).to.equal('change');
   });
+
+  it('detects external drag when dragging outside container', async () => {
+    const list: SortableList = await createSorter(BORING_LIST);
+    const bounds = list.getBoundingClientRect();
+
+    // track external drag events
+    let externalDragFired = false;
+    let internalDragFired = false;
+
+    list.addEventListener(CustomEventType.DragExternal, () => {
+      externalDragFired = true;
+    });
+
+    list.addEventListener(CustomEventType.DragInternal, () => {
+      internalDragFired = true;
+    });
+
+    // start dragging an item
+    await moveMouse(bounds.left + 20, bounds.bottom - 10);
+    await mouseDown();
+    
+    // drag outside the container (far to the right)
+    await moveMouse(bounds.right + 100, bounds.top + 10);
+    clock.runAll();
+
+    // should have fired external drag event
+    expect(externalDragFired).to.be.true;
+
+    // drag back inside
+    externalDragFired = false; // reset
+    await moveMouse(bounds.left + 20, bounds.top + 10);
+    clock.runAll();
+
+    // should have fired internal drag event
+    expect(internalDragFired).to.be.true;
+
+    // clean up
+    await mouseUp();
+    clock.runAll();
+  });
+
+  it('fires DragStop with isExternal=true when dropped outside container', async () => {
+    const list: SortableList = await createSorter(BORING_LIST);
+    const bounds = list.getBoundingClientRect();
+
+    // start dragging an item
+    await moveMouse(bounds.left + 20, bounds.bottom - 10);
+    await mouseDown();
+    
+    // drag outside the container
+    await moveMouse(bounds.right + 100, bounds.top + 10);
+    clock.runAll();
+
+    // listen for drag stop event
+    const dragStop = oneEvent(list, CustomEventType.DragStop, false);
+    
+    // drop outside
+    await mouseUp();
+    clock.runAll();
+
+    const dragStopEvent = await dragStop;
+    expect(dragStopEvent.detail.isExternal).to.be.true;
+  });
 });
+
