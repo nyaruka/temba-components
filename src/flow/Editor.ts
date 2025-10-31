@@ -139,6 +139,9 @@ export class Editor extends RapidElement {
   @state()
   private pendingNodePosition: FlowPosition | null = null;
 
+  @state()
+  private addActionToNodeUuid: string | null = null;
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -441,6 +444,12 @@ export class Editor extends RapidElement {
     this.addEventListener(
       CustomEventType.ActionEditRequested,
       this.handleActionEditRequested.bind(this)
+    );
+
+    // Listen for add action requests from flow nodes
+    this.addEventListener(
+      CustomEventType.AddActionRequested,
+      this.handleAddActionRequested.bind(this)
     );
 
     // Listen for node edit requests from flow nodes
@@ -1022,6 +1031,37 @@ export class Editor extends RapidElement {
   private handleNodeTypeSelection(event: CustomEvent): void {
     const selection = event.detail as NodeTypeSelection;
 
+    // Check if we're adding an action to an existing node
+    if (this.addActionToNodeUuid) {
+      // Find the existing node
+      const node = this.definition.nodes.find(
+        (n) => n.uuid === this.addActionToNodeUuid
+      );
+      const nodeUI = this.definition._ui.nodes[this.addActionToNodeUuid];
+
+      if (node && nodeUI) {
+        // Create a new action to add to the existing node
+        const actionUuid = generateUUID();
+        this.editingAction = {
+          uuid: actionUuid,
+          type: selection.nodeType as any
+        } as Action;
+
+        // Set the editing node to the existing node (not creating new)
+        this.editingNode = node;
+        this.editingNodeUI = nodeUI;
+        this.isCreatingNewNode = false;
+
+        // Clear the addActionToNodeUuid flag
+        this.addActionToNodeUuid = null;
+
+        return;
+      }
+
+      // If we couldn't find the node, clear the flag and continue with normal flow
+      this.addActionToNodeUuid = null;
+    }
+
     // Create a temporary node structure for editing (not added to store yet)
     const nodeUuid = generateUUID();
 
@@ -1107,6 +1147,38 @@ export class Editor extends RapidElement {
       this.editingNodeUI = this.definition._ui.nodes[nodeUuid];
     }
   }
+
+  private handleAddActionRequested(event: CustomEvent): void {
+    // Get the node where we want to add the action
+    const nodeUuid = event.detail.nodeUuid;
+    const node = this.definition.nodes.find((n) => n.uuid === nodeUuid);
+
+    if (!node) {
+      return;
+    }
+
+    // Get the node's position to place the selector near it
+    const nodeUI = this.definition._ui.nodes[nodeUuid];
+    if (!nodeUI) {
+      return;
+    }
+
+    // Show the node type selector in action mode, excluding branching actions
+    const selector = this.querySelector(
+      'temba-node-type-selector'
+    ) as NodeTypeSelector;
+    if (selector) {
+      // Show the selector near the node, using a mode that excludes branching actions
+      selector.show('action-no-branching' as any, {
+        x: nodeUI.position.left,
+        y: nodeUI.position.top
+      });
+
+      // Store the node UUID so we know which node to add the action to
+      this.addActionToNodeUuid = nodeUuid;
+    }
+  }
+
   private handleNodeEditRequested(event: CustomEvent): void {
     this.editingNode = event.detail.node;
     this.editingNodeUI = event.detail.nodeUI;

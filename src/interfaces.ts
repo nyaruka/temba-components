@@ -288,6 +288,7 @@ export enum CustomEventType {
   DateRangeChanged = 'temba-date-range-changed',
   NodeDeleted = 'temba-node-deleted',
   ActionEditRequested = 'temba-action-edit-requested',
+  AddActionRequested = 'temba-add-action-requested',
   ActionSaved = 'temba-action-saved',
   ActionEditCanceled = 'temba-action-edit-canceled',
   NodeEditRequested = 'temba-node-edit-requested',
