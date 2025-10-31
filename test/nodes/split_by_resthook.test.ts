@@ -1,6 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { split_by_resthook } from '../../src/flow/nodes/split_by_resthook';
-import { Node } from '../../src/store/flow-definition.d';
+import { Node, CallResthook } from '../../src/store/flow-definition.d';
 
 describe('temba-split-by-resthook', () => {
   it('should transform from flow definition to form data correctly', () => {
@@ -12,7 +12,7 @@ describe('temba-split-by-resthook', () => {
           uuid: 'action-uuid',
           resthook: 'new-registration',
           result_name: ''
-        }
+        } as CallResthook
       ],
       router: {
         type: 'switch',
@@ -57,7 +57,7 @@ describe('temba-split-by-resthook', () => {
           uuid: 'action-uuid',
           resthook: 'payment-received',
           result_name: 'payment_status'
-        }
+        } as CallResthook
       ],
       router: {
         type: 'switch',
@@ -192,7 +192,7 @@ describe('temba-split-by-resthook', () => {
           uuid: 'existing-action-uuid',
           resthook: 'new-registration',
           result_name: ''
-        }
+        } as CallResthook
       ],
       router: {
         type: 'switch',
@@ -262,7 +262,7 @@ describe('temba-split-by-resthook', () => {
           uuid: 'existing-action-uuid',
           resthook: 'new-registration',
           result_name: 'reg_result'
-        }
+        } as CallResthook
       ],
       router: {
         type: 'switch',
@@ -393,7 +393,7 @@ describe('temba-split-by-resthook', () => {
           uuid: 'action-uuid',
           resthook: 'payment-received',
           result_name: ''
-        }
+        } as CallResthook
       ],
       exits: []
     };
@@ -402,6 +402,20 @@ describe('temba-split-by-resthook', () => {
 
     // check that the rendered output includes the resthook name
     expect(rendered.strings[0]).to.include('class="body"');
+  });
+
+  it('should handle missing resthook action when loading form data', () => {
+    const node: Node = {
+      uuid: 'test-node-uuid',
+      actions: [],
+      exits: []
+    };
+
+    const formData = split_by_resthook.toFormData!(node);
+
+    expect(formData.uuid).to.equal('test-node-uuid');
+    expect(formData.resthook).to.have.lengthOf(0);
+    expect(formData.result_name).to.equal('');
   });
 
   it('should render placeholder when no resthook configured', () => {

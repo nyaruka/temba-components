@@ -60,7 +60,12 @@ export const split_by_resthook: NodeConfig = {
     return {
       uuid: node.uuid,
       resthook: callResthookAction?.resthook
-        ? [{ value: callResthookAction.resthook, name: callResthookAction.resthook }]
+        ? [
+            {
+              value: callResthookAction.resthook,
+              name: callResthookAction.resthook
+            }
+          ]
         : [],
       result_name: callResthookAction?.result_name || ''
     };
