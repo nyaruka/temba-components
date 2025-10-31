@@ -1,0 +1,32 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "uuid": "c99d8a64-2e47-48d7-ae91-e3fbd2e32323",
+      "name": "Booking Classifier",
+      "value": "c99d8a64-2e47-48d7-ae91-e3fbd2e32323",
+      "type": "wit",
+      "intents": [
+        "book_flight",
+        "book_hotel",
+        "book_car",
+        "cancel_booking",
+        "modify_booking"
+      ]
+    },
+    {
+      "uuid": "d4a8f123-9b56-4e21-bc45-789abc123def",
+      "name": "Support Classifier",
+      "value": "d4a8f123-9b56-4e21-bc45-789abc123def",
+      "type": "luis",
+      "intents": [
+        "greeting",
+        "goodbye",
+        "help",
+        "complaint",
+        "feedback"
+      ]
+    }
+  ]
+}
