@@ -1355,7 +1355,7 @@ export class Editor extends RapidElement {
     };
   }
 
-  private handleActionDragInternal(event: CustomEvent): void {
+  private handleActionDragInternal(_event: CustomEvent): void {
     this.canvasDropPreview = null;
   }
 

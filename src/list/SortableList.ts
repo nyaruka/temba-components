@@ -112,7 +112,7 @@ export class SortableList extends RapidElement {
   private isMouseOverContainer(mouseX: number, mouseY: number): boolean {
     const container = this.shadowRoot.querySelector('.container');
     if (!container) return false;
-    
+
     const rect = container.getBoundingClientRect();
     // add some padding to make it easier to stay within the container
     const padding = 50;
@@ -548,7 +548,11 @@ export class SortableList extends RapidElement {
       this.hideDropPlaceholder();
 
       // fire the order changed event only when dropped if we have a valid drop position
-      if (!this.isExternalDrag && this.pendingDropIndex >= 0 && this.pendingTargetElement) {
+      if (
+        !this.isExternalDrag &&
+        this.pendingDropIndex >= 0 &&
+        this.pendingTargetElement
+      ) {
         // Use the original drag index we captured before hiding the element
         const originalDragIdx = this.originalDragIndex;
 

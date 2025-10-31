@@ -635,14 +635,14 @@ export class CanvasNode extends RapidElement {
     });
   }
 
-  private handleActionDragInternal(event: CustomEvent) {
+  private handleActionDragInternal(_event: CustomEvent) {
     // fire event to editor to hide canvas drop preview
     this.fireCustomEvent(CustomEventType.DragInternal, {});
   }
 
   private handleActionDragStop(event: CustomEvent) {
     const isExternal = event.detail.isExternal;
-    
+
     if (isExternal) {
       // get the action being dragged
       const actionId = event.detail.id;

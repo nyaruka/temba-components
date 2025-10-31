@@ -168,7 +168,7 @@ describe('temba-sortable-list', () => {
     // start dragging an item
     await moveMouse(bounds.left + 20, bounds.bottom - 10);
     await mouseDown();
-    
+
     // drag outside the container (far to the right)
     await moveMouse(bounds.right + 100, bounds.top + 10);
     clock.runAll();
@@ -196,14 +196,14 @@ describe('temba-sortable-list', () => {
     // start dragging an item
     await moveMouse(bounds.left + 20, bounds.bottom - 10);
     await mouseDown();
-    
+
     // drag outside the container
     await moveMouse(bounds.right + 100, bounds.top + 10);
     clock.runAll();
 
     // listen for drag stop event
     const dragStop = oneEvent(list, CustomEventType.DragStop, false);
-    
+
     // drop outside
     await mouseUp();
     clock.runAll();
@@ -212,4 +212,3 @@ describe('temba-sortable-list', () => {
     expect(dragStopEvent.detail.isExternal).to.be.true;
   });
 });
-
