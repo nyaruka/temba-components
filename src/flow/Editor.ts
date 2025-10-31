@@ -1169,7 +1169,7 @@ export class Editor extends RapidElement {
     ) as NodeTypeSelector;
     if (selector) {
       // Show the selector near the node, using a mode that excludes branching actions
-      selector.show('action-no-branching' as any, {
+      selector.show('action-no-branching', {
         x: nodeUI.position.left,
         y: nodeUI.position.top
       });
