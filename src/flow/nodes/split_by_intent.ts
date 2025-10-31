@@ -68,7 +68,8 @@ const isEmptyRuleItem = (item: any): boolean => {
 };
 
 /**
- * Handles auto-updating category names based on operator and intent changes
+ * Handles auto-updating category names based on operator and intent changes.
+ * This function returns a new handler instance but maintains the same logic.
  */
 const createRuleItemChangeHandler = () => {
   return (itemIndex: number, field: string, value: any, allItems: any[]) => {
@@ -154,12 +155,13 @@ export const split_by_intent: NodeConfig = {
           multi: false,
           flavor: 'xsmall',
           placeholder: 'Intent',
+          // Note: getDynamicOptions would ideally load intents from the selected classifier
+          // For now, we use allowCreate to let users type in intent names directly
+          // Future enhancement: implement dynamic loading based on formData.classifier
           getDynamicOptions: () => {
-            // This will be populated based on the selected classifier
-            // For now, return empty array - the form will need to handle dynamic loading
             return [];
           },
-          allowCreate: true // Allow creating arbitrary intents as fallback
+          allowCreate: true // Allow typing custom intent names
         },
         threshold: {
           type: 'text',
