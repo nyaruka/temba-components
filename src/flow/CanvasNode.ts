@@ -620,6 +620,9 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleActionDragExternal(event: CustomEvent) {
+    // stop propagation of the original event from SortableList
+    event.stopPropagation();
+    
     // get the action being dragged
     const actionId = event.detail.id;
     const actionIndex = parseInt(actionId.split('-')[1]);
@@ -636,6 +639,9 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleActionDragInternal(_event: CustomEvent) {
+    // stop propagation of the original event from SortableList
+    _event.stopPropagation();
+    
     // fire event to editor to hide canvas drop preview
     this.fireCustomEvent(CustomEventType.DragInternal, {});
   }
@@ -644,6 +650,9 @@ export class CanvasNode extends RapidElement {
     const isExternal = event.detail.isExternal;
 
     if (isExternal) {
+      // stop propagation of the original event from SortableList
+      event.stopPropagation();
+      
       // get the action being dragged
       const actionId = event.detail.id;
       const actionIndex = parseInt(actionId.split('-')[1]);

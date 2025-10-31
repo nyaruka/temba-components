@@ -792,7 +792,7 @@ export class Editor extends RapidElement {
 
     return html`<div
       class="canvas-drop-preview"
-      style="position: absolute; left: ${position.left}px; top: ${position.top}px; opacity: 0.6; pointer-events: none;"
+      style="position: absolute; left: ${position.left}px; top: ${position.top}px; opacity: 0.6; pointer-events: none; z-index: 10000;"
     >
       <div
         class="node execute-actions"
@@ -1371,6 +1371,9 @@ export class Editor extends RapidElement {
       actionIndex,
       position
     };
+    
+    // Force re-render to update preview position
+    this.requestUpdate();
   }
 
   private handleActionDragInternal(_event: CustomEvent): void {
