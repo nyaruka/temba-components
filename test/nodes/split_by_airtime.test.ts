@@ -1,6 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { split_by_airtime } from '../../src/flow/nodes/split_by_airtime';
-import { Node } from '../../src/store/flow-definition';
+import { Node, TransferAirtime } from '../../src/store/flow-definition';
 import { NodeTest } from '../NodeHelper';
 
 /**
@@ -36,7 +36,7 @@ describe('split_by_airtime node config', () => {
             amounts: {
               USD: 10
             }
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',
@@ -82,7 +82,7 @@ describe('split_by_airtime node config', () => {
               EUR: 15,
               GBP: 8
             }
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',
@@ -111,7 +111,7 @@ describe('split_by_airtime node config', () => {
 
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.amounts).to.have.lengthOf(3);
-      
+
       // Check currencies are present (order not guaranteed in object iteration)
       const currencies = formData.amounts.map((a: any) => a.currency[0].value);
       expect(currencies).to.include('USD');
@@ -129,7 +129,7 @@ describe('split_by_airtime node config', () => {
             amounts: {
               USD: 10
             }
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',
@@ -167,7 +167,7 @@ describe('split_by_airtime node config', () => {
             type: 'transfer_airtime',
             uuid: 'action-uuid',
             amounts: {}
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',
@@ -209,11 +209,11 @@ describe('split_by_airtime node config', () => {
 
       expect(node.uuid).to.equal('test-node-uuid');
       expect(node.actions).to.have.lengthOf(1);
-      
+
       const action: any = node.actions![0];
       expect(action.type).to.equal('transfer_airtime');
       expect(action.amounts).to.deep.equal({ USD: 10 });
-      
+
       expect(node.router?.type).to.equal('switch');
       expect(node.router?.categories).to.have.lengthOf(2);
       expect(node.router?.categories![0].name).to.equal('Success');
@@ -250,7 +250,7 @@ describe('split_by_airtime node config', () => {
       const node = split_by_airtime.fromFormData!(formData, originalNode);
 
       expect(node.actions).to.have.lengthOf(1);
-      
+
       const action: any = node.actions![0];
       expect(action.type).to.equal('transfer_airtime');
       expect(action.amounts).to.deep.equal({
@@ -322,7 +322,7 @@ describe('split_by_airtime node config', () => {
             type: 'transfer_airtime',
             uuid: 'existing-action-uuid',
             amounts: { USD: 5 }
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',
@@ -359,7 +359,7 @@ describe('split_by_airtime node config', () => {
             type: 'transfer_airtime',
             uuid: 'action-uuid',
             amounts: { USD: 5 }
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',
@@ -402,7 +402,7 @@ describe('split_by_airtime node config', () => {
       expect(node.router?.categories![1].uuid).to.equal('cat-failure');
       expect(node.exits![0].uuid).to.equal('exit-success');
       expect(node.exits![1].uuid).to.equal('exit-failure');
-      
+
       // Check that destinations are preserved
       expect(node.exits![0].destination_uuid).to.equal('next-node-1');
       expect(node.exits![1].destination_uuid).to.equal('next-node-2');
@@ -560,7 +560,7 @@ describe('split_by_airtime node config', () => {
             amounts: {
               USD: 10
             }
-          }
+          } as TransferAirtime
         ],
         exits: []
       };
@@ -581,7 +581,7 @@ describe('split_by_airtime node config', () => {
               EUR: 15,
               GBP: 8
             }
-          }
+          } as TransferAirtime
         ],
         exits: []
       };
@@ -598,7 +598,7 @@ describe('split_by_airtime node config', () => {
             type: 'transfer_airtime',
             uuid: 'action-uuid',
             amounts: {}
-          }
+          } as TransferAirtime
         ],
         exits: []
       };
@@ -620,7 +620,7 @@ describe('split_by_airtime node config', () => {
               USD: 10,
               EUR: 15.5
             }
-          }
+          } as TransferAirtime
         ],
         router: {
           type: 'switch',

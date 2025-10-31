@@ -49,9 +49,7 @@ export const split_by_airtime: NodeConfig = {
     if (formData.amounts && Array.isArray(formData.amounts)) {
       const validAmounts = formData.amounts.filter(
         (item: any) =>
-          item?.currency &&
-          item?.amount &&
-          item.amount.trim() !== ''
+          item?.currency && item?.amount && item.amount.trim() !== ''
       );
 
       if (validAmounts.length === 0) {
@@ -68,9 +66,10 @@ export const split_by_airtime: NodeConfig = {
 
       validAmounts.forEach((item: any) => {
         // Extract currency code from selection
-        const currencyCode = Array.isArray(item.currency) && item.currency.length > 0
-          ? item.currency[0].value
-          : typeof item.currency === 'string'
+        const currencyCode =
+          Array.isArray(item.currency) && item.currency.length > 0
+            ? item.currency[0].value
+            : typeof item.currency === 'string'
             ? item.currency
             : item.currency?.value;
 
@@ -112,7 +111,7 @@ export const split_by_airtime: NodeConfig = {
 
     const amounts = transferAirtimeAction.amounts;
     const currencies = Object.keys(amounts);
-    
+
     if (currencies.length === 0) {
       return html`<div class="body">Configure airtime transfer</div>`;
     }
@@ -124,7 +123,8 @@ export const split_by_airtime: NodeConfig = {
 
     return html`
       <div class="body">
-        ${firstCurrency} ${firstAmount}${moreCount > 0
+        ${firstCurrency}
+        ${firstAmount}${moreCount > 0
           ? html` <span style="color: #999;">+${moreCount} more</span>`
           : ''}
       </div>
