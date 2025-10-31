@@ -118,7 +118,8 @@ export class NodeTest<T extends Node> {
 
     // Step 3: Test round-trip conversion (simulates save workflow)
     if (this.nodeConfig.toFormData && this.nodeConfig.fromFormData) {
-      const formData = this.nodeConfig.toFormData(node);
+      const formDataOrPromise = this.nodeConfig.toFormData(node);
+      const formData = formDataOrPromise instanceof Promise ? await formDataOrPromise : formDataOrPromise;
       const convertedNode = this.nodeConfig.fromFormData(formData, node) as T;
 
       // Validate the round trip worked

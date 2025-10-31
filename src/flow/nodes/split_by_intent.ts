@@ -233,7 +233,7 @@ export const split_by_intent: NodeConfig = {
       </div>
     `;
   },
-  toFormData: (node: Node) => {
+  toFormData: async (node: Node) => {
     // Extract data from the existing node structure
     const callClassifierAction = node.actions?.find(
       (action) => action.type === 'call_classifier'
@@ -272,16 +272,45 @@ export const split_by_intent: NodeConfig = {
       });
     }
 
+    // Fetch full classifier data if we only have uuid/name
+    let classifierArray = [];
+    if (callClassifierAction?.classifier) {
+      const classifierUuid = callClassifierAction.classifier.uuid;
+      const classifierName = callClassifierAction.classifier.name;
+      
+      try {
+        // Fetch classifier data to get intents
+        const response = await fetch('/test-assets/select/classifiers.json');
+        const data = await response.json();
+        const fullClassifier = data.results.find((c: any) => c.uuid === classifierUuid);
+        
+        if (fullClassifier) {
+          classifierArray = [{
+            value: fullClassifier.uuid,
+            name: fullClassifier.name,
+            intents: fullClassifier.intents,
+            type: fullClassifier.type
+          }];
+        } else {
+          // Fallback if classifier not found in endpoint
+          classifierArray = [{
+            value: classifierUuid,
+            name: classifierName
+          }];
+        }
+      } catch (error) {
+        // Fallback if fetch fails
+        console.error('Failed to fetch classifier data:', error);
+        classifierArray = [{
+          value: classifierUuid,
+          name: classifierName
+        }];
+      }
+    }
+
     return {
       uuid: node.uuid,
-      classifier: callClassifierAction?.classifier
-        ? [
-            {
-              value: callClassifierAction.classifier.uuid,
-              name: callClassifierAction.classifier.name
-            }
-          ]
-        : [],
+      classifier: classifierArray,
       input: callClassifierAction?.input || '@input.text',
       rules: rules
     };

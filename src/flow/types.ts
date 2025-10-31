@@ -99,7 +99,7 @@ export interface NodeConfig extends FormConfig {
     }[];
   };
 
-  toFormData?: (node: Node, nodeUI?: any) => FormData;
+  toFormData?: (node: Node, nodeUI?: any) => FormData | Promise<FormData>;
   fromFormData?: (formData: FormData, originalNode: Node) => Node;
   toUIConfig?: (formData: FormData) => Record<string, any>;
   render?: (node: Node, nodeUI?: any) => TemplateResult;

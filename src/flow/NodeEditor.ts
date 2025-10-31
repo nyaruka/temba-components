@@ -371,7 +371,18 @@ export class NodeEditor extends RapidElement {
       const actionConfig = ACTION_CONFIG[this.action.type];
 
       if (actionConfig?.toFormData) {
-        this.formData = actionConfig.toFormData(this.action);
+        const formDataOrPromise = actionConfig.toFormData(this.action);
+        if (formDataOrPromise instanceof Promise) {
+          formDataOrPromise.then((formData) => {
+            this.formData = formData;
+            this.processFormDataForEditing();
+            this.originalFormData = JSON.parse(JSON.stringify(this.formData));
+            this.requestUpdate();
+          });
+          return; // Exit early, will update when promise resolves
+        } else {
+          this.formData = formDataOrPromise;
+        }
       } else {
         this.formData = { ...this.action };
       }
@@ -385,7 +396,18 @@ export class NodeEditor extends RapidElement {
       // Node editing mode - use node config
       const nodeConfig = this.getNodeConfig();
       if (nodeConfig?.toFormData) {
-        this.formData = nodeConfig.toFormData(this.node, this.nodeUI);
+        const formDataOrPromise = nodeConfig.toFormData(this.node, this.nodeUI);
+        if (formDataOrPromise instanceof Promise) {
+          formDataOrPromise.then((formData) => {
+            this.formData = formData;
+            this.processFormDataForEditing();
+            this.originalFormData = JSON.parse(JSON.stringify(this.formData));
+            this.requestUpdate();
+          });
+          return; // Exit early, will update when promise resolves
+        } else {
+          this.formData = formDataOrPromise;
+        }
       } else {
         this.formData = { ...this.node };
       }
