@@ -154,14 +154,13 @@ export const split_by_intent: NodeConfig = {
           required: true,
           multi: false,
           flavor: 'xsmall',
-          placeholder: 'Intent',
-          // Note: getDynamicOptions would ideally load intents from the selected classifier
-          // For now, we use allowCreate to let users type in intent names directly
-          // Future enhancement: implement dynamic loading based on formData.classifier
-          getDynamicOptions: () => {
-            return [];
-          },
-          allowCreate: true // Allow typing custom intent names
+          placeholder: 'Select or type intent name',
+          // Note: Ideally, this would dynamically load intents from the selected classifier.
+          // However, array item fields don't have access to parent form data (classifier selection).
+          // Users can type intent names that match their classifier's intents.
+          options: [], // Empty options - users must type intent names
+          allowCreate: true, // Allow typing intent names directly
+          searchable: false
         },
         threshold: {
           type: 'text',

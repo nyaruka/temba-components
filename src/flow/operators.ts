@@ -154,16 +154,18 @@ export const OPERATORS: OperatorConfig[] = [
     filter: 'HAS_LOCATIONS'
   },
 
-  // Intent/classifier operators
+  // Intent/classifier operators (hidden from general use, only for split_by_intent)
   {
     type: 'has_intent',
     name: 'has intent',
-    operands: 2 // intent name and confidence threshold
+    operands: 2, // intent name and confidence threshold
+    visibility: 'hidden'
   },
   {
     type: 'has_top_intent',
     name: 'has top intent',
-    operands: 2 // intent name and confidence threshold
+    operands: 2, // intent name and confidence threshold
+    visibility: 'hidden'
   },
 
   // Hidden/system operators

@@ -81,7 +81,7 @@ describe('split_by_intent node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(split_by_intent.name).to.equal('Call classifier');
+      expect(split_by_intent.name).to.equal('Split by Classifier');
     });
 
     it('has correct type', () => {
