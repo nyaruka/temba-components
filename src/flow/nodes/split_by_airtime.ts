@@ -30,7 +30,8 @@ export const split_by_airtime: NodeConfig = {
           required: true,
           options: CURRENCY_OPTIONS,
           searchable: true,
-          multi: false
+          multi: false,
+          width: '200px'
         },
         amount: {
           type: 'text',
