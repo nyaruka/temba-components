@@ -7,7 +7,12 @@ import { NodeTest } from '../NodeHelper';
  * Helper function to create routers with proper cases and exits for intent classification
  */
 function createIntentRouter(
-  rules: Array<{ intent: string; threshold: string; operator: string; category: string }>
+  rules: Array<{
+    intent: string;
+    threshold: string;
+    operator: string;
+    category: string;
+  }>
 ) {
   const categories = [];
   const exits = [];
@@ -235,11 +240,36 @@ describe('split_by_intent node config', () => {
 
     it('renders with many intents', async () => {
       const manyIntentsRouter = createIntentRouter([
-        { intent: 'greeting', threshold: '0.9', operator: 'has_intent', category: 'Greeting' },
-        { intent: 'goodbye', threshold: '0.9', operator: 'has_intent', category: 'Goodbye' },
-        { intent: 'help', threshold: '0.85', operator: 'has_intent', category: 'Help' },
-        { intent: 'complaint', threshold: '0.8', operator: 'has_intent', category: 'Complaint' },
-        { intent: 'feedback', threshold: '0.75', operator: 'has_intent', category: 'Feedback' }
+        {
+          intent: 'greeting',
+          threshold: '0.9',
+          operator: 'has_intent',
+          category: 'Greeting'
+        },
+        {
+          intent: 'goodbye',
+          threshold: '0.9',
+          operator: 'has_intent',
+          category: 'Goodbye'
+        },
+        {
+          intent: 'help',
+          threshold: '0.85',
+          operator: 'has_intent',
+          category: 'Help'
+        },
+        {
+          intent: 'complaint',
+          threshold: '0.8',
+          operator: 'has_intent',
+          category: 'Complaint'
+        },
+        {
+          intent: 'feedback',
+          threshold: '0.75',
+          operator: 'has_intent',
+          category: 'Feedback'
+        }
       ]);
       await helper.testNode(
         {
@@ -416,7 +446,7 @@ describe('split_by_intent node config', () => {
       };
 
       const result = split_by_intent.fromFormData!(formData, originalNode);
-      
+
       const testCase = result.router!.cases[0];
       expect(testCase.arguments[1]).to.equal('0.9');
     });
@@ -610,7 +640,10 @@ describe('split_by_intent node config', () => {
       };
 
       // Convert form data to node
-      const node = split_by_intent.fromFormData!(originalFormData, originalNode);
+      const node = split_by_intent.fromFormData!(
+        originalFormData,
+        originalNode
+      );
 
       // Convert back to form data
       const recoveredFormData = split_by_intent.toFormData!(node);
