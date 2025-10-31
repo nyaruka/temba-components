@@ -161,7 +161,7 @@ export interface StartSession extends Action {
 }
 
 export interface TransferAirtime extends Action {
-  amounts: number[];
+  amounts: Record<string, number>;
 }
 
 export interface CallClassifier extends Action {
