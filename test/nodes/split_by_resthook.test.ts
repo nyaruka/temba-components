@@ -10,8 +10,7 @@ describe('temba-split-by-resthook', () => {
         {
           type: 'call_resthook',
           uuid: 'action-uuid',
-          resthook: 'new-registration',
-          result_name: ''
+          resthook: 'new-registration'
         } as CallResthook
       ],
       router: {
@@ -42,8 +41,7 @@ describe('temba-split-by-resthook', () => {
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.resthook).to.have.lengthOf(1);
     expect(formData.resthook[0]).to.deep.equal({
-      value: 'new-registration',
-      name: 'new-registration'
+      resthook: 'new-registration'
     });
     expect(formData.result_name).to.equal('');
   });
@@ -55,8 +53,7 @@ describe('temba-split-by-resthook', () => {
         {
           type: 'call_resthook',
           uuid: 'action-uuid',
-          resthook: 'payment-received',
-          result_name: 'payment_status'
+          resthook: 'payment-received'
         } as CallResthook
       ],
       router: {
@@ -73,6 +70,7 @@ describe('temba-split-by-resthook', () => {
           { uuid: 'cat-success', name: 'Success', exit_uuid: 'exit-success' },
           { uuid: 'cat-failure', name: 'Failure', exit_uuid: 'exit-failure' }
         ],
+        result_name: 'payment_status',
         default_category_uuid: 'cat-failure',
         operand: '@webhook.json.status'
       },
@@ -87,8 +85,7 @@ describe('temba-split-by-resthook', () => {
     expect(formData.result_name).to.equal('payment_status');
     expect(formData.resthook).to.have.lengthOf(1);
     expect(formData.resthook[0]).to.deep.equal({
-      value: 'payment-received',
-      name: 'payment-received'
+      resthook: 'payment-received'
     });
   });
 
@@ -101,8 +98,7 @@ describe('temba-split-by-resthook', () => {
 
     const formData = {
       uuid: 'test-node-uuid',
-      resthook: [{ value: 'new-registration', name: 'new-registration' }],
-      result_name: ''
+      resthook: [{ resthook: 'new-registration' }]
     };
 
     const resultNode = split_by_resthook.fromFormData!(formData, originalNode);
@@ -112,8 +108,6 @@ describe('temba-split-by-resthook', () => {
 
     const action = resultNode.actions![0];
     expect(action.type).to.equal('call_resthook');
-    expect((action as any).resthook).to.equal('new-registration');
-    expect((action as any).result_name).to.equal('');
 
     expect(resultNode.router!.type).to.equal('switch');
     expect(resultNode.router!.operand).to.equal('@webhook.json.status');
@@ -136,30 +130,10 @@ describe('temba-split-by-resthook', () => {
     );
   });
 
-  it('should transform from form data with result_name', () => {
-    const originalNode: Node = {
-      uuid: 'test-node-uuid',
-      actions: [],
-      exits: []
-    };
-
-    const formData = {
-      uuid: 'test-node-uuid',
-      resthook: [{ value: 'survey-completed', name: 'survey-completed' }],
-      result_name: 'survey_result'
-    };
-
-    const resultNode = split_by_resthook.fromFormData!(formData, originalNode);
-
-    const action = resultNode.actions![0];
-    expect((action as any).result_name).to.equal('survey_result');
-    expect((action as any).resthook).to.equal('survey-completed');
-  });
-
   it('should validate form data correctly', () => {
     // valid form data
     const validData = {
-      resthook: [{ value: 'new-registration', name: 'new-registration' }]
+      resthook: [{ resthook: 'new-registration' }]
     };
 
     const validResult = split_by_resthook.validate!(validData);
@@ -190,8 +164,7 @@ describe('temba-split-by-resthook', () => {
         {
           type: 'call_resthook',
           uuid: 'existing-action-uuid',
-          resthook: 'new-registration',
-          result_name: ''
+          resthook: 'new-registration'
         } as CallResthook
       ],
       router: {
@@ -234,7 +207,7 @@ describe('temba-split-by-resthook', () => {
     // re-save with same resthook
     const formData = {
       uuid: 'test-node-uuid',
-      resthook: [{ value: 'new-registration', name: 'new-registration' }],
+      resthook: [{ resthook: 'new-registration' }],
       result_name: ''
     };
 
@@ -260,8 +233,7 @@ describe('temba-split-by-resthook', () => {
         {
           type: 'call_resthook',
           uuid: 'existing-action-uuid',
-          resthook: 'new-registration',
-          result_name: 'reg_result'
+          resthook: 'new-registration'
         } as CallResthook
       ],
       router: {
@@ -304,8 +276,7 @@ describe('temba-split-by-resthook', () => {
     // change to different resthook
     const formData = {
       uuid: 'test-node-uuid',
-      resthook: [{ value: 'payment-received', name: 'payment-received' }],
-      result_name: 'payment_result'
+      resthook: [{ resthook: 'payment-received' }]
     };
 
     const resultNode = split_by_resthook.fromFormData!(formData, originalNode);
@@ -316,9 +287,6 @@ describe('temba-split-by-resthook', () => {
     // resthook should be updated
     expect((resultNode.actions![0] as any).resthook).to.equal(
       'payment-received'
-    );
-    expect((resultNode.actions![0] as any).result_name).to.equal(
-      'payment_result'
     );
 
     // structure should be preserved
@@ -335,14 +303,12 @@ describe('temba-split-by-resthook', () => {
 
     const formData = {
       uuid: 'test-node-uuid',
-      resthook: [{ value: 'new-registration', name: 'new-registration' }],
+      resthook: [{ resthook: 'new-registration' }],
       result_name: '   '
     };
 
     const resultNode = split_by_resthook.fromFormData!(formData, originalNode);
-
-    const action = resultNode.actions![0];
-    expect((action as any).result_name).to.equal('');
+    expect(resultNode.router.result_name).to.be.undefined;
   });
 
   it('should handle missing resthook selection gracefully', () => {
@@ -391,8 +357,7 @@ describe('temba-split-by-resthook', () => {
         {
           type: 'call_resthook',
           uuid: 'action-uuid',
-          resthook: 'payment-received',
-          result_name: ''
+          resthook: 'payment-received'
         } as CallResthook
       ],
       exits: []
