@@ -2,7 +2,7 @@ import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
 import { TransferAirtime, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
-import { CURRENCY_OPTIONS } from '../currencies';
+import { CURRENCY_OPTIONS, CURRENCIES } from '../currencies';
 import { resultNameField } from './shared';
 
 export const split_by_airtime: NodeConfig = {
@@ -85,12 +85,16 @@ export const split_by_airtime: NodeConfig = {
       }
 
       // Validate amounts are numeric
-      validAmounts.forEach((item: any) => {
+      for (const item of validAmounts) {
         const amount = item.amount.trim();
         if (isNaN(Number(amount)) || Number(amount) <= 0) {
           errors.amounts = 'All amounts must be valid positive numbers';
+          return {
+            valid: false,
+            errors
+          };
         }
-      });
+      }
     } else {
       errors.amounts = 'At least one currency and amount is required';
     }
@@ -141,7 +145,14 @@ export const split_by_airtime: NodeConfig = {
       Object.entries(transferAirtimeAction.amounts).forEach(
         ([currency, amount]) => {
           amounts.push({
-            currency: [{ value: currency, name: currency }],
+            currency: [
+              {
+                value: currency,
+                name: CURRENCIES[currency]?.name
+                  ? `${CURRENCIES[currency].name} (${currency})`
+                  : currency
+              }
+            ],
             amount: String(amount)
           });
         }

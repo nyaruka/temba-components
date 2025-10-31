@@ -66,6 +66,7 @@ describe('split_by_airtime node config', () => {
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.amounts).to.have.lengthOf(1);
       expect(formData.amounts[0].currency[0].value).to.equal('USD');
+      expect(formData.amounts[0].currency[0].name).to.equal('US Dollar (USD)');
       expect(formData.amounts[0].amount).to.equal('10');
       expect(formData.result_name).to.equal('');
     });
