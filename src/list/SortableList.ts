@@ -86,6 +86,7 @@ export class SortableList extends RapidElement {
   dropPlaceholder: HTMLDivElement = null;
   pendingDropIndex = -1;
   pendingTargetElement: HTMLElement = null;
+  isExternalDrag = false;
 
   private clickBlocker: ((e: MouseEvent) => void) | null = null;
 
@@ -106,6 +107,21 @@ export class SortableList extends RapidElement {
           !ele.classList.contains('drop-placeholder')
       );
     return eles;
+  }
+
+  private isMouseOverContainer(mouseX: number, mouseY: number): boolean {
+    const container = this.shadowRoot.querySelector('.container');
+    if (!container) return false;
+    
+    const rect = container.getBoundingClientRect();
+    // add some padding to make it easier to stay within the container
+    const padding = 50;
+    return (
+      mouseX >= rect.left - padding &&
+      mouseX <= rect.right + padding &&
+      mouseY >= rect.top - padding &&
+      mouseY <= rect.bottom + padding
+    );
   }
 
   private cloneElementWithState(element: HTMLElement): HTMLElement {
@@ -440,41 +456,75 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
 
-      const targetInfo = this.getDropTargetInfo(event.clientX, event.clientY);
-      if (targetInfo) {
-        const { element: targetElement, insertAfter } = targetInfo;
-        const targetIdx = this.getRowIndex(targetElement.id);
+      // check if the drag is over the container
+      const isOverContainer = this.isMouseOverContainer(
+        event.clientX,
+        event.clientY
+      );
 
-        // Use the original drag index we captured before moving the element
-        const originalDragIdx = this.originalDragIndex;
-
-        // Calculate where the dragged element will end up in the final array
-        // targetIdx is the position of target element in current DOM (missing dragged element)
-
-        let dropIdx;
-        if (targetIdx < originalDragIdx) {
-          // Target is before the original drag position - moving backward
-          dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
-        } else {
-          // Target was originally after the drag position - moving forward
-          // When moving the dragged element forward (i.e., to a higher index), the targetIdx is based on the current DOM,
-          // which no longer includes the dragged element. This means all elements after the original position have shifted left by one,
-          // so we need to subtract 1 from targetIdx to get the correct insertion index. If inserting after the target, we use targetIdx as is.
-          dropIdx = insertAfter ? targetIdx : targetIdx - 1;
-        }
-
-        // Store pending drop info but don't fire event yet
-        this.dropTargetId = targetElement.id;
-        this.pendingDropIndex = dropIdx;
-        this.pendingTargetElement = targetElement;
-
-        // Show drop placeholder
-        this.showDropPlaceholder(targetElement, insertAfter);
-      } else {
+      // detect transition between internal and external drag
+      if (!isOverContainer && !this.isExternalDrag) {
+        // transitioning to external drag
+        this.isExternalDrag = true;
         this.hideDropPlaceholder();
-        this.dropTargetId = null;
-        this.pendingDropIndex = -1;
-        this.pendingTargetElement = null;
+        this.fireCustomEvent(CustomEventType.DragExternal, {
+          id: this.downEle.id,
+          mouseX: event.clientX,
+          mouseY: event.clientY
+        });
+      } else if (isOverContainer && this.isExternalDrag) {
+        // transitioning back to internal drag
+        this.isExternalDrag = false;
+        this.fireCustomEvent(CustomEventType.DragInternal, {
+          id: this.downEle.id
+        });
+      }
+
+      // only show drop placeholder and calculate drop position if internal drag
+      if (!this.isExternalDrag) {
+        const targetInfo = this.getDropTargetInfo(event.clientX, event.clientY);
+        if (targetInfo) {
+          const { element: targetElement, insertAfter } = targetInfo;
+          const targetIdx = this.getRowIndex(targetElement.id);
+
+          // Use the original drag index we captured before moving the element
+          const originalDragIdx = this.originalDragIndex;
+
+          // Calculate where the dragged element will end up in the final array
+          // targetIdx is the position of target element in current DOM (missing dragged element)
+
+          let dropIdx;
+          if (targetIdx < originalDragIdx) {
+            // Target is before the original drag position - moving backward
+            dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
+          } else {
+            // Target was originally after the drag position - moving forward
+            // When moving the dragged element forward (i.e., to a higher index), the targetIdx is based on the current DOM,
+            // which no longer includes the dragged element. This means all elements after the original position have shifted left by one,
+            // so we need to subtract 1 from targetIdx to get the correct insertion index. If inserting after the target, we use targetIdx as is.
+            dropIdx = insertAfter ? targetIdx : targetIdx - 1;
+          }
+
+          // Store pending drop info but don't fire event yet
+          this.dropTargetId = targetElement.id;
+          this.pendingDropIndex = dropIdx;
+          this.pendingTargetElement = targetElement;
+
+          // Show drop placeholder
+          this.showDropPlaceholder(targetElement, insertAfter);
+        } else {
+          this.hideDropPlaceholder();
+          this.dropTargetId = null;
+          this.pendingDropIndex = -1;
+          this.pendingTargetElement = null;
+        }
+      } else {
+        // external drag - continue firing external drag events with updated position
+        this.fireCustomEvent(CustomEventType.DragExternal, {
+          id: this.downEle.id,
+          mouseX: event.clientX,
+          mouseY: event.clientY
+        });
       }
     }
   }
@@ -498,7 +548,7 @@ export class SortableList extends RapidElement {
       this.hideDropPlaceholder();
 
       // fire the order changed event only when dropped if we have a valid drop position
-      if (this.pendingDropIndex >= 0 && this.pendingTargetElement) {
+      if (!this.isExternalDrag && this.pendingDropIndex >= 0 && this.pendingTargetElement) {
         // Use the original drag index we captured before hiding the element
         const originalDragIdx = this.originalDragIndex;
 
@@ -515,7 +565,10 @@ export class SortableList extends RapidElement {
       }
 
       this.fireCustomEvent(CustomEventType.DragStop, {
-        id: this.draggingId
+        id: this.draggingId,
+        isExternal: this.isExternalDrag,
+        mouseX: evt.clientX,
+        mouseY: evt.clientY
       });
 
       this.draggingId = null;
@@ -525,6 +578,7 @@ export class SortableList extends RapidElement {
       this.originalDragIndex = -1;
       this.pendingDropIndex = -1;
       this.pendingTargetElement = null;
+      this.isExternalDrag = false;
 
       // Clear the ghost reference since we removed it
       this.ghostElement = null;

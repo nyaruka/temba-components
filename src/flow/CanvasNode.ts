@@ -346,6 +346,9 @@ export class CanvasNode extends RapidElement {
   constructor() {
     super();
     this.handleActionOrderChanged = this.handleActionOrderChanged.bind(this);
+    this.handleActionDragExternal = this.handleActionDragExternal.bind(this);
+    this.handleActionDragInternal = this.handleActionDragInternal.bind(this);
+    this.handleActionDragStop = this.handleActionDragStop.bind(this);
   }
 
   protected updated(
@@ -614,6 +617,48 @@ export class CanvasNode extends RapidElement {
     getStore()
       ?.getState()
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
+  }
+
+  private handleActionDragExternal(event: CustomEvent) {
+    // get the action being dragged
+    const actionId = event.detail.id;
+    const actionIndex = parseInt(actionId.split('-')[1]);
+    const action = this.node.actions[actionIndex];
+
+    // fire event to editor to show canvas drop preview
+    this.fireCustomEvent(CustomEventType.DragExternal, {
+      action,
+      nodeUuid: this.node.uuid,
+      actionIndex,
+      mouseX: event.detail.mouseX,
+      mouseY: event.detail.mouseY
+    });
+  }
+
+  private handleActionDragInternal(event: CustomEvent) {
+    // fire event to editor to hide canvas drop preview
+    this.fireCustomEvent(CustomEventType.DragInternal, {});
+  }
+
+  private handleActionDragStop(event: CustomEvent) {
+    const isExternal = event.detail.isExternal;
+    
+    if (isExternal) {
+      // get the action being dragged
+      const actionId = event.detail.id;
+      const actionIndex = parseInt(actionId.split('-')[1]);
+      const action = this.node.actions[actionIndex];
+
+      // fire event to editor to create new node
+      this.fireCustomEvent(CustomEventType.DragStop, {
+        action,
+        nodeUuid: this.node.uuid,
+        actionIndex,
+        isExternal: true,
+        mouseX: event.detail.mouseX,
+        mouseY: event.detail.mouseY
+      });
+    }
   }
 
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
@@ -1012,6 +1057,9 @@ export class CanvasNode extends RapidElement {
             ? html`<temba-sortable-list
                 dragHandle="drag-handle"
                 @temba-order-changed="${this.handleActionOrderChanged}"
+                @temba-drag-external="${this.handleActionDragExternal}"
+                @temba-drag-internal="${this.handleActionDragInternal}"
+                @temba-drag-stop="${this.handleActionDragStop}"
               >
                 ${this.node.actions.map((action, index) =>
                   this.renderAction(this.node, action, index)
