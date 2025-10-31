@@ -242,6 +242,7 @@ export default {
             '/api/v2/labels.json': 'labels.json',
             '/api/v2/fields.json': 'fields.json', 
             '/api/v2/globals.json': 'globals.json',
+            '/api/v2/resthooks.json': 'resthooks.json',
             '/api/v2/completion.json': '../mr/docs/en-us/editor.json', // Special case
             '/api/v2/functions.json': 'functions.json',
             '/api/internal/templates.json': 'templates.json',
