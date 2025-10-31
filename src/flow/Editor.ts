@@ -60,6 +60,10 @@ export interface SelectionBox {
 
 const DRAG_THRESHOLD = 5;
 
+// Offset for positioning dropped action node relative to mouse cursor
+const DROP_PREVIEW_OFFSET_X = 100;
+const DROP_PREVIEW_OFFSET_Y = 50;
+
 export class Editor extends RapidElement {
   // unfortunately, jsplumb requires that we be in light DOM
   createRenderRoot() {
@@ -1331,12 +1335,13 @@ export class Editor extends RapidElement {
     this.closeNodeEditor();
   }
 
-  private handleActionDragExternal(event: CustomEvent): void {
-    const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
-
+  private calculateCanvasDropPosition(
+    mouseX: number,
+    mouseY: number
+  ): FlowPosition {
     // calculate the position on the canvas
     const canvas = this.querySelector('#canvas');
-    if (!canvas) return;
+    if (!canvas) return { left: 0, top: 0 };
 
     const canvasRect = canvas.getBoundingClientRect();
     const scrollContainer = this.querySelector('#editor');
@@ -1344,14 +1349,27 @@ export class Editor extends RapidElement {
     const scrollTop = scrollContainer?.scrollTop || 0;
 
     // calculate position relative to canvas, accounting for scroll
-    const left = snapToGrid(mouseX - canvasRect.left + scrollLeft - 100);
-    const top = snapToGrid(mouseY - canvasRect.top + scrollTop - 50);
+    // offset by half the node width/height to center under cursor
+    const left = snapToGrid(
+      mouseX - canvasRect.left + scrollLeft - DROP_PREVIEW_OFFSET_X
+    );
+    const top = snapToGrid(
+      mouseY - canvasRect.top + scrollTop - DROP_PREVIEW_OFFSET_Y
+    );
+
+    return { left, top };
+  }
+
+  private handleActionDragExternal(event: CustomEvent): void {
+    const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
+
+    const position = this.calculateCanvasDropPosition(mouseX, mouseY);
 
     this.canvasDropPreview = {
       action,
       nodeUuid,
       actionIndex,
-      position: { left, top }
+      position
     };
   }
 
@@ -1362,18 +1380,7 @@ export class Editor extends RapidElement {
   private handleActionDropExternal(event: CustomEvent): void {
     const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
 
-    // calculate the position on the canvas
-    const canvas = this.querySelector('#canvas');
-    if (!canvas) return;
-
-    const canvasRect = canvas.getBoundingClientRect();
-    const scrollContainer = this.querySelector('#editor');
-    const scrollLeft = scrollContainer?.scrollLeft || 0;
-    const scrollTop = scrollContainer?.scrollTop || 0;
-
-    // calculate position relative to canvas, accounting for scroll
-    const left = snapToGrid(mouseX - canvasRect.left + scrollLeft - 100);
-    const top = snapToGrid(mouseY - canvasRect.top + scrollTop - 50);
+    const position = this.calculateCanvasDropPosition(mouseX, mouseY);
 
     // remove the action from the original node
     const originalNode = this.definition.nodes.find((n) => n.uuid === nodeUuid);
@@ -1405,7 +1412,7 @@ export class Editor extends RapidElement {
     };
 
     const newNodeUI: NodeUI = {
-      position: { left, top },
+      position,
       type: 'execute_actions',
       config: {}
     };

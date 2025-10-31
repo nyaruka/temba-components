@@ -9,6 +9,10 @@ import { RapidElement } from '../RapidElement';
 
 // how far we have to drag before it starts
 const DRAG_THRESHOLD = 2;
+
+// padding around container for external drag detection
+const EXTERNAL_DRAG_PADDING = 50;
+
 export class SortableList extends RapidElement {
   originalDownDisplay: string;
   static get styles() {
@@ -115,12 +119,11 @@ export class SortableList extends RapidElement {
 
     const rect = container.getBoundingClientRect();
     // add some padding to make it easier to stay within the container
-    const padding = 50;
     return (
-      mouseX >= rect.left - padding &&
-      mouseX <= rect.right + padding &&
-      mouseY >= rect.top - padding &&
-      mouseY <= rect.bottom + padding
+      mouseX >= rect.left - EXTERNAL_DRAG_PADDING &&
+      mouseX <= rect.right + EXTERNAL_DRAG_PADDING &&
+      mouseY >= rect.top - EXTERNAL_DRAG_PADDING &&
+      mouseY <= rect.bottom + EXTERNAL_DRAG_PADDING
     );
   }
 
