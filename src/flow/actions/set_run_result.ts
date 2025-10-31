@@ -30,7 +30,7 @@ export const set_run_result: ActionConfig = {
       },
       searchable: true,
       clearable: false,
-      getDynamicOptions: () => {
+      getDynamicOptions: (_formData?: Record<string, any>) => {
         const store = getStore();
         return store
           ? store

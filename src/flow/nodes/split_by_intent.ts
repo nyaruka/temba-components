@@ -154,13 +154,26 @@ export const split_by_intent: NodeConfig = {
           required: true,
           multi: false,
           flavor: 'xsmall',
-          placeholder: 'Select or type intent name',
-          // Note: Ideally, this would dynamically load intents from the selected classifier.
-          // However, array item fields don't have access to parent form data (classifier selection).
-          // Users can type intent names that match their classifier's intents.
-          options: [], // Empty options - users must type intent names
-          allowCreate: true, // Allow typing intent names directly
-          searchable: false
+          placeholder: 'Select intent',
+          getDynamicOptions: (formData?: Record<string, any>) => {
+            // Extract intents from the selected classifier
+            if (!formData || !formData.classifier || !Array.isArray(formData.classifier) || formData.classifier.length === 0) {
+              return [];
+            }
+            
+            const selectedClassifier = formData.classifier[0];
+            if (!selectedClassifier || !selectedClassifier.intents || !Array.isArray(selectedClassifier.intents)) {
+              return [];
+            }
+            
+            // Return intents as options
+            return selectedClassifier.intents.map((intent: string) => ({
+              value: intent,
+              name: intent
+            }));
+          },
+          allowCreate: true, // Allow typing custom intent names as fallback
+          searchable: true
         },
         threshold: {
           type: 'text',
