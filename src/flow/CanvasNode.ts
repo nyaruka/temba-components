@@ -340,6 +340,36 @@ export class CanvasNode extends RapidElement {
         border-top-left-radius: var(--curvature);
         border-top-right-radius: var(--curvature);
       }
+
+      /* Add action button */
+      .add-action-button {
+        position: absolute;
+        bottom: 0.5em;
+        right: 0.5em;
+        width: 1.5em;
+        height: 1.5em;
+        border-radius: 50%;
+        background: var(--color-primary, #3b82f6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 200ms ease-in-out;
+        z-index: 10;
+        pointer-events: auto;
+        font-size: 0.9em;
+      }
+
+      .node.execute-actions:hover .add-action-button {
+        opacity: 0.8;
+      }
+
+      .add-action-button:hover {
+        opacity: 1 !important;
+        transform: scale(1.1);
+      }
   }`;
   }
 
@@ -814,6 +844,16 @@ export class CanvasNode extends RapidElement {
     this.pendingNodeClick = null;
   }
 
+  private handleAddActionClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Fire event to request adding a new action to this node
+    this.fireCustomEvent(CustomEventType.AddActionRequested, {
+      nodeUuid: this.node.uuid
+    });
+  }
+
   private renderTitle(
     config: ActionConfig,
     action: Action,
@@ -1031,6 +1071,15 @@ export class CanvasNode extends RapidElement {
                 (exit) => this.renderExit(exit)
               )}
             </div>`}
+        ${this.ui.type === 'execute_actions'
+          ? html`<div
+              class="add-action-button"
+              @click=${(e: MouseEvent) => this.handleAddActionClick(e)}
+              title="Add action"
+            >
+              <temba-icon name="add"></temba-icon>
+            </div>`
+          : ''}
       </div>
     `;
   }
