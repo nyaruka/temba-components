@@ -61,8 +61,9 @@ export interface SelectionBox {
 const DRAG_THRESHOLD = 5;
 
 // Offset for positioning dropped action node relative to mouse cursor
-const DROP_PREVIEW_OFFSET_X = 100;
-const DROP_PREVIEW_OFFSET_Y = 50;
+// Keep small to make drop location close to cursor position
+const DROP_PREVIEW_OFFSET_X = 20;
+const DROP_PREVIEW_OFFSET_Y = 20;
 
 export class Editor extends RapidElement {
   // unfortunately, jsplumb requires that we be in light DOM
@@ -1344,17 +1345,15 @@ export class Editor extends RapidElement {
     if (!canvas) return { left: 0, top: 0 };
 
     const canvasRect = canvas.getBoundingClientRect();
-    const scrollContainer = this.querySelector('#editor');
-    const scrollLeft = scrollContainer?.scrollLeft || 0;
-    const scrollTop = scrollContainer?.scrollTop || 0;
 
-    // calculate position relative to canvas, accounting for scroll
-    // offset by half the node width/height to center under cursor
+    // calculate position relative to canvas
+    // canvasRect gives us the canvas position in the viewport, which already accounts for scroll
+    // so we just need mouseX/Y - canvasRect.left/top to get position within canvas
     const left = snapToGrid(
-      mouseX - canvasRect.left + scrollLeft - DROP_PREVIEW_OFFSET_X
+      mouseX - canvasRect.left - DROP_PREVIEW_OFFSET_X
     );
     const top = snapToGrid(
-      mouseY - canvasRect.top + scrollTop - DROP_PREVIEW_OFFSET_Y
+      mouseY - canvasRect.top - DROP_PREVIEW_OFFSET_Y
     );
 
     return { left, top };
