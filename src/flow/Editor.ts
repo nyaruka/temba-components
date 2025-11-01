@@ -1338,7 +1338,8 @@ export class Editor extends RapidElement {
 
   private calculateCanvasDropPosition(
     mouseX: number,
-    mouseY: number
+    mouseY: number,
+    applyGridSnapping: boolean = true
   ): FlowPosition {
     // calculate the position on the canvas
     const canvas = this.querySelector('#canvas');
@@ -1349,12 +1350,16 @@ export class Editor extends RapidElement {
     // calculate position relative to canvas
     // canvasRect gives us the canvas position in the viewport, which already accounts for scroll
     // so we just need mouseX/Y - canvasRect.left/top to get position within canvas
-    const left = snapToGrid(
-      mouseX - canvasRect.left - DROP_PREVIEW_OFFSET_X
-    );
-    const top = snapToGrid(
-      mouseY - canvasRect.top - DROP_PREVIEW_OFFSET_Y
-    );
+    const left = mouseX - canvasRect.left - DROP_PREVIEW_OFFSET_X;
+    const top = mouseY - canvasRect.top - DROP_PREVIEW_OFFSET_Y;
+
+    // Apply grid snapping only if requested (for final drop position)
+    if (applyGridSnapping) {
+      return {
+        left: snapToGrid(left),
+        top: snapToGrid(top)
+      };
+    }
 
     return { left, top };
   }
@@ -1362,7 +1367,8 @@ export class Editor extends RapidElement {
   private handleActionDragExternal(event: CustomEvent): void {
     const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
 
-    const position = this.calculateCanvasDropPosition(mouseX, mouseY);
+    // Don't snap to grid for preview - let it follow cursor smoothly
+    const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
 
     this.canvasDropPreview = {
       action,
@@ -1382,7 +1388,8 @@ export class Editor extends RapidElement {
   private handleActionDropExternal(event: CustomEvent): void {
     const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
 
-    const position = this.calculateCanvasDropPosition(mouseX, mouseY);
+    // Snap to grid for the final drop position
+    const position = this.calculateCanvasDropPosition(mouseX, mouseY, true);
 
     // remove the action from the original node
     const originalNode = this.definition.nodes.find((n) => n.uuid === nodeUuid);
