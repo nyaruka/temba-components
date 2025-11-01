@@ -50,7 +50,7 @@ describe('split_by_llm node config', () => {
         exits: []
       };
 
-      const formData = split_by_llm.toFormData(node);
+      const formData = split_by_llm.toFormData(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.llm).to.deep.equal([{ value: 'gpt-4', name: 'GPT 4.1' }]);
@@ -65,7 +65,7 @@ describe('split_by_llm node config', () => {
         exits: []
       };
 
-      const formData = split_by_llm.toFormData(node);
+      const formData = split_by_llm.toFormData(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.llm).to.deep.equal([]);

@@ -113,7 +113,7 @@ describe('split_by_intent node config', () => {
               uuid: 'call-classifier-uuid',
               type: 'call_classifier',
               classifier: {
-                uuid: 'classifier-123',
+                uuid: 'c99d8a64-2e47-48d7-ae91-e3fbd2e32323',
                 name: 'Booking Classifier'
               },
               input: '@input.text'
@@ -224,7 +224,7 @@ describe('split_by_intent node config', () => {
               uuid: 'call-classifier-uuid-4',
               type: 'call_classifier',
               classifier: {
-                uuid: 'classifier-mixed',
+                uuid: 'c99d8a64-2e47-48d7-ae91-e3fbd2e32323',
                 name: 'Booking Classifier'
               },
               input: '@input.text'
@@ -279,7 +279,7 @@ describe('split_by_intent node config', () => {
               uuid: 'call-classifier-uuid-5',
               type: 'call_classifier',
               classifier: {
-                uuid: 'classifier-support',
+                uuid: 'd4a8f123-9b56-4e21-bc45-789abc123def',
                 name: 'Support Classifier'
               },
               input: '@input.text'
@@ -295,7 +295,7 @@ describe('split_by_intent node config', () => {
   });
 
   describe('round-trip conversion validation', () => {
-    it('converts to form data correctly', () => {
+    it('converts to form data correctly', async () => {
       const testRouter = createIntentRouter([
         {
           intent: 'book_flight',
@@ -317,7 +317,7 @@ describe('split_by_intent node config', () => {
             uuid: 'call-classifier-uuid',
             type: 'call_classifier',
             classifier: {
-              uuid: 'classifier-123',
+              uuid: 'c99d8a64-2e47-48d7-ae91-e3fbd2e32323',
               name: 'Booking Classifier'
             },
             input: '@input.text'
@@ -327,12 +327,13 @@ describe('split_by_intent node config', () => {
         exits: testRouter.exits
       };
 
-      const formData = split_by_intent.toFormData!(node);
+      const formData = await split_by_intent.toFormData!(node);
 
       expect(formData.uuid).to.equal('test-node');
-      expect(formData.classifier).to.deep.equal([
-        { value: 'classifier-123', name: 'Booking Classifier' }
-      ]);
+      expect(formData.classifier).to.have.length(1);
+      expect(formData.classifier[0].value).to.equal('c99d8a64-2e47-48d7-ae91-e3fbd2e32323');
+      expect(formData.classifier[0].name).to.equal('Booking Classifier');
+      expect(formData.classifier[0].intents).to.exist;
       expect(formData.input).to.equal('@input.text');
       expect(formData.rules).to.have.length(2);
       expect(formData.rules[0].intent).to.deep.equal([
@@ -618,17 +619,21 @@ describe('split_by_intent node config', () => {
       expect(result.uuid).to.equal('original-node-uuid');
     });
 
-    it('roundtrip conversion works correctly', () => {
+    it('roundtrip conversion works correctly', async () => {
       const originalFormData = {
         uuid: 'test-node-uuid',
-        classifier: [{ value: 'classifier-123', name: 'Test Classifier' }],
+        classifier: [{ 
+          value: 'c99d8a64-2e47-48d7-ae91-e3fbd2e32323',
+          name: 'Booking Classifier',
+          intents: ['book_flight', 'book_hotel', 'book_car', 'cancel_booking', 'modify_booking']
+        }],
         input: '@custom.input',
         rules: [
           {
             operator: { value: 'has_intent', name: 'has intent' },
-            intent: [{ value: 'greeting', name: 'greeting' }],
+            intent: [{ value: 'book_flight', name: 'book_flight' }],
             threshold: '0.85',
-            category: 'Greeting'
+            category: 'Flight'
           }
         ]
       };
@@ -646,16 +651,16 @@ describe('split_by_intent node config', () => {
       );
 
       // Convert back to form data
-      const recoveredFormData = split_by_intent.toFormData!(node);
+      const recoveredFormData = await split_by_intent.toFormData!(node);
 
       // Should match original data
       expect(recoveredFormData.uuid).to.equal(originalFormData.uuid);
-      expect(recoveredFormData.classifier).to.deep.equal(
-        originalFormData.classifier
-      );
+      expect(recoveredFormData.classifier[0].value).to.equal(originalFormData.classifier[0].value);
+      expect(recoveredFormData.classifier[0].name).to.equal(originalFormData.classifier[0].name);
+      expect(recoveredFormData.classifier[0].intents).to.deep.equal(originalFormData.classifier[0].intents);
       expect(recoveredFormData.input).to.equal(originalFormData.input);
       expect(recoveredFormData.rules).to.have.length(1);
-      expect(recoveredFormData.rules[0].category).to.equal('Greeting');
+      expect(recoveredFormData.rules[0].category).to.equal('Flight');
       expect(recoveredFormData.rules[0].threshold).to.equal('0.85');
     });
   });

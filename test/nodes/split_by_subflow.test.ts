@@ -71,7 +71,7 @@ describe('split_by_subflow node config', () => {
         ]
       };
 
-      const formData = split_by_subflow.toFormData(node);
+      const formData = split_by_subflow.toFormData(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.flow).to.be.an('array');
@@ -89,7 +89,7 @@ describe('split_by_subflow node config', () => {
         exits: []
       };
 
-      const formData = split_by_subflow.toFormData(node);
+      const formData = split_by_subflow.toFormData(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.flow).to.be.an('array');
@@ -263,7 +263,7 @@ describe('split_by_subflow node config', () => {
       };
 
       // Convert to form data
-      const formData = split_by_subflow.toFormData(originalNode);
+      const formData = split_by_subflow.toFormData(originalNode) as any;
 
       // Convert back to node
       const resultNode = split_by_subflow.fromFormData(formData, originalNode);

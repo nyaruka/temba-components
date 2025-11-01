@@ -39,7 +39,7 @@ describe('temba-split-by-scheme', () => {
       ]
     };
 
-    const formData = split_by_scheme.toFormData!(node);
+    const formData = split_by_scheme.toFormData!(node) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.schemes).to.have.lengthOf(2);
@@ -82,7 +82,7 @@ describe('temba-split-by-scheme', () => {
       ]
     };
 
-    const formData = split_by_scheme.toFormData!(node);
+    const formData = split_by_scheme.toFormData!(node) as any;
 
     expect(formData.result_name).to.equal('channel_type');
     expect(formData.schemes).to.have.lengthOf(1);
@@ -428,7 +428,7 @@ describe('temba-split-by-scheme', () => {
       ]
     };
 
-    const formData = split_by_scheme.toFormData!(node);
+    const formData = split_by_scheme.toFormData!(node) as any;
 
     // Should fall back to scheme code for unknown schemes
     expect(formData.schemes).to.have.lengthOf(1);
