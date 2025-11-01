@@ -470,6 +470,12 @@ export class SortableList extends RapidElement {
         // transitioning to external drag
         this.isExternalDrag = true;
         this.hideDropPlaceholder();
+        
+        // hide the ghost element when dragging externally
+        if (this.ghostElement) {
+          this.ghostElement.style.display = 'none';
+        }
+        
         this.fireCustomEvent(CustomEventType.DragExternal, {
           id: this.downEle.id,
           mouseX: event.clientX,
@@ -478,6 +484,12 @@ export class SortableList extends RapidElement {
       } else if (isOverContainer && this.isExternalDrag) {
         // transitioning back to internal drag
         this.isExternalDrag = false;
+        
+        // show the ghost element again when dragging internally
+        if (this.ghostElement) {
+          this.ghostElement.style.display = 'block';
+        }
+        
         this.fireCustomEvent(CustomEventType.DragInternal, {
           id: this.downEle.id
         });
