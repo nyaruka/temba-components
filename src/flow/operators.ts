@@ -154,6 +154,20 @@ export const OPERATORS: OperatorConfig[] = [
     filter: 'HAS_LOCATIONS'
   },
 
+  // Intent/classifier operators (hidden from general use, only for split_by_intent)
+  {
+    type: 'has_intent',
+    name: 'has intent',
+    operands: 2, // intent name and confidence threshold
+    visibility: 'hidden'
+  },
+  {
+    type: 'has_top_intent',
+    name: 'has top intent',
+    operands: 2, // intent name and confidence threshold
+    visibility: 'hidden'
+  },
+
   // Hidden/system operators
   {
     type: 'has_group',
@@ -187,6 +201,13 @@ export const OPERATORS: OperatorConfig[] = [
 export const getWaitForResponseOperators = (): OperatorConfig[] => {
   return OPERATORS.filter(
     (op) => op.visibility !== 'hidden' && !op.filter // For now, exclude location operators unless we support feature detection
+  );
+};
+
+// Get operators suitable for intent classification
+export const getIntentOperators = (): OperatorConfig[] => {
+  return OPERATORS.filter(
+    (op) => op.type === 'has_intent' || op.type === 'has_top_intent'
   );
 };
 

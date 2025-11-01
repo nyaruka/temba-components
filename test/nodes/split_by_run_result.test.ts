@@ -98,7 +98,7 @@ describe('split_by_run_result node config', () => {
         }
       };
 
-      const formData = split_by_run_result.toFormData!(node, nodeUI);
+      const formData = split_by_run_result.toFormData!(node, nodeUI) as any;
 
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.result).to.be.an('array');
@@ -148,7 +148,7 @@ describe('split_by_run_result node config', () => {
         }
       };
 
-      const formData = split_by_run_result.toFormData!(node, nodeUI);
+      const formData = split_by_run_result.toFormData!(node, nodeUI) as any;
 
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.result).to.be.an('array');
@@ -178,7 +178,7 @@ describe('split_by_run_result node config', () => {
         exits: [{ uuid: 'exit-all', destination_uuid: null }]
       };
 
-      const formData = split_by_run_result.toFormData!(node);
+      const formData = split_by_run_result.toFormData!(node) as any;
 
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.result).to.be.an('array');
@@ -221,7 +221,7 @@ describe('split_by_run_result node config', () => {
         }
       };
 
-      const formData = split_by_run_result.toFormData!(node, nodeUI);
+      const formData = split_by_run_result.toFormData!(node, nodeUI) as any;
 
       expect(formData.rules).to.have.lengthOf(1);
       expect(formData.rules[0].operator.value).to.equal('has_number_between');
@@ -266,7 +266,7 @@ describe('split_by_run_result node config', () => {
         }
       };
 
-      const formData = split_by_run_result.toFormData!(node, nodeUI);
+      const formData = split_by_run_result.toFormData!(node, nodeUI) as any;
 
       expect(formData.rules).to.have.lengthOf(1);
       expect(formData.rules[0].operator.value).to.equal('has_number');

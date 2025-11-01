@@ -104,7 +104,7 @@ describe('split_by_contact_field', () => {
       }
     };
 
-    const formData = split_by_contact_field.toFormData!(node, nodeUI);
+    const formData = split_by_contact_field.toFormData!(node, nodeUI) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.field).to.have.lengthOf(1);
@@ -155,7 +155,7 @@ describe('split_by_contact_field', () => {
       }
     };
 
-    const formData = split_by_contact_field.toFormData!(node, nodeUI);
+    const formData = split_by_contact_field.toFormData!(node, nodeUI) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.field).to.have.lengthOf(1);
@@ -424,7 +424,7 @@ describe('split_by_contact_field', () => {
       }
     };
 
-    const formData = split_by_contact_field.toFormData!(node, nodeUI);
+    const formData = split_by_contact_field.toFormData!(node, nodeUI) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.field).to.have.lengthOf(1);

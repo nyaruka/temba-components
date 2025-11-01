@@ -29,7 +29,7 @@ export const set_contact_language: ActionConfig = {
       valueKey: 'value',
       nameKey: 'name',
       helpText: 'Select the language to set for the contact',
-      getDynamicOptions: () => {
+      getDynamicOptions: (_formData?: Record<string, any>) => {
         const store = getStore();
         const workspace = store?.getState().workspace;
         if (workspace?.languages && Array.isArray(workspace.languages)) {

@@ -200,7 +200,7 @@ describe('wait_for_response node config', () => {
         exits: []
       };
 
-      const formData = wait_for_response.toFormData!(node);
+      const formData = wait_for_response.toFormData!(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.result_name).to.equal('user_response');
@@ -254,7 +254,7 @@ describe('wait_for_response node config', () => {
         ]
       };
 
-      const formData = wait_for_response.toFormData!(node);
+      const formData = wait_for_response.toFormData!(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.result_name).to.equal('user_response');

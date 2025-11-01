@@ -206,12 +206,13 @@ export class FieldRenderer {
       showLabel = true,
       flavor,
       extraClasses,
-      style
+      style,
+      formData = {}
     } = context;
 
     // Get options - use dynamic options if available, otherwise use static options
     const optionsToRender = config.getDynamicOptions
-      ? config.getDynamicOptions()
+      ? config.getDynamicOptions(formData)
       : config.options;
 
     return html`<temba-select
@@ -341,7 +342,8 @@ export class FieldRenderer {
       onChange,
       showLabel = true,
       extraClasses,
-      style
+      style,
+      formData = {}
     } = context;
 
     return html`<div class="form-field">
@@ -357,6 +359,7 @@ export class FieldRenderer {
         ?maintainEmptyItem="${config.maintainEmptyItem !== false}"
         .onItemChange="${config.onItemChange}"
         .isEmptyItemFn="${config.isEmptyItem}"
+        .parentFormData="${formData}"
         class="${extraClasses}"
         style="${style}"
         @change="${onChange || (() => {})}"

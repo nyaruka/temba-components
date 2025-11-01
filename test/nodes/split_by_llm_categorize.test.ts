@@ -259,7 +259,7 @@ describe('split_by_llm_categorize node config', () => {
         exits: testRouter.exits
       };
 
-      const formData = split_by_llm_categorize.toFormData!(node);
+      const formData = split_by_llm_categorize.toFormData!(node) as any;
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.llm).to.deep.equal([
@@ -489,7 +489,7 @@ describe('split_by_llm_categorize node config', () => {
       );
 
       // Convert back to form data
-      const recoveredFormData = split_by_llm_categorize.toFormData!(node);
+      const recoveredFormData = split_by_llm_categorize.toFormData!(node) as any;
 
       // Should match original data
       expect(recoveredFormData.uuid).to.equal(originalFormData.uuid);

@@ -99,7 +99,7 @@ export interface NodeConfig extends FormConfig {
     }[];
   };
 
-  toFormData?: (node: Node, nodeUI?: any) => FormData;
+  toFormData?: (node: Node, nodeUI?: any) => FormData | Promise<FormData>;
   fromFormData?: (formData: FormData, originalNode: Node) => Node;
   toUIConfig?: (formData: FormData) => Record<string, any>;
   render?: (node: Node, nodeUI?: any) => TemplateResult;
@@ -170,7 +170,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   flavor?: 'xsmall' | 'small' | 'large';
   createArbitraryOption?: (input: string, options: any[]) => any;
   allowCreate?: boolean;
-  getDynamicOptions?: () => Array<{ value: string; name: string }>;
+  getDynamicOptions?: (formData?: Record<string, any>) => Array<{ value: string; name: string }>;
 }
 
 export interface KeyValueFieldConfig extends BaseFieldConfig {
