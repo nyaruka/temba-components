@@ -655,7 +655,12 @@ export class CanvasNode extends RapidElement {
 
     // get the action being dragged
     const actionId = event.detail.id;
-    const actionIndex = parseInt(actionId.split('-')[1]);
+    const splitId = actionId.split('-');
+    if (splitId.length < 2 || isNaN(parseInt(splitId[1], 10))) {
+      // invalid format, do not proceed
+      return;
+    }
+    const actionIndex = parseInt(splitId[1], 10);
     const action = this.node.actions[actionIndex];
 
     // fire event to editor to show canvas drop preview
@@ -685,7 +690,12 @@ export class CanvasNode extends RapidElement {
 
       // get the action being dragged
       const actionId = event.detail.id;
-      const actionIndex = parseInt(actionId.split('-')[1]);
+      const split = actionId.split('-');
+      if (split.length < 2 || isNaN(Number(split[1]))) {
+        // invalid actionId format, do not proceed
+        return;
+      }
+      const actionIndex = parseInt(split[1], 10);
       const action = this.node.actions[actionIndex];
 
       // fire event to editor to create new node

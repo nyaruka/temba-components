@@ -494,9 +494,8 @@ export class Editor extends RapidElement {
     );
 
     this.addEventListener(CustomEventType.DragStop, (event: CustomEvent) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail.isExternal) {
-        this.handleActionDropExternal(customEvent);
+      if (event.detail.isExternal) {
+        this.handleActionDropExternal(event);
       }
     });
   }
