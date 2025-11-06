@@ -239,12 +239,15 @@ export class NodeTypeSelector extends RapidElement {
   public open = false;
 
   @property({ type: String })
-  public mode: 'action' | 'split' = 'action';
+  public mode: 'action' | 'split' | 'action-no-branching' = 'action';
 
   @state()
   private clickPosition = { x: 0, y: 0 };
 
-  public show(mode: 'action' | 'split', position: { x: number; y: number }) {
+  public show(
+    mode: 'action' | 'split' | 'action-no-branching',
+    position: { x: number; y: number }
+  ) {
     this.mode = mode;
     this.clickPosition = position;
     this.open = true;
@@ -267,7 +270,7 @@ export class NodeTypeSelector extends RapidElement {
   }
 
   private getCategories(): NodeCategory[] {
-    if (this.mode === 'action') {
+    if (this.mode === 'action' || this.mode === 'action-no-branching') {
       // Group actions by group
       const actionsByGroup = new Map<
         string,
@@ -292,22 +295,25 @@ export class NodeTypeSelector extends RapidElement {
         });
 
       // Collect nodes that have showAsAction=true (these appear as "with split" actions)
-      Object.entries(NODE_CONFIG)
-        .filter(([type, config]) => {
-          return (
-            type !== 'execute_actions' &&
-            config.name &&
-            config.showAsAction &&
-            config.group
-          );
-        })
-        .forEach(([type, config]) => {
-          const group = config.group!;
-          if (!splitsByGroup.has(group)) {
-            splitsByGroup.set(group, []);
-          }
-          splitsByGroup.get(group)!.push({ type, config });
-        });
+      // Only if we're not in 'action-no-branching' mode
+      if (this.mode === 'action') {
+        Object.entries(NODE_CONFIG)
+          .filter(([type, config]) => {
+            return (
+              type !== 'execute_actions' &&
+              config.name &&
+              config.showAsAction &&
+              config.group
+            );
+          })
+          .forEach(([type, config]) => {
+            const group = config.group!;
+            if (!splitsByGroup.has(group)) {
+              splitsByGroup.set(group, []);
+            }
+            splitsByGroup.get(group)!.push({ type, config });
+          });
+      }
 
       // Build categories - first regular actions, then splitting actions
       const categories: NodeCategory[] = [];
@@ -453,7 +459,11 @@ export class NodeTypeSelector extends RapidElement {
 
     const categories = this.getCategories();
     const title =
-      this.mode === 'action' ? 'Select an Action' : 'Select a Split';
+      this.mode === 'split'
+        ? 'Select a Split'
+        : this.mode === 'action-no-branching'
+        ? 'Add Action'
+        : 'Select an Action';
 
     // Separate regular and branching categories for action mode
     const regularCategories = categories.filter((c) => !c.isBranching);
@@ -467,7 +477,7 @@ export class NodeTypeSelector extends RapidElement {
           <h2>${title}</h2>
         </div>
         <div class="content">
-          ${this.mode === 'action'
+          ${this.mode === 'action' || this.mode === 'action-no-branching'
             ? html`
                 <div class="section-regular">
                   ${regularCategories.map(

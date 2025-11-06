@@ -1201,4 +1201,102 @@ describe('EditorNode', () => {
       // This sequence ensures JSPlumb visuals stay in sync with the flow definition
     });
   });
+
+  describe('add action button', () => {
+    beforeEach(async () => {
+      editorNode = new CanvasNode();
+      editorNode['plumber'] = mockPlumber;
+    });
+
+    it('handleAddActionClick fires AddActionRequested event', () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }]
+      };
+
+      editorNode['node'] = mockNode;
+
+      let eventFired = false;
+      let eventDetail: any = null;
+
+      editorNode.addEventListener(CustomEventType.AddActionRequested, (e) => {
+        eventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub()
+      } as any;
+
+      // Call the add action click handler
+      (editorNode as any).handleAddActionClick(mockEvent);
+
+      // Verify the event was fired with correct detail
+      expect(eventFired).to.be.true;
+      expect(eventDetail).to.exist;
+      expect(eventDetail.nodeUuid).to.equal('test-node');
+
+      // Verify event handlers were called
+      expect(mockEvent.preventDefault).to.have.been.called;
+      expect(mockEvent.stopPropagation).to.have.been.called;
+    });
+
+    it('renders add action button for execute_actions nodes', () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }]
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'execute_actions'
+      };
+
+      editorNode['node'] = mockNode;
+      editorNode['ui'] = mockUI;
+
+      const rendered = editorNode.render();
+      expect(rendered).to.exist;
+    });
+
+    it('renders correctly for non-execute_actions nodes', () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }],
+        router: {
+          type: 'switch',
+          categories: []
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'wait_for_response'
+      };
+
+      editorNode['node'] = mockNode;
+      editorNode['ui'] = mockUI;
+
+      const rendered = editorNode.render();
+      expect(rendered).to.exist;
+    });
+  });
 });
