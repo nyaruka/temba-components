@@ -151,6 +151,9 @@ describe('temba-sortable-list', () => {
 
   it('detects external drag when dragging outside container', async () => {
     const list: SortableList = await createSorter(BORING_LIST);
+    list.externalDrag = true;
+    await list.updateComplete;
+
     const bounds = list.getBoundingClientRect();
 
     // track external drag events
@@ -191,6 +194,9 @@ describe('temba-sortable-list', () => {
 
   it('fires DragStop with isExternal=true when dropped outside container', async () => {
     const list: SortableList = await createSorter(BORING_LIST);
+    list.externalDrag = true;
+    await list.updateComplete;
+
     const bounds = list.getBoundingClientRect();
 
     // start dragging an item

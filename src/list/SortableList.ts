@@ -69,6 +69,9 @@ export class SortableList extends RapidElement {
   @property({ type: String })
   gap: string = '0em';
 
+  @property({ type: Boolean })
+  externalDrag: boolean = false;
+
   /**
    * Optional callback to allow parent components to customize the ghost node.
    * Called after the ghost node is cloned but before it is appended to the DOM.
@@ -459,37 +462,36 @@ export class SortableList extends RapidElement {
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
 
-      // check if the drag is over the container
-      const isOverContainer = this.isMouseOverContainer(
-        event.clientX,
-        event.clientY
-      );
+      // check if the drag is over the container (only if external dragging is allowed)
+      const isOverContainer = this.externalDrag
+        ? this.isMouseOverContainer(event.clientX, event.clientY)
+        : true; // always consider "over container" if external drag is disabled
 
-      // detect transition between internal and external drag
-      if (!isOverContainer && !this.isExternalDrag) {
+      // detect transition between internal and external drag (only if allowed)
+      if (this.externalDrag && !isOverContainer && !this.isExternalDrag) {
         // transitioning to external drag
         this.isExternalDrag = true;
         this.hideDropPlaceholder();
-        
+
         // hide the ghost element when dragging externally
         if (this.ghostElement) {
           this.ghostElement.style.display = 'none';
         }
-        
+
         this.fireCustomEvent(CustomEventType.DragExternal, {
           id: this.downEle.id,
           mouseX: event.clientX,
           mouseY: event.clientY
         });
-      } else if (isOverContainer && this.isExternalDrag) {
+      } else if (this.externalDrag && isOverContainer && this.isExternalDrag) {
         // transitioning back to internal drag
         this.isExternalDrag = false;
-        
+
         // show the ghost element again when dragging internally
         if (this.ghostElement) {
           this.ghostElement.style.display = 'block';
         }
-        
+
         this.fireCustomEvent(CustomEventType.DragInternal, {
           id: this.downEle.id
         });

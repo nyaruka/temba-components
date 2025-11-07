@@ -1115,6 +1115,7 @@ export class CanvasNode extends RapidElement {
           ? this.ui.type === 'execute_actions'
             ? html`<temba-sortable-list
                 dragHandle="drag-handle"
+                externalDrag
                 @temba-order-changed="${this.handleActionOrderChanged}"
                 @temba-drag-external="${this.handleActionDragExternal}"
                 @temba-drag-internal="${this.handleActionDragInternal}"
