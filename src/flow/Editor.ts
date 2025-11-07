@@ -15,6 +15,7 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
+import { ACTION_GROUP_METADATA } from './types';
 
 import { Plumber } from './Plumber';
 import { CanvasNode } from './CanvasNode';
@@ -58,6 +59,11 @@ export interface SelectionBox {
 }
 
 const DRAG_THRESHOLD = 5;
+
+// Offset for positioning dropped action node relative to mouse cursor
+// Keep small to make drop location close to cursor position
+const DROP_PREVIEW_OFFSET_X = 20;
+const DROP_PREVIEW_OFFSET_Y = 20;
 
 export class Editor extends RapidElement {
   // unfortunately, jsplumb requires that we be in light DOM
@@ -139,6 +145,14 @@ export class Editor extends RapidElement {
   @state()
   private pendingNodePosition: FlowPosition | null = null;
 
+  // Canvas drop state for dragging actions to canvas
+  @state()
+  private canvasDropPreview: {
+    action: Action;
+    nodeUuid: string;
+    actionIndex: number;
+    position: FlowPosition;
+  } | null = null;
   @state()
   private addActionToNodeUuid: string | null = null;
 
@@ -467,6 +481,23 @@ export class Editor extends RapidElement {
         this.handleNodeTypeSelection(event);
       }
     });
+
+    // Listen for action drag events from nodes
+    this.addEventListener(
+      CustomEventType.DragExternal,
+      this.handleActionDragExternal.bind(this)
+    );
+
+    this.addEventListener(
+      CustomEventType.DragInternal,
+      this.handleActionDragInternal.bind(this)
+    );
+
+    this.addEventListener(CustomEventType.DragStop, (event: CustomEvent) => {
+      if (event.detail.isExternal) {
+        this.handleActionDropExternal(event);
+      }
+    });
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -757,6 +788,50 @@ export class Editor extends RapidElement {
       class="selection-box"
       style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;"
     ></div>`;
+  }
+
+  private renderCanvasDropPreview(): TemplateResult | string {
+    if (!this.canvasDropPreview) return '';
+
+    const { action, position } = this.canvasDropPreview;
+    const actionConfig = ACTION_CONFIG[action.type];
+
+    if (!actionConfig) return '';
+
+    return html`<div
+      class="canvas-drop-preview"
+      style="position: absolute; left: ${position.left}px; top: ${position.top}px; opacity: 0.6; pointer-events: none; z-index: 10000;"
+    >
+      <div
+        class="node execute-actions"
+        style="outline: 3px dashed var(--color-primary, #3b82f6); outline-offset: 2px; border-radius: var(--curvature);"
+      >
+        <div class="action sortable ${action.type}">
+          <div class="action-content">
+            <div
+              class="cn-title"
+              style="background: ${actionConfig.group
+                ? ACTION_GROUP_METADATA[actionConfig.group]?.color
+                : '#aaaaaa'}"
+            >
+              <div class="title-spacer"></div>
+              <div class="name">${actionConfig.name}</div>
+              <div class="title-spacer"></div>
+            </div>
+            <div class="body">
+              ${actionConfig.render
+                ? actionConfig.render({ actions: [action] } as any, action)
+                : html`<pre>${action.type}</pre>`}
+            </div>
+          </div>
+        </div>
+        <div class="action-exits">
+          <div class="exit-wrapper">
+            <div class="exit"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
   }
 
   private handleMouseMove(event: MouseEvent): void {
@@ -1331,6 +1406,110 @@ export class Editor extends RapidElement {
     this.closeNodeEditor();
   }
 
+  private calculateCanvasDropPosition(
+    mouseX: number,
+    mouseY: number,
+    applyGridSnapping: boolean = true
+  ): FlowPosition {
+    // calculate the position on the canvas
+    const canvas = this.querySelector('#canvas');
+    if (!canvas) return { left: 0, top: 0 };
+
+    const canvasRect = canvas.getBoundingClientRect();
+
+    // calculate position relative to canvas
+    // canvasRect gives us the canvas position in the viewport, which already accounts for scroll
+    // so we just need mouseX/Y - canvasRect.left/top to get position within canvas
+    const left = mouseX - canvasRect.left - DROP_PREVIEW_OFFSET_X;
+    const top = mouseY - canvasRect.top - DROP_PREVIEW_OFFSET_Y;
+
+    // Apply grid snapping only if requested (for final drop position)
+    if (applyGridSnapping) {
+      return {
+        left: snapToGrid(left),
+        top: snapToGrid(top)
+      };
+    }
+
+    return { left, top };
+  }
+
+  private handleActionDragExternal(event: CustomEvent): void {
+    const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
+
+    // Don't snap to grid for preview - let it follow cursor smoothly
+    const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
+
+    this.canvasDropPreview = {
+      action,
+      nodeUuid,
+      actionIndex,
+      position
+    };
+
+    // Force re-render to update preview position
+    this.requestUpdate();
+  }
+
+  private handleActionDragInternal(_event: CustomEvent): void {
+    this.canvasDropPreview = null;
+  }
+
+  private handleActionDropExternal(event: CustomEvent): void {
+    const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
+
+    // Snap to grid for the final drop position
+    const position = this.calculateCanvasDropPosition(mouseX, mouseY, true);
+
+    // remove the action from the original node
+    const originalNode = this.definition.nodes.find((n) => n.uuid === nodeUuid);
+    if (!originalNode) return;
+
+    const updatedActions = originalNode.actions.filter(
+      (_a, idx) => idx !== actionIndex
+    );
+
+    // if no actions remain, delete the node
+    if (updatedActions.length === 0) {
+      getStore()?.getState().removeNodes([nodeUuid]);
+    } else {
+      // update the node
+      const updatedNode = { ...originalNode, actions: updatedActions };
+      getStore()?.getState().updateNode(nodeUuid, updatedNode);
+    }
+
+    // create a new execute_actions node with the dropped action
+    const newNode: Node = {
+      uuid: generateUUID(),
+      actions: [action],
+      exits: [
+        {
+          uuid: generateUUID(),
+          destination_uuid: null
+        }
+      ]
+    };
+
+    const newNodeUI: NodeUI = {
+      position,
+      type: 'execute_actions',
+      config: {}
+    };
+
+    // add the new node
+    getStore()?.getState().addNode(newNode, newNodeUI);
+
+    // clear the preview
+    this.canvasDropPreview = null;
+
+    // repaint connections
+    if (this.plumber) {
+      requestAnimationFrame(() => {
+        this.plumber.repaintEverything();
+      });
+    }
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
@@ -1404,7 +1583,7 @@ export class Editor extends RapidElement {
                 ></temba-sticky-note>`;
               }
             )}
-            ${this.renderSelectionBox()}
+            ${this.renderSelectionBox()} ${this.renderCanvasDropPreview()}
           </div>
         </div>
       </div>
