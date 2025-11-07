@@ -387,16 +387,23 @@ export class CanvasNode extends RapidElement {
     this.handleActionDragExternal = this.handleActionDragExternal.bind(this);
     this.handleActionDragInternal = this.handleActionDragInternal.bind(this);
     this.handleActionDragStop = this.handleActionDragStop.bind(this);
-    this.handleExternalActionDragOver = this.handleExternalActionDragOver.bind(this);
+    this.handleExternalActionDragOver =
+      this.handleExternalActionDragOver.bind(this);
     this.handleExternalActionDrop = this.handleExternalActionDrop.bind(this);
   }
 
   connectedCallback() {
     super.connectedCallback();
-    
+
     // Listen for external action drag events from Editor
-    this.addEventListener('action-drag-over', this.handleExternalActionDragOver as EventListener);
-    this.addEventListener('action-drop', this.handleExternalActionDrop as EventListener);
+    this.addEventListener(
+      'action-drag-over',
+      this.handleExternalActionDragOver as EventListener
+    );
+    this.addEventListener(
+      'action-drop',
+      this.handleExternalActionDrop as EventListener
+    );
   }
 
   protected updated(
@@ -444,8 +451,14 @@ export class CanvasNode extends RapidElement {
     super.disconnectedCallback();
 
     // Remove external drag event listeners
-    this.removeEventListener('action-drag-over', this.handleExternalActionDragOver as EventListener);
-    this.removeEventListener('action-drop', this.handleExternalActionDrop as EventListener);
+    this.removeEventListener(
+      'action-drag-over',
+      this.handleExternalActionDragOver as EventListener
+    );
+    this.removeEventListener(
+      'action-drop',
+      this.handleExternalActionDrop as EventListener
+    );
 
     // Clear any pending exit removal timeouts
     this.exitRemovalTimeouts.forEach((timeoutId) => {
@@ -946,8 +959,10 @@ export class CanvasNode extends RapidElement {
     if (!sortableList) return this.node.actions.length;
 
     // Get all action elements
-    const actionElements = Array.from(sortableList.querySelectorAll('.action.sortable'));
-    
+    const actionElements = Array.from(
+      sortableList.querySelectorAll('.action.sortable')
+    );
+
     if (actionElements.length === 0) {
       return 0;
     }
@@ -972,7 +987,7 @@ export class CanvasNode extends RapidElement {
     if (this.ui.type !== 'execute_actions') return;
 
     const { action, sourceNodeUuid, actionIndex, mouseY } = event.detail;
-    
+
     // Don't accept drops from the same node
     if (sourceNodeUuid === this.node.uuid) return;
 
@@ -996,21 +1011,22 @@ export class CanvasNode extends RapidElement {
     if (this.ui.type !== 'execute_actions') return;
 
     const { action, sourceNodeUuid, actionIndex } = event.detail;
-    
+
     // Don't accept drops from the same node
     if (sourceNodeUuid === this.node.uuid) return;
 
     // Get the drop index from our tracking state
-    const dropIndex = this.externalDragInfo?.dropIndex ?? this.node.actions.length;
+    const dropIndex =
+      this.externalDragInfo?.dropIndex ?? this.node.actions.length;
 
     // Clear external drag state
     this.externalDragInfo = null;
 
     // Remove the action from the source node
-    const sourceNode = getStore()?.getState().flowDefinition.nodes.find(
-      (n) => n.uuid === sourceNodeUuid
-    );
-    
+    const sourceNode = getStore()
+      ?.getState()
+      .flowDefinition.nodes.find((n) => n.uuid === sourceNodeUuid);
+
     if (sourceNode) {
       const updatedSourceActions = sourceNode.actions.filter(
         (_a, idx) => idx !== actionIndex
@@ -1023,7 +1039,10 @@ export class CanvasNode extends RapidElement {
         });
       } else {
         // Update source node
-        const updatedSourceNode = { ...sourceNode, actions: updatedSourceActions };
+        const updatedSourceNode = {
+          ...sourceNode,
+          actions: updatedSourceActions
+        };
         getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
       }
     }

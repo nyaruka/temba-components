@@ -1,6 +1,6 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { CanvasNode } from '../src/flow/CanvasNode';
-import { Node, NodeUI } from '../src/store/flow-definition';
+import { Node, NodeUI, SendMsg } from '../src/store/flow-definition';
 import '../temba-modules';
 
 describe('Drag actions between nodes', () => {
@@ -19,13 +19,13 @@ describe('Drag actions between nodes', () => {
           uuid: 'action-1',
           text: 'First message',
           quick_replies: []
-        },
+        } as SendMsg,
         {
           type: 'send_msg',
           uuid: 'action-2',
           text: 'Second message',
           quick_replies: []
-        }
+        } as SendMsg
       ],
       exits: [{ uuid: 'exit-1', destination_uuid: null }]
     };
@@ -44,7 +44,7 @@ describe('Drag actions between nodes', () => {
           uuid: 'action-3',
           text: 'Third message',
           quick_replies: []
-        }
+        } as SendMsg
       ],
       exits: [{ uuid: 'exit-2', destination_uuid: null }]
     };
@@ -58,10 +58,7 @@ describe('Drag actions between nodes', () => {
 
   it('should render execute_actions node with sortable list', async () => {
     const node1Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node1}
-        .ui=${node1UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node1} .ui=${node1UI}></temba-flow-node>
     `);
 
     await node1Element.updateComplete;
@@ -77,10 +74,7 @@ describe('Drag actions between nodes', () => {
 
   it('should show placeholder in target node during drag', async () => {
     const node2Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node2}
-        .ui=${node2UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node2} .ui=${node2UI}></temba-flow-node>
     `);
 
     await node2Element.updateComplete;
@@ -106,10 +100,7 @@ describe('Drag actions between nodes', () => {
 
   it('should handle drag-over event and store external drag info', async () => {
     const node2Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node2}
-        .ui=${node2UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node2} .ui=${node2UI}></temba-flow-node>
     `);
 
     await node2Element.updateComplete;
@@ -136,18 +127,17 @@ describe('Drag actions between nodes', () => {
 
   it('should calculate correct drop index based on mouse position', async () => {
     const node2Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node2}
-        .ui=${node2UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node2} .ui=${node2UI}></temba-flow-node>
     `);
 
     await node2Element.updateComplete;
 
     // Get action element bounds to calculate positions
-    const actionElement = node2Element.querySelector('.action.sortable') as HTMLElement;
+    const actionElement = node2Element.querySelector(
+      '.action.sortable'
+    ) as HTMLElement;
     expect(actionElement).to.exist;
-    
+
     const rect = actionElement.getBoundingClientRect();
     const topY = rect.top + 5; // Near top of first action
     const bottomY = rect.bottom + 5; // Below first action
@@ -189,10 +179,7 @@ describe('Drag actions between nodes', () => {
 
   it('should not accept drops from the same node', async () => {
     const node1Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node1}
-        .ui=${node1UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node1} .ui=${node1UI}></temba-flow-node>
     `);
 
     await node1Element.updateComplete;
@@ -217,10 +204,7 @@ describe('Drag actions between nodes', () => {
 
   it('should clear external drag state and hide placeholder', async () => {
     const node2Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node2}
-        .ui=${node2UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node2} .ui=${node2UI}></temba-flow-node>
     `);
 
     await node2Element.updateComplete;
@@ -255,10 +239,7 @@ describe('Drag actions between nodes', () => {
 
   it('should have sortable list for internal drag support', async () => {
     const node1Element = await fixture<CanvasNode>(html`
-      <temba-flow-node
-        .node=${node1}
-        .ui=${node1UI}
-      ></temba-flow-node>
+      <temba-flow-node .node=${node1} .ui=${node1UI}></temba-flow-node>
     `);
 
     await node1Element.updateComplete;
