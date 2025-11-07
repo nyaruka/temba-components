@@ -47,6 +47,14 @@ export class CanvasNode extends RapidElement {
   private nodeClickStartPos: { x: number; y: number } | null = null;
   private pendingNodeClick: { event: MouseEvent } | null = null;
 
+  // Track external action drag (action being dragged from another node)
+  private externalDragInfo: {
+    action: Action;
+    sourceNodeUuid: string;
+    actionIndex: number;
+    dropIndex: number;
+  } | null = null;
+
   static get styles() {
     return css`
 
@@ -379,6 +387,16 @@ export class CanvasNode extends RapidElement {
     this.handleActionDragExternal = this.handleActionDragExternal.bind(this);
     this.handleActionDragInternal = this.handleActionDragInternal.bind(this);
     this.handleActionDragStop = this.handleActionDragStop.bind(this);
+    this.handleExternalActionDragOver = this.handleExternalActionDragOver.bind(this);
+    this.handleExternalActionDrop = this.handleExternalActionDrop.bind(this);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    
+    // Listen for external action drag events from Editor
+    this.addEventListener('action-drag-over', this.handleExternalActionDragOver as EventListener);
+    this.addEventListener('action-drop', this.handleExternalActionDrop as EventListener);
   }
 
   protected updated(
@@ -424,6 +442,10 @@ export class CanvasNode extends RapidElement {
   disconnectedCallback() {
     // Remove the event listener when the component is removed
     super.disconnectedCallback();
+
+    // Remove external drag event listeners
+    this.removeEventListener('action-drag-over', this.handleExternalActionDragOver as EventListener);
+    this.removeEventListener('action-drop', this.handleExternalActionDrop as EventListener);
 
     // Clear any pending exit removal timeouts
     this.exitRemovalTimeouts.forEach((timeoutId) => {
@@ -918,6 +940,105 @@ export class CanvasNode extends RapidElement {
     });
   }
 
+  private calculateDropIndex(mouseY: number): number {
+    // Get the sortable list element
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (!sortableList) return this.node.actions.length;
+
+    // Get all action elements
+    const actionElements = Array.from(sortableList.querySelectorAll('.action.sortable'));
+    
+    if (actionElements.length === 0) {
+      return 0;
+    }
+
+    // Find where to insert based on mouse Y position
+    for (let i = 0; i < actionElements.length; i++) {
+      const actionElement = actionElements[i] as HTMLElement;
+      const rect = actionElement.getBoundingClientRect();
+      const centerY = rect.top + rect.height / 2;
+
+      if (mouseY < centerY) {
+        return i;
+      }
+    }
+
+    // If past all elements, insert at the end
+    return actionElements.length;
+  }
+
+  private handleExternalActionDragOver(event: CustomEvent): void {
+    // Only handle if this is an execute_actions node
+    if (this.ui.type !== 'execute_actions') return;
+
+    const { action, sourceNodeUuid, actionIndex, mouseY } = event.detail;
+    
+    // Don't accept drops from the same node
+    if (sourceNodeUuid === this.node.uuid) return;
+
+    // Calculate where to drop
+    const dropIndex = this.calculateDropIndex(mouseY);
+
+    // Store the drag info
+    this.externalDragInfo = {
+      action,
+      sourceNodeUuid,
+      actionIndex,
+      dropIndex
+    };
+
+    // Request update to show placeholder
+    this.requestUpdate();
+  }
+
+  private handleExternalActionDrop(event: CustomEvent): void {
+    // Only handle if this is an execute_actions node
+    if (this.ui.type !== 'execute_actions') return;
+
+    const { action, sourceNodeUuid, actionIndex } = event.detail;
+    
+    // Don't accept drops from the same node
+    if (sourceNodeUuid === this.node.uuid) return;
+
+    // Get the drop index from our tracking state
+    const dropIndex = this.externalDragInfo?.dropIndex ?? this.node.actions.length;
+
+    // Clear external drag state
+    this.externalDragInfo = null;
+
+    // Remove the action from the source node
+    const sourceNode = getStore()?.getState().flowDefinition.nodes.find(
+      (n) => n.uuid === sourceNodeUuid
+    );
+    
+    if (sourceNode) {
+      const updatedSourceActions = sourceNode.actions.filter(
+        (_a, idx) => idx !== actionIndex
+      );
+
+      // If source node has no actions left, remove it
+      if (updatedSourceActions.length === 0) {
+        this.fireCustomEvent(CustomEventType.NodeDeleted, {
+          uuid: sourceNodeUuid
+        });
+      } else {
+        // Update source node
+        const updatedSourceNode = { ...sourceNode, actions: updatedSourceActions };
+        getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
+      }
+    }
+
+    // Add the action to this node at the calculated position
+    const newActions = [...this.node.actions];
+    newActions.splice(dropIndex, 0, action);
+
+    const updatedNode = { ...this.node, actions: newActions };
+    getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+    // Request update
+    this.requestUpdate();
+  }
+
   private renderTitle(
     config: ActionConfig,
     action: Action,
@@ -977,6 +1098,13 @@ export class CanvasNode extends RapidElement {
     </div>`;
   }
 
+  private renderDropPlaceholder() {
+    return html`<div
+      class="action sortable drop-placeholder"
+      style="min-height: 60px; background: rgba(var(--color-primary-rgb), 0.1); border: 2px dashed rgba(var(--color-primary-rgb), 0.3); border-radius: var(--curvature);"
+    ></div>`;
+  }
+
   private renderAction(node: Node, action: Action, index: number) {
     const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
@@ -1015,6 +1143,31 @@ export class CanvasNode extends RapidElement {
       </div>
       ${action.type}
     </div>`;
+  }
+
+  private renderActionsWithPlaceholder() {
+    if (!this.externalDragInfo) {
+      // No external drag, render normally
+      return this.node.actions.map((action, index) =>
+        this.renderAction(this.node, action, index)
+      );
+    }
+
+    // Insert placeholder at the drop index
+    const result = [];
+    for (let i = 0; i < this.node.actions.length; i++) {
+      if (i === this.externalDragInfo.dropIndex) {
+        result.push(this.renderDropPlaceholder());
+      }
+      result.push(this.renderAction(this.node, this.node.actions[i], i));
+    }
+
+    // If dropping at the end, add placeholder after all actions
+    if (this.externalDragInfo.dropIndex >= this.node.actions.length) {
+      result.push(this.renderDropPlaceholder());
+    }
+
+    return result;
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
@@ -1121,9 +1274,7 @@ export class CanvasNode extends RapidElement {
                 @temba-drag-internal="${this.handleActionDragInternal}"
                 @temba-drag-stop="${this.handleActionDragStop}"
               >
-                ${this.node.actions.map((action, index) =>
-                  this.renderAction(this.node, action, index)
-                )}
+                ${this.renderActionsWithPlaceholder()}
               </temba-sortable-list>`
             : html`${this.node.actions.map((action, index) =>
                 this.renderAction(this.node, action, index)

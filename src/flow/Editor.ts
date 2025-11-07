@@ -156,6 +156,10 @@ export class Editor extends RapidElement {
   @state()
   private addActionToNodeUuid: string | null = null;
 
+  // Track target node for action drag
+  @state()
+  private actionDragTargetNodeUuid: string | null = null;
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -1406,6 +1410,26 @@ export class Editor extends RapidElement {
     this.closeNodeEditor();
   }
 
+  private getNodeAtPosition(mouseX: number, mouseY: number): string | null {
+    // Get all node elements
+    const nodeElements = this.querySelectorAll('temba-flow-node');
+    
+    for (const nodeElement of Array.from(nodeElements)) {
+      const rect = nodeElement.getBoundingClientRect();
+      
+      if (
+        mouseX >= rect.left &&
+        mouseX <= rect.right &&
+        mouseY >= rect.top &&
+        mouseY <= rect.bottom
+      ) {
+        return nodeElement.getAttribute('data-node-uuid');
+      }
+    }
+    
+    return null;
+  }
+
   private calculateCanvasDropPosition(
     mouseX: number,
     mouseY: number,
@@ -1437,6 +1461,38 @@ export class Editor extends RapidElement {
   private handleActionDragExternal(event: CustomEvent): void {
     const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
 
+    // Check if mouse is over another execute_actions node
+    const targetNode = this.getNodeAtPosition(mouseX, mouseY);
+    
+    if (targetNode && targetNode !== nodeUuid) {
+      const targetNodeUI = this.definition._ui.nodes[targetNode];
+      const targetNodeDef = this.definition.nodes.find(n => n.uuid === targetNode);
+      
+      // Only allow dropping on execute_actions nodes, and not the source node
+      if (targetNodeUI?.type === 'execute_actions' && targetNodeDef) {
+        // Update target node for drop handling
+        this.actionDragTargetNodeUuid = targetNode;
+        
+        // Hide canvas preview when over a valid target
+        this.canvasDropPreview = null;
+        
+        // Notify the target node about the drag
+        const targetElement = this.querySelector(`temba-flow-node[data-node-uuid="${targetNode}"]`);
+        if (targetElement) {
+          targetElement.dispatchEvent(new CustomEvent('action-drag-over', {
+            detail: { action, sourceNodeUuid: nodeUuid, actionIndex, mouseX, mouseY },
+            bubbles: false
+          }));
+        }
+        
+        this.requestUpdate();
+        return;
+      }
+    }
+    
+    // Not over a valid target node, show canvas preview
+    this.actionDragTargetNodeUuid = null;
+    
     // Don't snap to grid for preview - let it follow cursor smoothly
     const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
 
@@ -1453,11 +1509,32 @@ export class Editor extends RapidElement {
 
   private handleActionDragInternal(_event: CustomEvent): void {
     this.canvasDropPreview = null;
+    this.actionDragTargetNodeUuid = null;
   }
 
   private handleActionDropExternal(event: CustomEvent): void {
     const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
 
+    // Check if we're dropping on an existing execute_actions node
+    const targetNodeUuid = this.actionDragTargetNodeUuid;
+    
+    if (targetNodeUuid && targetNodeUuid !== nodeUuid) {
+      // Dropping on another node - notify the target node to handle the drop
+      const targetElement = this.querySelector(`temba-flow-node[data-node-uuid="${targetNodeUuid}"]`);
+      if (targetElement) {
+        targetElement.dispatchEvent(new CustomEvent('action-drop', {
+          detail: { action, sourceNodeUuid: nodeUuid, actionIndex, mouseX, mouseY },
+          bubbles: false
+        }));
+      }
+      
+      // Clear state
+      this.canvasDropPreview = null;
+      this.actionDragTargetNodeUuid = null;
+      return;
+    }
+
+    // Not dropping on another node, create a new one on canvas
     // Snap to grid for the final drop position
     const position = this.calculateCanvasDropPosition(mouseX, mouseY, true);
 
@@ -1501,6 +1578,7 @@ export class Editor extends RapidElement {
 
     // clear the preview
     this.canvasDropPreview = null;
+    this.actionDragTargetNodeUuid = null;
 
     // repaint connections
     if (this.plumber) {
@@ -1550,6 +1628,7 @@ export class Editor extends RapidElement {
                         : ''}"
                       @mousedown=${this.handleMouseDown.bind(this)}
                       uuid=${node.uuid}
+                      data-node-uuid=${node.uuid}
                       style="left:${position.left}px; top:${position.top}px"
                       .plumber=${this.plumber}
                       .node=${node}
