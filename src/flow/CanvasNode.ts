@@ -956,7 +956,8 @@ export class CanvasNode extends RapidElement {
   private calculateDropIndex(mouseY: number): number {
     // Get the sortable list element
     const sortableList = this.querySelector('temba-sortable-list');
-    if (!sortableList) return this.node.actions.length;
+    if (!sortableList || !this.node.actions)
+      return this.node.actions?.length ?? 0;
 
     // Get all action elements
     const actionElements = Array.from(
@@ -1017,15 +1018,21 @@ export class CanvasNode extends RapidElement {
 
     // Get the drop index from our tracking state
     const dropIndex =
-      this.externalDragInfo?.dropIndex ?? this.node.actions.length;
+      this.externalDragInfo?.dropIndex ?? this.node.actions?.length ?? 0;
 
     // Clear external drag state
     this.externalDragInfo = null;
 
     // Remove the action from the source node
-    const sourceNode = getStore()
-      ?.getState()
-      .flowDefinition.nodes.find((n) => n.uuid === sourceNodeUuid);
+    const store = getStore();
+    if (!store) return;
+
+    const flowDefinition = store.getState().flowDefinition;
+    if (!flowDefinition) return;
+
+    const sourceNode = flowDefinition.nodes.find(
+      (n) => n.uuid === sourceNodeUuid
+    );
 
     if (sourceNode) {
       const updatedSourceActions = sourceNode.actions.filter(
