@@ -160,6 +160,9 @@ export class Editor extends RapidElement {
   @state()
   private actionDragTargetNodeUuid: string | null = null;
 
+  // Track previous target node to clear placeholder when moving between nodes
+  private previousActionDragTargetNodeUuid: string | null = null;
+
   private canvasMouseDown = false;
 
   // Bound event handlers to maintain proper 'this' context
@@ -1472,11 +1475,41 @@ export class Editor extends RapidElement {
 
       // Only allow dropping on execute_actions nodes, and not the source node
       if (targetNodeUI?.type === 'execute_actions' && targetNodeDef) {
+        // If we moved to a different target node, clear the previous one's placeholder
+        if (this.previousActionDragTargetNodeUuid && 
+            this.previousActionDragTargetNodeUuid !== targetNode) {
+          const previousElement = this.querySelector(
+            `temba-flow-node[data-node-uuid="${this.previousActionDragTargetNodeUuid}"]`
+          );
+          if (previousElement) {
+            previousElement.dispatchEvent(
+              new CustomEvent('action-drag-leave', {
+                detail: {},
+                bubbles: false
+              })
+            );
+          }
+        }
+
         // Update target node for drop handling
         this.actionDragTargetNodeUuid = targetNode;
+        this.previousActionDragTargetNodeUuid = targetNode;
 
         // Hide canvas preview when over a valid target
         this.canvasDropPreview = null;
+
+        // Tell source node to show ghost (we're over a valid target)
+        const sourceElement = this.querySelector(
+          `temba-flow-node[data-node-uuid="${nodeUuid}"]`
+        );
+        if (sourceElement) {
+          sourceElement.dispatchEvent(
+            new CustomEvent('action-show-ghost', {
+              detail: {},
+              bubbles: false
+            })
+          );
+        }
 
         // Notify the target node about the drag
         const targetElement = this.querySelector(
@@ -1502,8 +1535,36 @@ export class Editor extends RapidElement {
       }
     }
 
-    // Not over a valid target node, show canvas preview
+    // Not over a valid target node, clear any previous target's placeholder
+    if (this.previousActionDragTargetNodeUuid) {
+      const previousElement = this.querySelector(
+        `temba-flow-node[data-node-uuid="${this.previousActionDragTargetNodeUuid}"]`
+      );
+      if (previousElement) {
+        previousElement.dispatchEvent(
+          new CustomEvent('action-drag-leave', {
+            detail: {},
+            bubbles: false
+          })
+        );
+      }
+      this.previousActionDragTargetNodeUuid = null;
+    }
+
     this.actionDragTargetNodeUuid = null;
+
+    // Tell source node to hide ghost (we're not over a valid target)
+    const sourceElement = this.querySelector(
+      `temba-flow-node[data-node-uuid="${nodeUuid}"]`
+    );
+    if (sourceElement) {
+      sourceElement.dispatchEvent(
+        new CustomEvent('action-hide-ghost', {
+          detail: {},
+          bubbles: false
+        })
+      );
+    }
 
     // Don't snap to grid for preview - let it follow cursor smoothly
     const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
@@ -1520,6 +1581,22 @@ export class Editor extends RapidElement {
   }
 
   private handleActionDragInternal(_event: CustomEvent): void {
+    // Clear any previous target's placeholder when returning to internal drag
+    if (this.previousActionDragTargetNodeUuid) {
+      const previousElement = this.querySelector(
+        `temba-flow-node[data-node-uuid="${this.previousActionDragTargetNodeUuid}"]`
+      );
+      if (previousElement) {
+        previousElement.dispatchEvent(
+          new CustomEvent('action-drag-leave', {
+            detail: {},
+            bubbles: false
+          })
+        );
+      }
+      this.previousActionDragTargetNodeUuid = null;
+    }
+
     this.canvasDropPreview = null;
     this.actionDragTargetNodeUuid = null;
   }

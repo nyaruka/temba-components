@@ -390,6 +390,10 @@ export class CanvasNode extends RapidElement {
     this.handleExternalActionDragOver =
       this.handleExternalActionDragOver.bind(this);
     this.handleExternalActionDrop = this.handleExternalActionDrop.bind(this);
+    this.handleExternalActionDragLeave =
+      this.handleExternalActionDragLeave.bind(this);
+    this.handleActionShowGhost = this.handleActionShowGhost.bind(this);
+    this.handleActionHideGhost = this.handleActionHideGhost.bind(this);
   }
 
   connectedCallback() {
@@ -403,6 +407,18 @@ export class CanvasNode extends RapidElement {
     this.addEventListener(
       'action-drop',
       this.handleExternalActionDrop as EventListener
+    );
+    this.addEventListener(
+      'action-drag-leave',
+      this.handleExternalActionDragLeave as EventListener
+    );
+    this.addEventListener(
+      'action-show-ghost',
+      this.handleActionShowGhost as EventListener
+    );
+    this.addEventListener(
+      'action-hide-ghost',
+      this.handleActionHideGhost as EventListener
     );
   }
 
@@ -458,6 +474,18 @@ export class CanvasNode extends RapidElement {
     this.removeEventListener(
       'action-drop',
       this.handleExternalActionDrop as EventListener
+    );
+    this.removeEventListener(
+      'action-drag-leave',
+      this.handleExternalActionDragLeave as EventListener
+    );
+    this.removeEventListener(
+      'action-show-ghost',
+      this.handleActionShowGhost as EventListener
+    );
+    this.removeEventListener(
+      'action-hide-ghost',
+      this.handleActionHideGhost as EventListener
     );
 
     // Clear any pending exit removal timeouts
@@ -1005,6 +1033,34 @@ export class CanvasNode extends RapidElement {
 
     // Request update to show placeholder
     this.requestUpdate();
+  }
+
+  private handleExternalActionDragLeave(_event: CustomEvent): void {
+    // Clear external drag state when drag leaves this node
+    this.externalDragInfo = null;
+    this.requestUpdate();
+  }
+
+  private handleActionShowGhost(_event: CustomEvent): void {
+    // Show the ghost element in the sortable list
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (sortableList) {
+      const ghostElement = document.querySelector('.ghost') as HTMLElement;
+      if (ghostElement) {
+        ghostElement.style.display = 'block';
+      }
+    }
+  }
+
+  private handleActionHideGhost(_event: CustomEvent): void {
+    // Hide the ghost element in the sortable list
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (sortableList) {
+      const ghostElement = document.querySelector('.ghost') as HTMLElement;
+      if (ghostElement) {
+        ghostElement.style.display = 'none';
+      }
+    }
   }
 
   private handleExternalActionDrop(event: CustomEvent): void {
