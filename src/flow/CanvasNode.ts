@@ -1183,7 +1183,7 @@ export class CanvasNode extends RapidElement {
   private renderDropPlaceholder() {
     return html`<div
       class="action sortable drop-placeholder"
-      style="min-height: 60px; background: rgba(var(--color-primary-rgb), 0.1); border: 2px dashed rgba(var(--color-primary-rgb), 0.3); border-radius: var(--curvature);"
+      style="min-height: 60px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: var(--curvature);"
     ></div>`;
   }
 
