@@ -53,6 +53,7 @@ export class CanvasNode extends RapidElement {
     sourceNodeUuid: string;
     actionIndex: number;
     dropIndex: number;
+    actionHeight: number;
   } | null = null;
 
   static get styles() {
@@ -1015,7 +1016,7 @@ export class CanvasNode extends RapidElement {
     // Only handle if this is an execute_actions node
     if (this.ui.type !== 'execute_actions') return;
 
-    const { action, sourceNodeUuid, actionIndex, mouseY } = event.detail;
+    const { action, sourceNodeUuid, actionIndex, mouseY, actionHeight } = event.detail;
 
     // Don't accept drops from the same node
     if (sourceNodeUuid === this.node.uuid) return;
@@ -1028,7 +1029,8 @@ export class CanvasNode extends RapidElement {
       action,
       sourceNodeUuid,
       actionIndex,
-      dropIndex
+      dropIndex,
+      actionHeight: actionHeight || 60 // fallback to 60px if not provided
     };
 
     // Request update to show placeholder
@@ -1181,9 +1183,10 @@ export class CanvasNode extends RapidElement {
   }
 
   private renderDropPlaceholder() {
+    const height = this.externalDragInfo?.actionHeight || 60;
     return html`<div
       class="action sortable drop-placeholder"
-      style="min-height: 60px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: var(--curvature);"
+      style="height: ${height}px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: var(--curvature);"
     ></div>`;
   }
 

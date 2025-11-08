@@ -1511,6 +1511,16 @@ export class Editor extends RapidElement {
           );
         }
 
+        // Get dimensions of the dragged action from the source node
+        let actionHeight = 60; // default fallback
+        if (sourceElement) {
+          const actionElement = sourceElement.querySelector(`#action-${actionIndex}`) as HTMLElement;
+          if (actionElement) {
+            const rect = actionElement.getBoundingClientRect();
+            actionHeight = rect.height;
+          }
+        }
+
         // Notify the target node about the drag
         const targetElement = this.querySelector(
           `temba-flow-node[data-node-uuid="${targetNode}"]`
@@ -1523,7 +1533,8 @@ export class Editor extends RapidElement {
                 sourceNodeUuid: nodeUuid,
                 actionIndex,
                 mouseX,
-                mouseY
+                mouseY,
+                actionHeight
               },
               bubbles: false
             })
