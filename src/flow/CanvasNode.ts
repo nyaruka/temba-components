@@ -47,6 +47,18 @@ export class CanvasNode extends RapidElement {
   private nodeClickStartPos: { x: number; y: number } | null = null;
   private pendingNodeClick: { event: MouseEvent } | null = null;
 
+  // Track the height of the action being dragged (captured at drag start)
+  private draggedActionHeight: number = 0;
+
+  // Track external action drag (action being dragged from another node)
+  private externalDragInfo: {
+    action: Action;
+    sourceNodeUuid: string;
+    actionIndex: number;
+    dropIndex: number;
+    actionHeight: number;
+  } | null = null;
+
   static get styles() {
     return css`
 
@@ -376,9 +388,43 @@ export class CanvasNode extends RapidElement {
   constructor() {
     super();
     this.handleActionOrderChanged = this.handleActionOrderChanged.bind(this);
+    this.handleActionDragStart = this.handleActionDragStart.bind(this);
     this.handleActionDragExternal = this.handleActionDragExternal.bind(this);
     this.handleActionDragInternal = this.handleActionDragInternal.bind(this);
     this.handleActionDragStop = this.handleActionDragStop.bind(this);
+    this.handleExternalActionDragOver =
+      this.handleExternalActionDragOver.bind(this);
+    this.handleExternalActionDrop = this.handleExternalActionDrop.bind(this);
+    this.handleExternalActionDragLeave =
+      this.handleExternalActionDragLeave.bind(this);
+    this.handleActionShowGhost = this.handleActionShowGhost.bind(this);
+    this.handleActionHideGhost = this.handleActionHideGhost.bind(this);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    // Listen for external action drag events from Editor
+    this.addEventListener(
+      'action-drag-over',
+      this.handleExternalActionDragOver as EventListener
+    );
+    this.addEventListener(
+      'action-drop',
+      this.handleExternalActionDrop as EventListener
+    );
+    this.addEventListener(
+      'action-drag-leave',
+      this.handleExternalActionDragLeave as EventListener
+    );
+    this.addEventListener(
+      'action-show-ghost',
+      this.handleActionShowGhost as EventListener
+    );
+    this.addEventListener(
+      'action-hide-ghost',
+      this.handleActionHideGhost as EventListener
+    );
   }
 
   protected updated(
@@ -424,6 +470,28 @@ export class CanvasNode extends RapidElement {
   disconnectedCallback() {
     // Remove the event listener when the component is removed
     super.disconnectedCallback();
+
+    // Remove external drag event listeners
+    this.removeEventListener(
+      'action-drag-over',
+      this.handleExternalActionDragOver as EventListener
+    );
+    this.removeEventListener(
+      'action-drop',
+      this.handleExternalActionDrop as EventListener
+    );
+    this.removeEventListener(
+      'action-drag-leave',
+      this.handleExternalActionDragLeave as EventListener
+    );
+    this.removeEventListener(
+      'action-show-ghost',
+      this.handleActionShowGhost as EventListener
+    );
+    this.removeEventListener(
+      'action-hide-ghost',
+      this.handleActionHideGhost as EventListener
+    );
 
     // Clear any pending exit removal timeouts
     this.exitRemovalTimeouts.forEach((timeoutId) => {
@@ -649,6 +717,20 @@ export class CanvasNode extends RapidElement {
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
   }
 
+  private handleActionDragStart(event: CustomEvent) {
+    // Capture the height of the action being dragged
+    const actionId = event.detail.id;
+    const actionElement = this.querySelector(`#${actionId}`) as HTMLElement;
+
+    if (actionElement) {
+      const rect = actionElement.getBoundingClientRect();
+      this.draggedActionHeight = rect.height;
+    } else {
+      // Fallback to a reasonable default
+      this.draggedActionHeight = 60;
+    }
+  }
+
   private handleActionDragExternal(event: CustomEvent) {
     // stop propagation of the original event from SortableList
     event.stopPropagation();
@@ -663,13 +745,14 @@ export class CanvasNode extends RapidElement {
     const actionIndex = parseInt(splitId[1], 10);
     const action = this.node.actions[actionIndex];
 
-    // fire event to editor to show canvas drop preview
+    // fire event to editor to show canvas drop preview, including the captured height
     this.fireCustomEvent(CustomEventType.DragExternal, {
       action,
       nodeUuid: this.node.uuid,
       actionIndex,
       mouseX: event.detail.mouseX,
-      mouseY: event.detail.mouseY
+      mouseY: event.detail.mouseY,
+      actionHeight: this.draggedActionHeight
     });
   }
 
@@ -918,6 +1001,148 @@ export class CanvasNode extends RapidElement {
     });
   }
 
+  private calculateDropIndex(mouseY: number): number {
+    // Get the sortable list element
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (!sortableList || !this.node.actions)
+      return this.node.actions?.length ?? 0;
+
+    // Get all action elements
+    const actionElements = Array.from(
+      sortableList.querySelectorAll('.action.sortable')
+    );
+
+    if (actionElements.length === 0) {
+      return 0;
+    }
+
+    // Find where to insert based on mouse Y position
+    for (let i = 0; i < actionElements.length; i++) {
+      const actionElement = actionElements[i] as HTMLElement;
+      const rect = actionElement.getBoundingClientRect();
+      const centerY = rect.top + rect.height / 2;
+
+      if (mouseY < centerY) {
+        return i;
+      }
+    }
+
+    // If past all elements, insert at the end
+    return actionElements.length;
+  }
+
+  private handleExternalActionDragOver(event: CustomEvent): void {
+    // Only handle if this is an execute_actions node
+    if (this.ui.type !== 'execute_actions') return;
+
+    const { action, sourceNodeUuid, actionIndex, mouseY, actionHeight } =
+      event.detail;
+
+    // Don't accept drops from the same node
+    if (sourceNodeUuid === this.node.uuid) return;
+
+    // Calculate where to drop
+    const dropIndex = this.calculateDropIndex(mouseY);
+
+    // Store the drag info
+    this.externalDragInfo = {
+      action,
+      sourceNodeUuid,
+      actionIndex,
+      dropIndex,
+      actionHeight: actionHeight || 60 // fallback to 60px if not provided
+    };
+
+    // Request update to show placeholder
+    this.requestUpdate();
+  }
+
+  private handleExternalActionDragLeave(_event: CustomEvent): void {
+    // Clear external drag state when drag leaves this node
+    this.externalDragInfo = null;
+    this.requestUpdate();
+  }
+
+  private handleActionShowGhost(_event: CustomEvent): void {
+    // Show the ghost element in the sortable list
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (sortableList) {
+      const ghostElement = document.querySelector('.ghost') as HTMLElement;
+      if (ghostElement) {
+        ghostElement.style.display = 'block';
+      }
+    }
+  }
+
+  private handleActionHideGhost(_event: CustomEvent): void {
+    // Hide the ghost element in the sortable list
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (sortableList) {
+      const ghostElement = document.querySelector('.ghost') as HTMLElement;
+      if (ghostElement) {
+        ghostElement.style.display = 'none';
+      }
+    }
+  }
+
+  private handleExternalActionDrop(event: CustomEvent): void {
+    // Only handle if this is an execute_actions node
+    if (this.ui.type !== 'execute_actions') return;
+
+    const { action, sourceNodeUuid, actionIndex } = event.detail;
+
+    // Don't accept drops from the same node
+    if (sourceNodeUuid === this.node.uuid) return;
+
+    // Get the drop index from our tracking state
+    const dropIndex =
+      this.externalDragInfo?.dropIndex ?? this.node.actions?.length ?? 0;
+
+    // Clear external drag state
+    this.externalDragInfo = null;
+
+    // Remove the action from the source node
+    const store = getStore();
+    if (!store) return;
+
+    const flowDefinition = store.getState().flowDefinition;
+    if (!flowDefinition) return;
+
+    const sourceNode = flowDefinition.nodes.find(
+      (n) => n.uuid === sourceNodeUuid
+    );
+
+    if (sourceNode) {
+      const updatedSourceActions = sourceNode.actions.filter(
+        (_a, idx) => idx !== actionIndex
+      );
+
+      // If source node has no actions left, remove it
+      if (updatedSourceActions.length === 0) {
+        this.fireCustomEvent(CustomEventType.NodeDeleted, {
+          uuid: sourceNodeUuid
+        });
+      } else {
+        // Update source node
+        const updatedSourceNode = {
+          ...sourceNode,
+          actions: updatedSourceActions
+        };
+        getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
+      }
+    }
+
+    // Add the action to this node at the calculated position
+    const newActions = [...this.node.actions];
+    newActions.splice(dropIndex, 0, action);
+
+    const updatedNode = { ...this.node, actions: newActions };
+    getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+    // Request update
+    this.requestUpdate();
+  }
+
   private renderTitle(
     config: ActionConfig,
     action: Action,
@@ -977,6 +1202,14 @@ export class CanvasNode extends RapidElement {
     </div>`;
   }
 
+  private renderDropPlaceholder() {
+    const height = this.externalDragInfo?.actionHeight || 60;
+    return html`<div
+      class="action sortable drop-placeholder"
+      style="height: ${height}px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: var(--curvature);"
+    ></div>`;
+  }
+
   private renderAction(node: Node, action: Action, index: number) {
     const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
@@ -1015,6 +1248,31 @@ export class CanvasNode extends RapidElement {
       </div>
       ${action.type}
     </div>`;
+  }
+
+  private renderActionsWithPlaceholder() {
+    if (!this.externalDragInfo) {
+      // No external drag, render normally
+      return this.node.actions.map((action, index) =>
+        this.renderAction(this.node, action, index)
+      );
+    }
+
+    // Insert placeholder at the drop index
+    const result = [];
+    for (let i = 0; i < this.node.actions.length; i++) {
+      if (i === this.externalDragInfo.dropIndex) {
+        result.push(this.renderDropPlaceholder());
+      }
+      result.push(this.renderAction(this.node, this.node.actions[i], i));
+    }
+
+    // If dropping at the end, add placeholder after all actions
+    if (this.externalDragInfo.dropIndex >= this.node.actions.length) {
+      result.push(this.renderDropPlaceholder());
+    }
+
+    return result;
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
@@ -1117,13 +1375,12 @@ export class CanvasNode extends RapidElement {
                 dragHandle="drag-handle"
                 externalDrag
                 @temba-order-changed="${this.handleActionOrderChanged}"
+                @temba-drag-start="${this.handleActionDragStart}"
                 @temba-drag-external="${this.handleActionDragExternal}"
                 @temba-drag-internal="${this.handleActionDragInternal}"
                 @temba-drag-stop="${this.handleActionDragStop}"
               >
-                ${this.node.actions.map((action, index) =>
-                  this.renderAction(this.node, action, index)
-                )}
+                ${this.renderActionsWithPlaceholder()}
               </temba-sortable-list>`
             : html`${this.node.actions.map((action, index) =>
                 this.renderAction(this.node, action, index)

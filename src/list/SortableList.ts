@@ -327,6 +327,8 @@ export class SortableList extends RapidElement {
       this.dropPlaceholder.style.minHeight = rect.height + 'px';
       this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
       this.dropPlaceholder.style.flexShrink = '0';
+      this.dropPlaceholder.style.background = '#f3f4f6';
+      this.dropPlaceholder.style.border = '2px dashed #d1d5db';
     }
 
     // Insert the placeholder in the correct position in the DOM
@@ -357,10 +359,8 @@ export class SortableList extends RapidElement {
     this.dropPlaceholder.style.minHeight = rect.height + 'px';
     this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
     this.dropPlaceholder.style.flexShrink = '0';
-    this.dropPlaceholder.style.background =
-      'rgba(var(--color-primary-rgb), 0.1)';
-    this.dropPlaceholder.style.border =
-      '2px dashed rgba(var(--color-primary-rgb), 0.3)';
+    this.dropPlaceholder.style.background = '#f3f4f6';
+    this.dropPlaceholder.style.border = '2px dashed #d1d5db';
 
     // Insert the placeholder right after the hidden original element
     this.downEle.insertAdjacentElement('afterend', this.dropPlaceholder);
