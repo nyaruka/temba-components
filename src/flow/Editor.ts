@@ -152,6 +152,7 @@ export class Editor extends RapidElement {
     nodeUuid: string;
     actionIndex: number;
     position: FlowPosition;
+    actionHeight: number;
   } | null = null;
   @state()
   private addActionToNodeUuid: string | null = null;
@@ -1462,7 +1463,14 @@ export class Editor extends RapidElement {
   }
 
   private handleActionDragExternal(event: CustomEvent): void {
-    const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
+    const {
+      action,
+      nodeUuid,
+      actionIndex,
+      mouseX,
+      mouseY,
+      actionHeight = 60
+    } = event.detail;
 
     // Check if mouse is over another execute_actions node
     const targetNode = this.getNodeAtPosition(mouseX, mouseY);
@@ -1476,8 +1484,10 @@ export class Editor extends RapidElement {
       // Only allow dropping on execute_actions nodes, and not the source node
       if (targetNodeUI?.type === 'execute_actions' && targetNodeDef) {
         // If we moved to a different target node, clear the previous one's placeholder
-        if (this.previousActionDragTargetNodeUuid && 
-            this.previousActionDragTargetNodeUuid !== targetNode) {
+        if (
+          this.previousActionDragTargetNodeUuid &&
+          this.previousActionDragTargetNodeUuid !== targetNode
+        ) {
           const previousElement = this.querySelector(
             `temba-flow-node[data-node-uuid="${this.previousActionDragTargetNodeUuid}"]`
           );
@@ -1509,16 +1519,6 @@ export class Editor extends RapidElement {
               bubbles: false
             })
           );
-        }
-
-        // Get dimensions of the dragged action from the source node
-        let actionHeight = 60; // default fallback
-        if (sourceElement) {
-          const actionElement = sourceElement.querySelector(`#action-${actionIndex}`) as HTMLElement;
-          if (actionElement) {
-            const rect = actionElement.getBoundingClientRect();
-            actionHeight = rect.height;
-          }
         }
 
         // Notify the target node about the drag
@@ -1584,7 +1584,8 @@ export class Editor extends RapidElement {
       action,
       nodeUuid,
       actionIndex,
-      position
+      position,
+      actionHeight
     };
 
     // Force re-render to update preview position

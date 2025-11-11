@@ -47,6 +47,9 @@ export class CanvasNode extends RapidElement {
   private nodeClickStartPos: { x: number; y: number } | null = null;
   private pendingNodeClick: { event: MouseEvent } | null = null;
 
+  // Track the height of the action being dragged (captured at drag start)
+  private draggedActionHeight: number = 0;
+
   // Track external action drag (action being dragged from another node)
   private externalDragInfo: {
     action: Action;
@@ -385,6 +388,7 @@ export class CanvasNode extends RapidElement {
   constructor() {
     super();
     this.handleActionOrderChanged = this.handleActionOrderChanged.bind(this);
+    this.handleActionDragStart = this.handleActionDragStart.bind(this);
     this.handleActionDragExternal = this.handleActionDragExternal.bind(this);
     this.handleActionDragInternal = this.handleActionDragInternal.bind(this);
     this.handleActionDragStop = this.handleActionDragStop.bind(this);
@@ -713,6 +717,20 @@ export class CanvasNode extends RapidElement {
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
   }
 
+  private handleActionDragStart(event: CustomEvent) {
+    // Capture the height of the action being dragged
+    const actionId = event.detail.id;
+    const actionElement = this.querySelector(`#${actionId}`) as HTMLElement;
+
+    if (actionElement) {
+      const rect = actionElement.getBoundingClientRect();
+      this.draggedActionHeight = rect.height;
+    } else {
+      // Fallback to a reasonable default
+      this.draggedActionHeight = 60;
+    }
+  }
+
   private handleActionDragExternal(event: CustomEvent) {
     // stop propagation of the original event from SortableList
     event.stopPropagation();
@@ -727,13 +745,14 @@ export class CanvasNode extends RapidElement {
     const actionIndex = parseInt(splitId[1], 10);
     const action = this.node.actions[actionIndex];
 
-    // fire event to editor to show canvas drop preview
+    // fire event to editor to show canvas drop preview, including the captured height
     this.fireCustomEvent(CustomEventType.DragExternal, {
       action,
       nodeUuid: this.node.uuid,
       actionIndex,
       mouseX: event.detail.mouseX,
-      mouseY: event.detail.mouseY
+      mouseY: event.detail.mouseY,
+      actionHeight: this.draggedActionHeight
     });
   }
 
@@ -1016,7 +1035,8 @@ export class CanvasNode extends RapidElement {
     // Only handle if this is an execute_actions node
     if (this.ui.type !== 'execute_actions') return;
 
-    const { action, sourceNodeUuid, actionIndex, mouseY, actionHeight } = event.detail;
+    const { action, sourceNodeUuid, actionIndex, mouseY, actionHeight } =
+      event.detail;
 
     // Don't accept drops from the same node
     if (sourceNodeUuid === this.node.uuid) return;
@@ -1355,6 +1375,7 @@ export class CanvasNode extends RapidElement {
                 dragHandle="drag-handle"
                 externalDrag
                 @temba-order-changed="${this.handleActionOrderChanged}"
+                @temba-drag-start="${this.handleActionDragStart}"
                 @temba-drag-external="${this.handleActionDragExternal}"
                 @temba-drag-internal="${this.handleActionDragInternal}"
                 @temba-drag-stop="${this.handleActionDragStop}"
