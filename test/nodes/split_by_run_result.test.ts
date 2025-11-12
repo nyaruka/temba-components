@@ -709,13 +709,12 @@ describe('split_by_run_result node config', () => {
 
         const formData = split_by_run_result.toFormData!(node, nodeUI);
 
-        expect(formData.delimit_enabled).to.be.true;
-        expect(formData.field_number).to.be.an('array');
-        expect(formData.field_number[0].value).to.equal('2');
-        expect(formData.field_number[0].name).to.equal('third');
-        expect(formData.delimiter).to.be.an('array');
-        expect(formData.delimiter[0].value).to.equal('.');
-        expect(formData.delimiter[0].name).to.equal('periods');
+        expect(formData.delimit_by).to.be.an('array');
+        expect(formData.delimit_by[0].value).to.equal('.');
+        expect(formData.delimit_by[0].name).to.equal('periods');
+        expect(formData.delimit_index).to.be.an('array');
+        expect(formData.delimit_index[0].value).to.equal('2');
+        expect(formData.delimit_index[0].name).to.equal('third');
       });
 
       it('should handle delimiter not enabled', () => {
@@ -749,11 +748,11 @@ describe('split_by_run_result node config', () => {
 
         const formData = split_by_run_result.toFormData!(node, nodeUI);
 
-        expect(formData.delimit_enabled).to.be.false;
-        expect(formData.field_number).to.be.an('array');
-        expect(formData.field_number[0].value).to.equal('0');
-        expect(formData.delimiter).to.be.an('array');
-        expect(formData.delimiter[0].value).to.equal(' ');
+        expect(formData.delimit_by).to.be.an('array');
+        expect(formData.delimit_by[0].value).to.equal('');
+        expect(formData.delimit_by[0].name).to.equal("Don't delimit");
+        expect(formData.delimit_index).to.be.an('array');
+        expect(formData.delimit_index[0].value).to.equal('0');
       });
     });
 
@@ -762,9 +761,8 @@ describe('split_by_run_result node config', () => {
         const formData = {
           uuid: 'test-node-uuid',
           result: [{ value: 'favorite_color', name: 'Favorite Color' }],
-          delimit_enabled: true,
-          field_number: [{ value: '1', name: 'second' }],
-          delimiter: [{ value: '+', name: 'plusses' }],
+          delimit_by: [{ value: '+', name: 'plusses' }],
+          delimit_index: [{ value: '1', name: 'second' }],
           rules: [
             {
               operator: { value: 'has_phrase', name: 'has the phrase' },
@@ -803,9 +801,8 @@ describe('split_by_run_result node config', () => {
         const formData = {
           uuid: 'test-node-uuid',
           result: [{ value: 'favorite_color', name: 'Favorite Color' }],
-          delimit_enabled: false,
-          field_number: [{ value: '0', name: 'first' }],
-          delimiter: [{ value: ' ', name: 'spaces' }],
+          delimit_by: [{ value: '', name: "Don't delimit" }],
+          delimit_index: [{ value: '0', name: 'first' }],
           rules: [],
           result_name: ''
         };
@@ -835,9 +832,8 @@ describe('split_by_run_result node config', () => {
         const formData = {
           uuid: 'test-node-uuid',
           result: [{ value: 'age', name: 'Age' }],
-          delimit_enabled: true,
-          field_number: [{ value: '9', name: 'tenth' }],
-          delimiter: [{ value: '.', name: 'periods' }],
+          delimit_by: [{ value: '.', name: 'periods' }],
+          delimit_index: [{ value: '9', name: 'tenth' }],
           rules: [],
           result_name: ''
         };
@@ -869,7 +865,7 @@ describe('split_by_run_result node config', () => {
         const formData = {
           uuid: 'test-node-uuid',
           result: [{ value: 'favorite_color', name: 'Favorite Color' }],
-          delimit_enabled: true,
+          delimit_by: [{ value: ' ', name: 'spaces' }],
           rules: [],
           result_name: ''
         };
@@ -902,9 +898,8 @@ describe('split_by_run_result node config', () => {
       it('should persist delimiter configuration when enabled', () => {
         const formData = {
           result: [{ value: 'favorite_color', name: 'Favorite Color' }],
-          delimit_enabled: true,
-          field_number: [{ value: '3', name: 'fourth' }],
-          delimiter: [{ value: '+', name: 'plusses' }],
+          delimit_by: [{ value: '+', name: 'plusses' }],
+          delimit_index: [{ value: '3', name: 'fourth' }],
           rules: [],
           result_name: ''
         };
@@ -920,9 +915,8 @@ describe('split_by_run_result node config', () => {
       it('should not include delimiter config when not enabled', () => {
         const formData = {
           result: [{ value: 'favorite_color', name: 'Favorite Color' }],
-          delimit_enabled: false,
-          field_number: [{ value: '0', name: 'first' }],
-          delimiter: [{ value: ' ', name: 'spaces' }],
+          delimit_by: [{ value: '', name: "Don't delimit" }],
+          delimit_index: [{ value: '0', name: 'first' }],
           rules: [],
           result_name: ''
         };
@@ -1023,12 +1017,11 @@ describe('split_by_run_result node config', () => {
 
         // Convert to form data
         const formData = split_by_run_result.toFormData!(originalNode, nodeUI);
-        expect(formData.delimit_enabled).to.be.false;
+        expect(formData.delimit_by[0].value).to.equal('');
 
         // Enable delimiter
-        formData.delimit_enabled = true;
-        formData.field_number = [{ value: '2', name: 'third' }];
-        formData.delimiter = [{ value: '+', name: 'plusses' }];
+        formData.delimit_by = [{ value: '+', name: 'plusses' }];
+        formData.delimit_index = [{ value: '2', name: 'third' }];
 
         // Convert to node
         const resultNode = split_by_run_result.fromFormData!(

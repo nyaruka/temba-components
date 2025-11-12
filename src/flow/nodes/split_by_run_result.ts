@@ -14,8 +14,8 @@ import {
 } from './shared-rules';
 import { getStore } from '../../store/Store';
 
-// field number options for delimiter feature (first through 20th)
-const FIELD_NUMBER_OPTIONS = [
+// delimit index options (first through 20th)
+const DELIMIT_INDEX_OPTIONS = [
   { value: '0', name: 'first' },
   { value: '1', name: 'second' },
   { value: '2', name: 'third' },
@@ -38,8 +38,9 @@ const FIELD_NUMBER_OPTIONS = [
   { value: '19', name: '20th' }
 ];
 
-// delimiter options for delimiter feature
-const DELIMITER_OPTIONS = [
+// delimit by options - includes "don't delimit" and delimiter characters
+const DELIMIT_BY_OPTIONS = [
+  { value: '', name: "Don't delimit" },
   { value: ' ', name: 'spaces' },
   { value: '.', name: 'periods' },
   { value: '+', name: 'plusses' }
@@ -71,35 +72,30 @@ export const split_by_run_result: NodeConfig = {
       valueKey: 'value',
       nameKey: 'name'
     },
-    delimit_enabled: {
-      type: 'checkbox',
-      label: 'Delimit Result',
-      helpText: 'Evaluate your rules against a delimited part of your result'
-    },
-    field_number: {
+    delimit_by: {
       type: 'select',
-      label: 'Field',
+      label: 'Delimit by',
       required: false,
       searchable: false,
       clearable: false,
-      options: FIELD_NUMBER_OPTIONS,
+      options: DELIMIT_BY_OPTIONS,
       valueKey: 'value',
-      nameKey: 'name',
-      conditions: {
-        visible: (formData: FormData) => formData.delimit_enabled === true
-      }
+      nameKey: 'name'
     },
-    delimiter: {
+    delimit_index: {
       type: 'select',
-      label: 'Delimiter',
+      label: 'Delimit Index',
       required: false,
       searchable: false,
       clearable: false,
-      options: DELIMITER_OPTIONS,
+      options: DELIMIT_INDEX_OPTIONS,
       valueKey: 'value',
       nameKey: 'name',
       conditions: {
-        visible: (formData: FormData) => formData.delimit_enabled === true
+        visible: (formData: FormData) => {
+          const delimitBy = formData.delimit_by?.[0]?.value;
+          return delimitBy !== undefined && delimitBy !== '';
+        }
       }
     },
     rules: createRulesArrayConfig(
@@ -112,17 +108,13 @@ export const split_by_run_result: NodeConfig = {
     'result',
     {
       type: 'group',
-      label: 'Advanced',
+      label: 'Delimit Result (Optional)',
       collapsible: true,
-      collapsed: (formData: FormData) => !formData.delimit_enabled,
-      items: [
-        'delimit_enabled',
-        {
-          type: 'row',
-          items: ['field_number', 'delimiter'],
-          gap: '1rem'
-        }
-      ]
+      collapsed: (formData: FormData) => {
+        const delimitBy = formData.delimit_by?.[0]?.value;
+        return delimitBy === undefined || delimitBy === '';
+      },
+      items: ['delimit_by', 'delimit_index']
     },
     'rules',
     'result_name'
@@ -148,24 +140,23 @@ export const split_by_run_result: NodeConfig = {
     const rules = casesToFormRules(node);
 
     // Extract delimiter configuration from UI config
-    const delimit_enabled = nodeUI?.config?.index !== undefined;
-    const field_number = nodeUI?.config?.index ?? 0;
-    const delimiter = nodeUI?.config?.delimiter ?? ' ';
+    const hasDelimiter = nodeUI?.config?.index !== undefined;
+    const delimitIndex = nodeUI?.config?.index ?? 0;
+    const delimiter = nodeUI?.config?.delimiter ?? '';
 
     return {
       uuid: node.uuid,
       result: result ? [result] : [],
-      delimit_enabled: delimit_enabled,
-      field_number: delimit_enabled
+      delimit_by: hasDelimiter
+        ? [DELIMIT_BY_OPTIONS.find((opt) => opt.value === delimiter)]
+        : [DELIMIT_BY_OPTIONS[0]],
+      delimit_index: hasDelimiter
         ? [
-            FIELD_NUMBER_OPTIONS.find(
-              (opt) => opt.value === String(field_number)
+            DELIMIT_INDEX_OPTIONS.find(
+              (opt) => opt.value === String(delimitIndex)
             )
           ]
-        : [FIELD_NUMBER_OPTIONS[0]],
-      delimiter: delimit_enabled
-        ? [DELIMITER_OPTIONS.find((opt) => opt.value === delimiter)]
-        : [DELIMITER_OPTIONS[0]],
+        : [DELIMIT_INDEX_OPTIONS[0]],
       rules: rules,
       result_name: node.router?.result_name || ''
     };
@@ -178,15 +169,17 @@ export const split_by_run_result: NodeConfig = {
       return originalNode;
     }
 
-    // Build operand based on whether delimiter is enabled
+    // Build operand based on whether delimiter is selected
     let operand: string;
-    if (formData.delimit_enabled) {
+    const delimitBy = formData.delimit_by?.[0]?.value;
+    const hasDelimiter = delimitBy !== undefined && delimitBy !== '';
+
+    if (hasDelimiter) {
       // Get delimiter configuration
-      const fieldNumber = formData.field_number?.[0]?.value ?? '0';
-      const delimiter = formData.delimiter?.[0]?.value ?? ' ';
+      const delimitIndex = formData.delimit_index?.[0]?.value ?? '0';
 
       // Build operand with field() function
-      operand = `@(field(results.${selectedResult.value}, ${fieldNumber}, "${delimiter}"))`;
+      operand = `@(field(results.${selectedResult.value}, ${delimitIndex}, "${delimitBy}"))`;
     } else {
       // Standard operand without delimiter
       operand = `@results.${selectedResult.value}`;
@@ -243,10 +236,13 @@ export const split_by_run_result: NodeConfig = {
       }
     };
 
-    // Add delimiter configuration if enabled
-    if (formData.delimit_enabled) {
-      config.index = parseInt(formData.field_number?.[0]?.value ?? '0', 10);
-      config.delimiter = formData.delimiter?.[0]?.value ?? ' ';
+    // Add delimiter configuration if selected
+    const delimitBy = formData.delimit_by?.[0]?.value;
+    const hasDelimiter = delimitBy !== undefined && delimitBy !== '';
+
+    if (hasDelimiter) {
+      config.index = parseInt(formData.delimit_index?.[0]?.value ?? '0', 10);
+      config.delimiter = delimitBy;
     }
 
     return config;
