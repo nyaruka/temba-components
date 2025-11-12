@@ -6,10 +6,14 @@ export const set_contact_field: ActionConfig = {
   name: 'Update Field',
   group: ACTION_GROUPS.contacts,
   render: (_node: Node, action: SetContactField) => {
-    return html`<div>
-      Set <strong>${action.field.name}</strong> to
-      <strong>${action.value}</strong>
-    </div>`;
+    if (action.value) {
+      return html`<div>
+        Set <strong>${action.field.name}</strong> to
+        <strong>${action.value}</strong>
+      </div>`;
+    } else {
+      return html`<div>Clear <strong>${action.field.name}</strong></div>`;
+    }
   },
   form: {
     field: {
@@ -30,7 +34,6 @@ export const set_contact_field: ActionConfig = {
       type: 'text',
       label: 'Value',
       placeholder: 'Enter field value...',
-      required: true,
       evaluated: true,
       helpText:
         'The new value for the contact field. You can use expressions like @contact.name'
