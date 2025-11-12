@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {

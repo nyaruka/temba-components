@@ -209,7 +209,8 @@ export const send_msg: ActionConfig = {
       (item: any) => item && item.expression && item.expression.trim() !== ''
     );
 
-    const totalAttachments = staticAttachments.length + runtimeAttachments.length;
+    const totalAttachments =
+      staticAttachments.length + runtimeAttachments.length;
     if (totalAttachments > 10) {
       if (runtimeAttachments.length > 0) {
         errors.runtime_attachments =
