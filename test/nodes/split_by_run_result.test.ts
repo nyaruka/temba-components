@@ -665,4 +665,386 @@ describe('split_by_run_result node config', () => {
       expect(validation.errors).to.deep.equal({});
     });
   });
+
+  describe('delimiter functionality', () => {
+    describe('toFormData', () => {
+      it('should extract delimiter configuration when enabled', () => {
+        const node: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@(field(results.favorite_color, 2, "."))',
+            cases: [
+              {
+                uuid: 'case-1',
+                type: 'has_phrase',
+                arguments: ['red'],
+                category_uuid: 'cat-1'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-1', name: 'Red', exit_uuid: 'exit-1' },
+              { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+            ],
+            default_category_uuid: 'cat-other',
+            result_name: 'color_category'
+          },
+          exits: [
+            { uuid: 'exit-1', destination_uuid: null },
+            { uuid: 'exit-other', destination_uuid: null }
+          ]
+        };
+
+        const nodeUI = {
+          config: {
+            operand: {
+              value: 'favorite_color',
+              name: 'Favorite Color'
+            },
+            index: 2,
+            delimiter: '.'
+          }
+        };
+
+        const formData = split_by_run_result.toFormData!(node, nodeUI);
+
+        expect(formData.delimit_enabled).to.be.true;
+        expect(formData.field_number).to.be.an('array');
+        expect(formData.field_number[0].value).to.equal('2');
+        expect(formData.field_number[0].name).to.equal('third');
+        expect(formData.delimiter).to.be.an('array');
+        expect(formData.delimiter[0].value).to.equal('.');
+        expect(formData.delimiter[0].name).to.equal('periods');
+      });
+
+      it('should handle delimiter not enabled', () => {
+        const node: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@results.favorite_color',
+            cases: [],
+            categories: [
+              {
+                uuid: 'cat-all',
+                name: 'All Responses',
+                exit_uuid: 'exit-all'
+              }
+            ],
+            default_category_uuid: 'cat-all'
+          },
+          exits: [{ uuid: 'exit-all', destination_uuid: null }]
+        };
+
+        const nodeUI = {
+          config: {
+            operand: {
+              value: 'favorite_color',
+              name: 'Favorite Color'
+            }
+          }
+        };
+
+        const formData = split_by_run_result.toFormData!(node, nodeUI);
+
+        expect(formData.delimit_enabled).to.be.false;
+        expect(formData.field_number).to.be.an('array');
+        expect(formData.field_number[0].value).to.equal('0');
+        expect(formData.delimiter).to.be.an('array');
+        expect(formData.delimiter[0].value).to.equal(' ');
+      });
+    });
+
+    describe('fromFormData', () => {
+      it('should generate operand with field() function when delimiter enabled', () => {
+        const formData = {
+          uuid: 'test-node-uuid',
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_enabled: true,
+          field_number: [{ value: '1', name: 'second' }],
+          delimiter: [{ value: '+', name: 'plusses' }],
+          rules: [
+            {
+              operator: { value: 'has_phrase', name: 'has the phrase' },
+              value1: 'red',
+              value2: '',
+              category: 'Red'
+            }
+          ],
+          result_name: 'color_category'
+        };
+
+        const originalNode: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@results.old_result',
+            cases: [],
+            categories: [],
+            default_category_uuid: ''
+          },
+          exits: []
+        };
+
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          originalNode
+        );
+
+        expect(resultNode.router!.operand).to.equal(
+          '@(field(results.favorite_color, 1, "+"))'
+        );
+      });
+
+      it('should generate standard operand when delimiter not enabled', () => {
+        const formData = {
+          uuid: 'test-node-uuid',
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_enabled: false,
+          field_number: [{ value: '0', name: 'first' }],
+          delimiter: [{ value: ' ', name: 'spaces' }],
+          rules: [],
+          result_name: ''
+        };
+
+        const originalNode: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@results.old_result',
+            cases: [],
+            categories: [],
+            default_category_uuid: ''
+          },
+          exits: []
+        };
+
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          originalNode
+        );
+
+        expect(resultNode.router!.operand).to.equal('@results.favorite_color');
+      });
+
+      it('should handle different field numbers correctly', () => {
+        const formData = {
+          uuid: 'test-node-uuid',
+          result: [{ value: 'age', name: 'Age' }],
+          delimit_enabled: true,
+          field_number: [{ value: '9', name: 'tenth' }],
+          delimiter: [{ value: '.', name: 'periods' }],
+          rules: [],
+          result_name: ''
+        };
+
+        const originalNode: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@results.age',
+            cases: [],
+            categories: [],
+            default_category_uuid: ''
+          },
+          exits: []
+        };
+
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          originalNode
+        );
+
+        expect(resultNode.router!.operand).to.equal(
+          '@(field(results.age, 9, "."))'
+        );
+      });
+
+      it('should use default values when delimiter fields missing', () => {
+        const formData = {
+          uuid: 'test-node-uuid',
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_enabled: true,
+          rules: [],
+          result_name: ''
+        };
+
+        const originalNode: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@results.old_result',
+            cases: [],
+            categories: [],
+            default_category_uuid: ''
+          },
+          exits: []
+        };
+
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          originalNode
+        );
+
+        expect(resultNode.router!.operand).to.equal(
+          '@(field(results.favorite_color, 0, " "))'
+        );
+      });
+    });
+
+    describe('toUIConfig', () => {
+      it('should persist delimiter configuration when enabled', () => {
+        const formData = {
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_enabled: true,
+          field_number: [{ value: '3', name: 'fourth' }],
+          delimiter: [{ value: '+', name: 'plusses' }],
+          rules: [],
+          result_name: ''
+        };
+
+        const config = split_by_run_result.toUIConfig!(formData);
+
+        expect(config.operand).to.exist;
+        expect(config.operand.id).to.equal('favorite_color');
+        expect(config.index).to.equal(3);
+        expect(config.delimiter).to.equal('+');
+      });
+
+      it('should not include delimiter config when not enabled', () => {
+        const formData = {
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_enabled: false,
+          field_number: [{ value: '0', name: 'first' }],
+          delimiter: [{ value: ' ', name: 'spaces' }],
+          rules: [],
+          result_name: ''
+        };
+
+        const config = split_by_run_result.toUIConfig!(formData);
+
+        expect(config.operand).to.exist;
+        expect(config.operand.id).to.equal('favorite_color');
+        expect(config.index).to.be.undefined;
+        expect(config.delimiter).to.be.undefined;
+      });
+    });
+
+    describe('round-trip tests', () => {
+      it('should preserve delimiter configuration through toFormData and fromFormData', () => {
+        const originalNode: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@(field(results.favorite_color, 5, "."))',
+            cases: [
+              {
+                uuid: 'case-1',
+                type: 'has_phrase',
+                arguments: ['red'],
+                category_uuid: 'cat-1'
+              }
+            ],
+            categories: [
+              { uuid: 'cat-1', name: 'Red', exit_uuid: 'exit-1' },
+              { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+            ],
+            default_category_uuid: 'cat-other',
+            result_name: 'color_category'
+          },
+          exits: [
+            { uuid: 'exit-1', destination_uuid: null },
+            { uuid: 'exit-other', destination_uuid: null }
+          ]
+        };
+
+        const nodeUI = {
+          config: {
+            operand: {
+              value: 'favorite_color',
+              name: 'Favorite Color'
+            },
+            index: 5,
+            delimiter: '.'
+          }
+        };
+
+        // Convert to form data
+        const formData = split_by_run_result.toFormData!(originalNode, nodeUI);
+
+        // Convert back to node
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          originalNode
+        );
+
+        // Verify operand is preserved
+        expect(resultNode.router!.operand).to.equal(
+          '@(field(results.favorite_color, 5, "."))'
+        );
+      });
+
+      it('should handle toggling delimiter on and off', () => {
+        const originalNode: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@results.favorite_color',
+            cases: [],
+            categories: [
+              {
+                uuid: 'cat-all',
+                name: 'All Responses',
+                exit_uuid: 'exit-all'
+              }
+            ],
+            default_category_uuid: 'cat-all'
+          },
+          exits: [{ uuid: 'exit-all', destination_uuid: null }]
+        };
+
+        // Start with delimiter disabled
+        const nodeUI = {
+          config: {
+            operand: {
+              value: 'favorite_color',
+              name: 'Favorite Color'
+            }
+          }
+        };
+
+        // Convert to form data
+        const formData = split_by_run_result.toFormData!(originalNode, nodeUI);
+        expect(formData.delimit_enabled).to.be.false;
+
+        // Enable delimiter
+        formData.delimit_enabled = true;
+        formData.field_number = [{ value: '2', name: 'third' }];
+        formData.delimiter = [{ value: '+', name: 'plusses' }];
+
+        // Convert to node
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          originalNode
+        );
+
+        expect(resultNode.router!.operand).to.equal(
+          '@(field(results.favorite_color, 2, "+"))'
+        );
+
+        // Get UI config and verify it persists delimiter settings
+        const config = split_by_run_result.toUIConfig!(formData);
+        expect(config.index).to.equal(2);
+        expect(config.delimiter).to.equal('+');
+      });
+    });
+  });
 });
