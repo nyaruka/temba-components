@@ -238,7 +238,7 @@ describe('send_broadcast action config', () => {
         attachments: []
       };
 
-      const action = send_broadcast.fromFormData(formData);
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
 
       expect(action.uuid).to.equal('test-uuid');
       expect(action.type).to.equal('send_broadcast');
@@ -259,7 +259,7 @@ describe('send_broadcast action config', () => {
         attachments: []
       };
 
-      const action = send_broadcast.fromFormData(formData);
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
 
       expect(action.contacts).to.have.lengthOf(0);
       expect(action.groups).to.have.lengthOf(2);
@@ -276,7 +276,7 @@ describe('send_broadcast action config', () => {
         attachments: ['image/jpeg:test.jpg']
       };
 
-      const action = send_broadcast.fromFormData(formData);
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
 
       expect(action.contacts).to.have.lengthOf(1);
       expect(action.groups).to.have.lengthOf(1);
