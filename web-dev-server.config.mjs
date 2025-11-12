@@ -254,7 +254,8 @@ export default {
             '/api/v2/languages.json': 'languages.json',
             '/api/v2/workspace.json': 'workspace.json',
             '/api/internal/locations.json': 'locations.json',
-            '/api/internal/orgs.json': 'orgs.json'
+            '/api/internal/orgs.json': 'orgs.json',
+            '/api/v2/channels.json': 'channels.json'
           };
 
           // Handle base path without query parameters
