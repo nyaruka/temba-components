@@ -1,42 +1,27 @@
 import { html } from 'lit-html';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
-import {
-  ActionConfig,
-  ACTION_GROUPS,
-  FormData,
-  ValidationResult
-} from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
-import { renderNamedObjects } from '../utils';
+import { renderStringList } from '../utils';
+import { Icon } from '../../Icons';
 
 export const send_broadcast: ActionConfig = {
   name: 'Send Broadcast',
   group: ACTION_GROUPS.broadcast,
   render: (_node: Node, action: SendBroadcast) => {
-    const hasGroups = action.groups && action.groups.length > 0;
-    const hasContacts = action.contacts && action.contacts.length > 0;
-    const text = action.text.replace(/\n/g, '<br>');
+    const recipients = [
+      ...(action.contacts || []).map((c) => c.name),
+      ...(action.groups || []).map((g) => g.name)
+    ];
 
     return html`<div>
-      <div
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; margin-bottom: 0.5em"
-      >
-        ${unsafeHTML(text)}
+      <div>${renderStringList(recipients, Icon.contacts)}</div>
+      <div style="margin-top: 0.5em">
+        <div
+          style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+        >
+          ${action.text}
+        </div>
       </div>
-      ${hasGroups
-        ? html`<div style="margin-bottom: 0.25em">
-            <div style="font-weight: bold; margin-bottom: 0.25em">Groups:</div>
-            ${renderNamedObjects(action.groups, 'group')}
-          </div>`
-        : null}
-      ${hasContacts
-        ? html`<div>
-            <div style="font-weight: bold; margin-bottom: 0.25em">
-              Contacts:
-            </div>
-            ${renderNamedObjects(action.contacts, 'contact')}
-          </div>`
-        : null}
     </div>`;
   },
 
@@ -108,32 +93,5 @@ export const send_broadcast: ActionConfig = {
     if (formData.text && typeof formData.text === 'string') {
       formData.text = formData.text.trim();
     }
-  },
-
-  validate: (action: SendBroadcast): ValidationResult => {
-    const errors: { [key: string]: string } = {};
-
-    // Validate recipients
-    const hasGroups = action.groups && action.groups.length > 0;
-    const hasContacts = action.contacts && action.contacts.length > 0;
-    if (!hasGroups && !hasContacts) {
-      errors.recipients = 'At least one contact or group must be selected';
-    }
-
-    // Validate message text
-    if (!action.text || action.text.trim() === '') {
-      errors.text = 'Message text is required';
-    }
-
-    // Validate attachment count
-    const attachments = action.attachments || [];
-    if (attachments.length > 10) {
-      errors.text = 'Each broadcast can only have up to 10 attachments';
-    }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
   }
 };
