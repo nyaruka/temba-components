@@ -147,6 +147,7 @@ export interface SendBroadcast extends Action {
   text: string;
   groups: Group[];
   contacts: NamedObject[];
+  attachments?: string[];
 }
 
 export interface EnterFlow extends Action {
