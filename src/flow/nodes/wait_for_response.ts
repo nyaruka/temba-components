@@ -96,9 +96,10 @@ export const wait_for_response: NodeConfig = {
       type: 'select',
       placeholder: '5 minutes',
       multi: false,
-      maxWidth: '150px',
+      maxWidth: '100px',
       flavor: 'xsmall',
       options: TIMEOUT_OPTIONS,
+
       conditions: {
         visible: (formData: Record<string, any>) => {
           return formData.timeout_enabled === true;

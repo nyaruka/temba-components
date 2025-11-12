@@ -16,34 +16,34 @@ import { getStore } from '../../store/Store';
 
 // delimit index options (first through 20th)
 const DELIMIT_INDEX_OPTIONS = [
-  { value: '0', name: 'first' },
-  { value: '1', name: 'second' },
-  { value: '2', name: 'third' },
-  { value: '3', name: 'fourth' },
-  { value: '4', name: 'fifth' },
-  { value: '5', name: 'sixth' },
-  { value: '6', name: 'seventh' },
-  { value: '7', name: 'eighth' },
-  { value: '8', name: 'ninth' },
-  { value: '9', name: 'tenth' },
-  { value: '10', name: '11th' },
-  { value: '11', name: '12th' },
-  { value: '12', name: '13th' },
-  { value: '13', name: '14th' },
-  { value: '14', name: '15th' },
-  { value: '15', name: '16th' },
-  { value: '16', name: '17th' },
-  { value: '17', name: '18th' },
-  { value: '18', name: '19th' },
-  { value: '19', name: '20th' }
+  { value: '0', name: 'first result' },
+  { value: '1', name: 'second result' },
+  { value: '2', name: 'third result' },
+  { value: '3', name: 'fourth result' },
+  { value: '4', name: 'fifth result' },
+  { value: '5', name: 'sixth result' },
+  { value: '6', name: 'seventh result' },
+  { value: '7', name: 'eighth result' },
+  { value: '8', name: 'ninth result' },
+  { value: '9', name: 'tenth result' },
+  { value: '10', name: '11th result' },
+  { value: '11', name: '12th result' },
+  { value: '12', name: '13th result' },
+  { value: '13', name: '14th result' },
+  { value: '14', name: '15th result' },
+  { value: '15', name: '16th result' },
+  { value: '16', name: '17th result' },
+  { value: '17', name: '18th result' },
+  { value: '18', name: '19th result' },
+  { value: '19', name: '20th result' }
 ];
 
 // delimit by options - includes "don't delimit" and delimiter characters
 const DELIMIT_BY_OPTIONS = [
-  { value: '', name: "Don't delimit" },
-  { value: ' ', name: 'spaces' },
-  { value: '.', name: 'periods' },
-  { value: '+', name: 'plusses' }
+  { value: '', name: "Don't delimit result" },
+  { value: ' ', name: 'Delimited by spaces' },
+  { value: '.', name: 'Delimited by periods' },
+  { value: '+', name: 'Delimited by plusses' }
 ];
 
 export const split_by_run_result: NodeConfig = {
@@ -54,8 +54,7 @@ export const split_by_run_result: NodeConfig = {
   form: {
     result: {
       type: 'select',
-      label: 'Flow Result',
-      helpText: 'Select the flow result to split on',
+
       required: true,
       searchable: false,
       clearable: false,
@@ -74,23 +73,23 @@ export const split_by_run_result: NodeConfig = {
     },
     delimit_by: {
       type: 'select',
-      label: 'Delimit by',
       required: false,
       searchable: false,
       clearable: false,
       options: DELIMIT_BY_OPTIONS,
       valueKey: 'value',
-      nameKey: 'name'
+      nameKey: 'name',
+      maxWidth: '180px'
     },
     delimit_index: {
       type: 'select',
-      label: 'Delimit Index',
       required: false,
       searchable: false,
       clearable: false,
       options: DELIMIT_INDEX_OPTIONS,
       valueKey: 'value',
       nameKey: 'name',
+      maxWidth: '140px',
       conditions: {
         visible: (formData: FormData) => {
           const delimitBy = formData.delimit_by?.[0]?.value;
@@ -105,16 +104,12 @@ export const split_by_run_result: NodeConfig = {
     result_name: resultNameField
   },
   layout: [
-    'result',
     {
-      type: 'group',
-      label: 'Delimit Result (Optional)',
-      collapsible: true,
-      collapsed: (formData: FormData) => {
-        const delimitBy = formData.delimit_by?.[0]?.value;
-        return delimitBy === undefined || delimitBy === '';
-      },
-      items: ['delimit_by', 'delimit_index']
+      type: 'row',
+      label: 'Flow Result',
+      helpText:
+        'Select a flow result and optionally delimit it to split on a specific part',
+      items: ['result', 'delimit_by', 'delimit_index']
     },
     'rules',
     'result_name'
@@ -139,10 +134,18 @@ export const split_by_run_result: NodeConfig = {
     // Extract rules from router cases using shared function
     const rules = casesToFormRules(node);
 
-    // Extract delimiter configuration from UI config
-    const hasDelimiter = nodeUI?.config?.index !== undefined;
-    const delimitIndex = nodeUI?.config?.index ?? 0;
-    const delimiter = nodeUI?.config?.delimiter ?? '';
+    // Extract delimiter configuration by checking the actual operand string
+    // If operand contains field() function, we have a delimiter
+    const operand = node.router?.operand || '';
+    const fieldFunctionMatch = operand.match(
+      /field\(results\.[\w]+,\s*(\d+),\s*"(.+?)"\)/
+    );
+
+    const hasDelimiter = fieldFunctionMatch !== null;
+    const delimitIndex = hasDelimiter
+      ? parseInt(fieldFunctionMatch![1], 10)
+      : 0;
+    const delimiter = hasDelimiter ? fieldFunctionMatch![2] : '';
 
     return {
       uuid: node.uuid,

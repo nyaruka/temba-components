@@ -94,6 +94,28 @@ export class NodeEditor extends RapidElement {
         align-items: center;
       }
 
+      .form-row-wrapper {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-row-label {
+        margin-bottom: 5px;
+        margin-left: 4px;
+        display: block;
+        font-weight: 400;
+        font-size: var(--label-size);
+        letter-spacing: 0.05em;
+        line-height: normal;
+        color: var(--color-label, #777);
+      }
+
+      .form-row-help {
+        font-size: 12px;
+        color: #666;
+        margin-top: 6px;
+      }
+
       .form-group {
         border: 1px solid #e0e0e0;
         border-radius: 6px;
@@ -1059,22 +1081,30 @@ export class NodeEditor extends RapidElement {
     });
   }
 
+  /**
+   * Helper method to check if a field is visible based on its conditions
+   */
+  private isFieldVisible(fieldName: string, config: FieldConfig): boolean {
+    if (config.conditions?.visible) {
+      try {
+        return config.conditions.visible(this.formData);
+      } catch (error) {
+        console.error(`Error checking visibility for ${fieldName}:`, error);
+        // If there's an error, show the field by default
+        return true;
+      }
+    }
+    return true;
+  }
+
   private renderNewField(
     fieldName: string,
     config: FieldConfig,
     value: any
   ): TemplateResult {
     // Check visibility condition
-    if (config.conditions?.visible) {
-      try {
-        const isVisible = config.conditions.visible(this.formData);
-        if (!isVisible) {
-          return html``;
-        }
-      } catch (error) {
-        console.error(`Error checking visibility for ${fieldName}:`, error);
-        // If there's an error, show the field by default
-      }
+    if (!this.isFieldVisible(fieldName, config)) {
+      return html``;
     }
 
     const errors = this.errors[fieldName] ? [this.errors[fieldName]] : [];
@@ -1282,7 +1312,7 @@ export class NodeEditor extends RapidElement {
     config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
-    const { items, gap = '1rem' } = rowConfig;
+    const { items, gap = '1rem', label, helpText } = rowConfig;
 
     // Collect all fields from this row for width calculations
     const fieldsInRow = this.collectFieldsFromItems(items);
@@ -1290,26 +1320,77 @@ export class NodeEditor extends RapidElement {
       (fieldName) => config.form?.[fieldName]
     );
 
-    if (validFields.length === 0) {
+    // Filter for visible fields only to handle conditional visibility
+    const visibleFields = validFields.filter((fieldName) => {
+      const fieldConfig = config.form![fieldName];
+      return this.isFieldVisible(fieldName, fieldConfig);
+    });
+
+    if (visibleFields.length === 0) {
       return html``;
     }
 
-    // Calculate grid template columns based on field maxWidth constraints
-    const columns = validFields.map((fieldName) => {
+    // Build a map of field flex styles
+    // Fields with maxWidth get flex: 0 0 {maxWidth} (fixed)
+    // Fields without maxWidth get flex: 1 1 0 (grow to fill space)
+    const fieldFlexStyles = new Map<string, string>();
+    visibleFields.forEach((fieldName) => {
       const fieldConfig = config.form![fieldName];
-      return fieldConfig.maxWidth || '1fr';
+      if (fieldConfig.maxWidth) {
+        // Fixed width field: no grow, no shrink, basis = maxWidth
+        fieldFlexStyles.set(fieldName, `flex: 0 0 ${fieldConfig.maxWidth};`);
+      } else {
+        // Flexible field: grow to fill remaining space
+        fieldFlexStyles.set(fieldName, `flex: 1 1 0;`);
+      }
     });
 
+    const rowContent = html`
+      <div class="form-row" style="display: flex; gap: ${gap};">
+        ${items.map((item) => {
+          // Get the field name from the item
+          const fieldName =
+            typeof item === 'string'
+              ? item
+              : item.type === 'field'
+              ? item.field
+              : null;
+
+          // Get flex style for this field if it's a visible field
+          const flexStyle =
+            fieldName && fieldFlexStyles.has(fieldName)
+              ? fieldFlexStyles.get(fieldName)
+              : '';
+
+          const itemContent = this.renderLayoutItem(
+            item,
+            config,
+            renderedFields
+          );
+
+          // Wrap in a div with flex style if we have a flex style
+          return flexStyle
+            ? html`<div style="${flexStyle}">${itemContent}</div>`
+            : itemContent;
+        })}
+      </div>
+    `;
+
+    // If no label or helpText, return just the row content
+    if (!label && !helpText) {
+      return rowContent;
+    }
+
+    // Otherwise, wrap with label on top, content, then helpText below (matching field pattern)
     return html`
-      <div
-        class="form-row"
-        style="display: grid; grid-template-columns: ${columns.join(
-          ' '
-        )}; gap: ${gap};"
-      >
-        ${items.map((item) =>
-          this.renderLayoutItem(item, config, renderedFields)
-        )}
+      <div class="form-row-wrapper">
+        ${label ? html`<label class="form-row-label">${label}</label>` : ''}
+        ${rowContent}
+        ${helpText
+          ? html`<div class="form-row-help">
+              ${renderMarkdownInline(helpText)}
+            </div>`
+          : ''}
       </div>
     `;
   }

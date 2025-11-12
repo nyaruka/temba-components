@@ -711,10 +711,10 @@ describe('split_by_run_result node config', () => {
 
         expect(formData.delimit_by).to.be.an('array');
         expect(formData.delimit_by[0].value).to.equal('.');
-        expect(formData.delimit_by[0].name).to.equal('periods');
+        expect(formData.delimit_by[0].name).to.equal('Delimited by periods');
         expect(formData.delimit_index).to.be.an('array');
         expect(formData.delimit_index[0].value).to.equal('2');
-        expect(formData.delimit_index[0].name).to.equal('third');
+        expect(formData.delimit_index[0].name).to.equal('third result');
       });
 
       it('should handle delimiter not enabled', () => {
@@ -750,7 +750,7 @@ describe('split_by_run_result node config', () => {
 
         expect(formData.delimit_by).to.be.an('array');
         expect(formData.delimit_by[0].value).to.equal('');
-        expect(formData.delimit_by[0].name).to.equal("Don't delimit");
+        expect(formData.delimit_by[0].name).to.equal("Don't delimit result");
         expect(formData.delimit_index).to.be.an('array');
         expect(formData.delimit_index[0].value).to.equal('0');
       });
@@ -1037,6 +1037,72 @@ describe('split_by_run_result node config', () => {
         const config = split_by_run_result.toUIConfig!(formData);
         expect(config.index).to.equal(2);
         expect(config.delimiter).to.equal('+');
+      });
+
+      it('should properly remove delimiter when switching from delimited to non-delimited', () => {
+        // Start with a node that has delimiter enabled
+        const nodeWithDelimiter: Node = {
+          uuid: 'test-node-uuid',
+          actions: [],
+          router: {
+            type: 'switch',
+            operand: '@(field(results.favorite_color, 2, "."))',
+            cases: [],
+            categories: [
+              {
+                uuid: 'cat-all',
+                name: 'All Responses',
+                exit_uuid: 'exit-all'
+              }
+            ],
+            default_category_uuid: 'cat-all'
+          },
+          exits: [{ uuid: 'exit-all', destination_uuid: null }]
+        };
+
+        const nodeUI = {
+          config: {
+            operand: {
+              value: 'favorite_color',
+              name: 'Favorite Color'
+            }
+          }
+        };
+
+        // Convert to form data - should show delimiter is enabled
+        const formData = split_by_run_result.toFormData!(
+          nodeWithDelimiter,
+          nodeUI
+        );
+        expect(formData.delimit_by[0].value).to.equal('.');
+        expect(formData.delimit_index[0].value).to.equal('2');
+
+        // Now remove the delimiter by selecting "Don't delimit result"
+        formData.delimit_by = [{ value: '', name: "Don't delimit result" }];
+
+        // Convert back to node
+        const resultNode = split_by_run_result.fromFormData!(
+          formData,
+          nodeWithDelimiter
+        );
+
+        // Operand should now be standard without field() function
+        expect(resultNode.router!.operand).to.equal('@results.favorite_color');
+
+        // Get UI config - should NOT have index or delimiter
+        const config = split_by_run_result.toUIConfig!(formData);
+        expect(config.index).to.be.undefined;
+        expect(config.delimiter).to.be.undefined;
+
+        // Re-open the dialog - toFormData should show no delimiter
+        const formDataReopened = split_by_run_result.toFormData!(
+          resultNode,
+          nodeUI
+        );
+        expect(formDataReopened.delimit_by[0].value).to.equal('');
+        expect(formDataReopened.delimit_by[0].name).to.equal(
+          "Don't delimit result"
+        );
       });
     });
   });

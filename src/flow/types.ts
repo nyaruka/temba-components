@@ -239,6 +239,8 @@ export interface RowLayoutConfig {
   type: 'row';
   items: LayoutItem[]; // can contain fields, groups, or other rows
   gap?: string; // CSS gap value, defaults to '1rem'
+  label?: string; // optional label for the entire row
+  helpText?: string; // optional help text for the entire row
 }
 
 export interface GroupLayoutConfig {
