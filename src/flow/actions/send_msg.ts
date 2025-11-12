@@ -200,39 +200,23 @@ export const send_msg: ActionConfig = {
       formData.text = formData.text.trim();
     }
   },
-  validate: (action: SendMsg): ValidationResult => {
+  validate: (formData: FormData): ValidationResult => {
     const errors: { [key: string]: string } = {};
 
-    if (!action.text || action.text.trim() === '') {
-      errors.text = 'Message text is required';
-    }
+    // Check total attachment count (static + runtime should not exceed 10)
+    const staticAttachments = formData.attachments || [];
+    const runtimeAttachments = (formData.runtime_attachments || []).filter(
+      (item: any) => item && item.expression && item.expression.trim() !== ''
+    );
 
-    const attachments = action.attachments || [];
-    if (attachments.length > 10) {
-      const staticAttachments = attachments.filter(
-        (attachment) =>
-          typeof attachment === 'string' &&
-          attachment.substring(0, attachment.indexOf(':')).includes('/')
-      );
-
-      const runtimeAttachments = attachments.filter(
-        (attachment) =>
-          typeof attachment === 'string' &&
-          !attachment.substring(0, attachment.indexOf(':')).includes('/')
-      );
-
+    const totalAttachments = staticAttachments.length + runtimeAttachments.length;
+    if (totalAttachments > 10) {
       if (runtimeAttachments.length > 0) {
         errors.runtime_attachments =
           'Each message can only have up to 10 attachments';
       }
-
       if (staticAttachments.length > 0) {
-        const message = 'Each message can only have up to 10 total attachments';
-        if (errors.text) {
-          errors.text += ` ${message}`;
-        } else {
-          errors.text = message;
-        }
+        errors.text = 'Each message can only have up to 10 total attachments';
       }
     }
 

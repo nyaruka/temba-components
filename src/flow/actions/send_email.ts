@@ -58,10 +58,10 @@ export const send_email: ActionConfig = {
       body: formData.body
     };
   },
-  validate: (action: SendEmail): ValidationResult => {
+  validate: (formData: FormData): ValidationResult => {
     const errors: { [key: string]: string } = {};
 
-    if (!action.addresses || action.addresses.length === 0) {
+    if (!formData.addresses || formData.addresses.length === 0) {
       errors.addresses = 'At least one recipient email address is required';
     }
 

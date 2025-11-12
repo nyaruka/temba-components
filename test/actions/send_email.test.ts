@@ -118,15 +118,14 @@ describe('send_email action config', () => {
 
   describe('validation edge cases', () => {
     it('fails validation for empty addresses array', () => {
-      const action: SendEmail = {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_email',
         addresses: [],
         subject: 'Test Subject',
         body: 'Test Body'
       };
 
-      const result = send_email.validate(action);
+      const result = send_email.validate(formData);
       expect(result.valid).to.be.false;
       expect(result.errors.addresses).to.equal(
         'At least one recipient email address is required'
@@ -134,15 +133,14 @@ describe('send_email action config', () => {
     });
 
     it('fails validation for null addresses', () => {
-      const action: SendEmail = {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_email',
         addresses: null as any,
         subject: 'Test Subject',
         body: 'Test Body'
       };
 
-      const result = send_email.validate(action);
+      const result = send_email.validate(formData);
       expect(result.valid).to.be.false;
       expect(result.errors.addresses).to.equal(
         'At least one recipient email address is required'
@@ -150,15 +148,14 @@ describe('send_email action config', () => {
     });
 
     it('fails validation for undefined addresses', () => {
-      const action: SendEmail = {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_email',
         addresses: undefined as any,
         subject: 'Test Subject',
         body: 'Test Body'
       };
 
-      const result = send_email.validate(action);
+      const result = send_email.validate(formData);
       expect(result.valid).to.be.false;
       expect(result.errors.addresses).to.equal(
         'At least one recipient email address is required'
@@ -166,47 +163,44 @@ describe('send_email action config', () => {
     });
 
     it('passes validation with valid email addresses', () => {
-      const action: SendEmail = {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_email',
-        addresses: ['valid@example.com'],
+        addresses: [{ name: 'valid@example.com', value: 'valid@example.com' }],
         subject: 'Test Subject',
         body: 'Test Body'
       };
 
-      const result = send_email.validate(action);
+      const result = send_email.validate(formData);
       expect(result.valid).to.be.true;
       expect(Object.keys(result.errors)).to.have.length(0);
     });
 
     it('passes validation with multiple email addresses', () => {
-      const action: SendEmail = {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_email',
         addresses: [
-          'user1@example.com',
-          'user2@example.com',
-          'user3@example.com'
+          { name: 'user1@example.com', value: 'user1@example.com' },
+          { name: 'user2@example.com', value: 'user2@example.com' },
+          { name: 'user3@example.com', value: 'user3@example.com' }
         ],
         subject: 'Test Subject',
         body: 'Test Body'
       };
 
-      const result = send_email.validate(action);
+      const result = send_email.validate(formData);
       expect(result.valid).to.be.true;
       expect(Object.keys(result.errors)).to.have.length(0);
     });
 
     it('passes validation with empty subject and body', () => {
-      const action: SendEmail = {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_email',
-        addresses: ['test@example.com'],
+        addresses: [{ name: 'test@example.com', value: 'test@example.com' }],
         subject: '',
         body: ''
       };
 
-      const result = send_email.validate(action);
+      const result = send_email.validate(formData);
       expect(result.valid).to.be.true;
       expect(Object.keys(result.errors)).to.have.length(0);
     });

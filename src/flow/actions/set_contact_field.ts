@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, ValidationResult } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
 
 export const set_contact_field: ActionConfig = {
@@ -43,7 +43,7 @@ export const set_contact_field: ActionConfig = {
       value: action.value
     };
   },
-  fromFormData: (formData: SetContactField): SetContactField => {
+  fromFormData: (formData: FormData): SetContactField => {
     const field = formData.field[0];
     return {
       uuid: formData.uuid,
@@ -52,23 +52,7 @@ export const set_contact_field: ActionConfig = {
       value: formData.value
     };
   },
-  validate: (formData: SetContactField): ValidationResult => {
-    const errors: { [key: string]: string } = {};
-
-    if (!formData.field) {
-      errors.field = 'Field is required';
-    }
-
-    if (!formData.value || formData.value.trim() === '') {
-      errors.value = 'Field value is required';
-    }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
-  sanitize: (formData: SetContactField): void => {
+  sanitize: (formData: FormData): void => {
     if (formData.value && typeof formData.value === 'string') {
       formData.value = formData.value.trim();
     }
