@@ -57,8 +57,8 @@ export interface ChatStartedEvent extends ContactEvent {
 export interface MsgEvent extends ContactEvent {
   msg: Msg;
   optin?: ObjectReference;
-  _status?: string;
-  _failed_reason?: string;
+  _status?: string | { status: string; changed_on: string; reason: string };
+  _failed_reason?: string; // deprecated
   _logs_url?: string;
 }
 
