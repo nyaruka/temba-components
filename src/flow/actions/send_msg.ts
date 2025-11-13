@@ -237,6 +237,9 @@ export const send_msg: ActionConfig = {
     // Handle text (single value, but stored as array in localization)
     if (localization.text && Array.isArray(localization.text)) {
       formData.text = localization.text[0] || '';
+    } else {
+      // Fall back to empty string if no localization
+      formData.text = '';
     }
 
     // Handle attachments (already an array)

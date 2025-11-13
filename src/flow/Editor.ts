@@ -498,7 +498,7 @@ export class Editor extends RapidElement {
   }
 
   private handleLanguageChange(languageCode: string): void {
-    getStore().getState().setLanguageCode(languageCode);
+    zustand.getState().setLanguageCode(languageCode);
   }
 
   disconnectedCallback(): void {
