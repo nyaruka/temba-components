@@ -1,4 +1,4 @@
-import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes, Features } from '../types';
 import { TransferAirtime, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -9,6 +9,8 @@ export const split_by_airtime: NodeConfig = {
   type: 'split_by_airtime',
   name: 'Send Airtime',
   group: ACTION_GROUPS.services,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
+  features: [Features.AIRTIME],
   showAsAction: true,
   form: {
     amounts: {

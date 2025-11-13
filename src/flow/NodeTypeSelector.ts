@@ -241,6 +241,12 @@ export class NodeTypeSelector extends RapidElement {
   @property({ type: String })
   public mode: 'action' | 'split' | 'action-no-branching' = 'action';
 
+  @property({ type: String })
+  public flowType: string = 'message';
+
+  @property({ type: Array })
+  public features: string[] = [];
+
   @state()
   private clickPosition = { x: 0, y: 0 };
 
@@ -255,6 +261,29 @@ export class NodeTypeSelector extends RapidElement {
 
   public close() {
     this.open = false;
+  }
+
+  /**
+   * Check if a config is available for the current flow type and features
+   */
+  private isConfigAvailable(config: NodeConfig | ActionConfig): boolean {
+    // Check flow type filter
+    if (config.flowTypes && config.flowTypes.length > 0) {
+      if (!config.flowTypes.includes(this.flowType as any)) {
+        return false;
+      }
+    }
+
+    // Check features filter - all required features must be present
+    if (config.features && config.features.length > 0) {
+      for (const requiredFeature of config.features) {
+        if (!this.features.includes(requiredFeature)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private handleNodeTypeClick(nodeType: string) {
@@ -284,7 +313,12 @@ export class NodeTypeSelector extends RapidElement {
       // Collect regular actions (from ACTION_CONFIG, unless hideFromActions is true)
       Object.entries(ACTION_CONFIG)
         .filter(([_, config]) => {
-          return config.name && !config.hideFromActions && config.group;
+          return (
+            config.name &&
+            !config.hideFromActions &&
+            config.group &&
+            this.isConfigAvailable(config)
+          );
         })
         .forEach(([type, config]) => {
           const group = config.group;
@@ -303,7 +337,8 @@ export class NodeTypeSelector extends RapidElement {
               type !== 'execute_actions' &&
               config.name &&
               config.showAsAction &&
-              config.group
+              config.group &&
+              this.isConfigAvailable(config)
             );
           })
           .forEach(([type, config]) => {
@@ -400,7 +435,10 @@ export class NodeTypeSelector extends RapidElement {
           // exclude execute_actions (it's the default action-only node)
           // exclude nodes that have showAsAction=true (they appear in action mode)
           return (
-            type !== 'execute_actions' && config.name && !config.showAsAction
+            type !== 'execute_actions' &&
+            config.name &&
+            !config.showAsAction &&
+            this.isConfigAvailable(config)
           );
         })
         .forEach(([type, config]) => {

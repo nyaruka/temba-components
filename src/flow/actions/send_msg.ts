@@ -4,7 +4,8 @@ import {
   ActionConfig,
   ACTION_GROUPS,
   FormData,
-  ValidationResult
+  ValidationResult,
+  FlowTypes
 } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
@@ -12,6 +13,7 @@ import { titleCase } from '../../utils';
 export const send_msg: ActionConfig = {
   name: 'Send Message',
   group: ACTION_GROUPS.send,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`

@@ -83,6 +83,12 @@ export class Editor extends RapidElement {
   @property({ type: String })
   public version: string;
 
+  @property({ type: String })
+  public flowType: string = 'message';
+
+  @property({ type: Array })
+  public features: string[] = [];
+
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private definition!: FlowDefinition;
 
@@ -1792,6 +1798,9 @@ export class Editor extends RapidElement {
         : ''}
 
       <temba-canvas-menu></temba-canvas-menu>
-      <temba-node-type-selector></temba-node-type-selector> `;
+      <temba-node-type-selector
+        .flowType=${this.flowType}
+        .features=${this.features}
+      ></temba-node-type-selector> `;
   }
 }

@@ -1,4 +1,4 @@
-import { FormData, NodeConfig, ACTION_GROUPS } from '../types';
+import { FormData, NodeConfig, ACTION_GROUPS, FlowTypes, Features } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
@@ -7,6 +7,8 @@ export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
   name: 'Split by AI',
   group: ACTION_GROUPS.services,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
+  features: [Features.AI],
   form: {
     llm: {
       type: 'select',
