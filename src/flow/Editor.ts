@@ -92,6 +92,12 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.dirtyDate)
   private dirtyDate!: Date;
 
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
+
   // Drag state
   @state()
   private isDragging = false;
@@ -165,6 +171,13 @@ export class Editor extends RapidElement {
   private previousActionDragTargetNodeUuid: string | null = null;
 
   private canvasMouseDown = false;
+
+  // Available languages for localization
+  private readonly AVAILABLE_LANGUAGES = [
+    { code: 'eng', name: 'English' },
+    { code: 'fra', name: 'French' },
+    { code: 'esp', name: 'Spanish' }
+  ];
 
   // Bound event handlers to maintain proper 'this' context
   private boundMouseMove = this.handleMouseMove.bind(this);
@@ -316,6 +329,56 @@ export class Editor extends RapidElement {
       .jtk-floating-endpoint {
         pointer-events: none;
       }
+
+      /* Language selector toolbar */
+      #language-toolbar {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        gap: 8px;
+        font-size: 13px;
+      }
+
+      #language-toolbar label {
+        font-weight: 500;
+        color: #666;
+      }
+
+      .language-selector {
+        display: flex;
+        gap: 4px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .language-button {
+        padding: 4px 12px;
+        background: white;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        color: #666;
+        transition: all 0.2s;
+      }
+
+      .language-button:hover {
+        background: #f5f5f5;
+      }
+
+      .language-button.active {
+        background: var(--color-primary, #3498db);
+        color: white;
+        font-weight: 500;
+      }
+
+      .language-button.translating {
+        background: #ffa500;
+        color: white;
+        font-weight: 500;
+      }
     `;
   }
 
@@ -432,6 +495,10 @@ export class Editor extends RapidElement {
       });
 
     getStore().getState().setDirtyDate(null);
+  }
+
+  private handleLanguageChange(languageCode: string): void {
+    getStore().getState().setLanguageCode(languageCode);
   }
 
   disconnectedCallback(): void {
@@ -1699,6 +1766,40 @@ export class Editor extends RapidElement {
     }
   }
 
+  private renderLanguageToolbar(): TemplateResult {
+    if (!this.definition) {
+      return html``;
+    }
+
+    const baseLanguage = this.definition.language;
+
+    return html`
+      <div id="language-toolbar">
+        <label>Language:</label>
+        <div class="language-selector">
+          ${this.AVAILABLE_LANGUAGES.map((lang) => {
+            const isActive = this.languageCode === lang.code;
+            const isBase = lang.code === baseLanguage;
+            const cssClass = isActive
+              ? isBase
+                ? 'active'
+                : 'translating'
+              : '';
+
+            return html`
+              <button
+                class="language-button ${cssClass}"
+                @click=${() => this.handleLanguageChange(lang.code)}
+              >
+                ${lang.name}
+              </button>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
@@ -1708,7 +1809,7 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style}
+    return html`${style} ${this.renderLanguageToolbar()}
       <div id="editor">
         <div
           id="grid"
