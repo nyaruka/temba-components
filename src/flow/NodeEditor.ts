@@ -22,7 +22,6 @@ import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
-import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 
 export class NodeEditor extends RapidElement {
@@ -661,28 +660,10 @@ export class NodeEditor extends RapidElement {
     actionUuid: string,
     localizationData: Record<string, any>
   ): void {
-    const store = getStore().getState();
-
-    // Initialize localization structure if it doesn't exist
-    if (!store.flowDefinition.localization) {
-      store.flowDefinition.localization = {};
-    }
-
-    if (!store.flowDefinition.localization[languageCode]) {
-      store.flowDefinition.localization[languageCode] = {};
-    }
-
-    // Update or remove the localization for this action
-    if (Object.keys(localizationData).length > 0) {
-      store.flowDefinition.localization[languageCode][actionUuid] =
-        localizationData;
-    } else {
-      // If no localized values, remove the entry
-      delete store.flowDefinition.localization[languageCode][actionUuid];
-    }
-
-    // Mark as dirty to trigger save
-    store.setDirtyDate(new Date());
+    // Use the store method to properly update localization with immer
+    zustand
+      .getState()
+      .updateLocalization(languageCode, actionUuid, localizationData);
   }
 
   private processFormDataForSave(): FormData {

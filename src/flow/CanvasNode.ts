@@ -9,6 +9,7 @@ import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
+import { AppState, fromStore, zustand } from '../store/AppState';
 
 const DRAG_THRESHOLD = 5;
 
@@ -25,6 +26,9 @@ export class CanvasNode extends RapidElement {
 
   @property({ type: Object })
   private ui: NodeUI;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
 
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
@@ -160,6 +164,28 @@ export class CanvasNode extends RapidElement {
 
       .node.execute-actions temba-sortable-list .action:last-child .body {
         padding-bottom: 1.5em;
+      }
+
+      /* Localization indicators */
+      .action.localizable {
+        border-left: 3px solid #ffa500;
+      }
+
+      .action.non-localizable {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      .action.non-localizable .action-content {
+        cursor: not-allowed;
+      }
+
+      .localization-indicator {
+        position: absolute;
+        top: 0.5em;
+        right: 0.5em;
+        color: #ffa500;
+        opacity: 0.8;
       }      
 
       .action .drag-handle {
@@ -1213,17 +1239,31 @@ export class CanvasNode extends RapidElement {
   private renderAction(node: Node, action: Action, index: number) {
     const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
+    const isLocalizable = config?.localizable && config.localizable.length > 0;
+    const isDisabled = this.isTranslating && !isLocalizable;
 
     if (config) {
-      return html`<div
-        class="action sortable ${action.type} ${isRemoving ? 'removing' : ''}"
-        id="action-${index}"
-      >
+      const classes = [
+        'action',
+        'sortable',
+        action.type,
+        isRemoving ? 'removing' : '',
+        isLocalizable && this.isTranslating ? 'localizable' : '',
+        isDisabled ? 'non-localizable' : ''
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return html`<div class="${classes}" id="action-${index}">
         <div
           class="action-content"
-          @mousedown=${(e: MouseEvent) => this.handleActionMouseDown(e, action)}
-          @mouseup=${(e: MouseEvent) => this.handleActionMouseUp(e, action)}
-          style="cursor: pointer; background: #fff"
+          @mousedown=${(e: MouseEvent) =>
+            !isDisabled && this.handleActionMouseDown(e, action)}
+          @mouseup=${(e: MouseEvent) =>
+            !isDisabled && this.handleActionMouseUp(e, action)}
+          style="cursor: ${isDisabled
+            ? 'not-allowed'
+            : 'pointer'}; background: #fff"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
@@ -1231,6 +1271,14 @@ export class CanvasNode extends RapidElement {
               ? config.render(node, action)
               : html`<pre>${action.type}</pre>`}
           </div>
+          ${isLocalizable && this.isTranslating
+            ? html`<div
+                class="localization-indicator"
+                title="This action is localizable"
+              >
+                <temba-icon name="language" size="0.8"></temba-icon>
+              </div>`
+            : ''}
         </div>
       </div>`;
     }

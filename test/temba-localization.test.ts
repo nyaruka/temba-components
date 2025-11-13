@@ -69,49 +69,51 @@ describe('Localization Editing', () => {
     const toolbar = editor.querySelector('#language-toolbar');
     expect(toolbar).to.exist;
 
-    // Check that all three languages are present
-    const buttons = toolbar.querySelectorAll('.language-button');
-    expect(buttons.length).to.equal(3);
+    // Check that the select dropdown is present
+    const select = toolbar.querySelector('temba-select');
+    expect(select).to.exist;
 
-    const buttonTexts = Array.from(buttons).map((btn) =>
-      btn.textContent.trim()
+    // Check that all three languages are available as options
+    const options = toolbar.querySelectorAll('temba-option');
+    expect(options.length).to.equal(3);
+
+    const optionNames = Array.from(options).map((opt) =>
+      opt.getAttribute('name')
     );
-    expect(buttonTexts).to.include('English');
-    expect(buttonTexts).to.include('French');
-    expect(buttonTexts).to.include('Spanish');
+    expect(optionNames.some((name) => name.includes('English'))).to.be.true;
+    expect(optionNames.some((name) => name.includes('French'))).to.be.true;
+    expect(optionNames.some((name) => name.includes('Spanish'))).to.be.true;
   });
 
   it('should show English as active by default', async () => {
     const toolbar = editor.querySelector('#language-toolbar');
-    const buttons = toolbar.querySelectorAll('.language-button');
+    const select = toolbar.querySelector('temba-select') as any;
 
-    const activeButton = Array.from(buttons).find((btn) =>
-      btn.classList.contains('active')
-    );
-    expect(activeButton).to.exist;
-    expect(activeButton.textContent.trim()).to.equal('English');
+    expect(select).to.exist;
+    expect(select.values).to.exist;
+    expect(select.values.length).to.be.greaterThan(0);
+    expect(select.values[0].value).to.equal('eng');
   });
 
-  it('should change language when clicking language button', async () => {
+  it('should change language when selecting from dropdown', async () => {
     const toolbar = editor.querySelector('#language-toolbar');
-    const buttons = toolbar.querySelectorAll('.language-button');
+    const select = toolbar.querySelector('temba-select') as any;
 
-    // Find and click Spanish button
-    const spanishButton = Array.from(buttons).find(
-      (btn) => btn.textContent.trim() === 'Spanish'
-    ) as HTMLElement;
-    expect(spanishButton).to.exist;
+    expect(select).to.exist;
 
-    spanishButton.click();
+    // Simulate selecting Spanish
+    select.values = [{ name: 'Spanish', value: 'esp' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
     await editor.updateComplete;
-
-    // Check that Spanish is now active
-    expect(spanishButton.classList.contains('translating')).to.be.true;
 
     // Check store was updated
     const state = zustand.getState();
     expect(state.languageCode).to.equal('esp');
     expect(state.isTranslating).to.be.true;
+
+    // Check that translating indicator is shown
+    const indicator = toolbar.querySelector('.translating-indicator');
+    expect(indicator).to.exist;
   });
 
   it('should load base language values when in English', () => {
