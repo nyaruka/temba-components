@@ -36,7 +36,7 @@ describe('temba-split-by-resthook', () => {
       ]
     };
 
-    const formData = split_by_resthook.toFormData!(node);
+    const formData = split_by_resthook.toFormData!(node) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.resthook).to.have.lengthOf(1);
@@ -80,7 +80,7 @@ describe('temba-split-by-resthook', () => {
       ]
     };
 
-    const formData = split_by_resthook.toFormData!(node);
+    const formData = split_by_resthook.toFormData!(node) as any;
 
     expect(formData.result_name).to.equal('payment_status');
     expect(formData.resthook).to.have.lengthOf(1);
@@ -376,7 +376,7 @@ describe('temba-split-by-resthook', () => {
       exits: []
     };
 
-    const formData = split_by_resthook.toFormData!(node);
+    const formData = split_by_resthook.toFormData!(node) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.resthook).to.have.lengthOf(0);

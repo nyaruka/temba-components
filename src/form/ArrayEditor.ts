@@ -31,6 +31,9 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
   @property({ type: Boolean })
   maintainEmptyItem = true; // Enable by default for better UX
 
+  @property({ type: Object })
+  parentFormData: Record<string, any> = {};
+
   // Focus preservation properties
   private focusInfo: {
     itemIndex: number;
@@ -488,6 +491,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         showLabel: false, // ArrayEditor doesn't show labels for individual fields
         flavor: flavor,
         extraClasses: 'form-control',
+        formData: this.parentFormData,
         onChange: (e: Event) => {
           let value: any;
           const target = e.target as any;

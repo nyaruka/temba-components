@@ -59,7 +59,7 @@ export const split_by_run_result: NodeConfig = {
       searchable: false,
       clearable: false,
       placeholder: 'Select a result...',
-      getDynamicOptions: () => {
+      getDynamicOptions: (_formData?: Record<string, any>) => {
         const store = getStore();
         return store
           ? store

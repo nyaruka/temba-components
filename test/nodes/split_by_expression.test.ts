@@ -65,7 +65,7 @@ describe('split_by_expression node config', () => {
         ]
       };
 
-      const formData = split_by_expression.toFormData!(node);
+      const formData = split_by_expression.toFormData!(node) as any;
 
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.operand).to.equal('@fields.age');
@@ -108,7 +108,7 @@ describe('split_by_expression node config', () => {
         exits: [{ uuid: 'exit-all', destination_uuid: null }]
       };
 
-      const formData = split_by_expression.toFormData!(node);
+      const formData = split_by_expression.toFormData!(node) as any;
 
       expect(formData.uuid).to.equal('test-node-uuid');
       expect(formData.operand).to.equal('@input.text');
@@ -136,7 +136,7 @@ describe('split_by_expression node config', () => {
         exits: [{ uuid: 'exit-all', destination_uuid: null }]
       };
 
-      const formData = split_by_expression.toFormData!(node);
+      const formData = split_by_expression.toFormData!(node) as any;
 
       expect(formData.result_name).to.equal('Color Choice');
     });
@@ -168,7 +168,7 @@ describe('split_by_expression node config', () => {
         ]
       };
 
-      const formData = split_by_expression.toFormData!(node);
+      const formData = split_by_expression.toFormData!(node) as any;
 
       expect(formData.rules).to.have.lengthOf(1);
       expect(formData.rules[0].operator.value).to.equal('has_number');
@@ -718,7 +718,7 @@ describe('split_by_expression node config', () => {
         ]
       };
 
-      const formData = split_by_expression.toFormData!(originalNode);
+      const formData = split_by_expression.toFormData!(originalNode) as any;
       const resultNode = split_by_expression.fromFormData!(
         formData,
         originalNode

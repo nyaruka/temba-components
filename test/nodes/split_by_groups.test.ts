@@ -39,7 +39,7 @@ describe('temba-split-by-groups', () => {
       ]
     };
 
-    const formData = split_by_groups.toFormData!(node);
+    const formData = split_by_groups.toFormData!(node) as any;
 
     expect(formData.uuid).to.equal('test-node-uuid');
     expect(formData.groups).to.have.lengthOf(2);
