@@ -362,4 +362,15 @@ export interface ActionConfig extends FormConfig {
 
   toFormData?: (action: Action) => FormData;
   fromFormData?: (formData: FormData) => Action;
+
+  // Localization support
+  localizable?: string[]; // array of field names that can be localized
+  toLocalizationFormData?: (
+    action: Action,
+    localization: Record<string, any>
+  ) => FormData;
+  fromLocalizationFormData?: (
+    formData: FormData,
+    action: Action
+  ) => Record<string, any>;
 }

@@ -1,7 +1,7 @@
 import { html, TemplateResult, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
-import { Node, NodeUI, Action } from '../store/flow-definition';
+import { Node, NodeUI, Action, FlowDefinition } from '../store/flow-definition';
 import {
   ValidationResult,
   NodeConfig,
@@ -22,6 +22,8 @@ import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
+import { getStore } from '../store/Store';
+import { AppState, fromStore, zustand } from '../store/AppState';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -352,6 +354,15 @@ export class NodeEditor extends RapidElement {
   @state()
   private revealedOptionalFields: Set<string> = new Set();
 
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
+
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private flowDefinition!: FlowDefinition;
+
   connectedCallback(): void {
     super.connectedCallback();
     this.initializeFormData();
@@ -392,7 +403,23 @@ export class NodeEditor extends RapidElement {
       // Action editing mode - use action config
       const actionConfig = ACTION_CONFIG[this.action.type];
 
-      if (actionConfig?.toFormData) {
+      // Check if we're in localization mode
+      if (
+        this.isTranslating &&
+        actionConfig?.localizable &&
+        actionConfig.toLocalizationFormData
+      ) {
+        // Get localized values for this action
+        const localization =
+          this.flowDefinition?.localization?.[this.languageCode]?.[
+            this.action.uuid
+          ] || {};
+
+        this.formData = actionConfig.toLocalizationFormData(
+          this.action,
+          localization
+        );
+      } else if (actionConfig?.toFormData) {
         this.formData = actionConfig.toFormData(this.action);
       } else {
         this.formData = { ...this.action };
@@ -565,6 +592,33 @@ export class NodeEditor extends RapidElement {
     // Process form data to convert key-value arrays to Records before saving
     const processedFormData = this.processFormDataForSave();
 
+    // Check if we're in localization mode
+    if (this.isTranslating && this.action) {
+      const actionConfig = ACTION_CONFIG[this.action.type];
+
+      if (
+        actionConfig?.localizable &&
+        actionConfig.fromLocalizationFormData
+      ) {
+        // Save to localization structure
+        const localizationData = actionConfig.fromLocalizationFormData(
+          processedFormData,
+          this.action
+        );
+
+        // Update the flow definition's localization
+        this.updateLocalization(
+          this.languageCode,
+          this.action.uuid,
+          localizationData
+        );
+
+        // Close the dialog
+        this.fireCustomEvent(CustomEventType.NodeEditCancelled, {});
+        return;
+      }
+    }
+
     // Determine whether to use node or action saving based on context
     // If we have a node with a router, always use node saving (even if action is set)
     // because router configuration is handled at the node level
@@ -603,6 +657,35 @@ export class NodeEditor extends RapidElement {
         uiConfig
       });
     }
+  }
+
+  private updateLocalization(
+    languageCode: string,
+    actionUuid: string,
+    localizationData: Record<string, any>
+  ): void {
+    const store = getStore().getState();
+
+    // Initialize localization structure if it doesn't exist
+    if (!store.flowDefinition.localization) {
+      store.flowDefinition.localization = {};
+    }
+
+    if (!store.flowDefinition.localization[languageCode]) {
+      store.flowDefinition.localization[languageCode] = {};
+    }
+
+    // Update or remove the localization for this action
+    if (Object.keys(localizationData).length > 0) {
+      store.flowDefinition.localization[languageCode][actionUuid] =
+        localizationData;
+    } else {
+      // If no localized values, remove the entry
+      delete store.flowDefinition.localization[languageCode][actionUuid];
+    }
+
+    // Mark as dirty to trigger save
+    store.setDirtyDate(new Date());
   }
 
   private processFormDataForSave(): FormData {
@@ -1760,9 +1843,13 @@ export class NodeEditor extends RapidElement {
     const config = this.getConfig();
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
+    const headerText = this.isTranslating
+      ? `${config?.name || 'Edit'} (Localizing)`
+      : config?.name || 'Edit';
+
     return html`
       <temba-dialog
-        header="${config?.name || 'Edit'}"
+        header="${headerText}"
         .open="${this.isOpen}"
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"
