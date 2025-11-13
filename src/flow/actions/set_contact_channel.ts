@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, ValidationResult } from '../types';
+import { ActionConfig, ACTION_GROUPS } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {
@@ -25,18 +25,6 @@ export const set_contact_channel: ActionConfig = {
     return {
       uuid: action.uuid,
       channel: action.channel ? [action.channel] : null
-    };
-  },
-  validate: (formData: SetContactChannel): ValidationResult => {
-    const errors: { [key: string]: string } = {};
-
-    if (!formData.channel) {
-      errors.channel = 'Channel is required';
-    }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
     };
   }
 };

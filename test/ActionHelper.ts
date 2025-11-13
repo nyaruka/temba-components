@@ -111,9 +111,9 @@ export class ActionTest<T extends Action> {
         expect(convertedAction.uuid).to.equal(action.uuid);
         expect(convertedAction.type).to.equal(action.type);
 
-        // Validate the converted action
+        // Validate the form data
         if (this.actionConfig.validate) {
-          const validation = this.actionConfig.validate(convertedAction);
+          const validation = this.actionConfig.validate(formData);
           expect(validation.valid).to.be.true;
         }
       }
