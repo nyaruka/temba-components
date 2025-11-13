@@ -1,4 +1,4 @@
-import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
@@ -8,6 +8,7 @@ export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
   name: 'Enter a Flow',
   group: ACTION_GROUPS.trigger,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
   form: {
     flow: {

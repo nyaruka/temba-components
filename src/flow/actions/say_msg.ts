@@ -1,8 +1,6 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS } from '../types';
+import { ActionConfig, ACTION_GROUPS, FlowTypes } from '../types';
 import { Node, SayMsg } from '../../store/flow-definition';
-
-import { FlowTypes } from '../types';
 
 export const say_msg: ActionConfig = {
   name: 'Say Message',

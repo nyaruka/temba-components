@@ -149,4 +149,134 @@ describe('temba-node-type-selector', () => {
     expect(selectionDetail.position).to.deep.equal({ x: 100, y: 100 });
     expect(selector.open).to.be.false;
   });
+
+  it('filters actions by flow type - voice flow should show voice-only actions', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'voice';
+    await selector.updateComplete;
+    selector.show('action', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // voice flow should have Say Message and Play Audio
+    expect(titles).to.include('Say Message');
+    expect(titles).to.include('Play Audio');
+  });
+
+  it('filters actions by flow type - message flow should not show voice-only actions', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('action', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // message flow should not have Say Message or Play Audio
+    expect(titles).to.not.include('Say Message');
+    expect(titles).to.not.include('Play Audio');
+  });
+
+  it('filters splits by flow type - message flow should show wait for response', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('split', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // message flow should have Wait for Response
+    expect(titles).to.include('Wait for Response');
+  });
+
+  it('filters splits by flow type - voice flow should not show wait for response', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'voice';
+    await selector.updateComplete;
+    selector.show('split', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // voice flow should not have Wait for Response
+    expect(titles).to.not.include('Wait for Response');
+
+    // but should have Wait for Digits and Wait for Menu Selection
+    expect(titles).to.include('Wait for Digits');
+    expect(titles).to.include('Wait for Menu Selection');
+  });
+
+  it('filters by features - AI feature enables AI splits', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = ['ai'];
+    await selector.updateComplete;
+    selector.show('split', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // with ai feature, should have Split by AI
+    expect(titles).to.include('Split by AI');
+  });
+
+  it('filters by features - without AI feature, AI splits are hidden', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = [];
+    await selector.updateComplete;
+    selector.show('split', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // without ai feature, should not have Split by AI
+    expect(titles).to.not.include('Split by AI');
+  });
+
+  it('filters by features - airtime feature enables airtime actions', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = ['airtime'];
+    await selector.updateComplete;
+    selector.show('action', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // with airtime feature, should have Send Airtime
+    expect(titles).to.include('Send Airtime');
+  });
+
+  it('filters by features - without airtime feature, airtime actions are hidden', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = [];
+    await selector.updateComplete;
+    selector.show('action', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+
+    // without airtime feature, should not have Send Airtime
+    expect(titles).to.not.include('Send Airtime');
+  });
 });

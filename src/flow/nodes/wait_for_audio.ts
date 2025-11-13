@@ -1,7 +1,8 @@
-import { SPLIT_GROUPS, NodeConfig } from '../types';
+import { SPLIT_GROUPS, NodeConfig, FlowTypes } from '../types';
 
 export const wait_for_audio: NodeConfig = {
   type: 'wait_for_audio',
   name: 'Wait for Audio',
-  group: SPLIT_GROUPS.wait
+  group: SPLIT_GROUPS.wait,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND]
 };

@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
 import { Icon } from '../../Icons';
@@ -7,6 +7,7 @@ import { Icon } from '../../Icons';
 export const send_broadcast: ActionConfig = {
   name: 'Send Broadcast',
   group: ACTION_GROUPS.broadcast,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendBroadcast) => {
     const recipients = [
       ...(action.contacts || []).map((c) => c.name),

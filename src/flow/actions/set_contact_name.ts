@@ -1,10 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactName } from '../../store/flow-definition';
 
 export const set_contact_name: ActionConfig = {
   name: 'Update Name',
   group: ACTION_GROUPS.contacts,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactName) => {
     return html`<div>Set to <strong>${action.name}</strong></div>`;
   },
