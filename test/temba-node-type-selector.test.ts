@@ -159,7 +159,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // voice flow should have Say Message and Play Audio
     expect(titles).to.include('Say Message');
@@ -175,7 +177,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // message flow should not have Say Message or Play Audio
     expect(titles).to.not.include('Say Message');
@@ -191,7 +195,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // message flow should have Wait for Response
     expect(titles).to.include('Wait for Response');
@@ -206,7 +212,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // voice flow should not have Wait for Response
     expect(titles).to.not.include('Wait for Response');
@@ -226,7 +234,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // with ai feature, should have Split by AI
     expect(titles).to.include('Split by AI');
@@ -242,7 +252,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // without ai feature, should not have Split by AI
     expect(titles).to.not.include('Split by AI');
@@ -258,7 +270,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // with airtime feature, should have Send Airtime
     expect(titles).to.include('Send Airtime');
@@ -274,7 +288,9 @@ describe('temba-node-type-selector', () => {
 
     // get all node item titles
     const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) => item.textContent);
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
     // without airtime feature, should not have Send Airtime
     expect(titles).to.not.include('Send Airtime');
