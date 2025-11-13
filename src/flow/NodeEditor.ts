@@ -596,10 +596,7 @@ export class NodeEditor extends RapidElement {
     if (this.isTranslating && this.action) {
       const actionConfig = ACTION_CONFIG[this.action.type];
 
-      if (
-        actionConfig?.localizable &&
-        actionConfig.fromLocalizationFormData
-      ) {
+      if (actionConfig?.localizable && actionConfig.fromLocalizationFormData) {
         // Save to localization structure
         const localizationData = actionConfig.fromLocalizationFormData(
           processedFormData,

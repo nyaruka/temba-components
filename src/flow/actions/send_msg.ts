@@ -227,7 +227,10 @@ export const send_msg: ActionConfig = {
     };
   },
   localizable: ['text', 'quick_replies', 'attachments'],
-  toLocalizationFormData: (action: SendMsg, localization: Record<string, any>) => {
+  toLocalizationFormData: (
+    action: SendMsg,
+    localization: Record<string, any>
+  ) => {
     // Convert localized values to form data format
     // Localized values are stored as arrays even for single values
     const formData: FormData = {
@@ -248,7 +251,10 @@ export const send_msg: ActionConfig = {
     }
 
     // Handle quick_replies (already an array)
-    if (localization.quick_replies && Array.isArray(localization.quick_replies)) {
+    if (
+      localization.quick_replies &&
+      Array.isArray(localization.quick_replies)
+    ) {
       formData.quick_replies = localization.quick_replies.map((reply) => ({
         name: reply,
         value: reply
@@ -304,7 +310,8 @@ export const send_msg: ActionConfig = {
     // Only save if different from base action or if there are quick replies
     if (
       quickReplies.length > 0 &&
-      JSON.stringify(quickReplies) !== JSON.stringify(action.quick_replies || [])
+      JSON.stringify(quickReplies) !==
+        JSON.stringify(action.quick_replies || [])
     ) {
       localization.quick_replies = quickReplies;
     }

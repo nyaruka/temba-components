@@ -1,7 +1,7 @@
 import { expect, fixture, html } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { NodeEditor } from '../src/flow/NodeEditor';
-import { SendMsg, Node, FlowDefinition } from '../src/store/flow-definition';
+import { SendMsg, FlowDefinition } from '../src/store/flow-definition';
 import { zustand } from '../src/store/AppState';
 import { send_msg } from '../src/flow/actions/send_msg';
 import '../temba-modules';
