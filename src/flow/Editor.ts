@@ -493,6 +493,13 @@ export class Editor extends RapidElement {
 
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
+    
+    // Repaint connections after language change since node sizes can change
+    if (this.plumber) {
+      requestAnimationFrame(() => {
+        this.plumber.repaintEverything();
+      });
+    }
   }
 
   disconnectedCallback(): void {

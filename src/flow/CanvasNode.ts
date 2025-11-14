@@ -173,25 +173,21 @@ export class CanvasNode extends RapidElement {
       }
 
       /* Localization indicators */
-      .action.localizable {
-        border-left: 3px solid #ffa500;
+      .action.localizable .action-content {
+        background: #fff8dc !important; /* Light yellow background for localizable */
+      }
+
+      .action.localizable.has-localization .action-content {
+        background: #e6f7ff !important; /* Light blue background for localized */
       }
 
       .action.non-localizable {
-        opacity: 0.5;
+        opacity: 0.25;
         pointer-events: none;
       }
 
       .action.non-localizable .action-content {
         cursor: not-allowed;
-      }
-
-      .localization-indicator {
-        position: absolute;
-        top: 0.5em;
-        right: 0.5em;
-        color: #ffa500;
-        opacity: 0.8;
       }      
 
       .action .drag-handle {
@@ -1185,19 +1181,21 @@ export class CanvasNode extends RapidElement {
       ? ACTION_GROUP_METADATA[config.group]?.color
       : '#aaaaaa';
     return html`<div class="cn-title" style="background:${color}">
-      ${this.node?.actions?.length > 1
+      ${!this.isTranslating && this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
-      <div
-        class="remove-button"
-        @click=${(e: MouseEvent) =>
-          this.handleActionRemoveClick(e, action, index)}
-        title="Remove action"
-      >
-        ✕
-      </div>
+      ${!this.isTranslating
+        ? html`<div
+            class="remove-button"
+            @click=${(e: MouseEvent) =>
+              this.handleActionRemoveClick(e, action, index)}
+            title="Remove action"
+          >
+            ✕
+          </div>`
+        : ''}
     </div>`;
   }
 
@@ -1224,13 +1222,15 @@ export class CanvasNode extends RapidElement {
           ? config.renderTitle(node, ui)
           : html`${config.name}`}
       </div>
-      <div
-        class="remove-button"
-        @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
-        title="Remove node"
-      >
-        ✕
-      </div>
+      ${!this.isTranslating
+        ? html`<div
+            class="remove-button"
+            @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+            title="Remove node"
+          >
+            ✕
+          </div>`
+        : ''}
     </div>`;
   }
 
@@ -1295,6 +1295,11 @@ export class CanvasNode extends RapidElement {
     const isLocalizable = config?.localizable && config.localizable.length > 0;
     const isDisabled = this.isTranslating && !isLocalizable;
 
+    // Check if this action has localization data
+    const hasLocalization =
+      this.isTranslating &&
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
+
     // Get the localized action if translating
     const displayAction = this.getLocalizedAction(action);
 
@@ -1305,6 +1310,7 @@ export class CanvasNode extends RapidElement {
         action.type,
         isRemoving ? 'removing' : '',
         isLocalizable && this.isTranslating ? 'localizable' : '',
+        hasLocalization ? 'has-localization' : '',
         isDisabled ? 'non-localizable' : ''
       ]
         .filter(Boolean)
@@ -1317,9 +1323,7 @@ export class CanvasNode extends RapidElement {
             !isDisabled && this.handleActionMouseDown(e, action)}
           @mouseup=${(e: MouseEvent) =>
             !isDisabled && this.handleActionMouseUp(e, action)}
-          style="cursor: ${isDisabled
-            ? 'not-allowed'
-            : 'pointer'}; background: #fff"
+          style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
@@ -1327,14 +1331,6 @@ export class CanvasNode extends RapidElement {
               ? config.render(node, displayAction)
               : html`<pre>${action.type}</pre>`}
           </div>
-          ${isLocalizable && this.isTranslating
-            ? html`<div
-                class="localization-indicator"
-                title="This action is localizable"
-              >
-                <temba-icon name="language" size="0.8"></temba-icon>
-              </div>`
-            : ''}
         </div>
       </div>`;
     }
@@ -1500,7 +1496,7 @@ export class CanvasNode extends RapidElement {
                 (exit) => this.renderExit(exit)
               )}
             </div>`}
-        ${this.ui.type === 'execute_actions'
+        ${this.ui.type === 'execute_actions' && !this.isTranslating
           ? html`<div
               class="add-action-button"
               @click=${(e: MouseEvent) => this.handleAddActionClick(e)}
