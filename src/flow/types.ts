@@ -104,6 +104,17 @@ export interface NodeConfig extends FormConfig {
   toUIConfig?: (formData: FormData) => Record<string, any>;
   render?: (node: Node, nodeUI?: any) => TemplateResult;
   renderTitle?: (node: Node, nodeUI?: NodeUI) => TemplateResult;
+
+  // Localization support for router categories
+  localizable?: 'categories'; // Only categories are localizable for routers
+  toLocalizationFormData?: (
+    node: Node,
+    localization: Record<string, any>
+  ) => FormData;
+  fromLocalizationFormData?: (
+    formData: FormData,
+    node: Node
+  ) => Record<string, any>;
 }
 
 // New field configuration system for generic form generation

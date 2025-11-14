@@ -343,6 +343,41 @@ export class NodeEditor extends RapidElement {
         white-space: pre-wrap;
         word-break: break-word;
       }
+
+      .category-localization-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .category-localization-table th {
+        text-align: left;
+        padding: 10px;
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .category-localization-table td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .category-localization-table td.original-name {
+        background: #fff8dc;
+        font-weight: 500;
+        width: 40%;
+      }
+
+      .category-localization-table td.localized-name {
+        width: 60%;
+      }
+
+      .category-localization-table temba-textinput {
+        width: 100%;
+      }
     `;
   }
 
@@ -455,7 +490,22 @@ export class NodeEditor extends RapidElement {
     } else if (this.node) {
       // Node editing mode - use node config
       const nodeConfig = this.getNodeConfig();
-      if (nodeConfig?.toFormData) {
+
+      // Check if we're in localization mode for a node with localizable categories
+      if (
+        this.isTranslating &&
+        nodeConfig?.localizable === 'categories' &&
+        nodeConfig.toLocalizationFormData
+      ) {
+        // Get localized values for this node's categories
+        const localization =
+          this.flowDefinition?.localization?.[this.languageCode] || {};
+
+        this.formData = nodeConfig.toLocalizationFormData(
+          this.node,
+          localization
+        );
+      } else if (nodeConfig?.toFormData) {
         this.formData = nodeConfig.toFormData(this.node, this.nodeUI);
       } else {
         this.formData = { ...this.node };
@@ -615,26 +665,61 @@ export class NodeEditor extends RapidElement {
     const processedFormData = this.processFormDataForSave();
 
     // Check if we're in localization mode
-    if (this.isTranslating && this.action) {
-      const actionConfig = ACTION_CONFIG[this.action.type];
+    if (this.isTranslating) {
+      // Handle action localization
+      if (this.action) {
+        const actionConfig = ACTION_CONFIG[this.action.type];
 
-      if (actionConfig?.localizable && actionConfig.fromLocalizationFormData) {
-        // Save to localization structure
-        const localizationData = actionConfig.fromLocalizationFormData(
-          processedFormData,
-          this.action
-        );
+        if (
+          actionConfig?.localizable &&
+          actionConfig.fromLocalizationFormData
+        ) {
+          // Save to localization structure
+          const localizationData = actionConfig.fromLocalizationFormData(
+            processedFormData,
+            this.action
+          );
 
-        // Update the flow definition's localization
-        this.updateLocalization(
-          this.languageCode,
-          this.action.uuid,
-          localizationData
-        );
+          // Update the flow definition's localization
+          this.updateLocalization(
+            this.languageCode,
+            this.action.uuid,
+            localizationData
+          );
 
-        // Close the dialog
-        this.fireCustomEvent(CustomEventType.NodeEditCancelled, {});
-        return;
+          // Close the dialog
+          this.fireCustomEvent(CustomEventType.NodeEditCancelled, {});
+          return;
+        }
+      }
+
+      // Handle node localization (for router categories)
+      if (this.node) {
+        const nodeConfig = this.getNodeConfig();
+
+        if (
+          nodeConfig?.localizable === 'categories' &&
+          nodeConfig.fromLocalizationFormData
+        ) {
+          // Get localization data for all categories
+          const localizationData = nodeConfig.fromLocalizationFormData(
+            processedFormData,
+            this.node
+          );
+
+          // Update each category's localization
+          Object.keys(localizationData).forEach((categoryUuid) => {
+            this.updateLocalization(
+              this.languageCode,
+              categoryUuid,
+              localizationData[categoryUuid]
+            );
+          });
+
+          // Close the dialog
+          this.fireCustomEvent(CustomEventType.NodeEditCancelled, {});
+          return;
+        }
       }
     }
 
@@ -1262,6 +1347,71 @@ export class NodeEditor extends RapidElement {
     ]);
   }
 
+  private renderCategoryLocalizationTable(): TemplateResult {
+    const categories = this.formData.categories || {};
+    const categoryEntries = Object.entries(categories);
+
+    if (categoryEntries.length === 0) {
+      return html`<div>No categories to localize</div>`;
+    }
+
+    return html`
+      <div class="category-localization-info">
+        <p style="margin-bottom: 15px; color: #666; font-size: 13px;">
+          Enter localized names for each category. Leave blank to use the original name.
+        </p>
+      </div>
+      <table class="category-localization-table">
+        <thead>
+          <tr>
+            <th>Original Category Name</th>
+            <th>Localized Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${categoryEntries.map(
+            ([categoryUuid, categoryData]: [string, any]) => html`
+              <tr>
+                <td class="original-name">${categoryData.originalName}</td>
+                <td class="localized-name">
+                  <temba-textinput
+                    name="${categoryUuid}"
+                    placeholder="Enter localized name..."
+                    value="${categoryData.localizedName || ''}"
+                    @change=${(e: Event) =>
+                      this.handleCategoryLocalizationChange(
+                        categoryUuid,
+                        (e.target as any).value
+                      )}
+                  ></temba-textinput>
+                </td>
+              </tr>
+            `
+          )}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private handleCategoryLocalizationChange(
+    categoryUuid: string,
+    value: string
+  ): void {
+    // Update formData with new localized value
+    if (!this.formData.categories) {
+      this.formData.categories = {};
+    }
+
+    if (!this.formData.categories[categoryUuid]) {
+      this.formData.categories[categoryUuid] = {};
+    }
+
+    this.formData.categories[categoryUuid].localizedName = value;
+    
+    // Trigger a re-render
+    this.requestUpdate();
+  }
+
   private renderOriginalValue(
     fieldName: string,
     originalValue: any
@@ -1748,6 +1898,11 @@ export class NodeEditor extends RapidElement {
     const config = this.getConfig();
     if (!config) {
       return html` <div>No configuration available</div> `;
+    }
+
+    // Special rendering for category localization
+    if (this.isTranslating && config.localizable === 'categories' && this.formData.categories) {
+      return this.renderCategoryLocalizationTable();
     }
 
     // Use the new fields configuration system
