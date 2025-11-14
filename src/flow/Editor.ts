@@ -83,6 +83,12 @@ export class Editor extends RapidElement {
   @property({ type: String })
   public version: string;
 
+  @property({ type: String })
+  public flowType: string = 'message';
+
+  @property({ type: Array })
+  public features: string[] = [];
+
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private definition!: FlowDefinition;
 
@@ -389,12 +395,36 @@ export class Editor extends RapidElement {
 
     if (changes.has('definition')) {
       this.updateCanvasSize();
+
+      // Set flowType from the loaded definition
+      if (this.definition?.type) {
+        this.flowType = this.getFlowTypeFromDefinition(this.definition.type);
+      }
     }
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
         this.debouncedSave();
       }
+    }
+  }
+
+  /**
+   * Map FlowDefinition type to Editor flowType
+   * FlowDefinition uses: 'messaging', 'messaging_background', 'messaging_offline', 'voice'
+   * Editor uses: 'message', 'voice', 'background'
+   */
+  private getFlowTypeFromDefinition(definitionType: string): string {
+    if (definitionType === 'voice') {
+      return 'voice';
+    } else if (
+      definitionType === 'messaging_background' ||
+      definitionType === 'messaging_offline'
+    ) {
+      return 'background';
+    } else {
+      // 'messaging' or any other messaging type defaults to 'message'
+      return 'message';
     }
   }
 
@@ -1792,6 +1822,9 @@ export class Editor extends RapidElement {
         : ''}
 
       <temba-canvas-menu></temba-canvas-menu>
-      <temba-node-type-selector></temba-node-type-selector> `;
+      <temba-node-type-selector
+        .flowType=${this.flowType}
+        .features=${this.features}
+      ></temba-node-type-selector> `;
   }
 }

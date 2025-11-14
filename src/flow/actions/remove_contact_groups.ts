@@ -3,7 +3,8 @@ import {
   ActionConfig,
   ACTION_GROUPS,
   FormData,
-  ValidationResult
+  ValidationResult,
+  FlowTypes
 } from '../types';
 import { Node, RemoveFromGroup } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
@@ -11,6 +12,7 @@ import { renderNamedObjects } from '../utils';
 export const remove_contact_groups: ActionConfig = {
   name: 'Remove from Group',
   group: ACTION_GROUPS.contacts,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: RemoveFromGroup) => {
     if (action.all_groups) {
       return html`<div>Remove from all groups</div>`;

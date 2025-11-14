@@ -1,10 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
 
 export const set_contact_field: ActionConfig = {
   name: 'Update Field',
   group: ACTION_GROUPS.contacts,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactField) => {
     if (action.value) {
       return html`<div>

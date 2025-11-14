@@ -1,4 +1,4 @@
-import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -50,6 +50,7 @@ export const split_by_run_result: NodeConfig = {
   type: 'split_by_run_result',
   name: 'Split by Result',
   group: SPLIT_GROUPS.split,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   dialogSize: 'large',
   form: {
     result: {

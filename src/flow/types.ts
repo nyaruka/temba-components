@@ -6,6 +6,27 @@ export interface ValidationResult {
   errors: { [key: string]: string };
 }
 
+/**
+ * Flow types - defines the type of flow being edited
+ */
+export const FlowTypes = {
+  MESSAGE: 'message',
+  VOICE: 'voice',
+  BACKGROUND: 'background'
+} as const;
+
+export type FlowType = (typeof FlowTypes)[keyof typeof FlowTypes];
+
+/**
+ * Features - defines the features available in the account
+ */
+export const Features = {
+  AI: 'ai',
+  AIRTIME: 'airtime'
+} as const;
+
+export type Feature = (typeof Features)[keyof typeof Features];
+
 // Component attribute interfaces - these define what's allowed for each component type
 export interface TextInputAttributes {
   type?: 'text' | 'email' | 'number' | 'url' | 'tel';
@@ -82,6 +103,8 @@ export interface NodeConfig extends FormConfig {
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
   showAsAction?: boolean; // if true, show in action dialog instead of splits (default: false - nodes show in splits)
+  flowTypes?: FlowType[]; // which flow types this node is available for (defaults to all if not specified)
+  features?: Feature[]; // which features are required for this node (all must be present)
   router?: {
     type: 'switch' | 'random';
     defaultCategory?: string;
@@ -354,6 +377,8 @@ export interface ActionConfig extends FormConfig {
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];
   hideFromActions?: boolean; // if true, don't show in action dialog (default: false - actions show in actions)
+  flowTypes?: FlowType[]; // which flow types this action is available for (defaults to all if not specified)
+  features?: Feature[]; // which features are required for this action (all must be present)
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;

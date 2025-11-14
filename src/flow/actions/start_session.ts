@@ -3,7 +3,8 @@ import {
   ActionConfig,
   ACTION_GROUPS,
   FormData,
-  ValidationResult
+  ValidationResult,
+  FlowTypes
 } from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
@@ -11,6 +12,7 @@ import { renderNamedObjects } from '../utils';
 export const start_session: ActionConfig = {
   name: 'Start Flow',
   group: ACTION_GROUPS.broadcast,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: StartSession) => {
     const hasGroups = action.groups && action.groups.length > 0;
     const hasContacts = action.contacts && action.contacts.length > 0;

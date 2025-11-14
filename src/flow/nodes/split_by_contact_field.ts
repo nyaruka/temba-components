@@ -1,4 +1,4 @@
-import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -44,6 +44,7 @@ export const split_by_contact_field: NodeConfig = {
   type: 'split_by_contact_field',
   name: 'Split by Contact Field',
   group: SPLIT_GROUPS.split,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   dialogSize: 'large',
   form: {
     field: {
