@@ -295,4 +295,61 @@ describe('temba-node-type-selector', () => {
     // without airtime feature, should not have Send Airtime
     expect(titles).to.not.include('Send Airtime');
   });
+
+  it('hides actions/nodes with empty flowTypes array from selector', async () => {
+    const selector = await createSelector();
+
+    // test that isConfigAvailable returns false for empty flowTypes array
+    const configWithEmptyFlowTypes = {
+      name: 'Test Action',
+      type: 'test_action',
+      flowTypes: [] // empty array should hide from all flow types
+    };
+
+    selector.flowType = 'message';
+    await selector.updateComplete;
+
+    // call private method via any to test behavior
+    const isAvailable = (selector as any).isConfigAvailable(
+      configWithEmptyFlowTypes
+    );
+    expect(isAvailable).to.be.false;
+
+    // test with different flow types - should still be false
+    selector.flowType = 'voice';
+    await selector.updateComplete;
+
+    const isAvailableVoice = (selector as any).isConfigAvailable(
+      configWithEmptyFlowTypes
+    );
+    expect(isAvailableVoice).to.be.false;
+  });
+
+  it('shows actions/nodes with undefined flowTypes for all flow types', async () => {
+    const selector = await createSelector();
+
+    // test that isConfigAvailable returns true for undefined flowTypes
+    const configWithUndefinedFlowTypes = {
+      name: 'Test Action',
+      type: 'test_action'
+      // flowTypes is undefined - should be available for all
+    };
+
+    selector.flowType = 'message';
+    await selector.updateComplete;
+
+    const isAvailable = (selector as any).isConfigAvailable(
+      configWithUndefinedFlowTypes
+    );
+    expect(isAvailable).to.be.true;
+
+    // test with different flow types - should still be true
+    selector.flowType = 'voice';
+    await selector.updateComplete;
+
+    const isAvailableVoice = (selector as any).isConfigAvailable(
+      configWithUndefinedFlowTypes
+    );
+    expect(isAvailableVoice).to.be.true;
+  });
 });

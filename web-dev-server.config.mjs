@@ -345,6 +345,7 @@ export default {
           
           if (fs.existsSync(flowsDir)) {
             const files = fs.readdirSync(flowsDir).filter(file => file.endsWith('.json'));
+            console.log(`Listing ${files.length} flow files from ${flowsDir}...`);
 
             // Return JSON array of filenames
             context.contentType = 'application/json';

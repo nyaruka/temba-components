@@ -36,19 +36,16 @@ import { split_by_webhook } from './nodes/split_by_webhook';
 import { split_by_resthook } from './nodes/split_by_resthook';
 import { split_by_llm } from './nodes/split_by_llm';
 import { split_by_llm_categorize } from './nodes/split_by_llm_categorize';
-import { wait_for_audio } from './nodes/wait_for_audio';
 import { wait_for_digits } from './nodes/wait_for_digits';
-import { wait_for_image } from './nodes/wait_for_image';
-import { wait_for_location } from './nodes/wait_for_location';
 import { wait_for_menu } from './nodes/wait_for_menu';
 import { wait_for_response } from './nodes/wait_for_response';
-import { wait_for_video } from './nodes/wait_for_video';
 
 export const ACTION_CONFIG: {
   [key: string]: ActionConfig;
 } = {
+  say_msg,
+  play_audio,
   set_contact_field,
-
   send_broadcast,
   set_run_result,
   send_msg,
@@ -60,8 +57,6 @@ export const ACTION_CONFIG: {
   set_contact_channel,
   set_contact_language,
   set_contact_status,
-  say_msg,
-  play_audio,
   add_contact_urn,
   add_input_labels,
   request_optin
@@ -71,7 +66,6 @@ export const NODE_CONFIG: {
   [key: string]: NodeConfig;
 } = {
   execute_actions,
-
   split_by_contact_field,
   split_by_expression,
   split_by_groups,
@@ -84,12 +78,8 @@ export const NODE_CONFIG: {
   split_by_ticket,
   split_by_webhook,
   split_by_resthook,
-  wait_for_audio,
   wait_for_digits,
-  wait_for_image,
-  wait_for_location,
   wait_for_menu,
   wait_for_response,
-  wait_for_video,
   split_by_airtime
 };

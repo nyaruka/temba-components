@@ -268,11 +268,17 @@ export class NodeTypeSelector extends RapidElement {
    */
   private isConfigAvailable(config: NodeConfig | ActionConfig): boolean {
     // Check flow type filter
-    if (config.flowTypes && config.flowTypes.length > 0) {
+    if (config.flowTypes !== undefined) {
+      // Empty array means not available for any flow type in selector
+      if (config.flowTypes.length === 0) {
+        return false;
+      }
+      // Non-empty array means check if current flow type is included
       if (!config.flowTypes.includes(this.flowType as any)) {
         return false;
       }
     }
+    // undefined/null flowTypes means available for all flow types
 
     // Check features filter - all required features must be present
     if (config.features && config.features.length > 0) {
