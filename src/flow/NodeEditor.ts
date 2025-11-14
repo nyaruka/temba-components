@@ -325,17 +325,8 @@ export class NodeEditor extends RapidElement {
         background: #fff8dc;
         padding: 10px;
         border-radius: 4px;
-        margin-bottom: 10px;
         font-size: 13px;
         color: #666;
-      }
-
-      .original-value-label {
-        font-weight: 500;
-        color: #555;
-        margin-bottom: 5px;
-        font-size: 12px;
-        text-transform: uppercase;
       }
 
       .original-value-content {
@@ -1297,10 +1288,7 @@ export class NodeEditor extends RapidElement {
       errors
     );
 
-    const content = html`
-      ${originalValueDisplay}
-      ${fieldContent}
-    `;
+    const content = html` ${originalValueDisplay} ${fieldContent} `;
 
     // Wrap in container with style if maxWidth is specified
     if (containerStyle) {
@@ -1436,13 +1424,8 @@ export class NodeEditor extends RapidElement {
       return html``;
     }
 
-    const actionConfig = this.action ? ACTION_CONFIG[this.action.type] : null;
-    const fieldConfig = actionConfig?.form?.[fieldName];
-    const label = fieldConfig?.label || fieldName;
-
     return html`
       <div class="original-value">
-        <div class="original-value-label">Original ${label}:</div>
         <div class="original-value-content">${displayValue}</div>
       </div>
     `;
@@ -2053,12 +2036,13 @@ export class NodeEditor extends RapidElement {
       return html``;
     }
 
-    const headerColor = this.getHeaderColor();
+    const headerColor = this.isTranslating ? '#505050' : this.getHeaderColor();
+    const headerTextColor = this.isTranslating ? '#fff' : '#fff';
     const config = this.getConfig();
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
     const headerText = this.isTranslating
-      ? `${config?.name || 'Edit'} (Localizing)`
+      ? `Translate ${config?.name || 'Edit'}`
       : config?.name || 'Edit';
 
     return html`
@@ -2068,7 +2052,7 @@ export class NodeEditor extends RapidElement {
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"
         cancelButtonName="Cancel"
-        style="--header-bg: ${headerColor}"
+        style="--header-bg: ${headerColor}; --header-text: ${headerTextColor};"
         size="${dialogSize}"
       >
         <div class="node-editor-form">
