@@ -55,8 +55,7 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "F",
-      "_failed_reason": "No suitable channel found",
+      "_status": {"status": "failed", "reason": "error_limit"},
       "_logs_url": null
     },
     {
