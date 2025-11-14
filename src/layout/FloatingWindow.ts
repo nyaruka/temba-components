@@ -111,16 +111,16 @@ export class FloatingWindow extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
-    
+
     // calculate initial position from right side
     if (this.left === -1) {
       this.left = window.innerWidth - this.width - 20;
     }
-    
+
     // store initial position
     this.initialTop = this.top;
     this.initialLeft = this.left;
-    
+
     // set initial hidden class
     this.classList.toggle('hidden', this.hidden);
   }
@@ -131,7 +131,7 @@ export class FloatingWindow extends RapidElement {
     super.updated(changes);
     if (changes.has('hidden')) {
       this.classList.toggle('hidden', this.hidden);
-      
+
       // reset position to initial when showing (only if we have stored initial values)
       if (!this.hidden && changes.get('hidden') && this.initialTop !== 0) {
         this.top = this.initialTop;
@@ -159,7 +159,7 @@ export class FloatingWindow extends RapidElement {
 
     document.addEventListener('mousemove', this.handleMouseMove);
     document.addEventListener('mouseup', this.handleMouseUp);
-    
+
     event.preventDefault();
   }
 
@@ -173,7 +173,10 @@ export class FloatingWindow extends RapidElement {
     this.top = this.dragOffsetY + deltaY;
 
     // keep window within viewport bounds
-    this.left = Math.max(0, Math.min(this.left, window.innerWidth - this.width));
+    this.left = Math.max(
+      0,
+      Math.min(this.left, window.innerWidth - this.width)
+    );
     this.top = Math.max(0, Math.min(this.top, window.innerHeight - 100));
   };
 

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <title>Floating Tab & Window Examples</title>
+    <link
+      href="/static/css/temba-components.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link href="/demo/static/css/styles.css" rel="stylesheet" type="text/css" />
+    <style>
+      body {
+        min-height: 100vh;
+        position: relative;
+      }
+      .content {
+        padding: 20px;
+        max-width: 800px;
+      }
+      .phone-simulator {
+        padding: 20px;
+      }
+      .phone-frame {
+        border: 2px solid #ccc;
+        border-radius: 20px;
+        padding: 40px 10px;
+        background: #f5f5f5;
+      }
+      .phone-screen {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        min-height: 400px;
+      }
+      .message {
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        max-width: 80%;
+      }
+      .message.incoming {
+        background: #e5e7eb;
+        margin-right: auto;
+      }
+      .message.outgoing {
+        background: #10b981;
+        color: white;
+        margin-left: auto;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="content">
+      <h1>Floating Tab & Window Examples</h1>
+      <p><a href="/demo/index.html">← Back to main demo</a></p>
+
+      <div class="example">
+        <h3>Phone Simulator</h3>
+        <p>
+          Click the green phone icon on the right to open a phone simulator
+          window. The window can be dragged around the screen.
+        </p>
+        <p>
+          Hover over the tab to see the label animate in. Click again to close
+          the window.
+        </p>
+      </div>
+
+      <div class="example">
+        <h3>Multiple Tabs</h3>
+        <p>
+          Multiple floating tabs can be displayed at once, each with different
+          colors and purposes.
+        </p>
+        <ul>
+          <li><strong>Phone (Green):</strong> Phone simulator window</li>
+          <li><strong>Clock (Purple):</strong> Revision history window</li>
+          <li><strong>Globe (Gray):</strong> Translation/localization window</li>
+        </ul>
+      </div>
+
+      <div class="example">
+        <h3>Usage</h3>
+        <pre><code>&lt;!-- Floating Tab --&gt;
+&lt;temba-floating-tab
+  id="phone-tab"
+  icon="phone"
+  label="Phone Simulator"
+  color="#10b981"
+  top="100"
+&gt;&lt;/temba-floating-tab&gt;
+
+&lt;!-- Floating Window --&gt;
+&lt;temba-floating-window
+  id="phone-window"
+  title="Phone Simulator"
+  width="250"
+  height="700"
+  top="100"
+&gt;
+  &lt;!-- Your content here --&gt;
+&lt;/temba-floating-window&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- Phone Simulator Tab & Window -->
+    <temba-floating-tab
+      id="phone-tab"
+      icon="phone"
+      label="Phone Simulator"
+      color="#10b981"
+      top="100"
+    ></temba-floating-tab>
+
+    <temba-floating-window
+      id="phone-window"
+      title="Phone Simulator"
+      width="250"
+      height="700"
+      top="100"
+    >
+      <div class="phone-simulator">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <h4 style="margin-top: 0; text-align: center">Chat Preview</h4>
+            <div class="message incoming">
+              Hello! How can I help you today?
+            </div>
+            <div class="message outgoing">I need help with my account</div>
+            <div class="message incoming">
+              Sure, I'd be happy to help. What seems to be the issue?
+            </div>
+          </div>
+        </div>
+      </div>
+    </temba-floating-window>
+
+    <!-- History Tab & Window -->
+    <temba-floating-tab
+      id="history-tab"
+      icon="clock"
+      label="Revision History"
+      color="#8b5cf6"
+      top="200"
+    ></temba-floating-tab>
+
+    <temba-floating-window
+      id="history-window"
+      title="Revision History"
+      width="300"
+      height="500"
+      top="100"
+    >
+      <div style="padding: 20px">
+        <h4 style="margin-top: 0">Recent Changes</h4>
+        <ul style="list-style: none; padding: 0">
+          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
+            <strong>2 hours ago</strong><br />
+            Updated flow configuration
+          </li>
+          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
+            <strong>Yesterday</strong><br />
+            Added new message template
+          </li>
+          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
+            <strong>3 days ago</strong><br />
+            Modified contact fields
+          </li>
+        </ul>
+      </div>
+    </temba-floating-window>
+
+    <!-- Translation Tab & Window -->
+    <temba-floating-tab
+      id="translation-tab"
+      icon="globe"
+      label="Flow Translation"
+      color="#6b7280"
+      top="300"
+    ></temba-floating-tab>
+
+    <temba-floating-window
+      id="translation-window"
+      title="Flow Translation"
+      width="350"
+      height="600"
+      top="100"
+    >
+      <div style="padding: 20px">
+        <h4 style="margin-top: 0">Translate Flow</h4>
+        <div style="display: flex; flex-direction: column; gap: 15px">
+          <div>
+            <label style="display: block; margin-bottom: 5px; font-weight: 500"
+              >Language</label
+            >
+            <select style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db">
+              <option>English</option>
+              <option>Spanish</option>
+              <option>French</option>
+              <option>Portuguese</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px; font-weight: 500"
+              >Original Text</label
+            >
+            <textarea
+              style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db"
+              rows="3"
+              placeholder="Enter text to translate..."
+            ></textarea>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px; font-weight: 500"
+              >Translation</label
+            >
+            <textarea
+              style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db"
+              rows="3"
+              placeholder="Enter translation..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    </temba-floating-window>
+
+    <script type="module">
+      import '/out-tsc/temba-modules.js';
+
+      // connect tabs to windows
+      const phoneTab = document.getElementById('phone-tab');
+      const phoneWindow = document.getElementById('phone-window');
+
+      const historyTab = document.getElementById('history-tab');
+      const historyWindow = document.getElementById('history-window');
+
+      const translationTab = document.getElementById('translation-tab');
+      const translationWindow = document.getElementById('translation-window');
+
+      // phone tab/window interaction
+      phoneTab.addEventListener('temba-button-clicked', () => {
+        phoneTab.hidden = true;
+        phoneWindow.show();
+      });
+
+      phoneWindow.addEventListener('temba-dialog-hidden', () => {
+        phoneWindow.hide();
+        phoneTab.hidden = false;
+      });
+
+      // history tab/window interaction
+      historyTab.addEventListener('temba-button-clicked', () => {
+        historyTab.hidden = true;
+        historyWindow.show();
+      });
+
+      historyWindow.addEventListener('temba-dialog-hidden', () => {
+        historyWindow.hide();
+        historyTab.hidden = false;
+      });
+
+      // translation tab/window interaction
+      translationTab.addEventListener('temba-button-clicked', () => {
+        translationTab.hidden = true;
+        translationWindow.show();
+      });
+
+      translationWindow.addEventListener('temba-dialog-hidden', () => {
+        translationWindow.hide();
+        translationTab.hidden = false;
+      });
+    </script>
+  </body>
+</html>

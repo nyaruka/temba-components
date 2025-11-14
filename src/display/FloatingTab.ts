@@ -2,7 +2,6 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
-import { getClasses } from '../utils';
 
 export class FloatingTab extends RapidElement {
   static get styles() {
@@ -106,7 +105,9 @@ export class FloatingTab extends RapidElement {
     return html`
       <div class="tab" style="${tabStyle}" @click=${this.handleClick}>
         <div class="icon-container">
-          ${this.icon ? html`<temba-icon name="${this.icon}"></temba-icon>` : ''}
+          ${this.icon
+            ? html`<temba-icon name="${this.icon}"></temba-icon>`
+            : ''}
         </div>
         <div class="label">${this.label}</div>
       </div>
