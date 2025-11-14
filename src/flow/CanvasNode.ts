@@ -30,6 +30,12 @@ export class CanvasNode extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
 
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private flowDefinition!: any;
+
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
 
@@ -1236,11 +1242,61 @@ export class CanvasNode extends RapidElement {
     ></div>`;
   }
 
+  /**
+   * Get the localized version of an action if translating, otherwise return the original action.
+   * Falls back to base language values if no localization exists for a field.
+   */
+  private getLocalizedAction(action: Action): Action {
+    // If not translating or no flow definition, return original action
+    if (
+      !this.isTranslating ||
+      !this.flowDefinition ||
+      !this.languageCode ||
+      this.languageCode === this.flowDefinition.language
+    ) {
+      return action;
+    }
+
+    // Check if there's localization for this action
+    const localization =
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
+
+    if (!localization) {
+      // No localization available, return original action
+      return action;
+    }
+
+    // Create a new action with localized values, falling back to base language
+    const localizedAction = { ...action };
+
+    // Apply localized values for each field
+    Object.keys(localization).forEach((field) => {
+      const localizedValue = localization[field];
+      if (Array.isArray(localizedValue)) {
+        // Localized values are stored as arrays
+        if (localizedValue.length > 0) {
+          // For single-value fields like 'text', take the first element
+          // For array fields like 'quick_replies', use the whole array
+          if (Array.isArray(action[field])) {
+            localizedAction[field] = localizedValue;
+          } else {
+            localizedAction[field] = localizedValue[0];
+          }
+        }
+      }
+    });
+
+    return localizedAction;
+  }
+
   private renderAction(node: Node, action: Action, index: number) {
     const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
     const isLocalizable = config?.localizable && config.localizable.length > 0;
     const isDisabled = this.isTranslating && !isLocalizable;
+
+    // Get the localized action if translating
+    const displayAction = this.getLocalizedAction(action);
 
     if (config) {
       const classes = [
@@ -1268,7 +1324,7 @@ export class CanvasNode extends RapidElement {
           ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
             ${config.render
-              ? config.render(node, action)
+              ? config.render(node, displayAction)
               : html`<pre>${action.type}</pre>`}
           </div>
           ${isLocalizable && this.isTranslating
