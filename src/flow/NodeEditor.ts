@@ -320,6 +320,29 @@ export class NodeEditor extends RapidElement {
       .optional-field-link a:hover {
         text-decoration: underline;
       }
+
+      .original-value {
+        background: #fff8dc;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #666;
+      }
+
+      .original-value-label {
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 5px;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .original-value-content {
+        color: #333;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
     `;
   }
 
@@ -725,8 +748,9 @@ export class NodeEditor extends RapidElement {
             }
           }
 
-          // Check required fields
+          // Check required fields (skip in localization mode since all fields are optional)
           if (
+            !this.isTranslating &&
             (fieldConfig as any).required &&
             (!value || (Array.isArray(value) && value.length === 0))
           ) {
@@ -1175,6 +1199,12 @@ export class NodeEditor extends RapidElement {
       ? `max-width: ${config.maxWidth};`
       : '';
 
+    // Render original value if in localization mode and action has the field
+    const originalValueDisplay =
+      this.isTranslating && this.action && fieldName in this.action
+        ? this.renderOriginalValue(fieldName, this.action[fieldName])
+        : html``;
+
     const fieldContent = this.renderFieldContent(
       fieldName,
       config,
@@ -1182,12 +1212,17 @@ export class NodeEditor extends RapidElement {
       errors
     );
 
+    const content = html`
+      ${originalValueDisplay}
+      ${fieldContent}
+    `;
+
     // Wrap in container with style if maxWidth is specified
     if (containerStyle) {
-      return html`<div style="${containerStyle}">${fieldContent}</div>`;
+      return html`<div style="${containerStyle}">${content}</div>`;
     }
 
-    return fieldContent;
+    return content;
   }
 
   private renderOptionalField(
@@ -1225,6 +1260,42 @@ export class NodeEditor extends RapidElement {
       ...this.revealedOptionalFields,
       fieldName
     ]);
+  }
+
+  private renderOriginalValue(
+    fieldName: string,
+    originalValue: any
+  ): TemplateResult {
+    // Format the original value for display
+    let displayValue = '';
+
+    if (Array.isArray(originalValue)) {
+      if (originalValue.length === 0) {
+        return html``; // Don't show anything for empty arrays
+      }
+      // For arrays, join with commas
+      displayValue = originalValue.join(', ');
+    } else if (typeof originalValue === 'string') {
+      displayValue = originalValue;
+    } else if (originalValue) {
+      displayValue = String(originalValue);
+    }
+
+    // Don't show if empty
+    if (!displayValue || displayValue.trim() === '') {
+      return html``;
+    }
+
+    const actionConfig = this.action ? ACTION_CONFIG[this.action.type] : null;
+    const fieldConfig = actionConfig?.form?.[fieldName];
+    const label = fieldConfig?.label || fieldName;
+
+    return html`
+      <div class="original-value">
+        <div class="original-value-label">Original ${label}:</div>
+        <div class="original-value-content">${displayValue}</div>
+      </div>
+    `;
   }
 
   private renderFieldContent(
