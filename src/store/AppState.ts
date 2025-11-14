@@ -438,6 +438,19 @@ export const zustand = createStore<AppState>()(
             delete state.flowDefinition.localization[languageCode][actionUuid];
           }
 
+          // Clean up empty language sections
+          if (
+            Object.keys(state.flowDefinition.localization[languageCode])
+              .length === 0
+          ) {
+            delete state.flowDefinition.localization[languageCode];
+          }
+
+          // Clean up empty localization object
+          if (Object.keys(state.flowDefinition.localization).length === 0) {
+            delete state.flowDefinition.localization;
+          }
+
           state.dirtyDate = new Date();
         });
       }

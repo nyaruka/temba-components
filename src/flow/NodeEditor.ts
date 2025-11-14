@@ -1233,8 +1233,13 @@ export class NodeEditor extends RapidElement {
     value: any,
     errors: string[]
   ): TemplateResult {
+    // In localization mode, make all fields optional (not required)
+    const fieldConfig = this.isTranslating
+      ? { ...config, required: false }
+      : config;
+
     // Use FieldRenderer for consistent field rendering
-    return FieldRenderer.renderField(fieldName, config, value, {
+    return FieldRenderer.renderField(fieldName, fieldConfig, value, {
       errors,
       onChange: (e: Event) => {
         // Handle different change event types

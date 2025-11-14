@@ -173,12 +173,8 @@ export class CanvasNode extends RapidElement {
       }
 
       /* Localization indicators */
-      .action.localizable .action-content {
-        background: #fff8dc !important; /* Light yellow background for localizable */
-      }
-
-      .action.localizable.has-localization .action-content {
-        background: #e6f7ff !important; /* Light blue background for localized */
+      .action.localizable:not(.has-localization) .action-content {
+        background: #fff8dc !important; /* Light yellow background for localizable but not yet localized */
       }
 
       .action.non-localizable {

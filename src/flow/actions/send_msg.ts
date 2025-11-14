@@ -298,32 +298,40 @@ export const send_msg: ActionConfig = {
     const localization: Record<string, any> = {};
 
     // Handle text (store as single-element array)
-    if (formData.text !== undefined && formData.text !== action.text) {
-      localization.text = [formData.text];
+    // Only save if not empty and different from base action
+    if (formData.text && formData.text.trim() !== '') {
+      if (formData.text !== action.text) {
+        localization.text = [formData.text];
+      }
     }
 
     // Handle quick_replies (store as array)
-    const quickReplies = (formData.quick_replies || []).map((reply: any) =>
-      typeof reply === 'string' ? reply : reply.value || reply.name || reply
-    );
+    const quickReplies = (formData.quick_replies || [])
+      .map((reply: any) =>
+        typeof reply === 'string' ? reply : reply.value || reply.name || reply
+      )
+      .filter((reply: string) => reply && reply.trim() !== '');
 
-    // Only save if different from base action or if there are quick replies
-    if (
-      quickReplies.length > 0 &&
-      JSON.stringify(quickReplies) !==
+    // Only save if there are quick replies and different from base action
+    if (quickReplies.length > 0) {
+      if (
+        JSON.stringify(quickReplies) !==
         JSON.stringify(action.quick_replies || [])
-    ) {
-      localization.quick_replies = quickReplies;
+      ) {
+        localization.quick_replies = quickReplies;
+      }
     }
 
     // Handle attachments (combine static and runtime attachments)
-    const staticAttachments = formData.attachments || [];
+    const staticAttachments = (formData.attachments || []).filter(
+      (att: string) => att && att.trim() !== ''
+    );
     const runtimeAttachments = (formData.runtime_attachments || [])
       .filter(
         (item: {
           type: [{ name: string; value: string }];
           expression: string;
-        }) => item && item.type && item.expression
+        }) => item && item.type && item.expression && item.expression.trim() !== ''
       )
       .map(
         (item: {
@@ -334,13 +342,14 @@ export const send_msg: ActionConfig = {
 
     const allAttachments = [...staticAttachments, ...runtimeAttachments];
 
-    // Only save if different from base action or if there are attachments
-    if (
-      allAttachments.length > 0 &&
-      JSON.stringify(allAttachments) !==
+    // Only save if there are attachments and different from base action
+    if (allAttachments.length > 0) {
+      if (
+        JSON.stringify(allAttachments) !==
         JSON.stringify(action.attachments || [])
-    ) {
-      localization.attachments = allAttachments;
+      ) {
+        localization.attachments = allAttachments;
+      }
     }
 
     return localization;
