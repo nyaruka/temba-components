@@ -3,23 +3,22 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { getClasses } from '../utils';
+import { FloatingTab } from '../display/FloatingTab';
 
 export class FloatingWindow extends RapidElement {
   static get styles() {
     return css`
-      :host {
-        position: fixed;
-        z-index: 9998;
-        transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
-      }
-
-      :host(.hidden) {
+      .window.hidden {
         transform: translateX(100%);
         opacity: 0;
         pointer-events: none;
       }
 
       .window {
+        transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
+        position: fixed;
+        z-index: 9999;
+        top: 100px;
         background: white;
         border-radius: 8px;
         box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
@@ -27,6 +26,12 @@ export class FloatingWindow extends RapidElement {
         flex-direction: column;
         height: 100%;
         overflow: hidden;
+      }
+
+      .window.chromeless {
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
       }
 
       .window.dragging {
@@ -39,8 +44,8 @@ export class FloatingWindow extends RapidElement {
         align-items: center;
         justify-content: space-between;
         padding: 12px 16px;
-        background: var(--color-primary-light, #f3f4f6);
-        border-bottom: 1px solid var(--color-widget-border, #e5e7eb);
+        background: var(--header-color, var(--color-primary-light, #f3f4f6));
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         cursor: move;
         user-select: none;
       }
@@ -48,7 +53,7 @@ export class FloatingWindow extends RapidElement {
       .title {
         font-weight: 600;
         font-size: 16px;
-        color: var(--color-text-dark, #1f2937);
+        color: white;
       }
 
       .close-button {
@@ -64,11 +69,11 @@ export class FloatingWindow extends RapidElement {
       }
 
       .close-button:hover {
-        background-color: rgba(0, 0, 0, 0.05);
+        background-color: rgba(255, 255, 255, 0.2);
       }
 
       .close-button temba-icon {
-        --icon-color: var(--color-text, #4b5563);
+        --icon-color: white;
       }
 
       .body {
@@ -76,14 +81,24 @@ export class FloatingWindow extends RapidElement {
         overflow-y: auto;
         padding: 16px;
       }
+
+      .window.chromeless .body {
+        padding: 0;
+      }
+
+      ::slotted(.drag-handle) {
+        cursor: move;
+        user-select: none;
+        border: 1px solid red;
+      }
     `;
   }
 
   @property({ type: String })
-  title = '';
+  header = '';
 
   @property({ type: Number })
-  width = 250;
+  width = 500;
 
   @property({ type: Number })
   height = 700;
@@ -99,6 +114,12 @@ export class FloatingWindow extends RapidElement {
 
   @property({ type: Boolean })
   dragging = false;
+
+  @property({ type: Boolean })
+  chromeless = false;
+
+  @property({ type: String })
+  color = '#6B7280';
 
   private dragStartX = 0;
   private dragStartY = 0;
@@ -121,9 +142,37 @@ export class FloatingWindow extends RapidElement {
     this.initialTop = this.top;
     this.initialLeft = this.left;
 
-    // set initial hidden class
-    this.classList.toggle('hidden', this.hidden);
+    // set up drag handle listeners for chromeless windows
+    if (this.chromeless) {
+      this.setupDragHandles();
+    }
   }
+
+  private setupDragHandles() {
+    // listen for mousedown on slotted content
+    this.addEventListener('mousedown', this.handleSlotMouseDown);
+  }
+
+  private handleSlotMouseDown = (event: MouseEvent) => {
+    // check if the target or any parent has the drag-handle class
+    const target = event.target as HTMLElement;
+    const dragHandle = target.closest('.drag-handle');
+
+    if (!dragHandle) {
+      return;
+    }
+
+    this.dragging = true;
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.dragOffsetX = this.left;
+    this.dragOffsetY = this.top;
+
+    document.addEventListener('mousemove', this.handleMouseMove);
+    document.addEventListener('mouseup', this.handleMouseUp);
+
+    event.preventDefault();
+  };
 
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -138,10 +187,17 @@ export class FloatingWindow extends RapidElement {
         this.left = this.initialLeft;
       }
     }
+
+    // setup drag handles if chromeless changed to true
+    if (changes.has('chromeless') && this.chromeless) {
+      this.setupDragHandles();
+    }
   }
 
   private handleClose() {
     this.hidden = true;
+    // show all tabs when window is closed
+    FloatingTab.showAllTabs();
     this.fireCustomEvent(CustomEventType.DialogHidden);
   }
 
@@ -194,27 +250,41 @@ export class FloatingWindow extends RapidElement {
     this.hidden = true;
   }
 
+  public close() {
+    this.hidden = true;
+    // show all tabs when window is closed
+    FloatingTab.showAllTabs();
+    this.fireCustomEvent(CustomEventType.DialogHidden);
+  }
+
   public render(): TemplateResult {
     const windowStyle = `
       width: ${this.width}px;
       height: ${this.height}px;
       top: ${this.top}px;
       left: ${this.left}px;
+      --header-color: ${this.color};
     `;
 
     const windowClasses = getClasses({
       window: true,
-      dragging: this.dragging
+      dragging: this.dragging,
+      hidden: this.hidden,
+      chromeless: this.chromeless
     });
 
     return html`
       <div class="${windowClasses}" style="${windowStyle}">
-        <div class="header" @mousedown=${this.handleHeaderMouseDown}>
-          <div class="title">${this.title}</div>
-          <button class="close-button" @click=${this.handleClose}>
-            <temba-icon name="x"></temba-icon>
-          </button>
-        </div>
+        ${!this.chromeless
+          ? html`
+              <div class="header" @mousedown=${this.handleHeaderMouseDown}>
+                <div class="title">${this.header}</div>
+                <button class="close-button" @click=${this.handleClose}>
+                  <temba-icon name="close" size="2"></temba-icon>
+                </button>
+              </div>
+            `
+          : ''}
         <div class="body">
           <slot></slot>
         </div>

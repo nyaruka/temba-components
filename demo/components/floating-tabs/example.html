@@ -21,37 +21,160 @@
       .content {
         padding: 20px;
         max-width: 800px;
+                
       }
       .phone-simulator {
-        padding: 20px;
+        padding: 30px;
+        position: relative;
       }
       .phone-frame {
-        border: 2px solid #ccc;
+        border-radius: 40px;
+        border: 8px solid #1f2937;
+        box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
+        background: #000;
+        position: relative;
+        overflow:hidden;
+        
+      }
+      .phone-top {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        cursor: grab;
+      }
+      .phone-notch {
+        background: transparent;
+        height: 50px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+      }
+      .phone-notch::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+        z-index: -1;
+      }
+      .dynamic-island {
+        
+        top: 10px;
+        left: 50%;
+        
+        width: 120px;
+        height: 30px;
+        background: #000;
         border-radius: 20px;
-        padding: 40px 10px;
-        background: #f5f5f5;
+        z-index: 1;
+      }
+      .phone-notch .time {
+        color: #000;
+        font-size: 14px;
+        font-weight: 600;
+        
+      }
+      .phone-notch .status-icons {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .phone-notch .status-icons span {
+        color: #000;
+        font-size: 14px;
+      }
+      .phone-header {
+        background: transparent;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        cursor: move;
+        user-select: none;
+        border-bottom: none;
+        pointer-events: all;
+      }
+      .close-btn {
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width:29px;
+      }
+
+      .close-btn:hover {
+        color: rgba(0, 0, 0, 0.7);
       }
       .phone-screen {
         background: white;
-        border-radius: 10px;
         padding: 15px;
-        min-height: 400px;
+        padding-top: 75px;
+        padding-bottom: 60px;
+        height:470px;
+        overflow-y: auto;
+        flex-direction: column-reverse;
+        display: flex;
       }
+
+
       .message {
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        max-width: 80%;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        border-radius: 18px;
+        max-width: 70%;
+        font-size: 15px;
+        line-height: 1.4;
       }
       .message.incoming {
-        background: #e5e7eb;
+        background: #e5e5ea;
+        color: #000;
         margin-right: auto;
+        border-bottom-left-radius: 4px;
       }
       .message.outgoing {
-        background: #10b981;
+        background: #007aff;
         color: white;
         margin-left: auto;
-        text-align: right;
+        text-align: left;
+        border-bottom-right-radius: 4px;
+      }
+      .message-input {
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 70%, transparent 100%);
+        padding: 8px 16px;
+        border-top: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: absolute;
+        bottom: 0px;
+        left: 0px;
+        right: 0px;
+        z-index: 10;
+      }
+      .message-input input {
+        flex: 1;
+        border: 1px solid #c6c6c8;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 15px;
+        margin-bottom:5px;
+        background: white;
+        border: none;
+        outline:none;
+      }
+      .message-input input::placeholder {
+        color: #8e8e93;
       }
     </style>
   </head>
@@ -109,85 +232,15 @@
       </div>
     </div>
 
+
     <!-- Phone Simulator Tab & Window -->
-    <temba-floating-tab
-      id="phone-tab"
-      icon="phone"
-      label="Phone Simulator"
-      color="#10b981"
-    ></temba-floating-tab>
-
-    <temba-floating-window
-      id="phone-window"
-      title="Phone Simulator"
-      width="250"
-      height="700"
-      top="100"
-    >
-      <div class="phone-simulator">
-        <div class="phone-frame">
-          <div class="phone-screen">
-            <h4 style="margin-top: 0; text-align: center">Chat Preview</h4>
-            <div class="message incoming">
-              Hello! How can I help you today?
-            </div>
-            <div class="message outgoing">I need help with my account</div>
-            <div class="message incoming">
-              Sure, I'd be happy to help. What seems to be the issue?
-            </div>
-          </div>
-        </div>
-      </div>
-    </temba-floating-window>
-
-    <!-- History Tab & Window -->
-    <temba-floating-tab
-      id="history-tab"
-      icon="clock"
-      label="Revision History"
-      color="#8b5cf6"
-    ></temba-floating-tab>
-
-    <temba-floating-window
-      id="history-window"
-      title="Revision History"
-      width="300"
-      height="500"
-      top="100"
-    >
-      <div style="padding: 20px">
-        <h4 style="margin-top: 0">Recent Changes</h4>
-        <ul style="list-style: none; padding: 0">
-          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
-            <strong>2 hours ago</strong><br />
-            Updated flow configuration
-          </li>
-          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
-            <strong>Yesterday</strong><br />
-            Added new message template
-          </li>
-          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
-            <strong>3 days ago</strong><br />
-            Modified contact fields
-          </li>
-        </ul>
-      </div>
-    </temba-floating-window>
-
-    <!-- Translation Tab & Window -->
-    <temba-floating-tab
-      id="translation-tab"
-      icon="globe"
-      label="Flow Translation"
-      color="#6b7280"
-    ></temba-floating-tab>
-
-    <temba-floating-window
+         <temba-floating-window
       id="translation-window"
-      title="Flow Translation"
+      header="Flow Translation"
       width="350"
       height="600"
       top="100"
+      color="#6b7280"
     >
       <div style="padding: 20px">
         <h4 style="margin-top: 0">Translate Flow</h4>
@@ -227,6 +280,102 @@
       </div>
     </temba-floating-window>
 
+    <temba-floating-window
+      id="phone-window"
+      width="375"
+      height="720"
+      top="60"
+      chromeless
+    >
+      <div class="phone-simulator">
+        
+        <div class="phone-frame">
+          <div class="phone-top drag-handle">
+
+            <div class="phone-notch">
+              <div style="width:29px;"></div>
+              <div class="dynamic-island"></div>
+              <button class="close-btn" onclick="document.getElementById('phone-window').close()">
+                <temba-icon name="x" clickable size="2"></temba-icon>
+              </button>
+            </div>
+            
+          </div>
+          <div class="phone-screen">
+            <div class="message outgoing">Always do!</div>
+            <div class="message incoming">Drive safe!</div>
+            <div class="message outgoing">Can't wait!</div>
+            <div class="message incoming">See you soon!</div>
+            <div class="message outgoing">On it!</div>
+            <div class="message incoming">Don't forget the salad dressing!</div>
+            <div class="message outgoing">Sure thing, see you soon!</div>
+            <div class="message incoming">Great! Also need some tomatoes.</div>
+            <div class="message outgoing">I got broccoli and asparagus</div>
+            <div class="message incoming">Can you buy some veggies on your way home?</div>
+          </div>
+          <div class="message-input">
+            <input type="text" placeholder="Enter Message"/>
+          </div>
+        </div>
+      </div>
+    </temba-floating-window>
+
+    <temba-floating-window
+      id="history-window"
+      header="Revision History"
+      width="300"
+      height="500"
+      top="100"
+      color="#8b5cf6"
+    >
+      <div style="padding: 20px">
+        <h4 style="margin-top: 0">Recent Changes</h4>
+        <ul style="list-style: none; padding: 0">
+          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
+            <strong>2 hours ago</strong><br />
+            Updated flow configuration
+          </li>
+          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
+            <strong>Yesterday</strong><br />
+            Added new message template
+          </li>
+          <li style="margin-bottom: 15px; padding: 10px; background: #f3f4f6; border-radius: 8px">
+            <strong>3 days ago</strong><br />
+            Modified contact fields
+          </li>
+        </ul>
+      </div>
+    </temba-floating-window>
+
+    <temba-floating-tab
+      id="phone-tab"
+      icon="simulator"
+      label="Phone Simulator"
+      color="#10b981"
+    ></temba-floating-tab>
+
+    
+
+    <!-- History Tab & Window -->
+    <temba-floating-tab
+      id="history-tab"
+      icon="revisions"
+      label="Revision History"
+      color="#8b5cf6"
+    ></temba-floating-tab>
+
+    
+
+    <!-- Translation Tab & Window -->
+    <temba-floating-tab
+      id="translation-tab"
+      icon="language"
+      label="Flow Translation"
+      color="#6b7280"
+    ></temba-floating-tab>
+
+
+
     <script type="module">
       import '/out-tsc/temba-modules.js';
 
@@ -242,35 +391,29 @@
 
       // phone tab/window interaction
       phoneTab.addEventListener('temba-button-clicked', () => {
-        phoneTab.hidden = true;
         phoneWindow.show();
       });
 
       phoneWindow.addEventListener('temba-dialog-hidden', () => {
         phoneWindow.hide();
-        phoneTab.hidden = false;
       });
 
       // history tab/window interaction
       historyTab.addEventListener('temba-button-clicked', () => {
-        historyTab.hidden = true;
         historyWindow.show();
       });
 
       historyWindow.addEventListener('temba-dialog-hidden', () => {
         historyWindow.hide();
-        historyTab.hidden = false;
       });
 
       // translation tab/window interaction
       translationTab.addEventListener('temba-button-clicked', () => {
-        translationTab.hidden = true;
         translationWindow.show();
       });
 
       translationWindow.addEventListener('temba-dialog-hidden', () => {
         translationWindow.hide();
-        translationTab.hidden = false;
       });
     </script>
   </body>

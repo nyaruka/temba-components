@@ -7,7 +7,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Phone Simulator',
+        header: 'Phone Simulator',
         width: 250,
         height: 700,
         top: 100
@@ -18,7 +18,7 @@ describe('temba-floating-window', () => {
     )) as FloatingWindow;
 
     assert.instanceOf(window, FloatingWindow);
-    expect(window.title).to.equal('Phone Simulator');
+    expect(window.header).to.equal('Phone Simulator');
     expect(window.width).to.equal(250);
     expect(window.height).to.equal(700);
     expect(window.top).to.equal(100);
@@ -42,7 +42,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Test Window'
+        header: 'Test Window'
       },
       '<div>Content</div>'
     )) as FloatingWindow;
@@ -55,7 +55,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Test Window',
+        header: 'Test Window',
         hidden: true
       },
       '<div>Content</div>'
@@ -78,7 +78,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Test Window'
+        header: 'Test Window'
       },
       '<div>Content</div>',
       300,
@@ -106,11 +106,11 @@ describe('temba-floating-window', () => {
     expect(window.hidden).to.equal(true);
   });
 
-  it('displays title correctly', async () => {
+  it('displays header correctly', async () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Phone Simulator'
+        header: 'Phone Simulator'
       },
       '<div>Content</div>',
       300,
@@ -131,14 +131,14 @@ describe('temba-floating-window', () => {
       width: window.width,
       height: window.height
     };
-    await assertScreenshot('floating-window/with-title', clip);
+    await assertScreenshot('floating-window/with-header', clip);
   });
 
   it('renders slot content', async () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Test'
+        header: 'Test'
       },
       '<div class="test-content">Custom content</div>',
       300,
@@ -157,7 +157,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Custom Size',
+        header: 'Custom Size',
         width: 400,
         height: 600
       },
@@ -186,7 +186,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Draggable Window',
+        header: 'Draggable Window',
         width: 250,
         height: 400,
         top: 100,
@@ -215,7 +215,7 @@ describe('temba-floating-window', () => {
     const window = (await getComponent(
       'temba-floating-window',
       {
-        title: 'Test',
+        header: 'Test',
         width: 250,
         height: 400,
         top: 100,
@@ -247,5 +247,114 @@ describe('temba-floating-window', () => {
     // position should be reset
     expect(window.top).to.equal(initialTop);
     expect(window.left).to.equal(initialLeft);
+  });
+
+  it('can disable chrome', async () => {
+    const window = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Test',
+        width: 250,
+        height: 400,
+        top: 100,
+        left: 100,
+        chromeless: true
+      },
+      '<div style="background: white; padding: 20px;">Chromeless content</div>',
+      300,
+      450
+    )) as FloatingWindow;
+
+    expect(window.chromeless).to.equal(true);
+
+    window.hidden = false;
+    await window.updateComplete;
+
+    const windowElement = window.shadowRoot.querySelector('.window');
+    expect(windowElement.classList.contains('chromeless')).to.equal(true);
+
+    // header should not be rendered
+    const header = window.shadowRoot.querySelector('.header');
+    expect(header).to.not.exist;
+
+    // body should have no padding
+    const body = window.shadowRoot.querySelector('.body') as HTMLElement;
+    const bodyStyles = getComputedStyle(body);
+    expect(bodyStyles.padding).to.equal('0px');
+
+    // use custom clip for fixed positioned element
+    const clip = {
+      x: window.left,
+      y: window.top,
+      width: window.width,
+      height: window.height
+    };
+    await assertScreenshot('floating-window/chromeless', clip);
+  });
+
+  it('defaults to showing chrome', async () => {
+    const window = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Test'
+      },
+      '<div>Content</div>'
+    )) as FloatingWindow;
+
+    expect(window.chromeless).to.equal(false);
+  });
+
+  it('can close via public close() method', async () => {
+    const window = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Test',
+        chromeless: true
+      },
+      '<div>Content</div>'
+    )) as FloatingWindow;
+
+    window.hidden = false;
+    await window.updateComplete;
+    expect(window.hidden).to.equal(false);
+
+    let eventFired = false;
+    window.addEventListener('temba-dialog-hidden', () => {
+      eventFired = true;
+    });
+
+    // call public close() method
+    window.close();
+    await window.updateComplete;
+
+    expect(window.hidden).to.equal(true);
+    expect(eventFired).to.equal(true);
+  });
+
+  it('chromeless window has no borders or shadows', async () => {
+    const window = (await getComponent(
+      'temba-floating-window',
+      {
+        header: 'Test',
+        width: 250,
+        height: 400,
+        chromeless: true
+      },
+      '<div>Content</div>',
+      300,
+      450
+    )) as FloatingWindow;
+
+    window.hidden = false;
+    await window.updateComplete;
+
+    const windowElement = window.shadowRoot.querySelector(
+      '.window'
+    ) as HTMLElement;
+    const styles = getComputedStyle(windowElement);
+
+    expect(styles.boxShadow).to.equal('none');
+    expect(styles.borderRadius).to.equal('0px');
+    expect(styles.background.includes('rgba(0, 0, 0, 0)')).to.be.true;
   });
 });

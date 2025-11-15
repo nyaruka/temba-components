@@ -2,22 +2,19 @@ import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
+import { getClasses } from '../utils';
 
 export class FloatingTab extends RapidElement {
   static get styles() {
     return css`
-      :host {
-        position: fixed;
-        right: 0;
-        z-index: 9999;
-        transition: transform 300ms ease-in-out;
-      }
-
-      :host(.hidden) {
+      .tab.hidden {
         transform: translateX(100%);
       }
-
       .tab {
+        position: fixed;
+        right: 0;
+        z-index: 9998;
+        transition: transform 300ms ease-in-out;
         display: flex;
         align-items: center;
         padding: 12px;
@@ -49,7 +46,7 @@ export class FloatingTab extends RapidElement {
       .label {
         color: white;
         font-weight: 500;
-        font-size: 14px;
+        font-size: 16px;
         max-width: 0;
         overflow: hidden;
         white-space: nowrap;
@@ -129,8 +126,25 @@ export class FloatingTab extends RapidElement {
   }
 
   private handleClick() {
+    // hide all tabs when one is clicked
+    FloatingTab.allTabs.forEach((tab) => {
+      tab.hidden = true;
+    });
+
     this.fireCustomEvent(CustomEventType.ButtonClicked, {
       action: 'toggle'
+    });
+  }
+
+  public static showAllTabs() {
+    FloatingTab.allTabs.forEach((tab) => {
+      tab.hidden = false;
+    });
+  }
+
+  public static hideAllTabs() {
+    FloatingTab.allTabs.forEach((tab) => {
+      tab.hidden = true;
     });
   }
 
@@ -140,11 +154,16 @@ export class FloatingTab extends RapidElement {
       top: ${this.top}px;
     `;
 
+    const classes = getClasses({
+      tab: true,
+      hidden: this.hidden
+    });
+
     return html`
-      <div class="tab" style="${tabStyle}" @click=${this.handleClick}>
+      <div class="${classes}" style="${tabStyle}" @click=${this.handleClick}>
         <div class="icon-container">
           ${this.icon
-            ? html`<temba-icon name="${this.icon}"></temba-icon>`
+            ? html`<temba-icon size="2" name="${this.icon}"></temba-icon>`
             : ''}
         </div>
         <div class="label">${this.label}</div>
