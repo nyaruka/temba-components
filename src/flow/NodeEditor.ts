@@ -23,6 +23,7 @@ import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
 import { AppState, fromStore, zustand } from '../store/AppState';
+import { getStore } from '../store/Store';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -337,36 +338,35 @@ export class NodeEditor extends RapidElement {
 
       .category-localization-table {
         width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
       }
 
-      .category-localization-table th {
-        text-align: left;
-        padding: 10px;
-        background: #f5f5f5;
-        border-bottom: 2px solid #ddd;
-        font-size: 13px;
-        font-weight: 500;
-        color: #555;
+      .category-localization-row {
+        display: grid;
+        grid-template-columns: 40% 60%;
       }
 
-      .category-localization-table td {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
+      .category-localization-row:last-child {
+        border-bottom: none;
       }
 
-      .category-localization-table td.original-name {
+      .original-name {
+        padding: 10px 20px;
         background: #fff8dc;
-        font-weight: 500;
-        width: 40%;
+        display: flex;
+        align-items: center;
+        border-radius: var(--curvature);
       }
 
-      .category-localization-table td.localized-name {
-        width: 60%;
+      .localized-name {
+        padding: 10px;
+        display: flex;
+        align-items: center;
       }
 
-      .category-localization-table temba-textinput {
+      .localized-name temba-textinput {
         width: 100%;
       }
     `;
@@ -1343,41 +1343,31 @@ export class NodeEditor extends RapidElement {
       return html`<div>No categories to localize</div>`;
     }
 
+    const languageName =
+      getStore().getLanguageName(this.languageCode) || this.languageCode;
+
     return html`
-      <div class="category-localization-info">
-        <p style="margin-bottom: 15px; color: #666; font-size: 13px;">
-          Enter localized names for each category. Leave blank to use the original name.
-        </p>
+      <div class="category-localization-table">
+        ${categoryEntries.map(
+          ([categoryUuid, categoryData]: [string, any]) => html`
+            <div class="category-localization-row">
+              <div class="original-name">${categoryData.originalName}</div>
+              <div class="localized-name">
+                <temba-textinput
+                  name="${categoryUuid}"
+                  placeholder="${languageName} Translation"
+                  value="${categoryData.localizedName || ''}"
+                  @change=${(e: Event) =>
+                    this.handleCategoryLocalizationChange(
+                      categoryUuid,
+                      (e.target as any).value
+                    )}
+                ></temba-textinput>
+              </div>
+            </div>
+          `
+        )}
       </div>
-      <table class="category-localization-table">
-        <thead>
-          <tr>
-            <th>Original Category Name</th>
-            <th>Localized Name</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${categoryEntries.map(
-            ([categoryUuid, categoryData]: [string, any]) => html`
-              <tr>
-                <td class="original-name">${categoryData.originalName}</td>
-                <td class="localized-name">
-                  <temba-textinput
-                    name="${categoryUuid}"
-                    placeholder="Enter localized name..."
-                    value="${categoryData.localizedName || ''}"
-                    @change=${(e: Event) =>
-                      this.handleCategoryLocalizationChange(
-                        categoryUuid,
-                        (e.target as any).value
-                      )}
-                  ></temba-textinput>
-                </td>
-              </tr>
-            `
-          )}
-        </tbody>
-      </table>
     `;
   }
 
@@ -1395,7 +1385,7 @@ export class NodeEditor extends RapidElement {
     }
 
     this.formData.categories[categoryUuid].localizedName = value;
-    
+
     // Trigger a re-render
     this.requestUpdate();
   }
@@ -1884,7 +1874,11 @@ export class NodeEditor extends RapidElement {
     }
 
     // Special rendering for category localization
-    if (this.isTranslating && config.localizable === 'categories' && this.formData.categories) {
+    if (
+      this.isTranslating &&
+      config.localizable === 'categories' &&
+      this.formData.categories
+    ) {
       return this.renderCategoryLocalizationTable();
     }
 
@@ -2041,8 +2035,12 @@ export class NodeEditor extends RapidElement {
     const config = this.getConfig();
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
+    const languageName = this.isTranslating
+      ? getStore().getLanguageName(this.languageCode) || this.languageCode
+      : '';
+
     const headerText = this.isTranslating
-      ? `Translate ${config?.name || 'Edit'}`
+      ? `${languageName} - ${config?.name || 'Edit'}`
       : config?.name || 'Edit';
 
     return html`
