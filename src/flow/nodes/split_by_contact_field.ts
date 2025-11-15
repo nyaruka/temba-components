@@ -6,7 +6,11 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
@@ -186,5 +190,10 @@ export const split_by_contact_field: NodeConfig = {
   },
   renderTitle: (node: Node, nodeUI?: any) => {
     return html`<div>Split by ${nodeUI.config.operand.name}</div>`;
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

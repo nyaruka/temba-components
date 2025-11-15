@@ -1122,6 +1122,45 @@
     },
     "revision": 69,
     "expire_after_minutes": 4320,
-    "localization": {}
+    "localization": {
+      "esp": {
+        "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5": {
+          "text": [
+            "¿Cuál es tu color favorito?! @contact.uuid. Funciona."
+          ],
+          "quick_replies": [
+            "Rojo",
+            "Verde",
+            "Azul",
+            "Amarillo",
+            "Morado"
+          ]
+        },
+        "9963160a-a007-4c7b-8c9e-7325e1b69ed8": {
+          "text": [
+            "Excelentes opciones."
+          ],
+          "quick_replies": [
+            "Rojo",
+            "Verde",
+            "Azul"
+          ]
+        }
+      },
+      "fra": {
+        "3d56e4cf-1e88-499a-b0b4-ff48385fc9a5": {
+          "text": [
+            "Quelle est votre couleur préférée?! @contact.uuid. Ça marche."
+          ],
+          "quick_replies": [
+            "Rouge",
+            "Vert",
+            "Bleu",
+            "Jaune",
+            "Violet"
+          ]
+        }
+      }
+    }
   }
 }

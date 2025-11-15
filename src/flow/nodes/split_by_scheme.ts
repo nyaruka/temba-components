@@ -2,7 +2,11 @@ import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
 import { SCHEMES } from '../utils';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 // Helper function to get scheme options for the select dropdown
 const getSchemeOptions = () => {
@@ -194,5 +198,10 @@ export const split_by_scheme: NodeConfig = {
   router: {
     type: 'switch',
     operand: '@(urn_parts(contact.urn).scheme)'
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

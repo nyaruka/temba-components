@@ -1,0 +1,330 @@
+import { expect, fixture, html } from '@open-wc/testing';
+import { Editor } from '../src/flow/Editor';
+import { NodeEditor } from '../src/flow/NodeEditor';
+import { SendMsg, FlowDefinition } from '../src/store/flow-definition';
+import { zustand } from '../src/store/AppState';
+import { send_msg } from '../src/flow/actions/send_msg';
+import '../temba-modules';
+
+describe('Localization Editing', () => {
+  let editor: Editor;
+  let storeElement: HTMLElement;
+
+  const languageNames: Record<string, string> = {
+    eng: 'English',
+    fra: 'French',
+    esp: 'Spanish'
+  };
+
+  before(() => {
+    storeElement = document.createElement('temba-store');
+    (storeElement as any).getLanguageName = (code: string) =>
+      languageNames[code];
+    document.body.appendChild(storeElement);
+  });
+
+  after(() => {
+    storeElement?.remove();
+  });
+
+  beforeEach(async () => {
+    // Create a flow definition with localization data
+    const flowDefinition: FlowDefinition = {
+      uuid: 'test-flow',
+      name: 'Test Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {
+        esp: {
+          'action-1': {
+            text: ['Hola mundo'],
+            quick_replies: ['Sí', 'No']
+          }
+        }
+      },
+      nodes: [
+        {
+          uuid: 'node-1',
+          actions: [
+            {
+              type: 'send_msg',
+              uuid: 'action-1',
+              text: 'Hello world',
+              quick_replies: ['Yes', 'No']
+            } as SendMsg
+          ],
+          exits: [{ uuid: 'exit-1' }]
+        }
+      ],
+      _ui: {
+        nodes: {
+          'node-1': {
+            position: { left: 100, top: 100 }
+          }
+        },
+        languages: []
+      }
+    };
+
+    // Initialize store with flow definition
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 1, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    await editor.updateComplete;
+  });
+
+  it('should display language selector toolbar', async () => {
+    const toolbar = editor.querySelector('#language-toolbar');
+    expect(toolbar).to.exist;
+
+    // Check that the select dropdown is present
+    const select = toolbar.querySelector('temba-select');
+    expect(select).to.exist;
+
+    // Check that all three languages are available as options
+    const options = toolbar.querySelectorAll('temba-option');
+    expect(options.length).to.equal(3);
+
+    const optionNames = Array.from(options).map((opt) =>
+      opt.getAttribute('name')
+    );
+    expect(optionNames.some((name) => name.includes('English'))).to.be.true;
+    expect(optionNames.some((name) => name.includes('French'))).to.be.true;
+    expect(optionNames.some((name) => name.includes('Spanish'))).to.be.true;
+  });
+
+  it('should show English as active by default', async () => {
+    const toolbar = editor.querySelector('#language-toolbar');
+    const select = toolbar.querySelector('temba-select') as any;
+
+    expect(select).to.exist;
+    expect(select.values).to.exist;
+    expect(select.values.length).to.be.greaterThan(0);
+    expect(select.values[0].value).to.equal('eng');
+  });
+
+  it('should change language when selecting from dropdown', async () => {
+    const toolbar = editor.querySelector('#language-toolbar');
+    const select = toolbar.querySelector('temba-select') as any;
+
+    expect(select).to.exist;
+
+    // Simulate selecting Spanish
+    select.values = [{ name: 'Spanish', value: 'esp' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
+    await editor.updateComplete;
+
+    // Check store was updated
+    const state = zustand.getState();
+    expect(state.languageCode).to.equal('esp');
+    expect(state.isTranslating).to.be.true;
+
+    // Check that translating indicator is shown
+    const indicator = toolbar.querySelector('.translating-indicator');
+    expect(indicator).to.exist;
+  });
+
+  it('should load base language values when in English', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: ['Yes', 'No']
+    };
+
+    const formData = send_msg.toFormData(action);
+
+    expect(formData.text).to.equal('Hello world');
+    expect(formData.quick_replies).to.have.lengthOf(2);
+    expect(formData.quick_replies[0].value).to.equal('Yes');
+    expect(formData.quick_replies[1].value).to.equal('No');
+  });
+
+  it('should load localized values when in Spanish', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: ['Yes', 'No']
+    };
+
+    const localization = {
+      text: ['Hola mundo'],
+      quick_replies: ['Sí', 'No']
+    };
+
+    const formData = send_msg.toLocalizationFormData(action, localization);
+
+    expect(formData.text).to.equal('Hola mundo');
+    expect(formData.quick_replies).to.have.lengthOf(2);
+    expect(formData.quick_replies[0].value).to.equal('Sí');
+    expect(formData.quick_replies[1].value).to.equal('No');
+  });
+
+  it('should fall back to base language if no localization exists', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: ['Yes', 'No']
+    };
+
+    const localization = {}; // Empty localization
+
+    const formData = send_msg.toLocalizationFormData(action, localization);
+
+    // Should show base language values (but empty since localization is empty)
+    expect(formData.text).to.equal('');
+    expect(formData.quick_replies).to.be.undefined;
+  });
+
+  it('should convert form data to localization format', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: ['Yes', 'No']
+    };
+
+    const formData = {
+      uuid: 'action-1',
+      text: 'Bonjour le monde',
+      quick_replies: [
+        { name: 'Oui', value: 'Oui' },
+        { name: 'Non', value: 'Non' }
+      ]
+    };
+
+    const localization = send_msg.fromLocalizationFormData(formData, action);
+
+    expect(localization.text).to.deep.equal(['Bonjour le monde']);
+    expect(localization.quick_replies).to.deep.equal(['Oui', 'Non']);
+  });
+
+  it('should not include unchanged values in localization', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: ['Yes', 'No']
+    };
+
+    const formData = {
+      uuid: 'action-1',
+      text: 'Hello world', // Same as base
+      quick_replies: [
+        { name: 'Yes', value: 'Yes' },
+        { name: 'No', value: 'No' }
+      ] // Same as base
+    };
+
+    const localization = send_msg.fromLocalizationFormData(formData, action);
+
+    // should not include unchanged values
+    expect(localization.text).to.be.undefined;
+    expect(localization.quick_replies).to.be.undefined;
+  });
+
+  it('should include language name in dialog header when translating', async () => {
+    // Switch to Spanish
+    zustand.getState().setLanguageCode('esp');
+
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: []
+    };
+
+    const nodeEditor: NodeEditor = await fixture(html`
+      <temba-node-editor .action=${action} .isOpen=${true}> </temba-node-editor>
+    `);
+
+    await nodeEditor.updateComplete;
+
+    // Check dialog header
+    const dialog = nodeEditor.shadowRoot.querySelector('temba-dialog');
+    expect(dialog).to.exist;
+    expect(dialog.getAttribute('header')).to.equal('Spanish - Send Message');
+  });
+
+  it('should handle attachments in localization', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello',
+      attachments: ['image/jpeg:http://example.com/image.jpg']
+    };
+
+    const localization = {
+      text: ['Hola'],
+      attachments: ['image/jpeg:http://example.com/imagen.jpg']
+    };
+
+    const formData = send_msg.toLocalizationFormData(action, localization);
+
+    expect(formData.text).to.equal('Hola');
+    expect(formData.attachments).to.have.lengthOf(1);
+    expect(formData.attachments[0]).to.equal(
+      'image/jpeg:http://example.com/imagen.jpg'
+    );
+  });
+
+  it('should handle runtime attachments in localization', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello',
+      attachments: ['image:@fields.profile_pic']
+    };
+
+    const localization = {
+      text: ['Hola'],
+      attachments: ['image:@fields.foto_perfil']
+    };
+
+    const formData = send_msg.toLocalizationFormData(action, localization);
+
+    expect(formData.text).to.equal('Hola');
+    expect(formData.runtime_attachments).to.have.lengthOf(1);
+    expect(formData.runtime_attachments[0].expression).to.equal(
+      '@fields.foto_perfil'
+    );
+  });
+
+  it('should identify localizable fields', () => {
+    expect(send_msg.localizable).to.exist;
+    expect(send_msg.localizable).to.include('text');
+    expect(send_msg.localizable).to.include('quick_replies');
+    expect(send_msg.localizable).to.include('attachments');
+  });
+
+  it('should save empty localization when all values match base', () => {
+    const action: SendMsg = {
+      type: 'send_msg',
+      uuid: 'action-1',
+      text: 'Hello world',
+      quick_replies: []
+    };
+
+    const formData = {
+      uuid: 'action-1',
+      text: 'Hello world' // Same as base, so shouldn't be saved
+    };
+
+    const localization = send_msg.fromLocalizationFormData(formData, action);
+
+    // empty localization when nothing changed
+    expect(Object.keys(localization)).to.have.lengthOf(0);
+  });
+});

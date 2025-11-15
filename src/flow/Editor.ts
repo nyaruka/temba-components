@@ -98,6 +98,12 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.dirtyDate)
   private dirtyDate!: Date;
 
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
+
   // Drag state
   @state()
   private isDragging = false;
@@ -171,6 +177,27 @@ export class Editor extends RapidElement {
   private previousActionDragTargetNodeUuid: string | null = null;
 
   private canvasMouseDown = false;
+
+  // Default languages if not specified in flow definition
+  private readonly DEFAULT_LANGUAGES = [
+    { code: 'eng', name: 'English' },
+    { code: 'fra', name: 'French' },
+    { code: 'esp', name: 'Spanish' }
+  ];
+
+  private getAvailableLanguages(): Array<{ code: string; name: string }> {
+    // Use languages from flow definition if available, otherwise use defaults
+    if (
+      this.definition?._ui?.languages &&
+      this.definition._ui.languages.length > 0
+    ) {
+      return this.definition._ui.languages.map((lang: any) => ({
+        code: typeof lang === 'string' ? lang : lang.iso || lang.code,
+        name: typeof lang === 'string' ? lang : lang.name
+      }));
+    }
+    return this.DEFAULT_LANGUAGES;
+  }
 
   // Bound event handlers to maintain proper 'this' context
   private boundMouseMove = this.handleMouseMove.bind(this);
@@ -322,6 +349,36 @@ export class Editor extends RapidElement {
       .jtk-floating-endpoint {
         pointer-events: none;
       }
+
+      /* Language selector toolbar */
+      #language-toolbar {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        gap: 12px;
+        font-size: 13px;
+      }
+
+      #language-toolbar label {
+        font-weight: 500;
+        color: #666;
+      }
+
+      .language-selector {
+        min-width: 200px;
+      }
+
+      .language-selector.translating {
+        --color-widget-border: #ffa500;
+      }
+
+      .translating-indicator {
+        color: #ffa500;
+        font-weight: 500;
+        font-size: 12px;
+      }
     `;
   }
 
@@ -462,6 +519,17 @@ export class Editor extends RapidElement {
       });
 
     getStore().getState().setDirtyDate(null);
+  }
+
+  private handleLanguageChange(languageCode: string): void {
+    zustand.getState().setLanguageCode(languageCode);
+    
+    // Repaint connections after language change since node sizes can change
+    if (this.plumber) {
+      requestAnimationFrame(() => {
+        this.plumber.repaintEverything();
+      });
+    }
   }
 
   disconnectedCallback(): void {
@@ -1729,6 +1797,55 @@ export class Editor extends RapidElement {
     }
   }
 
+  private renderLanguageToolbar(): TemplateResult {
+    if (!this.definition) {
+      return html``;
+    }
+
+    const baseLanguage = this.definition.language;
+    const availableLanguages = this.getAvailableLanguages();
+    const isTranslating = this.languageCode !== baseLanguage;
+
+    // Find the current language name
+    const currentLang = availableLanguages.find(
+      (lang) => lang.code === this.languageCode
+    );
+    const currentLangName = currentLang?.name || 'English';
+
+    return html`
+      <div id="language-toolbar">
+        <label>Language:</label>
+        <temba-select
+          class="language-selector ${isTranslating ? 'translating' : ''}"
+          .values=${[{ name: currentLangName, value: this.languageCode }]}
+          @change=${this.handleLanguageSelectChange}
+        >
+          ${availableLanguages.map((lang) => {
+            const isBase = lang.code === baseLanguage;
+            return html`
+              <temba-option
+                name="${lang.name}${isBase ? ' (Base)' : ''}"
+                value="${lang.code}"
+              ></temba-option>
+            `;
+          })}
+        </temba-select>
+        ${isTranslating
+          ? html`<span class="translating-indicator"
+              >Translating to ${currentLangName}</span
+            >`
+          : ''}
+      </div>
+    `;
+  }
+
+  private handleLanguageSelectChange(event: CustomEvent): void {
+    const select = event.target as any;
+    if (select.values && select.values.length > 0) {
+      this.handleLanguageChange(select.values[0].value);
+    }
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
@@ -1738,7 +1855,7 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style}
+    return html`${style} ${this.renderLanguageToolbar()}
       <div id="editor">
         <div
           id="grid"

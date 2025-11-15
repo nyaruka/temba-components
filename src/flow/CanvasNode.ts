@@ -9,6 +9,7 @@ import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
+import { AppState, fromStore, zustand } from '../store/AppState';
 
 const DRAG_THRESHOLD = 5;
 
@@ -25,6 +26,15 @@ export class CanvasNode extends RapidElement {
 
   @property({ type: Object })
   private ui: NodeUI;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
+
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private flowDefinition!: any;
 
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
@@ -160,6 +170,20 @@ export class CanvasNode extends RapidElement {
 
       .node.execute-actions temba-sortable-list .action:last-child .body {
         padding-bottom: 1.5em;
+      }
+
+      /* Localization indicators */
+      .action.localizable:not(.has-localization) .action-content {
+        background: #fff8dc !important; /* Light yellow background for localizable but not yet localized */
+      }
+
+      .action.non-localizable {
+        opacity: 0.25;
+        pointer-events: none;
+      }
+
+      .action.non-localizable .action-content {
+        cursor: not-allowed;
       }      
 
       .action .drag-handle {
@@ -242,6 +266,11 @@ export class CanvasNode extends RapidElement {
         text-align: center;
         display: flex;
         flex-direction: column;
+      }
+
+      /* Localizable category - yellow background */
+      .category.localizable {
+        background-color: #fff8dc;
       }
 
       .action-exits {
@@ -1153,19 +1182,21 @@ export class CanvasNode extends RapidElement {
       ? ACTION_GROUP_METADATA[config.group]?.color
       : '#aaaaaa';
     return html`<div class="cn-title" style="background:${color}">
-      ${this.node?.actions?.length > 1
+      ${!this.isTranslating && this.node?.actions?.length > 1
         ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
-      <div
-        class="remove-button"
-        @click=${(e: MouseEvent) =>
-          this.handleActionRemoveClick(e, action, index)}
-        title="Remove action"
-      >
-        ✕
-      </div>
+      ${!this.isTranslating
+        ? html`<div
+            class="remove-button"
+            @click=${(e: MouseEvent) =>
+              this.handleActionRemoveClick(e, action, index)}
+            title="Remove action"
+          >
+            ✕
+          </div>`
+        : ''}
     </div>`;
   }
 
@@ -1192,13 +1223,15 @@ export class CanvasNode extends RapidElement {
           ? config.renderTitle(node, ui)
           : html`${config.name}`}
       </div>
-      <div
-        class="remove-button"
-        @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
-        title="Remove node"
-      >
-        ✕
-      </div>
+      ${!this.isTranslating
+        ? html`<div
+            class="remove-button"
+            @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+            title="Remove node"
+          >
+            ✕
+          </div>`
+        : ''}
     </div>`;
   }
 
@@ -1210,25 +1243,93 @@ export class CanvasNode extends RapidElement {
     ></div>`;
   }
 
+  /**
+   * Get the localized version of an action if translating, otherwise return the original action.
+   * Falls back to base language values if no localization exists for a field.
+   */
+  private getLocalizedAction(action: Action): Action {
+    // If not translating or no flow definition, return original action
+    if (
+      !this.isTranslating ||
+      !this.flowDefinition ||
+      !this.languageCode ||
+      this.languageCode === this.flowDefinition.language
+    ) {
+      return action;
+    }
+
+    // Check if there's localization for this action
+    const localization =
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
+
+    if (!localization) {
+      // No localization available, return original action
+      return action;
+    }
+
+    // Create a new action with localized values, falling back to base language
+    const localizedAction = { ...action };
+
+    // Apply localized values for each field
+    Object.keys(localization).forEach((field) => {
+      const localizedValue = localization[field];
+      if (Array.isArray(localizedValue)) {
+        // Localized values are stored as arrays
+        if (localizedValue.length > 0) {
+          // For single-value fields like 'text', take the first element
+          // For array fields like 'quick_replies', use the whole array
+          if (Array.isArray(action[field])) {
+            localizedAction[field] = localizedValue;
+          } else {
+            localizedAction[field] = localizedValue[0];
+          }
+        }
+      }
+    });
+
+    return localizedAction;
+  }
+
   private renderAction(node: Node, action: Action, index: number) {
     const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
+    const isLocalizable = config?.localizable && config.localizable.length > 0;
+    const isDisabled = this.isTranslating && !isLocalizable;
+
+    // Check if this action has localization data
+    const hasLocalization =
+      this.isTranslating &&
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
+
+    // Get the localized action if translating
+    const displayAction = this.getLocalizedAction(action);
 
     if (config) {
-      return html`<div
-        class="action sortable ${action.type} ${isRemoving ? 'removing' : ''}"
-        id="action-${index}"
-      >
+      const classes = [
+        'action',
+        'sortable',
+        action.type,
+        isRemoving ? 'removing' : '',
+        isLocalizable && this.isTranslating ? 'localizable' : '',
+        hasLocalization ? 'has-localization' : '',
+        isDisabled ? 'non-localizable' : ''
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return html`<div class="${classes}" id="action-${index}">
         <div
           class="action-content"
-          @mousedown=${(e: MouseEvent) => this.handleActionMouseDown(e, action)}
-          @mouseup=${(e: MouseEvent) => this.handleActionMouseUp(e, action)}
-          style="cursor: pointer; background: #fff"
+          @mousedown=${(e: MouseEvent) =>
+            !isDisabled && this.handleActionMouseDown(e, action)}
+          @mouseup=${(e: MouseEvent) =>
+            !isDisabled && this.handleActionMouseUp(e, action)}
+          style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
             ${config.render
-              ? config.render(node, action)
+              ? config.render(node, displayAction)
               : html`<pre>${action.type}</pre>`}
           </div>
         </div>
@@ -1299,6 +1400,10 @@ export class CanvasNode extends RapidElement {
       return null;
     }
 
+    // Check if this node type supports category localization
+    const nodeConfig = NODE_CONFIG[this.ui?.type];
+    const supportsLocalization = nodeConfig?.localizable === 'categories';
+
     return html`<div class="categories">
       ${repeat(
         node.router.categories,
@@ -1308,13 +1413,43 @@ export class CanvasNode extends RapidElement {
             (exit: Exit) => exit.uuid == category.exit_uuid
           );
 
+          // Get localized category name if translating
+          let displayName = category.name;
+          let isLocalized = false;
+
+          if (
+            this.isTranslating &&
+            this.languageCode !== 'eng' &&
+            supportsLocalization
+          ) {
+            const localization =
+              this.flowDefinition?.localization?.[this.languageCode];
+            if (localization && localization[category.uuid]) {
+              const categoryLocalization = localization[category.uuid];
+              if (categoryLocalization.name && categoryLocalization.name[0]) {
+                displayName = categoryLocalization.name[0];
+                isLocalized = true;
+              }
+            }
+          }
+
+          // Category is localizable if: translating, supports localization, and not base language
+          const isLocalizable =
+            this.isTranslating &&
+            this.languageCode !== 'eng' &&
+            supportsLocalization &&
+            !isLocalized;
+
           return html`<div
-            class="category"
+            class=${getClasses({
+              category: true,
+              localizable: isLocalizable
+            })}
             @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
             style="cursor: pointer;"
           >
-            <div class="cn-title">${category.name}</div>
+            <div class="cn-title">${displayName}</div>
             ${this.renderExit(exit)}
           </div>`;
         }
@@ -1396,7 +1531,7 @@ export class CanvasNode extends RapidElement {
                 (exit) => this.renderExit(exit)
               )}
             </div>`}
-        ${this.ui.type === 'execute_actions'
+        ${this.ui.type === 'execute_actions' && !this.isTranslating
           ? html`<div
               class="add-action-button"
               @click=${(e: MouseEvent) => this.handleAddActionClick(e)}

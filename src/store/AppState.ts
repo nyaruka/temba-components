@@ -109,6 +109,11 @@ export interface AppState {
   createStickyNote(position: FlowPosition): string;
   createNode(nodeType: string, position: FlowPosition): string;
   addNode(node: Node, nodeUI: NodeUI): void;
+  updateLocalization(
+    languageCode: string,
+    actionUuid: string,
+    localizationData: Record<string, any>
+  ): void;
 }
 
 export const zustand = createStore<AppState>()(
@@ -404,6 +409,47 @@ export const zustand = createStore<AppState>()(
           }
 
           state.flowDefinition._ui.nodes[node.uuid] = nodeUI;
+
+          state.dirtyDate = new Date();
+        });
+      },
+
+      updateLocalization: (
+        languageCode: string,
+        actionUuid: string,
+        localizationData: Record<string, any>
+      ) => {
+        set((state: AppState) => {
+          // Initialize localization structure if it doesn't exist
+          if (!state.flowDefinition.localization) {
+            state.flowDefinition.localization = {};
+          }
+
+          if (!state.flowDefinition.localization[languageCode]) {
+            state.flowDefinition.localization[languageCode] = {};
+          }
+
+          // Update or remove the localization for this action
+          if (Object.keys(localizationData).length > 0) {
+            state.flowDefinition.localization[languageCode][actionUuid] =
+              localizationData;
+          } else {
+            // If no localized values, remove the entry
+            delete state.flowDefinition.localization[languageCode][actionUuid];
+          }
+
+          // Clean up empty language sections
+          if (
+            Object.keys(state.flowDefinition.localization[languageCode])
+              .length === 0
+          ) {
+            delete state.flowDefinition.localization[languageCode];
+          }
+
+          // Clean up empty localization object
+          if (Object.keys(state.flowDefinition.localization).length === 0) {
+            delete state.flowDefinition.localization;
+          }
 
           state.dirtyDate = new Date();
         });

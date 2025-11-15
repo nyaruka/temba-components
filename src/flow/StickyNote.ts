@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { StickyNote as StickyNoteData } from '../store/flow-definition';
 import { getStore } from '../store/Store';
+import { AppState, fromStore, zustand } from '../store/AppState';
 
 export class StickyNote extends RapidElement {
   @property({ type: String })
@@ -19,6 +20,9 @@ export class StickyNote extends RapidElement {
 
   @property({ type: Boolean })
   private colorPickerExpanded = false;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
 
   static get styles() {
     return css`
@@ -377,7 +381,7 @@ export class StickyNote extends RapidElement {
           <temba-icon name="drag" class="drag-handle"></temba-icon>
           <div
             class="sticky-title"
-            contenteditable="true"
+            contenteditable="${!this.isTranslating}"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
@@ -387,13 +391,15 @@ export class StickyNote extends RapidElement {
         <div class="sticky-body-container">
           <div
             class="sticky-body"
-            contenteditable="true"
+            contenteditable="${!this.isTranslating}"
             @blur="${this.handleBodyBlur}"
             @keydown="${this.handleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
             .textContent="${this.data.body}"
           ></div>
-          <div class="edit-icon" title="Edit note"></div>
+          ${!this.isTranslating
+            ? html`<div class="edit-icon" title="Edit note"></div>`
+            : ''}
 
           <!-- Color picker -->
           <div

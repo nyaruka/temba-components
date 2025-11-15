@@ -8,6 +8,10 @@ import {
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
+import {
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
@@ -179,5 +183,10 @@ export const split_by_llm_categorize: NodeConfig = {
       router: router,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };
