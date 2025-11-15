@@ -77,6 +77,15 @@ export class ProgressBar extends RapidElement {
       display: none;
     }
 
+    .meter.static > span:after {
+      display: none;
+      animation: none;
+    }
+
+    .meter.static > span {
+      background-image: none;
+    }
+
     @keyframes move {
       0% {
         background-position: 0 0;
@@ -154,6 +163,9 @@ export class ProgressBar extends RapidElement {
   @property({ type: String })
   message: string;
 
+  @property({ type: Boolean })
+  animated = true;
+
   public updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -176,8 +188,16 @@ export class ProgressBar extends RapidElement {
   }
 
   public render(): TemplateResult {
+    const meterClasses = [
+      'meter',
+      this.done ? 'done' : '',
+      this.animated ? '' : 'static'
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     return html`<div class="wrapper ${this.done ? 'complete' : ''}">
-      <div class="meter ${this.done ? 'done' : ''}">
+      <div class="${meterClasses}">
         ${this.message
           ? html`<div class="message">${this.message}</div>`
           : null}

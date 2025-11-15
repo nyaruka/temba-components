@@ -366,32 +366,10 @@ export class Editor extends RapidElement {
         line-height: 1.4;
       }
 
-      .localization-language-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .language-chip {
-        border: 1px solid #e5e7eb;
-        border-radius: 999px;
-        padding: 6px 14px;
-        background: #f9fafb;
-        color: #111827;
-        cursor: pointer;
-        font-size: 13px;
-        transition: all 150ms ease-in-out;
-      }
-
-      .language-chip:hover {
-        border-color: var(--color-primary-light, #93c5fd);
-      }
-
-      .language-chip.selected {
-        background: var(--color-primary-light, #dbeafe);
-        border-color: var(--color-primary-dark, #2563eb);
-        color: var(--color-primary-dark, #2563eb);
-        font-weight: 600;
+      .localization-language-select {
+        --color-widget-border: #d1d5db;
+        --color-widget-background: #fff;
+        min-width: 100%;
       }
 
       .localization-progress {
@@ -1929,6 +1907,14 @@ export class Editor extends RapidElement {
     this.handleLanguageChange(languageCode);
   }
 
+  private handleLocalizationLanguageSelectChange(event: CustomEvent): void {
+    const select = event.target as any;
+    const nextValue = select?.values?.[0]?.value;
+    if (nextValue) {
+      this.handleLocalizationLanguageSelect(nextValue);
+    }
+  }
+
   private handleLocalizationWindowClosed(): void {
     this.localizationWindowHidden = true;
 
@@ -1980,21 +1966,20 @@ export class Editor extends RapidElement {
             Translate from <strong>${baseName}</strong> to the languages below.
             Closing this window returns you to editing in ${baseName}.
           </div>
-          <div class="localization-language-grid">
-            ${languages.map((lang) => {
-              const selected = lang.code === activeLanguageCode;
-              return html`
-                <button
-                  type="button"
-                  class="language-chip ${selected ? 'selected' : ''}"
-                  @click=${() =>
-                    this.handleLocalizationLanguageSelect(lang.code)}
-                >
-                  ${lang.name}
-                </button>
-              `;
-            })}
-          </div>
+          <temba-select
+            class="localization-language-select"
+            .values=${activeLanguage
+              ? [{ name: activeLanguage.name, value: activeLanguage.code }]
+              : []}
+            @change=${this.handleLocalizationLanguageSelectChange}
+          >
+            ${languages.map(
+              (lang) => html`<temba-option
+                value="${lang.code}"
+                name="${lang.name}"
+              ></temba-option>`
+            )}
+          </temba-select>
           <div class="localization-progress">
             <h5>Localization progress</h5>
             <div class="localization-progress-summary">
@@ -2003,6 +1988,7 @@ export class Editor extends RapidElement {
             <temba-progress
               .current=${progress.localized}
               .total=${Math.max(progress.total, 1)}
+              .animated=${false}
             ></temba-progress>
           </div>
         </div>

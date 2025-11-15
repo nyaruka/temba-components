@@ -102,14 +102,18 @@ describe('Localization Editing', () => {
     const windowEl = editor.querySelector('#localization-window') as any;
     expect(windowEl.hidden).to.be.false;
 
-    const chips = windowEl.querySelectorAll('.language-chip');
-    expect(chips.length).to.equal(2);
-    const chipLabels = Array.from(chips).map((chip: Element) =>
-      chip.textContent.trim()
+    const select = windowEl.querySelector('temba-select') as any;
+    expect(select).to.exist;
+    expect(select.values[0].value).to.equal('fra');
+
+    const options = windowEl.querySelectorAll('temba-option');
+    expect(options.length).to.equal(2);
+    const optionLabels = Array.from(options).map((opt: Element) =>
+      opt.getAttribute('name')
     );
-    expect(chipLabels).to.include('French');
-    expect(chipLabels).to.include('Spanish');
-    expect(chipLabels).to.not.include('English');
+    expect(optionLabels).to.include('French');
+    expect(optionLabels).to.include('Spanish');
+    expect(optionLabels).to.not.include('English');
 
     const state = zustand.getState();
     expect(state.languageCode).to.equal('fra');
@@ -121,6 +125,7 @@ describe('Localization Editing', () => {
     expect(progress).to.exist;
     expect(progress.current).to.equal(0);
     expect(progress.total).to.equal(1);
+    expect(progress.animated).to.be.false;
   });
 
   it('should allow toggling translation languages within the window', async () => {
@@ -131,17 +136,15 @@ describe('Localization Editing', () => {
     await editor.updateComplete;
 
     const windowEl = editor.querySelector('#localization-window');
-    let chips = windowEl.querySelectorAll<HTMLButtonElement>('.language-chip');
-    expect(chips.length).to.equal(2);
+    const select = windowEl.querySelector('temba-select') as any;
+    expect(select).to.exist;
 
-    chips[1].click();
+    select.values = [{ name: 'Spanish', value: 'esp' }];
+    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
     await editor.updateComplete;
 
     const state = zustand.getState();
     expect(state.languageCode).to.equal('esp');
-    chips = windowEl.querySelectorAll<HTMLButtonElement>('.language-chip');
-    expect(chips[1].classList.contains('selected')).to.be.true;
-
     const summary = windowEl.querySelector('.localization-progress-summary');
     expect(summary?.textContent.trim()).to.equal('1 of 1 items translated');
   });
