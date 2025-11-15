@@ -43,7 +43,7 @@ export class FloatingWindow extends RapidElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 16px;
+        padding: 6px 6px;
         background: var(--header-color, var(--color-primary-light, #f3f4f6));
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         cursor: move;
@@ -54,6 +54,7 @@ export class FloatingWindow extends RapidElement {
         font-weight: 600;
         font-size: 16px;
         color: white;
+        padding-left: 8px;
       }
 
       .close-button {
@@ -280,7 +281,7 @@ export class FloatingWindow extends RapidElement {
               <div class="header" @mousedown=${this.handleHeaderMouseDown}>
                 <div class="title">${this.header}</div>
                 <button class="close-button" @click=${this.handleClose}>
-                  <temba-icon name="close" size="2"></temba-icon>
+                  <temba-icon name="close" size="1.5"></temba-icon>
                 </button>
               </div>
             `

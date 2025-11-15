@@ -1196,7 +1196,7 @@ export class CanvasNode extends RapidElement {
           >
             ✕
           </div>`
-        : ''}
+        : html`<div class="title-spacer"></div>`}
     </div>`;
   }
 
@@ -1231,7 +1231,7 @@ export class CanvasNode extends RapidElement {
           >
             ✕
           </div>`
-        : ''}
+        : html`<div class="title-spacer"></div>`}
     </div>`;
   }
 
