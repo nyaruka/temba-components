@@ -3,7 +3,11 @@ import { TransferAirtime, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
 import { CURRENCY_OPTIONS, CURRENCIES } from '../currencies';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 export const split_by_airtime: NodeConfig = {
   type: 'split_by_airtime',
@@ -238,5 +242,10 @@ export const split_by_airtime: NodeConfig = {
       router: finalRouter,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

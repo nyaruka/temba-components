@@ -641,19 +641,23 @@ export class NodeEditor extends RapidElement {
   }
 
   private handleSave(): void {
-    // Validate the form
-    const validation = this.validateForm();
-    if (!validation.valid) {
-      this.errors = validation.errors;
-
-      // Expand any groups that contain validation errors
-      this.expandGroupsWithErrors(validation.errors);
-
-      return;
-    }
-
-    // Process form data to convert key-value arrays to Records before saving
+    // Process form data first
     const processedFormData = this.processFormDataForSave();
+
+    // Skip validation if we're in localization mode
+    // (localization only deals with translating text, not changing structure)
+    if (!this.isTranslating) {
+      // Validate the form
+      const validation = this.validateForm();
+      if (!validation.valid) {
+        this.errors = validation.errors;
+
+        // Expand any groups that contain validation errors
+        this.expandGroupsWithErrors(validation.errors);
+
+        return;
+      }
+    }
 
     // Check if we're in localization mode
     if (this.isTranslating) {
@@ -1343,8 +1347,7 @@ export class NodeEditor extends RapidElement {
       return html`<div>No categories to localize</div>`;
     }
 
-    const languageName =
-      getStore().getLanguageName(this.languageCode) || this.languageCode;
+    const languageName = getStore().getLanguageName(this.languageCode);
 
     return html`
       <div class="category-localization-table">
@@ -2036,16 +2039,17 @@ export class NodeEditor extends RapidElement {
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
     const languageName = this.isTranslating
-      ? getStore().getLanguageName(this.languageCode) || this.languageCode
+      ? getStore().getLanguageName(this.languageCode)
       : '';
 
-    const headerText = this.isTranslating
-      ? `${languageName} - ${config?.name || 'Edit'}`
-      : config?.name || 'Edit';
+    let header = config?.name || 'Edit';
+    if (this.isTranslating) {
+      header = languageName ? `${languageName} - ${header}` : header;
+    }
 
     return html`
       <temba-dialog
-        header="${headerText}"
+        header="${header}"
         .open="${this.isOpen}"
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"

@@ -3,6 +3,10 @@ import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
 import { renderNamedObjects } from '../utils';
+import {
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
@@ -157,5 +161,10 @@ export const split_by_subflow: NodeConfig = {
       router: router,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };
