@@ -333,7 +333,8 @@ export const send_msg: ActionConfig = {
         (item: {
           type: [{ name: string; value: string }];
           expression: string;
-        }) => item && item.type && item.expression && item.expression.trim() !== ''
+        }) =>
+          item && item.type && item.expression && item.expression.trim() !== ''
       )
       .map(
         (item: {

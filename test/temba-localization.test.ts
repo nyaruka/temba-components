@@ -83,55 +83,83 @@ describe('Localization Editing', () => {
     await editor.updateComplete;
   });
 
-  it('should display language selector toolbar', async () => {
-    const toolbar = editor.querySelector('#language-toolbar');
-    expect(toolbar).to.exist;
+  it('should render localization floating tab when translations exist', () => {
+    const tab = editor.querySelector('#localization-tab');
+    expect(tab).to.exist;
 
-    // Check that the select dropdown is present
-    const select = toolbar.querySelector('temba-select');
-    expect(select).to.exist;
+    const windowEl = editor.querySelector('#localization-window') as any;
+    expect(windowEl).to.exist;
+    expect(windowEl.hidden).to.be.true;
+  });
 
-    // Check that all three languages are available as options
-    const options = toolbar.querySelectorAll('temba-option');
-    expect(options.length).to.equal(3);
-
-    const optionNames = Array.from(options).map((opt) =>
-      opt.getAttribute('name')
+  it('should open localization window with translation languages excluding base', async () => {
+    const tab = editor.querySelector('#localization-tab');
+    tab.dispatchEvent(
+      new CustomEvent('temba-button-clicked', { bubbles: true })
     );
-    expect(optionNames.some((name) => name.includes('English'))).to.be.true;
-    expect(optionNames.some((name) => name.includes('French'))).to.be.true;
-    expect(optionNames.some((name) => name.includes('Spanish'))).to.be.true;
-  });
-
-  it('should show English as active by default', async () => {
-    const toolbar = editor.querySelector('#language-toolbar');
-    const select = toolbar.querySelector('temba-select') as any;
-
-    expect(select).to.exist;
-    expect(select.values).to.exist;
-    expect(select.values.length).to.be.greaterThan(0);
-    expect(select.values[0].value).to.equal('eng');
-  });
-
-  it('should change language when selecting from dropdown', async () => {
-    const toolbar = editor.querySelector('#language-toolbar');
-    const select = toolbar.querySelector('temba-select') as any;
-
-    expect(select).to.exist;
-
-    // Simulate selecting Spanish
-    select.values = [{ name: 'Spanish', value: 'esp' }];
-    select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
     await editor.updateComplete;
 
-    // Check store was updated
+    const windowEl = editor.querySelector('#localization-window') as any;
+    expect(windowEl.hidden).to.be.false;
+
+    const chips = windowEl.querySelectorAll('.language-chip');
+    expect(chips.length).to.equal(2);
+    const chipLabels = Array.from(chips).map((chip: Element) =>
+      chip.textContent.trim()
+    );
+    expect(chipLabels).to.include('French');
+    expect(chipLabels).to.include('Spanish');
+    expect(chipLabels).to.not.include('English');
+
+    const state = zustand.getState();
+    expect(state.languageCode).to.equal('fra');
+
+    const summary = windowEl.querySelector('.localization-progress-summary');
+    expect(summary?.textContent.trim()).to.equal('0 of 1 items translated');
+
+    const progress = windowEl.querySelector('temba-progress') as any;
+    expect(progress).to.exist;
+    expect(progress.current).to.equal(0);
+    expect(progress.total).to.equal(1);
+  });
+
+  it('should allow toggling translation languages within the window', async () => {
+    const tab = editor.querySelector('#localization-tab');
+    tab.dispatchEvent(
+      new CustomEvent('temba-button-clicked', { bubbles: true })
+    );
+    await editor.updateComplete;
+
+    const windowEl = editor.querySelector('#localization-window');
+    let chips = windowEl.querySelectorAll<HTMLButtonElement>('.language-chip');
+    expect(chips.length).to.equal(2);
+
+    chips[1].click();
+    await editor.updateComplete;
+
     const state = zustand.getState();
     expect(state.languageCode).to.equal('esp');
-    expect(state.isTranslating).to.be.true;
+    chips = windowEl.querySelectorAll<HTMLButtonElement>('.language-chip');
+    expect(chips[1].classList.contains('selected')).to.be.true;
 
-    // Check that translating indicator is shown
-    const indicator = toolbar.querySelector('.translating-indicator');
-    expect(indicator).to.exist;
+    const summary = windowEl.querySelector('.localization-progress-summary');
+    expect(summary?.textContent.trim()).to.equal('1 of 1 items translated');
+  });
+
+  it('should return to base language when window closes', async () => {
+    const tab = editor.querySelector('#localization-tab');
+    tab.dispatchEvent(
+      new CustomEvent('temba-button-clicked', { bubbles: true })
+    );
+    await editor.updateComplete;
+
+    const windowEl = editor.querySelector('#localization-window') as any;
+    windowEl.close();
+    await editor.updateComplete;
+
+    const state = zustand.getState();
+    expect(state.languageCode).to.equal('eng');
+    expect(windowEl.hidden).to.be.true;
   });
 
   it('should load base language values when in English', () => {

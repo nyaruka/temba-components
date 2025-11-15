@@ -141,6 +141,9 @@ export class Editor extends RapidElement {
   @state()
   private isValidTarget = true;
 
+  @state()
+  private localizationWindowHidden = true;
+
   // NodeEditor state - handles both node and action editing
   @state()
   private editingNode: Node | null = null;
@@ -350,34 +353,69 @@ export class Editor extends RapidElement {
         pointer-events: none;
       }
 
-      /* Language selector toolbar */
-      #language-toolbar {
+      .localization-window-content {
         display: flex;
-        align-items: center;
-        padding: 8px 16px;
-        background: white;
-        border-bottom: 1px solid #e0e0e0;
-        gap: 12px;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+      }
+
+      .localization-header {
         font-size: 13px;
+        color: #4b5563;
+        line-height: 1.4;
       }
 
-      #language-toolbar label {
-        font-weight: 500;
-        color: #666;
+      .localization-language-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
-      .language-selector {
-        min-width: 200px;
+      .language-chip {
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 6px 14px;
+        background: #f9fafb;
+        color: #111827;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 150ms ease-in-out;
       }
 
-      .language-selector.translating {
-        --color-widget-border: #ffa500;
+      .language-chip:hover {
+        border-color: var(--color-primary-light, #93c5fd);
       }
 
-      .translating-indicator {
-        color: #ffa500;
-        font-weight: 500;
+      .language-chip.selected {
+        background: var(--color-primary-light, #dbeafe);
+        border-color: var(--color-primary-dark, #2563eb);
+        color: var(--color-primary-dark, #2563eb);
+        font-weight: 600;
+      }
+
+      .localization-progress {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .localization-progress h5 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .localization-progress-summary {
         font-size: 12px;
+        color: #6b7280;
+      }
+
+      .localization-empty {
+        font-size: 13px;
+        color: #9ca3af;
       }
     `;
   }
@@ -523,7 +561,7 @@ export class Editor extends RapidElement {
 
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
-    
+
     // Repaint connections after language change since node sizes can change
     if (this.plumber) {
       requestAnimationFrame(() => {
@@ -1797,53 +1835,197 @@ export class Editor extends RapidElement {
     }
   }
 
-  private renderLanguageToolbar(): TemplateResult {
+  private getLocalizationLanguages(): Array<{ code: string; name: string }> {
     if (!this.definition) {
-      return html``;
+      return [];
     }
 
     const baseLanguage = this.definition.language;
-    const availableLanguages = this.getAvailableLanguages();
-    const isTranslating = this.languageCode !== baseLanguage;
+    return this.getAvailableLanguages().filter(
+      (lang) => lang.code !== baseLanguage
+    );
+  }
 
-    // Find the current language name
-    const currentLang = availableLanguages.find(
+  private getLocalizationProgress(languageCode: string): {
+    total: number;
+    localized: number;
+  } {
+    if (
+      !this.definition ||
+      !languageCode ||
+      languageCode === this.definition.language
+    ) {
+      return { total: 0, localized: 0 };
+    }
+
+    let total = 0;
+    let localized = 0;
+    const localizationMap =
+      (this.definition.localization &&
+        this.definition.localization[languageCode]) ||
+      {};
+
+    this.definition.nodes.forEach((node) => {
+      node.actions.forEach((action) => {
+        const config = ACTION_CONFIG[action.type];
+        if (config?.localizable && config.localizable.length > 0) {
+          total += 1;
+          const actionLocalization = localizationMap[action.uuid];
+          if (
+            actionLocalization &&
+            Object.keys(actionLocalization).length > 0
+          ) {
+            localized += 1;
+          }
+        }
+      });
+
+      const nodeUI = this.definition._ui?.nodes?.[node.uuid];
+      const nodeType = nodeUI?.type;
+      const nodeConfig = nodeType ? NODE_CONFIG[nodeType] : undefined;
+      if (
+        nodeConfig?.localizable === 'categories' &&
+        node.router?.categories?.length
+      ) {
+        node.router.categories.forEach((category) => {
+          total += 1;
+          const categoryLocalization = localizationMap[category.uuid];
+          if (
+            categoryLocalization &&
+            Array.isArray(categoryLocalization.name) &&
+            categoryLocalization.name[0] &&
+            categoryLocalization.name[0].trim() !== ''
+          ) {
+            localized += 1;
+          }
+        });
+      }
+    });
+
+    return { total, localized };
+  }
+
+  private handleLocalizationTabClick(): void {
+    const languages = this.getLocalizationLanguages();
+    if (!languages.length) {
+      return;
+    }
+
+    this.localizationWindowHidden = false;
+
+    const alreadySelected = languages.some(
       (lang) => lang.code === this.languageCode
     );
-    const currentLangName = currentLang?.name || 'English';
+
+    if (!alreadySelected) {
+      this.handleLanguageChange(languages[0].code);
+    }
+  }
+
+  private handleLocalizationLanguageSelect(languageCode: string): void {
+    if (languageCode === this.languageCode) {
+      return;
+    }
+    this.handleLanguageChange(languageCode);
+  }
+
+  private handleLocalizationWindowClosed(): void {
+    this.localizationWindowHidden = true;
+
+    const baseLanguage = this.definition?.language;
+    if (baseLanguage && this.languageCode !== baseLanguage) {
+      this.handleLanguageChange(baseLanguage);
+    }
+  }
+
+  private renderLocalizationWindow(): TemplateResult | string {
+    const languages = this.getLocalizationLanguages();
+    if (!languages.length) {
+      return html``;
+    }
+
+    const baseLanguage = this.definition?.language;
+    const availableLanguages = this.getAvailableLanguages();
+    const baseName =
+      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
+      'Base Language';
+
+    const activeLanguageCode = languages.some(
+      (lang) => lang.code === this.languageCode
+    )
+      ? this.languageCode
+      : languages[0]?.code;
+    const activeLanguage = activeLanguageCode
+      ? languages.find((lang) => lang.code === activeLanguageCode)
+      : null;
+    const progress = this.getLocalizationProgress(activeLanguageCode || '');
+
+    const headerLabel = activeLanguage
+      ? `${activeLanguage.name} Translation`
+      : 'Translate Flow';
 
     return html`
-      <div id="language-toolbar">
-        <label>Language:</label>
-        <temba-select
-          class="language-selector ${isTranslating ? 'translating' : ''}"
-          .values=${[{ name: currentLangName, value: this.languageCode }]}
-          @change=${this.handleLanguageSelectChange}
-        >
-          ${availableLanguages.map((lang) => {
-            const isBase = lang.code === baseLanguage;
-            return html`
-              <temba-option
-                name="${lang.name}${isBase ? ' (Base)' : ''}"
-                value="${lang.code}"
-              ></temba-option>
-            `;
-          })}
-        </temba-select>
-        ${isTranslating
-          ? html`<span class="translating-indicator"
-              >Translating to ${currentLangName}</span
-            >`
-          : ''}
-      </div>
+      <temba-floating-window
+        id="localization-window"
+        header="${headerLabel}"
+        .width=${360}
+        .height=${420}
+        .top=${120}
+        color="#6b7280"
+        .hidden=${this.localizationWindowHidden}
+        @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
+      >
+        <div class="localization-window-content">
+          <div class="localization-header">
+            Translate from <strong>${baseName}</strong> to the languages below.
+            Closing this window returns you to editing in ${baseName}.
+          </div>
+          <div class="localization-language-grid">
+            ${languages.map((lang) => {
+              const selected = lang.code === activeLanguageCode;
+              return html`
+                <button
+                  type="button"
+                  class="language-chip ${selected ? 'selected' : ''}"
+                  @click=${() =>
+                    this.handleLocalizationLanguageSelect(lang.code)}
+                >
+                  ${lang.name}
+                </button>
+              `;
+            })}
+          </div>
+          <div class="localization-progress">
+            <h5>Localization progress</h5>
+            <div class="localization-progress-summary">
+              ${progress.localized} of ${progress.total} items translated
+            </div>
+            <temba-progress
+              .current=${progress.localized}
+              .total=${Math.max(progress.total, 1)}
+            ></temba-progress>
+          </div>
+        </div>
+      </temba-floating-window>
     `;
   }
 
-  private handleLanguageSelectChange(event: CustomEvent): void {
-    const select = event.target as any;
-    if (select.values && select.values.length > 0) {
-      this.handleLanguageChange(select.values[0].value);
+  private renderLocalizationTab(): TemplateResult | string {
+    const languages = this.getLocalizationLanguages();
+    if (!languages.length) {
+      return html``;
     }
+
+    return html`
+      <temba-floating-tab
+        id="localization-tab"
+        icon="language"
+        label="Translate Flow"
+        color="#6b7280"
+        .hidden=${!this.localizationWindowHidden}
+        @temba-button-clicked=${this.handleLocalizationTabClick}
+      ></temba-floating-tab>
+    `;
   }
 
   public render(): TemplateResult {
@@ -1855,7 +2037,7 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style} ${this.renderLanguageToolbar()}
+    return html`${style} ${this.renderLocalizationWindow()}
       <div id="editor">
         <div
           id="grid"
@@ -1942,6 +2124,7 @@ export class Editor extends RapidElement {
       <temba-node-type-selector
         .flowType=${this.flowType}
         .features=${this.features}
-      ></temba-node-type-selector> `;
+      ></temba-node-type-selector>
+      ${this.renderLocalizationTab()} `;
   }
 }
