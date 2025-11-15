@@ -8,6 +8,24 @@ import '../temba-modules';
 
 describe('Localization Editing', () => {
   let editor: Editor;
+  let storeElement: HTMLElement;
+
+  const languageNames: Record<string, string> = {
+    eng: 'English',
+    fra: 'French',
+    esp: 'Spanish'
+  };
+
+  before(() => {
+    storeElement = document.createElement('temba-store');
+    (storeElement as any).getLanguageName = (code: string) =>
+      languageNames[code];
+    document.body.appendChild(storeElement);
+  });
+
+  after(() => {
+    storeElement?.remove();
+  });
 
   beforeEach(async () => {
     // Create a flow definition with localization data
@@ -217,7 +235,7 @@ describe('Localization Editing', () => {
     expect(localization.quick_replies).to.be.undefined;
   });
 
-  it('should show "(Localizing)" in dialog header when translating', async () => {
+  it('should include language name in dialog header when translating', async () => {
     // Switch to Spanish
     zustand.getState().setLanguageCode('esp');
 
@@ -229,7 +247,7 @@ describe('Localization Editing', () => {
     };
 
     const nodeEditor: NodeEditor = await fixture(html`
-      <temba-node-editor .action=${action}></temba-node-editor>
+      <temba-node-editor .action=${action} .isOpen=${true}> </temba-node-editor>
     `);
 
     await nodeEditor.updateComplete;
@@ -237,7 +255,7 @@ describe('Localization Editing', () => {
     // Check dialog header
     const dialog = nodeEditor.shadowRoot.querySelector('temba-dialog');
     expect(dialog).to.exist;
-    expect(dialog.getAttribute('header')).to.include('Localizing');
+    expect(dialog.getAttribute('header')).to.equal('Spanish - Send Message');
   });
 
   it('should handle attachments in localization', () => {
