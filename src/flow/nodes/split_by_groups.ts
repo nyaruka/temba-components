@@ -1,7 +1,11 @@
 import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 // Helper function to create a switch router with group cases
 const createGroupRouter = (
@@ -197,5 +201,10 @@ export const split_by_groups: NodeConfig = {
   router: {
     type: 'switch',
     operand: '@contact.groups'
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

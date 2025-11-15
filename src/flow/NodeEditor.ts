@@ -1967,6 +1967,11 @@ export class NodeEditor extends RapidElement {
       return html``;
     }
 
+    // Don't show gutter when localizing categories
+    if (this.isTranslating && config.localizable === 'categories') {
+      return html``;
+    }
+
     // Use the same layout rendering system for gutter fields
     const renderedFields = new Set<string>();
 

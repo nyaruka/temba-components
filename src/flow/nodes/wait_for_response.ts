@@ -6,7 +6,11 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
@@ -394,54 +398,6 @@ export const wait_for_response: NodeConfig = {
 
   // Localization support for categories
   localizable: 'categories',
-
-  toLocalizationFormData: (node: Node, localization: Record<string, any>) => {
-    // Build formData with categories array for localization
-    const categories = node.router?.categories || [];
-    const localizationData: Record<string, any> = {};
-
-    // For each category, get its localized name if available
-    categories.forEach((category: any) => {
-      const categoryUuid = category.uuid;
-      const categoryLocalization = localization[categoryUuid];
-
-      // Store both original name and localized name
-      localizationData[categoryUuid] = {
-        originalName: category.name,
-        localizedName:
-          categoryLocalization && categoryLocalization.name
-            ? Array.isArray(categoryLocalization.name)
-              ? categoryLocalization.name[0] || ''
-              : categoryLocalization.name
-            : ''
-      };
-    });
-
-    return {
-      categories: localizationData
-    };
-  },
-
-  fromLocalizationFormData: (formData: FormData, node: Node) => {
-    const localizationData: Record<string, any> = {};
-    const categories = node.router?.categories || [];
-
-    if (formData.categories) {
-      // Process each category
-      Object.keys(formData.categories).forEach((categoryUuid) => {
-        const categoryData = formData.categories[categoryUuid];
-        const localizedName = categoryData.localizedName?.trim() || '';
-        const originalName = categoryData.originalName?.trim() || '';
-
-        // Only save if localized name is different from original and not empty
-        if (localizedName && localizedName !== originalName) {
-          localizationData[categoryUuid] = {
-            name: [localizedName]
-          };
-        }
-      });
-    }
-
-    return localizationData;
-  }
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

@@ -268,6 +268,11 @@ export class CanvasNode extends RapidElement {
         flex-direction: column;
       }
 
+      /* Localizable category - yellow background */
+      .category.localizable {
+        background-color: #fff8dc;
+      }
+
       .action-exits {
         padding-bottom: 0.7em;
         margin-top: -0.7em;
@@ -1395,6 +1400,10 @@ export class CanvasNode extends RapidElement {
       return null;
     }
 
+    // Check if this node type supports category localization
+    const nodeConfig = NODE_CONFIG[this.ui?.type];
+    const supportsLocalization = nodeConfig?.localizable === 'categories';
+
     return html`<div class="categories">
       ${repeat(
         node.router.categories,
@@ -1404,13 +1413,43 @@ export class CanvasNode extends RapidElement {
             (exit: Exit) => exit.uuid == category.exit_uuid
           );
 
+          // Get localized category name if translating
+          let displayName = category.name;
+          let isLocalized = false;
+
+          if (
+            this.isTranslating &&
+            this.languageCode !== 'eng' &&
+            supportsLocalization
+          ) {
+            const localization =
+              this.flowDefinition?.localization?.[this.languageCode];
+            if (localization && localization[category.uuid]) {
+              const categoryLocalization = localization[category.uuid];
+              if (categoryLocalization.name && categoryLocalization.name[0]) {
+                displayName = categoryLocalization.name[0];
+                isLocalized = true;
+              }
+            }
+          }
+
+          // Category is localizable if: translating, supports localization, and not base language
+          const isLocalizable =
+            this.isTranslating &&
+            this.languageCode !== 'eng' &&
+            supportsLocalization &&
+            !isLocalized;
+
           return html`<div
-            class="category"
+            class=${getClasses({
+              category: true,
+              localizable: isLocalizable
+            })}
             @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
             style="cursor: pointer;"
           >
-            <div class="cn-title">${category.name}</div>
+            <div class="cn-title">${displayName}</div>
             ${this.renderExit(exit)}
           </div>`;
         }
