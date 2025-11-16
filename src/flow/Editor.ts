@@ -2547,16 +2547,12 @@ export class Editor extends RapidElement {
     const autoTranslateButtonDisabled =
       !this.autoTranslating && !hasTranslations;
 
-    const headerLabel = activeLanguage
-      ? `${activeLanguage.name} Translation`
-      : 'Translate Flow';
-
     return html`
       <temba-floating-window
         id="localization-window"
-        header="${headerLabel}"
+        header="Translations"
         .width=${360}
-        .height=${350}
+        .maxHeight=${600}
         .top=${20}
         color="#6b7280"
         .hidden=${this.localizationWindowHidden}
@@ -2593,7 +2589,6 @@ export class Editor extends RapidElement {
             </button>
           </div>
           <div class="localization-progress">
-            <h5>Localization progress</h5>
             <div class="localization-progress-summary">
               ${this.autoTranslating
                 ? html`<temba-loading units="3" size="8"></temba-loading>
