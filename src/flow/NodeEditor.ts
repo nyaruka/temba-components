@@ -702,13 +702,24 @@ export class NodeEditor extends RapidElement {
             this.node
           );
 
-          // Update each category's localization
-          Object.keys(localizationData).forEach((categoryUuid) => {
-            this.updateLocalization(
-              this.languageCode,
-              categoryUuid,
-              localizationData[categoryUuid]
-            );
+          const languageLocalization =
+            this.flowDefinition?.localization?.[this.languageCode] || {};
+          const categories = this.node?.router?.categories || [];
+
+          categories.forEach((category) => {
+            const categoryUuid = category.uuid;
+            const nextLocalization = localizationData[categoryUuid];
+
+            if (nextLocalization) {
+              this.updateLocalization(
+                this.languageCode,
+                categoryUuid,
+                nextLocalization
+              );
+            } else if (languageLocalization[categoryUuid]) {
+              // Remove existing localization when the translation was cleared
+              this.updateLocalization(this.languageCode, categoryUuid, {});
+            }
           });
 
           // Close the dialog

@@ -18,9 +18,9 @@ export const send_msg: ActionConfig = {
     const text = action.text.replace(/\n/g, '<br>');
     return html`
       ${unsafeHTML(text)}
-      ${action.quick_replies?.length > 0
+      ${(action.quick_replies || [])?.length > 0
         ? html`<div class="quick-replies">
-            ${action.quick_replies.map((reply) => {
+            ${(action.quick_replies || []).map((reply) => {
               return html`<div class="quick-reply">${reply}</div>`;
             })}
             ${action.template
@@ -333,7 +333,8 @@ export const send_msg: ActionConfig = {
         (item: {
           type: [{ name: string; value: string }];
           expression: string;
-        }) => item && item.type && item.expression && item.expression.trim() !== ''
+        }) =>
+          item && item.type && item.expression && item.expression.trim() !== ''
       )
       .map(
         (item: {

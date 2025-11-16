@@ -114,6 +114,12 @@ export interface AppState {
     actionUuid: string,
     localizationData: Record<string, any>
   ): void;
+  setTranslationFilters: (filters: { categories: boolean }) => void;
+  markAutoTranslated: (
+    languageCode: string,
+    uuid: string,
+    attributes: string[]
+  ) => void;
 }
 
 export const zustand = createStore<AppState>()(
@@ -451,6 +457,58 @@ export const zustand = createStore<AppState>()(
             delete state.flowDefinition.localization;
           }
 
+          state.dirtyDate = new Date();
+        });
+      },
+
+      setTranslationFilters: (filters: { categories: boolean }) => {
+        set((state: AppState) => {
+          if (!state.flowDefinition?._ui) {
+            return;
+          }
+
+          const currentFilters = state.flowDefinition._ui
+            .translation_filters || {
+            categories: false
+          };
+
+          state.flowDefinition._ui.translation_filters = {
+            ...currentFilters,
+            categories: !!filters.categories
+          };
+
+          state.dirtyDate = new Date();
+        });
+      },
+
+      markAutoTranslated: (
+        languageCode: string,
+        uuid: string,
+        attributes: string[]
+      ) => {
+        set((state: AppState) => {
+          if (!state.flowDefinition?._ui) {
+            return;
+          }
+
+          if (!state.flowDefinition._ui.auto_translations) {
+            state.flowDefinition._ui.auto_translations = {};
+          }
+
+          if (!state.flowDefinition._ui.auto_translations[languageCode]) {
+            state.flowDefinition._ui.auto_translations[languageCode] = {};
+          }
+
+          const existing =
+            state.flowDefinition._ui.auto_translations[languageCode][uuid] ||
+            [];
+
+          const merged = Array.from(
+            new Set([...existing, ...(attributes || [])])
+          );
+
+          state.flowDefinition._ui.auto_translations[languageCode][uuid] =
+            merged;
           state.dirtyDate = new Date();
         });
       }

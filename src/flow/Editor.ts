@@ -13,9 +13,10 @@ import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType } from '../interfaces';
-import { generateUUID } from '../utils';
+import { generateUUID, postJSON } from '../utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { ACTION_GROUP_METADATA } from './types';
+import { Checkbox } from '../form/Checkbox';
 
 import { Plumber } from './Plumber';
 import { CanvasNode } from './CanvasNode';
@@ -59,6 +60,35 @@ export interface SelectionBox {
 }
 
 const DRAG_THRESHOLD = 5;
+
+type TranslationType = 'property' | 'category';
+
+interface TranslationEntry {
+  uuid: string;
+  type: TranslationType;
+  attribute: string;
+  from: string;
+  to: string | null;
+}
+
+interface TranslationBundle {
+  nodeUuid: string;
+  actionUuid?: string;
+  translations: TranslationEntry[];
+}
+
+interface TranslationModel {
+  uuid: string;
+  name: string;
+  description?: string;
+}
+
+interface LocalizationUpdate {
+  uuid: string;
+  translations: Record<string, string>;
+}
+
+const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
 
 // Offset for positioning dropped action node relative to mouse cursor
 // Keep small to make drop location close to cursor position
@@ -140,6 +170,31 @@ export class Editor extends RapidElement {
 
   @state()
   private isValidTarget = true;
+
+  @state()
+  private localizationWindowHidden = true;
+
+  @state()
+  private translationFilters: { categories: boolean } = {
+    categories: false
+  };
+
+  @state()
+  private translationSettingsExpanded = false;
+
+  @state()
+  private autoTranslateDialogOpen = false;
+
+  @state()
+  private autoTranslating = false;
+
+  @state()
+  private autoTranslateModel: TranslationModel | null = null;
+
+  @state()
+  private autoTranslateError: string | null = null;
+
+  private translationCache = new Map<string, string>();
 
   // NodeEditor state - handles both node and action editing
   @state()
@@ -350,34 +405,183 @@ export class Editor extends RapidElement {
         pointer-events: none;
       }
 
-      /* Language selector toolbar */
-      #language-toolbar {
+      .localization-window-content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+      }
+
+      .localization-header {
+        font-size: 13px;
+        color: #4b5563;
+        line-height: 1.4;
+      }
+
+      .localization-language-select {
+        --color-widget-border: #d1d5db;
+        --color-widget-background: #fff;
+      }
+
+      .localization-language-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+      }
+
+      .localization-language-row temba-select {
+        flex: 1;
+      }
+
+      .localization-progress {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .localization-progress-bar-row {
         display: flex;
         align-items: center;
-        padding: 8px 16px;
-        background: white;
-        border-bottom: 1px solid #e0e0e0;
-        gap: 12px;
+        gap: 8px;
+      }
+
+      .localization-progress-trigger {
+        flex: 1;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+
+      .localization-progress-trigger:focus-visible {
+        outline: 2px solid #94a3b8;
+        outline-offset: 2px;
+      }
+
+      .localization-progress-trigger temba-progress {
+        flex: 1;
+      }
+
+      .localization-progress h5 {
+        margin: 0;
         font-size: 13px;
+        font-weight: 600;
+        color: #374151;
       }
 
-      #language-toolbar label {
-        font-weight: 500;
-        color: #666;
-      }
-
-      .language-selector {
-        min-width: 200px;
-      }
-
-      .language-selector.translating {
-        --color-widget-border: #ffa500;
-      }
-
-      .translating-indicator {
-        color: #ffa500;
-        font-weight: 500;
+      .localization-progress-summary {
         font-size: 12px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 20px;
+      }
+
+      .translation-settings-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: none;
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+      }
+
+      .translation-settings-label {
+        font-size: 12px;
+        color: #6b7280;
+      }
+
+      .translation-settings-toggle:focus-visible {
+        outline: 2px solid #94a3b8;
+        outline-offset: 2px;
+      }
+
+      .translation-settings-arrow {
+        width: 8px;
+        height: 8px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(-45deg);
+        transition: transform 0.2s ease;
+        margin-left: 2px;
+      }
+
+      .translation-settings-arrow.expanded {
+        transform: rotate(45deg);
+      }
+
+      .translation-settings {
+      }
+
+      .translation-settings-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .translation-settings-row temba-checkbox {
+        width: 100%;
+      }
+
+      .auto-translate-button {
+        background: var(--color-primary-dark);
+        border: none;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: var(--curvature);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .auto-translate-button[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .auto-translate-error {
+        font-size: 12px;
+        color: #b91c1c;
+      }
+
+      .auto-translate-dialog-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 14px;
+        color: #374151;
+      }
+
+      .auto-translate-dialog-content p {
+        margin: 0;
+      }
+
+      .auto-translate-loading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #6b7280;
+      }
+
+      .auto-translate-empty {
+        font-size: 13px;
+        color: #6b7280;
+      }
+
+      .localization-empty {
+        font-size: 13px;
+        color: #9ca3af;
+        white-space: nowrap;
       }
     `;
   }
@@ -457,12 +661,29 @@ export class Editor extends RapidElement {
       if (this.definition?.type) {
         this.flowType = this.getFlowTypeFromDefinition(this.definition.type);
       }
+
+      const filters = this.definition?._ui?.translation_filters || {
+        categories: false
+      };
+      const normalizedFilters = {
+        categories: !!filters.categories
+      };
+
+      if (this.translationFilters.categories !== normalizedFilters.categories) {
+        this.translationFilters = normalizedFilters;
+      }
+
+      this.translationCache.clear();
     }
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
         this.debouncedSave();
       }
+    }
+
+    if (changes.has('languageCode')) {
+      this.translationCache.clear();
     }
   }
 
@@ -523,7 +744,7 @@ export class Editor extends RapidElement {
 
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
-    
+
     // Repaint connections after language change since node sizes can change
     if (this.plumber) {
       requestAnimationFrame(() => {
@@ -1797,53 +2018,717 @@ export class Editor extends RapidElement {
     }
   }
 
-  private renderLanguageToolbar(): TemplateResult {
+  private getLocalizationLanguages(): Array<{ code: string; name: string }> {
     if (!this.definition) {
-      return html``;
+      return [];
     }
 
     const baseLanguage = this.definition.language;
-    const availableLanguages = this.getAvailableLanguages();
-    const isTranslating = this.languageCode !== baseLanguage;
+    return this.getAvailableLanguages().filter(
+      (lang) => lang.code !== baseLanguage
+    );
+  }
 
-    // Find the current language name
-    const currentLang = availableLanguages.find(
+  private getLocalizationProgress(languageCode: string): {
+    total: number;
+    localized: number;
+  } {
+    if (
+      !this.definition ||
+      !languageCode ||
+      languageCode === this.definition.language
+    ) {
+      return { total: 0, localized: 0 };
+    }
+
+    const bundles = this.buildTranslationBundles(
+      this.translationFilters.categories,
+      languageCode
+    );
+    return this.getTranslationCounts(bundles);
+  }
+
+  private getLanguageLocalization(languageCode: string): Record<string, any> {
+    if (!this.definition?.localization) {
+      return {};
+    }
+    return this.definition.localization[languageCode] || {};
+  }
+
+  private buildTranslationBundles(
+    includeCategories: boolean,
+    languageCode: string = this.languageCode
+  ): TranslationBundle[] {
+    if (
+      !this.definition ||
+      !languageCode ||
+      languageCode === this.definition.language
+    ) {
+      return [];
+    }
+
+    const languageLocalization = this.getLanguageLocalization(languageCode);
+    const bundles: TranslationBundle[] = [];
+
+    this.definition.nodes.forEach((node) => {
+      node.actions.forEach((action) => {
+        const config = ACTION_CONFIG[action.type];
+        if (!config?.localizable || config.localizable.length === 0) {
+          return;
+        }
+
+        // For send_msg actions, only count 'text' for progress tracking
+        // (quick_replies and attachments are still localizable but don't count toward progress)
+        const localizableKeys =
+          action.type === 'send_msg'
+            ? config.localizable.filter((key) => key === 'text')
+            : config.localizable;
+
+        const translations = this.findTranslations(
+          'property',
+          action.uuid,
+          localizableKeys,
+          action,
+          languageLocalization
+        );
+
+        if (translations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            actionUuid: action.uuid,
+            translations
+          });
+        }
+      });
+
+      if (!includeCategories) {
+        return;
+      }
+
+      const nodeUI = this.definition._ui?.nodes?.[node.uuid];
+      const nodeType = nodeUI?.type;
+      if (!nodeType) {
+        return;
+      }
+
+      const nodeConfig = NODE_CONFIG[nodeType];
+      if (
+        nodeConfig?.localizable === 'categories' &&
+        node.router?.categories?.length
+      ) {
+        const categoryTranslations = node.router.categories.flatMap(
+          (category) =>
+            this.findTranslations(
+              'category',
+              category.uuid,
+              ['name'],
+              category,
+              languageLocalization
+            )
+        );
+
+        if (categoryTranslations.length > 0) {
+          bundles.push({
+            nodeUuid: node.uuid,
+            translations: categoryTranslations
+          });
+        }
+      }
+    });
+
+    return bundles;
+  }
+
+  private findTranslations(
+    type: TranslationType,
+    uuid: string,
+    localizeableKeys: string[],
+    source: any,
+    localization: Record<string, any>
+  ): TranslationEntry[] {
+    const translations: TranslationEntry[] = [];
+
+    localizeableKeys.forEach((attribute) => {
+      if (attribute === 'quick_replies') {
+        return;
+      }
+
+      const pathSegments = attribute.split('.');
+      let from: any = source;
+      let to: any = [];
+
+      while (pathSegments.length > 0 && from) {
+        if (from.uuid) {
+          to = localization[from.uuid];
+        }
+
+        const path = pathSegments.shift();
+        if (!path) {
+          break;
+        }
+
+        if (to) {
+          to = to[path];
+        }
+        from = from[path];
+      }
+
+      if (!from) {
+        return;
+      }
+
+      const fromValue = this.formatTranslationValue(from);
+      if (!fromValue) {
+        return;
+      }
+
+      const toValue = to ? this.formatTranslationValue(to) : null;
+
+      translations.push({
+        uuid,
+        type,
+        attribute,
+        from: fromValue,
+        to: toValue
+      });
+    });
+
+    return translations;
+  }
+
+  private formatTranslationValue(value: any): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      const normalized = value
+        .map((entry) => this.formatTranslationValue(entry))
+        .filter((entry) => !!entry) as string[];
+      return normalized.length > 0 ? normalized.join(', ') : null;
+    }
+
+    if (typeof value === 'object') {
+      if ('name' in value && value.name) {
+        return String(value.name);
+      }
+
+      if ('arguments' in value && Array.isArray(value.arguments)) {
+        return value.arguments.join(' ');
+      }
+
+      return null;
+    }
+
+    if (typeof value === 'number') {
+      return value.toString();
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    return null;
+  }
+
+  private getTranslationCounts(bundles: TranslationBundle[]): {
+    total: number;
+    localized: number;
+  } {
+    return bundles.reduce(
+      (counts, bundle) => {
+        bundle.translations.forEach((translation) => {
+          counts.total += 1;
+          if (translation.to && translation.to.trim().length > 0) {
+            counts.localized += 1;
+          }
+        });
+        return counts;
+      },
+      { total: 0, localized: 0 }
+    );
+  }
+
+  private handleLocalizationTabClick(): void {
+    const languages = this.getLocalizationLanguages();
+    if (!languages.length) {
+      return;
+    }
+
+    this.localizationWindowHidden = false;
+
+    const alreadySelected = languages.some(
       (lang) => lang.code === this.languageCode
     );
-    const currentLangName = currentLang?.name || 'English';
+
+    if (!alreadySelected) {
+      this.handleLanguageChange(languages[0].code);
+    }
+  }
+
+  private handleLocalizationLanguageSelect(languageCode: string): void {
+    if (languageCode === this.languageCode) {
+      return;
+    }
+    this.handleLanguageChange(languageCode);
+  }
+
+  private handleLocalizationLanguageSelectChange(event: CustomEvent): void {
+    const select = event.target as any;
+    const nextValue = select?.values?.[0]?.value;
+    if (nextValue) {
+      this.handleLocalizationLanguageSelect(nextValue);
+    }
+  }
+
+  private handleLocalizationWindowClosed(): void {
+    this.localizationWindowHidden = true;
+
+    const baseLanguage = this.definition?.language;
+    if (baseLanguage && this.languageCode !== baseLanguage) {
+      this.handleLanguageChange(baseLanguage);
+    }
+  }
+
+  private toggleTranslationSettings(): void {
+    this.translationSettingsExpanded = !this.translationSettingsExpanded;
+  }
+
+  private handleLocalizationProgressToggleClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('.translation-settings-toggle')) {
+      return;
+    }
+    this.toggleTranslationSettings();
+  }
+
+  private handleLocalizationProgressToggleKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleTranslationSettings();
+    }
+  }
+
+  private handleIncludeCategoriesChange(event: Event): void {
+    const checkbox = event.target as Checkbox;
+    const categories = checkbox?.checked ?? false;
+    this.translationFilters = { categories };
+    getStore()?.getState().setTranslationFilters({ categories });
+    this.requestUpdate();
+  }
+
+  private async handleAutoTranslateClick(event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.autoTranslating) {
+      this.autoTranslating = false;
+      return;
+    }
+
+    this.autoTranslateDialogOpen = true;
+  }
+
+  private handleAutoTranslateDialogButton(event: CustomEvent): void {
+    const button = event.detail?.button;
+    if (!button) {
+      return;
+    }
+
+    if (button.name === 'Translate') {
+      if (!this.autoTranslateModel) {
+        return;
+      }
+      this.autoTranslateDialogOpen = false;
+      this.autoTranslateError = null;
+      this.autoTranslating = true;
+      this.runAutoTranslation().catch((error) => {
+        console.error('Auto translation failed', error);
+        this.autoTranslateError = 'Auto translation failed. Please try again.';
+        this.autoTranslating = false;
+      });
+    } else if (button.name === 'Cancel' || button.name === 'Close') {
+      this.autoTranslateDialogOpen = false;
+    }
+  }
+
+  private handleAutoTranslateModelChange(event: Event): void {
+    const select = event.target as any;
+    const nextModel = select?.values?.[0] || null;
+    this.autoTranslateModel = nextModel;
+  }
+
+  private shouldTranslateValue(text: string): boolean {
+    if (!text) {
+      return false;
+    }
+    const trimmed = text.trim();
+    if (trimmed.length <= 1) {
+      return false;
+    }
+    if (/^\d+$/.test(trimmed)) {
+      return false;
+    }
+    return true;
+  }
+
+  private async requestAutoTranslation(text: string): Promise<string | null> {
+    if (!this.autoTranslateModel || !this.definition) {
+      return null;
+    }
+
+    const payload = {
+      text,
+      lang: {
+        from: this.definition.language,
+        to: this.languageCode
+      }
+    };
+
+    const response = await postJSON(
+      `/llm/translate/${this.autoTranslateModel.uuid}/`,
+      payload
+    );
+
+    if (response?.status === 200) {
+      const result = response.json?.result || response.json?.text;
+      return result ? String(result) : null;
+    }
+
+    throw new Error('Auto translation request failed');
+  }
+
+  private applyLocalizationUpdates(
+    updates: LocalizationUpdate[],
+    autoTranslated = false
+  ): void {
+    if (!updates.length || !this.definition) {
+      return;
+    }
+
+    const store = getStore();
+    if (!store) {
+      return;
+    }
+
+    updates.forEach(({ uuid, translations }) => {
+      const normalized = Object.entries(translations).reduce(
+        (acc, [key, value]) => {
+          if (!value) {
+            return acc;
+          }
+          acc[key] = Array.isArray(value) ? value : [value];
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+
+      const existing =
+        this.definition.localization?.[this.languageCode]?.[uuid] || {};
+      const merged = { ...existing, ...normalized };
+
+      store.getState().updateLocalization(this.languageCode, uuid, merged);
+
+      if (autoTranslated) {
+        zustand
+          .getState()
+          .markAutoTranslated(
+            this.languageCode,
+            uuid,
+            Object.keys(translations)
+          );
+      }
+    });
+  }
+
+  private async runAutoTranslation(): Promise<void> {
+    if (
+      !this.definition ||
+      this.languageCode === this.definition.language ||
+      !this.autoTranslateModel
+    ) {
+      this.autoTranslating = false;
+      return;
+    }
+
+    const bundles = this.buildTranslationBundles(
+      this.translationFilters.categories
+    );
+
+    for (const bundle of bundles) {
+      if (!this.autoTranslating) {
+        break;
+      }
+
+      const untranslated = bundle.translations.filter(
+        (translation) => !translation.to || translation.to.trim().length === 0
+      );
+
+      if (untranslated.length === 0) {
+        continue;
+      }
+
+      const updates: LocalizationUpdate[] = [];
+
+      for (const translation of untranslated) {
+        if (!this.autoTranslating) {
+          break;
+        }
+
+        if (!this.shouldTranslateValue(translation.from)) {
+          continue;
+        }
+
+        const cached = this.translationCache.get(translation.from);
+        if (cached) {
+          updates.push({
+            uuid: translation.uuid,
+            translations: { [translation.attribute]: cached }
+          });
+          continue;
+        }
+
+        try {
+          const result = await this.requestAutoTranslation(translation.from);
+          if (result) {
+            this.translationCache.set(translation.from, result);
+            updates.push({
+              uuid: translation.uuid,
+              translations: { [translation.attribute]: result }
+            });
+          }
+        } catch (error) {
+          console.error('Auto translation request failed', error);
+          this.autoTranslateError =
+            'Auto translation failed. Please try again.';
+          this.autoTranslating = false;
+          break;
+        }
+      }
+
+      if (updates.length > 0) {
+        this.applyLocalizationUpdates(updates, true);
+      }
+
+      if (!this.autoTranslating) {
+        break;
+      }
+    }
+
+    this.autoTranslating = false;
+  }
+
+  private renderLocalizationWindow(): TemplateResult | string {
+    const languages = this.getLocalizationLanguages();
+    if (!languages.length) {
+      return html``;
+    }
+
+    const baseLanguage = this.definition?.language;
+    const availableLanguages = this.getAvailableLanguages();
+    const baseName =
+      availableLanguages.find((lang) => lang.code === baseLanguage)?.name ||
+      'Base Language';
+
+    const activeLanguageCode = languages.some(
+      (lang) => lang.code === this.languageCode
+    )
+      ? this.languageCode
+      : languages[0]?.code;
+    const activeLanguage = activeLanguageCode
+      ? languages.find((lang) => lang.code === activeLanguageCode)
+      : null;
+    const progress = this.getLocalizationProgress(activeLanguageCode || '');
+    const includeCategories = this.translationFilters.categories;
+    const settingsPanelId = 'translation-settings-panel';
+    const remainingTranslations = Math.max(
+      progress.total - progress.localized,
+      0
+    );
+    const hasTranslations = progress.total > 0;
+    const hasPendingTranslations = remainingTranslations > 0;
+    const autoTranslateButtonLabel = this.autoTranslating
+      ? 'Stop Auto Translate'
+      : 'Auto Translate';
+    const autoTranslateButtonDisabled =
+      !this.autoTranslating && !hasTranslations;
 
     return html`
-      <div id="language-toolbar">
-        <label>Language:</label>
-        <temba-select
-          class="language-selector ${isTranslating ? 'translating' : ''}"
-          .values=${[{ name: currentLangName, value: this.languageCode }]}
-          @change=${this.handleLanguageSelectChange}
-        >
-          ${availableLanguages.map((lang) => {
-            const isBase = lang.code === baseLanguage;
-            return html`
-              <temba-option
-                name="${lang.name}${isBase ? ' (Base)' : ''}"
-                value="${lang.code}"
-              ></temba-option>
-            `;
-          })}
-        </temba-select>
-        ${isTranslating
-          ? html`<span class="translating-indicator"
-              >Translating to ${currentLangName}</span
-            >`
-          : ''}
-      </div>
+      <temba-floating-window
+        id="localization-window"
+        header="Translations"
+        .width=${360}
+        .maxHeight=${600}
+        .top=${20}
+        color="#6b7280"
+        .hidden=${this.localizationWindowHidden}
+        @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
+      >
+        <div class="localization-window-content">
+          <div class="localization-header">
+            Translate from <strong>${baseName}</strong> to the languages below.
+            Closing this window returns you to editing in ${baseName}.
+          </div>
+          <div class="localization-language-row">
+            <temba-select
+              flavor="small"
+              class="localization-language-select"
+              .values=${activeLanguage
+                ? [{ name: activeLanguage.name, value: activeLanguage.code }]
+                : []}
+              @change=${this.handleLocalizationLanguageSelectChange}
+            >
+              ${languages.map(
+                (lang) => html`<temba-option
+                  value="${lang.code}"
+                  name="${lang.name}"
+                ></temba-option>`
+              )}
+            </temba-select>
+            <button
+              class="auto-translate-button"
+              type="button"
+              ?disabled=${autoTranslateButtonDisabled}
+              @click=${this.handleAutoTranslateClick}
+            >
+              ${autoTranslateButtonLabel}
+            </button>
+          </div>
+          <div class="localization-progress">
+            <div class="localization-progress-summary">
+              ${this.autoTranslating
+                ? html`<temba-loading units="3" size="8"></temba-loading>
+                    <span>Auto translating remaining text…</span>`
+                : !hasTranslations
+                ? html`<span>
+                    Add content or enable more options to start translating.
+                  </span>`
+                : hasPendingTranslations
+                ? html`<span>
+                    ${progress.localized} of ${progress.total} items translated
+                  </span>`
+                : html`<span>All items are translated.</span>`}
+            </div>
+            ${this.autoTranslateError
+              ? html`<div class="auto-translate-error">
+                  ${this.autoTranslateError}
+                </div>`
+              : ''}
+            <div class="localization-progress-bar-row">
+              <div
+                class="localization-progress-trigger"
+                role="button"
+                tabindex="0"
+                aria-expanded="${this.translationSettingsExpanded}"
+                aria-controls="${settingsPanelId}"
+                @click=${this.handleLocalizationProgressToggleClick}
+                @keydown=${this.handleLocalizationProgressToggleKeydown}
+              >
+                <temba-progress
+                  .current=${progress.localized}
+                  .total=${Math.max(progress.total, 1)}
+                  .animated=${false}
+                ></temba-progress>
+              </div>
+              <button
+                class="translation-settings-toggle"
+                type="button"
+                @click=${this.toggleTranslationSettings}
+                aria-expanded="${this.translationSettingsExpanded}"
+                aria-controls="${settingsPanelId}"
+              >
+                <span
+                  class="translation-settings-arrow ${this
+                    .translationSettingsExpanded
+                    ? 'expanded'
+                    : ''}"
+                ></span>
+              </button>
+            </div>
+            ${this.translationSettingsExpanded
+              ? html`<div id="${settingsPanelId}" class="translation-settings">
+                  <div class="translation-settings-row">
+                    <temba-checkbox
+                      name="include-categories"
+                      label="Include categories"
+                      ?checked=${includeCategories}
+                      style="--checkbox-padding:5px; border-radius:var(--curvature);"
+                      @change=${this.handleIncludeCategoriesChange}
+                    ></temba-checkbox>
+                  </div>
+                </div>`
+              : ''}
+          </div>
+        </div>
+      </temba-floating-window>
     `;
   }
 
-  private handleLanguageSelectChange(event: CustomEvent): void {
-    const select = event.target as any;
-    if (select.values && select.values.length > 0) {
-      this.handleLanguageChange(select.values[0].value);
+  private renderAutoTranslateDialog(): TemplateResult | string {
+    if (!this.autoTranslateDialogOpen) {
+      return html``;
     }
+
+    const selectedModel = this.autoTranslateModel
+      ? [this.autoTranslateModel]
+      : [];
+    const disableTranslate = !this.autoTranslateModel;
+
+    return html`
+      <temba-dialog
+        header="Auto translate"
+        .open=${this.autoTranslateDialogOpen}
+        primaryButtonName="Translate"
+        cancelButtonName="Cancel"
+        size="small"
+        .disabled=${disableTranslate}
+        @temba-button-clicked=${this.handleAutoTranslateDialogButton}
+      >
+        <div class="auto-translate-dialog-content">
+          <p>
+            We'll send any untranslated text to the selected AI model and save
+            the responses automatically.
+          </p>
+          <div class="auto-translate-models">
+            <temba-select
+              class="auto-translate-model-select"
+              endpoint="${AUTO_TRANSLATE_MODELS_ENDPOINT}"
+              .valueKey=${'uuid'}
+              .values=${selectedModel}
+              ?searchable=${true}
+              ?clearable=${true}
+              placeholder="Select an AI model"
+              @change=${this.handleAutoTranslateModelChange}
+            ></temba-select>
+          </div>
+          <p>Only text without translations will be sent.</p>
+          ${this.autoTranslateError
+            ? html`<div class="auto-translate-error">
+                ${this.autoTranslateError}
+              </div>`
+            : ''}
+        </div>
+      </temba-dialog>
+    `;
+  }
+
+  private renderLocalizationTab(): TemplateResult | string {
+    const languages = this.getLocalizationLanguages();
+    if (!languages.length) {
+      return html``;
+    }
+
+    return html`
+      <temba-floating-tab
+        id="localization-tab"
+        icon="language"
+        label="Translate Flow"
+        color="#6b7280"
+        .hidden=${!this.localizationWindowHidden}
+        @temba-button-clicked=${this.handleLocalizationTabClick}
+      ></temba-floating-tab>
+    `;
   }
 
   public render(): TemplateResult {
@@ -1855,7 +2740,8 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style} ${this.renderLanguageToolbar()}
+    return html`${style} ${this.renderLocalizationWindow()}
+      ${this.renderAutoTranslateDialog()}
       <div id="editor">
         <div
           id="grid"
@@ -1942,6 +2828,7 @@ export class Editor extends RapidElement {
       <temba-node-type-selector
         .flowType=${this.flowType}
         .features=${this.features}
-      ></temba-node-type-selector> `;
+      ></temba-node-type-selector>
+      ${this.renderLocalizationTab()} `;
   }
 }
