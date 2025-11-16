@@ -36,6 +36,13 @@ export class CanvasNode extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: any;
 
+  @fromStore(
+    zustand,
+    (state: AppState) =>
+      state.flowDefinition?._ui?.translation_filters?.categories || false
+  )
+  private includeCategoriesInTranslation!: boolean;
+
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
 
@@ -177,7 +184,7 @@ export class CanvasNode extends RapidElement {
         background: #fff8dc !important; /* Light yellow background for localizable but not yet localized */
       }
 
-      .action.non-localizable {
+      .non-localizable {
         opacity: 0.25;
         pointer-events: none;
       }
@@ -250,6 +257,10 @@ export class CanvasNode extends RapidElement {
         display: inline-block;
         font-size: 0.8em;
         margin: 0.2em;
+      }
+
+      .router-section {
+        /* Container for router and categories */
       }
 
       .categories {
@@ -1433,11 +1444,12 @@ export class CanvasNode extends RapidElement {
             }
           }
 
-          // Category is localizable if: translating, supports localization, and not base language
+          // Category is localizable if: translating, supports localization, categories enabled, and not base language
           const isLocalizable =
             this.isTranslating &&
             this.languageCode !== 'eng' &&
             supportsLocalization &&
+            this.includeCategoriesInTranslation &&
             !isLocalized;
 
           return html`<div
@@ -1478,12 +1490,21 @@ export class CanvasNode extends RapidElement {
 
     const nodeConfig = NODE_CONFIG[this.ui.type];
 
+    // Check if this node should be disabled (grayed out)
+    const supportsLocalization = nodeConfig?.localizable === 'categories';
+    const isNodeDisabled =
+      this.isTranslating &&
+      supportsLocalization &&
+      !this.includeCategoriesInTranslation;
+
     return html`
       <div
         id="${this.node.uuid}"
-        class="node ${this.ui.type === 'execute_actions'
-          ? 'execute-actions'
-          : ''}"
+        class=${getClasses({
+          node: true,
+          'execute-actions': this.ui.type === 'execute_actions',
+          'non-localizable': isNodeDisabled
+        })}
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
         ${nodeConfig && nodeConfig.type !== 'execute_actions'
@@ -1522,8 +1543,10 @@ export class CanvasNode extends RapidElement {
               )}`
           : ''}
         ${this.node.router
-          ? html` ${this.renderRouter(this.node.router, this.ui)}
-            ${this.renderCategories(this.node)}`
+          ? html`<div class="router-section">
+              ${this.renderRouter(this.node.router, this.ui)}
+              ${this.renderCategories(this.node)}
+            </div>`
           : html`<div class="action-exits">
               ${repeat(
                 this.node.exits,

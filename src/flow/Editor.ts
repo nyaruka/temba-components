@@ -195,7 +195,6 @@ export class Editor extends RapidElement {
   private autoTranslateError: string | null = null;
 
   private translationCache = new Map<string, string>();
-  private autoTranslateDelay = 1000;
 
   // NodeEditor state - handles both node and action editing
   @state()
@@ -2078,10 +2077,17 @@ export class Editor extends RapidElement {
           return;
         }
 
+        // For send_msg actions, only count 'text' for progress tracking
+        // (quick_replies and attachments are still localizable but don't count toward progress)
+        const localizableKeys =
+          action.type === 'send_msg'
+            ? config.localizable.filter((key) => key === 'text')
+            : config.localizable;
+
         const translations = this.findTranslations(
           'property',
           action.uuid,
-          config.localizable,
+          localizableKeys,
           action,
           languageLocalization
         );
@@ -2309,6 +2315,7 @@ export class Editor extends RapidElement {
     const categories = checkbox?.checked ?? false;
     this.translationFilters = { categories };
     getStore()?.getState().setTranslationFilters({ categories });
+    this.requestUpdate();
   }
 
   private async handleAutoTranslateClick(event: Event): Promise<void> {

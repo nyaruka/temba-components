@@ -174,7 +174,7 @@ export class ProgressBar extends RapidElement {
       this.showEstimatedCompletion = this.estimatedCompletionDate > new Date();
     }
 
-    if (changes.has('current')) {
+    if (changes.has('current') || changes.has('total')) {
       const pct = Math.floor(Math.min((this.current / this.total) * 100, 100));
       if (Number.isNaN(pct)) {
         this.showPercentage = false;

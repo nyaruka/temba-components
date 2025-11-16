@@ -1299,4 +1299,148 @@ describe('EditorNode', () => {
       expect(rendered).to.exist;
     });
   });
+
+  describe('router section graying', () => {
+    it('grays out split nodes when categories not included in translation', async () => {
+      const mockNode: Node = {
+        uuid: 'split-node-1',
+        actions: [],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'Response',
+          categories: [
+            { uuid: 'cat-1', name: 'Category 1', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Category 2', exit_uuid: 'exit-2' }
+          ]
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'split_by_groups'
+      };
+
+      // Create node
+      const editorNode: CanvasNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${mockUI}
+        ></temba-flow-node>`
+      );
+
+      // Set fromStore properties directly
+      (editorNode as any).isTranslating = true;
+      (editorNode as any).includeCategoriesInTranslation = false;
+      (editorNode as any).languageCode = 'spa';
+
+      // Force re-render
+      editorNode.requestUpdate('isTranslating');
+      editorNode.requestUpdate('includeCategoriesInTranslation');
+      await editorNode.updateComplete;
+
+      // Find the node element
+      const nodeElement = editorNode.querySelector('.node');
+      expect(nodeElement).to.exist;
+
+      // Verify it has the non-localizable class
+      expect(nodeElement?.classList.contains('non-localizable')).to.be.true;
+    });
+
+    it('does not gray out split nodes when categories are included in translation', async () => {
+      const mockNode: Node = {
+        uuid: 'split-node-2',
+        actions: [],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'Response',
+          categories: [
+            { uuid: 'cat-1', name: 'Category 1', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Category 2', exit_uuid: 'exit-2' }
+          ]
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'split_by_groups'
+      };
+
+      // Create node
+      const editorNode: CanvasNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${mockUI}
+        ></temba-flow-node>`
+      );
+
+      // Set fromStore properties directly
+      (editorNode as any).isTranslating = true;
+      (editorNode as any).includeCategoriesInTranslation = true;
+      (editorNode as any).languageCode = 'spa';
+
+      await editorNode.requestUpdate();
+      await editorNode.updateComplete;
+
+      // Find the node element
+      const nodeElement = editorNode.querySelector('.node');
+      expect(nodeElement).to.exist;
+
+      // Verify it does NOT have the non-localizable class
+      expect(nodeElement?.classList.contains('non-localizable')).to.be.false;
+    });
+
+    it('does not gray out split nodes when not translating', async () => {
+      const mockNode: Node = {
+        uuid: 'split-node-3',
+        actions: [],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'Response',
+          categories: [
+            { uuid: 'cat-1', name: 'Category 1', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Category 2', exit_uuid: 'exit-2' }
+          ]
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'split_by_groups'
+      };
+
+      // Create node
+      const editorNode: CanvasNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${mockUI}
+        ></temba-flow-node>`
+      );
+
+      // Set fromStore properties directly
+      (editorNode as any).isTranslating = false;
+      (editorNode as any).languageCode = 'eng';
+
+      await editorNode.requestUpdate();
+      await editorNode.updateComplete;
+
+      // Find the node element
+      const nodeElement = editorNode.querySelector('.node');
+      expect(nodeElement).to.exist;
+
+      // Verify it does NOT have the non-localizable class
+      expect(nodeElement?.classList.contains('non-localizable')).to.be.false;
+    });
+  });
 });
