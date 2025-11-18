@@ -99,6 +99,7 @@ export interface FormConfig {
 export interface NodeConfig extends FormConfig {
   type: string;
   name?: string;
+  aliases?: string[]; // alternate type names for backwards compatibility (won't show in selector)
   group?: ActionGroup | SplitGroup; // Nodes can use either when showAsAction is true
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
@@ -384,6 +385,7 @@ export const SPLIT_GROUP_METADATA: Record<SplitGroup, GroupMetadata> = {
 
 export interface ActionConfig extends FormConfig {
   name: string;
+  aliases?: string[]; // alternate type names for backwards compatibility (won't show in selector)
   group: ActionGroup;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];

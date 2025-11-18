@@ -238,8 +238,9 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // with ai feature, should have Split by AI
-    expect(titles).to.include('Split by AI');
+    // split_by_llm_categorize (Split by AI) is filtered out for old editor compatibility
+    // so it should NOT appear even when AI feature is enabled
+    expect(titles).to.not.include('Split by AI');
   });
 
   it('filters by features - without AI feature, AI splits are hidden', async () => {
@@ -256,7 +257,8 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // without ai feature, should not have Split by AI
+    // without ai feature, should not have Call AI or Split by AI
+    expect(titles).to.not.include('Call AI');
     expect(titles).to.not.include('Split by AI');
   });
 
@@ -351,5 +353,89 @@ describe('temba-node-type-selector', () => {
       configWithUndefinedFlowTypes
     );
     expect(isAvailableVoice).to.be.true;
+  });
+
+  describe('alias filtering', () => {
+    it('should not show split_by_run_result twice when aliases exist', async () => {
+      const selector = await createSelector();
+
+      selector.show('split', { x: 100, y: 100 });
+      await selector.updateComplete;
+
+      // Get all the node items rendered in the selector
+      const nodeItems = selector.shadowRoot!.querySelectorAll('.node-item');
+
+      // Count how many times "Split by Result" appears
+      let splitByResultCount = 0;
+      nodeItems.forEach((item) => {
+        const title = item.querySelector('.node-item-title');
+        if (title?.textContent?.includes('Split by Result')) {
+          splitByResultCount++;
+        }
+      });
+
+      // Should only appear once, not twice
+      expect(splitByResultCount).to.equal(1);
+    });
+
+    it('should not show split_by_run_result_delimited type in the selector', async () => {
+      const selector = await createSelector();
+
+      selector.show('split', { x: 100, y: 100 });
+      await selector.updateComplete;
+
+      // Get all the node items and check their data-type attributes
+      const nodeItems = selector.shadowRoot!.querySelectorAll('.node-item');
+
+      let foundDelimitedType = false;
+      nodeItems.forEach((item) => {
+        const typeAttr = item.getAttribute('data-type');
+        if (typeAttr === 'split_by_run_result_delimited') {
+          foundDelimitedType = true;
+        }
+      });
+
+      expect(foundDelimitedType).to.be.false;
+    });
+
+    it('should not show split_by_llm_categorize in split mode', async () => {
+      const selector = await createSelector();
+
+      selector.show('split', { x: 100, y: 100 });
+      await selector.updateComplete;
+
+      // Get all the node items and check their data-type attributes
+      const nodeItems = selector.shadowRoot!.querySelectorAll('.node-item');
+
+      let foundLLMCategorize = false;
+      nodeItems.forEach((item) => {
+        const typeAttr = item.getAttribute('data-type');
+        if (typeAttr === 'split_by_llm_categorize') {
+          foundLLMCategorize = true;
+        }
+      });
+
+      expect(foundLLMCategorize).to.be.false;
+    });
+
+    it('should not show split_by_llm_categorize in action mode', async () => {
+      const selector = await createSelector();
+
+      selector.show('action', { x: 100, y: 100 });
+      await selector.updateComplete;
+
+      // Get all the node items and check their data-type attributes
+      const nodeItems = selector.shadowRoot!.querySelectorAll('.node-item');
+
+      let foundLLMCategorize = false;
+      nodeItems.forEach((item) => {
+        const typeAttr = item.getAttribute('data-type');
+        if (typeAttr === 'split_by_llm_categorize') {
+          foundLLMCategorize = true;
+        }
+      });
+
+      expect(foundLLMCategorize).to.be.false;
+    });
   });
 });

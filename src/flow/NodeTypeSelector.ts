@@ -318,8 +318,11 @@ export class NodeTypeSelector extends RapidElement {
 
       // Collect regular actions (from ACTION_CONFIG, unless hideFromActions is true)
       Object.entries(ACTION_CONFIG)
-        .filter(([_, config]) => {
+        .filter(([type, config]) => {
+          // exclude aliases - if config has aliases, check if this type is an alias
+          const isAlias = config.aliases && config.aliases.includes(type);
           return (
+            !isAlias &&
             config.name &&
             !config.hideFromActions &&
             config.group &&
@@ -341,6 +344,7 @@ export class NodeTypeSelector extends RapidElement {
           .filter(([type, config]) => {
             return (
               type !== 'execute_actions' &&
+              type === config.type && // exclude aliases (type won't match config.type for aliases)
               config.name &&
               config.showAsAction &&
               config.group &&
@@ -440,8 +444,10 @@ export class NodeTypeSelector extends RapidElement {
         .filter(([type, config]) => {
           // exclude execute_actions (it's the default action-only node)
           // exclude nodes that have showAsAction=true (they appear in action mode)
+          // exclude aliases (type won't match config.type for aliases)
           return (
             type !== 'execute_actions' &&
+            type === config.type &&
             config.name &&
             !config.showAsAction &&
             this.isConfigAvailable(config)
