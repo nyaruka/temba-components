@@ -165,18 +165,21 @@ describe('temba-floating-window', () => {
       {
         header: 'Custom Size',
         width: 400,
-        maxHeight: 600
+        maxHeight: 600,
+        top: 100,
+        left: 100
       },
       '<div>Content</div>',
       450,
       650
     )) as FloatingWindow;
 
-    window.hidden = false;
+    window.show();
     await window.updateComplete;
-
     expect(window.width).to.equal(400);
     expect(window.maxHeight).to.equal(600);
+    expect(window.top).to.equal(100);
+    expect(window.left).to.equal(100);
 
     // use custom clip for fixed positioned element
     const windowElement = window.shadowRoot.querySelector(
@@ -188,6 +191,7 @@ describe('temba-floating-window', () => {
       width: window.width,
       height: windowElement.offsetHeight
     };
+
     await assertScreenshot('floating-window/custom-size', clip);
   });
 

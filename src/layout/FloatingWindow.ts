@@ -15,7 +15,8 @@ export class FloatingWindow extends RapidElement {
       }
 
       .window {
-        transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
+        transition: transform var(--transition-duration, 300ms) ease-in-out,
+          opacity var(--transition-duration, 300ms) ease-in-out;
         position: fixed;
         z-index: 9999;
         top: 100px;
@@ -65,7 +66,8 @@ export class FloatingWindow extends RapidElement {
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        transition: background-color 150ms ease-in-out;
+        transition: background-color calc(var(--transition-duration, 150ms) / 2)
+          ease-in-out;
       }
 
       .close-button:hover {
