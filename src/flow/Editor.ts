@@ -12,7 +12,7 @@ import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
-import { CustomEventType } from '../interfaces';
+import { CustomEventType, Workspace } from '../interfaces';
 import { generateUUID, postJSON } from '../utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { ACTION_GROUP_METADATA } from './types';
@@ -135,7 +135,7 @@ export class Editor extends RapidElement {
   private isTranslating!: boolean;
 
   @fromStore(zustand, (state: AppState) => state.workspace)
-  private workspace!: AppState['workspace'];
+  private workspace!: Workspace;
 
   // Drag state
   @state()
