@@ -4,6 +4,7 @@ import { property } from 'lit/decorators.js';
 import { getCookie, setCookie } from '../utils';
 import { DEFAULT_AVATAR } from './assets';
 import { Chat, ChatEvent, Message, MessageType } from '../display/Chat';
+import { v7 as uuidv7 } from 'uuid';
 
 interface User {
   avatar?: string;
@@ -88,7 +89,7 @@ const sockToChat = function (msg: any): ChatEvent | Message {
   const msgContent = msg.msg_in || msg.msg_out;
 
   return {
-    id: msgContent.id,
+    uuid: msgContent.id,
     type,
     text: msgContent.text,
     date: new Date(msgContent.time),
@@ -570,7 +571,7 @@ export class WebChat extends LitElement {
       const date = new Date();
 
       this.chat.addMessages(
-        [{ type: MessageType.MsgIn, text, date }],
+        [{ uuid: uuidv7(), type: MessageType.MsgIn, text, date }],
         date,
         true
       );
