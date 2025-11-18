@@ -134,6 +134,9 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
 
+  @fromStore(zustand, (state: AppState) => state.workspace)
+  private workspace!: AppState['workspace'];
+
   // Drag state
   @state()
   private isDragging = false;
@@ -233,15 +236,23 @@ export class Editor extends RapidElement {
 
   private canvasMouseDown = false;
 
-  // Default languages if not specified in flow definition
-  private readonly DEFAULT_LANGUAGES = [
-    { code: 'eng', name: 'English' },
-    { code: 'fra', name: 'French' },
-    { code: 'esp', name: 'Spanish' }
-  ];
-
   private getAvailableLanguages(): Array<{ code: string; name: string }> {
-    // Use languages from flow definition if available, otherwise use defaults
+    // Use languages from workspace if available
+    if (this.workspace?.languages && this.workspace.languages.length > 0) {
+      const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
+      return this.workspace.languages
+        .map((code) => {
+          try {
+            const name = languageNames.of(code);
+            return name ? { code, name } : { code, name: code };
+          } catch {
+            return { code, name: code };
+          }
+        })
+        .filter((lang) => lang.code && lang.name);
+    }
+
+    // Fall back to flow definition languages if available
     if (
       this.definition?._ui?.languages &&
       this.definition._ui.languages.length > 0
@@ -251,7 +262,9 @@ export class Editor extends RapidElement {
         name: typeof lang === 'string' ? lang : lang.name
       }));
     }
-    return this.DEFAULT_LANGUAGES;
+
+    // No languages available
+    return [];
   }
 
   // Bound event handlers to maintain proper 'this' context
