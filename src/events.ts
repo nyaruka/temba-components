@@ -7,7 +7,7 @@ export interface EventGroup {
 }
 
 export interface ContactEvent {
-  uuid?: string;
+  uuid: string;
   type: string;
   created_on: string;
   _user?: ObjectReference;

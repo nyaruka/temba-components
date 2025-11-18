@@ -18,7 +18,6 @@ import {
   isImageAttachment,
   stopEvent,
   hslToHex,
-  hashCode,
   showModax,
   debounce,
   throttle,
@@ -537,24 +536,6 @@ describe('utils/index', () => {
 
     it('handles black', () => {
       expect(hslToHex(0, 0, 0)).to.equal('#000000');
-    });
-  });
-
-  describe('hashCode', () => {
-    it('generates consistent hash for same string', () => {
-      const hash1 = hashCode('test');
-      const hash2 = hashCode('test');
-      expect(hash1).to.equal(hash2);
-    });
-
-    it('generates different hashes for different strings', () => {
-      const hash1 = hashCode('test1');
-      const hash2 = hashCode('test2');
-      expect(hash1).to.not.equal(hash2);
-    });
-
-    it('handles empty string', () => {
-      expect(hashCode('')).to.equal(0);
     });
   });
 

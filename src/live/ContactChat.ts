@@ -794,7 +794,7 @@ export class ContactChat extends ContactStoreElement {
     }
 
     if (message) {
-      message.id = event.uuid;
+      message.uuid = event.uuid;
       message.date = new Date(event.created_on);
     }
 
@@ -825,7 +825,7 @@ export class ContactChat extends ContactStoreElement {
           const ticketEvent = event as TicketEvent;
           messages.push({
             type: MessageType.Note,
-            id: event.created_on + event.type,
+            uuid: event.uuid,
             user: this.getUserForEvent(ticketEvent),
             date: new Date(ticketEvent.created_on),
             text: ticketEvent.note
@@ -835,7 +835,7 @@ export class ContactChat extends ContactStoreElement {
           const ticketEvent = event as TicketEvent;
           messages.push({
             type: MessageType.Note,
-            id: event.created_on + event.type + '_note',
+            uuid: event.uuid,
             user: this.getUserForEvent(ticketEvent),
             date: new Date(ticketEvent.created_on),
             text: ticketEvent.note
@@ -851,7 +851,7 @@ export class ContactChat extends ContactStoreElement {
           const msgEvent = event as MsgEvent;
 
           messages.push({
-            id: event.uuid,
+            uuid: event.uuid,
             type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
             user: this.getUserForEvent(msgEvent),
             date: new Date(msgEvent.created_on),

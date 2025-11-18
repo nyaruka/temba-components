@@ -3,7 +3,6 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { hashCode } from '../utils';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 0.05;
@@ -25,7 +24,7 @@ interface User {
 }
 
 export interface ChatEvent {
-  id?: string;
+  uuid: string;
   type: MessageType;
   text: TemplateResult;
   date: Date;
@@ -530,16 +529,6 @@ export class Chat extends RapidElement {
     startTime: Date = null,
     append = false
   ) {
-    // make sure our messages have ids
-    messages.forEach((m) => {
-      if (!m.id) {
-        m.id =
-          hashCode((m.text.strings || []).join('')) +
-          '_' +
-          m.date.toISOString();
-      }
-    });
-
     if (!startTime) {
       startTime = new Date();
     }
@@ -552,7 +541,7 @@ export class Chat extends RapidElement {
         const newMessages = [];
         for (const m of messages) {
           if (this.addMessage(m)) {
-            newMessages.push(m.id);
+            newMessages.push(m.uuid);
           }
         }
 
@@ -581,12 +570,12 @@ export class Chat extends RapidElement {
 
   private addMessage(msg: ChatEvent): boolean {
     const isNew = !this.messageExists(msg);
-    this.msgMap.set(msg.id, msg);
+    this.msgMap.set(msg.uuid, msg);
     return isNew;
   }
 
   public messageExists(msg: ChatEvent): boolean {
-    return this.msgMap.has(msg.id);
+    return this.msgMap.has(msg.uuid);
   }
 
   private isSameGroup(msg1: ChatEvent, msg2: ChatEvent): boolean {
