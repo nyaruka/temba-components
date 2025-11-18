@@ -13,7 +13,22 @@ describe('Localization Editing', () => {
   const languageNames: Record<string, string> = {
     eng: 'English',
     fra: 'French',
-    esp: 'Spanish'
+    spa: 'Spanish'
+  };
+
+  const setupWorkspace = () => {
+    zustand.setState({
+      workspace: {
+        uuid: 'test-workspace',
+        name: 'Test Workspace',
+        languages: ['eng', 'fra', 'spa'],
+        primary_language: 'eng',
+        timezone: 'UTC',
+        date_style: 'day_first',
+        country: 'US',
+        anon: false
+      }
+    });
   };
 
   const buildCategoryFlowDefinition = (
@@ -89,6 +104,9 @@ describe('Localization Editing', () => {
   });
 
   beforeEach(async () => {
+    // Set workspace with languages
+    setupWorkspace();
+
     // Create a flow definition with localization data
     const flowDefinition: FlowDefinition = {
       uuid: 'test-flow',
@@ -98,7 +116,7 @@ describe('Localization Editing', () => {
       revision: 1,
       spec_version: '14.3',
       localization: {
-        esp: {
+        spa: {
           'action-1': {
             text: ['Hola mundo'],
             quick_replies: ['Sí', 'No']
@@ -225,18 +243,20 @@ describe('Localization Editing', () => {
     const select = windowEl.querySelector('temba-select') as any;
     expect(select).to.exist;
 
-    select.values = [{ name: 'Spanish', value: 'esp' }];
+    select.values = [{ name: 'Spanish', value: 'spa' }];
     select.dispatchEvent(new CustomEvent('change', { bubbles: true }));
     await editor.updateComplete;
 
     const state = zustand.getState();
-    expect(state.languageCode).to.equal('esp');
+    expect(state.languageCode).to.equal('spa');
     const summary = windowEl.querySelector('.localization-progress-summary');
     expect(summary?.textContent.trim()).to.equal('All items are translated.');
   });
 
   it('should include category translations when include categories is enabled', async () => {
     editor?.remove();
+
+    setupWorkspace();
 
     const categoryFlowDefinition: FlowDefinition =
       buildCategoryFlowDefinition();
@@ -286,6 +306,8 @@ describe('Localization Editing', () => {
     editor?.remove();
     editor = null;
 
+    setupWorkspace();
+
     const flowDefinition = buildCategoryFlowDefinition({
       fra: {
         'cat-1': { name: ['Premier choix'] },
@@ -333,6 +355,8 @@ describe('Localization Editing', () => {
   it('should remove empty localization entries when all category translations are cleared', async () => {
     editor?.remove();
     editor = null;
+
+    setupWorkspace();
 
     const flowDefinition = buildCategoryFlowDefinition({
       fra: {
@@ -518,7 +542,7 @@ describe('Localization Editing', () => {
 
   it('should include language name in dialog header when translating', async () => {
     // Switch to Spanish
-    zustand.getState().setLanguageCode('esp');
+    zustand.getState().setLanguageCode('spa');
 
     const action: SendMsg = {
       type: 'send_msg',
