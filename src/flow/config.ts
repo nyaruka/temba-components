@@ -42,7 +42,7 @@ import { wait_for_response } from './nodes/wait_for_response';
 
 export const ACTION_CONFIG: {
   [key: string]: ActionConfig;
-} = {
+} = registerConfigWithAliases({
   say_msg,
   play_audio,
   set_contact_field,
@@ -60,11 +60,29 @@ export const ACTION_CONFIG: {
   add_contact_urn,
   add_input_labels,
   request_optin
-};
+});
+
+// Helper to register a config and its aliases
+function registerConfigWithAliases<T extends NodeConfig | ActionConfig>(
+  config: Record<string, T>
+): Record<string, T> {
+  const result = { ...config };
+
+  // Register aliases for each config
+  Object.values(config).forEach((cfg) => {
+    if (cfg.aliases) {
+      cfg.aliases.forEach((alias) => {
+        result[alias] = cfg;
+      });
+    }
+  });
+
+  return result;
+}
 
 export const NODE_CONFIG: {
   [key: string]: NodeConfig;
-} = {
+} = registerConfigWithAliases({
   execute_actions,
   split_by_contact_field,
   split_by_expression,
@@ -82,4 +100,4 @@ export const NODE_CONFIG: {
   wait_for_menu,
   wait_for_response,
   split_by_airtime
-};
+});

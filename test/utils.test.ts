@@ -13,7 +13,7 @@ import { expect, fixture, html, assert } from '@open-wc/testing';
 const style = document.createElement('style');
 style.textContent = `
   * {
-    --transition-duration: 0ms !important;
+    --transition-speed: 0ms !important;
   }
 `;
 document.head.appendChild(style);

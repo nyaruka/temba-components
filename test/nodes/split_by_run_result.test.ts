@@ -3,6 +3,7 @@ import { split_by_run_result } from '../../src/flow/nodes/split_by_run_result';
 import { Node } from '../../src/store/flow-definition';
 import { NodeTest } from '../NodeHelper';
 import { zustand } from '../../src/store/AppState';
+import { NODE_CONFIG } from '../../src/flow/config';
 
 /**
  * Test suite for the split_by_run_result node configuration.
@@ -1104,6 +1105,76 @@ describe('split_by_run_result node config', () => {
           "Don't delimit result"
         );
       });
+    });
+  });
+
+  describe('backwards compatibility', () => {
+    it('should support split_by_run_result_delimited type from old flows', () => {
+      // Verify that split_by_run_result_delimited points to the same config as split_by_run_result
+      expect(NODE_CONFIG['split_by_run_result_delimited']).to.equal(
+        NODE_CONFIG['split_by_run_result']
+      );
+      expect(NODE_CONFIG['split_by_run_result_delimited']).to.equal(
+        split_by_run_result
+      );
+
+      // Verify we can look up the config with the old type name
+      const config = NODE_CONFIG['split_by_run_result_delimited'];
+      expect(config).to.not.be.undefined;
+      expect(config.name).to.equal('Split by Result');
+    });
+
+    it('should correctly process old flow with split_by_run_result_delimited type', () => {
+      // Simulate a node from an old flow with the delimited type
+      const oldNode: Node = {
+        uuid: 'old-node-uuid',
+        actions: [],
+        router: {
+          type: 'switch',
+          operand: '@(field(results.bloop, 0, "+"))',
+          cases: [
+            {
+              uuid: 'case-1',
+              type: 'has_any_word',
+              arguments: ['red'],
+              category_uuid: 'cat-1'
+            }
+          ],
+          categories: [
+            { uuid: 'cat-1', name: 'Red', exit_uuid: 'exit-1' },
+            { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+          ],
+          default_category_uuid: 'cat-other'
+        },
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-other', destination_uuid: null }
+        ]
+      };
+
+      const oldNodeUI = {
+        type: 'split_by_run_result_delimited',
+        config: {
+          operand: {
+            id: 'bloop',
+            name: 'Bloop',
+            type: 'result'
+          },
+          index: 0,
+          delimiter: '+'
+        }
+      };
+
+      // Get config using the old type name - this should work due to backwards compatibility
+      const config = NODE_CONFIG[oldNodeUI.type];
+      expect(config).to.not.be.undefined;
+
+      // Verify we can convert to form data
+      const formData = config.toFormData!(oldNode, oldNodeUI);
+      expect(formData.result[0].id).to.equal('bloop');
+      expect(formData.result[0].name).to.equal('Bloop');
+      expect(formData.delimit_by[0].value).to.equal('+');
+      expect(formData.delimit_index[0].value).to.equal('0');
     });
   });
 });
