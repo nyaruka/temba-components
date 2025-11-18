@@ -875,15 +875,6 @@ export class ContactChat extends ContactStoreElement {
                       ${msgEvent.optin.name}
                     </div>`
                   : null}
-                ${msgEvent._failed_reason
-                  ? html`
-                      <div
-                        style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
-                      >
-                        ${msgEvent._failed_reason}
-                      </div>
-                    `
-                  : null}
               </div>
               ${msgEvent._logs_url
                 ? html`<a style="margin-left:0.5em" href="${msgEvent._logs_url}"
