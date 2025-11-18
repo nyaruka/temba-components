@@ -632,9 +632,17 @@ export class ContactChat extends ContactStoreElement {
     postJSON(`/api/v2/messages.json`, payload)
       .then((response) => {
         if (response.status < 400) {
+          const msg = response.json;
+          msg.date = new Date(msg.created_on);
+          msg.id = msg.uuid;
+
+          this.chat.addMessages([msg], null, true);
           this.checkForNewMessages();
           composeEle.reset();
-          this.fireCustomEvent(CustomEventType.MessageSent, { msg: payload });
+          this.fireCustomEvent(CustomEventType.MessageSent, {
+            msg: payload,
+            response
+          });
         } else {
           this.errorMessage = genericError;
         }
