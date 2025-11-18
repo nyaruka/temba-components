@@ -812,15 +812,6 @@ export class ContactChat extends ContactStoreElement {
     return null;
   }
 
-  private isMessageError(status: string | { status: string }): boolean {
-    if (typeof status === 'string') {
-      return status === 'E' || status === 'F';
-    } else if (status && typeof status === 'object' && 'status' in status) {
-      return status.status === 'errored' || status.status === 'failed';
-    }
-    return false;
-  }
-
   private createMessages(page: ContactHistoryPage): ChatEvent[] {
     if (page.events) {
       let messages = [];
@@ -866,7 +857,10 @@ export class ContactChat extends ContactStoreElement {
             date: new Date(msgEvent.created_on),
             attachments: msgEvent.msg.attachments,
             text: msgEvent.msg.text,
-            sendError: this.isMessageError(msgEvent._status),
+            sendError:
+              msgEvent._status &&
+              (msgEvent._status.status === 'errored' ||
+                msgEvent._status.status === 'failed'),
             popup: html`<div
               style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
             >
