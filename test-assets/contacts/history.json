@@ -3,7 +3,6 @@
   "recent_only": false,
   "next_before": 1617135091567814,
   "next_after": 1609359091567814,
-  "start_date": "2019-09-22",
   "events": [
     {
       "uuid": "01997d74-bf67-749a-8440-688a41c3b275",
@@ -55,7 +54,7 @@
           "name": "SMS Channel"
         }
       },
-      "_status": {"status": "failed", "reason": "error_limit"},
+      "_status": {"created_on": "2025-09-24T20:40:28.239437+00:00", "status": "failed", "reason": "error_limit"},
       "_logs_url": null
     },
     {
@@ -90,7 +89,7 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
+      "_status": {"created_on": "2025-09-23T20:40:28.239434+00:00", "status": "wired"},
       "_logs_url": "/channels/channellog/read/1478/"
     },
     {
@@ -119,7 +118,7 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
+      "_status": {"created_on": "2025-09-23T20:40:28.239434+00:00", "status": "wired"},
       "_logs_url": "/channels/channellog/read/1476/"
     },
     {
@@ -148,7 +147,7 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
+      "_status": {"created_on": "2025-09-23T20:40:28.239434+00:00", "status": "wired"},
       "_logs_url": "/channels/channellog/read/1474/"
     },
     {
@@ -199,7 +198,7 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
+      "_status": {"created_on": "2025-09-23T20:40:28.239434+00:00", "status": "wired"},
       "_logs_url": "/channels/channellog/read/1472/"
     },
     {

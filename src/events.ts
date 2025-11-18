@@ -57,8 +57,7 @@ export interface ChatStartedEvent extends ContactEvent {
 export interface MsgEvent extends ContactEvent {
   msg: Msg;
   optin?: ObjectReference;
-  _status?: string | { status: string; changed_on: string; reason: string };
-  _failed_reason?: string; // deprecated
+  _status?: { created_on: string; status: string; reason: string };
   _logs_url?: string;
 }
 
@@ -107,10 +106,9 @@ export interface AirtimeTransferredEvent extends ContactEvent {
 export type CallStartedEvent = ContactEvent;
 
 export interface ContactHistoryPage {
+  events: ContactEvent[];
   has_older: boolean;
   recent_only: boolean;
   next_before: number;
   next_after: number;
-  start_date: Date;
-  events: ContactEvent[];
 }
