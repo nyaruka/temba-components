@@ -254,6 +254,12 @@ export const split_by_run_result: NodeConfig = {
       config.delimiter = delimitBy;
     }
 
+    // Set the type based on whether delimiter is configured
+    // Use split_by_run_result_delimited for backward compatibility with old editor
+    config.type = hasDelimiter
+      ? 'split_by_run_result_delimited'
+      : 'split_by_run_result';
+
     return config;
   },
 

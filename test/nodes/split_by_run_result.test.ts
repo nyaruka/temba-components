@@ -929,6 +929,34 @@ describe('split_by_run_result node config', () => {
         expect(config.index).to.be.undefined;
         expect(config.delimiter).to.be.undefined;
       });
+
+      it('should set type to split_by_run_result_delimited when delimiter is enabled', () => {
+        const formData = {
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_by: [{ value: '+', name: 'plusses' }],
+          delimit_index: [{ value: '3', name: 'fourth' }],
+          rules: [],
+          result_name: ''
+        };
+
+        const config = split_by_run_result.toUIConfig!(formData);
+
+        expect(config.type).to.equal('split_by_run_result_delimited');
+      });
+
+      it('should set type to split_by_run_result when delimiter is not enabled', () => {
+        const formData = {
+          result: [{ value: 'favorite_color', name: 'Favorite Color' }],
+          delimit_by: [{ value: '', name: "Don't delimit" }],
+          delimit_index: [{ value: '0', name: 'first' }],
+          rules: [],
+          result_name: ''
+        };
+
+        const config = split_by_run_result.toUIConfig!(formData);
+
+        expect(config.type).to.equal('split_by_run_result');
+      });
     });
 
     describe('round-trip tests', () => {

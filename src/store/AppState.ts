@@ -308,10 +308,21 @@ export const zustand = createStore<AppState>()(
       updateNodeUIConfig: (uuid: string, config: Record<string, any>) => {
         set((state: AppState) => {
           if (state.flowDefinition._ui.nodes[uuid]) {
+            // Handle type separately if provided
+            if (config.type !== undefined) {
+              state.flowDefinition._ui.nodes[uuid].type = config.type;
+            }
+
+            // Update config (excluding type)
             if (!state.flowDefinition._ui.nodes[uuid].config) {
               state.flowDefinition._ui.nodes[uuid].config = {};
             }
-            Object.assign(state.flowDefinition._ui.nodes[uuid].config, config);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { type, ...configWithoutType } = config;
+            Object.assign(
+              state.flowDefinition._ui.nodes[uuid].config,
+              configWithoutType
+            );
           }
           state.dirtyDate = new Date();
         });
