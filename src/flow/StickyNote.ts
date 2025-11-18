@@ -123,6 +123,8 @@ export class StickyNote extends RapidElement {
         border-top-left-radius: var(--curvature);
         border-top-right-radius: var(--curvature);
         flex-grow: 1;
+        padding: 4px 8px !important;
+        margin: 2px;
         padding-left: 8px;
       }
       .sticky-title:empty::before {
@@ -143,6 +145,7 @@ export class StickyNote extends RapidElement {
         min-height: 48px;
         word-wrap: break-word;
         white-space: pre-wrap;
+        margin: 2px;
       }
       .sticky-body:empty::before {
         content: 'Click to add note';

@@ -14,7 +14,7 @@ export class FloatingTab extends RapidElement {
         position: fixed;
         right: 0;
         z-index: 9998;
-        transition: transform 300ms ease-in-out;
+        transition: transform var(--transition-duration, 300ms) ease-in-out;
         display: flex;
         align-items: center;
         padding: 12px;
@@ -22,7 +22,8 @@ export class FloatingTab extends RapidElement {
         border-bottom-left-radius: 8px;
         cursor: pointer;
         box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
-        transition: all 200ms ease-in-out;
+        transition: all calc(var(--transition-duration, 300ms) * 0.7)
+          ease-in-out;
         user-select: none;
       }
 
@@ -52,7 +53,7 @@ export class FloatingTab extends RapidElement {
         white-space: nowrap;
         margin-left: 0;
         opacity: 0;
-        transition: all 200ms ease-in-out;
+        transition: all var(--transition-duration, 300ms) ease-in-out;
       }
 
       .tab:hover .label {

@@ -15,7 +15,8 @@ export class FloatingWindow extends RapidElement {
       }
 
       .window {
-        transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
+        transition: transform var(--transition-duration, 300ms) ease-in-out,
+          opacity var(--transition-duration, 300ms) ease-in-out;
         position: fixed;
         z-index: 9999;
         top: 100px;
@@ -24,7 +25,6 @@ export class FloatingWindow extends RapidElement {
         box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
         display: flex;
         flex-direction: column;
-        height: 100%;
         overflow: hidden;
       }
 
@@ -43,7 +43,7 @@ export class FloatingWindow extends RapidElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 16px;
+        padding: 6px 6px;
         background: var(--header-color, var(--color-primary-light, #f3f4f6));
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         cursor: move;
@@ -54,6 +54,7 @@ export class FloatingWindow extends RapidElement {
         font-weight: 600;
         font-size: 16px;
         color: white;
+        padding-left: 8px;
       }
 
       .close-button {
@@ -65,7 +66,8 @@ export class FloatingWindow extends RapidElement {
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        transition: background-color 150ms ease-in-out;
+        transition: background-color calc(var(--transition-duration, 150ms) / 2)
+          ease-in-out;
       }
 
       .close-button:hover {
@@ -101,7 +103,10 @@ export class FloatingWindow extends RapidElement {
   width = 500;
 
   @property({ type: Number })
-  height = 700;
+  minHeight = 200;
+
+  @property({ type: Number })
+  maxHeight = 800;
 
   @property({ type: Number })
   top = 100;
@@ -125,27 +130,36 @@ export class FloatingWindow extends RapidElement {
   private dragStartY = 0;
   private dragOffsetX = 0;
   private dragOffsetY = 0;
-  private initialTop = 0;
-  private initialLeft = 0;
+  private positionFromRight = false;
+  private defaultTop = 100;
+  private defaultLeft = -1;
 
   public firstUpdated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
 
-    // calculate initial position from right side
-    if (this.left === -1) {
-      this.left = window.innerWidth - this.width - 20;
-    }
+    // store the default position from properties
+    this.defaultTop = this.top;
+    this.defaultLeft = this.left;
 
-    // store initial position
-    this.initialTop = this.top;
-    this.initialLeft = this.left;
+    // determine if we should position from right side
+    if (this.left === -1) {
+      this.positionFromRight = true;
+    }
 
     // set up drag handle listeners for chromeless windows
     if (this.chromeless) {
       this.setupDragHandles();
     }
+
+    // listen for window resize to keep window in bounds
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener('resize', this.handleResize);
   }
 
   private setupDragHandles() {
@@ -181,10 +195,25 @@ export class FloatingWindow extends RapidElement {
     if (changes.has('hidden')) {
       this.classList.toggle('hidden', this.hidden);
 
-      // reset position to initial when showing (only if we have stored initial values)
-      if (!this.hidden && changes.get('hidden') && this.initialTop !== 0) {
-        this.top = this.initialTop;
-        this.left = this.initialLeft;
+      // when hiding, reset positioning behavior to original
+      if (this.hidden && !changes.get('hidden')) {
+        if (this.defaultLeft === -1) {
+          this.positionFromRight = true;
+        }
+      }
+
+      // reset to default position when showing
+      if (!this.hidden && changes.get('hidden')) {
+        // reset top to default
+        this.top = this.defaultTop;
+
+        // if positioned from right, recalculate based on current viewport
+        if (this.positionFromRight) {
+          this.left = window.innerWidth - this.width - 20;
+        } else {
+          // reset left to default
+          this.left = this.defaultLeft;
+        }
       }
     }
 
@@ -228,18 +257,73 @@ export class FloatingWindow extends RapidElement {
     this.left = this.dragOffsetX + deltaX;
     this.top = this.dragOffsetY + deltaY;
 
-    // keep window within viewport bounds
+    // keep window within viewport bounds with 20px padding
+    const padding = 20;
     this.left = Math.max(
-      0,
-      Math.min(this.left, window.innerWidth - this.width)
+      padding,
+      Math.min(this.left, window.innerWidth - this.width - padding)
     );
-    this.top = Math.max(0, Math.min(this.top, window.innerHeight - 100));
+
+    // get the actual rendered height of the window element
+    const windowElement = this.shadowRoot?.querySelector(
+      '.window'
+    ) as HTMLElement;
+    const currentHeight =
+      windowElement?.offsetHeight || this.maxHeight || window.innerHeight;
+    const maxTop = Math.max(
+      padding,
+      window.innerHeight - currentHeight - padding
+    );
+    this.top = Math.max(padding, Math.min(this.top, maxTop));
   };
 
   private handleMouseUp = () => {
     this.dragging = false;
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
+
+    // once user drags the window, stop auto-positioning from right
+    this.positionFromRight = false;
+  };
+
+  private handleResize = () => {
+    // only constrain position if window is visible
+    if (this.hidden) return;
+
+    const padding = 20;
+    const windowElement = this.shadowRoot?.querySelector(
+      '.window'
+    ) as HTMLElement;
+    const currentHeight =
+      windowElement?.offsetHeight || this.maxHeight || window.innerHeight;
+
+    // if positioned from right, always recalculate from right edge
+    if (this.positionFromRight) {
+      this.left = window.innerWidth - this.width - padding;
+    } else {
+      // only adjust left if out of bounds
+      const minLeft = padding;
+      const maxLeft = window.innerWidth - this.width - padding;
+
+      if (this.left < minLeft) {
+        this.left = minLeft;
+      } else if (this.left > maxLeft) {
+        this.left = maxLeft;
+      }
+    }
+
+    // only adjust top if out of bounds
+    const minTop = padding;
+    const maxTop = Math.max(
+      padding,
+      window.innerHeight - currentHeight - padding
+    );
+
+    if (this.top < minTop) {
+      this.top = minTop;
+    } else if (this.top > maxTop) {
+      this.top = maxTop;
+    }
   };
 
   public show() {
@@ -258,9 +342,17 @@ export class FloatingWindow extends RapidElement {
   }
 
   public render(): TemplateResult {
+    const minHeightStyle = this.minHeight
+      ? `min-height: ${this.minHeight}px;`
+      : '';
+    const maxHeightStyle = this.maxHeight
+      ? `max-height: ${this.maxHeight}px;`
+      : '';
+
     const windowStyle = `
       width: ${this.width}px;
-      height: ${this.height}px;
+      ${minHeightStyle}
+      ${maxHeightStyle}
       top: ${this.top}px;
       left: ${this.left}px;
       --header-color: ${this.color};
@@ -280,7 +372,7 @@ export class FloatingWindow extends RapidElement {
               <div class="header" @mousedown=${this.handleHeaderMouseDown}>
                 <div class="title">${this.header}</div>
                 <button class="close-button" @click=${this.handleClose}>
-                  <temba-icon name="close" size="2"></temba-icon>
+                  <temba-icon name="close" size="1.5"></temba-icon>
                 </button>
               </div>
             `

@@ -309,7 +309,6 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-  setupFiles: ['./test-setup.js'],
   concurrency: 4,
   testFramework: {
     config: {
