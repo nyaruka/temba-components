@@ -13,17 +13,16 @@ export class FloatingTab extends RapidElement {
       .tab {
         position: fixed;
         right: 0;
-        z-index: 9998;
-        transition: transform var(--transition-duration, 300ms) ease-in-out;
+        z-index: 8998;
+        transition: transform var(--transition-speed, 300ms) ease-in-out;
         display: flex;
         align-items: center;
-        padding: 12px;
+        padding: 6px;
         border-top-left-radius: 8px;
         border-bottom-left-radius: 8px;
         cursor: pointer;
         box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
-        transition: all calc(var(--transition-duration, 300ms) * 0.7)
-          ease-in-out;
+        transition: all calc(var(--transition-speed, 300ms) * 0.7) ease-in-out;
         user-select: none;
       }
 
@@ -53,7 +52,7 @@ export class FloatingTab extends RapidElement {
         white-space: nowrap;
         margin-left: 0;
         opacity: 0;
-        transition: all var(--transition-duration, 300ms) ease-in-out;
+        transition: all var(--transition-speed, 300ms) ease-in-out;
       }
 
       .tab:hover .label {
@@ -164,7 +163,7 @@ export class FloatingTab extends RapidElement {
       <div class="${classes}" style="${tabStyle}" @click=${this.handleClick}>
         <div class="icon-container">
           ${this.icon
-            ? html`<temba-icon size="2" name="${this.icon}"></temba-icon>`
+            ? html`<temba-icon size="1.5" name="${this.icon}"></temba-icon>`
             : ''}
         </div>
         <div class="label">${this.label}</div>

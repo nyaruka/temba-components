@@ -90,6 +90,7 @@ export interface AppState {
   setFlowInfo: (info: FlowInfo) => void;
   setLanguageCode: (languageCode: string) => void;
   setDirtyDate: (date: Date) => void;
+  setRevision: (revision: number) => void;
   expandCanvas: (width: number, height: number) => void;
 
   updateNode(
@@ -220,6 +221,12 @@ export const zustand = createStore<AppState>()(
         set((state: AppState) => {
           state.languageCode = languageCode;
           state.isTranslating = state.flowDefinition.language !== languageCode;
+        });
+      },
+
+      setRevision: (revision: number) => {
+        set((state: AppState) => {
+          state.flowDefinition.revision = revision;
         });
       },
 

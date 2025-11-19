@@ -36,6 +36,7 @@ export class ContentMenu extends RapidElement {
     return css`
       :host {
         tabindex: 0;
+        z-index: 9800;
       }
       .container {
         --button-y: 0.4em;

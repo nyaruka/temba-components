@@ -279,8 +279,6 @@ export class Editor extends RapidElement {
         );
         background-size: 20px 20px;
         background-position: 10px 10px;
-        box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
-        border-top: 1px solid #e0e0e0;
         width: 100%;
         display: flex;
       }
@@ -728,11 +726,16 @@ export class Editor extends RapidElement {
   private saveChanges(): void {
     // post the flow definition to the server
     getStore()
-      .postJSON(`/flow/revisions/${this.flow}`, this.definition)
+      .postJSON(`/flow/revisions/${this.flow}/`, this.definition)
       .then((response) => {
         // Update flow info with the response data
         if (response.json && response.json.info) {
           getStore().getState().setFlowInfo(response.json.info);
+
+          // update our revision number in the definition
+          if (response.json.revision?.revision) {
+            getStore().getState().setRevision(response.json.revision.revision);
+          }
         }
       })
       .catch((error) => {
@@ -2071,7 +2074,7 @@ export class Editor extends RapidElement {
     const bundles: TranslationBundle[] = [];
 
     this.definition.nodes.forEach((node) => {
-      node.actions.forEach((action) => {
+      (node.actions || []).forEach((action) => {
         const config = ACTION_CONFIG[action.type];
         if (!config?.localizable || config.localizable.length === 0) {
           return;
@@ -2560,9 +2563,9 @@ export class Editor extends RapidElement {
         header="Translations"
         .width=${360}
         .maxHeight=${600}
-        .top=${20}
+        .top=${120}
         color="#6b7280"
-        .hidden=${this.localizationWindowHidden}
+        ?hidden=${this.localizationWindowHidden}
         @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
       >
         <div class="localization-window-content">
@@ -2725,6 +2728,7 @@ export class Editor extends RapidElement {
         icon="language"
         label="Translate Flow"
         color="#6b7280"
+        top="150"
         .hidden=${!this.localizationWindowHidden}
         @temba-button-clicked=${this.handleLocalizationTabClick}
       ></temba-floating-tab>
