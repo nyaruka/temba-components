@@ -629,13 +629,10 @@ export class ContactChat extends ContactStoreElement {
     }
 
     const genericError = 'Send failed, please try again.';
-    postJSON(`/api/v2/messages.json`, payload)
+    postJSON(`/contact/chat/${this.currentContact.uuid}/`, payload)
       .then((response) => {
         if (response.status < 400) {
-          const msg = response.json;
-          msg.date = new Date(msg.created_on);
-          msg.id = msg.uuid;
-
+          const msg = this.createChatForMessageEvent(response.json.event);
           this.chat.addMessages([msg], null, true);
           this.checkForNewMessages();
           composeEle.reset();
@@ -820,6 +817,42 @@ export class ContactChat extends ContactStoreElement {
     return null;
   }
 
+  private createChatForMessageEvent(msgEvent: MsgEvent): any {
+    return {
+      id: msgEvent.uuid,
+      type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
+      user: this.getUserForEvent(msgEvent),
+      date: new Date(msgEvent.created_on),
+      attachments: msgEvent.msg.attachments,
+      text: msgEvent.msg.text,
+      sendError:
+        msgEvent._status &&
+        (msgEvent._status.status === 'errored' ||
+          msgEvent._status.status === 'failed'),
+      popup: html`<div
+        style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
+      >
+        <div style="justify-content:left;text-align:left">
+          <temba-date
+            value=${msgEvent.created_on}
+            display="duration"
+          ></temba-date>
+
+          ${msgEvent.optin
+            ? html`<div style="font-size:0.9em;color:#aaa">
+                ${msgEvent.optin.name}
+              </div>`
+            : null}
+        </div>
+        ${msgEvent._logs_url
+          ? html`<a style="margin-left:0.5em" href="${msgEvent._logs_url}"
+              ><temba-icon name="log"></temba-icon
+            ></a>`
+          : null}
+      </div> `
+    };
+  }
+
   private createMessages(page: ContactHistoryPage): ChatEvent[] {
     if (page.events) {
       let messages = [];
@@ -857,40 +890,7 @@ export class ContactChat extends ContactStoreElement {
           event.type === 'ivr_created'
         ) {
           const msgEvent = event as MsgEvent;
-
-          messages.push({
-            id: event.uuid,
-            type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
-            user: this.getUserForEvent(msgEvent),
-            date: new Date(msgEvent.created_on),
-            attachments: msgEvent.msg.attachments,
-            text: msgEvent.msg.text,
-            sendError:
-              msgEvent._status &&
-              (msgEvent._status.status === 'errored' ||
-                msgEvent._status.status === 'failed'),
-            popup: html`<div
-              style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
-            >
-              <div style="justify-content:left;text-align:left">
-                <temba-date
-                  value=${msgEvent.created_on}
-                  display="duration"
-                ></temba-date>
-
-                ${msgEvent.optin
-                  ? html`<div style="font-size:0.9em;color:#aaa">
-                      ${msgEvent.optin.name}
-                    </div>`
-                  : null}
-              </div>
-              ${msgEvent._logs_url
-                ? html`<a style="margin-left:0.5em" href="${msgEvent._logs_url}"
-                    ><temba-icon name="log"></temba-icon
-                  ></a>`
-                : null}
-            </div> `
-          });
+          messages.push(this.createChatForMessageEvent(msgEvent));
         } else {
           const msg = this.getEventMessage(event);
           if (msg) {
