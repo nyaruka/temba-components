@@ -1451,22 +1451,30 @@ export const titleCase = (str: string) => {
 
 // list of RTL (Right-to-Left) language codes using ISO 639-3 (3-letter) and ISO 639-1 (2-letter) codes
 const RTL_LANGUAGES = new Set([
-  'ara', 'ar',  // arabic
-  'heb', 'he',  // hebrew
-  'fas', 'fa',  // persian/farsi
-  'urd', 'ur',  // urdu
-  'yid', 'yi',  // yiddish
-  'arc',        // aramaic
-  'azb',        // south azerbaijani
-  'ckb',        // central kurdish (sorani)
-  'div', 'dv',  // dhivehi/maldivian
-  'kur', 'ku',  // kurdish
-  'prs',        // dari
-  'pus', 'ps',  // pashto
-  'syr',        // syriac
-  'aii',        // assyrian neo-aramaic
-  'nqo',        // n'ko
-  'sam',        // samaritan aramaic
+  'ara',
+  'ar', // arabic
+  'heb',
+  'he', // hebrew
+  'fas',
+  'fa', // persian/farsi
+  'urd',
+  'ur', // urdu
+  'yid',
+  'yi', // yiddish
+  'arc', // aramaic
+  'azb', // south azerbaijani
+  'ckb', // central kurdish (sorani)
+  'div',
+  'dv', // dhivehi/maldivian
+  'kur',
+  'ku', // kurdish
+  'prs', // dari
+  'pus',
+  'ps', // pashto
+  'syr', // syriac
+  'aii', // assyrian neo-aramaic
+  'nqo', // n'ko
+  'sam' // samaritan aramaic
 ]);
 
 /**

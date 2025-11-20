@@ -391,7 +391,10 @@ export class StickyNote extends RapidElement {
         <div class="sticky-title-container">
           <temba-icon name="drag" class="drag-handle"></temba-icon>
           <div
-            class="sticky-title ${this.isTranslating && isRTLLanguage(this.languageCode) ? 'rtl' : ''}"
+            class="sticky-title ${this.isTranslating &&
+            isRTLLanguage(this.languageCode)
+              ? 'rtl'
+              : ''}"
             contenteditable="${!this.isTranslating}"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleKeyDown}"
@@ -401,7 +404,10 @@ export class StickyNote extends RapidElement {
         </div>
         <div class="sticky-body-container">
           <div
-            class="sticky-body ${this.isTranslating && isRTLLanguage(this.languageCode) ? 'rtl' : ''}"
+            class="sticky-body ${this.isTranslating &&
+            isRTLLanguage(this.languageCode)
+              ? 'rtl'
+              : ''}"
             contenteditable="${!this.isTranslating}"
             @blur="${this.handleBodyBlur}"
             @keydown="${this.handleKeyDown}"

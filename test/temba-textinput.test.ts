@@ -223,4 +223,48 @@ describe('temba-textinput', () => {
 
     await assertScreenshot('textinput/autogrow-initial', getClip(input));
   });
+
+  it('renders RTL text input correctly', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({ value: 'مرحبا بك', rtl: true })
+    );
+
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLInputElement;
+    
+    // check that RTL class is applied
+    expect(widget.classList.contains('rtl')).to.be.true;
+    
+    // check computed styles
+    const styles = window.getComputedStyle(widget);
+    expect(styles.direction).to.equal('rtl');
+    expect(styles.textAlign).to.equal('right');
+
+    await assertScreenshot('textinput/input-rtl', getClip(input));
+  });
+
+  it('renders RTL textarea correctly', async () => {
+    const input: TextInput = await createInput(
+      getInputHTML({ 
+        value: 'مرحبا بك في نظامنا', 
+        textarea: true, 
+        rtl: true 
+      })
+    );
+
+    const widget = input.shadowRoot.querySelector(
+      '.textinput'
+    ) as HTMLTextAreaElement;
+    
+    // check that RTL class is applied
+    expect(widget.classList.contains('rtl')).to.be.true;
+    
+    // check computed styles
+    const styles = window.getComputedStyle(widget);
+    expect(styles.direction).to.equal('rtl');
+    expect(styles.textAlign).to.equal('right');
+
+    await assertScreenshot('textinput/textarea-rtl', getClip(input));
+  });
 });

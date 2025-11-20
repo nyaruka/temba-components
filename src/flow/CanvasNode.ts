@@ -1343,7 +1343,11 @@ export class CanvasNode extends RapidElement {
           style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
-          <div class="body ${this.isTranslating && isRTLLanguage(this.languageCode) ? 'rtl' : ''}">
+          <div
+            class="body ${this.isTranslating && isRTLLanguage(this.languageCode)
+              ? 'rtl'
+              : ''}"
+          >
             ${config.render
               ? config.render(node, displayAction)
               : html`<pre>${action.type}</pre>`}
