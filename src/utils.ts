@@ -1482,7 +1482,9 @@ const RTL_LANGUAGES = new Set([
  * @param languageCode - ISO 639 language code (2-letter or 3-letter)
  * @returns true if the language is RTL, false otherwise
  */
-export const isRTLLanguage = (languageCode: string): boolean => {
+export const isRTLLanguage = (
+  languageCode: string | null | undefined
+): boolean => {
   if (!languageCode) {
     return false;
   }

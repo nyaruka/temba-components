@@ -121,6 +121,7 @@ export class FieldRenderer {
         placeholder="${config.placeholder || ''}"
         expressions="session"
         .helpText="${config.helpText || ''}"
+        ?rtl="${rtl}"
         class="${extraClasses}"
         style="${style}"
         @input="${onChange || (() => {})}"
@@ -175,6 +176,7 @@ export class FieldRenderer {
         textarea
         expressions="session"
         .helpText="${config.helpText || ''}"
+        ?rtl="${rtl}"
         class="${extraClasses}"
         style="${combinedStyle}"
         @input="${onChange || (() => {})}"
