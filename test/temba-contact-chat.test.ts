@@ -55,7 +55,7 @@ describe('temba-contact-chat', () => {
     mockedNow = mockNow('2021-03-31T00:31:00.000-00:00');
     clearMockPosts();
     mockGET(
-      /\/contact\/history\/contact-.*/,
+      /\/contact\/chat\/contact-.*/,
       '/test-assets/contacts/history.json'
     );
 

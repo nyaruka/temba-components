@@ -104,7 +104,8 @@ export class Chat extends RapidElement {
         text-align: center;
         font-size: 0.8em;
         color: #999;
-        margin-top: 2em;
+        margin-bottom: 2em;
+        margin-top: 1em;
         border-top: 1px solid #e9e9e9;
         padding: 1em;
         margin-left: 10%;
@@ -513,6 +514,12 @@ export class Chat extends RapidElement {
   @property({ type: Boolean })
   agent = false;
 
+  @property({ type: Boolean, attribute: false })
+  endOfHistory = false;
+
+  @property({ type: Object, attribute: false })
+  oldestEventDate: Date = null;
+
   private msgMap = new Map<string, ChatEvent>();
 
   public firstUpdated(
@@ -591,11 +598,11 @@ export class Chat extends RapidElement {
 
   private isSameGroup(msg1: ChatEvent, msg2: ChatEvent): boolean {
     if (msg1 && msg2) {
-      return (
+      const sameGroup =
         msg1.type === msg2.type &&
         msg1.user?.name === msg2.user?.name &&
-        Math.abs(msg1.date.getTime() - msg2.date.getTime()) < BATCH_TIME_WINDOW
-      );
+        Math.abs(msg1.date.getTime() - msg2.date.getTime()) < BATCH_TIME_WINDOW;
+      return sameGroup;
     }
 
     return false;
@@ -695,6 +702,7 @@ export class Chat extends RapidElement {
 
     const mostRecentId = msgIds[msgIds.length - 1];
     const currentMsg = this.msgMap.get(mostRecentId);
+
     let timeDisplay = null;
     if (
       prevMsg &&
@@ -732,7 +740,7 @@ export class Chat extends RapidElement {
       !incoming;
 
     return html`
-      ${!firstGroup ? timeDisplay : null}
+      ${timeDisplay}
       <div
         class="block  ${incoming ? 'incoming' : 'outgoing'} ${currentMsg.type}"
       >
@@ -756,7 +764,6 @@ export class Chat extends RapidElement {
             </div>`
           : null}
       </div>
-      ${firstGroup ? timeDisplay : null}
     `;
   }
 
@@ -787,7 +794,6 @@ export class Chat extends RapidElement {
                   <div class="bubble">
                     ${name ? html`<div class="name">${name}</div>` : null}
                     <div class="message message-text">${message.text}</div>
-
                     <!--div>${message.date.toLocaleDateString(
                       undefined,
                       VERBOSE_FORMAT
@@ -815,6 +821,13 @@ export class Chat extends RapidElement {
     this.messageGroups = [];
     this.hideBottomScroll = true;
     this.hideTopScroll = true;
+    this.endOfHistory = false;
+    this.oldestEventDate = null;
+  }
+
+  public setEndOfHistory(oldestDate: Date) {
+    this.endOfHistory = true;
+    this.oldestEventDate = oldestDate;
   }
 
   public render(): TemplateResult {
@@ -835,6 +848,15 @@ export class Chat extends RapidElement {
         <temba-loading
           class="${!this.fetching ? 'hidden' : ''}"
         ></temba-loading>
+
+        ${this.endOfHistory && this.oldestEventDate
+          ? html`<div class="time first">
+              ${this.oldestEventDate.toLocaleTimeString(
+                undefined,
+                VERBOSE_FORMAT
+              )}
+            </div>`
+          : null}
       </div>
       <slot class="header" name="header"></slot>
       <slot class="footer" name="footer"></slot>

@@ -107,8 +107,5 @@ export type CallStartedEvent = ContactEvent;
 
 export interface ContactHistoryPage {
   events: ContactEvent[];
-  has_older: boolean;
-  recent_only: boolean;
-  next_before: number;
-  next_after: number;
+  next: string | null;
 }
