@@ -444,7 +444,7 @@ describe('Collision Detection Utilities', () => {
         'dropped',
         movedBounds,
         allBounds,
-        false // droppedBelowMidpoint = false means dropped above midpoint
+        false // dropped node's bottom is above target midpoint, dropped node gets priority
       );
 
       // Existing node should be moved down
@@ -486,7 +486,7 @@ describe('Collision Detection Utilities', () => {
         'dropped',
         movedBounds,
         allBounds,
-        true // droppedBelowMidpoint = true means dropped below midpoint
+        true // dropped node's bottom is below target midpoint, target gets priority
       );
 
       // Dropped node should be moved down

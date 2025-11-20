@@ -1221,17 +1221,17 @@ export class Editor extends RapidElement {
     }
 
     // Check if we need to determine midpoint priority for a dropped node
-    let droppedBelowMidpoint = false;
+    let targetHasPriority = false;
     if (droppedNodeUuid && dropTargetBounds) {
       const droppedBounds = allBounds.find((b) => b.uuid === droppedNodeUuid);
       if (droppedBounds) {
         // Check if the bottom of the dropped node is below the midpoint of the target
-        // If bottom is above midpoint, dropped node gets preference (droppedBelowMidpoint = false)
-        // If bottom is below midpoint, target gets preference (droppedBelowMidpoint = true)
+        // If bottom is above midpoint, dropped node gets preference (targetHasPriority = false)
+        // If bottom is below midpoint, target gets preference (targetHasPriority = true)
         const droppedBottom = droppedBounds.bottom;
         const targetMidpoint =
           dropTargetBounds.top + dropTargetBounds.height / 2;
-        droppedBelowMidpoint = droppedBottom > targetMidpoint;
+        targetHasPriority = droppedBottom > targetMidpoint;
       }
     }
 
@@ -1247,7 +1247,7 @@ export class Editor extends RapidElement {
         movedUuid,
         movedBounds,
         allBounds,
-        droppedNodeUuid === movedUuid ? droppedBelowMidpoint : false
+        droppedNodeUuid === movedUuid ? targetHasPriority : false
       );
 
       // Merge into all reflow positions
