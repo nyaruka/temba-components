@@ -466,6 +466,132 @@ describe('Collision Detection Utilities', () => {
       }
     });
 
+    it('handles multiple iterations for complex cascading collisions', () => {
+      // Test case that requires multiple iterations to resolve all collisions
+      // This scenario has nodes that initially don't collide with moved node,
+      // but will collide with other nodes that get moved
+      const movedBounds: NodeBounds = {
+        uuid: 'moved',
+        left: 100,
+        top: 50,
+        right: 200,
+        bottom: 150,
+        width: 100,
+        height: 100
+      };
+
+      const allBounds: NodeBounds[] = [
+        movedBounds,
+        {
+          uuid: 'node1',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'node2',
+          left: 100,
+          top: 180,
+          right: 200,
+          bottom: 280,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'node3',
+          left: 100,
+          top: 260,
+          right: 200,
+          bottom: 360,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(
+        'moved',
+        movedBounds,
+        allBounds,
+        false
+      );
+
+      // All three nodes should be repositioned to be stacked below the moved node
+      expect(positions.size).to.equal(3);
+      expect(positions.has('node1')).to.be.true;
+      expect(positions.has('node2')).to.be.true;
+      expect(positions.has('node3')).to.be.true;
+
+      const node1Pos = positions.get('node1')!;
+      const node2Pos = positions.get('node2')!;
+      const node3Pos = positions.get('node3')!;
+
+      // Nodes should be stacked vertically with proper spacing
+      expect(node1Pos.top).to.be.at.least(170); // 150 (bottom of moved) + 20
+      expect(node2Pos.top).to.be.at.least(node1Pos.top + 120); // node1 top + height + spacing
+      expect(node3Pos.top).to.be.at.least(node2Pos.top + 120); // node2 top + height + spacing
+    });
+
+    it('handles nodes that collide with already repositioned nodes', () => {
+      // This test creates a scenario where node3 doesn't collide with the moved node,
+      // but collides with node2 which itself got repositioned due to collision with node1
+      const movedBounds: NodeBounds = {
+        uuid: 'moved',
+        left: 100,
+        top: 100,
+        right: 200,
+        bottom: 200,
+        width: 100,
+        height: 100
+      };
+
+      const allBounds: NodeBounds[] = [
+        movedBounds,
+        {
+          uuid: 'node1',
+          left: 100,
+          top: 150,
+          right: 200,
+          bottom: 250,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'node2',
+          left: 100,
+          top: 240,
+          right: 200,
+          bottom: 340,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(
+        'moved',
+        movedBounds,
+        allBounds,
+        false
+      );
+
+      // Both nodes should be moved
+      expect(positions.size).to.equal(2);
+      expect(positions.has('node1')).to.be.true;
+      expect(positions.has('node2')).to.be.true;
+
+      const node1Pos = positions.get('node1')!;
+      const node2Pos = positions.get('node2')!;
+
+      // node1 should be moved below moved node
+      expect(node1Pos.top).to.be.at.least(220); // 200 + 20
+
+      // node2 should be moved below the new position of node1
+      // This tests the code path where we check against already repositioned nodes
+      expect(node2Pos.top).to.be.at.least(node1Pos.top + 120);
+    });
+
     it('maintains horizontal position while moving vertically', () => {
       const movedBounds: NodeBounds = {
         uuid: 'moved',

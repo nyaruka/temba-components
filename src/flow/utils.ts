@@ -306,15 +306,8 @@ export const calculateReflowPositions = (
         continue;
       }
 
-      // Get current position (either new or original)
-      const currentBounds = newPositions.has(bounds.uuid)
-        ? {
-            ...bounds,
-            top: newPositions.get(bounds.uuid)!.top,
-            bottom:
-              newPositions.get(bounds.uuid)!.top + bounds.height
-          }
-        : bounds;
+      // Use original bounds since we skip already processed nodes
+      const currentBounds = bounds;
 
       // Check if this node collides with the moved node or any already repositioned nodes
       let collisionFound = false;
