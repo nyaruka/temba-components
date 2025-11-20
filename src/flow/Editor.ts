@@ -292,8 +292,6 @@ export class Editor extends RapidElement {
         );
         background-size: 20px 20px;
         background-position: 10px 10px;
-        box-shadow: inset -5px 0 10px rgba(0, 0, 0, 0.05);
-        border-top: 1px solid #e0e0e0;
         width: 100%;
         display: flex;
       }
@@ -741,11 +739,19 @@ export class Editor extends RapidElement {
   private saveChanges(): void {
     // post the flow definition to the server
     getStore()
-      .postJSON(`/flow/revisions/${this.flow}`, this.definition)
+      .postJSON(`/flow/revisions/${this.flow}/`, this.definition)
       .then((response) => {
-        // Update flow info with the response data
-        if (response.json && response.json.info) {
-          getStore().getState().setFlowInfo(response.json.info);
+        // Update flow info and revision with the response data
+        if (response.json) {
+          const state = getStore().getState();
+
+          if (response.json.info) {
+            state.setFlowInfo(response.json.info);
+          }
+
+          if (response.json.revision?.revision !== undefined) {
+            state.setRevision(response.json.revision.revision);
+          }
         }
       })
       .catch((error) => {
@@ -810,6 +816,12 @@ export class Editor extends RapidElement {
     this.addEventListener(
       CustomEventType.NodeEditRequested,
       this.handleNodeEditRequested.bind(this)
+    );
+
+    // Listen for node deletion events
+    this.addEventListener(
+      CustomEventType.NodeDeleted,
+      this.handleNodeDeleted.bind(this)
     );
 
     // Listen for canvas menu selections
@@ -1599,6 +1611,13 @@ export class Editor extends RapidElement {
     this.editingNodeUI = event.detail.nodeUI;
   }
 
+  private handleNodeDeleted(event: CustomEvent): void {
+    const nodeUuid = event.detail.uuid;
+    if (nodeUuid) {
+      this.deleteNodes([nodeUuid]);
+    }
+  }
+
   private handleActionSaved(updatedAction: Action): void {
     if (this.editingNode && this.editingAction) {
       let updatedActions: Action[];
@@ -1801,7 +1820,8 @@ export class Editor extends RapidElement {
       actionIndex,
       mouseX,
       mouseY,
-      actionHeight = 60
+      actionHeight = 60,
+      isLastAction = false
     } = event.detail;
 
     // Check if mouse is over another execute_actions node
@@ -1896,29 +1916,47 @@ export class Editor extends RapidElement {
 
     this.actionDragTargetNodeUuid = null;
 
-    // Tell source node to hide ghost (we're not over a valid target)
     const sourceElement = this.querySelector(
       `temba-flow-node[data-node-uuid="${nodeUuid}"]`
     );
-    if (sourceElement) {
-      sourceElement.dispatchEvent(
-        new CustomEvent('action-hide-ghost', {
-          detail: {},
-          bubbles: false
-        })
-      );
+
+    // Show canvas drop preview only if this is NOT the last action
+    // Last actions can only be dropped on other nodes, not on canvas
+    if (!isLastAction) {
+      // Hide ghost when showing canvas preview (for canvas drops)
+      if (sourceElement) {
+        sourceElement.dispatchEvent(
+          new CustomEvent('action-hide-ghost', {
+            detail: {},
+            bubbles: false
+          })
+        );
+      }
+
+      // Don't snap to grid for preview - let it follow cursor smoothly
+      const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
+
+      this.canvasDropPreview = {
+        action,
+        nodeUuid,
+        actionIndex,
+        position,
+        actionHeight
+      };
+    } else {
+      // For last action, keep ghost visible (can't drop on canvas)
+      if (sourceElement) {
+        sourceElement.dispatchEvent(
+          new CustomEvent('action-show-ghost', {
+            detail: {},
+            bubbles: false
+          })
+        );
+      }
+
+      // Clear any existing preview for last action
+      this.canvasDropPreview = null;
     }
-
-    // Don't snap to grid for preview - let it follow cursor smoothly
-    const position = this.calculateCanvasDropPosition(mouseX, mouseY, false);
-
-    this.canvasDropPreview = {
-      action,
-      nodeUuid,
-      actionIndex,
-      position,
-      actionHeight
-    };
 
     // Force re-render to update preview position
     this.requestUpdate();
@@ -1946,7 +1984,14 @@ export class Editor extends RapidElement {
   }
 
   private handleActionDropExternal(event: CustomEvent): void {
-    const { action, nodeUuid, actionIndex, mouseX, mouseY } = event.detail;
+    const {
+      action,
+      nodeUuid,
+      actionIndex,
+      mouseX,
+      mouseY,
+      isLastAction = false
+    } = event.detail;
 
     // Check if we're dropping on an existing execute_actions node
     const targetNodeUuid = this.actionDragTargetNodeUuid;
@@ -1972,6 +2017,14 @@ export class Editor extends RapidElement {
       }
 
       // Clear state
+      this.canvasDropPreview = null;
+      this.actionDragTargetNodeUuid = null;
+      return;
+    }
+
+    // If this is the last action and we're not dropping on another node, do nothing
+    // Last actions can only be moved to other nodes, not dropped on canvas
+    if (isLastAction) {
       this.canvasDropPreview = null;
       this.actionDragTargetNodeUuid = null;
       return;
@@ -2573,7 +2626,7 @@ export class Editor extends RapidElement {
         header="Translations"
         .width=${360}
         .maxHeight=${600}
-        .top=${20}
+        .top=${170}
         color="#6b7280"
         .hidden=${this.localizationWindowHidden}
         @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
@@ -2738,6 +2791,7 @@ export class Editor extends RapidElement {
         icon="language"
         label="Translate Flow"
         color="#6b7280"
+        top="180"
         .hidden=${!this.localizationWindowHidden}
         @temba-button-clicked=${this.handleLocalizationTabClick}
       ></temba-floating-tab>
@@ -2810,8 +2864,7 @@ export class Editor extends RapidElement {
                     ? 'selected'
                     : ''}"
                   @mousedown=${this.handleMouseDown.bind(this)}
-                  style="left:${position.left}px; top:${position.top}px; z-index: ${1000 +
-                  position.top}"
+                  style="left:${position.left}px; top:${position.top}px;"
                   uuid=${uuid}
                   .data=${sticky}
                   .dragging=${dragging}

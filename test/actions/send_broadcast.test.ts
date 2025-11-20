@@ -80,7 +80,8 @@ describe('send_broadcast action config', () => {
           'application/pdf:https://example.com/document.pdf'
         ]
       } as SendBroadcast,
-      'with-attachments'
+      'with-attachments',
+      true
     );
 
     helper.testAction(
