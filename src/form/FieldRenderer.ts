@@ -385,6 +385,7 @@ export class FieldRenderer {
       showLabel = true,
       extraClasses,
       style,
+      rtl = false,
       additionalData = {}
     } = context;
 
@@ -400,6 +401,7 @@ export class FieldRenderer {
       ?autogrow="${config.autogrow}"
       ?gsm="${config.gsm}"
       ?disableCompletion="${config.disableCompletion}"
+      ?rtl="${rtl}"
       counter="${config.counter || ''}"
       accept="${config.accept || ''}"
       endpoint="${config.endpoint || ''}"

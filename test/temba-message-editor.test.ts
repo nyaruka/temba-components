@@ -297,4 +297,34 @@ describe('temba-message-editor', () => {
       getClip(editor as HTMLElement)
     );
   });
+
+  it('passes rtl property to underlying completion', async () => {
+    const editor = (await getComponent('temba-message-editor', {
+      value: 'مرحبا بك في نظامنا',
+      rtl: true
+    })) as MessageEditor;
+
+    await editor.updateComplete;
+
+    const completion = editor.shadowRoot.querySelector('temba-completion');
+    expect(completion).to.exist;
+    expect(completion.hasAttribute('rtl')).to.be.true;
+
+    await assertScreenshot(
+      'message-editor/rtl',
+      getClip(editor as HTMLElement)
+    );
+  });
+
+  it('does not pass rtl when property is false', async () => {
+    const editor = (await getComponent('temba-message-editor', {
+      value: 'Hello world'
+    })) as MessageEditor;
+
+    await editor.updateComplete;
+
+    const completion = editor.shadowRoot.querySelector('temba-completion');
+    expect(completion).to.exist;
+    expect(completion.hasAttribute('rtl')).to.be.false;
+  });
 });

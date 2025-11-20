@@ -179,6 +179,9 @@ export class MessageEditor extends FieldElement {
   @property({ type: Boolean, attribute: false })
   uploading = false;
 
+  @property({ type: Boolean })
+  rtl = false;
+
   private completionElement: Completion;
   private mediaPickerElement: MediaPicker;
 
@@ -400,6 +403,7 @@ export class MessageEditor extends FieldElement {
             ?submitOnEnter=${this.submitOnEnter}
             ?gsm=${this.gsm}
             ?disableCompletion=${this.disableCompletion}
+            ?rtl=${this.rtl}
             maxlength=${ifDefined(this.maxLength)}
             counter=${ifDefined(this.counter)}
             minHeight=${ifDefined(this.minHeight)}
