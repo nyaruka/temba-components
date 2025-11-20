@@ -525,8 +525,8 @@ export class ContactChat extends ContactStoreElement {
   private chat: Chat;
 
   ticket = null;
-  lastEventTime = null;
-  newestEventTime = null;
+  beforeUUID: string = null; // for scrolling back through history
+  afterUUID: string = null; // for polling new messages
   refreshId = null;
   polling = false;
 
@@ -582,8 +582,8 @@ export class ContactChat extends ContactStoreElement {
     }
     this.blockFetching = false;
     this.ticket = null;
-    this.lastEventTime = null;
-    this.newestEventTime = null;
+    this.beforeUUID = null;
+    this.afterUUID = null;
     this.refreshId = null;
     this.polling = false;
     this.errorMessage = null;
@@ -651,30 +651,21 @@ export class ContactChat extends ContactStoreElement {
 
   private getEndpoint() {
     if (this.contact) {
-      return `/contact/history/${this.contact}/?_format=json`;
+      return `/contact/chat/${this.contact}/`;
     }
     return null;
   }
 
   private scheduleRefresh() {
-    // knock five seconds off the newest event time so we are
-    // a little more aggressive about refreshing short term
-    let window = new Date().getTime() - this.newestEventTime / 1000 - 5000;
-
     if (this.refreshId) {
       clearTimeout(this.refreshId);
       this.refreshId = null;
     }
 
-    // wait no longer than 15 seconds
-    window = Math.min(window, 15000);
-
-    // wait at least 2 seconds
-    window = Math.max(window, 2000);
-
+    // poll every 2 seconds for new messages
     this.refreshId = setTimeout(() => {
       this.checkForNewMessages();
-    }, window);
+    }, 2000);
   }
 
   public getEventMessage(event: ContactEvent): ChatEvent {
@@ -857,9 +848,9 @@ export class ContactChat extends ContactStoreElement {
     if (page.events) {
       let messages = [];
       page.events.forEach((event) => {
-        const ts = new Date(event.created_on).getTime() * 1000;
-        if (ts > this.newestEventTime) {
-          this.newestEventTime = ts;
+        // track the UUID of the newest event for polling
+        if (!this.afterUUID || event.uuid > this.afterUUID) {
+          this.afterUUID = event.uuid;
         }
 
         if (event.type === 'ticket_note_added') {
@@ -914,7 +905,7 @@ export class ContactChat extends ContactStoreElement {
 
     const chat = this.chat;
     const contactChat = this;
-    if (this.currentContact && this.newestEventTime) {
+    if (this.currentContact && this.afterUUID) {
       this.polling = true;
       const endpoint = this.getEndpoint();
       if (!endpoint) {
@@ -924,14 +915,12 @@ export class ContactChat extends ContactStoreElement {
       const fetchContact = this.currentContact.uuid;
 
       fetchContactHistory(
-        false,
         endpoint,
         this.currentTicket?.uuid,
         null,
-        this.newestEventTime
+        this.afterUUID
       ).then((page: ContactHistoryPage) => {
         if (fetchContact === this.currentContact.uuid) {
-          this.lastEventTime = page.next_before;
           const messages = this.createMessages(page);
           if (messages.length === 0) {
             contactChat.blockFetching = true;
@@ -959,19 +948,37 @@ export class ContactChat extends ContactStoreElement {
         return;
       }
 
+      // initialize anchor UUID if not set (first fetch)
+      if (!this.beforeUUID && !this.afterUUID) {
+        // generate a UUID v7 for current time as the anchor
+        const now = new Date();
+        const timestamp = now.getTime();
+        // uuid v7 starts with timestamp in milliseconds
+        // simplified approximation - create a uuid-like string from timestamp
+        const hex = timestamp.toString(16).padStart(12, '0');
+        this.beforeUUID = `${hex.slice(0, 8)}-${hex.slice(
+          8,
+          12
+        )}-7000-8000-000000000000`;
+        this.afterUUID = this.beforeUUID;
+      }
+
       fetchContactHistory(
-        false,
         endpoint,
         this.currentTicket?.uuid,
-        this.lastEventTime
+        this.beforeUUID,
+        null
       ).then((page: ContactHistoryPage) => {
-        this.lastEventTime = page.next_before;
         const messages = this.createMessages(page);
         messages.reverse();
 
         if (messages.length === 0) {
           contactChat.blockFetching = true;
+        } else if (page.next) {
+          // update beforeUUID for next fetch of older messages
+          this.beforeUUID = page.next;
         }
+
         chat.addMessages(messages);
         this.scheduleRefresh();
       });
@@ -1238,34 +1245,32 @@ export const fetchContact = (endpoint: string): Promise<Contact> => {
   });
 };
 export const fetchContactHistory = (
-  reset: boolean,
   endpoint: string,
-  ticket: string,
-  before: number = undefined,
-  after: number = undefined
+  ticket: string = undefined,
+  before: string = undefined,
+  after: string = undefined
 ): Promise<ContactHistoryPage> => {
-  if (reset) {
-    pendingRequests.forEach((controller) => {
-      controller.abort();
-    });
-    pendingRequests = [];
-  }
-
   return new Promise<ContactHistoryPage>((resolve) => {
     const controller = new AbortController();
     pendingRequests.push(controller);
 
     let url = endpoint;
+    const params = [];
+
     if (before) {
-      url += `&before=${before}`;
+      params.push(`before=${before}`);
     }
 
     if (after) {
-      url += `&after=${after}`;
+      params.push(`after=${after}`);
     }
 
     if (ticket) {
-      url += `&ticket=${ticket}`;
+      params.push(`ticket=${ticket}`);
+    }
+
+    if (params.length > 0) {
+      url += (url.includes('?') ? '&' : '?') + params.join('&');
     }
 
     const store = document.querySelector('temba-store') as Store;
