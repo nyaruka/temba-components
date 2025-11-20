@@ -10,6 +10,7 @@ import {
 } from '../interfaces';
 import {
   fetchResults,
+  generateUUIDv7,
   getUrl,
   oxfordFn,
   postJSON,
@@ -968,16 +969,9 @@ export class ContactChat extends ContactStoreElement {
       // initialize anchor UUID if not set (first fetch)
       if (!this.beforeUUID && !this.afterUUID) {
         // generate a UUID v7 for current time as the anchor
-        const now = new Date();
-        const timestamp = now.getTime();
-        // uuid v7 starts with timestamp in milliseconds
-        // simplified approximation - create a uuid-like string from timestamp
-        const hex = timestamp.toString(16).padStart(12, '0');
-        this.beforeUUID = `${hex.slice(0, 8)}-${hex.slice(
-          8,
-          12
-        )}-7000-8000-000000000000`;
-        this.afterUUID = this.beforeUUID;
+        const anchorUUID = generateUUIDv7();
+        this.beforeUUID = anchorUUID;
+        this.afterUUID = anchorUUID;
       }
 
       fetchContactHistory(
@@ -994,6 +988,13 @@ export class ContactChat extends ContactStoreElement {
         } else if (page.next) {
           // update beforeUUID for next fetch of older messages
           this.beforeUUID = page.next;
+        } else {
+          // no more history, mark end and show oldest event date
+          contactChat.blockFetching = true;
+          if (page.events && page.events.length > 0) {
+            const oldestEvent = page.events[page.events.length - 1];
+            chat.setEndOfHistory(new Date(oldestEvent.created_on));
+          }
         }
 
         chat.addMessages(messages);

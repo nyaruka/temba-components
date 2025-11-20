@@ -5,7 +5,7 @@ import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from './display/Toast';
-import { v4 as generateUUID } from 'uuid';
+import { v4 as generateUUID, v7 as generateUUIDv7 } from 'uuid';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -918,8 +918,8 @@ export const getMiddle = (a: DOMRect, b: DOMRect) => {
   return a.top + a.height / 2 - b.height / 2;
 };
 
-// Export the UUID function from the uuid package
-export { generateUUID };
+// Export the UUID functions from the uuid package
+export { generateUUID, generateUUIDv7 };
 
 // Helper types for router creation
 export interface RouterCategory {
