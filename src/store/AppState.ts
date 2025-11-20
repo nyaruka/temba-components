@@ -290,6 +290,8 @@ export const zustand = createStore<AppState>()(
                 destinations.every((dest) => dest === destinations[0])
               ) {
                 const targetDestination = destinations[0];
+                // Don't reroute if the target is also being removed
+                if (uuids.includes(targetDestination)) return;
 
                 // Find all nodes with exits pointing to the node being removed
                 draft.nodes.forEach((node) => {
