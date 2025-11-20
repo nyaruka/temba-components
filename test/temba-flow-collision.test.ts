@@ -450,7 +450,7 @@ describe('Collision Detection Utilities', () => {
       // Existing node should be moved down
       expect(positions.has('existing')).to.be.true;
       expect(positions.has('dropped')).to.be.false; // dropped keeps its position
-      
+
       const existingNewPos = positions.get('existing')!;
       expect(existingNewPos.top).to.be.greaterThan(180); // moved below dropped node
     });
@@ -492,7 +492,7 @@ describe('Collision Detection Utilities', () => {
       // Dropped node should be moved down
       expect(positions.has('dropped')).to.be.true;
       expect(positions.has('existing')).to.be.false; // existing keeps its position
-      
+
       const droppedNewPos = positions.get('dropped')!;
       expect(droppedNewPos.top).to.be.greaterThan(200); // moved below existing node
     });

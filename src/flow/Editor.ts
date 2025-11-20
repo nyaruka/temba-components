@@ -1466,7 +1466,7 @@ export class Editor extends RapidElement {
             if (nodeUuids.length === 1) {
               droppedNodeUuid = nodeUuids[0];
               const droppedNodeUI = this.definition._ui?.nodes[droppedNodeUuid];
-              
+
               if (droppedNodeUI?.position) {
                 const droppedBounds = getNodeBounds(
                   droppedNodeUuid,
@@ -1477,12 +1477,18 @@ export class Editor extends RapidElement {
                   // Find which node (if any) the dropped node overlaps with
                   for (const node of this.definition.nodes) {
                     if (node.uuid === droppedNodeUuid) continue;
-                    
+
                     const nodeUI = this.definition._ui?.nodes[node.uuid];
                     if (!nodeUI?.position) continue;
 
-                    const targetBounds = getNodeBounds(node.uuid, nodeUI.position);
-                    if (targetBounds && nodesOverlap(droppedBounds, targetBounds)) {
+                    const targetBounds = getNodeBounds(
+                      node.uuid,
+                      nodeUI.position
+                    );
+                    if (
+                      targetBounds &&
+                      nodesOverlap(droppedBounds, targetBounds)
+                    ) {
                       dropTargetBounds = targetBounds;
                       break; // Use the first overlapping node
                     }
@@ -1491,7 +1497,11 @@ export class Editor extends RapidElement {
               }
             }
 
-            this.checkCollisionsAndReflow(nodeUuids, droppedNodeUuid, dropTargetBounds);
+            this.checkCollisionsAndReflow(
+              nodeUuids,
+              droppedNodeUuid,
+              dropTargetBounds
+            );
           }, 0);
         } else {
           // No nodes moved, just repaint connections
