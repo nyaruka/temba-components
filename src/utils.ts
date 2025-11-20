@@ -1448,3 +1448,35 @@ export const createRulesRouter = (
 export const titleCase = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
+
+// list of RTL (Right-to-Left) language codes using ISO 639-3 (3-letter) and ISO 639-1 (2-letter) codes
+const RTL_LANGUAGES = new Set([
+  'ara', 'ar',  // arabic
+  'heb', 'he',  // hebrew
+  'fas', 'fa',  // persian/farsi
+  'urd', 'ur',  // urdu
+  'yid', 'yi',  // yiddish
+  'arc',        // aramaic
+  'azb',        // south azerbaijani
+  'ckb',        // central kurdish (sorani)
+  'div', 'dv',  // dhivehi/maldivian
+  'kur', 'ku',  // kurdish
+  'prs',        // dari
+  'pus', 'ps',  // pashto
+  'syr',        // syriac
+  'aii',        // assyrian neo-aramaic
+  'nqo',        // n'ko
+  'sam',        // samaritan aramaic
+]);
+
+/**
+ * determines if a language code represents a right-to-left (RTL) language
+ * @param languageCode - ISO 639 language code (2-letter or 3-letter)
+ * @returns true if the language is RTL, false otherwise
+ */
+export const isRTLLanguage = (languageCode: string): boolean => {
+  if (!languageCode) {
+    return false;
+  }
+  return RTL_LANGUAGES.has(languageCode.toLowerCase());
+};

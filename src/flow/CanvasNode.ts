@@ -5,7 +5,7 @@ import { ACTION_GROUP_METADATA, SPLIT_GROUP_METADATA } from './types';
 import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
-import { getClasses } from '../utils';
+import { getClasses, isRTLLanguage } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
@@ -173,6 +173,11 @@ export class CanvasNode extends RapidElement {
         hyphens: auto;
         white-space: normal;
         overflow: hidden;
+      }
+
+      .action .body.rtl {
+        direction: rtl;
+        text-align: right;
       }
 
       .node.execute-actions temba-sortable-list .action:last-child .body {
@@ -1338,7 +1343,7 @@ export class CanvasNode extends RapidElement {
           style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
-          <div class="body">
+          <div class="body ${this.isTranslating && isRTLLanguage(this.languageCode) ? 'rtl' : ''}">
             ${config.render
               ? config.render(node, displayAction)
               : html`<pre>${action.type}</pre>`}

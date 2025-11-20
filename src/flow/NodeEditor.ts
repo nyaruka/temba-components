@@ -19,7 +19,7 @@ import {
   SPLIT_GROUP_METADATA
 } from './types';
 import { CustomEventType } from '../interfaces';
-import { generateUUID } from '../utils';
+import { generateUUID, isRTLLanguage } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
 import { AppState, fromStore, zustand } from '../store/AppState';
@@ -1371,6 +1371,7 @@ export class NodeEditor extends RapidElement {
                   name="${categoryUuid}"
                   placeholder="${languageName} Translation"
                   value="${categoryData.localizedName || ''}"
+                  ?rtl="${isRTLLanguage(this.languageCode)}"
                   @change=${(e: Event) =>
                     this.handleCategoryLocalizationChange(
                       categoryUuid,
@@ -1469,6 +1470,7 @@ export class NodeEditor extends RapidElement {
         }
       },
       showLabel: true,
+      rtl: this.isTranslating && isRTLLanguage(this.languageCode),
       formData: this.formData,
       additionalData: {
         attachments: this.formData.attachments || []

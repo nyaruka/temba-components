@@ -4,6 +4,7 @@ import { RapidElement } from '../RapidElement';
 import { StickyNote as StickyNoteData } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
+import { isRTLLanguage } from '../utils';
 
 export class StickyNote extends RapidElement {
   @property({ type: String })
@@ -23,6 +24,9 @@ export class StickyNote extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
+
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
 
   static get styles() {
     return css`
@@ -111,6 +115,10 @@ export class StickyNote extends RapidElement {
         background-color: rgba(255, 255, 255, 0.8);
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         outline-color: var(--sticky-border-color);
+      }
+      [contenteditable='true'].rtl {
+        direction: rtl;
+        text-align: right;
       }
 
       /* Title */
@@ -383,7 +391,7 @@ export class StickyNote extends RapidElement {
         <div class="sticky-title-container">
           <temba-icon name="drag" class="drag-handle"></temba-icon>
           <div
-            class="sticky-title"
+            class="sticky-title ${this.isTranslating && isRTLLanguage(this.languageCode) ? 'rtl' : ''}"
             contenteditable="${!this.isTranslating}"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleKeyDown}"
@@ -393,7 +401,7 @@ export class StickyNote extends RapidElement {
         </div>
         <div class="sticky-body-container">
           <div
-            class="sticky-body"
+            class="sticky-body ${this.isTranslating && isRTLLanguage(this.languageCode) ? 'rtl' : ''}"
             contenteditable="${!this.isTranslating}"
             @blur="${this.handleBodyBlur}"
             @keydown="${this.handleKeyDown}"

@@ -106,7 +106,8 @@ export class FieldRenderer {
       onChange,
       showLabel = true,
       extraClasses,
-      style
+      style,
+      rtl = false
     } = context;
 
     // If field supports expression evaluation, use temba-completion
@@ -135,6 +136,7 @@ export class FieldRenderer {
       placeholder="${config.placeholder || ''}"
       .helpText="${config.helpText || ''}"
       flavor="${config.flavor || 'default'}"
+      ?rtl="${rtl}"
       class="${extraClasses}"
       style="${style}"
       @input="${onChange || (() => {})}"
@@ -152,7 +154,8 @@ export class FieldRenderer {
       onChange,
       showLabel = true,
       extraClasses,
-      style
+      style,
+      rtl = false
     } = context;
 
     const minHeightStyle = config.minHeight
@@ -188,6 +191,7 @@ export class FieldRenderer {
       textarea
       .rows="${config.rows || 3}"
       .helpText="${config.helpText || ''}"
+      ?rtl="${rtl}"
       class="${extraClasses}"
       style="${combinedStyle}"
       @input="${onChange || (() => {})}"
@@ -423,4 +427,6 @@ export interface FieldRenderContext {
   additionalData?: Record<string, any>;
   /** Form data for dynamic field configurations */
   formData?: Record<string, any>;
+  /** Whether to render text in RTL (Right-to-Left) mode */
+  rtl?: boolean;
 }
