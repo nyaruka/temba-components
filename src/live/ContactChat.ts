@@ -529,6 +529,8 @@ export class ContactChat extends ContactStoreElement {
   afterUUID: string = null; // for polling new messages
   refreshId = null;
   polling = false;
+  pollingInterval = 2000; // start at 2 seconds
+  lastFetchTime: number = null;
 
   constructor() {
     super();
@@ -586,6 +588,8 @@ export class ContactChat extends ContactStoreElement {
     this.afterUUID = null;
     this.refreshId = null;
     this.polling = false;
+    this.pollingInterval = 2000;
+    this.lastFetchTime = null;
     this.errorMessage = null;
 
     const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
@@ -634,6 +638,8 @@ export class ContactChat extends ContactStoreElement {
         if (response.status < 400) {
           const msg = this.createChatForMessageEvent(response.json.event);
           this.chat.addMessages([msg], null, true);
+          // reset polling interval to 2 seconds after sending a message
+          this.pollingInterval = 2000;
           this.checkForNewMessages();
           composeEle.reset();
           this.fireCustomEvent(CustomEventType.MessageSent, {
@@ -656,16 +662,23 @@ export class ContactChat extends ContactStoreElement {
     return null;
   }
 
-  private scheduleRefresh() {
+  private scheduleRefresh(hasNewEvents = false) {
     if (this.refreshId) {
       clearTimeout(this.refreshId);
       this.refreshId = null;
     }
 
-    // poll every 2 seconds for new messages
+    // reset to 2 seconds if we received new events
+    if (hasNewEvents) {
+      this.pollingInterval = 2000;
+    } else {
+      // increase interval by 1 second up to max of 15 seconds
+      this.pollingInterval = Math.min(this.pollingInterval + 1000, 15000);
+    }
+
     this.refreshId = setTimeout(() => {
       this.checkForNewMessages();
-    }, 2000);
+    }, this.pollingInterval);
   }
 
   public getEventMessage(event: ContactEvent): ChatEvent {
@@ -907,6 +920,7 @@ export class ContactChat extends ContactStoreElement {
     const contactChat = this;
     if (this.currentContact && this.afterUUID) {
       this.polling = true;
+      this.lastFetchTime = Date.now();
       const endpoint = this.getEndpoint();
       if (!endpoint) {
         return;
@@ -922,14 +936,17 @@ export class ContactChat extends ContactStoreElement {
       ).then((page: ContactHistoryPage) => {
         if (fetchContact === this.currentContact.uuid) {
           const messages = this.createMessages(page);
+          const hasNewEvents = messages.length > 0;
           if (messages.length === 0) {
             contactChat.blockFetching = true;
           }
           messages.reverse();
           chat.addMessages(messages, null, true);
+          this.polling = false;
+          this.scheduleRefresh(hasNewEvents);
+        } else {
+          this.polling = false;
         }
-        this.polling = false;
-        this.scheduleRefresh();
       });
     }
   }
