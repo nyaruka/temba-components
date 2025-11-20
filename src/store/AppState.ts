@@ -271,10 +271,44 @@ export const zustand = createStore<AppState>()(
           }
 
           state.flowDefinition = produce(state.flowDefinition, (draft) => {
+            // For each node being removed, check if we should reroute connections
+            uuids.forEach((removedUuid) => {
+              const removedNode = draft.nodes.find(
+                (n) => n.uuid === removedUuid
+              );
+
+              if (!removedNode || !removedNode.exits.length) return;
+
+              // Get all destinations (filter out null/undefined)
+              const destinations = removedNode.exits
+                .map((exit) => exit.destination_uuid)
+                .filter((dest) => dest);
+
+              // Only proceed if all exits have destinations and they all point to the same place
+              if (
+                destinations.length === removedNode.exits.length &&
+                destinations.every((dest) => dest === destinations[0])
+              ) {
+                const targetDestination = destinations[0];
+
+                // Find all nodes with exits pointing to the node being removed
+                draft.nodes.forEach((node) => {
+                  node.exits.forEach((exit) => {
+                    if (exit.destination_uuid === removedUuid) {
+                      // Reroute to the same destination the removed node was going to
+                      exit.destination_uuid = targetDestination;
+                    }
+                  });
+                });
+              }
+            });
+
+            // Remove the nodes
             draft.nodes = draft.nodes.filter(
               (node) => !uuids.includes(node.uuid)
             );
 
+            // Clear any remaining connections to removed nodes that weren't rerouted
             draft.nodes.forEach((node) => {
               node.exits.forEach((exit) => {
                 if (uuids.includes(exit.destination_uuid)) {

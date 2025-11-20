@@ -2044,7 +2044,8 @@ export class Editor extends RapidElement {
 
     // if no actions remain, delete the node
     if (updatedActions.length === 0) {
-      getStore()?.getState().removeNodes([nodeUuid]);
+      // Use deleteNodes to properly clean up Plumber connections before removing
+      this.deleteNodes([nodeUuid]);
     } else {
       // update the node
       const updatedNode = { ...originalNode, actions: updatedActions };
