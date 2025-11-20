@@ -863,7 +863,10 @@ export class ContactChat extends ContactStoreElement {
       let messages = [];
       page.events.forEach((event) => {
         // track the UUID of the newest event for polling
-        if (!this.afterUUID || event.uuid > this.afterUUID) {
+        if (
+          !this.afterUUID ||
+          event.uuid.toLowerCase() > this.afterUUID.toLowerCase()
+        ) {
           this.afterUUID = event.uuid;
         }
 
