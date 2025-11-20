@@ -244,20 +244,6 @@ export class Plumber {
     this.jsPlumb.selectEndpoints({ source: exitIds }).deleteAll();
   }
 
-  /**
-   * Get all inbound connections to a node
-   * @param nodeId The ID of the node to get inbound connections for
-   * @returns Array of connection info with sourceId (exit uuid)
-   */
-  public getInboundConnections(nodeId: string): Array<{ sourceId: string }> {
-    if (!this.jsPlumb) return [];
-
-    const connections = this.jsPlumb.getConnections({ target: nodeId });
-    return connections.map((connection) => ({
-      sourceId: connection.source.id
-    }));
-  }
-
   public removeExitConnection(exitId: string) {
     if (!this.jsPlumb) return;
 
