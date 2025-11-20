@@ -24,11 +24,7 @@ import { Dialog } from '../layout/Dialog';
 import { Connection } from '@jsplumb/browser-ui';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
-import {
-  getNodeBounds,
-  calculateReflowPositions,
-  NodeBounds
-} from './utils';
+import { getNodeBounds, calculateReflowPositions, NodeBounds } from './utils';
 
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
@@ -1194,7 +1190,7 @@ export class Editor extends RapidElement {
   /**
    * Checks for node collisions and reflows nodes as needed.
    * Nodes are only moved downward to resolve collisions.
-   * 
+   *
    * @param movedNodeUuids - UUIDs of nodes that were just moved/dropped
    * @param droppedNodeUuid - UUID of the specific node that was dropped (if applicable)
    * @param dropTargetBounds - Bounds of the node that was dropped onto (if applicable)
@@ -1208,7 +1204,7 @@ export class Editor extends RapidElement {
 
     // Get all node bounds (only for actual nodes, not stickies)
     const allBounds: NodeBounds[] = [];
-    
+
     for (const node of this.definition.nodes) {
       const nodeUI = this.definition._ui?.nodes[node.uuid];
       if (!nodeUI?.position) continue;
@@ -1226,7 +1222,8 @@ export class Editor extends RapidElement {
       if (droppedBounds) {
         // Check if the dropped node's center is below the midpoint of the target
         const droppedCenter = droppedBounds.top + droppedBounds.height / 2;
-        const targetMidpoint = dropTargetBounds.top + dropTargetBounds.height / 2;
+        const targetMidpoint =
+          dropTargetBounds.top + dropTargetBounds.height / 2;
         droppedBelowMidpoint = droppedCenter > targetMidpoint;
       }
     }
@@ -1261,20 +1258,18 @@ export class Editor extends RapidElement {
   /**
    * Applies reflow positions with CSS animations
    */
-  private applyReflowWithAnimation(
-    positions: Map<string, FlowPosition>
-  ): void {
+  private applyReflowWithAnimation(positions: Map<string, FlowPosition>): void {
     // Apply positions with transition
     for (const [uuid, position] of positions.entries()) {
       const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
       if (element) {
         // Enable transition
         element.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';
-        
+
         // Update position
         element.style.left = `${position.left}px`;
         element.style.top = `${position.top}px`;
-        
+
         // Remove transition after animation completes
         setTimeout(() => {
           element.style.transition = '';
@@ -1287,7 +1282,7 @@ export class Editor extends RapidElement {
     positions.forEach((pos, uuid) => {
       positionsObj[uuid] = pos;
     });
-    
+
     getStore().getState().updateCanvasPositions(positionsObj);
 
     // Repaint connections after animation
@@ -1448,7 +1443,7 @@ export class Editor extends RapidElement {
         const nodeUuids = itemsToMove.filter((uuid) =>
           this.definition.nodes.find((node) => node.uuid === uuid)
         );
-        
+
         if (nodeUuids.length > 0) {
           // Allow DOM to update before checking collisions
           setTimeout(() => {

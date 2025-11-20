@@ -369,7 +369,7 @@ describe('Collision Detection Utilities', () => {
 
       expect(positions.size).to.equal(1);
       expect(positions.has('node1')).to.be.true;
-      
+
       const newPos = positions.get('node1')!;
       expect(newPos.left).to.equal(150); // left unchanged
       expect(newPos.top).to.be.greaterThan(200); // moved below the moved node
@@ -408,7 +408,7 @@ describe('Collision Detection Utilities', () => {
 
       expect(positions.size).to.equal(1);
       expect(positions.has('moved')).to.be.true;
-      
+
       const newPos = positions.get('moved')!;
       expect(newPos.top).to.be.greaterThan(200); // moved below existing node
     });
@@ -455,12 +455,12 @@ describe('Collision Detection Utilities', () => {
 
       // Both nodes should be repositioned to avoid collision
       expect(positions.size).to.be.greaterThan(0);
-      
+
       // Check that moved nodes maintain vertical order and spacing
       if (positions.has('node1') && positions.has('node2')) {
         const node1Pos = positions.get('node1')!;
         const node2Pos = positions.get('node2')!;
-        
+
         // node2 should be below node1
         expect(node2Pos.top).to.be.greaterThan(node1Pos.top);
       }
@@ -721,14 +721,14 @@ describe('Collision Detection Utilities', () => {
 
       // Create a complex scenario with many overlapping nodes
       const allBounds: NodeBounds[] = [movedBounds];
-      
+
       for (let i = 0; i < 20; i++) {
         allBounds.push({
           uuid: `node${i}`,
-          left: 100 + (i * 10),
-          top: 100 + (i * 10),
-          right: 200 + (i * 10),
-          bottom: 200 + (i * 10),
+          left: 100 + i * 10,
+          top: 100 + i * 10,
+          right: 200 + i * 10,
+          bottom: 200 + i * 10,
           width: 100,
           height: 100
         });

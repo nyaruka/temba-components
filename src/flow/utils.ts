@@ -1,5 +1,5 @@
 import { html } from 'lit-html';
-import { NamedObject, FlowPosition, Node, NodeUI } from '../store/flow-definition';
+import { NamedObject, FlowPosition } from '../store/flow-definition';
 
 /**
  * Renders a single line item with optional icon
@@ -196,12 +196,12 @@ const OVERLAP_BUFFER = 0.5;
 
 /**
  * Gets the bounding box for a node from the DOM
- * 
+ *
  * @param nodeUuid - The UUID of the node
  * @param position - The current position of the node
  * @param element - Optional pre-fetched DOM element (recommended for performance when checking multiple nodes)
  * @returns NodeBounds object or null if element not found
- * 
+ *
  * Note: When element is not provided, performs a DOM query which may impact performance
  * during bulk collision detection. Consider fetching elements beforehand when possible.
  */
@@ -212,7 +212,7 @@ export const getNodeBounds = (
 ): NodeBounds | null => {
   // If element is provided, use it; otherwise try to find it in DOM
   const nodeElement =
-    element || document.querySelector(`[id="${nodeUuid}"]`) as HTMLElement;
+    element || (document.querySelector(`[id="${nodeUuid}"]`) as HTMLElement);
 
   if (!nodeElement) {
     return null;
