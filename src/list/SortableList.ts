@@ -577,8 +577,9 @@ export class SortableList extends RapidElement {
         const fromIdx = originalDragIdx;
         const toIdx = this.pendingDropIndex;
 
-        // only fire if the position actually changed
-        if (fromIdx !== toIdx) {
+        // only fire if the position actually changed AND this is not an external drag
+        // External drags are handled by external drop handlers
+        if (fromIdx !== toIdx && !this.isExternalDrag) {
           this.fireCustomEvent(CustomEventType.OrderChanged, {
             swap: [fromIdx, toIdx]
           });

@@ -13,7 +13,7 @@ export class FloatingTab extends RapidElement {
       .tab {
         position: fixed;
         right: 0;
-        z-index: 9998;
+        z-index: 4998;
         transition: transform var(--transition-duration, 300ms) ease-in-out;
         display: flex;
         align-items: center;
@@ -36,8 +36,8 @@ export class FloatingTab extends RapidElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 16px;
+        height: 16px;
       }
 
       temba-icon {
@@ -164,7 +164,7 @@ export class FloatingTab extends RapidElement {
       <div class="${classes}" style="${tabStyle}" @click=${this.handleClick}>
         <div class="icon-container">
           ${this.icon
-            ? html`<temba-icon size="2" name="${this.icon}"></temba-icon>`
+            ? html`<temba-icon size="1.5" name="${this.icon}"></temba-icon>`
             : ''}
         </div>
         <div class="label">${this.label}</div>

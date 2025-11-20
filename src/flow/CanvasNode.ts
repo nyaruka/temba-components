@@ -76,6 +76,10 @@ export class CanvasNode extends RapidElement {
     actionHeight: number;
   } | null = null;
 
+  // Track if we're showing a placeholder for our own last action being dragged out
+  private showLastActionPlaceholder = false;
+  private lastActionPlaceholderHeight = 60;
+
   static get styles() {
     return css`
 
@@ -119,6 +123,7 @@ export class CanvasNode extends RapidElement {
 
       .action .cn-title:hover .remove-button,
       .router:hover .remove-button {
+        visibility: visible;
         opacity: 0.7;
       }
 
@@ -135,7 +140,7 @@ export class CanvasNode extends RapidElement {
       .remove-button {
         background: transparent;
         color: white;
-        opacity: 0;
+        visibility: hidden;
         cursor: pointer;
         font-size: 1em;
         font-weight: 600;
@@ -143,14 +148,20 @@ export class CanvasNode extends RapidElement {
         z-index: 10;
         transition: all 100ms ease-in-out;
         align-self: center;
-        padding:0.25em;
+        margin-right:0.15em;
         border: 0px solid red;
         width: 1em;
         pointer-events: auto; /* Ensure remove button can receive events */
       }
 
       .remove-button:hover {
+        visibility: visible;
         opacity: 1;
+      }
+
+      .translating-hidden {
+        visibility: hidden !important;
+        pointer-events: none !important;
       }
 
       .action.sortable {
@@ -164,6 +175,7 @@ export class CanvasNode extends RapidElement {
         flex-direction: column;
         min-width: 0; /* Allow flex item to shrink below its content size */
         overflow: hidden;
+        background: #fff;
       }
 
       .action .body {
@@ -194,7 +206,7 @@ export class CanvasNode extends RapidElement {
       }      
 
       .action .drag-handle {
-        opacity: 0;
+        visibility: hidden;
         transition: all 200ms ease-in-out;
         cursor: move;
         background: rgba(0, 0, 0, 0.02);
@@ -209,6 +221,7 @@ export class CanvasNode extends RapidElement {
       }
 
       .action:hover .drag-handle {
+        visibility: visible;
         opacity: 0.7;
         
         
@@ -219,6 +232,7 @@ export class CanvasNode extends RapidElement {
       }
 
       .action .drag-handle:hover {
+        visibility: visible;
         opacity: 1;
         
       }
@@ -421,6 +435,18 @@ export class CanvasNode extends RapidElement {
       .add-action-button:hover {
         opacity: 1 !important;
         transform: scale(1.1);
+      }
+
+      .empty-node-placeholder {
+        height: 60px;
+        background: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        border-radius: var(--curvature);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 0.9em;
       }
   }`;
   }
@@ -742,6 +768,12 @@ export class CanvasNode extends RapidElement {
   private handleActionOrderChanged(event: CustomEvent) {
     const [fromIdx, toIdx] = event.detail.swap;
 
+    // If we have an external drag in progress, ignore internal order changes
+    // as they'll be handled by the external drop handler
+    if (this.externalDragInfo) {
+      return;
+    }
+
     // swap our actions
     const newActions = [...this.node.actions];
     const movedAction = newActions.splice(fromIdx, 1)[0];
@@ -769,6 +801,13 @@ export class CanvasNode extends RapidElement {
       // Fallback to a reasonable default
       this.draggedActionHeight = 60;
     }
+
+    // If this is the last action, show placeholder
+    if (this.node.actions.length === 1) {
+      this.showLastActionPlaceholder = true;
+      this.lastActionPlaceholderHeight = this.draggedActionHeight;
+      this.requestUpdate();
+    }
   }
 
   private handleActionDragExternal(event: CustomEvent) {
@@ -785,6 +824,9 @@ export class CanvasNode extends RapidElement {
     const actionIndex = parseInt(splitId[1], 10);
     const action = this.node.actions[actionIndex];
 
+    // Check if this is the last action
+    const isLastAction = this.node.actions.length === 1;
+
     // fire event to editor to show canvas drop preview, including the captured height
     this.fireCustomEvent(CustomEventType.DragExternal, {
       action,
@@ -792,7 +834,8 @@ export class CanvasNode extends RapidElement {
       actionIndex,
       mouseX: event.detail.mouseX,
       mouseY: event.detail.mouseY,
-      actionHeight: this.draggedActionHeight
+      actionHeight: this.draggedActionHeight,
+      isLastAction
     });
   }
 
@@ -806,6 +849,9 @@ export class CanvasNode extends RapidElement {
 
   private handleActionDragStop(event: CustomEvent) {
     const isExternal = event.detail.isExternal;
+
+    // Clear last action placeholder when drag stops
+    this.showLastActionPlaceholder = false;
 
     if (isExternal) {
       // stop propagation of the original event from SortableList
@@ -821,16 +867,23 @@ export class CanvasNode extends RapidElement {
       const actionIndex = parseInt(split[1], 10);
       const action = this.node.actions[actionIndex];
 
-      // fire event to editor to create new node
+      // Check if this is the last action in the node
+      const isLastAction = this.node.actions.length === 1;
+
+      // Always fire the DragStop event so the Editor can handle drops on other nodes
+      // The Editor will decide whether to create a new node or drop on existing node
       this.fireCustomEvent(CustomEventType.DragStop, {
         action,
         nodeUuid: this.node.uuid,
         actionIndex,
         isExternal: true,
+        isLastAction,
         mouseX: event.detail.mouseX,
         mouseY: event.detail.mouseY
       });
     }
+
+    this.requestUpdate();
   }
 
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
@@ -1141,7 +1194,6 @@ export class CanvasNode extends RapidElement {
     // Clear external drag state
     this.externalDragInfo = null;
 
-    // Remove the action from the source node
     const store = getStore();
     if (!store) return;
 
@@ -1152,32 +1204,35 @@ export class CanvasNode extends RapidElement {
       (n) => n.uuid === sourceNodeUuid
     );
 
-    if (sourceNode) {
-      const updatedSourceActions = sourceNode.actions.filter(
-        (_a, idx) => idx !== actionIndex
-      );
+    if (!sourceNode) return;
 
-      // If source node has no actions left, remove it
-      if (updatedSourceActions.length === 0) {
-        this.fireCustomEvent(CustomEventType.NodeDeleted, {
-          uuid: sourceNodeUuid
-        });
-      } else {
-        // Update source node
-        const updatedSourceNode = {
-          ...sourceNode,
-          actions: updatedSourceActions
-        };
-        getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
-      }
-    }
-
-    // Add the action to this node at the calculated position
+    // IMPORTANT: Add the action to this node FIRST, before removing from source
+    // This ensures we don't lose the action if the source node gets deleted
     const newActions = [...this.node.actions];
     newActions.splice(dropIndex, 0, action);
 
     const updatedNode = { ...this.node, actions: newActions };
     getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+    // Now remove the action from the source node
+    const updatedSourceActions = sourceNode.actions.filter(
+      (_a, idx) => idx !== actionIndex
+    );
+
+    // If source node has no actions left, remove it
+    if (updatedSourceActions.length === 0) {
+      // Fire event to Editor so it can clean up jsPlumb connections properly
+      this.fireCustomEvent(CustomEventType.NodeDeleted, {
+        uuid: sourceNodeUuid
+      });
+    } else {
+      // Update source node
+      const updatedSourceNode = {
+        ...sourceNode,
+        actions: updatedSourceActions
+      };
+      getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
+    }
 
     // Request update
     this.requestUpdate();
@@ -1193,21 +1248,31 @@ export class CanvasNode extends RapidElement {
       ? ACTION_GROUP_METADATA[config.group]?.color
       : '#aaaaaa';
     return html`<div class="cn-title" style="background:${color}">
-      ${!this.isTranslating && this.node?.actions?.length > 1
-        ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
+      ${this.ui?.type === 'execute_actions'
+        ? html`<temba-icon
+            class="drag-handle ${this.isTranslating
+              ? 'translating-hidden'
+              : ''}"
+            name="sort"
+          ></temba-icon>`
+        : this.node?.actions?.length > 1
+        ? html`<temba-icon
+            class="drag-handle ${this.isTranslating
+              ? 'translating-hidden'
+              : ''}"
+            name="sort"
+          ></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
-      ${!this.isTranslating
-        ? html`<div
-            class="remove-button"
-            @click=${(e: MouseEvent) =>
-              this.handleActionRemoveClick(e, action, index)}
-            title="Remove action"
-          >
-            ✕
-          </div>`
-        : html`<div class="title-spacer"></div>`}
+      <div
+        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
+        @click=${(e: MouseEvent) =>
+          this.handleActionRemoveClick(e, action, index)}
+        title="Remove action"
+      >
+        ✕
+      </div>
     </div>`;
   }
 
@@ -1234,15 +1299,13 @@ export class CanvasNode extends RapidElement {
           ? config.renderTitle(node, ui)
           : html`${config.name}`}
       </div>
-      ${!this.isTranslating
-        ? html`<div
-            class="remove-button"
-            @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
-            title="Remove node"
-          >
-            ✕
-          </div>`
-        : html`<div class="title-spacer"></div>`}
+      <div
+        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
+        @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
+        title="Remove node"
+      >
+        ✕
+      </div>
     </div>`;
   }
 
@@ -1528,19 +1591,27 @@ export class CanvasNode extends RapidElement {
           : this.node.actions.length > 0
           ? this.ui.type === 'execute_actions'
             ? html`<temba-sortable-list
-                dragHandle="drag-handle"
-                externalDrag
-                @temba-order-changed="${this.handleActionOrderChanged}"
-                @temba-drag-start="${this.handleActionDragStart}"
-                @temba-drag-external="${this.handleActionDragExternal}"
-                @temba-drag-internal="${this.handleActionDragInternal}"
-                @temba-drag-stop="${this.handleActionDragStop}"
-              >
-                ${this.renderActionsWithPlaceholder()}
-              </temba-sortable-list>`
+                  dragHandle="drag-handle"
+                  externalDrag
+                  @temba-order-changed="${this.handleActionOrderChanged}"
+                  @temba-drag-start="${this.handleActionDragStart}"
+                  @temba-drag-external="${this.handleActionDragExternal}"
+                  @temba-drag-internal="${this.handleActionDragInternal}"
+                  @temba-drag-stop="${this.handleActionDragStop}"
+                >
+                  ${this.renderActionsWithPlaceholder()}
+                </temba-sortable-list>
+                ${this.showLastActionPlaceholder
+                  ? html`<div
+                      class="empty-node-placeholder"
+                      style="height: ${this.lastActionPlaceholderHeight}px;"
+                    ></div>`
+                  : ''}`
             : html`${this.node.actions.map((action, index) =>
                 this.renderAction(this.node, action, index)
               )}`
+          : this.ui.type === 'execute_actions'
+          ? html`<div class="empty-node-placeholder"></div>`
           : ''}
         ${this.node.router
           ? html`<div class="router-section">
