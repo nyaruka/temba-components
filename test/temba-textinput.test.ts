@@ -232,10 +232,10 @@ describe('temba-textinput', () => {
     const widget = input.shadowRoot.querySelector(
       '.textinput'
     ) as HTMLInputElement;
-    
+
     // check that RTL class is applied
     expect(widget.classList.contains('rtl')).to.be.true;
-    
+
     // check computed styles
     const styles = window.getComputedStyle(widget);
     expect(styles.direction).to.equal('rtl');
@@ -246,20 +246,20 @@ describe('temba-textinput', () => {
 
   it('renders RTL textarea correctly', async () => {
     const input: TextInput = await createInput(
-      getInputHTML({ 
-        value: 'مرحبا بك في نظامنا', 
-        textarea: true, 
-        rtl: true 
+      getInputHTML({
+        value: 'مرحبا بك في نظامنا',
+        textarea: true,
+        rtl: true
       })
     );
 
     const widget = input.shadowRoot.querySelector(
       '.textinput'
     ) as HTMLTextAreaElement;
-    
+
     // check that RTL class is applied
     expect(widget.classList.contains('rtl')).to.be.true;
-    
+
     // check computed styles
     const styles = window.getComputedStyle(widget);
     expect(styles.direction).to.equal('rtl');
