@@ -88,6 +88,7 @@ export interface AppState {
 
   setFlowContents: (flow: FlowContents) => void;
   setFlowInfo: (info: FlowInfo) => void;
+  setRevision: (revision: number) => void;
   setLanguageCode: (languageCode: string) => void;
   setDirtyDate: (date: Date) => void;
   expandCanvas: (width: number, height: number) => void;
@@ -213,6 +214,12 @@ export const zustand = createStore<AppState>()(
       setFlowInfo: (info: FlowInfo) => {
         set((state: AppState) => {
           state.flowInfo = info;
+        });
+      },
+
+      setRevision: (revision: number) => {
+        set((state: AppState) => {
+          state.flowDefinition.revision = revision;
         });
       },
 

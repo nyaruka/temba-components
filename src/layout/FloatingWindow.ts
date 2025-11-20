@@ -18,7 +18,7 @@ export class FloatingWindow extends RapidElement {
         transition: transform var(--transition-duration, 300ms) ease-in-out,
           opacity var(--transition-duration, 300ms) ease-in-out;
         position: fixed;
-        z-index: 9999;
+        z-index: 5000;
         top: 100px;
         background: white;
         border-radius: 8px;
@@ -193,8 +193,6 @@ export class FloatingWindow extends RapidElement {
   ): void {
     super.updated(changes);
     if (changes.has('hidden')) {
-      this.classList.toggle('hidden', this.hidden);
-
       // when hiding, reset positioning behavior to original
       if (this.hidden && !changes.get('hidden')) {
         if (this.defaultLeft === -1) {
