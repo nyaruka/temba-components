@@ -24,6 +24,11 @@ import { Dialog } from '../layout/Dialog';
 import { Connection } from '@jsplumb/browser-ui';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
+import {
+  getNodeBounds,
+  calculateReflowPositions,
+  NodeBounds
+} from './utils';
 
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
@@ -1186,6 +1191,111 @@ export class Editor extends RapidElement {
     </div>`;
   }
 
+  /**
+   * Checks for node collisions and reflows nodes as needed.
+   * Nodes are only moved downward to resolve collisions.
+   * 
+   * @param movedNodeUuids - UUIDs of nodes that were just moved/dropped
+   * @param droppedNodeUuid - UUID of the specific node that was dropped (if applicable)
+   * @param dropTargetBounds - Bounds of the node that was dropped onto (if applicable)
+   */
+  private checkCollisionsAndReflow(
+    movedNodeUuids: string[],
+    droppedNodeUuid: string | null = null,
+    dropTargetBounds: NodeBounds | null = null
+  ): void {
+    if (!this.definition) return;
+
+    // Get all node bounds (only for actual nodes, not stickies)
+    const allBounds: NodeBounds[] = [];
+    
+    for (const node of this.definition.nodes) {
+      const nodeUI = this.definition._ui?.nodes[node.uuid];
+      if (!nodeUI?.position) continue;
+
+      const bounds = getNodeBounds(node.uuid, nodeUI.position);
+      if (bounds) {
+        allBounds.push(bounds);
+      }
+    }
+
+    // Check if we need to determine midpoint priority for a dropped node
+    let droppedBelowMidpoint = false;
+    if (droppedNodeUuid && dropTargetBounds) {
+      const droppedBounds = allBounds.find((b) => b.uuid === droppedNodeUuid);
+      if (droppedBounds) {
+        // Check if the dropped node's center is below the midpoint of the target
+        const droppedCenter = droppedBounds.top + droppedBounds.height / 2;
+        const targetMidpoint = dropTargetBounds.top + dropTargetBounds.height / 2;
+        droppedBelowMidpoint = droppedCenter > targetMidpoint;
+      }
+    }
+
+    // Calculate reflow positions for each moved node
+    const allReflowPositions = new Map<string, FlowPosition>();
+
+    for (const movedUuid of movedNodeUuids) {
+      const movedBounds = allBounds.find((b) => b.uuid === movedUuid);
+      if (!movedBounds) continue;
+
+      // Calculate reflow for this moved node
+      const reflowPositions = calculateReflowPositions(
+        movedUuid,
+        movedBounds,
+        allBounds,
+        droppedNodeUuid === movedUuid ? droppedBelowMidpoint : false
+      );
+
+      // Merge into all reflow positions
+      for (const [uuid, position] of reflowPositions.entries()) {
+        allReflowPositions.set(uuid, position);
+      }
+    }
+
+    // If there are positions to update, apply them with animation
+    if (allReflowPositions.size > 0) {
+      this.applyReflowWithAnimation(allReflowPositions);
+    }
+  }
+
+  /**
+   * Applies reflow positions with CSS animations
+   */
+  private applyReflowWithAnimation(
+    positions: Map<string, FlowPosition>
+  ): void {
+    // Apply positions with transition
+    for (const [uuid, position] of positions.entries()) {
+      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      if (element) {
+        // Enable transition
+        element.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';
+        
+        // Update position
+        element.style.left = `${position.left}px`;
+        element.style.top = `${position.top}px`;
+        
+        // Remove transition after animation completes
+        setTimeout(() => {
+          element.style.transition = '';
+        }, 300);
+      }
+    }
+
+    // Update the store with new positions
+    const positionsObj: { [uuid: string]: FlowPosition } = {};
+    positions.forEach((pos, uuid) => {
+      positionsObj[uuid] = pos;
+    });
+    
+    getStore().getState().updateCanvasPositions(positionsObj);
+
+    // Repaint connections after animation
+    setTimeout(() => {
+      this.plumber.repaintEverything();
+    }, 350);
+  }
+
   private handleMouseMove(event: MouseEvent): void {
     // Handle selection box drawing
     if (this.canvasMouseDown && !this.isMouseDown) {
@@ -1333,9 +1443,23 @@ export class Editor extends RapidElement {
       if (Object.keys(newPositions).length > 0) {
         getStore().getState().updateCanvasPositions(newPositions);
 
-        setTimeout(() => {
-          this.plumber.repaintEverything();
-        }, 0);
+        // Check for collisions and reflow nodes after updating positions
+        // Filter to only check nodes (not stickies)
+        const nodeUuids = itemsToMove.filter((uuid) =>
+          this.definition.nodes.find((node) => node.uuid === uuid)
+        );
+        
+        if (nodeUuids.length > 0) {
+          // Allow DOM to update before checking collisions
+          setTimeout(() => {
+            this.checkCollisionsAndReflow(nodeUuids);
+          }, 0);
+        } else {
+          // No nodes moved, just repaint connections
+          setTimeout(() => {
+            this.plumber.repaintEverything();
+          }, 0);
+        }
       }
 
       this.selectedItems.clear();
@@ -1657,23 +1781,18 @@ export class Editor extends RapidElement {
         this.isCreatingNewNode = false;
         this.pendingNodePosition = null;
 
-        // Repaint jsplumb connections
-        if (this.plumber) {
-          requestAnimationFrame(() => {
-            this.plumber.repaintEverything();
-          });
-        }
+        // Check for collisions and reflow
+        requestAnimationFrame(() => {
+          this.checkCollisionsAndReflow([updatedNode.uuid]);
+        });
       } else {
         // Update existing node in the store
         getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
 
-        // Repaint jsplumb connections in case node size changed
-        if (this.plumber) {
-          // Use requestAnimationFrame to ensure DOM has been updated first
-          requestAnimationFrame(() => {
-            this.plumber.repaintEverything();
-          });
-        }
+        // Check for collisions and reflow in case node size changed
+        requestAnimationFrame(() => {
+          this.checkCollisionsAndReflow([this.editingNode.uuid]);
+        });
       }
     }
     this.closeNodeEditor();
@@ -1715,6 +1834,11 @@ export class Editor extends RapidElement {
         // Reset the creation flags
         this.isCreatingNewNode = false;
         this.pendingNodePosition = null;
+
+        // Check for collisions and reflow
+        requestAnimationFrame(() => {
+          this.checkCollisionsAndReflow([updatedNode.uuid]);
+        });
       } else {
         // This is an existing node - update it
         // Clean up jsPlumb connections for removed exits before updating the node
@@ -1743,13 +1867,10 @@ export class Editor extends RapidElement {
         if (uiConfig) {
           getStore()?.getState().updateNodeUIConfig(updatedNode.uuid, uiConfig);
         }
-      }
 
-      // Repaint jsplumb connections in case node size changed
-      if (this.plumber) {
-        // Use requestAnimationFrame to ensure DOM has been updated first
+        // Check for collisions and reflow in case node size changed
         requestAnimationFrame(() => {
-          this.plumber.repaintEverything();
+          this.checkCollisionsAndReflow([this.editingNode.uuid]);
         });
       }
     }
@@ -2076,12 +2197,10 @@ export class Editor extends RapidElement {
     this.canvasDropPreview = null;
     this.actionDragTargetNodeUuid = null;
 
-    // repaint connections
-    if (this.plumber) {
-      requestAnimationFrame(() => {
-        this.plumber.repaintEverything();
-      });
-    }
+    // Check for collisions and reflow after adding new node
+    requestAnimationFrame(() => {
+      this.checkCollisionsAndReflow([newNode.uuid]);
+    });
   }
 
   private getLocalizationLanguages(): Array<{ code: string; name: string }> {
