@@ -1266,7 +1266,7 @@ export class Editor extends RapidElement {
   ): void {
     // Apply positions with transition
     for (const [uuid, position] of positions.entries()) {
-      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
       if (element) {
         // Enable transition
         element.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';

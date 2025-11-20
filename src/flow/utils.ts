@@ -188,7 +188,22 @@ export interface NodeBounds {
 const MIN_NODE_SPACING = 20;
 
 /**
+ * Small buffer to avoid floating point precision issues in overlap detection (in pixels)
+ * This prevents false positives when nodes are exactly adjacent (e.g., bottom of one node
+ * at exactly the same position as top of another)
+ */
+const OVERLAP_BUFFER = 0.5;
+
+/**
  * Gets the bounding box for a node from the DOM
+ * 
+ * @param nodeUuid - The UUID of the node
+ * @param position - The current position of the node
+ * @param element - Optional pre-fetched DOM element (recommended for performance when checking multiple nodes)
+ * @returns NodeBounds object or null if element not found
+ * 
+ * Note: When element is not provided, performs a DOM query which may impact performance
+ * during bulk collision detection. Consider fetching elements beforehand when possible.
  */
 export const getNodeBounds = (
   nodeUuid: string,
@@ -225,8 +240,8 @@ export const nodesOverlap = (
   bounds1: NodeBounds,
   bounds2: NodeBounds
 ): boolean => {
-  // Add a small buffer to avoid floating point precision issues
-  const buffer = 0.5;
+  // Use a small buffer to avoid floating point precision issues
+  const buffer = OVERLAP_BUFFER;
 
   return !(
     bounds1.right <= bounds2.left + buffer ||
