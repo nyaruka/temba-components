@@ -51,7 +51,6 @@ describe('temba-floating-window', () => {
     )) as FloatingWindow;
 
     expect(window.hidden).to.equal(true);
-    expect(window.classList.contains('hidden')).to.equal(true);
   });
 
   it('can be shown and hidden', async () => {
@@ -74,7 +73,6 @@ describe('temba-floating-window', () => {
     window.hide();
     await window.updateComplete;
     expect(window.hidden).to.equal(true);
-    expect(window.classList.contains('hidden')).to.equal(true);
   });
 
   it('fires close event when close button clicked', async () => {

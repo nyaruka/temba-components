@@ -240,7 +240,11 @@ export const waitForCondition = async (
   }
 };
 
-export const assertScreenshot = async (filename: string, clip: Clip) => {
+export const assertScreenshot = async (
+  filename: string,
+  clip: Clip,
+  waitForNetwork: boolean = false
+) => {
   // detect if we're running in copilot's environment and use adaptive threshold
   const isCopilotEnvironment = (window as any).isCopilotEnvironment;
   const threshold = isCopilotEnvironment ? 1.0 : 0.1;
@@ -251,7 +255,8 @@ export const assertScreenshot = async (filename: string, clip: Clip) => {
       `${filename}.png`,
       clip,
       exclude,
-      threshold
+      threshold,
+      waitForNetwork
     );
   } catch (error) {
     if (error.message) {
