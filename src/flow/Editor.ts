@@ -1225,11 +1225,13 @@ export class Editor extends RapidElement {
     if (droppedNodeUuid && dropTargetBounds) {
       const droppedBounds = allBounds.find((b) => b.uuid === droppedNodeUuid);
       if (droppedBounds) {
-        // Check if the dropped node's center is below the midpoint of the target
-        const droppedCenter = droppedBounds.top + droppedBounds.height / 2;
+        // Check if the bottom of the dropped node is below the midpoint of the target
+        // If bottom is above midpoint, dropped node gets preference (droppedBelowMidpoint = false)
+        // If bottom is below midpoint, target gets preference (droppedBelowMidpoint = true)
+        const droppedBottom = droppedBounds.bottom;
         const targetMidpoint =
           dropTargetBounds.top + dropTargetBounds.height / 2;
-        droppedBelowMidpoint = droppedCenter > targetMidpoint;
+        droppedBelowMidpoint = droppedBottom > targetMidpoint;
       }
     }
 
