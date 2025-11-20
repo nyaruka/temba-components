@@ -760,6 +760,8 @@ export class CanvasNode extends RapidElement {
     }
 
     // Fire the node deleted event
+    // The Editor will handle cleanup (Plumber connections) and call store.removeNodes()
+    // The store's removeNodes method handles rerouting of connections
     this.fireCustomEvent(CustomEventType.NodeDeleted, {
       uuid: this.node.uuid
     });
