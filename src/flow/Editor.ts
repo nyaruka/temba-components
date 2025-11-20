@@ -24,7 +24,12 @@ import { Dialog } from '../layout/Dialog';
 import { Connection } from '@jsplumb/browser-ui';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
-import { getNodeBounds, calculateReflowPositions, NodeBounds } from './utils';
+import {
+  getNodeBounds,
+  calculateReflowPositions,
+  NodeBounds,
+  nodesOverlap
+} from './utils';
 
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
@@ -1266,6 +1271,9 @@ export class Editor extends RapidElement {
         // Enable transition
         element.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';
 
+        // Force a reflow to ensure the transition property is applied before changing position
+        void element.offsetHeight;
+
         // Update position
         element.style.left = `${position.left}px`;
         element.style.top = `${position.top}px`;
@@ -1273,22 +1281,24 @@ export class Editor extends RapidElement {
         // Remove transition after animation completes
         setTimeout(() => {
           element.style.transition = '';
-        }, 300);
+        }, 350);
       }
     }
 
-    // Update the store with new positions
-    const positionsObj: { [uuid: string]: FlowPosition } = {};
-    positions.forEach((pos, uuid) => {
-      positionsObj[uuid] = pos;
-    });
+    // Update the store with new positions after a brief delay to allow animation to start
+    setTimeout(() => {
+      const positionsObj: { [uuid: string]: FlowPosition } = {};
+      positions.forEach((pos, uuid) => {
+        positionsObj[uuid] = pos;
+      });
 
-    getStore().getState().updateCanvasPositions(positionsObj);
+      getStore().getState().updateCanvasPositions(positionsObj);
+    }, 50);
 
     // Repaint connections after animation
     setTimeout(() => {
       this.plumber.repaintEverything();
-    }, 350);
+    }, 400);
   }
 
   private handleMouseMove(event: MouseEvent): void {
@@ -1447,7 +1457,39 @@ export class Editor extends RapidElement {
         if (nodeUuids.length > 0) {
           // Allow DOM to update before checking collisions
           setTimeout(() => {
-            this.checkCollisionsAndReflow(nodeUuids);
+            // If only one node was moved, detect which node it might have been dropped onto
+            let droppedNodeUuid: string | null = null;
+            let dropTargetBounds: NodeBounds | null = null;
+
+            if (nodeUuids.length === 1) {
+              droppedNodeUuid = nodeUuids[0];
+              const droppedNodeUI = this.definition._ui?.nodes[droppedNodeUuid];
+              
+              if (droppedNodeUI?.position) {
+                const droppedBounds = getNodeBounds(
+                  droppedNodeUuid,
+                  droppedNodeUI.position
+                );
+
+                if (droppedBounds) {
+                  // Find which node (if any) the dropped node overlaps with
+                  for (const node of this.definition.nodes) {
+                    if (node.uuid === droppedNodeUuid) continue;
+                    
+                    const nodeUI = this.definition._ui?.nodes[node.uuid];
+                    if (!nodeUI?.position) continue;
+
+                    const targetBounds = getNodeBounds(node.uuid, nodeUI.position);
+                    if (targetBounds && nodesOverlap(droppedBounds, targetBounds)) {
+                      dropTargetBounds = targetBounds;
+                      break; // Use the first overlapping node
+                    }
+                  }
+                }
+              }
+            }
+
+            this.checkCollisionsAndReflow(nodeUuids, droppedNodeUuid, dropTargetBounds);
           }, 0);
         } else {
           // No nodes moved, just repaint connections

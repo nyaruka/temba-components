@@ -413,6 +413,90 @@ describe('Collision Detection Utilities', () => {
       expect(newPos.top).to.be.greaterThan(200); // moved below existing node
     });
 
+    it('gives priority to dropped node when dropped above midpoint', () => {
+      // Dropped node overlaps with bottom of existing node
+      // Bottom of dropped (180) is above midpoint of existing (150)
+      // So dropped node should keep position, existing moves down
+      const movedBounds: NodeBounds = {
+        uuid: 'dropped',
+        left: 100,
+        top: 80,
+        right: 200,
+        bottom: 180,
+        width: 100,
+        height: 100
+      };
+
+      const allBounds: NodeBounds[] = [
+        movedBounds,
+        {
+          uuid: 'existing',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(
+        'dropped',
+        movedBounds,
+        allBounds,
+        false // droppedBelowMidpoint = false means dropped above midpoint
+      );
+
+      // Existing node should be moved down
+      expect(positions.has('existing')).to.be.true;
+      expect(positions.has('dropped')).to.be.false; // dropped keeps its position
+      
+      const existingNewPos = positions.get('existing')!;
+      expect(existingNewPos.top).to.be.greaterThan(180); // moved below dropped node
+    });
+
+    it('gives priority to existing node when dropped below midpoint', () => {
+      // Dropped node overlaps with top of existing node
+      // Bottom of dropped (220) is below midpoint of existing (150)
+      // So existing node keeps position, dropped moves down
+      const movedBounds: NodeBounds = {
+        uuid: 'dropped',
+        left: 100,
+        top: 120,
+        right: 200,
+        bottom: 220,
+        width: 100,
+        height: 100
+      };
+
+      const allBounds: NodeBounds[] = [
+        movedBounds,
+        {
+          uuid: 'existing',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(
+        'dropped',
+        movedBounds,
+        allBounds,
+        true // droppedBelowMidpoint = true means dropped below midpoint
+      );
+
+      // Dropped node should be moved down
+      expect(positions.has('dropped')).to.be.true;
+      expect(positions.has('existing')).to.be.false; // existing keeps its position
+      
+      const droppedNewPos = positions.get('dropped')!;
+      expect(droppedNewPos.top).to.be.greaterThan(200); // moved below existing node
+    });
+
     it('resolves cascading collisions', () => {
       const movedBounds: NodeBounds = {
         uuid: 'moved',
