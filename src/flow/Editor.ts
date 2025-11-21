@@ -1266,10 +1266,15 @@ export class Editor extends RapidElement {
    * Applies reflow positions with CSS animations
    */
   private applyReflowWithAnimation(positions: Map<string, FlowPosition>): void {
+    // Cache elements to avoid repeated DOM queries
+    const elements = new Map<string, HTMLElement>();
+    
     // Apply positions with transition
     for (const [uuid, position] of positions.entries()) {
       const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
       if (element) {
+        elements.set(uuid, element);
+        
         // Enable transition
         element.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';
 
@@ -1292,13 +1297,10 @@ export class Editor extends RapidElement {
 
       getStore().getState().updateCanvasPositions(positionsObj);
 
-      // Remove transitions after store update
-      for (const [uuid] of positions.entries()) {
-        const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
-        if (element) {
-          element.style.transition = '';
-        }
-      }
+      // Remove transitions after store update using cached elements
+      elements.forEach((element) => {
+        element.style.transition = '';
+      });
 
       // Repaint connections after positions are finalized
       this.plumber.repaintEverything();
