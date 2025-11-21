@@ -316,6 +316,7 @@ export class Editor extends RapidElement {
 
       #canvas > .dragging {
         z-index: 99999 !important;
+        transition: none !important;
       }
 
       body .jtk-endpoint {
@@ -1236,7 +1237,7 @@ export class Editor extends RapidElement {
     }
 
     // Calculate reflow positions for each moved node
-    const allReflowPositions = new Map<string, FlowPosition>();
+    const allReflowPositions: { [uuid: string]: FlowPosition } = {};
 
     for (const movedUuid of movedNodeUuids) {
       const movedBounds = allBounds.find((b) => b.uuid === movedUuid);
@@ -1252,59 +1253,14 @@ export class Editor extends RapidElement {
 
       // Merge into all reflow positions
       for (const [uuid, position] of reflowPositions.entries()) {
-        allReflowPositions.set(uuid, position);
+        allReflowPositions[uuid] = position;
       }
     }
 
-    // If there are positions to update, apply them with animation
-    if (allReflowPositions.size > 0) {
-      this.applyReflowWithAnimation(allReflowPositions);
+    // If there are positions to update, apply them
+    if (Object.keys(allReflowPositions).length > 0) {
+      getStore().getState().updateCanvasPositions(allReflowPositions);
     }
-  }
-
-  /**
-   * Applies reflow positions with CSS animations
-   */
-  private applyReflowWithAnimation(positions: Map<string, FlowPosition>): void {
-    // Cache elements to avoid repeated DOM queries
-    const elements = new Map<string, HTMLElement>();
-
-    // Apply positions with transition
-    for (const [uuid, position] of positions.entries()) {
-      const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
-      if (element) {
-        elements.set(uuid, element);
-
-        // Enable transition
-        element.style.transition = 'top 0.3s ease-out, left 0.3s ease-out';
-
-        // Force a reflow to ensure the transition property is applied before changing position
-        void element.offsetHeight;
-
-        // Update position
-        element.style.left = `${position.left}px`;
-        element.style.top = `${position.top}px`;
-      }
-    }
-
-    // Update the store with new positions after animation completes
-    // This ensures the store doesn't trigger a re-render that would override the animation
-    setTimeout(() => {
-      const positionsObj: { [uuid: string]: FlowPosition } = {};
-      positions.forEach((pos, uuid) => {
-        positionsObj[uuid] = pos;
-      });
-
-      getStore().getState().updateCanvasPositions(positionsObj);
-
-      // Remove transitions after store update using cached elements
-      elements.forEach((element) => {
-        element.style.transition = '';
-      });
-
-      // Repaint connections after positions are finalized
-      this.plumber.repaintEverything();
-    }, 350);
   }
 
   private handleMouseMove(event: MouseEvent): void {
@@ -3012,7 +2968,7 @@ export class Editor extends RapidElement {
                       @mousedown=${this.handleMouseDown.bind(this)}
                       uuid=${node.uuid}
                       data-node-uuid=${node.uuid}
-                      style="left:${position.left}px; top:${position.top}px"
+                      style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
                       .plumber=${this.plumber}
                       .node=${node}
                       .ui=${this.definition._ui.nodes[node.uuid]}
