@@ -497,6 +497,16 @@ export class CanvasNode extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (!!changes.get('ui') && changes.has('ui')) {
+      // run revalidation every 50ms until 350ms to catch animation updates
+      for (let delay = 25; delay <= 350; delay += 25) {
+        setTimeout(() => {
+          this.plumber.revalidate([this.node.uuid]);
+        }, delay);
+      }
+    }
+
     if (changes.has('node')) {
       // Only proceed if plumber is available (for tests that don't set it up)
       if (this.plumber) {
