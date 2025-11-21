@@ -1279,15 +1279,11 @@ export class Editor extends RapidElement {
         // Update position
         element.style.left = `${position.left}px`;
         element.style.top = `${position.top}px`;
-
-        // Remove transition after animation completes
-        setTimeout(() => {
-          element.style.transition = '';
-        }, 350);
       }
     }
 
-    // Update the store with new positions after a brief delay to allow animation to start
+    // Update the store with new positions after animation completes
+    // This ensures the store doesn't trigger a re-render that would override the animation
     setTimeout(() => {
       const positionsObj: { [uuid: string]: FlowPosition } = {};
       positions.forEach((pos, uuid) => {
@@ -1295,12 +1291,18 @@ export class Editor extends RapidElement {
       });
 
       getStore().getState().updateCanvasPositions(positionsObj);
-    }, 50);
 
-    // Repaint connections after animation
-    setTimeout(() => {
+      // Remove transitions after store update
+      for (const [uuid] of positions.entries()) {
+        const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
+        if (element) {
+          element.style.transition = '';
+        }
+      }
+
+      // Repaint connections after positions are finalized
       this.plumber.repaintEverything();
-    }, 400);
+    }, 350);
   }
 
   private handleMouseMove(event: MouseEvent): void {
