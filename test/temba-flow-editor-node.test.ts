@@ -1220,55 +1220,60 @@ describe('EditorNode', () => {
         ]
       };
 
-      editorNode['node'] = mockNode;
-
       const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        type: 'messaging' as const,
+        uuid: 'test-uuid',
+        revision: 1,
+        spec_version: '14.3',
         nodes: [
           {
             uuid: 'node-before',
+            actions: [],
             exits: [{ uuid: 'exit-before', destination_uuid: 'test-node' }]
           },
           mockNode,
           {
             uuid: 'node-after',
+            actions: [],
             exits: []
           }
-        ]
+        ],
+        _ui: {
+          nodes: {},
+          languages: []
+        }
       };
 
-      // Verify all exits point to the same destination
-      const destinations = mockNode.exits
-        .map((exit) => exit.destination_uuid)
-        .filter((dest) => dest);
+      // Set up the zustand store with our test flow
+      const { zustand } = await import('../src/store/AppState');
+      zustand.setState({
+        flowDefinition: mockFlowDefinition as any
+      });
 
-      expect(destinations).to.have.length(3);
-      expect(destinations.every((dest) => dest === 'node-after')).to.be.true;
+      // Verify initial state - node-before points to test-node
+      const initialNodeBefore = zustand
+        .getState()
+        .flowDefinition.nodes.find((n) => n.uuid === 'node-before');
+      expect(initialNodeBefore.exits[0].destination_uuid).to.equal('test-node');
 
-      // Find incoming connections
-      const incomingConnections: {
-        exitUuid: string;
-        sourceNodeUuid: string;
-      }[] = [];
+      // Call removeNodes to trigger the rerouting logic
+      zustand.getState().removeNodes(['test-node']);
 
-      for (const node of mockFlowDefinition.nodes) {
-        if (node.uuid !== mockNode.uuid) {
-          for (const exit of node.exits) {
-            if (exit.destination_uuid === mockNode.uuid) {
-              incomingConnections.push({
-                exitUuid: exit.uuid,
-                sourceNodeUuid: node.uuid
-              });
-            }
-          }
-        }
-      }
+      // Verify that the node was removed
+      const remainingNodes = zustand.getState().flowDefinition.nodes;
+      expect(remainingNodes.find((n) => n.uuid === 'test-node')).to.be
+        .undefined;
 
-      // Verify we found incoming connections
-      expect(incomingConnections).to.have.length(1);
-      expect(incomingConnections[0].exitUuid).to.equal('exit-before');
-
-      // This validates that when a node has multiple exits but they all point
-      // to the same destination, the rerouting logic should still apply
+      // Verify that node-before's exit was rerouted to node-after
+      const updatedNodeBefore = remainingNodes.find(
+        (n) => n.uuid === 'node-before'
+      );
+      expect(updatedNodeBefore.exits[0].destination_uuid).to.equal(
+        'node-after'
+      );
     });
 
     it('does not reroute connections when node has exits with different destinations', async () => {
@@ -1289,16 +1294,63 @@ describe('EditorNode', () => {
         ]
       };
 
-      const destinations = mockNode.exits
-        .map((exit) => exit.destination_uuid)
-        .filter((dest) => dest);
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        type: 'messaging' as const,
+        uuid: 'test-uuid',
+        revision: 1,
+        spec_version: '14.3',
+        nodes: [
+          {
+            uuid: 'node-before',
+            actions: [],
+            exits: [{ uuid: 'exit-before', destination_uuid: 'test-node' }]
+          },
+          mockNode,
+          {
+            uuid: 'node-after-1',
+            actions: [],
+            exits: []
+          },
+          {
+            uuid: 'node-after-2',
+            actions: [],
+            exits: []
+          }
+        ],
+        _ui: {
+          nodes: {},
+          languages: []
+        }
+      };
 
-      // Verify exits point to different destinations
-      expect(destinations).to.have.length(2);
-      expect(destinations.every((dest) => dest === destinations[0])).to.be
-        .false;
+      // Set up the zustand store with our test flow
+      const { zustand } = await import('../src/store/AppState');
+      zustand.setState({
+        flowDefinition: mockFlowDefinition as any
+      });
 
-      // This validates that rerouting does NOT apply when exits point to different places
+      // Verify initial state
+      const initialNodeBefore = zustand
+        .getState()
+        .flowDefinition.nodes.find((n) => n.uuid === 'node-before');
+      expect(initialNodeBefore.exits[0].destination_uuid).to.equal('test-node');
+
+      // Call removeNodes
+      zustand.getState().removeNodes(['test-node']);
+
+      // Verify that the node was removed
+      const remainingNodes = zustand.getState().flowDefinition.nodes;
+      expect(remainingNodes.find((n) => n.uuid === 'test-node')).to.be
+        .undefined;
+
+      // Verify that incoming connection was cleared (set to null), not rerouted
+      const updatedNodeBefore = remainingNodes.find(
+        (n) => n.uuid === 'node-before'
+      );
+      expect(updatedNodeBefore.exits[0].destination_uuid).to.be.null;
     });
 
     it('does not reroute connections when node has exits with null destinations', async () => {
@@ -1319,15 +1371,58 @@ describe('EditorNode', () => {
         ]
       };
 
-      const destinations = mockNode.exits
-        .map((exit) => exit.destination_uuid)
-        .filter((dest) => dest);
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        type: 'messaging' as const,
+        uuid: 'test-uuid',
+        revision: 1,
+        spec_version: '14.3',
+        nodes: [
+          {
+            uuid: 'node-before',
+            actions: [],
+            exits: [{ uuid: 'exit-before', destination_uuid: 'test-node' }]
+          },
+          mockNode,
+          {
+            uuid: 'node-after',
+            actions: [],
+            exits: []
+          }
+        ],
+        _ui: {
+          nodes: {},
+          languages: []
+        }
+      };
 
-      // Verify not all exits have destinations
-      expect(destinations).to.have.length(1);
-      expect(destinations.length).to.not.equal(mockNode.exits.length);
+      // Set up the zustand store with our test flow
+      const { zustand } = await import('../src/store/AppState');
+      zustand.setState({
+        flowDefinition: mockFlowDefinition as any
+      });
 
-      // This validates that rerouting does NOT apply when some exits have no destination
+      // Verify initial state
+      const initialNodeBefore = zustand
+        .getState()
+        .flowDefinition.nodes.find((n) => n.uuid === 'node-before');
+      expect(initialNodeBefore.exits[0].destination_uuid).to.equal('test-node');
+
+      // Call removeNodes
+      zustand.getState().removeNodes(['test-node']);
+
+      // Verify that the node was removed
+      const remainingNodes = zustand.getState().flowDefinition.nodes;
+      expect(remainingNodes.find((n) => n.uuid === 'test-node')).to.be
+        .undefined;
+
+      // Verify that incoming connection was cleared (set to null), not rerouted
+      const updatedNodeBefore = remainingNodes.find(
+        (n) => n.uuid === 'node-before'
+      );
+      expect(updatedNodeBefore.exits[0].destination_uuid).to.be.null;
     });
   });
 
