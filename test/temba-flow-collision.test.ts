@@ -112,7 +112,7 @@ describe('Collision Detection Utilities', () => {
       expect(nodesOverlap(bounds1, bounds2)).to.be.false;
     });
 
-    it('detects edge touching as non-overlapping', () => {
+    it('detects edge touching as overlapping (within buffer)', () => {
       const bounds1: NodeBounds = {
         uuid: 'node1',
         left: 100,
@@ -133,8 +133,8 @@ describe('Collision Detection Utilities', () => {
         height: 100
       };
 
-      // Edges touching should not be considered overlapping
-      expect(nodesOverlap(bounds1, bounds2)).to.be.false;
+      // edges touching should be considered overlapping due to buffer
+      expect(nodesOverlap(bounds1, bounds2)).to.be.true;
     });
 
     it('detects partial vertical overlap', () => {

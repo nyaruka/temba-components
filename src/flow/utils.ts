@@ -185,14 +185,14 @@ export interface NodeBounds {
 /**
  * Minimum vertical spacing between nodes (in pixels)
  */
-const MIN_NODE_SPACING = 20;
+const MIN_NODE_SPACING = 30;
 
 /**
  * Small buffer to avoid floating point precision issues in overlap detection (in pixels)
  * This prevents false positives when nodes are exactly adjacent (e.g., bottom of one node
  * at exactly the same position as top of another)
  */
-const OVERLAP_BUFFER = 0.5;
+const OVERLAP_BUFFER = 10;
 
 /**
  * Gets the bounding box for a node from the DOM
@@ -244,10 +244,10 @@ export const nodesOverlap = (
   const buffer = OVERLAP_BUFFER;
 
   return !(
-    bounds1.right <= bounds2.left + buffer ||
-    bounds1.left >= bounds2.right - buffer ||
-    bounds1.bottom <= bounds2.top + buffer ||
-    bounds1.top >= bounds2.bottom - buffer
+    bounds1.right <= bounds2.left - buffer ||
+    bounds1.left >= bounds2.right + buffer ||
+    bounds1.bottom <= bounds2.top - buffer ||
+    bounds1.top >= bounds2.bottom + buffer
   );
 };
 
