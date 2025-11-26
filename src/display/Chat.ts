@@ -28,6 +28,19 @@ const getUnsendableReasonMessage = (reason: string): string => {
   }
 };
 
+const getStatusReasonMessage = (reason: string): string => {
+  switch (reason) {
+    case 'error_limit':
+      return 'Error limit reached';
+    case 'too_old':
+      return 'Message is too old to send';
+    case 'channel_removed':
+      return 'Channel was removed';
+    default:
+      return 'Message failed to send';
+  }
+};
+
 export enum MessageType {
   Inline = 'inline',
   Error = 'error',
@@ -876,9 +889,11 @@ export class Chat extends RapidElement {
               const statusClass = (msg as any)._status
                 ? (msg as any)._status.status
                 : '';
-              const unsendableClass = msgEvent.msg?.unsendable_reason
-                ? 'error'
-                : '';
+              const hasError =
+                msgEvent.msg?.unsendable_reason ||
+                (msgEvent._status?.reason &&
+                  (statusClass === 'failed' || statusClass === 'errored'));
+              const unsendableClass = hasError ? 'error' : '';
               return html`<div
                 class="row message ${statusClass} ${unsendableClass}"
               >
@@ -909,8 +924,11 @@ export class Chat extends RapidElement {
 
     const message = event as MsgEvent;
     const unsendableReason = message.msg?.unsendable_reason;
+    const statusReason = message._status?.reason;
     const errorMessage = unsendableReason
       ? getUnsendableReasonMessage(unsendableReason)
+      : statusReason
+      ? getStatusReasonMessage(statusReason)
       : null;
 
     return html`
