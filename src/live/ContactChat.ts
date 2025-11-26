@@ -24,12 +24,10 @@ import {
   CallEvent,
   ChannelEvent,
   ChatStartedEvent,
-  ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
   ContactLanguageChangedEvent,
   ContactStatusChangedEvent,
-  MsgEvent,
   NameChangedEvent,
   OptInEvent,
   RunEvent,
@@ -37,11 +35,10 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
-import { Chat, ChatEvent, MessageType } from '../display/Chat';
+import { Chat, MessageType, ContactEvent } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
-import { Store } from '../store/Store';
 
 /*
 export const SCROLL_THRESHOLD = 100;
@@ -176,17 +173,40 @@ export const renderTicketAction = (
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
 
-  if (event._user) {
-    return html`<div>
-      <strong>${event._user.name}</strong> ${action} a
-      <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
-    </div>`;
+  const actionNote = event.note
+    ? html`<div
+        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em 0; border: 1px solid #ffe97f;border-radius: var(--curvature);"
+      >
+        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em">
+          <strong>${event._user.name}</strong> added a note
+          <temba-date
+            value=${event.created_on.toISOString()}
+            display="relative"
+          ></temba-date>
+        </div>
+        ${event.note}
+      </div>`
+    : null;
+
+  if (action === 'noted') {
+    return html`${actionNote}`;
   }
-  return html`<div>
-    A
-    <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong> was
-    <strong>${action}</strong>
-  </div>`;
+
+  const description = event._user
+    ? html`<div>
+        <strong>${event._user.name}</strong> ${action} a
+        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
+      </div>`
+    : html`<div>
+        A
+        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
+        was <strong>${action}</strong>
+      </div>`;
+
+  return html`<div style="${actionNote ? 'margin-bottom: 1em;' : ''}">
+      ${description}
+    </div>
+    ${actionNote}`;
 };
 
 export const renderTicketAssigneeChanged = (
@@ -572,9 +592,16 @@ export class ContactChat extends ContactStoreElement {
       this.currentContact = this.data;
     }
 
-    if (changedProperties.has('currentContact')) {
+    if (changedProperties.has('currentContact') && this.currentContact) {
       this.chat = this.shadowRoot.querySelector('temba-chat');
-      this.reset();
+      if (
+        this.currentContact.uuid !==
+        changedProperties.get('currentContact')?.uuid
+      ) {
+        this.reset();
+      } else {
+        setTimeout(() => this.checkForNewMessages(), 500);
+      }
       this.fetchPreviousMessages();
     }
   }
@@ -637,8 +664,9 @@ export class ContactChat extends ContactStoreElement {
     postJSON(`/contact/chat/${this.currentContact.uuid}/`, payload)
       .then((response) => {
         if (response.status < 400) {
-          const msg = this.createChatForMessageEvent(response.json.event);
-          this.chat.addMessages([msg], null, true);
+          const event = response.json.event;
+          event.created_on = new Date(event.created_on);
+          this.chat.addMessages([event], null, true);
           // reset polling interval to 2 seconds after sending a message
           this.pollingInterval = 2000;
           this.checkForNewMessages();
@@ -682,185 +710,136 @@ export class ContactChat extends ContactStoreElement {
     }, this.pollingInterval);
   }
 
-  public getEventMessage(event: ContactEvent): ChatEvent {
-    let message = null;
+  public prerender(event: ContactEvent) {
     switch (event.type) {
       case Events.AIRTIME_TRANSFERRED:
-        message = {
-          type: MessageType.Inline,
-          text: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent)
+        event._rendered = {
+          html: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CALL_CREATED:
       case Events.CALL_MISSED:
       case Events.CALL_RECEIVED:
-        message = {
-          type: MessageType.Inline,
-          text: renderCallEvent(event as CallEvent)
+        event._rendered = {
+          html: renderCallEvent(event as CallEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CHAT_STARTED:
-        message = {
-          type: MessageType.Inline,
-          text: renderChatStartedEvent(event as ChatStartedEvent)
+        event._rendered = {
+          html: renderChatStartedEvent(event as ChatStartedEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_FIELD_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderUpdateEvent(event as UpdateFieldEvent)
+        event._rendered = {
+          html: renderUpdateEvent(event as UpdateFieldEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_GROUPS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactGroupsEvent(event as ContactGroupsEvent)
+        event._rendered = {
+          html: renderContactGroupsEvent(event as ContactGroupsEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_LANGUAGE_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactLanguageChangedEvent(
+        event._rendered = {
+          html: renderContactLanguageChangedEvent(
             event as ContactLanguageChangedEvent
-          )
+          ),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_NAME_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderNameChanged(event as NameChangedEvent)
+        event._rendered = {
+          html: renderNameChanged(event as NameChangedEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_STATUS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactStatusChangedEvent(
+        event._rendered = {
+          html: renderContactStatusChangedEvent(
             event as ContactStatusChangedEvent
-          )
+          ),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_URNS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactURNsChanged(event as URNsChangedEvent)
+        event._rendered = {
+          html: renderContactURNsChanged(event as URNsChangedEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.OPTIN_REQUESTED:
       case Events.OPTIN_STARTED:
       case Events.OPTIN_STOPPED:
-        message = {
-          type: MessageType.Inline,
-          text: renderOptInEvent(event as OptInEvent)
+        event._rendered = {
+          html: renderOptInEvent(event as OptInEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.RUN_STARTED:
       case Events.RUN_ENDED:
-        message = {
-          type: MessageType.Inline,
-          text: renderRunEvent(event as RunEvent)
+        event._rendered = {
+          html: renderRunEvent(event as RunEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_ASSIGNEE_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAssigneeChanged(event as TicketEvent)
+        event._rendered = {
+          html: renderTicketAssigneeChanged(event as TicketEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_CLOSED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'closed')
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'closed'),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_OPENED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'opened')
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'opened'),
+          type: MessageType.Inline
+        };
+        break;
+      case Events.TICKET_NOTE_ADDED:
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'noted'),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_REOPENED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'reopened')
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'reopened'),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_TOPIC_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: html`<div>
+        event._rendered = {
+          html: html`<div>
             Topic changed to
             <strong>${(event as TicketEvent).topic.name}</strong>
-          </div>`
+          </div>`,
+          type: MessageType.Inline
         };
         break;
       case Events.CHANNEL_EVENT: // deprecated
-        message = {
-          type: MessageType.Inline,
-          text: renderChannelEvent(event as ChannelEvent)
+        event._rendered = {
+          html: renderChannelEvent(event as ChannelEvent),
+          type: MessageType.Inline
         };
         break;
       default:
         console.error('Unknown event type', event);
     }
-
-    if (message) {
-      message.id = event.uuid;
-      message.date = new Date(event.created_on);
-    }
-
-    return message;
   }
 
-  private getUserForEvent(event: MsgEvent | TicketEvent) {
-    if (event.type === 'msg_received') {
-      return {
-        name: this.currentContact.name
-      };
-    } else if (event._user) {
-      return event._user;
-    }
-    return null;
-  }
-
-  private createChatForMessageEvent(msgEvent: MsgEvent): any {
-    return {
-      id: msgEvent.uuid,
-      type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
-      user: this.getUserForEvent(msgEvent),
-      date: new Date(msgEvent.created_on),
-      attachments: msgEvent.msg.attachments,
-      text: msgEvent.msg.text,
-      sendError:
-        msgEvent._status &&
-        (msgEvent._status.status === 'errored' ||
-          msgEvent._status.status === 'failed'),
-      popup: html`<div
-        style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
-      >
-        <div style="justify-content:left;text-align:left">
-          <temba-date
-            value=${msgEvent.created_on}
-            display="duration"
-          ></temba-date>
-
-          ${msgEvent.optin
-            ? html`<div style="font-size:0.9em;color:#aaa">
-                ${msgEvent.optin.name}
-              </div>`
-            : null}
-        </div>
-        ${msgEvent._logs_url
-          ? html`<a style="margin-left:0.5em" href="${msgEvent._logs_url}"
-              ><temba-icon name="log"></temba-icon
-            ></a>`
-          : null}
-      </div> `
-    };
-  }
-
-  private createMessages(page: ContactHistoryPage): ChatEvent[] {
+  private createMessages(page: ContactHistoryPage): ContactEvent[] {
     if (page.events) {
-      let messages = [];
+      const messages: ContactEvent[] = [];
       page.events.forEach((event) => {
         // track the UUID of the newest event for polling
         if (
@@ -870,46 +849,25 @@ export class ContactChat extends ContactStoreElement {
           this.afterUUID = event.uuid;
         }
 
-        if (event.type === 'ticket_note_added') {
-          const ticketEvent = event as TicketEvent;
-          messages.push({
-            type: MessageType.Note,
-            id: event.created_on + event.type,
-            user: this.getUserForEvent(ticketEvent),
-            date: new Date(ticketEvent.created_on),
-            text: ticketEvent.note
-          });
-        } else if (event.type === 'ticket_opened') {
-          // ticket open events can have a note attached
-          const ticketEvent = event as TicketEvent;
-          messages.push({
-            type: MessageType.Note,
-            id: event.created_on + event.type + '_note',
-            user: this.getUserForEvent(ticketEvent),
-            date: new Date(ticketEvent.created_on),
-            text: ticketEvent.note
-          });
+        // convert to dates
+        event.created_on = new Date(event.created_on);
 
-          // but the opening of the ticket is a normal event
-          messages.push(this.getEventMessage(event));
-        } else if (
+        if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
           event.type === 'ivr_created'
         ) {
-          const msgEvent = event as MsgEvent;
-          messages.push(this.createChatForMessageEvent(msgEvent));
+          messages.push(event);
         } else {
-          const msg = this.getEventMessage(event);
-          if (msg) {
-            messages.push(msg);
+          this.prerender(event);
+          if (event._rendered) {
+            messages.push(event);
           }
         }
       });
 
       // remove any messages we don't recognize
-      messages = messages.filter((msg) => !!msg);
-      return messages as ChatEvent[];
+      return messages.filter((msg) => !!msg);
     }
     return [];
   }
@@ -921,7 +879,6 @@ export class ContactChat extends ContactStoreElement {
     }
 
     const chat = this.chat;
-    const contactChat = this;
     if (this.currentContact && this.afterUUID) {
       this.polling = true;
       this.lastFetchTime = Date.now();
@@ -938,13 +895,10 @@ export class ContactChat extends ContactStoreElement {
         null,
         this.afterUUID
       ).then((page: ContactHistoryPage) => {
+        const messages = this.createMessages(page);
+        messages.reverse();
         if (fetchContact === this.currentContact.uuid) {
-          const messages = this.createMessages(page);
           const hasNewEvents = messages.length > 0;
-          if (messages.length === 0) {
-            contactChat.blockFetching = true;
-          }
-          messages.reverse();
           chat.addMessages(messages, null, true);
           this.polling = false;
           this.scheduleRefresh(hasNewEvents);
@@ -1115,15 +1069,13 @@ export class ContactChat extends ContactStoreElement {
     if (this.currentTicket) {
       fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
         (values) => {
-          this.store.resolveUsers(values, ['assignee']).then(() => {
-            if (values.length > 0) {
-              this.fireCustomEvent(CustomEventType.TicketUpdated, {
-                ticket: values[0],
-                previous: this.currentTicket
-              });
-              this.currentTicket = values[0];
-            }
-          });
+          if (values.length > 0) {
+            this.fireCustomEvent(CustomEventType.TicketUpdated, {
+              ticket: values[0],
+              previous: this.currentTicket
+            });
+            this.currentTicket = values[0];
+          }
         }
       );
     }
@@ -1170,6 +1122,7 @@ export class ContactChat extends ContactStoreElement {
               @temba-fetch-complete=${this.fetchComplete}
               avatar=${this.avatar}
               agent
+              ?hasFooter=${inFlow}
             >
               ${inFlow
                 ? html`
@@ -1294,8 +1247,6 @@ export const fetchContactHistory = (
       url += (url.includes('?') ? '&' : '?') + params.join('&');
     }
 
-    const store = document.querySelector('temba-store') as Store;
-
     getUrl(url, controller)
       .then((response: WebResponse) => {
         // on success, remove our abort controller
@@ -1305,10 +1256,7 @@ export const fetchContactHistory = (
           }
         );
 
-        const page = response.json as ContactHistoryPage;
-        store.resolveUsers(page.events, ['created_by']).then(() => {
-          resolve(page);
-        });
+        resolve(response.json as ContactHistoryPage);
       })
       .catch(() => {
         // canceled

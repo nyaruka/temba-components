@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { getCookie, setCookie } from '../utils';
+import { generateUUIDv7, getCookie, setCookie } from '../utils';
 import { DEFAULT_AVATAR } from './assets';
-import { Chat, ChatEvent, Message, MessageType } from '../display/Chat';
+import { Chat, MsgEvent } from '../display/Chat';
 
 interface User {
   avatar?: string;
@@ -83,17 +83,24 @@ enum ChatStatus {
   CONNECTED = 'connected'
 }
 
-const sockToChat = function (msg: any): ChatEvent | Message {
-  const type = msg.msg_in ? MessageType.MsgIn : MessageType.MsgOut;
+const sockToChat = function (msg: any): MsgEvent {
+  const type = msg.msg_in ? 'msg_created' : 'msg_received';
   const msgContent = msg.msg_in || msg.msg_out;
 
   return {
-    id: msgContent.id,
+    uuid: msgContent.id,
     type,
-    text: msgContent.text,
-    date: new Date(msgContent.time),
-    user: msgContent.user,
-    attachments: msgContent.attachments
+    created_on: new Date(msgContent.time),
+    _user: msgContent.user,
+    msg: {
+      text: msgContent.text,
+      channel: undefined,
+      quick_replies: [],
+      urn: '',
+      direction: '',
+      type: '',
+      attachments: msgContent.attachments
+    }
   };
 };
 
@@ -570,7 +577,14 @@ export class WebChat extends LitElement {
       const date = new Date();
 
       this.chat.addMessages(
-        [{ type: MessageType.MsgIn, text, date }],
+        [
+          {
+            uuid: generateUUIDv7(),
+            type: 'msg_received',
+            msg: { text },
+            created_on: date
+          } as MsgEvent
+        ],
         date,
         true
       );

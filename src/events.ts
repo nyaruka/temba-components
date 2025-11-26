@@ -1,16 +1,10 @@
 import { Msg, ObjectReference, User } from './interfaces';
+import { ContactEvent } from './display/Chat';
 
 export interface EventGroup {
   type: string;
   events: ContactEvent[];
   open: boolean;
-}
-
-export interface ContactEvent {
-  uuid?: string;
-  type: string;
-  created_on: string;
-  _user?: ObjectReference;
 }
 
 export interface ChannelEvent extends ContactEvent {
@@ -57,7 +51,16 @@ export interface ChatStartedEvent extends ContactEvent {
 export interface MsgEvent extends ContactEvent {
   msg: Msg;
   optin?: ObjectReference;
-  _status?: { created_on: string; status: string; reason: string };
+  _status?: {
+    created_on: string;
+    status: 'wired' | 'sent' | 'delivered' | 'read' | 'errored' | 'failed';
+    reason: 'error_limit' | 'too_old' | 'channel_removed';
+  };
+  _deleted?: {
+    created_on: string;
+    by_contact: boolean;
+    user: { name: string; uuid: string };
+  };
   _logs_url?: string;
 }
 

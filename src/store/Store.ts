@@ -506,7 +506,7 @@ export class Store extends RapidElement {
 
   public resolveUsers(items: any, keys: string[]): Promise<void> {
     return new Promise<void>((resolve) => {
-      const emails = new Set<string>();
+      const uuids = new Set<string>();
 
       // keys are dot notation paths to user fields
       items.forEach((item) => {
@@ -519,17 +519,17 @@ export class Store extends RapidElement {
               break;
             }
           }
-          if (value && value.email) {
-            emails.add(value.email);
+          if (value && value.uuid) {
+            uuids.add(value.uuid);
           }
         });
       });
 
       const promises = [];
       // we don't want to fetch all users at once so we can benefit from caching
-      emails.forEach((email) => {
+      uuids.forEach((uuid) => {
         promises.push(
-          this.getUrl(`/api/v2/users.json?email=${encodeURIComponent(email)}`, {
+          this.getUrl(`/api/v2/users.json?uuid=${encodeURIComponent(uuid)}`, {
             force: true
           })
         );

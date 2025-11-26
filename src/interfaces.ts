@@ -103,6 +103,13 @@ export interface Msg {
   direction: string;
   type: string;
   attachments: string[];
+  unsendable_reason?:
+    | 'no_route'
+    | 'contact_blocked'
+    | 'contact_stopped'
+    | 'contact_archived'
+    | 'org_suspended'
+    | 'looping';
 }
 
 export interface ObjectReference {
