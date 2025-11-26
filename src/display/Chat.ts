@@ -9,6 +9,25 @@ const BATCH_TIME_WINDOW = 60 * 60 * 1000;
 const SCROLL_FETCH_BUFFER = 200; // pixels from top
 const MIN_FETCH_TIME = 250;
 
+const getUnsendableReasonMessage = (reason: string): string => {
+  switch (reason) {
+    case 'no_route':
+      return 'No channel available to send message';
+    case 'contact_blocked':
+      return 'Contact has been blocked';
+    case 'contact_stopped':
+      return 'Contact has been stopped';
+    case 'contact_archived':
+      return 'Contact is archived';
+    case 'org_suspended':
+      return 'Workspace is suspended';
+    case 'looping':
+      return 'Message loop detected';
+    default:
+      return 'Unable to send message';
+  }
+};
+
 export enum MessageType {
   Inline = 'inline',
   Error = 'error',
@@ -853,10 +872,15 @@ export class Chat extends RapidElement {
             (msgId) => msgId,
             (msgId, index) => {
               const msg = this.msgMap.get(msgId);
+              const msgEvent = msg as MsgEvent;
+              const statusClass = (msg as any)._status
+                ? (msg as any)._status.status
+                : '';
+              const unsendableClass = msgEvent.msg?.unsendable_reason
+                ? 'error'
+                : '';
               return html`<div
-                class="row message ${(msg as any)._status
-                  ? (msg as any)._status.status
-                  : ''}"
+                class="row message ${statusClass} ${unsendableClass}"
               >
                 ${this.renderMessage(msg, index == 0 ? name : null)}
               </div>`;
@@ -884,9 +908,19 @@ export class Chat extends RapidElement {
     }
 
     const message = event as MsgEvent;
+    const unsendableReason = message.msg?.unsendable_reason;
+    const errorMessage = unsendableReason
+      ? getUnsendableReasonMessage(unsendableReason)
+      : null;
+
     return html`
       <div class="bubble-wrap">
         <div class="popup" style="white-space: nowrap;">
+          ${errorMessage
+            ? html`<div style="color: var(--color-error); margin-right: 1em;">
+                ${errorMessage}
+              </div>`
+            : null}
           <temba-date
             value="${message.created_on.toISOString()}"
             display="relative"

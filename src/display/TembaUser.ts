@@ -90,8 +90,6 @@ export class TembaUser extends RapidElement {
     if (changed.has('avatar')) {
       if (this.avatar) {
         this.bgimage = `url('${this.avatar}') center / contain no-repeat`;
-        // } else {
-        //this.bgimage = null;
       }
     }
   }
