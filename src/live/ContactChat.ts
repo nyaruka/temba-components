@@ -178,7 +178,8 @@ export const renderTicketAction = (
         style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em 0; border: 1px solid #ffe97f;border-radius: var(--curvature);"
       >
         <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em">
-          <strong>${event._user.name}</strong> added a note
+          <strong>${event._user ? event._user.name : 'Someone'}</strong> added a
+          note
           <temba-date
             value=${event.created_on.toISOString()}
             display="relative"
