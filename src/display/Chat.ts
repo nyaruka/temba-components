@@ -41,6 +41,16 @@ const getStatusReasonMessage = (reason: string): string => {
   }
 };
 
+const getMessageLogURL = (event: MsgEvent, showDays: number): string | null => {
+  if (showDays > 0 && event.msg.channel) {
+    const cutoff = new Date(Date.now() - showDays * 24 * 60 * 60 * 1000);
+    if (event.created_on >= cutoff) {
+      return `/channels/channel/logs/${event.msg.channel}/msg/${event.uuid}/`;
+    }
+  }
+  return null;
+};
+
 export enum MessageType {
   Inline = 'inline',
   Error = 'error',
@@ -76,7 +86,7 @@ export interface Msg {
 }
 
 export interface ContactEvent {
-  uuid?: string;
+  uuid: string;
   type: string;
   created_on: Date;
   _user?: User;
@@ -96,7 +106,6 @@ export interface MsgEvent extends ContactEvent {
     by_contact: boolean;
     user: { name: string; uuid: string };
   };
-  _logs_url?: string;
 }
 
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
@@ -616,6 +625,9 @@ export class Chat extends RapidElement {
   @property({ type: Boolean, attribute: false })
   showNewMessageNotification = false;
 
+  @property({ type: Number })
+  showMessageLogsDays = 7;
+
   @property({ type: Boolean })
   hasFooter = false;
 
@@ -931,6 +943,8 @@ export class Chat extends RapidElement {
       ? getStatusReasonMessage(statusReason)
       : null;
 
+    const logsURL = getMessageLogURL(message, this.showMessageLogsDays);
+
     return html`
       <div class="bubble-wrap">
         <div class="popup" style="white-space: nowrap;">
@@ -943,10 +957,10 @@ export class Chat extends RapidElement {
             value="${message.created_on.toISOString()}"
             display="relative"
           ></temba-date>
-          ${message._logs_url
+          ${logsURL
             ? html`<a
                 style="margin-left: 1em; color: var(--color-primary-dark);"
-                href="${message._logs_url}"
+                href="${logsURL}"
                 target="_blank"
                 rel="noopener noreferrer"
                 ><temba-icon name="log"></temba-icon
