@@ -45,7 +45,7 @@ const getMessageLogURL = (event: MsgEvent, showDays: number): string | null => {
   if (showDays > 0 && event.msg.channel) {
     const cutoff = new Date(Date.now() - showDays * 24 * 60 * 60 * 1000);
     if (event.created_on >= cutoff) {
-      return `/channels/channel/logs/${event.msg.channel}/msg/${event.uuid}/`;
+      return `/channels/channel/logs/${event.msg.channel.uuid}/msg/${event.uuid}/`;
     }
   }
   return null;
