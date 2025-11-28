@@ -22,7 +22,6 @@ import { Compose, ComposeValue } from '../form/Compose';
 import {
   AirtimeTransferredEvent,
   CallEvent,
-  ChannelEvent,
   ChatStartedEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
@@ -64,7 +63,6 @@ export enum Events {
   IVR_CREATED = 'ivr_created',
   MSG_CREATED = 'msg_created',
   MSG_RECEIVED = 'msg_received',
-  NOTE_CREATED = 'note_created',
   OPTIN_REQUESTED = 'optin_requested',
   OPTIN_STARTED = 'optin_started',
   OPTIN_STOPPED = 'optin_stopped',
@@ -75,11 +73,7 @@ export enum Events {
   TICKET_NOTE_ADDED = 'ticket_note_added',
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
-  TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
-
-  // deprecated
-  CHANNEL_EVENT = 'channel_event',
-  TICKET_ASSIGNED = 'ticket_assigned'
+  TICKET_TOPIC_CHANGED = 'ticket_topic_changed'
 }
 
 const renderInfoList = (
@@ -103,14 +97,6 @@ const renderInfoList = (
       );
       return html`<div>${plural} ${middle}, and <strong>${last}</strong></div>`;
     }
-  }
-};
-
-const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
-  if (event.channel_event_type === 'welcome_message') {
-    return html`<div>Welcome message sent</div>`;
-  } else if (event.event.type === 'stop_contact') {
-    return html`<div>Stopped</div>`;
   }
 };
 
@@ -539,6 +525,9 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
 
+  @property({ type: Number })
+  showMessageLogsDays = 7;
+
   @property({ type: String })
   errorMessage: string;
 
@@ -824,12 +813,6 @@ export class ContactChat extends ContactStoreElement {
             Topic changed to
             <strong>${(event as TicketEvent).topic.name}</strong>
           </div>`,
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CHANNEL_EVENT: // deprecated
-        event._rendered = {
-          html: renderChannelEvent(event as ChannelEvent),
           type: MessageType.Inline
         };
         break;
@@ -1124,6 +1107,7 @@ export class ContactChat extends ContactStoreElement {
               avatar=${this.avatar}
               agent
               ?hasFooter=${inFlow}
+              showMessageLogsDays=${this.showMessageLogsDays}
             >
               ${inFlow
                 ? html`
