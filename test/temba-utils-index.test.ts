@@ -47,7 +47,8 @@ import {
   getDialog,
   DEFAULT_MEDIA_ENDPOINT,
   Color,
-  COOKIE_KEYS
+  COOKIE_KEYS,
+  isRTLLanguage
 } from '../src/utils';
 import { mockGET, mockPOST, clearMockPosts } from './utils.test';
 
@@ -1507,6 +1508,62 @@ describe('utils/index', () => {
         const assets = await getAssets('');
         expect(assets).to.deep.equal([]);
       });
+    });
+  });
+
+  describe('isRTLLanguage', () => {
+    it('detects Arabic (3-letter code)', () => {
+      expect(isRTLLanguage('ara')).to.be.true;
+    });
+
+    it('detects Arabic (2-letter code)', () => {
+      expect(isRTLLanguage('ar')).to.be.true;
+    });
+
+    it('detects Hebrew (3-letter code)', () => {
+      expect(isRTLLanguage('heb')).to.be.true;
+    });
+
+    it('detects Hebrew (2-letter code)', () => {
+      expect(isRTLLanguage('he')).to.be.true;
+    });
+
+    it('detects Farsi/Persian (3-letter code)', () => {
+      expect(isRTLLanguage('fas')).to.be.true;
+    });
+
+    it('detects Farsi/Persian (2-letter code)', () => {
+      expect(isRTLLanguage('fa')).to.be.true;
+    });
+
+    it('detects Urdu (3-letter code)', () => {
+      expect(isRTLLanguage('urd')).to.be.true;
+    });
+
+    it('detects Urdu (2-letter code)', () => {
+      expect(isRTLLanguage('ur')).to.be.true;
+    });
+
+    it('does not detect English as RTL', () => {
+      expect(isRTLLanguage('eng')).to.be.false;
+      expect(isRTLLanguage('en')).to.be.false;
+    });
+
+    it('does not detect Spanish as RTL', () => {
+      expect(isRTLLanguage('spa')).to.be.false;
+      expect(isRTLLanguage('es')).to.be.false;
+    });
+
+    it('handles null/undefined gracefully', () => {
+      expect(isRTLLanguage(null)).to.be.false;
+      expect(isRTLLanguage(undefined)).to.be.false;
+      expect(isRTLLanguage('')).to.be.false;
+    });
+
+    it('is case-insensitive', () => {
+      expect(isRTLLanguage('ARA')).to.be.true;
+      expect(isRTLLanguage('AR')).to.be.true;
+      expect(isRTLLanguage('ArA')).to.be.true;
     });
   });
 });

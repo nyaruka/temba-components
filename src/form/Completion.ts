@@ -124,6 +124,9 @@ export class Completion extends FieldElement {
   @property({ type: Number })
   minHeight: number;
 
+  @property({ type: Boolean })
+  rtl = false;
+
   private hiddenElement: HTMLInputElement;
   private query: string;
 
@@ -283,6 +286,7 @@ export class Completion extends FieldElement {
           ?autogrow=${this.autogrow}
           ?textarea=${this.textarea}
           ?submitOnEnter=${this.submitOnEnter}
+          ?rtl=${this.rtl}
           style=${this.minHeight
             ? `--textarea-min-height: ${this.minHeight}px`
             : ''}
