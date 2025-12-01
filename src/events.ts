@@ -7,21 +7,6 @@ export interface EventGroup {
   open: boolean;
 }
 
-export interface ChannelEvent extends ContactEvent {
-  channel_event_type: string;
-  duration: number;
-
-  event: {
-    type: string;
-    channel: { uuid: string; name: string };
-    duration?: number;
-    optin?: {
-      uuid: string;
-      name: string;
-    };
-  };
-}
-
 export interface ContactLanguageChangedEvent extends ContactEvent {
   language: string;
 }
@@ -61,7 +46,6 @@ export interface MsgEvent extends ContactEvent {
     by_contact: boolean;
     user: { name: string; uuid: string };
   };
-  _logs_url?: string;
 }
 
 export interface RunEvent extends ContactEvent {
