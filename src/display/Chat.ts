@@ -48,6 +48,17 @@ export enum MessageType {
   Note = 'note'
 }
 
+export type GroupReason =
+  | 'time_elapsed'
+  | 'new_author'
+  | 'new_type'
+  | 'initial';
+
+export interface MessageGroup {
+  messages: string[];
+  reason: GroupReason;
+}
+
 export interface ObjectReference {
   uuid: string;
   name: string;
@@ -76,7 +87,7 @@ export interface Msg {
 }
 
 export interface ContactEvent {
-  uuid: string;
+  uuid?: string;
   type: string;
   created_on: Date;
   _user?: User;
@@ -96,12 +107,21 @@ export interface MsgEvent extends ContactEvent {
     by_contact: boolean;
     user: { name: string; uuid: string };
   };
+  _logs_url?: string;
 }
 
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
 const VERBOSE_FORMAT = {
   weekday: undefined,
   year: undefined,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit'
+} as any;
+const VERBOSE_FORMAT_WITH_YEAR = {
+  weekday: undefined,
+  year: 'numeric',
   month: 'short',
   day: 'numeric',
   hour: 'numeric',
@@ -185,6 +205,16 @@ export class Chat extends RapidElement {
         padding-top: 0;
       }
 
+      .group-reason {
+        text-align: center;
+        font-size: 0.75em;
+        color: #999;
+        margin-bottom: 1em;
+        margin-top: 0.5em;
+        padding: 0.5em 1em;
+        font-style: italic;
+      }
+
       .row {
         display: flex;
         flex-direction: row;
@@ -229,6 +259,7 @@ export class Chat extends RapidElement {
       .incoming .row {
         flex-direction: row-reverse;
         margin-left: 1em;
+        margin-right: 1em;
       }
 
       .bubble {
@@ -289,7 +320,8 @@ export class Chat extends RapidElement {
         color: #ad47479a;
       }
 
-      .message {
+      .message-text {
+        white-space: pre-wrap;
         margin-bottom: 0.5em;
         line-height: 1.2em;
         word-break: break-word;
@@ -589,7 +621,7 @@ export class Chat extends RapidElement {
   }
 
   @property({ type: Array })
-  messageGroups: string[][] = [];
+  messageGroups: MessageGroup[] = [];
 
   @property({ type: Boolean })
   fetching = false;
@@ -614,9 +646,6 @@ export class Chat extends RapidElement {
 
   @property({ type: Boolean, attribute: false })
   showNewMessageNotification = false;
-
-  @property({ type: Object })
-  showMessageLogsAfter: Date = null;
 
   @property({ type: Boolean })
   hasFooter = false;
@@ -713,20 +742,43 @@ export class Chat extends RapidElement {
     return this.msgMap.has(msg.uuid);
   }
 
-  private isSameGroup(msg1: ContactEvent, msg2: ContactEvent): boolean {
-    if (msg1 && msg2) {
-      const sameGroup =
-        msg1.type === msg2.type &&
-        msg1._user?.name === msg2._user?.name &&
-        Math.abs(msg1.created_on.getTime() - msg2.created_on.getTime()) <
-          BATCH_TIME_WINDOW;
-      return sameGroup;
+  private isSameGroup(
+    msg1: ContactEvent,
+    msg2: ContactEvent,
+    lastTimeElapsedDate?: Date
+  ): { same: boolean; reason?: GroupReason } {
+    if (!msg1 || !msg2) {
+      return { same: true };
     }
 
-    return false;
+    // for type equivalence, treat all non-message types as the same
+    const isMsg1 = msg1.type === 'msg_created' || msg1.type === 'msg_received';
+    const isMsg2 = msg2.type === 'msg_created' || msg2.type === 'msg_received';
+    const typeMatch =
+      isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
+
+    // check time first - if BATCH_TIME_WINDOW has passed since last time_elapsed reason
+    const timeToCheck = lastTimeElapsedDate || msg1.created_on;
+    if (
+      Math.abs(msg2.created_on.getTime() - timeToCheck.getTime()) >=
+      BATCH_TIME_WINDOW
+    ) {
+      return { same: false, reason: 'time_elapsed' };
+    }
+
+    if (!typeMatch) {
+      return { same: false, reason: 'new_type' };
+    }
+
+    // only check author for message types
+    if (isMsg1 && isMsg2 && msg1._user?.name !== msg2._user?.name) {
+      return { same: false, reason: 'new_author' };
+    }
+
+    return { same: true };
   }
 
-  private insertGroups(newGroups: string[][], append = false) {
+  private insertGroups(newGroups: MessageGroup[], append = false) {
     if (!append) {
       newGroups.reverse();
     }
@@ -737,12 +789,13 @@ export class Chat extends RapidElement {
         this.messageGroups[append ? 0 : this.messageGroups.length - 1];
 
       if (group) {
-        const lastMsgId = group[group.length - 1];
+        const lastMsgId = group.messages[group.messages.length - 1];
         const lastMsg = this.msgMap.get(lastMsgId);
-        const newMsg = this.msgMap.get(newGroup[0]);
+        const newMsg = this.msgMap.get(newGroup.messages[0]);
         // if our message belongs to the previous group, in we go
-        if (this.isSameGroup(lastMsg, newMsg)) {
-          group.push(...newGroup);
+        const groupCheck = this.isSameGroup(lastMsg, newMsg);
+        if (groupCheck.same) {
+          group.messages.push(...newGroup.messages);
         } else {
           // otherwise, just add our entire group as a new one
           if (append) {
@@ -763,18 +816,31 @@ export class Chat extends RapidElement {
     this.requestUpdate('messageGroups');
   }
 
-  private groupMessages(msgIds: string[]): string[][] {
+  private groupMessages(msgIds: string[]): MessageGroup[] {
     // group our messages by origin and user
-    const groups = [];
-    let lastGroup = [];
-    let lastMsg = null;
+    const groups: MessageGroup[] = [];
+    let lastGroup: MessageGroup = null;
+    let lastMsg: ContactEvent = null;
+    let lastTimeElapsedDate: Date = null;
+
     for (const msgId of msgIds) {
       const msg = this.msgMap.get(msgId);
-      if (!this.isSameGroup(msg, lastMsg)) {
-        lastGroup = [];
+      const groupCheck = this.isSameGroup(msg, lastMsg, lastTimeElapsedDate);
+
+      if (!groupCheck.same || !lastGroup) {
+        lastGroup = {
+          messages: [],
+          reason: groupCheck.reason || 'initial'
+        };
         groups.push(lastGroup);
+
+        // track when we last broke for time_elapsed
+        if (groupCheck.reason === 'time_elapsed') {
+          lastTimeElapsedDate = msg.created_on;
+        }
       }
-      lastGroup.push(msgId);
+
+      lastGroup.messages.push(msgId);
       lastMsg = msg;
     }
     return groups;
@@ -822,47 +888,29 @@ export class Chat extends RapidElement {
     this.scrollToBottom();
   }
 
-  private renderMessageGroup(
-    msgIds: string[],
-    idx: number,
-    groups: string[][]
-  ): TemplateResult {
-    const today = new Date();
-    const firstGroup = idx === groups.length - 1;
-
-    let prevMsg: ContactEvent;
-    if (idx > 0) {
-      const lastGroup = groups[idx - 1];
-      if (lastGroup && lastGroup.length > 0) {
-        prevMsg = this.msgMap.get(lastGroup[0]);
-      }
+  private getReasonLabel(reason: GroupReason): string {
+    switch (reason) {
+      case 'new_author':
+        return '👤 Different author';
+      case 'new_type':
+        return '🔄 Message type changed';
+      case 'time_elapsed':
+      case 'initial':
+      default:
+        return '';
     }
+  }
+
+  private renderMessageGroup(
+    group: MessageGroup,
+    idx: number,
+    lastShownTimestamp: Date | null
+  ): { html: TemplateResult; timestamp: Date | null } {
+    const today = new Date();
+    const msgIds = group.messages;
 
     const mostRecentId = msgIds[msgIds.length - 1];
     const currentMsg = this.msgMap.get(mostRecentId);
-
-    let timeDisplay = null;
-    if (
-      prevMsg &&
-      !this.isSameGroup(prevMsg, currentMsg) &&
-      (Math.abs(
-        currentMsg.created_on.getTime() - prevMsg.created_on.getTime()
-      ) > BATCH_TIME_WINDOW ||
-        idx === groups.length - 1)
-    ) {
-      if (
-        today.getDate() !== prevMsg.created_on.getDate() ||
-        prevMsg.created_on.getDate() !== currentMsg.created_on.getDate()
-      ) {
-        timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
-          ${prevMsg.created_on.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
-        </div>`;
-      } else {
-        timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
-          ${prevMsg.created_on.toLocaleTimeString(undefined, TIME_FORMAT)}
-        </div>`;
-      }
-    }
 
     const incoming = this.agent
       ? currentMsg.type !== 'msg_received'
@@ -878,8 +926,48 @@ export class Chat extends RapidElement {
 
     const isSystem = !currentMsg._user?.uuid;
 
-    return html`
-      ${timeDisplay}
+    const reasonLabel = this.getReasonLabel(group.reason);
+    const showReason = false; // reasonLabel && idx > 0;
+
+    // determine if we should show a timestamp
+    // use the first message in the group (oldest) for the timestamp
+    const firstMsgId = msgIds[0];
+    const firstMsg = this.msgMap.get(firstMsgId);
+
+    // check if we should show a timestamp based on the last shown timestamp
+    let showTimeForReason = false;
+    let newLastShownTimestamp = lastShownTimestamp;
+
+    if (idx > 0) {
+      if (lastShownTimestamp) {
+        const timeSinceLastShown = Math.abs(
+          firstMsg.created_on.getTime() - lastShownTimestamp.getTime()
+        );
+        showTimeForReason = timeSinceLastShown >= BATCH_TIME_WINDOW;
+      } else {
+        // no previous timestamp, check against previous group
+        showTimeForReason = group.reason === 'time_elapsed';
+      }
+    }
+
+    let timeForReason = null;
+    if (showTimeForReason) {
+      newLastShownTimestamp = firstMsg.created_on;
+
+      const isDifferentYear =
+        today.getFullYear() !== firstMsg.created_on.getFullYear();
+      const format = isDifferentYear
+        ? VERBOSE_FORMAT_WITH_YEAR
+        : today.getDate() !== firstMsg.created_on.getDate()
+        ? VERBOSE_FORMAT
+        : TIME_FORMAT;
+
+      timeForReason = html`<div class="time time-elapsed">
+        ${firstMsg.created_on.toLocaleTimeString(undefined, format)}
+      </div>`;
+    }
+
+    const resultHtml = html`
       <div class="block  ${incoming ? 'incoming' : 'outgoing'}">
         <div class="group-messages" style="flex-grow:1">
           ${repeat(
@@ -916,7 +1004,13 @@ export class Chat extends RapidElement {
             </div>`
           : null}
       </div>
+      ${showReason
+        ? html`<div class="group-reason">${reasonLabel}</div>`
+        : null}
+      ${timeForReason}
     `;
+
+    return { html: resultHtml, timestamp: newLastShownTimestamp };
   }
 
   private renderMessage(event: ContactEvent, name = null): TemplateResult {
@@ -933,13 +1027,6 @@ export class Chat extends RapidElement {
       ? getStatusReasonMessage(statusReason)
       : null;
 
-    const logsURL =
-      this.showMessageLogsAfter &&
-      message.created_on >= this.showMessageLogsAfter &&
-      message.msg.channel
-        ? `/channels/channel/logs/${message.msg.channel}/msg/${event.uuid}/`
-        : null;
-
     return html`
       <div class="bubble-wrap">
         <div class="popup" style="white-space: nowrap;">
@@ -952,10 +1039,10 @@ export class Chat extends RapidElement {
             value="${message.created_on.toISOString()}"
             display="relative"
           ></temba-date>
-          ${logsURL
+          ${message._logs_url
             ? html`<a
                 style="margin-left: 1em; color: var(--color-primary-dark);"
-                href="${logsURL}"
+                href="${message._logs_url}"
                 target="_blank"
                 rel="noopener noreferrer"
                 ><temba-icon name="log"></temba-icon
@@ -967,7 +1054,7 @@ export class Chat extends RapidElement {
         ${message.msg.text
           ? html`<div class="bubble">
               ${name ? html`<div class="name">${name}</div>` : null}
-              <div class="message message-text">${message.msg.text}</div>
+              <div class="message-text">${message.msg.text}</div>
             </div>`
           : null}
 
@@ -1006,16 +1093,23 @@ export class Chat extends RapidElement {
     >
       <div class="scroll" @scroll=${this.handleScroll}>
         ${this.messageGroups
-          ? repeat(
-              this.messageGroups,
-              (msgGroup) => msgGroup.join(','),
-              (msgGroup, idx) =>
-                html`${this.renderMessageGroup(
+          ? (() => {
+              let lastTimestamp: Date | null = null;
+              // process from oldest to newest (high index to low index)
+              // to establish logical time groupings going forward in time
+              const results = [];
+              for (let idx = this.messageGroups.length - 1; idx >= 0; idx--) {
+                const msgGroup = this.messageGroups[idx];
+                const result = this.renderMessageGroup(
                   msgGroup,
                   idx,
-                  this.messageGroups
-                )}`
-            )
+                  lastTimestamp
+                );
+                lastTimestamp = result.timestamp;
+                results.unshift(result.html); // add to front since we're going backwards
+              }
+              return results;
+            })()
           : null}
 
         <temba-loading

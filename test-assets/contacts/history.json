@@ -83,7 +83,7 @@
       "created_on": "2025-09-23T20:40:27.239434+00:00",
       "msg": {
         "urn": "tel:+250788123123",
-        "text": "No problem, we are all done then!",
+        "text": "No problem.\nWe are all done here.",
         "channel": {
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
