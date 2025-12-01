@@ -78,7 +78,8 @@ describe('temba-contact-chat', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
+      contact: 'contact-dave-active',
+      showMessageLogsAfter: '2025-01-01T00:00:00.000Z'
     });
 
     await assertScreenshot('contacts/chat-for-active-contact', getClip(chat));
@@ -88,7 +89,8 @@ describe('temba-contact-chat', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-barack-archived'
+      contact: 'contact-barack-archived',
+      showMessageLogsAfter: '2025-01-01T00:00:00.000Z'
     });
 
     await assertScreenshot('contacts/chat-for-archived-contact', getClip(chat));

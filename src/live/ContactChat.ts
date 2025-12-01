@@ -526,7 +526,17 @@ export class ContactChat extends ContactStoreElement {
   avatar = DEFAULT_AVATAR;
 
   @property({ type: String })
-  showMessageLogsAfter = null;
+  set showMessageLogsAfter(value: string) {
+    const oldValue = this._showMessageLogsAfter;
+    this._showMessageLogsAfter = value ? new Date(value) : null;
+    this.requestUpdate('showMessageLogsAfter', oldValue);
+  }
+
+  get showMessageLogsAfter(): Date {
+    return this._showMessageLogsAfter;
+  }
+
+  private _showMessageLogsAfter: Date = null;
 
   @property({ type: String })
   errorMessage: string;
@@ -1107,9 +1117,7 @@ export class ContactChat extends ContactStoreElement {
               avatar=${this.avatar}
               agent
               ?hasFooter=${inFlow}
-              showMessageLogsAfter=${this.showMessageLogsAfter
-                ? new Date(this.showMessageLogsAfter)
-                : null}
+              .showMessageLogsAfter=${this.showMessageLogsAfter}
             >
               ${inFlow
                 ? html`
