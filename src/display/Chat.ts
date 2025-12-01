@@ -41,16 +41,6 @@ const getStatusReasonMessage = (reason: string): string => {
   }
 };
 
-const getMessageLogURL = (event: MsgEvent, showDays: number): string | null => {
-  if (showDays > 0 && event.msg.channel) {
-    const cutoff = new Date(Date.now() - showDays * 24 * 60 * 60 * 1000);
-    if (event.created_on >= cutoff) {
-      return `/channels/channel/logs/${event.msg.channel.uuid}/msg/${event.uuid}/`;
-    }
-  }
-  return null;
-};
-
 export enum MessageType {
   Inline = 'inline',
   Error = 'error',
@@ -625,8 +615,8 @@ export class Chat extends RapidElement {
   @property({ type: Boolean, attribute: false })
   showNewMessageNotification = false;
 
-  @property({ type: Number })
-  showMessageLogsDays = 7;
+  @property({ type: Object })
+  showMessageLogsAfter: Date = null;
 
   @property({ type: Boolean })
   hasFooter = false;
@@ -943,7 +933,12 @@ export class Chat extends RapidElement {
       ? getStatusReasonMessage(statusReason)
       : null;
 
-    const logsURL = getMessageLogURL(message, this.showMessageLogsDays);
+    const logsURL =
+      this.showMessageLogsAfter &&
+      message.created_on >= this.showMessageLogsAfter &&
+      message.msg.channel
+        ? `/channels/channel/logs/${message.msg.channel}/msg/${event.uuid}/`
+        : null;
 
     return html`
       <div class="bubble-wrap">

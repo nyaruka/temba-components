@@ -525,8 +525,8 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
 
-  @property({ type: Number })
-  showMessageLogsDays = 7;
+  @property({ type: String })
+  showMessageLogsAfter = null;
 
   @property({ type: String })
   errorMessage: string;
@@ -1107,7 +1107,9 @@ export class ContactChat extends ContactStoreElement {
               avatar=${this.avatar}
               agent
               ?hasFooter=${inFlow}
-              showMessageLogsDays=${this.showMessageLogsDays}
+              showMessageLogsAfter=${this.showMessageLogsAfter
+                ? new Date(this.showMessageLogsAfter)
+                : null}
             >
               ${inFlow
                 ? html`
