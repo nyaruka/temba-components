@@ -647,6 +647,9 @@ export class Chat extends RapidElement {
   @property({ type: Boolean, attribute: false })
   showNewMessageNotification = false;
 
+  @property({ type: Object })
+  showMessageLogsAfter: Date = null;
+
   @property({ type: Boolean })
   hasFooter = false;
 
@@ -1027,6 +1030,13 @@ export class Chat extends RapidElement {
       ? getStatusReasonMessage(statusReason)
       : null;
 
+    const logsURL =
+      this.showMessageLogsAfter &&
+      message.created_on >= this.showMessageLogsAfter &&
+      message.msg.channel
+        ? `/channels/channel/logs/${message.msg.channel}/msg/${event.uuid}/`
+        : null;
+
     return html`
       <div class="bubble-wrap">
         <div class="popup" style="white-space: nowrap;">
@@ -1039,10 +1049,10 @@ export class Chat extends RapidElement {
             value="${message.created_on.toISOString()}"
             display="relative"
           ></temba-date>
-          ${message._logs_url
+          ${logsURL
             ? html`<a
                 style="margin-left: 1em; color: var(--color-primary-dark);"
-                href="${message._logs_url}"
+                href="${logsURL}"
                 target="_blank"
                 rel="noopener noreferrer"
                 ><temba-icon name="log"></temba-icon
