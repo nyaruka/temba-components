@@ -161,9 +161,9 @@ export const renderTicketAction = (
 
   const actionNote = event.note
     ? html`<div
-        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em 0; border: 1px solid #ffe97f;border-radius: var(--curvature);"
+        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em;margin-top:1em; border: 1px solid #ffe97f;border-radius: var(--curvature);line-height: 1.2em; word-break: break-word;"
       >
-        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em">
+        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em; ">
           <strong>${event._user ? event._user.name : 'Someone'}</strong> added a
           note
           <temba-date
@@ -171,7 +171,7 @@ export const renderTicketAction = (
             display="relative"
           ></temba-date>
         </div>
-        ${event.note}
+        <div style="white-space: pre-wrap;">${event.note}</div>
       </div>`
     : null;
 
