@@ -105,6 +105,10 @@
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
         }
+      },
+      "_deleted": {
+        "created_on": "2025-09-23T20:40:27.239433+00:00",
+        "user": { "name": "Rowan Seymour", "uuid": "rowan-user-uuid" }
       }
     },
     {
