@@ -1030,7 +1030,7 @@ export class Chat extends RapidElement {
       this.showMessageLogsAfter &&
       message.created_on >= this.showMessageLogsAfter &&
       message.msg.channel
-        ? `/channels/channel/logs/${message.msg.channel}/msg/${event.uuid}/`
+        ? `/channels/channel/logs/${message.msg.channel.uuid}/msg/${event.uuid}/`
         : null;
 
     return html`
