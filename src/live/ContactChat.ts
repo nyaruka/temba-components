@@ -827,7 +827,7 @@ export class ContactChat extends ContactStoreElement {
         };
         break;
       default:
-        console.error('Unknown event type', event);
+      // console.error('Unknown event type', event);
     }
   }
 
