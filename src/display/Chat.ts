@@ -412,8 +412,6 @@ export class Chat extends RapidElement {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        margin-top: -1em;
-        padding-top: 1em;
       }
 
       .scroll-at-top.messages:before {
@@ -564,8 +562,6 @@ export class Chat extends RapidElement {
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
         border: 1px solid #f3f3f3;
         opacity: 0;
-        transform: scale(0.7);
-        transition: opacity 0.2s ease-out, transform 0.2s ease-out;
         z-index: 2;
       }
 
@@ -582,9 +578,9 @@ export class Chat extends RapidElement {
       }
 
       .bubble-wrap:hover .popup {
-        transform: translateY(-120%);
         opacity: 1;
         transition-delay: 1s;
+        top: -35px;
       }
 
       .new-message-notification {
