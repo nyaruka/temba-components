@@ -105,7 +105,7 @@ export interface MsgEvent extends ContactEvent {
   _deleted?: {
     created_on: string;
     by_contact: boolean;
-    user: { name: string; uuid: string };
+    user?: { name: string; uuid: string };
   };
   _logs_url?: string;
 }
@@ -320,11 +320,27 @@ export class Chat extends RapidElement {
         color: #ad47479a;
       }
 
+      .deleted .bubble {
+        background: #fff;
+        color: #999;
+        border: 1px solid #e0e0e0;
+      }
+
+      .deleted .bubble .name {
+        color: #aaa;
+      }
+
       .message-text {
         white-space: pre-wrap;
         margin-bottom: 0.5em;
         line-height: 1.2em;
         word-break: break-word;
+      }
+
+      .message-deleted {
+        font-style: italic;
+        margin-bottom: 0.5em;
+        line-height: 1.2em;
       }
 
       .chat {
@@ -983,8 +999,9 @@ export class Chat extends RapidElement {
                 (msgEvent._status?.reason &&
                   (statusClass === 'failed' || statusClass === 'errored'));
               const unsendableClass = hasError ? 'error' : '';
+              const deletedClass = msgEvent._deleted ? 'deleted' : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass}"
               >
                 ${this.renderMessage(msg, index == 0 ? name : null)}
               </div>`;
@@ -1033,6 +1050,14 @@ export class Chat extends RapidElement {
         ? `/channels/channel/logs/${message.msg.channel.uuid}/msg/${event.uuid}/`
         : null;
 
+    // handle deleted messages
+    const isDeleted = message._deleted;
+    const deletedByText = isDeleted
+      ? message._deleted.by_contact
+        ? 'contact'
+        : message._deleted.user?.name || 'user'
+      : null;
+
     return html`
       <div class="bubble-wrap">
         <div class="popup" style="white-space: nowrap;">
@@ -1057,7 +1082,14 @@ export class Chat extends RapidElement {
 
           <div class="arrow">▼</div>
         </div>
-        ${message.msg.text
+        ${isDeleted
+          ? html`<div class="bubble">
+              ${name ? html`<div class="name">${name}</div>` : null}
+              <div class="message-deleted">
+                Message deleted by ${deletedByText}
+              </div>
+            </div>`
+          : message.msg.text
           ? html`<div class="bubble">
               ${name ? html`<div class="name">${name}</div>` : null}
               <div class="message-text">${message.msg.text}</div>
