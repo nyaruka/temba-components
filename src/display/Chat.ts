@@ -105,7 +105,7 @@ export interface MsgEvent extends ContactEvent {
   _deleted?: {
     created_on: string;
     by_contact: boolean;
-    user: { name: string; uuid: string };
+    user?: { name: string; uuid: string };
   };
   _logs_url?: string;
 }
