@@ -79,6 +79,11 @@ export class TextInput extends FieldElement {
         unicode-bidi: var(--unicode-bidi, normal);
       }
 
+      .textinput.rtl {
+        direction: rtl;
+        text-align: right;
+      }
+
       .textinput:focus {
       }
 
@@ -198,6 +203,9 @@ export class TextInput extends FieldElement {
 
   @property({ type: String })
   flavor = 'default';
+
+  @property({ type: Boolean })
+  rtl = false;
 
   counterElement: CharCount = null;
   cursorStart = -1;
@@ -409,7 +417,7 @@ export class TextInput extends FieldElement {
     let input = html`
       <input
         autofocus
-        class="textinput"
+        class="textinput ${this.rtl ? 'rtl' : ''}"
         autocomplete="off"
         name=${this.name}
         type="${this.password || this.type === InputType.Password
@@ -478,7 +486,7 @@ export class TextInput extends FieldElement {
     if (this.textarea) {
       input = html`
         <textarea
-          class="textinput"
+          class="textinput ${this.rtl ? 'rtl' : ''}"
           name=${this.name}
           maxlength="${ifDefined(this.maxlength)}"
           placeholder=${this.placeholder}
