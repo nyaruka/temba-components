@@ -84,19 +84,19 @@ export const getHeaders = (headers: any = {}) => {
 
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
-  // include the current org id
-  const org_id = (window as any).org_id;
-  if (org_id) {
-    fetchHeaders['X-Temba-Org'] = org_id;
+  // include the current workspace identifier
+  const workspaceUUID = (window as any).workspace?.uuid;
+  if (workspaceUUID) {
+    fetchHeaders['X-Temba-Workspace'] = workspaceUUID;
   }
 
   // mark us as ajax
   fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 
   Object.keys(headers).forEach((key) => {
-    // if we are adding a service org, we omit temba-org
+    // if we are requesting to service, we omit current workspace identifier
     if (key === 'X-Temba-Service-Org') {
-      delete fetchHeaders['X-Temba-Org'];
+      delete fetchHeaders['X-Temba-Workspace'];
     }
 
     fetchHeaders[key] = headers[key];

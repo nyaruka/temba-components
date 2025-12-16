@@ -189,10 +189,15 @@ describe('utils/index', () => {
       expect(headers['X-CSRFToken']).to.equal('form-csrf-token');
     });
 
-    it('includes org id when available', () => {
-      (window as any).org_id = '123';
+    it('includes org uuid when available', () => {
+      (window as any).workspace = {
+        uuid: '3a7e2f10-b0b3-413d-bd84-626e147d5ed2',
+        anon: false
+      };
       const headers = getHeaders();
-      expect(headers['X-Temba-Org']).to.equal('123');
+      expect(headers['X-Temba-Workspace']).to.equal(
+        '3a7e2f10-b0b3-413d-bd84-626e147d5ed2'
+      );
     });
 
     it('merges provided headers', () => {
@@ -201,10 +206,13 @@ describe('utils/index', () => {
       expect(headers['X-Requested-With']).to.equal('XMLHttpRequest');
     });
 
-    it('removes X-Temba-Org when X-Temba-Service-Org is provided', () => {
-      (window as any).org_id = '123';
+    it('removes X-Temba-Workspace when X-Temba-Service-Org is provided', () => {
+      (window as any).workspace = {
+        uuid: '3a7e2f10-b0b3-413d-bd84-626e147d5ed2',
+        anon: false
+      };
       const headers = getHeaders({ 'X-Temba-Service-Org': 'service-org' });
-      expect(headers['X-Temba-Org']).to.be.undefined;
+      expect(headers['X-Temba-Workspace']).to.be.undefined;
       expect(headers['X-Temba-Service-Org']).to.equal('service-org');
     });
   });
