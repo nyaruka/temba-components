@@ -254,7 +254,9 @@ export default {
             '/api/v2/languages.json': 'languages.json',
             '/api/v2/workspace.json': 'workspace.json',
             '/api/internal/locations.json': 'locations.json',
-            '/api/internal/orgs.json': 'orgs.json'
+            '/api/internal/orgs.json': 'orgs.json',
+            '/api/v2/channels.json': 'channels.json',
+            '/api/internal/llms.json': 'llms.json'
           };
 
           // Handle base path without query parameters
@@ -327,6 +329,50 @@ export default {
         if (context.request.method === 'POST' && context.path === '/api/v2/groups.json') {
           return handleDevEntityCreation('groups', context);
         }
+
+        // Handle mock LLM translations
+        if (
+          context.request.method === 'POST' &&
+          context.path.startsWith('/llm/translate/')
+        ) {
+          return new Promise((resolve) => {
+            let body = '';
+            context.req.on('data', (chunk) => {
+              body += chunk.toString();
+            });
+            context.req.on('end', () => {
+              let payload = {};
+              try {
+                payload = body ? JSON.parse(body) : {};
+              } catch (error) {
+                console.warn('Invalid LLM translate payload', error);
+              }
+
+              const sourceText =
+                typeof payload.text === 'string' ? payload.text : '';
+              const targetLang = payload.lang?.to || 'eng';
+              const modelUuid = context.path.split('/')[3] || 'mock-model';
+
+              const translated = sourceText
+                ? `${sourceText} (${targetLang.toUpperCase()})`
+                : `Translation for ${targetLang.toUpperCase()}`;
+
+              context.contentType = 'application/json';
+              context.status = 200;
+              context.body = JSON.stringify({
+                status: 'success',
+                model: modelUuid,
+                text: translated,
+                result: translated,
+                lang: {
+                  from: payload.lang?.from || 'eng',
+                  to: targetLang
+                }
+              });
+              resolve();
+            });
+          });
+        }
       }
     },
     {
@@ -344,6 +390,7 @@ export default {
           
           if (fs.existsSync(flowsDir)) {
             const files = fs.readdirSync(flowsDir).filter(file => file.endsWith('.json'));
+            console.log(`Listing ${files.length} flow files from ${flowsDir}...`);
 
             // Return JSON array of filenames
             context.contentType = 'application/json';

@@ -88,6 +88,7 @@ export interface AppState {
 
   setFlowContents: (flow: FlowContents) => void;
   setFlowInfo: (info: FlowInfo) => void;
+  setRevision: (revision: number) => void;
   setLanguageCode: (languageCode: string) => void;
   setDirtyDate: (date: Date) => void;
   expandCanvas: (width: number, height: number) => void;
@@ -109,6 +110,17 @@ export interface AppState {
   createStickyNote(position: FlowPosition): string;
   createNode(nodeType: string, position: FlowPosition): string;
   addNode(node: Node, nodeUI: NodeUI): void;
+  updateLocalization(
+    languageCode: string,
+    actionUuid: string,
+    localizationData: Record<string, any>
+  ): void;
+  setTranslationFilters: (filters: { categories: boolean }) => void;
+  markAutoTranslated: (
+    languageCode: string,
+    uuid: string,
+    attributes: string[]
+  ) => void;
 }
 
 export const zustand = createStore<AppState>()(
@@ -205,6 +217,12 @@ export const zustand = createStore<AppState>()(
         });
       },
 
+      setRevision: (revision: number) => {
+        set((state: AppState) => {
+          state.flowDefinition.revision = revision;
+        });
+      },
+
       setLanguageCode: (languageCode: string) => {
         set((state: AppState) => {
           state.languageCode = languageCode;
@@ -253,10 +271,46 @@ export const zustand = createStore<AppState>()(
           }
 
           state.flowDefinition = produce(state.flowDefinition, (draft) => {
+            // For each node being removed, check if we should reroute connections
+            uuids.forEach((removedUuid) => {
+              const removedNode = draft.nodes.find(
+                (n) => n.uuid === removedUuid
+              );
+
+              if (!removedNode || !removedNode.exits.length) return;
+
+              // Get all destinations (filter out null/undefined)
+              const destinations = removedNode.exits
+                .map((exit) => exit.destination_uuid)
+                .filter((dest) => dest);
+
+              // Only proceed if all exits have destinations and they all point to the same place
+              if (
+                destinations.length === removedNode.exits.length &&
+                destinations.every((dest) => dest === destinations[0])
+              ) {
+                const targetDestination = destinations[0];
+                // Don't reroute if the target is also being removed
+                if (uuids.includes(targetDestination)) return;
+
+                // Find all nodes with exits pointing to the node being removed
+                draft.nodes.forEach((node) => {
+                  node.exits.forEach((exit) => {
+                    if (exit.destination_uuid === removedUuid) {
+                      // Reroute to the same destination the removed node was going to
+                      exit.destination_uuid = targetDestination;
+                    }
+                  });
+                });
+              }
+            });
+
+            // Remove the nodes
             draft.nodes = draft.nodes.filter(
               (node) => !uuids.includes(node.uuid)
             );
 
+            // Clear any remaining connections to removed nodes that weren't rerouted
             draft.nodes.forEach((node) => {
               node.exits.forEach((exit) => {
                 if (uuids.includes(exit.destination_uuid)) {
@@ -297,10 +351,21 @@ export const zustand = createStore<AppState>()(
       updateNodeUIConfig: (uuid: string, config: Record<string, any>) => {
         set((state: AppState) => {
           if (state.flowDefinition._ui.nodes[uuid]) {
+            // Handle type separately if provided
+            if (config.type !== undefined) {
+              state.flowDefinition._ui.nodes[uuid].type = config.type;
+            }
+
+            // Update config (excluding type)
             if (!state.flowDefinition._ui.nodes[uuid].config) {
               state.flowDefinition._ui.nodes[uuid].config = {};
             }
-            Object.assign(state.flowDefinition._ui.nodes[uuid].config, config);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { type, ...configWithoutType } = config;
+            Object.assign(
+              state.flowDefinition._ui.nodes[uuid].config,
+              configWithoutType
+            );
           }
           state.dirtyDate = new Date();
         });
@@ -405,6 +470,99 @@ export const zustand = createStore<AppState>()(
 
           state.flowDefinition._ui.nodes[node.uuid] = nodeUI;
 
+          state.dirtyDate = new Date();
+        });
+      },
+
+      updateLocalization: (
+        languageCode: string,
+        actionUuid: string,
+        localizationData: Record<string, any>
+      ) => {
+        set((state: AppState) => {
+          // Initialize localization structure if it doesn't exist
+          if (!state.flowDefinition.localization) {
+            state.flowDefinition.localization = {};
+          }
+
+          if (!state.flowDefinition.localization[languageCode]) {
+            state.flowDefinition.localization[languageCode] = {};
+          }
+
+          // Update or remove the localization for this action
+          if (Object.keys(localizationData).length > 0) {
+            state.flowDefinition.localization[languageCode][actionUuid] =
+              localizationData;
+          } else {
+            // If no localized values, remove the entry
+            delete state.flowDefinition.localization[languageCode][actionUuid];
+          }
+
+          // Clean up empty language sections
+          if (
+            Object.keys(state.flowDefinition.localization[languageCode])
+              .length === 0
+          ) {
+            delete state.flowDefinition.localization[languageCode];
+          }
+
+          // Clean up empty localization object
+          if (Object.keys(state.flowDefinition.localization).length === 0) {
+            delete state.flowDefinition.localization;
+          }
+
+          state.dirtyDate = new Date();
+        });
+      },
+
+      setTranslationFilters: (filters: { categories: boolean }) => {
+        set((state: AppState) => {
+          if (!state.flowDefinition?._ui) {
+            return;
+          }
+
+          const currentFilters = state.flowDefinition._ui
+            .translation_filters || {
+            categories: false
+          };
+
+          state.flowDefinition._ui.translation_filters = {
+            ...currentFilters,
+            categories: !!filters.categories
+          };
+
+          state.dirtyDate = new Date();
+        });
+      },
+
+      markAutoTranslated: (
+        languageCode: string,
+        uuid: string,
+        attributes: string[]
+      ) => {
+        set((state: AppState) => {
+          if (!state.flowDefinition?._ui) {
+            return;
+          }
+
+          if (!state.flowDefinition._ui.auto_translations) {
+            state.flowDefinition._ui.auto_translations = {};
+          }
+
+          if (!state.flowDefinition._ui.auto_translations[languageCode]) {
+            state.flowDefinition._ui.auto_translations[languageCode] = {};
+          }
+
+          const existing =
+            state.flowDefinition._ui.auto_translations[languageCode][uuid] ||
+            [];
+
+          const merged = Array.from(
+            new Set([...existing, ...(attributes || [])])
+          );
+
+          state.flowDefinition._ui.auto_translations[languageCode][uuid] =
+            merged;
           state.dirtyDate = new Date();
         });
       }

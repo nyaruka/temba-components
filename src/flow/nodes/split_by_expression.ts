@@ -1,4 +1,4 @@
-import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -6,7 +6,11 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
@@ -17,6 +21,7 @@ export const split_by_expression: NodeConfig = {
   type: 'split_by_expression',
   name: 'Split by Expression',
   group: SPLIT_GROUPS.split,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   dialogSize: 'large',
   form: {
     operand: {
@@ -95,5 +100,10 @@ export const split_by_expression: NodeConfig = {
       router: finalRouter,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

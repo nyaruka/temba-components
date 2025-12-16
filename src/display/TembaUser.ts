@@ -63,6 +63,9 @@ export class TembaUser extends RapidElement {
   email: string;
 
   @property({ type: String })
+  uuid: string;
+
+  @property({ type: String })
   avatar: string;
 
   public updated(
@@ -87,8 +90,6 @@ export class TembaUser extends RapidElement {
     if (changed.has('avatar')) {
       if (this.avatar) {
         this.bgimage = `url('${this.avatar}') center / contain no-repeat`;
-      } else if (!this.system) {
-        this.bgimage = null;
       }
     }
   }

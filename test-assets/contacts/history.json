@@ -1,9 +1,5 @@
 {
-  "has_older": true,
-  "recent_only": false,
-  "next_before": 1617135091567814,
-  "next_after": 1609359091567814,
-  "start_date": "2019-09-22",
+  "next": "01997d74-bf67-749a-8440-688a41c3b270",
   "events": [
     {
       "uuid": "01997d74-bf67-749a-8440-688a41c3b275",
@@ -55,9 +51,11 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "F",
-      "_failed_reason": "No suitable channel found",
-      "_logs_url": null
+      "_status": {
+        "created_on": "2025-09-24T20:40:28.239437+00:00",
+        "status": "failed",
+        "reason": "error_limit"
+      }
     },
     {
       "uuid": "01997d74-bf67-7305-b5f7-017c6eb04cf7",
@@ -85,14 +83,16 @@
       "created_on": "2025-09-23T20:40:27.239434+00:00",
       "msg": {
         "urn": "tel:+250788123123",
-        "text": "No problem, we are all done then!",
+        "text": "No problem.\nWe are all done here.",
         "channel": {
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
-      "_logs_url": "/channels/channellog/read/1478/"
+      "_status": {
+        "created_on": "2025-09-23T20:40:28.239434+00:00",
+        "status": "wired"
+      }
     },
     {
       "uuid": "01997d74-bf67-74a1-97db-faaf45bbff53",
@@ -106,7 +106,10 @@
           "name": "SMS Channel"
         }
       },
-      "_logs_url": "/channels/channellog/read/1477/"
+      "_deleted": {
+        "created_on": "2025-09-23T20:40:27.239433+00:00",
+        "user": { "name": "Rowan Seymour", "uuid": "rowan-user-uuid" }
+      }
     },
     {
       "uuid": "01997d74-bf67-70c2-bfae-14c661955736",
@@ -120,8 +123,10 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
-      "_logs_url": "/channels/channellog/read/1476/"
+      "_status": {
+        "created_on": "2025-09-23T20:40:28.239434+00:00",
+        "status": "wired"
+      }
     },
     {
       "uuid": "01997d74-bf67-7199-8e8a-200e41a90d71",
@@ -134,8 +139,7 @@
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
         }
-      },
-      "_logs_url": "/channels/channellog/read/1475/"
+      }
     },
     {
       "uuid": "01997d74-bf67-7768-9b3e-1a2dd9b90aa4",
@@ -149,8 +153,10 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
-      "_logs_url": "/channels/channellog/read/1474/"
+      "_status": {
+        "created_on": "2025-09-23T20:40:28.239434+00:00",
+        "status": "wired"
+      }
     },
     {
       "uuid": "01997d74-bf67-74c6-86d6-a9398ee1f5f4",
@@ -163,8 +169,7 @@
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
         }
-      },
-      "_logs_url": "/channels/channellog/read/1473/"
+      }
     },
     {
       "uuid": "01997d74-bf67-75c9-bd59-36a465fc0c88",
@@ -200,8 +205,10 @@
           "name": "SMS Channel"
         }
       },
-      "_status": "W",
-      "_logs_url": "/channels/channellog/read/1472/"
+      "_status": {
+        "created_on": "2025-09-23T20:40:28.239434+00:00",
+        "status": "wired"
+      }
     },
     {
       "uuid": "01997d74-bf67-70a9-a0fc-6543b4d0b3d1",
@@ -229,8 +236,7 @@
           "uuid": "8a81e9e0-10a0-4319-9b00-ce723cfa8303",
           "name": "SMS Channel"
         }
-      },
-      "_logs_url": "/channels/channellog/read/1471/"
+      }
     }
   ]
 }

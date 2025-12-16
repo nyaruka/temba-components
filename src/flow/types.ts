@@ -6,6 +6,27 @@ export interface ValidationResult {
   errors: { [key: string]: string };
 }
 
+/**
+ * Flow types - defines the type of flow being edited
+ */
+export const FlowTypes = {
+  MESSAGE: 'message',
+  VOICE: 'voice',
+  BACKGROUND: 'background'
+} as const;
+
+export type FlowType = (typeof FlowTypes)[keyof typeof FlowTypes];
+
+/**
+ * Features - defines the features available in the account
+ */
+export const Features = {
+  AI: 'ai',
+  AIRTIME: 'airtime'
+} as const;
+
+export type Feature = (typeof Features)[keyof typeof Features];
+
 // Component attribute interfaces - these define what's allowed for each component type
 export interface TextInputAttributes {
   type?: 'text' | 'email' | 'number' | 'url' | 'tel';
@@ -78,10 +99,13 @@ export interface FormConfig {
 export interface NodeConfig extends FormConfig {
   type: string;
   name?: string;
+  aliases?: string[]; // alternate type names for backwards compatibility (won't show in selector)
   group?: ActionGroup | SplitGroup; // Nodes can use either when showAsAction is true
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
   showAsAction?: boolean; // if true, show in action dialog instead of splits (default: false - nodes show in splits)
+  flowTypes?: FlowType[]; // which flow types this node is available for (defaults to all if not specified)
+  features?: Feature[]; // which features are required for this node (all must be present)
   router?: {
     type: 'switch' | 'random';
     defaultCategory?: string;
@@ -104,6 +128,17 @@ export interface NodeConfig extends FormConfig {
   toUIConfig?: (formData: FormData) => Record<string, any>;
   render?: (node: Node, nodeUI?: any) => TemplateResult;
   renderTitle?: (node: Node, nodeUI?: NodeUI) => TemplateResult;
+
+  // Localization support for router categories
+  localizable?: 'categories'; // Only categories are localizable for routers
+  toLocalizationFormData?: (
+    node: Node,
+    localization: Record<string, any>
+  ) => FormData;
+  fromLocalizationFormData?: (
+    formData: FormData,
+    node: Node
+  ) => Record<string, any>;
 }
 
 // New field configuration system for generic form generation
@@ -239,6 +274,8 @@ export interface RowLayoutConfig {
   type: 'row';
   items: LayoutItem[]; // can contain fields, groups, or other rows
   gap?: string; // CSS gap value, defaults to '1rem'
+  label?: string; // optional label for the entire row
+  helpText?: string; // optional help text for the entire row
 }
 
 export interface GroupLayoutConfig {
@@ -348,10 +385,13 @@ export const SPLIT_GROUP_METADATA: Record<SplitGroup, GroupMetadata> = {
 
 export interface ActionConfig extends FormConfig {
   name: string;
+  aliases?: string[]; // alternate type names for backwards compatibility (won't show in selector)
   group: ActionGroup;
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   evaluated?: string[];
   hideFromActions?: boolean; // if true, don't show in action dialog (default: false - actions show in actions)
+  flowTypes?: FlowType[]; // which flow types this action is available for (defaults to all if not specified)
+  features?: Feature[]; // which features are required for this action (all must be present)
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;
@@ -360,4 +400,15 @@ export interface ActionConfig extends FormConfig {
 
   toFormData?: (action: Action) => FormData;
   fromFormData?: (formData: FormData) => Action;
+
+  // Localization support
+  localizable?: string[]; // array of field names that can be localized
+  toLocalizationFormData?: (
+    action: Action,
+    localization: Record<string, any>
+  ) => FormData;
+  fromLocalizationFormData?: (
+    formData: FormData,
+    action: Action
+  ) => Record<string, any>;
 }

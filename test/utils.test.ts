@@ -8,6 +8,26 @@ interface Clip {
 }
 
 import { expect, fixture, html, assert } from '@open-wc/testing';
+
+// disable transitions for all tests to prevent flaky screenshot tests
+const style = document.createElement('style');
+style.textContent = `
+  * {
+    --transition-speed: 0ms !important;
+  }
+`;
+document.head.appendChild(style);
+
+// prevent resize event listeners from being added during tests
+// this prevents flaky positioning in components that adjust on resize
+const originalAddEventListener = window.addEventListener;
+window.addEventListener = function (type, listener, options) {
+  if (type === 'resize') {
+    // skip adding resize listeners during tests
+    return;
+  }
+  return originalAddEventListener.call(this, type, listener, options);
+} as typeof window.addEventListener;
 import MouseHelper from './MouseHelper';
 import { Store } from '../src/store/Store';
 import { stub } from 'sinon';
@@ -220,7 +240,11 @@ export const waitForCondition = async (
   }
 };
 
-export const assertScreenshot = async (filename: string, clip: Clip) => {
+export const assertScreenshot = async (
+  filename: string,
+  clip: Clip,
+  waitForNetwork: boolean = false
+) => {
   // detect if we're running in copilot's environment and use adaptive threshold
   const isCopilotEnvironment = (window as any).isCopilotEnvironment;
   const threshold = isCopilotEnvironment ? 1.0 : 0.1;
@@ -231,7 +255,8 @@ export const assertScreenshot = async (filename: string, clip: Clip) => {
       `${filename}.png`,
       clip,
       exclude,
-      threshold
+      threshold,
+      waitForNetwork
     );
   } catch (error) {
     if (error.message) {

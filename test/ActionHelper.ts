@@ -71,12 +71,13 @@ export class ActionTest<T extends Action> {
    */
   private async assertDialogScreenshot(
     el: HTMLElement,
-    screenshotName: string
+    screenshotName: string,
+    waitForNetwork: boolean = false
   ) {
     const dialog = el.shadowRoot
       .querySelector('temba-dialog')
       .shadowRoot.querySelector('.dialog-container') as HTMLElement;
-    await assertScreenshot(screenshotName, getClip(dialog));
+    await assertScreenshot(screenshotName, getClip(dialog), waitForNetwork);
   }
 
   /**
@@ -84,22 +85,29 @@ export class ActionTest<T extends Action> {
    * 1. Renders the action in a flow node (with screenshot)
    * 2. Opens the node editor (with screenshot)
    * 3. Simulates save and validates round-trip conversion
+   * @param waitForNetwork - If true, waits longer for network idle (useful for slow loading resources)
    */
-  async testAction(action: T, testName: string) {
+  async testAction(
+    action: T,
+    testName: string,
+    waitForNetwork: boolean = false
+  ) {
     it(`${testName}`, async () => {
       // Step 1: Render action in flow node
       const flowNode = await this.renderAction(action);
       expect(flowNode.querySelector('.body')).to.exist;
       await assertScreenshot(
         `actions/${this.actionName}/render/${testName}`,
-        getClip(flowNode)
+        getClip(flowNode),
+        waitForNetwork
       );
 
       // Step 2: Open node editor
       const nodeEditor = await this.openNodeEditor(action);
       await this.assertDialogScreenshot(
         nodeEditor,
-        `actions/${this.actionName}/editor/${testName}`
+        `actions/${this.actionName}/editor/${testName}`,
+        waitForNetwork
       );
 
       // Step 3: Test round-trip conversion (simulates save workflow)
@@ -111,9 +119,9 @@ export class ActionTest<T extends Action> {
         expect(convertedAction.uuid).to.equal(action.uuid);
         expect(convertedAction.type).to.equal(action.type);
 
-        // Validate the converted action
+        // Validate the form data
         if (this.actionConfig.validate) {
-          const validation = this.actionConfig.validate(convertedAction);
+          const validation = this.actionConfig.validate(formData);
           expect(validation.valid).to.be.true;
         }
       }

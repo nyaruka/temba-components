@@ -239,12 +239,21 @@ export class NodeTypeSelector extends RapidElement {
   public open = false;
 
   @property({ type: String })
-  public mode: 'action' | 'split' = 'action';
+  public mode: 'action' | 'split' | 'action-no-branching' = 'action';
+
+  @property({ type: String })
+  public flowType: string = 'message';
+
+  @property({ type: Array })
+  public features: string[] = [];
 
   @state()
   private clickPosition = { x: 0, y: 0 };
 
-  public show(mode: 'action' | 'split', position: { x: number; y: number }) {
+  public show(
+    mode: 'action' | 'split' | 'action-no-branching',
+    position: { x: number; y: number }
+  ) {
     this.mode = mode;
     this.clickPosition = position;
     this.open = true;
@@ -252,6 +261,35 @@ export class NodeTypeSelector extends RapidElement {
 
   public close() {
     this.open = false;
+  }
+
+  /**
+   * Check if a config is available for the current flow type and features
+   */
+  private isConfigAvailable(config: NodeConfig | ActionConfig): boolean {
+    // Check flow type filter
+    if (config.flowTypes !== undefined) {
+      // Empty array means not available for any flow type in selector
+      if (config.flowTypes.length === 0) {
+        return false;
+      }
+      // Non-empty array means check if current flow type is included
+      if (!config.flowTypes.includes(this.flowType as any)) {
+        return false;
+      }
+    }
+    // undefined/null flowTypes means available for all flow types
+
+    // Check features filter - all required features must be present
+    if (config.features && config.features.length > 0) {
+      for (const requiredFeature of config.features) {
+        if (!this.features.includes(requiredFeature)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private handleNodeTypeClick(nodeType: string) {
@@ -267,7 +305,7 @@ export class NodeTypeSelector extends RapidElement {
   }
 
   private getCategories(): NodeCategory[] {
-    if (this.mode === 'action') {
+    if (this.mode === 'action' || this.mode === 'action-no-branching') {
       // Group actions by group
       const actionsByGroup = new Map<
         string,
@@ -280,8 +318,16 @@ export class NodeTypeSelector extends RapidElement {
 
       // Collect regular actions (from ACTION_CONFIG, unless hideFromActions is true)
       Object.entries(ACTION_CONFIG)
-        .filter(([_, config]) => {
-          return config.name && !config.hideFromActions && config.group;
+        .filter(([type, config]) => {
+          // exclude aliases - if config has aliases, check if this type is an alias
+          const isAlias = config.aliases && config.aliases.includes(type);
+          return (
+            !isAlias &&
+            config.name &&
+            !config.hideFromActions &&
+            config.group &&
+            this.isConfigAvailable(config)
+          );
         })
         .forEach(([type, config]) => {
           const group = config.group;
@@ -292,22 +338,27 @@ export class NodeTypeSelector extends RapidElement {
         });
 
       // Collect nodes that have showAsAction=true (these appear as "with split" actions)
-      Object.entries(NODE_CONFIG)
-        .filter(([type, config]) => {
-          return (
-            type !== 'execute_actions' &&
-            config.name &&
-            config.showAsAction &&
-            config.group
-          );
-        })
-        .forEach(([type, config]) => {
-          const group = config.group!;
-          if (!splitsByGroup.has(group)) {
-            splitsByGroup.set(group, []);
-          }
-          splitsByGroup.get(group)!.push({ type, config });
-        });
+      // Only if we're not in 'action-no-branching' mode
+      if (this.mode === 'action') {
+        Object.entries(NODE_CONFIG)
+          .filter(([type, config]) => {
+            return (
+              type !== 'execute_actions' &&
+              type === config.type && // exclude aliases (type won't match config.type for aliases)
+              config.name &&
+              config.showAsAction &&
+              config.group &&
+              this.isConfigAvailable(config)
+            );
+          })
+          .forEach(([type, config]) => {
+            const group = config.group!;
+            if (!splitsByGroup.has(group)) {
+              splitsByGroup.set(group, []);
+            }
+            splitsByGroup.get(group)!.push({ type, config });
+          });
+      }
 
       // Build categories - first regular actions, then splitting actions
       const categories: NodeCategory[] = [];
@@ -393,8 +444,13 @@ export class NodeTypeSelector extends RapidElement {
         .filter(([type, config]) => {
           // exclude execute_actions (it's the default action-only node)
           // exclude nodes that have showAsAction=true (they appear in action mode)
+          // exclude aliases (type won't match config.type for aliases)
           return (
-            type !== 'execute_actions' && config.name && !config.showAsAction
+            type !== 'execute_actions' &&
+            type === config.type &&
+            config.name &&
+            !config.showAsAction &&
+            this.isConfigAvailable(config)
           );
         })
         .forEach(([type, config]) => {
@@ -453,7 +509,11 @@ export class NodeTypeSelector extends RapidElement {
 
     const categories = this.getCategories();
     const title =
-      this.mode === 'action' ? 'Select an Action' : 'Select a Split';
+      this.mode === 'split'
+        ? 'Select a Split'
+        : this.mode === 'action-no-branching'
+        ? 'Add Action'
+        : 'Select an Action';
 
     // Separate regular and branching categories for action mode
     const regularCategories = categories.filter((c) => !c.isBranching);
@@ -467,7 +527,7 @@ export class NodeTypeSelector extends RapidElement {
           <h2>${title}</h2>
         </div>
         <div class="content">
-          ${this.mode === 'action'
+          ${this.mode === 'action' || this.mode === 'action-no-branching'
             ? html`
                 <div class="section-regular">
                   ${regularCategories.map(

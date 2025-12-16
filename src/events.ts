@@ -1,31 +1,10 @@
 import { Msg, ObjectReference, User } from './interfaces';
+import { ContactEvent } from './display/Chat';
 
 export interface EventGroup {
   type: string;
   events: ContactEvent[];
   open: boolean;
-}
-
-export interface ContactEvent {
-  uuid?: string;
-  type: string;
-  created_on: string;
-  _user?: ObjectReference;
-}
-
-export interface ChannelEvent extends ContactEvent {
-  channel_event_type: string;
-  duration: number;
-
-  event: {
-    type: string;
-    channel: { uuid: string; name: string };
-    duration?: number;
-    optin?: {
-      uuid: string;
-      name: string;
-    };
-  };
 }
 
 export interface ContactLanguageChangedEvent extends ContactEvent {
@@ -57,9 +36,16 @@ export interface ChatStartedEvent extends ContactEvent {
 export interface MsgEvent extends ContactEvent {
   msg: Msg;
   optin?: ObjectReference;
-  _status?: string;
-  _failed_reason?: string;
-  _logs_url?: string;
+  _status?: {
+    created_on: string;
+    status: 'wired' | 'sent' | 'delivered' | 'read' | 'errored' | 'failed';
+    reason: 'error_limit' | 'too_old' | 'channel_removed';
+  };
+  _deleted?: {
+    created_on: string;
+    by_contact: boolean;
+    user: { name: string; uuid: string };
+  };
 }
 
 export interface RunEvent extends ContactEvent {
@@ -107,10 +93,6 @@ export interface AirtimeTransferredEvent extends ContactEvent {
 export type CallStartedEvent = ContactEvent;
 
 export interface ContactHistoryPage {
-  has_older: boolean;
-  recent_only: boolean;
-  next_before: number;
-  next_after: number;
-  start_date: Date;
   events: ContactEvent[];
+  next: string | null;
 }

@@ -55,7 +55,7 @@ describe('temba-contact-chat', () => {
     mockedNow = mockNow('2021-03-31T00:31:00.000-00:00');
     clearMockPosts();
     mockGET(
-      /\/contact\/history\/contact-.*/,
+      /\/contact\/chat\/contact-.*/,
       '/test-assets/contacts/history.json'
     );
 
@@ -78,7 +78,8 @@ describe('temba-contact-chat', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-dave-active'
+      contact: 'contact-dave-active',
+      showMessageLogsAfter: '2025-01-01T00:00:00.000Z'
     });
 
     await assertScreenshot('contacts/chat-for-active-contact', getClip(chat));
@@ -88,7 +89,8 @@ describe('temba-contact-chat', () => {
     // we are a StoreElement, so load a store first
     await loadStore();
     const chat: ContactChat = await getContactChat({
-      contact: 'contact-barack-archived'
+      contact: 'contact-barack-archived',
+      showMessageLogsAfter: '2025-01-01T00:00:00.000Z'
     });
 
     await assertScreenshot('contacts/chat-for-archived-contact', getClip(chat));
@@ -125,11 +127,16 @@ describe('temba-contact-chat', () => {
     await updateComponent(compose, text);
 
     const response_body = {
-      contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
-      text: text,
-      attachments: []
+      event: {
+        uuid: 'msg-uuid',
+        contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
+        msg: {
+          text: text,
+          attachments: []
+        }
+      }
     };
-    mockPOST(/api\/v2\/messages\.json/, response_body);
+    mockPOST(/contact\/chat\/contact-dave-active\//, response_body);
 
     const listener = oneEvent(compose, CustomEventType.Submitted, false);
     await typeInto('temba-contact-chat:temba-compose', text, true, true);
@@ -149,14 +156,19 @@ describe('temba-contact-chat', () => {
     await updateComponent(compose, null, attachments);
     const response_attachments = getResponseSuccessFiles(attachments);
     const response_body = {
-      contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
-      text: '',
-      attachments: response_attachments
+      event: {
+        uuid: 'msg-uuid',
+        contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
+        msg: {
+          text: '',
+          attachments: response_attachments
+        }
+      }
     };
     const response_headers = {};
     const response_status = '200';
     mockPOST(
-      /api\/v2\/messages\.json/,
+      /contact\/chat\/contact-dave-active\//,
       response_body,
       response_headers,
       response_status
@@ -184,11 +196,16 @@ describe('temba-contact-chat', () => {
     await updateComponent(compose, text, attachments);
     const response_attachments = getResponseSuccessFiles(attachments);
     const response_body = {
-      contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
-      text: text,
-      attachments: response_attachments
+      event: {
+        uuid: 'msg-uuid',
+        contact: { uuid: 'contact-dave-active', name: 'Dave Matthews' },
+        msg: {
+          text,
+          attachments: response_attachments
+        }
+      }
     };
-    mockPOST(/api\/v2\/messages\.json/, response_body);
+    mockPOST(/contact\/chat\/contact-dave-active\//, response_body);
 
     // press enter
     const listener = oneEvent(compose, CustomEventType.Submitted, false);

@@ -1,13 +1,18 @@
-import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { CallResthook, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 export const split_by_resthook: NodeConfig = {
   type: 'split_by_resthook',
   name: 'Call Resthook',
   group: ACTION_GROUPS.services,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
   form: {
     resthook: {
@@ -126,5 +131,10 @@ export const split_by_resthook: NodeConfig = {
       router: finalRouter,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

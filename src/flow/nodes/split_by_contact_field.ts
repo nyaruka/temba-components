@@ -1,4 +1,4 @@
-import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
 import {
@@ -6,7 +6,11 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
@@ -44,6 +48,7 @@ export const split_by_contact_field: NodeConfig = {
   type: 'split_by_contact_field',
   name: 'Split by Contact Field',
   group: SPLIT_GROUPS.split,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   dialogSize: 'large',
   form: {
     field: {
@@ -185,5 +190,10 @@ export const split_by_contact_field: NodeConfig = {
   },
   renderTitle: (node: Node, nodeUI?: any) => {
     return html`<div>Split by ${nodeUI.config.operand.name}</div>`;
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

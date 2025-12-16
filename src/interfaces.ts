@@ -103,6 +103,13 @@ export interface Msg {
   direction: string;
   type: string;
   attachments: string[];
+  unsendable_reason?:
+    | 'no_route'
+    | 'contact_blocked'
+    | 'contact_stopped'
+    | 'contact_archived'
+    | 'org_suspended'
+    | 'looping';
 }
 
 export interface ObjectReference {
@@ -278,6 +285,8 @@ export enum CustomEventType {
   OrderChanged = 'temba-order-changed',
   DragStart = 'temba-drag-start',
   DragStop = 'temba-drag-stop',
+  DragExternal = 'temba-drag-external',
+  DragInternal = 'temba-drag-internal',
   Resized = 'temba-resized',
   DetailsChanged = 'temba-details-changed',
   Error = 'temba-error',
@@ -288,6 +297,7 @@ export enum CustomEventType {
   DateRangeChanged = 'temba-date-range-changed',
   NodeDeleted = 'temba-node-deleted',
   ActionEditRequested = 'temba-action-edit-requested',
+  AddActionRequested = 'temba-add-action-requested',
   ActionSaved = 'temba-action-saved',
   ActionEditCanceled = 'temba-action-edit-canceled',
   NodeEditRequested = 'temba-node-edit-requested',

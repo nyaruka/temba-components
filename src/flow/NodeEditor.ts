@@ -1,7 +1,7 @@
 import { html, TemplateResult, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
-import { Node, NodeUI, Action } from '../store/flow-definition';
+import { Node, NodeUI, Action, FlowDefinition } from '../store/flow-definition';
 import {
   ValidationResult,
   NodeConfig,
@@ -22,6 +22,8 @@ import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
+import { AppState, fromStore, zustand } from '../store/AppState';
+import { getStore } from '../store/Store';
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -92,6 +94,28 @@ export class NodeEditor extends RapidElement {
         display: grid;
         gap: 1rem;
         align-items: center;
+      }
+
+      .form-row-wrapper {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-row-label {
+        margin-bottom: 5px;
+        margin-left: 4px;
+        display: block;
+        font-weight: 400;
+        font-size: var(--label-size);
+        letter-spacing: 0.05em;
+        line-height: normal;
+        color: var(--color-label, #777);
+      }
+
+      .form-row-help {
+        font-size: 12px;
+        color: #666;
+        margin-top: 6px;
       }
 
       .form-group {
@@ -297,6 +321,54 @@ export class NodeEditor extends RapidElement {
       .optional-field-link a:hover {
         text-decoration: underline;
       }
+
+      .original-value {
+        background: #fff8dc;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #666;
+      }
+
+      .original-value-content {
+        color: #333;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .category-localization-table {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .category-localization-row {
+        display: grid;
+        grid-template-columns: 40% 60%;
+      }
+
+      .category-localization-row:last-child {
+        border-bottom: none;
+      }
+
+      .original-name {
+        padding: 10px 20px;
+        background: #fff8dc;
+        display: flex;
+        align-items: center;
+        border-radius: var(--curvature);
+      }
+
+      .localized-name {
+        padding: 10px;
+        display: flex;
+        align-items: center;
+      }
+
+      .localized-name temba-textinput {
+        width: 100%;
+      }
     `;
   }
 
@@ -329,6 +401,15 @@ export class NodeEditor extends RapidElement {
 
   @state()
   private revealedOptionalFields: Set<string> = new Set();
+
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
+
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private flowDefinition!: FlowDefinition;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -370,7 +451,23 @@ export class NodeEditor extends RapidElement {
       // Action editing mode - use action config
       const actionConfig = ACTION_CONFIG[this.action.type];
 
-      if (actionConfig?.toFormData) {
+      // Check if we're in localization mode
+      if (
+        this.isTranslating &&
+        actionConfig?.localizable &&
+        actionConfig.toLocalizationFormData
+      ) {
+        // Get localized values for this action
+        const localization =
+          this.flowDefinition?.localization?.[this.languageCode]?.[
+            this.action.uuid
+          ] || {};
+
+        this.formData = actionConfig.toLocalizationFormData(
+          this.action,
+          localization
+        );
+      } else if (actionConfig?.toFormData) {
         const formDataOrPromise = actionConfig.toFormData(this.action);
         if (formDataOrPromise instanceof Promise) {
           formDataOrPromise.then((formData) => {
@@ -395,7 +492,22 @@ export class NodeEditor extends RapidElement {
     } else if (this.node) {
       // Node editing mode - use node config
       const nodeConfig = this.getNodeConfig();
-      if (nodeConfig?.toFormData) {
+
+      // Check if we're in localization mode for a node with localizable categories
+      if (
+        this.isTranslating &&
+        nodeConfig?.localizable === 'categories' &&
+        nodeConfig.toLocalizationFormData
+      ) {
+        // Get localized values for this node's categories
+        const localization =
+          this.flowDefinition?.localization?.[this.languageCode] || {};
+
+        this.formData = nodeConfig.toLocalizationFormData(
+          this.node,
+          localization
+        );
+      } else if (nodeConfig?.toFormData) {
         const formDataOrPromise = nodeConfig.toFormData(this.node, this.nodeUI);
         if (formDataOrPromise instanceof Promise) {
           formDataOrPromise.then((formData) => {
@@ -551,19 +663,93 @@ export class NodeEditor extends RapidElement {
   }
 
   private handleSave(): void {
-    // Validate the form
-    const validation = this.validateForm();
-    if (!validation.valid) {
-      this.errors = validation.errors;
+    // Process form data first
+    const processedFormData = this.processFormDataForSave();
 
-      // Expand any groups that contain validation errors
-      this.expandGroupsWithErrors(validation.errors);
+    // Skip validation if we're in localization mode
+    // (localization only deals with translating text, not changing structure)
+    if (!this.isTranslating) {
+      // Validate the form
+      const validation = this.validateForm();
+      if (!validation.valid) {
+        this.errors = validation.errors;
 
-      return;
+        // Expand any groups that contain validation errors
+        this.expandGroupsWithErrors(validation.errors);
+
+        return;
+      }
     }
 
-    // Process form data to convert key-value arrays to Records before saving
-    const processedFormData = this.processFormDataForSave();
+    // Check if we're in localization mode
+    if (this.isTranslating) {
+      // Handle action localization
+      if (this.action) {
+        const actionConfig = ACTION_CONFIG[this.action.type];
+
+        if (
+          actionConfig?.localizable &&
+          actionConfig.fromLocalizationFormData
+        ) {
+          // Save to localization structure
+          const localizationData = actionConfig.fromLocalizationFormData(
+            processedFormData,
+            this.action
+          );
+
+          // Update the flow definition's localization
+          this.updateLocalization(
+            this.languageCode,
+            this.action.uuid,
+            localizationData
+          );
+
+          // Close the dialog
+          this.fireCustomEvent(CustomEventType.NodeEditCancelled, {});
+          return;
+        }
+      }
+
+      // Handle node localization (for router categories)
+      if (this.node) {
+        const nodeConfig = this.getNodeConfig();
+
+        if (
+          nodeConfig?.localizable === 'categories' &&
+          nodeConfig.fromLocalizationFormData
+        ) {
+          // Get localization data for all categories
+          const localizationData = nodeConfig.fromLocalizationFormData(
+            processedFormData,
+            this.node
+          );
+
+          const languageLocalization =
+            this.flowDefinition?.localization?.[this.languageCode] || {};
+          const categories = this.node?.router?.categories || [];
+
+          categories.forEach((category) => {
+            const categoryUuid = category.uuid;
+            const nextLocalization = localizationData[categoryUuid];
+
+            if (nextLocalization) {
+              this.updateLocalization(
+                this.languageCode,
+                categoryUuid,
+                nextLocalization
+              );
+            } else if (languageLocalization[categoryUuid]) {
+              // Remove existing localization when the translation was cleared
+              this.updateLocalization(this.languageCode, categoryUuid, {});
+            }
+          });
+
+          // Close the dialog
+          this.fireCustomEvent(CustomEventType.NodeEditCancelled, {});
+          return;
+        }
+      }
+    }
 
     // Determine whether to use node or action saving based on context
     // If we have a node with a router, always use node saving (even if action is set)
@@ -603,6 +789,17 @@ export class NodeEditor extends RapidElement {
         uiConfig
       });
     }
+  }
+
+  private updateLocalization(
+    languageCode: string,
+    actionUuid: string,
+    localizationData: Record<string, any>
+  ): void {
+    // Use the store method to properly update localization with immer
+    zustand
+      .getState()
+      .updateLocalization(languageCode, actionUuid, localizationData);
   }
 
   private processFormDataForSave(): FormData {
@@ -664,8 +861,9 @@ export class NodeEditor extends RapidElement {
             }
           }
 
-          // Check required fields
+          // Check required fields (skip in localization mode since all fields are optional)
           if (
+            !this.isTranslating &&
             (fieldConfig as any).required &&
             (!value || (Array.isArray(value) && value.length === 0))
           ) {
@@ -1081,22 +1279,30 @@ export class NodeEditor extends RapidElement {
     });
   }
 
+  /**
+   * Helper method to check if a field is visible based on its conditions
+   */
+  private isFieldVisible(fieldName: string, config: FieldConfig): boolean {
+    if (config.conditions?.visible) {
+      try {
+        return config.conditions.visible(this.formData);
+      } catch (error) {
+        console.error(`Error checking visibility for ${fieldName}:`, error);
+        // If there's an error, show the field by default
+        return true;
+      }
+    }
+    return true;
+  }
+
   private renderNewField(
     fieldName: string,
     config: FieldConfig,
     value: any
   ): TemplateResult {
     // Check visibility condition
-    if (config.conditions?.visible) {
-      try {
-        const isVisible = config.conditions.visible(this.formData);
-        if (!isVisible) {
-          return html``;
-        }
-      } catch (error) {
-        console.error(`Error checking visibility for ${fieldName}:`, error);
-        // If there's an error, show the field by default
-      }
+    if (!this.isFieldVisible(fieldName, config)) {
+      return html``;
     }
 
     const errors = this.errors[fieldName] ? [this.errors[fieldName]] : [];
@@ -1106,6 +1312,12 @@ export class NodeEditor extends RapidElement {
       ? `max-width: ${config.maxWidth};`
       : '';
 
+    // Render original value if in localization mode and action has the field
+    const originalValueDisplay =
+      this.isTranslating && this.action && fieldName in this.action
+        ? this.renderOriginalValue(fieldName, this.action[fieldName])
+        : html``;
+
     const fieldContent = this.renderFieldContent(
       fieldName,
       config,
@@ -1113,12 +1325,14 @@ export class NodeEditor extends RapidElement {
       errors
     );
 
+    const content = html` ${originalValueDisplay} ${fieldContent} `;
+
     // Wrap in container with style if maxWidth is specified
     if (containerStyle) {
-      return html`<div style="${containerStyle}">${fieldContent}</div>`;
+      return html`<div style="${containerStyle}">${content}</div>`;
     }
 
-    return fieldContent;
+    return content;
   }
 
   private renderOptionalField(
@@ -1158,14 +1372,104 @@ export class NodeEditor extends RapidElement {
     ]);
   }
 
+  private renderCategoryLocalizationTable(): TemplateResult {
+    const categories = this.formData.categories || {};
+    const categoryEntries = Object.entries(categories);
+
+    if (categoryEntries.length === 0) {
+      return html`<div>No categories to localize</div>`;
+    }
+
+    const languageName = getStore().getLanguageName(this.languageCode);
+
+    return html`
+      <div class="category-localization-table">
+        ${categoryEntries.map(
+          ([categoryUuid, categoryData]: [string, any]) => html`
+            <div class="category-localization-row">
+              <div class="original-name">${categoryData.originalName}</div>
+              <div class="localized-name">
+                <temba-textinput
+                  name="${categoryUuid}"
+                  placeholder="${languageName} Translation"
+                  value="${categoryData.localizedName || ''}"
+                  @change=${(e: Event) =>
+                    this.handleCategoryLocalizationChange(
+                      categoryUuid,
+                      (e.target as any).value
+                    )}
+                ></temba-textinput>
+              </div>
+            </div>
+          `
+        )}
+      </div>
+    `;
+  }
+
+  private handleCategoryLocalizationChange(
+    categoryUuid: string,
+    value: string
+  ): void {
+    // Update formData with new localized value
+    if (!this.formData.categories) {
+      this.formData.categories = {};
+    }
+
+    if (!this.formData.categories[categoryUuid]) {
+      this.formData.categories[categoryUuid] = {};
+    }
+
+    this.formData.categories[categoryUuid].localizedName = value;
+
+    // Trigger a re-render
+    this.requestUpdate();
+  }
+
+  private renderOriginalValue(
+    fieldName: string,
+    originalValue: any
+  ): TemplateResult {
+    // Format the original value for display
+    let displayValue = '';
+
+    if (Array.isArray(originalValue)) {
+      if (originalValue.length === 0) {
+        return html``; // Don't show anything for empty arrays
+      }
+      // For arrays, join with commas
+      displayValue = originalValue.join(', ');
+    } else if (typeof originalValue === 'string') {
+      displayValue = originalValue;
+    } else if (originalValue) {
+      displayValue = String(originalValue);
+    }
+
+    // Don't show if empty
+    if (!displayValue || displayValue.trim() === '') {
+      return html``;
+    }
+
+    return html`
+      <div class="original-value">
+        <div class="original-value-content">${displayValue}</div>
+      </div>
+    `;
+  }
+
   private renderFieldContent(
     fieldName: string,
     config: FieldConfig,
     value: any,
     errors: string[]
   ): TemplateResult {
+    // In localization mode, make all fields optional (not required)
+    const fieldConfig = this.isTranslating
+      ? { ...config, required: false }
+      : config;
+
     // Use FieldRenderer for consistent field rendering
-    return FieldRenderer.renderField(fieldName, config, value, {
+    return FieldRenderer.renderField(fieldName, fieldConfig, value, {
       errors,
       onChange: (e: Event) => {
         // Handle different change event types
@@ -1304,7 +1608,7 @@ export class NodeEditor extends RapidElement {
     config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
-    const { items, gap = '1rem' } = rowConfig;
+    const { items, gap = '1rem', label, helpText } = rowConfig;
 
     // Collect all fields from this row for width calculations
     const fieldsInRow = this.collectFieldsFromItems(items);
@@ -1312,26 +1616,77 @@ export class NodeEditor extends RapidElement {
       (fieldName) => config.form?.[fieldName]
     );
 
-    if (validFields.length === 0) {
+    // Filter for visible fields only to handle conditional visibility
+    const visibleFields = validFields.filter((fieldName) => {
+      const fieldConfig = config.form![fieldName];
+      return this.isFieldVisible(fieldName, fieldConfig);
+    });
+
+    if (visibleFields.length === 0) {
       return html``;
     }
 
-    // Calculate grid template columns based on field maxWidth constraints
-    const columns = validFields.map((fieldName) => {
+    // Build a map of field flex styles
+    // Fields with maxWidth get flex: 0 0 {maxWidth} (fixed)
+    // Fields without maxWidth get flex: 1 1 0 (grow to fill space)
+    const fieldFlexStyles = new Map<string, string>();
+    visibleFields.forEach((fieldName) => {
       const fieldConfig = config.form![fieldName];
-      return fieldConfig.maxWidth || '1fr';
+      if (fieldConfig.maxWidth) {
+        // Fixed width field: no grow, no shrink, basis = maxWidth
+        fieldFlexStyles.set(fieldName, `flex: 0 0 ${fieldConfig.maxWidth};`);
+      } else {
+        // Flexible field: grow to fill remaining space
+        fieldFlexStyles.set(fieldName, `flex: 1 1 0;`);
+      }
     });
 
+    const rowContent = html`
+      <div class="form-row" style="display: flex; gap: ${gap};">
+        ${items.map((item) => {
+          // Get the field name from the item
+          const fieldName =
+            typeof item === 'string'
+              ? item
+              : item.type === 'field'
+              ? item.field
+              : null;
+
+          // Get flex style for this field if it's a visible field
+          const flexStyle =
+            fieldName && fieldFlexStyles.has(fieldName)
+              ? fieldFlexStyles.get(fieldName)
+              : '';
+
+          const itemContent = this.renderLayoutItem(
+            item,
+            config,
+            renderedFields
+          );
+
+          // Wrap in a div with flex style if we have a flex style
+          return flexStyle
+            ? html`<div style="${flexStyle}">${itemContent}</div>`
+            : itemContent;
+        })}
+      </div>
+    `;
+
+    // If no label or helpText, return just the row content
+    if (!label && !helpText) {
+      return rowContent;
+    }
+
+    // Otherwise, wrap with label on top, content, then helpText below (matching field pattern)
     return html`
-      <div
-        class="form-row"
-        style="display: grid; grid-template-columns: ${columns.join(
-          ' '
-        )}; gap: ${gap};"
-      >
-        ${items.map((item) =>
-          this.renderLayoutItem(item, config, renderedFields)
-        )}
+      <div class="form-row-wrapper">
+        ${label ? html`<label class="form-row-label">${label}</label>` : ''}
+        ${rowContent}
+        ${helpText
+          ? html`<div class="form-row-help">
+              ${renderMarkdownInline(helpText)}
+            </div>`
+          : ''}
       </div>
     `;
   }
@@ -1554,6 +1909,15 @@ export class NodeEditor extends RapidElement {
       return html` <div>No configuration available</div> `;
     }
 
+    // Special rendering for category localization
+    if (
+      this.isTranslating &&
+      config.localizable === 'categories' &&
+      this.formData.categories
+    ) {
+      return this.renderCategoryLocalizationTable();
+    }
+
     // Use the new fields configuration system
     if (config.form) {
       // If layout is specified, use it
@@ -1613,6 +1977,11 @@ export class NodeEditor extends RapidElement {
   private renderGutter(): TemplateResult {
     const config = this.getConfig();
     if (!config?.gutter || config.gutter.length === 0) {
+      return html``;
+    }
+
+    // Don't show gutter when localizing categories
+    if (this.isTranslating && config.localizable === 'categories') {
       return html``;
     }
 
@@ -1697,18 +2066,28 @@ export class NodeEditor extends RapidElement {
       return html``;
     }
 
-    const headerColor = this.getHeaderColor();
+    const headerColor = this.isTranslating ? '#505050' : this.getHeaderColor();
+    const headerTextColor = this.isTranslating ? '#fff' : '#fff';
     const config = this.getConfig();
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
+    const languageName = this.isTranslating
+      ? getStore().getLanguageName(this.languageCode)
+      : '';
+
+    let header = config?.name || 'Edit';
+    if (this.isTranslating) {
+      header = languageName ? `${languageName} - ${header}` : header;
+    }
+
     return html`
       <temba-dialog
-        header="${config?.name || 'Edit'}"
+        header="${header}"
         .open="${this.isOpen}"
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"
         cancelButtonName="Cancel"
-        style="--header-bg: ${headerColor}"
+        style="--header-bg: ${headerColor}; --header-text: ${headerTextColor};"
         size="${dialogSize}"
       >
         <div class="node-editor-form">

@@ -1,6 +1,10 @@
-import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition.d';
 import { generateUUID } from '../../utils';
+import {
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 // Helper function to create a random router with categories
 const createRandomRouter = (
@@ -49,6 +53,7 @@ export const split_by_random: NodeConfig = {
   type: 'split_by_random',
   name: 'Random Split',
   group: SPLIT_GROUPS.split,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   form: {
     categories: {
       type: 'array',
@@ -155,5 +160,10 @@ export const split_by_random: NodeConfig = {
   },
   router: {
     type: 'random'
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

@@ -1,4 +1,4 @@
-import { SPLIT_GROUPS, FormData, NodeConfig } from '../types';
+import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { generateUUID, createRulesRouter } from '../../utils';
 import {
@@ -6,7 +6,11 @@ import {
   operatorsToSelectOptions,
   getOperatorConfig
 } from '../operators';
-import { resultNameField } from './shared';
+import {
+  resultNameField,
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 import {
   createRulesArrayConfig,
   extractUserRules,
@@ -77,6 +81,7 @@ export const wait_for_response: NodeConfig = {
   type: 'wait_for_response',
   name: 'Wait for Response',
   group: SPLIT_GROUPS.wait,
+  flowTypes: [FlowTypes.MESSAGE],
   dialogSize: 'large',
   form: {
     rules: createRulesArrayConfig(
@@ -96,9 +101,10 @@ export const wait_for_response: NodeConfig = {
       type: 'select',
       placeholder: '5 minutes',
       multi: false,
-      maxWidth: '150px',
+      maxWidth: '100px',
       flavor: 'xsmall',
       options: TIMEOUT_OPTIONS,
+
       conditions: {
         visible: (formData: Record<string, any>) => {
           return formData.timeout_enabled === true;
@@ -389,5 +395,10 @@ export const wait_for_response: NodeConfig = {
       router: finalRouter,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

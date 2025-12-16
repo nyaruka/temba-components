@@ -5,7 +5,7 @@ import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from './display/Toast';
-import { v4 as generateUUID } from 'uuid';
+import { v4 as generateUUID, v7 as generateUUIDv7 } from 'uuid';
 
 export const DEFAULT_MEDIA_ENDPOINT = '/api/v2/media.json';
 
@@ -84,19 +84,19 @@ export const getHeaders = (headers: any = {}) => {
 
   const fetchHeaders: any = csrf ? { 'X-CSRFToken': csrf } : {};
 
-  // include the current org id
-  const org_id = (window as any).org_id;
-  if (org_id) {
-    fetchHeaders['X-Temba-Org'] = org_id;
+  // include the current workspace identifier
+  const workspaceUUID = (window as any).workspace?.uuid;
+  if (workspaceUUID) {
+    fetchHeaders['X-Temba-Workspace'] = workspaceUUID;
   }
 
   // mark us as ajax
   fetchHeaders['X-Requested-With'] = 'XMLHttpRequest';
 
   Object.keys(headers).forEach((key) => {
-    // if we are adding a service org, we omit temba-org
+    // if we are requesting to service, we omit current workspace identifier
     if (key === 'X-Temba-Service-Org') {
-      delete fetchHeaders['X-Temba-Org'];
+      delete fetchHeaders['X-Temba-Workspace'];
     }
 
     fetchHeaders[key] = headers[key];
@@ -918,8 +918,8 @@ export const getMiddle = (a: DOMRect, b: DOMRect) => {
   return a.top + a.height / 2 - b.height / 2;
 };
 
-// Export the UUID function from the uuid package
-export { generateUUID };
+// Export the UUID functions from the uuid package
+export { generateUUID, generateUUIDv7 };
 
 // Helper types for router creation
 export interface RouterCategory {

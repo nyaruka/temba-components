@@ -9,6 +9,7 @@ import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
+import { AppState, fromStore, zustand } from '../store/AppState';
 
 const DRAG_THRESHOLD = 5;
 
@@ -25,6 +26,22 @@ export class CanvasNode extends RapidElement {
 
   @property({ type: Object })
   private ui: NodeUI;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
+
+  @fromStore(zustand, (state: AppState) => state.languageCode)
+  private languageCode!: string;
+
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private flowDefinition!: any;
+
+  @fromStore(
+    zustand,
+    (state: AppState) =>
+      state.flowDefinition?._ui?.translation_filters?.categories || false
+  )
+  private includeCategoriesInTranslation!: boolean;
 
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
@@ -46,6 +63,22 @@ export class CanvasNode extends RapidElement {
   // Track node click state to distinguish from drag
   private nodeClickStartPos: { x: number; y: number } | null = null;
   private pendingNodeClick: { event: MouseEvent } | null = null;
+
+  // Track the height of the action being dragged (captured at drag start)
+  private draggedActionHeight: number = 0;
+
+  // Track external action drag (action being dragged from another node)
+  private externalDragInfo: {
+    action: Action;
+    sourceNodeUuid: string;
+    actionIndex: number;
+    dropIndex: number;
+    actionHeight: number;
+  } | null = null;
+
+  // Track if we're showing a placeholder for our own last action being dragged out
+  private showLastActionPlaceholder = false;
+  private lastActionPlaceholderHeight = 60;
 
   static get styles() {
     return css`
@@ -90,6 +123,7 @@ export class CanvasNode extends RapidElement {
 
       .action .cn-title:hover .remove-button,
       .router:hover .remove-button {
+        visibility: visible;
         opacity: 0.7;
       }
 
@@ -106,7 +140,7 @@ export class CanvasNode extends RapidElement {
       .remove-button {
         background: transparent;
         color: white;
-        opacity: 0;
+        visibility: hidden;
         cursor: pointer;
         font-size: 1em;
         font-weight: 600;
@@ -114,14 +148,20 @@ export class CanvasNode extends RapidElement {
         z-index: 10;
         transition: all 100ms ease-in-out;
         align-self: center;
-        padding:0.25em;
+        margin-right:0.15em;
         border: 0px solid red;
         width: 1em;
         pointer-events: auto; /* Ensure remove button can receive events */
       }
 
       .remove-button:hover {
+        visibility: visible;
         opacity: 1;
+      }
+
+      .translating-hidden {
+        visibility: hidden !important;
+        pointer-events: none !important;
       }
 
       .action.sortable {
@@ -135,6 +175,7 @@ export class CanvasNode extends RapidElement {
         flex-direction: column;
         min-width: 0; /* Allow flex item to shrink below its content size */
         overflow: hidden;
+        background: #fff;
       }
 
       .action .body {
@@ -148,10 +189,24 @@ export class CanvasNode extends RapidElement {
 
       .node.execute-actions temba-sortable-list .action:last-child .body {
         padding-bottom: 1.5em;
+      }
+
+      /* Localization indicators */
+      .action.localizable:not(.has-localization) .action-content {
+        background: #fff8dc !important; /* Light yellow background for localizable but not yet localized */
+      }
+
+      .non-localizable {
+        opacity: 0.25;
+        pointer-events: none;
+      }
+
+      .action.non-localizable .action-content {
+        cursor: not-allowed;
       }      
 
       .action .drag-handle {
-        opacity: 0;
+        visibility: hidden;
         transition: all 200ms ease-in-out;
         cursor: move;
         background: rgba(0, 0, 0, 0.02);
@@ -166,6 +221,7 @@ export class CanvasNode extends RapidElement {
       }
 
       .action:hover .drag-handle {
+        visibility: visible;
         opacity: 0.7;
         
         
@@ -176,6 +232,7 @@ export class CanvasNode extends RapidElement {
       }
 
       .action .drag-handle:hover {
+        visibility: visible;
         opacity: 1;
         
       }
@@ -216,6 +273,10 @@ export class CanvasNode extends RapidElement {
         margin: 0.2em;
       }
 
+      .router-section {
+        /* Container for router and categories */
+      }
+
       .categories {
         display: flex;
         flex-direction: row;
@@ -230,6 +291,11 @@ export class CanvasNode extends RapidElement {
         text-align: center;
         display: flex;
         flex-direction: column;
+      }
+
+      /* Localizable category - yellow background */
+      .category.localizable {
+        background-color: #fff8dc;
       }
 
       .action-exits {
@@ -340,18 +406,107 @@ export class CanvasNode extends RapidElement {
         border-top-left-radius: var(--curvature);
         border-top-right-radius: var(--curvature);
       }
+
+      /* Add action button */
+      .add-action-button {
+        position: absolute;
+        bottom: 0.5em;
+        right: 0.5em;
+        width: 1.5em;
+        height: 1.5em;
+        border-radius: 50%;
+        background: var(--color-primary, #3b82f6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 200ms ease-in-out;
+        z-index: 10;
+        pointer-events: auto;
+        font-size: 0.9em;
+      }
+
+      .node.execute-actions:hover .add-action-button {
+        opacity: 0.8;
+      }
+
+      .add-action-button:hover {
+        opacity: 1 !important;
+        transform: scale(1.1);
+      }
+
+      .empty-node-placeholder {
+        height: 60px;
+        background: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        border-radius: var(--curvature);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 0.9em;
+      }
   }`;
   }
 
   constructor() {
     super();
     this.handleActionOrderChanged = this.handleActionOrderChanged.bind(this);
+    this.handleActionDragStart = this.handleActionDragStart.bind(this);
+    this.handleActionDragExternal = this.handleActionDragExternal.bind(this);
+    this.handleActionDragInternal = this.handleActionDragInternal.bind(this);
+    this.handleActionDragStop = this.handleActionDragStop.bind(this);
+    this.handleExternalActionDragOver =
+      this.handleExternalActionDragOver.bind(this);
+    this.handleExternalActionDrop = this.handleExternalActionDrop.bind(this);
+    this.handleExternalActionDragLeave =
+      this.handleExternalActionDragLeave.bind(this);
+    this.handleActionShowGhost = this.handleActionShowGhost.bind(this);
+    this.handleActionHideGhost = this.handleActionHideGhost.bind(this);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    // Listen for external action drag events from Editor
+    this.addEventListener(
+      'action-drag-over',
+      this.handleExternalActionDragOver as EventListener
+    );
+    this.addEventListener(
+      'action-drop',
+      this.handleExternalActionDrop as EventListener
+    );
+    this.addEventListener(
+      'action-drag-leave',
+      this.handleExternalActionDragLeave as EventListener
+    );
+    this.addEventListener(
+      'action-show-ghost',
+      this.handleActionShowGhost as EventListener
+    );
+    this.addEventListener(
+      'action-hide-ghost',
+      this.handleActionHideGhost as EventListener
+    );
   }
 
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (!!changes.get('ui') && changes.has('ui')) {
+      // run revalidation every 50ms until 350ms to catch animation updates
+      for (let delay = 25; delay <= 350; delay += 25) {
+        setTimeout(() => {
+          this.plumber.revalidate([this.node.uuid]);
+        }, delay);
+      }
+    }
+
     if (changes.has('node')) {
       // Only proceed if plumber is available (for tests that don't set it up)
       if (this.plumber) {
@@ -391,6 +546,28 @@ export class CanvasNode extends RapidElement {
   disconnectedCallback() {
     // Remove the event listener when the component is removed
     super.disconnectedCallback();
+
+    // Remove external drag event listeners
+    this.removeEventListener(
+      'action-drag-over',
+      this.handleExternalActionDragOver as EventListener
+    );
+    this.removeEventListener(
+      'action-drop',
+      this.handleExternalActionDrop as EventListener
+    );
+    this.removeEventListener(
+      'action-drag-leave',
+      this.handleExternalActionDragLeave as EventListener
+    );
+    this.removeEventListener(
+      'action-show-ghost',
+      this.handleActionShowGhost as EventListener
+    );
+    this.removeEventListener(
+      'action-hide-ghost',
+      this.handleActionHideGhost as EventListener
+    );
 
     // Clear any pending exit removal timeouts
     this.exitRemovalTimeouts.forEach((timeoutId) => {
@@ -593,6 +770,8 @@ export class CanvasNode extends RapidElement {
     }
 
     // Fire the node deleted event
+    // The Editor will handle cleanup (Plumber connections) and call store.removeNodes()
+    // The store's removeNodes method handles rerouting of connections
     this.fireCustomEvent(CustomEventType.NodeDeleted, {
       uuid: this.node.uuid
     });
@@ -600,6 +779,12 @@ export class CanvasNode extends RapidElement {
 
   private handleActionOrderChanged(event: CustomEvent) {
     const [fromIdx, toIdx] = event.detail.swap;
+
+    // If we have an external drag in progress, ignore internal order changes
+    // as they'll be handled by the external drop handler
+    if (this.externalDragInfo) {
+      return;
+    }
 
     // swap our actions
     const newActions = [...this.node.actions];
@@ -614,6 +799,103 @@ export class CanvasNode extends RapidElement {
     getStore()
       ?.getState()
       .updateNode(this.node.uuid, { ...this.node, actions: newActions });
+  }
+
+  private handleActionDragStart(event: CustomEvent) {
+    // Capture the height of the action being dragged
+    const actionId = event.detail.id;
+    const actionElement = this.querySelector(`#${actionId}`) as HTMLElement;
+
+    if (actionElement) {
+      const rect = actionElement.getBoundingClientRect();
+      this.draggedActionHeight = rect.height;
+    } else {
+      // Fallback to a reasonable default
+      this.draggedActionHeight = 60;
+    }
+
+    // If this is the last action, show placeholder
+    if (this.node.actions.length === 1) {
+      this.showLastActionPlaceholder = true;
+      this.lastActionPlaceholderHeight = this.draggedActionHeight;
+      this.requestUpdate();
+    }
+  }
+
+  private handleActionDragExternal(event: CustomEvent) {
+    // stop propagation of the original event from SortableList
+    event.stopPropagation();
+
+    // get the action being dragged
+    const actionId = event.detail.id;
+    const splitId = actionId.split('-');
+    if (splitId.length < 2 || isNaN(parseInt(splitId[1], 10))) {
+      // invalid format, do not proceed
+      return;
+    }
+    const actionIndex = parseInt(splitId[1], 10);
+    const action = this.node.actions[actionIndex];
+
+    // Check if this is the last action
+    const isLastAction = this.node.actions.length === 1;
+
+    // fire event to editor to show canvas drop preview, including the captured height
+    this.fireCustomEvent(CustomEventType.DragExternal, {
+      action,
+      nodeUuid: this.node.uuid,
+      actionIndex,
+      mouseX: event.detail.mouseX,
+      mouseY: event.detail.mouseY,
+      actionHeight: this.draggedActionHeight,
+      isLastAction
+    });
+  }
+
+  private handleActionDragInternal(_event: CustomEvent) {
+    // stop propagation of the original event from SortableList
+    _event.stopPropagation();
+
+    // fire event to editor to hide canvas drop preview
+    this.fireCustomEvent(CustomEventType.DragInternal, {});
+  }
+
+  private handleActionDragStop(event: CustomEvent) {
+    const isExternal = event.detail.isExternal;
+
+    // Clear last action placeholder when drag stops
+    this.showLastActionPlaceholder = false;
+
+    if (isExternal) {
+      // stop propagation of the original event from SortableList
+      event.stopPropagation();
+
+      // get the action being dragged
+      const actionId = event.detail.id;
+      const split = actionId.split('-');
+      if (split.length < 2 || isNaN(Number(split[1]))) {
+        // invalid actionId format, do not proceed
+        return;
+      }
+      const actionIndex = parseInt(split[1], 10);
+      const action = this.node.actions[actionIndex];
+
+      // Check if this is the last action in the node
+      const isLastAction = this.node.actions.length === 1;
+
+      // Always fire the DragStop event so the Editor can handle drops on other nodes
+      // The Editor will decide whether to create a new node or drop on existing node
+      this.fireCustomEvent(CustomEventType.DragStop, {
+        action,
+        nodeUuid: this.node.uuid,
+        actionIndex,
+        isExternal: true,
+        isLastAction,
+        mouseX: event.detail.mouseX,
+        mouseY: event.detail.mouseY
+      });
+    }
+
+    this.requestUpdate();
   }
 
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
@@ -814,6 +1096,160 @@ export class CanvasNode extends RapidElement {
     this.pendingNodeClick = null;
   }
 
+  private handleAddActionClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Fire event to request adding a new action to this node
+    this.fireCustomEvent(CustomEventType.AddActionRequested, {
+      nodeUuid: this.node.uuid
+    });
+  }
+
+  private calculateDropIndex(mouseY: number): number {
+    // Get the sortable list element
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (!sortableList || !this.node.actions)
+      return this.node.actions?.length ?? 0;
+
+    // Get all action elements
+    const actionElements = Array.from(
+      sortableList.querySelectorAll('.action.sortable')
+    );
+
+    if (actionElements.length === 0) {
+      return 0;
+    }
+
+    // Find where to insert based on mouse Y position
+    for (let i = 0; i < actionElements.length; i++) {
+      const actionElement = actionElements[i] as HTMLElement;
+      const rect = actionElement.getBoundingClientRect();
+      const centerY = rect.top + rect.height / 2;
+
+      if (mouseY < centerY) {
+        return i;
+      }
+    }
+
+    // If past all elements, insert at the end
+    return actionElements.length;
+  }
+
+  private handleExternalActionDragOver(event: CustomEvent): void {
+    // Only handle if this is an execute_actions node
+    if (this.ui.type !== 'execute_actions') return;
+
+    const { action, sourceNodeUuid, actionIndex, mouseY, actionHeight } =
+      event.detail;
+
+    // Don't accept drops from the same node
+    if (sourceNodeUuid === this.node.uuid) return;
+
+    // Calculate where to drop
+    const dropIndex = this.calculateDropIndex(mouseY);
+
+    // Store the drag info
+    this.externalDragInfo = {
+      action,
+      sourceNodeUuid,
+      actionIndex,
+      dropIndex,
+      actionHeight: actionHeight || 60 // fallback to 60px if not provided
+    };
+
+    // Request update to show placeholder
+    this.requestUpdate();
+  }
+
+  private handleExternalActionDragLeave(_event: CustomEvent): void {
+    // Clear external drag state when drag leaves this node
+    this.externalDragInfo = null;
+    this.requestUpdate();
+  }
+
+  private handleActionShowGhost(_event: CustomEvent): void {
+    // Show the ghost element in the sortable list
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (sortableList) {
+      const ghostElement = document.querySelector('.ghost') as HTMLElement;
+      if (ghostElement) {
+        ghostElement.style.display = 'block';
+      }
+    }
+  }
+
+  private handleActionHideGhost(_event: CustomEvent): void {
+    // Hide the ghost element in the sortable list
+    const sortableList = this.querySelector('temba-sortable-list');
+    if (sortableList) {
+      const ghostElement = document.querySelector('.ghost') as HTMLElement;
+      if (ghostElement) {
+        ghostElement.style.display = 'none';
+      }
+    }
+  }
+
+  private handleExternalActionDrop(event: CustomEvent): void {
+    // Only handle if this is an execute_actions node
+    if (this.ui.type !== 'execute_actions') return;
+
+    const { action, sourceNodeUuid, actionIndex } = event.detail;
+
+    // Don't accept drops from the same node
+    if (sourceNodeUuid === this.node.uuid) return;
+
+    // Get the drop index from our tracking state
+    const dropIndex =
+      this.externalDragInfo?.dropIndex ?? this.node.actions?.length ?? 0;
+
+    // Clear external drag state
+    this.externalDragInfo = null;
+
+    const store = getStore();
+    if (!store) return;
+
+    const flowDefinition = store.getState().flowDefinition;
+    if (!flowDefinition) return;
+
+    const sourceNode = flowDefinition.nodes.find(
+      (n) => n.uuid === sourceNodeUuid
+    );
+
+    if (!sourceNode) return;
+
+    // IMPORTANT: Add the action to this node FIRST, before removing from source
+    // This ensures we don't lose the action if the source node gets deleted
+    const newActions = [...this.node.actions];
+    newActions.splice(dropIndex, 0, action);
+
+    const updatedNode = { ...this.node, actions: newActions };
+    getStore()?.getState().updateNode(this.node.uuid, updatedNode);
+
+    // Now remove the action from the source node
+    const updatedSourceActions = sourceNode.actions.filter(
+      (_a, idx) => idx !== actionIndex
+    );
+
+    // If source node has no actions left, remove it
+    if (updatedSourceActions.length === 0) {
+      // Fire event to Editor so it can clean up jsPlumb connections properly
+      this.fireCustomEvent(CustomEventType.NodeDeleted, {
+        uuid: sourceNodeUuid
+      });
+    } else {
+      // Update source node
+      const updatedSourceNode = {
+        ...sourceNode,
+        actions: updatedSourceActions
+      };
+      getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
+    }
+
+    // Request update
+    this.requestUpdate();
+  }
+
   private renderTitle(
     config: ActionConfig,
     action: Action,
@@ -824,13 +1260,25 @@ export class CanvasNode extends RapidElement {
       ? ACTION_GROUP_METADATA[config.group]?.color
       : '#aaaaaa';
     return html`<div class="cn-title" style="background:${color}">
-      ${this.node?.actions?.length > 1
-        ? html`<temba-icon class="drag-handle" name="sort"></temba-icon>`
+      ${this.ui?.type === 'execute_actions'
+        ? html`<temba-icon
+            class="drag-handle ${this.isTranslating
+              ? 'translating-hidden'
+              : ''}"
+            name="sort"
+          ></temba-icon>`
+        : this.node?.actions?.length > 1
+        ? html`<temba-icon
+            class="drag-handle ${this.isTranslating
+              ? 'translating-hidden'
+              : ''}"
+            name="sort"
+          ></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div
-        class="remove-button"
+        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
         @click=${(e: MouseEvent) =>
           this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
@@ -864,7 +1312,7 @@ export class CanvasNode extends RapidElement {
           : html`${config.name}`}
       </div>
       <div
-        class="remove-button"
+        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
         @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
         title="Remove node"
       >
@@ -873,25 +1321,101 @@ export class CanvasNode extends RapidElement {
     </div>`;
   }
 
+  private renderDropPlaceholder() {
+    const height = this.externalDragInfo?.actionHeight || 60;
+    return html`<div
+      class="action sortable drop-placeholder"
+      style="height: ${height}px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: var(--curvature);"
+    ></div>`;
+  }
+
+  /**
+   * Get the localized version of an action if translating, otherwise return the original action.
+   * Falls back to base language values if no localization exists for a field.
+   */
+  private getLocalizedAction(action: Action): Action {
+    // If not translating or no flow definition, return original action
+    if (
+      !this.isTranslating ||
+      !this.flowDefinition ||
+      !this.languageCode ||
+      this.languageCode === this.flowDefinition.language
+    ) {
+      return action;
+    }
+
+    // Check if there's localization for this action
+    const localization =
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
+
+    if (!localization) {
+      // No localization available, return original action
+      return action;
+    }
+
+    // Create a new action with localized values, falling back to base language
+    const localizedAction = { ...action };
+
+    // Apply localized values for each field
+    Object.keys(localization).forEach((field) => {
+      const localizedValue = localization[field];
+      if (Array.isArray(localizedValue)) {
+        // Localized values are stored as arrays
+        if (localizedValue.length > 0) {
+          // For single-value fields like 'text', take the first element
+          // For array fields like 'quick_replies', use the whole array
+          if (Array.isArray(action[field])) {
+            localizedAction[field] = localizedValue;
+          } else {
+            localizedAction[field] = localizedValue[0];
+          }
+        }
+      }
+    });
+
+    return localizedAction;
+  }
+
   private renderAction(node: Node, action: Action, index: number) {
     const config = ACTION_CONFIG[action.type];
     const isRemoving = this.actionRemovingState.has(action.uuid);
+    const isLocalizable = config?.localizable && config.localizable.length > 0;
+    const isDisabled = this.isTranslating && !isLocalizable;
+
+    // Check if this action has localization data
+    const hasLocalization =
+      this.isTranslating &&
+      this.flowDefinition?.localization?.[this.languageCode]?.[action.uuid];
+
+    // Get the localized action if translating
+    const displayAction = this.getLocalizedAction(action);
 
     if (config) {
-      return html`<div
-        class="action sortable ${action.type} ${isRemoving ? 'removing' : ''}"
-        id="action-${index}"
-      >
+      const classes = [
+        'action',
+        'sortable',
+        action.type,
+        isRemoving ? 'removing' : '',
+        isLocalizable && this.isTranslating ? 'localizable' : '',
+        hasLocalization ? 'has-localization' : '',
+        isDisabled ? 'non-localizable' : ''
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return html`<div class="${classes}" id="action-${index}">
         <div
           class="action-content"
-          @mousedown=${(e: MouseEvent) => this.handleActionMouseDown(e, action)}
-          @mouseup=${(e: MouseEvent) => this.handleActionMouseUp(e, action)}
-          style="cursor: pointer; background: #fff"
+          @mousedown=${(e: MouseEvent) =>
+            !isDisabled && this.handleActionMouseDown(e, action)}
+          @mouseup=${(e: MouseEvent) =>
+            !isDisabled && this.handleActionMouseUp(e, action)}
+          style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
           <div class="body">
             ${config.render
-              ? config.render(node, action)
+              ? config.render(node, displayAction)
               : html`<pre>${action.type}</pre>`}
           </div>
         </div>
@@ -911,6 +1435,31 @@ export class CanvasNode extends RapidElement {
       </div>
       ${action.type}
     </div>`;
+  }
+
+  private renderActionsWithPlaceholder() {
+    if (!this.externalDragInfo) {
+      // No external drag, render normally
+      return this.node.actions.map((action, index) =>
+        this.renderAction(this.node, action, index)
+      );
+    }
+
+    // Insert placeholder at the drop index
+    const result = [];
+    for (let i = 0; i < this.node.actions.length; i++) {
+      if (i === this.externalDragInfo.dropIndex) {
+        result.push(this.renderDropPlaceholder());
+      }
+      result.push(this.renderAction(this.node, this.node.actions[i], i));
+    }
+
+    // If dropping at the end, add placeholder after all actions
+    if (this.externalDragInfo.dropIndex >= this.node.actions.length) {
+      result.push(this.renderDropPlaceholder());
+    }
+
+    return result;
   }
 
   private renderRouter(router: Router, ui: NodeUI) {
@@ -937,6 +1486,10 @@ export class CanvasNode extends RapidElement {
       return null;
     }
 
+    // Check if this node type supports category localization
+    const nodeConfig = NODE_CONFIG[this.ui?.type];
+    const supportsLocalization = nodeConfig?.localizable === 'categories';
+
     return html`<div class="categories">
       ${repeat(
         node.router.categories,
@@ -946,13 +1499,44 @@ export class CanvasNode extends RapidElement {
             (exit: Exit) => exit.uuid == category.exit_uuid
           );
 
+          // Get localized category name if translating
+          let displayName = category.name;
+          let isLocalized = false;
+
+          if (
+            this.isTranslating &&
+            this.languageCode !== 'eng' &&
+            supportsLocalization
+          ) {
+            const localization =
+              this.flowDefinition?.localization?.[this.languageCode];
+            if (localization && localization[category.uuid]) {
+              const categoryLocalization = localization[category.uuid];
+              if (categoryLocalization.name && categoryLocalization.name[0]) {
+                displayName = categoryLocalization.name[0];
+                isLocalized = true;
+              }
+            }
+          }
+
+          // Category is localizable if: translating, supports localization, categories enabled, and not base language
+          const isLocalizable =
+            this.isTranslating &&
+            this.languageCode !== 'eng' &&
+            supportsLocalization &&
+            this.includeCategoriesInTranslation &&
+            !isLocalized;
+
           return html`<div
-            class="category"
+            class=${getClasses({
+              category: true,
+              localizable: isLocalizable
+            })}
             @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
             style="cursor: pointer;"
           >
-            <div class="cn-title">${category.name}</div>
+            <div class="cn-title">${displayName}</div>
             ${this.renderExit(exit)}
           </div>`;
         }
@@ -981,12 +1565,21 @@ export class CanvasNode extends RapidElement {
 
     const nodeConfig = NODE_CONFIG[this.ui.type];
 
+    // Check if this node should be disabled (grayed out)
+    const supportsLocalization = nodeConfig?.localizable === 'categories';
+    const isNodeDisabled =
+      this.isTranslating &&
+      supportsLocalization &&
+      !this.includeCategoriesInTranslation;
+
     return html`
       <div
         id="${this.node.uuid}"
-        class="node ${this.ui.type === 'execute_actions'
-          ? 'execute-actions'
-          : ''}"
+        class=${getClasses({
+          node: true,
+          'execute-actions': this.ui.type === 'execute_actions',
+          'non-localizable': isNodeDisabled
+        })}
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
         ${nodeConfig && nodeConfig.type !== 'execute_actions'
@@ -1010,20 +1603,33 @@ export class CanvasNode extends RapidElement {
           : this.node.actions.length > 0
           ? this.ui.type === 'execute_actions'
             ? html`<temba-sortable-list
-                dragHandle="drag-handle"
-                @temba-order-changed="${this.handleActionOrderChanged}"
-              >
-                ${this.node.actions.map((action, index) =>
-                  this.renderAction(this.node, action, index)
-                )}
-              </temba-sortable-list>`
+                  dragHandle="drag-handle"
+                  externalDrag
+                  @temba-order-changed="${this.handleActionOrderChanged}"
+                  @temba-drag-start="${this.handleActionDragStart}"
+                  @temba-drag-external="${this.handleActionDragExternal}"
+                  @temba-drag-internal="${this.handleActionDragInternal}"
+                  @temba-drag-stop="${this.handleActionDragStop}"
+                >
+                  ${this.renderActionsWithPlaceholder()}
+                </temba-sortable-list>
+                ${this.showLastActionPlaceholder
+                  ? html`<div
+                      class="empty-node-placeholder"
+                      style="height: ${this.lastActionPlaceholderHeight}px;"
+                    ></div>`
+                  : ''}`
             : html`${this.node.actions.map((action, index) =>
                 this.renderAction(this.node, action, index)
               )}`
+          : this.ui.type === 'execute_actions'
+          ? html`<div class="empty-node-placeholder"></div>`
           : ''}
         ${this.node.router
-          ? html` ${this.renderRouter(this.node.router, this.ui)}
-            ${this.renderCategories(this.node)}`
+          ? html`<div class="router-section">
+              ${this.renderRouter(this.node.router, this.ui)}
+              ${this.renderCategories(this.node)}
+            </div>`
           : html`<div class="action-exits">
               ${repeat(
                 this.node.exits,
@@ -1031,6 +1637,15 @@ export class CanvasNode extends RapidElement {
                 (exit) => this.renderExit(exit)
               )}
             </div>`}
+        ${this.ui.type === 'execute_actions' && !this.isTranslating
+          ? html`<div
+              class="add-action-button"
+              @click=${(e: MouseEvent) => this.handleAddActionClick(e)}
+              title="Add action"
+            >
+              <temba-icon name="add"></temba-icon>
+            </div>`
+          : ''}
       </div>
     `;
   }

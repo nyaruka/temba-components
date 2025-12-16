@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { StickyNote as StickyNoteData } from '../store/flow-definition';
 import { getStore } from '../store/Store';
+import { AppState, fromStore, zustand } from '../store/AppState';
 
 export class StickyNote extends RapidElement {
   @property({ type: String })
@@ -19,6 +20,9 @@ export class StickyNote extends RapidElement {
 
   @property({ type: Boolean })
   private colorPickerExpanded = false;
+
+  @fromStore(zustand, (state: AppState) => state.isTranslating)
+  private isTranslating!: boolean;
 
   static get styles() {
     return css`
@@ -119,6 +123,8 @@ export class StickyNote extends RapidElement {
         border-top-left-radius: var(--curvature);
         border-top-right-radius: var(--curvature);
         flex-grow: 1;
+        padding: 4px 8px !important;
+        margin: 2px;
         padding-left: 8px;
       }
       .sticky-title:empty::before {
@@ -139,6 +145,7 @@ export class StickyNote extends RapidElement {
         min-height: 48px;
         word-wrap: break-word;
         white-space: pre-wrap;
+        margin: 2px;
       }
       .sticky-body:empty::before {
         content: 'Click to add note';
@@ -377,7 +384,7 @@ export class StickyNote extends RapidElement {
           <temba-icon name="drag" class="drag-handle"></temba-icon>
           <div
             class="sticky-title"
-            contenteditable="true"
+            contenteditable="${!this.isTranslating}"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
@@ -387,13 +394,15 @@ export class StickyNote extends RapidElement {
         <div class="sticky-body-container">
           <div
             class="sticky-body"
-            contenteditable="true"
+            contenteditable="${!this.isTranslating}"
             @blur="${this.handleBodyBlur}"
             @keydown="${this.handleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
             .textContent="${this.data.body}"
           ></div>
-          <div class="edit-icon" title="Edit note"></div>
+          ${!this.isTranslating
+            ? html`<div class="edit-icon" title="Edit note"></div>`
+            : ''}
 
           <!-- Color picker -->
           <div

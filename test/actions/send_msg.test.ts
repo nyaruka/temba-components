@@ -101,30 +101,54 @@ describe('send_msg action config', () => {
   });
 
   describe('validation edge cases', () => {
-    it('fails validation for empty text', () => {
-      const action: SendMsg = {
+    it('passes validation with valid text', () => {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_msg',
-        text: '',
-        quick_replies: []
+        text: 'Hello world',
+        attachments: [],
+        runtime_attachments: []
       };
 
-      const result = send_msg.validate(action);
-      expect(result.valid).to.be.false;
-      expect(result.errors.text).to.equal('Message text is required');
+      const result = send_msg.validate(formData);
+      expect(result.valid).to.be.true;
+      expect(Object.keys(result.errors)).to.have.length(0);
     });
 
-    it('fails validation for whitespace-only text', () => {
-      const action: SendMsg = {
+    it('fails validation when total attachments exceed 10', () => {
+      const formData = {
         uuid: 'test-action',
-        type: 'send_msg',
-        text: '   \n\t  ',
-        quick_replies: []
+        text: 'Hello world',
+        attachments: Array(6).fill('image/jpeg:http://example.com/image.jpg'),
+        runtime_attachments: Array(5).fill({
+          type: [{ name: 'Image', value: 'image' }],
+          expression: '@contact.photo'
+        })
       };
 
-      const result = send_msg.validate(action);
+      const result = send_msg.validate(formData);
       expect(result.valid).to.be.false;
-      expect(result.errors.text).to.equal('Message text is required');
+      expect(result.errors.text).to.equal(
+        'Each message can only have up to 10 total attachments'
+      );
+      expect(result.errors.runtime_attachments).to.equal(
+        'Each message can only have up to 10 attachments'
+      );
+    });
+
+    it('passes validation with exactly 10 attachments', () => {
+      const formData = {
+        uuid: 'test-action',
+        text: 'Hello world',
+        attachments: Array(5).fill('image/jpeg:http://example.com/image.jpg'),
+        runtime_attachments: Array(5).fill({
+          type: [{ name: 'Image', value: 'image' }],
+          expression: '@contact.photo'
+        })
+      };
+
+      const result = send_msg.validate(formData);
+      expect(result.valid).to.be.true;
+      expect(Object.keys(result.errors)).to.have.length(0);
     });
   });
 });

@@ -1,11 +1,12 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 
 export const set_contact_status: ActionConfig = {
   name: 'Update Status',
   group: ACTION_GROUPS.contacts,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactStatus) => {
     return html`<div>Set to <strong>${titleCase(action.status)}</strong></div>`;
   },

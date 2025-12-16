@@ -145,15 +145,15 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
 
   page.exposeFunction(
     'matchPageSnapshot',
-    (filename, clip, excluded, threshold) => {
+    (filename, clip, excluded, threshold, waitForNetwork = false) => {
       return new Promise(async (resolve, reject) => {
         // const start = Date.now();
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
-        // Only wait for network idle if explicitly requested
+        // Wait for network idle - use per-call parameter or fall back to global wait flag
         try{
-          if (wait) {
+          if (waitForNetwork || wait) {
             await page.waitForNetworkIdle({idleTime: 500, timeout: 2000});
           } else {
             await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
@@ -309,7 +309,6 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-  setupFiles: ['./test-setup.js'],
   concurrency: 4,
   testFramework: {
     config: {

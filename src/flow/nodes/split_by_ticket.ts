@@ -1,12 +1,17 @@
-import { ACTION_GROUPS, FormData, NodeConfig } from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, OpenTicket } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
+import {
+  categoriesToLocalizationFormData,
+  localizationFormDataToCategories
+} from './shared';
 
 export const split_by_ticket: NodeConfig = {
   type: 'split_by_ticket',
   name: 'Open Ticket',
   group: ACTION_GROUPS.trigger,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
   form: {
     topic: {
@@ -138,5 +143,10 @@ export const split_by_ticket: NodeConfig = {
       router: router,
       exits: exits
     };
-  }
+  },
+
+  // Localization support for categories
+  localizable: 'categories',
+  toLocalizationFormData: categoriesToLocalizationFormData,
+  fromLocalizationFormData: localizationFormDataToCategories
 };

@@ -1,11 +1,12 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 
 export const set_run_result: ActionConfig = {
   name: 'Save Flow Result',
   group: ACTION_GROUPS.save,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetRunResult) => {
     return html`<div>
       Save <strong>${action.value}</strong> as <strong>${action.name}</strong>

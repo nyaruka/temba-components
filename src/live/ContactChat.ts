@@ -10,6 +10,7 @@ import {
 } from '../interfaces';
 import {
   fetchResults,
+  generateUUIDv7,
   getUrl,
   oxfordFn,
   postJSON,
@@ -21,14 +22,11 @@ import { Compose, ComposeValue } from '../form/Compose';
 import {
   AirtimeTransferredEvent,
   CallEvent,
-  ChannelEvent,
   ChatStartedEvent,
-  ContactEvent,
   ContactGroupsEvent,
   ContactHistoryPage,
   ContactLanguageChangedEvent,
   ContactStatusChangedEvent,
-  MsgEvent,
   NameChangedEvent,
   OptInEvent,
   RunEvent,
@@ -36,11 +34,10 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
-import { Chat, ChatEvent, MessageType } from '../display/Chat';
+import { Chat, MessageType, ContactEvent } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
-import { Store } from '../store/Store';
 
 /*
 export const SCROLL_THRESHOLD = 100;
@@ -66,7 +63,6 @@ export enum Events {
   IVR_CREATED = 'ivr_created',
   MSG_CREATED = 'msg_created',
   MSG_RECEIVED = 'msg_received',
-  NOTE_CREATED = 'note_created',
   OPTIN_REQUESTED = 'optin_requested',
   OPTIN_STARTED = 'optin_started',
   OPTIN_STOPPED = 'optin_stopped',
@@ -77,11 +73,7 @@ export enum Events {
   TICKET_NOTE_ADDED = 'ticket_note_added',
   TICKET_OPENED = 'ticket_opened',
   TICKET_REOPENED = 'ticket_reopened',
-  TICKET_TOPIC_CHANGED = 'ticket_topic_changed',
-
-  // deprecated
-  CHANNEL_EVENT = 'channel_event',
-  TICKET_ASSIGNED = 'ticket_assigned'
+  TICKET_TOPIC_CHANGED = 'ticket_topic_changed'
 }
 
 const renderInfoList = (
@@ -105,14 +97,6 @@ const renderInfoList = (
       );
       return html`<div>${plural} ${middle}, and <strong>${last}</strong></div>`;
     }
-  }
-};
-
-const renderChannelEvent = (event: ChannelEvent): TemplateResult => {
-  if (event.channel_event_type === 'welcome_message') {
-    return html`<div>Welcome message sent</div>`;
-  } else if (event.event.type === 'stop_contact') {
-    return html`<div>Stopped</div>`;
   }
 };
 
@@ -175,17 +159,41 @@ export const renderTicketAction = (
 ): TemplateResult => {
   const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
 
-  if (event._user) {
-    return html`<div>
-      <strong>${event._user.name}</strong> ${action} a
-      <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
-    </div>`;
+  const actionNote = event.note
+    ? html`<div
+        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em;margin-top:1em; border: 1px solid #ffe97f;border-radius: var(--curvature);line-height: 1.2em; word-break: break-word;"
+      >
+        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em; ">
+          <strong>${event._user ? event._user.name : 'Someone'}</strong> added a
+          note
+          <temba-date
+            value=${event.created_on.toISOString()}
+            display="relative"
+          ></temba-date>
+        </div>
+        <div style="white-space: pre-wrap;">${event.note}</div>
+      </div>`
+    : null;
+
+  if (action === 'noted') {
+    return html`${actionNote}`;
   }
-  return html`<div>
-    A
-    <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong> was
-    <strong>${action}</strong>
-  </div>`;
+
+  const description = event._user
+    ? html`<div>
+        <strong>${event._user.name}</strong> ${action} a
+        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
+      </div>`
+    : html`<div>
+        A
+        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
+        was <strong>${action}</strong>
+      </div>`;
+
+  return html`<div style="${actionNote ? 'margin-bottom: 1em;' : ''}">
+      ${description}
+    </div>
+    ${actionNote}`;
 };
 
 export const renderTicketAssigneeChanged = (
@@ -518,6 +526,19 @@ export class ContactChat extends ContactStoreElement {
   avatar = DEFAULT_AVATAR;
 
   @property({ type: String })
+  set showMessageLogsAfter(value: string) {
+    const oldValue = this._showMessageLogsAfter;
+    this._showMessageLogsAfter = value ? new Date(value) : null;
+    this.requestUpdate('showMessageLogsAfter', oldValue);
+  }
+
+  get showMessageLogsAfter(): Date {
+    return this._showMessageLogsAfter;
+  }
+
+  private _showMessageLogsAfter: Date = null;
+
+  @property({ type: String })
   errorMessage: string;
 
   // http promise to monitor for completeness
@@ -525,10 +546,12 @@ export class ContactChat extends ContactStoreElement {
   private chat: Chat;
 
   ticket = null;
-  lastEventTime = null;
-  newestEventTime = null;
+  beforeUUID: string = null; // for scrolling back through history
+  afterUUID: string = null; // for polling new messages
   refreshId = null;
   polling = false;
+  pollingInterval = 2000; // start at 2 seconds
+  lastFetchTime: number = null;
 
   constructor() {
     super();
@@ -569,9 +592,16 @@ export class ContactChat extends ContactStoreElement {
       this.currentContact = this.data;
     }
 
-    if (changedProperties.has('currentContact')) {
+    if (changedProperties.has('currentContact') && this.currentContact) {
       this.chat = this.shadowRoot.querySelector('temba-chat');
-      this.reset();
+      if (
+        this.currentContact.uuid !==
+        changedProperties.get('currentContact')?.uuid
+      ) {
+        this.reset();
+      } else {
+        setTimeout(() => this.checkForNewMessages(), 500);
+      }
       this.fetchPreviousMessages();
     }
   }
@@ -582,10 +612,12 @@ export class ContactChat extends ContactStoreElement {
     }
     this.blockFetching = false;
     this.ticket = null;
-    this.lastEventTime = null;
-    this.newestEventTime = null;
+    this.beforeUUID = null;
+    this.afterUUID = null;
     this.refreshId = null;
     this.polling = false;
+    this.pollingInterval = 2000;
+    this.lastFetchTime = null;
     this.errorMessage = null;
 
     const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
@@ -629,12 +661,20 @@ export class ContactChat extends ContactStoreElement {
     }
 
     const genericError = 'Send failed, please try again.';
-    postJSON(`/api/v2/messages.json`, payload)
+    postJSON(`/contact/chat/${this.currentContact.uuid}/`, payload)
       .then((response) => {
         if (response.status < 400) {
+          const event = response.json.event;
+          event.created_on = new Date(event.created_on);
+          this.chat.addMessages([event], null, true);
+          // reset polling interval to 2 seconds after sending a message
+          this.pollingInterval = 2000;
           this.checkForNewMessages();
           composeEle.reset();
-          this.fireCustomEvent(CustomEventType.MessageSent, { msg: payload });
+          this.fireCustomEvent(CustomEventType.MessageSent, {
+            msg: payload,
+            response
+          });
         } else {
           this.errorMessage = genericError;
         }
@@ -646,260 +686,182 @@ export class ContactChat extends ContactStoreElement {
 
   private getEndpoint() {
     if (this.contact) {
-      return `/contact/history/${this.contact}/?_format=json`;
+      return `/contact/chat/${this.contact}/`;
     }
     return null;
   }
 
-  private scheduleRefresh() {
-    // knock five seconds off the newest event time so we are
-    // a little more aggressive about refreshing short term
-    let window = new Date().getTime() - this.newestEventTime / 1000 - 5000;
-
+  private scheduleRefresh(hasNewEvents = false) {
     if (this.refreshId) {
       clearTimeout(this.refreshId);
       this.refreshId = null;
     }
 
-    // wait no longer than 15 seconds
-    window = Math.min(window, 15000);
-
-    // wait at least 2 seconds
-    window = Math.max(window, 2000);
+    // reset to 2 seconds if we received new events
+    if (hasNewEvents) {
+      this.pollingInterval = 2000;
+    } else {
+      // increase interval by 1 second up to max of 15 seconds
+      this.pollingInterval = Math.min(this.pollingInterval + 1000, 15000);
+    }
 
     this.refreshId = setTimeout(() => {
       this.checkForNewMessages();
-    }, window);
+    }, this.pollingInterval);
   }
 
-  public getEventMessage(event: ContactEvent): ChatEvent {
-    let message = null;
+  public prerender(event: ContactEvent) {
     switch (event.type) {
       case Events.AIRTIME_TRANSFERRED:
-        message = {
-          type: MessageType.Inline,
-          text: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent)
+        event._rendered = {
+          html: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CALL_CREATED:
       case Events.CALL_MISSED:
       case Events.CALL_RECEIVED:
-        message = {
-          type: MessageType.Inline,
-          text: renderCallEvent(event as CallEvent)
+        event._rendered = {
+          html: renderCallEvent(event as CallEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CHAT_STARTED:
-        message = {
-          type: MessageType.Inline,
-          text: renderChatStartedEvent(event as ChatStartedEvent)
+        event._rendered = {
+          html: renderChatStartedEvent(event as ChatStartedEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_FIELD_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderUpdateEvent(event as UpdateFieldEvent)
+        event._rendered = {
+          html: renderUpdateEvent(event as UpdateFieldEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_GROUPS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactGroupsEvent(event as ContactGroupsEvent)
+        event._rendered = {
+          html: renderContactGroupsEvent(event as ContactGroupsEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_LANGUAGE_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactLanguageChangedEvent(
+        event._rendered = {
+          html: renderContactLanguageChangedEvent(
             event as ContactLanguageChangedEvent
-          )
+          ),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_NAME_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderNameChanged(event as NameChangedEvent)
+        event._rendered = {
+          html: renderNameChanged(event as NameChangedEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_STATUS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactStatusChangedEvent(
+        event._rendered = {
+          html: renderContactStatusChangedEvent(
             event as ContactStatusChangedEvent
-          )
+          ),
+          type: MessageType.Inline
         };
         break;
       case Events.CONTACT_URNS_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderContactURNsChanged(event as URNsChangedEvent)
+        event._rendered = {
+          html: renderContactURNsChanged(event as URNsChangedEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.OPTIN_REQUESTED:
       case Events.OPTIN_STARTED:
       case Events.OPTIN_STOPPED:
-        message = {
-          type: MessageType.Inline,
-          text: renderOptInEvent(event as OptInEvent)
+        event._rendered = {
+          html: renderOptInEvent(event as OptInEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.RUN_STARTED:
       case Events.RUN_ENDED:
-        message = {
-          type: MessageType.Inline,
-          text: renderRunEvent(event as RunEvent)
+        event._rendered = {
+          html: renderRunEvent(event as RunEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_ASSIGNEE_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAssigneeChanged(event as TicketEvent)
+        event._rendered = {
+          html: renderTicketAssigneeChanged(event as TicketEvent),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_CLOSED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'closed')
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'closed'),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_OPENED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'opened')
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'opened'),
+          type: MessageType.Inline
+        };
+        break;
+      case Events.TICKET_NOTE_ADDED:
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'noted'),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_REOPENED:
-        message = {
-          type: MessageType.Inline,
-          text: renderTicketAction(event as TicketEvent, 'reopened')
+        event._rendered = {
+          html: renderTicketAction(event as TicketEvent, 'reopened'),
+          type: MessageType.Inline
         };
         break;
       case Events.TICKET_TOPIC_CHANGED:
-        message = {
-          type: MessageType.Inline,
-          text: html`<div>
+        event._rendered = {
+          html: html`<div>
             Topic changed to
             <strong>${(event as TicketEvent).topic.name}</strong>
-          </div>`
-        };
-        break;
-      case Events.CHANNEL_EVENT: // deprecated
-        message = {
-          type: MessageType.Inline,
-          text: renderChannelEvent(event as ChannelEvent)
+          </div>`,
+          type: MessageType.Inline
         };
         break;
       default:
-        console.error('Unknown event type', event);
+      // console.error('Unknown event type', event);
     }
-
-    if (message) {
-      message.id = event.uuid;
-      message.date = new Date(event.created_on);
-    }
-
-    return message;
   }
 
-  private getUserForEvent(event: MsgEvent | TicketEvent) {
-    if (event.type === 'msg_received') {
-      return {
-        name: this.currentContact.name
-      };
-    } else if (event._user) {
-      return event._user;
-    }
-    return null;
-  }
-
-  private createMessages(page: ContactHistoryPage): ChatEvent[] {
+  private createMessages(page: ContactHistoryPage): ContactEvent[] {
     if (page.events) {
-      let messages = [];
+      const messages: ContactEvent[] = [];
       page.events.forEach((event) => {
-        const ts = new Date(event.created_on).getTime() * 1000;
-        if (ts > this.newestEventTime) {
-          this.newestEventTime = ts;
+        // track the UUID of the newest event for polling
+        if (
+          !this.afterUUID ||
+          event.uuid.toLowerCase() > this.afterUUID.toLowerCase()
+        ) {
+          this.afterUUID = event.uuid;
         }
 
-        if (event.type === 'ticket_note_added') {
-          const ticketEvent = event as TicketEvent;
-          messages.push({
-            type: MessageType.Note,
-            id: event.created_on + event.type,
-            user: this.getUserForEvent(ticketEvent),
-            date: new Date(ticketEvent.created_on),
-            text: ticketEvent.note
-          });
-        } else if (event.type === 'ticket_opened') {
-          // ticket open events can have a note attached
-          const ticketEvent = event as TicketEvent;
-          messages.push({
-            type: MessageType.Note,
-            id: event.created_on + event.type + '_note',
-            user: this.getUserForEvent(ticketEvent),
-            date: new Date(ticketEvent.created_on),
-            text: ticketEvent.note
-          });
+        // convert to dates
+        event.created_on = new Date(event.created_on);
 
-          // but the opening of the ticket is a normal event
-          messages.push(this.getEventMessage(event));
-        } else if (
+        if (
           event.type === 'msg_created' ||
           event.type === 'msg_received' ||
           event.type === 'ivr_created'
         ) {
-          const msgEvent = event as MsgEvent;
-
-          messages.push({
-            id: event.uuid,
-            type: msgEvent.type === 'msg_received' ? 'msg_in' : 'msg_out',
-            user: this.getUserForEvent(msgEvent),
-            date: new Date(msgEvent.created_on),
-            attachments: msgEvent.msg.attachments,
-            text: msgEvent.msg.text,
-            sendError: msgEvent._status === 'E' || msgEvent._status === 'F',
-            popup: html`<div
-              style="display: flex; flex-direction: row; align-items:center; justify-content: space-between;font-size:0.9em;line-height:1em;min-width:10em"
-            >
-              <div style="justify-content:left;text-align:left">
-                <temba-date
-                  value=${msgEvent.created_on}
-                  display="duration"
-                ></temba-date>
-
-                ${msgEvent.optin
-                  ? html`<div style="font-size:0.9em;color:#aaa">
-                      ${msgEvent.optin.name}
-                    </div>`
-                  : null}
-                ${msgEvent._failed_reason
-                  ? html`
-                      <div
-                        style="margin-top:0.2em;margin-right: 0.5em;min-width:10em;max-width:15em;color:var(--color-error);font-size:0.9em"
-                      >
-                        ${msgEvent._failed_reason}
-                      </div>
-                    `
-                  : null}
-              </div>
-              ${msgEvent._logs_url
-                ? html`<a style="margin-left:0.5em" href="${msgEvent._logs_url}"
-                    ><temba-icon name="log"></temba-icon
-                  ></a>`
-                : null}
-            </div> `
-          });
+          messages.push(event);
         } else {
-          const msg = this.getEventMessage(event);
-          if (msg) {
-            messages.push(msg);
+          this.prerender(event);
+          if (event._rendered) {
+            messages.push(event);
           }
         }
       });
 
       // remove any messages we don't recognize
-      messages = messages.filter((msg) => !!msg);
-      return messages as ChatEvent[];
+      return messages.filter((msg) => !!msg);
     }
     return [];
   }
@@ -911,9 +873,9 @@ export class ContactChat extends ContactStoreElement {
     }
 
     const chat = this.chat;
-    const contactChat = this;
-    if (this.currentContact && this.newestEventTime) {
+    if (this.currentContact && this.afterUUID) {
       this.polling = true;
+      this.lastFetchTime = Date.now();
       const endpoint = this.getEndpoint();
       if (!endpoint) {
         return;
@@ -922,23 +884,21 @@ export class ContactChat extends ContactStoreElement {
       const fetchContact = this.currentContact.uuid;
 
       fetchContactHistory(
-        false,
         endpoint,
         this.currentTicket?.uuid,
         null,
-        this.newestEventTime
+        this.afterUUID
       ).then((page: ContactHistoryPage) => {
+        const messages = this.createMessages(page);
+        messages.reverse();
         if (fetchContact === this.currentContact.uuid) {
-          this.lastEventTime = page.next_before;
-          const messages = this.createMessages(page);
-          if (messages.length === 0) {
-            contactChat.blockFetching = true;
-          }
-          messages.reverse();
+          const hasNewEvents = messages.length > 0;
           chat.addMessages(messages, null, true);
+          this.polling = false;
+          this.scheduleRefresh(hasNewEvents);
+        } else {
+          this.polling = false;
         }
-        this.polling = false;
-        this.scheduleRefresh();
       });
     }
   }
@@ -957,19 +917,37 @@ export class ContactChat extends ContactStoreElement {
         return;
       }
 
+      // initialize anchor UUID if not set (first fetch)
+      if (!this.beforeUUID && !this.afterUUID) {
+        // generate a UUID v7 for current time as the anchor
+        const anchorUUID = generateUUIDv7();
+        this.beforeUUID = anchorUUID;
+        this.afterUUID = anchorUUID;
+      }
+
       fetchContactHistory(
-        false,
         endpoint,
         this.currentTicket?.uuid,
-        this.lastEventTime
+        this.beforeUUID,
+        null
       ).then((page: ContactHistoryPage) => {
-        this.lastEventTime = page.next_before;
         const messages = this.createMessages(page);
         messages.reverse();
 
         if (messages.length === 0) {
           contactChat.blockFetching = true;
+        } else if (page.next) {
+          // update beforeUUID for next fetch of older messages
+          this.beforeUUID = page.next;
+        } else {
+          // no more history, mark end and show oldest event date
+          contactChat.blockFetching = true;
+          if (page.events && page.events.length > 0) {
+            const oldestEvent = page.events[page.events.length - 1];
+            chat.setEndOfHistory(new Date(oldestEvent.created_on));
+          }
         }
+
         chat.addMessages(messages);
         this.scheduleRefresh();
       });
@@ -1085,15 +1063,13 @@ export class ContactChat extends ContactStoreElement {
     if (this.currentTicket) {
       fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
         (values) => {
-          this.store.resolveUsers(values, ['assignee']).then(() => {
-            if (values.length > 0) {
-              this.fireCustomEvent(CustomEventType.TicketUpdated, {
-                ticket: values[0],
-                previous: this.currentTicket
-              });
-              this.currentTicket = values[0];
-            }
-          });
+          if (values.length > 0) {
+            this.fireCustomEvent(CustomEventType.TicketUpdated, {
+              ticket: values[0],
+              previous: this.currentTicket
+            });
+            this.currentTicket = values[0];
+          }
         }
       );
     }
@@ -1140,6 +1116,8 @@ export class ContactChat extends ContactStoreElement {
               @temba-fetch-complete=${this.fetchComplete}
               avatar=${this.avatar}
               agent
+              ?hasFooter=${inFlow}
+              .showMessageLogsAfter=${this.showMessageLogsAfter}
             >
               ${inFlow
                 ? html`
@@ -1236,37 +1214,33 @@ export const fetchContact = (endpoint: string): Promise<Contact> => {
   });
 };
 export const fetchContactHistory = (
-  reset: boolean,
   endpoint: string,
-  ticket: string,
-  before: number = undefined,
-  after: number = undefined
+  ticket: string = undefined,
+  before: string = undefined,
+  after: string = undefined
 ): Promise<ContactHistoryPage> => {
-  if (reset) {
-    pendingRequests.forEach((controller) => {
-      controller.abort();
-    });
-    pendingRequests = [];
-  }
-
   return new Promise<ContactHistoryPage>((resolve) => {
     const controller = new AbortController();
     pendingRequests.push(controller);
 
     let url = endpoint;
+    const params = [];
+
     if (before) {
-      url += `&before=${before}`;
+      params.push(`before=${before}`);
     }
 
     if (after) {
-      url += `&after=${after}`;
+      params.push(`after=${after}`);
     }
 
     if (ticket) {
-      url += `&ticket=${ticket}`;
+      params.push(`ticket=${ticket}`);
     }
 
-    const store = document.querySelector('temba-store') as Store;
+    if (params.length > 0) {
+      url += (url.includes('?') ? '&' : '?') + params.join('&');
+    }
 
     getUrl(url, controller)
       .then((response: WebResponse) => {
@@ -1277,10 +1251,7 @@ export const fetchContactHistory = (
           }
         );
 
-        const page = response.json as ContactHistoryPage;
-        store.resolveUsers(page.events, ['created_by']).then(() => {
-          resolve(page);
-        });
+        resolve(response.json as ContactHistoryPage);
       })
       .catch(() => {
         // canceled

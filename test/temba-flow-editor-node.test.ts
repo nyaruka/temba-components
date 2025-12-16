@@ -1200,5 +1200,471 @@ describe('EditorNode', () => {
       // 3. New JSPlumb connections are created with connectIds
       // This sequence ensures JSPlumb visuals stay in sync with the flow definition
     });
+
+    it('reroutes connections when removing node with multiple exits pointing to same destination', async () => {
+      // Test case: node with multiple exits, but all point to the same destination
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: 'node-after' },
+          { uuid: 'exit-2', destination_uuid: 'node-after' },
+          { uuid: 'exit-3', destination_uuid: 'node-after' }
+        ]
+      };
+
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        type: 'messaging' as const,
+        uuid: 'test-uuid',
+        revision: 1,
+        spec_version: '14.3',
+        nodes: [
+          {
+            uuid: 'node-before',
+            actions: [],
+            exits: [{ uuid: 'exit-before', destination_uuid: 'test-node' }]
+          },
+          mockNode,
+          {
+            uuid: 'node-after',
+            actions: [],
+            exits: []
+          }
+        ],
+        _ui: {
+          nodes: {},
+          languages: []
+        }
+      };
+
+      // Set up the zustand store with our test flow
+      const { zustand } = await import('../src/store/AppState');
+      zustand.setState({
+        flowDefinition: mockFlowDefinition as any
+      });
+
+      // Verify initial state - node-before points to test-node
+      const initialNodeBefore = zustand
+        .getState()
+        .flowDefinition.nodes.find((n) => n.uuid === 'node-before');
+      expect(initialNodeBefore.exits[0].destination_uuid).to.equal('test-node');
+
+      // Call removeNodes to trigger the rerouting logic
+      zustand.getState().removeNodes(['test-node']);
+
+      // Verify that the node was removed
+      const remainingNodes = zustand.getState().flowDefinition.nodes;
+      expect(remainingNodes.find((n) => n.uuid === 'test-node')).to.be
+        .undefined;
+
+      // Verify that node-before's exit was rerouted to node-after
+      const updatedNodeBefore = remainingNodes.find(
+        (n) => n.uuid === 'node-before'
+      );
+      expect(updatedNodeBefore.exits[0].destination_uuid).to.equal(
+        'node-after'
+      );
+    });
+
+    it('does not reroute connections when node has exits with different destinations', async () => {
+      // Test case: node with multiple exits pointing to different destinations
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: 'node-after-1' },
+          { uuid: 'exit-2', destination_uuid: 'node-after-2' }
+        ]
+      };
+
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        type: 'messaging' as const,
+        uuid: 'test-uuid',
+        revision: 1,
+        spec_version: '14.3',
+        nodes: [
+          {
+            uuid: 'node-before',
+            actions: [],
+            exits: [{ uuid: 'exit-before', destination_uuid: 'test-node' }]
+          },
+          mockNode,
+          {
+            uuid: 'node-after-1',
+            actions: [],
+            exits: []
+          },
+          {
+            uuid: 'node-after-2',
+            actions: [],
+            exits: []
+          }
+        ],
+        _ui: {
+          nodes: {},
+          languages: []
+        }
+      };
+
+      // Set up the zustand store with our test flow
+      const { zustand } = await import('../src/store/AppState');
+      zustand.setState({
+        flowDefinition: mockFlowDefinition as any
+      });
+
+      // Verify initial state
+      const initialNodeBefore = zustand
+        .getState()
+        .flowDefinition.nodes.find((n) => n.uuid === 'node-before');
+      expect(initialNodeBefore.exits[0].destination_uuid).to.equal('test-node');
+
+      // Call removeNodes
+      zustand.getState().removeNodes(['test-node']);
+
+      // Verify that the node was removed
+      const remainingNodes = zustand.getState().flowDefinition.nodes;
+      expect(remainingNodes.find((n) => n.uuid === 'test-node')).to.be
+        .undefined;
+
+      // Verify that incoming connection was cleared (set to null), not rerouted
+      const updatedNodeBefore = remainingNodes.find(
+        (n) => n.uuid === 'node-before'
+      );
+      expect(updatedNodeBefore.exits[0].destination_uuid).to.be.null;
+    });
+
+    it('does not reroute connections when node has exits with null destinations', async () => {
+      // Test case: node with some exits having null destinations
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: 'node-after' },
+          { uuid: 'exit-2', destination_uuid: null }
+        ]
+      };
+
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        type: 'messaging' as const,
+        uuid: 'test-uuid',
+        revision: 1,
+        spec_version: '14.3',
+        nodes: [
+          {
+            uuid: 'node-before',
+            actions: [],
+            exits: [{ uuid: 'exit-before', destination_uuid: 'test-node' }]
+          },
+          mockNode,
+          {
+            uuid: 'node-after',
+            actions: [],
+            exits: []
+          }
+        ],
+        _ui: {
+          nodes: {},
+          languages: []
+        }
+      };
+
+      // Set up the zustand store with our test flow
+      const { zustand } = await import('../src/store/AppState');
+      zustand.setState({
+        flowDefinition: mockFlowDefinition as any
+      });
+
+      // Verify initial state
+      const initialNodeBefore = zustand
+        .getState()
+        .flowDefinition.nodes.find((n) => n.uuid === 'node-before');
+      expect(initialNodeBefore.exits[0].destination_uuid).to.equal('test-node');
+
+      // Call removeNodes
+      zustand.getState().removeNodes(['test-node']);
+
+      // Verify that the node was removed
+      const remainingNodes = zustand.getState().flowDefinition.nodes;
+      expect(remainingNodes.find((n) => n.uuid === 'test-node')).to.be
+        .undefined;
+
+      // Verify that incoming connection was cleared (set to null), not rerouted
+      const updatedNodeBefore = remainingNodes.find(
+        (n) => n.uuid === 'node-before'
+      );
+      expect(updatedNodeBefore.exits[0].destination_uuid).to.be.null;
+    });
+  });
+
+  describe('add action button', () => {
+    beforeEach(async () => {
+      editorNode = new CanvasNode();
+      editorNode['plumber'] = mockPlumber;
+    });
+
+    it('handleAddActionClick fires AddActionRequested event', () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }]
+      };
+
+      editorNode['node'] = mockNode;
+
+      let eventFired = false;
+      let eventDetail: any = null;
+
+      editorNode.addEventListener(CustomEventType.AddActionRequested, (e) => {
+        eventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      const mockEvent = {
+        preventDefault: stub(),
+        stopPropagation: stub()
+      } as any;
+
+      // Call the add action click handler
+      (editorNode as any).handleAddActionClick(mockEvent);
+
+      // Verify the event was fired with correct detail
+      expect(eventFired).to.be.true;
+      expect(eventDetail).to.exist;
+      expect(eventDetail.nodeUuid).to.equal('test-node');
+
+      // Verify event handlers were called
+      expect(mockEvent.preventDefault).to.have.been.called;
+      expect(mockEvent.stopPropagation).to.have.been.called;
+    });
+
+    it('renders add action button for execute_actions nodes', () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: 'action-1',
+            text: 'Hello',
+            quick_replies: []
+          } as any
+        ],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }]
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'execute_actions'
+      };
+
+      editorNode['node'] = mockNode;
+      editorNode['ui'] = mockUI;
+
+      const rendered = editorNode.render();
+      expect(rendered).to.exist;
+    });
+
+    it('renders correctly for non-execute_actions nodes', () => {
+      const mockNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [{ uuid: 'exit-1', destination_uuid: null }],
+        router: {
+          type: 'switch',
+          categories: []
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'wait_for_response'
+      };
+
+      editorNode['node'] = mockNode;
+      editorNode['ui'] = mockUI;
+
+      const rendered = editorNode.render();
+      expect(rendered).to.exist;
+    });
+  });
+
+  describe('router section graying', () => {
+    it('grays out split nodes when categories not included in translation', async () => {
+      const mockNode: Node = {
+        uuid: 'split-node-1',
+        actions: [],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'Response',
+          categories: [
+            { uuid: 'cat-1', name: 'Category 1', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Category 2', exit_uuid: 'exit-2' }
+          ]
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'split_by_groups'
+      };
+
+      // Create node
+      const editorNode: CanvasNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${mockUI}
+        ></temba-flow-node>`
+      );
+
+      // Set fromStore properties directly
+      (editorNode as any).isTranslating = true;
+      (editorNode as any).includeCategoriesInTranslation = false;
+      (editorNode as any).languageCode = 'spa';
+
+      // Force re-render
+      editorNode.requestUpdate('isTranslating');
+      editorNode.requestUpdate('includeCategoriesInTranslation');
+      await editorNode.updateComplete;
+
+      // Find the node element
+      const nodeElement = editorNode.querySelector('.node');
+      expect(nodeElement).to.exist;
+
+      // Verify it has the non-localizable class
+      expect(nodeElement?.classList.contains('non-localizable')).to.be.true;
+    });
+
+    it('does not gray out split nodes when categories are included in translation', async () => {
+      const mockNode: Node = {
+        uuid: 'split-node-2',
+        actions: [],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'Response',
+          categories: [
+            { uuid: 'cat-1', name: 'Category 1', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Category 2', exit_uuid: 'exit-2' }
+          ]
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'split_by_groups'
+      };
+
+      // Create node
+      const editorNode: CanvasNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${mockUI}
+        ></temba-flow-node>`
+      );
+
+      // Set fromStore properties directly
+      (editorNode as any).isTranslating = true;
+      (editorNode as any).includeCategoriesInTranslation = true;
+      (editorNode as any).languageCode = 'spa';
+
+      await editorNode.requestUpdate();
+      await editorNode.updateComplete;
+
+      // Find the node element
+      const nodeElement = editorNode.querySelector('.node');
+      expect(nodeElement).to.exist;
+
+      // Verify it does NOT have the non-localizable class
+      expect(nodeElement?.classList.contains('non-localizable')).to.be.false;
+    });
+
+    it('does not gray out split nodes when not translating', async () => {
+      const mockNode: Node = {
+        uuid: 'split-node-3',
+        actions: [],
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ],
+        router: {
+          type: 'switch',
+          result_name: 'Response',
+          categories: [
+            { uuid: 'cat-1', name: 'Category 1', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Category 2', exit_uuid: 'exit-2' }
+          ]
+        }
+      };
+
+      const mockUI: NodeUI = {
+        position: { left: 0, top: 0 },
+        type: 'split_by_groups'
+      };
+
+      // Create node
+      const editorNode: CanvasNode = await fixture(
+        html`<temba-flow-node
+          .node=${mockNode}
+          .ui=${mockUI}
+        ></temba-flow-node>`
+      );
+
+      // Set fromStore properties directly
+      (editorNode as any).isTranslating = false;
+      (editorNode as any).languageCode = 'eng';
+
+      await editorNode.requestUpdate();
+      await editorNode.updateComplete;
+
+      // Find the node element
+      const nodeElement = editorNode.querySelector('.node');
+      expect(nodeElement).to.exist;
+
+      // Verify it does NOT have the non-localizable class
+      expect(nodeElement?.classList.contains('non-localizable')).to.be.false;
+    });
   });
 });

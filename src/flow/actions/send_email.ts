@@ -3,7 +3,8 @@ import {
   ActionConfig,
   ACTION_GROUPS,
   FormData,
-  ValidationResult
+  ValidationResult,
+  FlowTypes
 } from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
 import { renderStringList } from '../utils';
@@ -12,6 +13,7 @@ import { Icon } from '../../Icons';
 export const send_email: ActionConfig = {
   name: 'Send Email',
   group: ACTION_GROUPS.broadcast,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email)}</div>
@@ -58,10 +60,10 @@ export const send_email: ActionConfig = {
       body: formData.body
     };
   },
-  validate: (action: SendEmail): ValidationResult => {
+  validate: (formData: FormData): ValidationResult => {
     const errors: { [key: string]: string } = {};
 
-    if (!action.addresses || action.addresses.length === 0) {
+    if (!formData.addresses || formData.addresses.length === 0) {
       errors.addresses = 'At least one recipient email address is required';
     }
 

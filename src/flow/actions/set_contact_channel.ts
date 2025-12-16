@@ -1,10 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, ValidationResult } from '../types';
+import { ActionConfig, ACTION_GROUPS, FlowTypes } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 
 export const set_contact_channel: ActionConfig = {
   name: 'Update Channel',
   group: ACTION_GROUPS.contacts,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactChannel) => {
     return html`<div>Set to <strong>${action.channel.name}</strong></div>`;
   },
@@ -25,18 +26,6 @@ export const set_contact_channel: ActionConfig = {
     return {
       uuid: action.uuid,
       channel: action.channel ? [action.channel] : null
-    };
-  },
-  validate: (formData: SetContactChannel): ValidationResult => {
-    const errors: { [key: string]: string } = {};
-
-    if (!formData.channel) {
-      errors.channel = 'Channel is required';
-    }
-
-    return {
-      valid: Object.keys(errors).length === 0,
-      errors
     };
   }
 };

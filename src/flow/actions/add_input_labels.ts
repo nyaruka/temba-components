@@ -1,11 +1,12 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData } from '../types';
+import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, AddInputLabels } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const add_input_labels: ActionConfig = {
   name: 'Add Input Labels',
   group: ACTION_GROUPS.save,
+  flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: AddInputLabels) => {
     return html`<div>${renderNamedObjects(action.labels, 'label')}</div>`;
   },

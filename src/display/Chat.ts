@@ -1,47 +1,127 @@
 import { TemplateResult, html, PropertyValueMap, css } from 'lit';
 import { property } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { hashCode } from '../utils';
 
 const BATCH_TIME_WINDOW = 60 * 60 * 1000;
-const SCROLL_FETCH_BUFFER = 0.05;
+const SCROLL_FETCH_BUFFER = 200; // pixels from top
 const MIN_FETCH_TIME = 250;
+
+const getUnsendableReasonMessage = (reason: string): string => {
+  switch (reason) {
+    case 'no_route':
+      return 'No channel available to send message';
+    case 'contact_blocked':
+      return 'Contact has been blocked';
+    case 'contact_stopped':
+      return 'Contact has been stopped';
+    case 'contact_archived':
+      return 'Contact is archived';
+    case 'org_suspended':
+      return 'Workspace is suspended';
+    case 'looping':
+      return 'Message loop detected';
+    default:
+      return 'Unable to send message';
+  }
+};
+
+const getStatusReasonMessage = (reason: string): string => {
+  switch (reason) {
+    case 'error_limit':
+      return 'Error limit reached';
+    case 'too_old':
+      return 'Message is too old to send';
+    case 'channel_removed':
+      return 'Channel was removed';
+    default:
+      return 'Message failed to send';
+  }
+};
 
 export enum MessageType {
   Inline = 'inline',
   Error = 'error',
   Collapse = 'collapse',
-  Note = 'note',
-  MsgIn = 'msg_in',
-  MsgOut = 'msg_out'
+  Note = 'note'
 }
 
-interface User {
-  avatar?: string;
-  email: string;
+export type GroupReason =
+  | 'time_elapsed'
+  | 'new_author'
+  | 'new_type'
+  | 'initial';
+
+export interface MessageGroup {
+  messages: string[];
+  reason: GroupReason;
+}
+
+export interface ObjectReference {
+  uuid: string;
   name: string;
 }
 
-export interface ChatEvent {
-  id?: string;
-  type: MessageType;
-  text: TemplateResult;
-  date: Date;
-  user?: User;
-  popup?: TemplateResult;
+interface User extends ObjectReference {
+  avatar?: string;
+  email: string;
 }
 
-export interface Message extends ChatEvent {
-  sendError?: boolean;
-  attachments?: string[];
+export interface Msg {
+  text: string;
+  channel: ObjectReference;
+  quick_replies: string[];
+  urn: string;
+  direction: string;
+  type: string;
+  attachments: string[];
+  unsendable_reason?:
+    | 'no_route'
+    | 'contact_blocked'
+    | 'contact_stopped'
+    | 'contact_archived'
+    | 'org_suspended'
+    | 'looping';
+}
+
+export interface ContactEvent {
+  uuid?: string;
+  type: string;
+  created_on: Date;
+  _user?: User;
+  _rendered?: { html: TemplateResult; type: MessageType };
+}
+
+export interface MsgEvent extends ContactEvent {
+  msg: Msg;
+  optin?: ObjectReference;
+  _status?: {
+    created_on: string;
+    status: 'wired' | 'sent' | 'delivered' | 'read' | 'errored' | 'failed';
+    reason: 'error_limit' | 'too_old' | 'channel_removed';
+  };
+  _deleted?: {
+    created_on: string;
+    by_contact: boolean;
+    user?: { name: string; uuid: string };
+  };
+  _logs_url?: string;
 }
 
 const TIME_FORMAT = { hour: 'numeric', minute: '2-digit' } as any;
 const VERBOSE_FORMAT = {
   weekday: undefined,
   year: undefined,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit'
+} as any;
+const VERBOSE_FORMAT_WITH_YEAR = {
+  weekday: undefined,
+  year: 'numeric',
   month: 'short',
   day: 'numeric',
   hour: 'numeric',
@@ -104,7 +184,8 @@ export class Chat extends RapidElement {
         text-align: center;
         font-size: 0.8em;
         color: #999;
-        margin-top: 2em;
+        margin-bottom: 2em;
+        margin-top: 1em;
         border-top: 1px solid #e9e9e9;
         padding: 1em;
         margin-left: 10%;
@@ -122,6 +203,16 @@ export class Chat extends RapidElement {
         margin-top: 0;
         border-top: none;
         padding-top: 0;
+      }
+
+      .group-reason {
+        text-align: center;
+        font-size: 0.75em;
+        color: #999;
+        margin-bottom: 1em;
+        margin-top: 0.5em;
+        padding: 0.5em 1em;
+        font-style: italic;
       }
 
       .row {
@@ -168,6 +259,7 @@ export class Chat extends RapidElement {
       .incoming .row {
         flex-direction: row-reverse;
         margin-left: 1em;
+        margin-right: 1em;
       }
 
       .bubble {
@@ -216,14 +308,39 @@ export class Chat extends RapidElement {
         color: rgba(0, 0, 0, 0.5);
       }
 
-      .message {
+      .failed .bubble,
+      .error .bubble {
+        border: 1px solid var(--color-error);
+        background: #ffe6e6;
+        color: #ad4747ff;
+      }
+
+      .error .bubble .name,
+      .failed .bubble .name {
+        color: #ad47479a;
+      }
+
+      .deleted .bubble {
+        background: #fff;
+        color: #999;
+        border: 1px solid #e0e0e0;
+      }
+
+      .deleted .bubble .name {
+        color: #aaa;
+      }
+
+      .message-text {
+        white-space: pre-wrap;
         margin-bottom: 0.5em;
         line-height: 1.2em;
         word-break: break-word;
       }
 
-      .message-text {
-        white-space: pre-line;
+      .message-deleted {
+        font-style: italic;
+        margin-bottom: 0.5em;
+        line-height: 1.2em;
       }
 
       .chat {
@@ -311,8 +428,6 @@ export class Chat extends RapidElement {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        margin-top: -1em;
-        padding-top: 1em;
       }
 
       .scroll-at-top.messages:before {
@@ -436,19 +551,12 @@ export class Chat extends RapidElement {
         border-radius: var(--curvature);
       }
 
-      .error .bubble {
-        border: 1px solid var(--color-error);
-        background: white;
-        color: #333;
-      }
-
-      .error .bubble .name {
-        color: #999;
-      }
-
+      .failed temba-thumbnail,
       .error temba-thumbnail {
-        --thumb-background: var(--color-error);
-        --thumb-icon: white;
+        --thumb-background: #ffe6e6;
+        --thumb-border: var(--color-error);
+        border: 1px solid var(--color-error);
+        color: #ad4747a8;
       }
 
       .outgoing .popup {
@@ -470,8 +578,6 @@ export class Chat extends RapidElement {
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
         border: 1px solid #f3f3f3;
         opacity: 0;
-        transform: scale(0.7);
-        transition: opacity 0.2s ease-out, transform 0.2s ease-out;
         z-index: 2;
       }
 
@@ -488,15 +594,46 @@ export class Chat extends RapidElement {
       }
 
       .bubble-wrap:hover .popup {
-        transform: translateY(-120%);
         opacity: 1;
         transition-delay: 1s;
+        top: -35px;
+      }
+
+      .new-message-notification {
+        position: absolute;
+        bottom: 1em;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--color-primary-dark, #3c92dd);
+        color: white;
+        padding: 0.75em 1.5em;
+        border-radius: var(--curvature);
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.3) 0px 1px 2px 0px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s ease-out;
+        z-index: 100;
+        font-weight: 500;
+        pointer-events: none;
+      }
+
+      .new-message-notification.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .new-message-notification:hover {
+        background: var(--color-primary-darker, #2b7ac4);
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 10px 0px,
+          rgba(0, 0, 0, 0.4) 0px 2px 4px 0px;
       }
     `;
   }
 
   @property({ type: Array })
-  messageGroups: string[][] = [];
+  messageGroups: MessageGroup[] = [];
 
   @property({ type: Boolean })
   fetching = false;
@@ -513,7 +650,23 @@ export class Chat extends RapidElement {
   @property({ type: Boolean })
   agent = false;
 
-  private msgMap = new Map<string, ChatEvent>();
+  @property({ type: Boolean, attribute: false })
+  endOfHistory = false;
+
+  @property({ type: Object, attribute: false })
+  oldestEventDate: Date = null;
+
+  @property({ type: Boolean, attribute: false })
+  showNewMessageNotification = false;
+
+  @property({ type: Object })
+  showMessageLogsAfter: Date = null;
+
+  @property({ type: Boolean })
+  hasFooter = false;
+
+  private msgMap = new Map<string, ContactEvent>();
+  private metadataCache = new Map<string, ContactEvent>();
 
   public firstUpdated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -526,20 +679,10 @@ export class Chat extends RapidElement {
   }
 
   public addMessages(
-    messages: ChatEvent[],
+    messages: ContactEvent[],
     startTime: Date = null,
     append = false
   ) {
-    // make sure our messages have ids
-    messages.forEach((m) => {
-      if (!m.id) {
-        m.id =
-          hashCode((m.text.strings || []).join('')) +
-          '_' +
-          m.date.toISOString();
-      }
-    });
-
     if (!startTime) {
       startTime = new Date();
     }
@@ -551,8 +694,17 @@ export class Chat extends RapidElement {
         // first add messages to the map
         const newMessages = [];
         for (const m of messages) {
+          // filter out metadata events - they aren't rendered but cached for later reference
+          if (m.type === 'msg_deleted' || m.type === 'msg_status_changed') {
+            const msgUuid = (m as any).msg_uuid;
+            if (msgUuid) {
+              this.metadataCache.set(msgUuid, m);
+            }
+            continue;
+          }
+
           if (this.addMessage(m)) {
-            newMessages.push(m.id);
+            newMessages.push(m.uuid);
           }
         }
 
@@ -562,12 +714,28 @@ export class Chat extends RapidElement {
 
         const ele = this.shadowRoot.querySelector('.scroll');
         const prevTop = ele.scrollTop;
+        const prevScrollHeight = ele.scrollHeight;
+        const scrollableHeight = ele.scrollHeight - ele.clientHeight;
+        const isScrolledAway =
+          scrollableHeight > 0 && Math.abs(ele.scrollTop) > 50;
 
         const grouped = this.groupMessages(newMessages);
         this.insertGroups(grouped, append);
 
+        // show notification if new messages are appended and user is scrolled away from bottom
+        if (append && isScrolledAway && newMessages.length > 0) {
+          this.showNewMessageNotification = true;
+        }
+
         window.setTimeout(() => {
-          ele.scrollTop = prevTop;
+          // when appending (new messages at bottom), adjust scroll to maintain visible content
+          // with column-reverse, new content at bottom increases scrollHeight
+          if (append && isScrolledAway) {
+            const heightDiff = ele.scrollHeight - prevScrollHeight;
+            ele.scrollTop = prevTop - heightDiff;
+          } else {
+            ele.scrollTop = prevTop;
+          }
 
           this.fireCustomEvent(CustomEventType.FetchComplete);
         }, 100);
@@ -579,29 +747,53 @@ export class Chat extends RapidElement {
     );
   }
 
-  private addMessage(msg: ChatEvent): boolean {
+  private addMessage(msg: ContactEvent): boolean {
     const isNew = !this.messageExists(msg);
-    this.msgMap.set(msg.id, msg);
+    this.msgMap.set(msg.uuid, msg);
     return isNew;
   }
 
-  public messageExists(msg: ChatEvent): boolean {
-    return this.msgMap.has(msg.id);
+  public messageExists(msg: ContactEvent): boolean {
+    return this.msgMap.has(msg.uuid);
   }
 
-  private isSameGroup(msg1: ChatEvent, msg2: ChatEvent): boolean {
-    if (msg1 && msg2) {
-      return (
-        msg1.type === msg2.type &&
-        msg1.user?.name === msg2.user?.name &&
-        Math.abs(msg1.date.getTime() - msg2.date.getTime()) < BATCH_TIME_WINDOW
-      );
+  private isSameGroup(
+    msg1: ContactEvent,
+    msg2: ContactEvent,
+    lastTimeElapsedDate?: Date
+  ): { same: boolean; reason?: GroupReason } {
+    if (!msg1 || !msg2) {
+      return { same: true };
     }
 
-    return false;
+    // for type equivalence, treat all non-message types as the same
+    const isMsg1 = msg1.type === 'msg_created' || msg1.type === 'msg_received';
+    const isMsg2 = msg2.type === 'msg_created' || msg2.type === 'msg_received';
+    const typeMatch =
+      isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
+
+    // check time first - if BATCH_TIME_WINDOW has passed since last time_elapsed reason
+    const timeToCheck = lastTimeElapsedDate || msg1.created_on;
+    if (
+      Math.abs(msg2.created_on.getTime() - timeToCheck.getTime()) >=
+      BATCH_TIME_WINDOW
+    ) {
+      return { same: false, reason: 'time_elapsed' };
+    }
+
+    if (!typeMatch) {
+      return { same: false, reason: 'new_type' };
+    }
+
+    // only check author for message types
+    if (isMsg1 && isMsg2 && msg1._user?.name !== msg2._user?.name) {
+      return { same: false, reason: 'new_author' };
+    }
+
+    return { same: true };
   }
 
-  private insertGroups(newGroups: string[][], append = false) {
+  private insertGroups(newGroups: MessageGroup[], append = false) {
     if (!append) {
       newGroups.reverse();
     }
@@ -612,12 +804,13 @@ export class Chat extends RapidElement {
         this.messageGroups[append ? 0 : this.messageGroups.length - 1];
 
       if (group) {
-        const lastMsgId = group[group.length - 1];
+        const lastMsgId = group.messages[group.messages.length - 1];
         const lastMsg = this.msgMap.get(lastMsgId);
-        const newMsg = this.msgMap.get(newGroup[0]);
+        const newMsg = this.msgMap.get(newGroup.messages[0]);
         // if our message belongs to the previous group, in we go
-        if (this.isSameGroup(lastMsg, newMsg)) {
-          group.push(...newGroup);
+        const groupCheck = this.isSameGroup(lastMsg, newMsg);
+        if (groupCheck.same) {
+          group.messages.push(...newGroup.messages);
         } else {
           // otherwise, just add our entire group as a new one
           if (append) {
@@ -638,18 +831,31 @@ export class Chat extends RapidElement {
     this.requestUpdate('messageGroups');
   }
 
-  private groupMessages(msgIds: string[]): string[][] {
+  private groupMessages(msgIds: string[]): MessageGroup[] {
     // group our messages by origin and user
-    const groups = [];
-    let lastGroup = [];
-    let lastMsg = null;
+    const groups: MessageGroup[] = [];
+    let lastGroup: MessageGroup = null;
+    let lastMsg: ContactEvent = null;
+    let lastTimeElapsedDate: Date = null;
+
     for (const msgId of msgIds) {
       const msg = this.msgMap.get(msgId);
-      if (!this.isSameGroup(msg, lastMsg)) {
-        lastGroup = [];
+      const groupCheck = this.isSameGroup(msg, lastMsg, lastTimeElapsedDate);
+
+      if (!groupCheck.same || !lastGroup) {
+        lastGroup = {
+          messages: [],
+          reason: groupCheck.reason || 'initial'
+        };
         groups.push(lastGroup);
+
+        // track when we last broke for time_elapsed
+        if (groupCheck.reason === 'time_elapsed') {
+          lastTimeElapsedDate = msg.created_on;
+        }
       }
-      lastGroup.push(msgId);
+
+      lastGroup.messages.push(msgId);
       lastMsg = msg;
     }
     return groups;
@@ -657,14 +863,29 @@ export class Chat extends RapidElement {
 
   private handleScroll(event: any) {
     const ele = event.target;
-    const top = ele.scrollHeight - ele.clientHeight;
-    const scroll = Math.round(top + ele.scrollTop);
-    const scrollPct = scroll / top;
+    const scrollableHeight = ele.scrollHeight - ele.clientHeight;
 
-    this.hideTopScroll = scrollPct <= 0.01;
-    this.hideBottomScroll = scrollPct >= 0.99;
+    if (scrollableHeight <= 0) {
+      return;
+    }
 
-    if (scrollPct < SCROLL_FETCH_BUFFER) {
+    // with column-reverse, scrollTop behavior depends on the browser
+    // check if scrollTop is negative (some browsers) or positive (others)
+    const absScrollTop = Math.abs(ele.scrollTop);
+
+    // when scrolling up to older messages, absScrollTop increases
+    // trigger when we're close to the maximum scroll (oldest messages)
+    const shouldFetch = absScrollTop >= scrollableHeight - SCROLL_FETCH_BUFFER;
+
+    this.hideTopScroll = absScrollTop >= scrollableHeight - 1;
+    this.hideBottomScroll = absScrollTop <= 1;
+
+    // hide notification when scrolled to bottom
+    if (absScrollTop <= 10) {
+      this.showNewMessageNotification = false;
+    }
+
+    if (shouldFetch) {
       this.fireCustomEvent(CustomEventType.ScrollThreshold);
     }
   }
@@ -672,139 +893,216 @@ export class Chat extends RapidElement {
   private scrollToBottom() {
     const scroll = this.shadowRoot.querySelector('.scroll');
     if (scroll) {
-      scroll.scrollTop = scroll.scrollHeight;
+      scroll.scrollTop = 0;
       this.hideBottomScroll = true;
+      this.showNewMessageNotification = false;
+    }
+  }
+
+  private handleNewMessageClick() {
+    this.scrollToBottom();
+  }
+
+  private getReasonLabel(reason: GroupReason): string {
+    switch (reason) {
+      case 'new_author':
+        return '👤 Different author';
+      case 'new_type':
+        return '🔄 Message type changed';
+      case 'time_elapsed':
+      case 'initial':
+      default:
+        return '';
     }
   }
 
   private renderMessageGroup(
-    msgIds: string[],
+    group: MessageGroup,
     idx: number,
-    groups: string[][]
-  ): TemplateResult {
+    lastShownTimestamp: Date | null
+  ): { html: TemplateResult; timestamp: Date | null } {
     const today = new Date();
-    const firstGroup = idx === groups.length - 1;
-
-    let prevMsg: ChatEvent;
-    if (idx > 0) {
-      const lastGroup = groups[idx - 1];
-      if (lastGroup && lastGroup.length > 0) {
-        prevMsg = this.msgMap.get(lastGroup[0]);
-      }
-    }
+    const msgIds = group.messages;
 
     const mostRecentId = msgIds[msgIds.length - 1];
     const currentMsg = this.msgMap.get(mostRecentId);
-    let timeDisplay = null;
-    if (
-      prevMsg &&
-      !this.isSameGroup(prevMsg, currentMsg) &&
-      (Math.abs(currentMsg.date.getTime() - prevMsg.date.getTime()) >
-        BATCH_TIME_WINDOW ||
-        idx === groups.length - 1)
-    ) {
-      if (
-        today.getDate() !== prevMsg.date.getDate() ||
-        prevMsg.date.getDate() !== currentMsg.date.getDate()
-      ) {
-        timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
-          ${prevMsg.date.toLocaleTimeString(undefined, VERBOSE_FORMAT)}
-        </div>`;
-      } else {
-        timeDisplay = html`<div class="time ${firstGroup ? 'first' : ''}">
-          ${prevMsg.date.toLocaleTimeString(undefined, TIME_FORMAT)}
-        </div>`;
-      }
-    }
 
     const incoming = this.agent
-      ? currentMsg.type !== 'msg_in'
-      : currentMsg.type === 'msg_in';
+      ? currentMsg.type !== 'msg_received'
+      : currentMsg.type === 'msg_received';
 
-    const name = currentMsg.user?.name;
-    const email = currentMsg.user?.email;
+    const name = currentMsg._user?.name;
 
     const showAvatar =
-      ((currentMsg.type === 'note' ||
-        currentMsg.type === 'msg_in' ||
-        currentMsg.type === 'msg_out') &&
+      ((currentMsg.type === 'msg_received' ||
+        currentMsg.type === 'msg_created') &&
         this.agent) ||
       !incoming;
 
-    return html`
-      ${!firstGroup ? timeDisplay : null}
-      <div
-        class="block  ${incoming ? 'incoming' : 'outgoing'} ${currentMsg.type}"
-      >
+    const isSystem = !currentMsg._user?.uuid;
+
+    const reasonLabel = this.getReasonLabel(group.reason);
+    const showReason = false; // reasonLabel && idx > 0;
+
+    // determine if we should show a timestamp
+    // use the first message in the group (oldest) for the timestamp
+    const firstMsgId = msgIds[0];
+    const firstMsg = this.msgMap.get(firstMsgId);
+
+    // check if we should show a timestamp based on the last shown timestamp
+    let showTimeForReason = false;
+    let newLastShownTimestamp = lastShownTimestamp;
+
+    if (idx > 0) {
+      if (lastShownTimestamp) {
+        const timeSinceLastShown = Math.abs(
+          firstMsg.created_on.getTime() - lastShownTimestamp.getTime()
+        );
+        showTimeForReason = timeSinceLastShown >= BATCH_TIME_WINDOW;
+      } else {
+        // no previous timestamp, check against previous group
+        showTimeForReason = group.reason === 'time_elapsed';
+      }
+    }
+
+    let timeForReason = null;
+    if (showTimeForReason) {
+      newLastShownTimestamp = firstMsg.created_on;
+
+      const isDifferentYear =
+        today.getFullYear() !== firstMsg.created_on.getFullYear();
+      const format = isDifferentYear
+        ? VERBOSE_FORMAT_WITH_YEAR
+        : today.getDate() !== firstMsg.created_on.getDate()
+        ? VERBOSE_FORMAT
+        : TIME_FORMAT;
+
+      timeForReason = html`<div class="time time-elapsed">
+        ${firstMsg.created_on.toLocaleTimeString(undefined, format)}
+      </div>`;
+    }
+
+    const resultHtml = html`
+      <div class="block  ${incoming ? 'incoming' : 'outgoing'}">
         <div class="group-messages" style="flex-grow:1">
-          ${msgIds.map((msgId, index) => {
-            const msg = this.msgMap.get(msgId);
-            return html`<div class="row message">
-              ${this.renderMessage(msg, index == 0 ? name : null)}
-            </div>`;
-          })}
+          ${repeat(
+            msgIds,
+            (msgId) => msgId,
+            (msgId, index) => {
+              const msg = this.msgMap.get(msgId);
+              const msgEvent = msg as MsgEvent;
+              const statusClass = (msg as any)._status
+                ? (msg as any)._status.status
+                : '';
+              const hasError =
+                msgEvent.msg?.unsendable_reason ||
+                (msgEvent._status?.reason &&
+                  (statusClass === 'failed' || statusClass === 'errored'));
+              const unsendableClass = hasError ? 'error' : '';
+              const deletedClass = msgEvent._deleted ? 'deleted' : '';
+              return html`<div
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass}"
+              >
+                ${this.renderMessage(msg, index == 0 ? name : null)}
+              </div>`;
+            }
+          )}
         </div>
         ${showAvatar
           ? html`<div class="avatar" style="align-self:flex-end">
               <temba-user
-                email=${email}
+                uuid=${currentMsg._user?.uuid}
                 name=${name}
-                avatar=${currentMsg.user?.avatar}
-                ?system=${!email && !name}
+                avatar=${currentMsg._user?.avatar}
+                ?system=${isSystem}
               >
               </temba-user>
             </div>`
           : null}
       </div>
-      ${firstGroup ? timeDisplay : null}
+      ${showReason
+        ? html`<div class="group-reason">${reasonLabel}</div>`
+        : null}
+      ${timeForReason}
     `;
+
+    return { html: resultHtml, timestamp: newLastShownTimestamp };
   }
 
-  private renderMessage(event: ChatEvent, name = null): TemplateResult {
-    if (
-      event.type === MessageType.Error ||
-      event.type === MessageType.Collapse ||
-      event.type === MessageType.Inline
-    ) {
-      return html`<div class="event">${event.text}</div>`;
+  private renderMessage(event: ContactEvent, name = null): TemplateResult {
+    if (event._rendered) {
+      return html`<div class="event">${event._rendered.html}</div>`;
     }
 
-    const message = event as Message;
+    const message = event as MsgEvent;
+    const unsendableReason = message.msg?.unsendable_reason;
+    const statusReason = message._status?.reason;
+    const errorMessage = unsendableReason
+      ? getUnsendableReasonMessage(unsendableReason)
+      : statusReason
+      ? getStatusReasonMessage(statusReason)
+      : null;
+
+    const logsURL =
+      this.showMessageLogsAfter &&
+      message.created_on >= this.showMessageLogsAfter &&
+      message.msg.channel
+        ? `/channels/channel/logs/${message.msg.channel.uuid}/msg/${event.uuid}/`
+        : null;
+
+    // handle deleted messages
+    const isDeleted = message._deleted;
+    const deletedByText = isDeleted
+      ? message._deleted.by_contact
+        ? 'contact'
+        : message._deleted.user?.name || 'user'
+      : null;
+
     return html`
-        <div class="bubble-wrap ${message.sendError ? 'error' : ''}">
-        ${
-          message.popup
-            ? html`<div class="popup">
-                ${message.popup}
-                <div class="arrow">▼</div>
+      <div class="bubble-wrap">
+        <div class="popup" style="white-space: nowrap;">
+          ${errorMessage
+            ? html`<div style="color: var(--color-error); margin-right: 1em;">
+                ${errorMessage}
               </div>`
-            : null
-        }
-          
-          ${
-            message.text
-              ? html`
-                  <div class="bubble">
-                    ${name ? html`<div class="name">${name}</div>` : null}
-                    <div class="message message-text">${message.text}</div>
+            : null}
+          <temba-date
+            value="${message.created_on.toISOString()}"
+            display="relative"
+          ></temba-date>
+          ${logsURL
+            ? html`<a
+                style="margin-left: 1em; color: var(--color-primary-dark);"
+                href="${logsURL}"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><temba-icon name="log"></temba-icon
+              ></a>`
+            : null}
 
-                    <!--div>${message.date.toLocaleDateString(
-                      undefined,
-                      VERBOSE_FORMAT
-                    )}</div-->
-                  </div>
-                `
-              : null
-          }
+          <div class="arrow">▼</div>
+        </div>
+        ${isDeleted
+          ? html`<div class="bubble">
+              ${name ? html`<div class="name">${name}</div>` : null}
+              <div class="message-deleted">
+                Message deleted by ${deletedByText}
+              </div>
+            </div>`
+          : message.msg.text
+          ? html`<div class="bubble">
+              ${name ? html`<div class="name">${name}</div>` : null}
+              <div class="message-text">${message.msg.text}</div>
+            </div>`
+          : null}
 
-          <div class="attachments">
-            ${(message.attachments || []).map(
-              (attachment) =>
-                html`<temba-thumbnail
-                  attachment="${attachment}"
-                ></temba-thumbnail>`
-            )}
-          </div>
+        <div class="attachments">
+          ${(message.msg.attachments || []).map(
+            (attachment) =>
+              html`<temba-thumbnail
+                attachment="${attachment}"
+              ></temba-thumbnail>`
+          )}
         </div>
       </div>
     `;
@@ -815,6 +1113,13 @@ export class Chat extends RapidElement {
     this.messageGroups = [];
     this.hideBottomScroll = true;
     this.hideTopScroll = true;
+    this.endOfHistory = false;
+    this.oldestEventDate = null;
+  }
+
+  public setEndOfHistory(oldestDate: Date) {
+    this.endOfHistory = true;
+    this.oldestEventDate = oldestDate;
   }
 
   public render(): TemplateResult {
@@ -826,16 +1131,48 @@ export class Chat extends RapidElement {
     >
       <div class="scroll" @scroll=${this.handleScroll}>
         ${this.messageGroups
-          ? this.messageGroups.map(
-              (msgGroup, idx, groups) =>
-                html`${this.renderMessageGroup(msgGroup, idx, groups)}`
-            )
+          ? (() => {
+              let lastTimestamp: Date | null = null;
+              // process from oldest to newest (high index to low index)
+              // to establish logical time groupings going forward in time
+              const results = [];
+              for (let idx = this.messageGroups.length - 1; idx >= 0; idx--) {
+                const msgGroup = this.messageGroups[idx];
+                const result = this.renderMessageGroup(
+                  msgGroup,
+                  idx,
+                  lastTimestamp
+                );
+                lastTimestamp = result.timestamp;
+                results.unshift(result.html); // add to front since we're going backwards
+              }
+              return results;
+            })()
           : null}
 
         <temba-loading
           class="${!this.fetching ? 'hidden' : ''}"
         ></temba-loading>
+
+        ${this.endOfHistory && this.oldestEventDate
+          ? html`<div class="time first">
+              ${this.oldestEventDate.toLocaleTimeString(
+                undefined,
+                VERBOSE_FORMAT
+              )}
+            </div>`
+          : null}
       </div>
+      ${!this.hasFooter
+        ? html`<div
+            class="new-message-notification ${this.showNewMessageNotification
+              ? 'visible'
+              : ''}"
+            @click=${this.handleNewMessageClick}
+          >
+            New Messages
+          </div>`
+        : null}
       <slot class="header" name="header"></slot>
       <slot class="footer" name="footer"></slot>
     </div>`;
