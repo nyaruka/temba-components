@@ -1058,6 +1058,15 @@ export class Chat extends RapidElement {
         : message._deleted.user?.name || 'user'
       : null;
 
+    // check if message has location attachment and text is just coordinates
+    const hasLocationAttachment = message.msg.attachments?.some((att) =>
+      att.startsWith('geo:')
+    );
+    const textIsCoordinates =
+      hasLocationAttachment &&
+      message.msg.text &&
+      /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/.test(message.msg.text.trim());
+
     return html`
       <div class="bubble-wrap">
         <div class="popup" style="white-space: nowrap;">
@@ -1089,7 +1098,7 @@ export class Chat extends RapidElement {
                 Message deleted by ${deletedByText}
               </div>
             </div>`
-          : message.msg.text
+          : message.msg.text && !textIsCoordinates
           ? html`<div class="bubble">
               ${name ? html`<div class="name">${name}</div>` : null}
               <div class="message-text">${message.msg.text}</div>
