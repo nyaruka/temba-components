@@ -10,6 +10,7 @@ enum ThumbnailContentType {
   AUDIO = 'audio',
   VIDEO = 'video',
   DOCUMENT = 'document',
+  LOCATION = 'location',
   OTHER = 'other'
 }
 
@@ -122,6 +123,24 @@ export class Thumbnail extends RapidElement {
   @property({ type: String, attribute: true })
   contentType: string;
 
+  @property({ type: Number, attribute: false })
+  latitude: number;
+
+  @property({ type: Number, attribute: false })
+  longitude: number;
+
+  // convert lat/lng to tile coordinates for OSM
+  private latLngToTile(lat: number, lng: number, zoom: number) {
+    const n = Math.pow(2, zoom);
+    const x = Math.floor(((lng + 180) / 360) * n);
+    const latRad = (lat * Math.PI) / 180;
+    const y = Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
+        n
+    );
+    return { x, y, z: zoom };
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -162,6 +181,15 @@ export class Thumbnail extends RapidElement {
             this.contentType = ThumbnailContentType.VIDEO;
           } else if (contentType.startsWith('application')) {
             this.contentType = ThumbnailContentType.DOCUMENT;
+          } else if (contentType.startsWith('geo')) {
+            this.contentType = ThumbnailContentType.LOCATION;
+            // Parse coordinates from URL which is already stripped of "geo:" prefix
+            // Format is now just: lat,lng
+            const coords = this.url.match(/^([^,]+),([^,]+)/);
+            if (coords) {
+              this.latitude = parseFloat(coords[1]);
+              this.longitude = parseFloat(coords[2]);
+            }
           } else {
             this.contentType = ThumbnailContentType.OTHER;
           }
@@ -176,6 +204,10 @@ export class Thumbnail extends RapidElement {
         const lightbox = document.querySelector('temba-lightbox') as Lightbox;
         lightbox.showElement(this);
       }, 100);
+    } else if (this.contentType === ThumbnailContentType.LOCATION) {
+      // open location in openstreetmap
+      const osmUrl = `https://www.openstreetmap.org/?mlat=${this.latitude}&mlon=${this.longitude}#map=15/${this.latitude}/${this.longitude}`;
+      window.open(osmUrl, '_blank');
     } else {
       window.open(this.url, '_blank');
     }
@@ -203,14 +235,29 @@ export class Thumbnail extends RapidElement {
           class="observe thumb ${this.contentType}"
           src="${this.url}"
         ></img></div>`
-          : html`<div
-              style="padding:1em; background:rgba(0,0,0,.05);border-radius:var(--curvature);"
-            >
-              <temba-icon
-                size="1.5"
-                name="${ThumbnailIcons[this.contentType]}"
-              ></temba-icon>
-            </div>`}
+          : html`
+              ${this.contentType === ThumbnailContentType.LOCATION
+                ? html`<img
+                    style="height:125px;margin-bottom:-3px;border-radius:var(--curvature);"
+                    src="${(() => {
+                      const tile = this.latLngToTile(
+                        this.latitude,
+                        this.longitude,
+                        13
+                      );
+                      return `https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`;
+                    })()}"
+                    alt="Location preview"
+                  />`
+                : html`<div
+                    style="padding:1em; background:rgba(0,0,0,.05);border-radius:var(--curvature);"
+                  >
+                    <temba-icon
+                      size="1.5"
+                      name="${ThumbnailIcons[this.contentType]}"
+                    ></temba-icon>
+                  </div>`}
+            `}
       </div>
     `;
   }
