@@ -210,6 +210,8 @@ export class Thumbnail extends RapidElement {
       ) {
         const tile = this.latLngToTile(this.latitude, this.longitude, 13);
         this.tileUrl = `https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`;
+      } else {
+        this.tileUrl = '';
       }
     }
   }
