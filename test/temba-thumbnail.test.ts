@@ -19,7 +19,6 @@ describe('temba-thumbnail', () => {
       attachment: 'geo:40.7128,-74.0060'
     });
     await thumbnail.updateComplete;
-
     expect(thumbnail.latitude).to.equal(40.7128);
     expect(thumbnail.longitude).to.equal(-74.006);
     expect(thumbnail.contentType).to.equal('location');

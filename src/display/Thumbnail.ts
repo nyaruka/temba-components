@@ -130,6 +130,7 @@ export class Thumbnail extends RapidElement {
   longitude: number;
 
   // cached tile URL for location thumbnails
+  @property({ type: String, attribute: false })
   private tileUrl: string = '';
 
   // convert lat/lng to tile coordinates for OSM
