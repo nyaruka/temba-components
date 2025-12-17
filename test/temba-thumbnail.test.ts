@@ -21,7 +21,7 @@ describe('temba-thumbnail', () => {
     await thumbnail.updateComplete;
 
     expect(thumbnail.latitude).to.equal(40.7128);
-    expect(thumbnail.longitude).to.equal(-74.0060);
+    expect(thumbnail.longitude).to.equal(-74.006);
     expect(thumbnail.contentType).to.equal('location');
 
     // verify the rendered image contains the correct tile URL
@@ -34,7 +34,7 @@ describe('temba-thumbnail', () => {
   describe('latLngToTile', () => {
     it('converts coordinates at 0,0', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test at zoom level 0
       const tile0 = (thumbnail as any).latLngToTile(0, 0, 0);
       expect(tile0.x).to.equal(0);
@@ -50,7 +50,7 @@ describe('temba-thumbnail', () => {
 
     it('converts positive coordinates', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test London coordinates at zoom 13
       const londonTile = (thumbnail as any).latLngToTile(51.5074, -0.1278, 13);
       expect(londonTile.x).to.equal(4093);
@@ -60,9 +60,13 @@ describe('temba-thumbnail', () => {
 
     it('converts negative coordinates', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test Sydney coordinates (negative latitude) at zoom 13
-      const sydneyTile = (thumbnail as any).latLngToTile(-33.8688, 151.2093, 13);
+      const sydneyTile = (thumbnail as any).latLngToTile(
+        -33.8688,
+        151.2093,
+        13
+      );
       expect(sydneyTile.x).to.equal(7536);
       expect(sydneyTile.y).to.equal(4915);
       expect(sydneyTile.z).to.equal(13);
@@ -70,7 +74,7 @@ describe('temba-thumbnail', () => {
 
     it('converts coordinates near the North Pole', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test near North Pole (85.05 is practical limit for Web Mercator)
       const northPoleTile = (thumbnail as any).latLngToTile(85, 0, 5);
       expect(northPoleTile.x).to.equal(16);
@@ -80,7 +84,7 @@ describe('temba-thumbnail', () => {
 
     it('converts coordinates near the South Pole', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test near South Pole (-85.05 is practical limit for Web Mercator)
       const southPoleTile = (thumbnail as any).latLngToTile(-85, 0, 5);
       expect(southPoleTile.x).to.equal(16);
@@ -90,7 +94,7 @@ describe('temba-thumbnail', () => {
 
     it('converts coordinates near the Date Line (positive)', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test near Date Line (179.9 longitude)
       const dateLineTile = (thumbnail as any).latLngToTile(0, 179.9, 10);
       expect(dateLineTile.x).to.equal(1023);
@@ -100,7 +104,7 @@ describe('temba-thumbnail', () => {
 
     it('converts coordinates near the Date Line (negative)', async () => {
       const thumbnail = await getThumbnail();
-      
+
       // test near Date Line (-179.9 longitude)
       const dateLineTile = (thumbnail as any).latLngToTile(0, -179.9, 10);
       expect(dateLineTile.x).to.equal(0);
@@ -110,8 +114,8 @@ describe('temba-thumbnail', () => {
 
     it('works correctly with zoom level 1', async () => {
       const thumbnail = await getThumbnail();
-      
-      const tile = (thumbnail as any).latLngToTile(40.7128, -74.0060, 1);
+
+      const tile = (thumbnail as any).latLngToTile(40.7128, -74.006, 1);
       expect(tile.x).to.equal(0);
       expect(tile.y).to.equal(0);
       expect(tile.z).to.equal(1);
@@ -119,8 +123,8 @@ describe('temba-thumbnail', () => {
 
     it('works correctly with zoom level 5', async () => {
       const thumbnail = await getThumbnail();
-      
-      const tile = (thumbnail as any).latLngToTile(40.7128, -74.0060, 5);
+
+      const tile = (thumbnail as any).latLngToTile(40.7128, -74.006, 5);
       expect(tile.x).to.equal(9);
       expect(tile.y).to.equal(12);
       expect(tile.z).to.equal(5);
@@ -128,8 +132,8 @@ describe('temba-thumbnail', () => {
 
     it('works correctly with zoom level 15', async () => {
       const thumbnail = await getThumbnail();
-      
-      const tile = (thumbnail as any).latLngToTile(40.7128, -74.0060, 15);
+
+      const tile = (thumbnail as any).latLngToTile(40.7128, -74.006, 15);
       expect(tile.x).to.equal(9647);
       expect(tile.y).to.equal(12320);
       expect(tile.z).to.equal(15);
@@ -137,8 +141,8 @@ describe('temba-thumbnail', () => {
 
     it('works correctly with zoom level 18 (maximum)', async () => {
       const thumbnail = await getThumbnail();
-      
-      const tile = (thumbnail as any).latLngToTile(40.7128, -74.0060, 18);
+
+      const tile = (thumbnail as any).latLngToTile(40.7128, -74.006, 18);
       expect(tile.x).to.equal(77182);
       expect(tile.y).to.equal(98561);
       expect(tile.z).to.equal(18);
