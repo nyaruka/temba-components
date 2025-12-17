@@ -129,6 +129,9 @@ export class Thumbnail extends RapidElement {
   @property({ type: Number, attribute: false })
   longitude: number;
 
+  // cached tile URL for location thumbnails
+  private tileUrl: string = '';
+
   // convert lat/lng to tile coordinates for OSM
   private latLngToTile(lat: number, lng: number, zoom: number) {
     const n = Math.pow(2, zoom);
@@ -196,6 +199,21 @@ export class Thumbnail extends RapidElement {
         }
       }
     }
+
+    // calculate tile URL when latitude/longitude changes
+    if (changes.has('latitude') || changes.has('longitude')) {
+      if (
+        this.latitude !== undefined &&
+        this.longitude !== undefined &&
+        !isNaN(this.latitude) &&
+        !isNaN(this.longitude)
+      ) {
+        const tile = this.latLngToTile(this.latitude, this.longitude, 13);
+        this.tileUrl = `https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`;
+      } else {
+        this.tileUrl = '';
+      }
+    }
   }
 
   public handleThumbnailClicked() {
@@ -239,14 +257,7 @@ export class Thumbnail extends RapidElement {
               ${this.contentType === ThumbnailContentType.LOCATION
                 ? html`<img
                     style="height:125px;margin-bottom:-3px;border-radius:var(--curvature);"
-                    src="${(() => {
-                      const tile = this.latLngToTile(
-                        this.latitude,
-                        this.longitude,
-                        13
-                      );
-                      return `https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`;
-                    })()}"
+                    src="${this.tileUrl}"
                     alt="Location preview"
                   />`
                 : html`<div
