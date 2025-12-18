@@ -25,10 +25,7 @@ jobs:
             CI=true
       - name: Check build output
         run: ls -la && ls -la dist/ || echo "No dist folder"
-      - name: Setup Node for NPM publishing
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
       - name: Publish to NPM
-        run: npm publish --provenance --access public
+        run: |
+          npm config set provenance true
+          npm publish --access public
