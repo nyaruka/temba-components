@@ -16,14 +16,13 @@ jobs:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
       - run: docker network create --driver bridge textit_default
-      - name: Build and run dev container task
+      - name: Build and publish from dev container
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: yarn run build
+          runCmd: |
+            yarn run build
+            npm publish --provenance --access public
           push: never
           env: |
             CI=true
-      - name: Publish
-        run: npm publish --provenance --access public
-        env:
-          CI: true
+            NPM_CONFIG_PROVENANCE=true
