@@ -25,7 +25,16 @@ jobs:
             CI=true
       - name: Check build output
         run: ls -la && ls -la dist/ || echo "No dist folder"
-      - name: Publish to NPM
+      - name: Setup Node.js and upgrade npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Upgrade npm to latest (requires 9.5.0+ for provenance)
         run: |
-          npm config set provenance true
-          npm publish --access public
+          echo "Current npm version:"
+          npm --version
+          npm install -g npm@latest
+          echo "Updated npm version:"
+          npm --version
+      - name: Publish to NPM
+        run: npm publish --provenance --access public
