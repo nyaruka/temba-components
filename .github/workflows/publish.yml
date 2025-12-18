@@ -24,8 +24,6 @@ jobs:
           env: |
             CI=true
       - name: Publish
-        run: |
-          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
-          npm publish --access public
+        run: npm publish --provenance --access public
         env:
           CI: true
