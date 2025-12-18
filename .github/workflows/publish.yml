@@ -16,15 +16,17 @@ jobs:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
       - run: docker network create --driver bridge textit_default
-      - name: Build and publish from dev container
+      - name: Build in dev container
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: |
-            yarn run build
-            npm publish --provenance --access public
+          runCmd: yarn run build
           push: never
           env: |
             CI=true
-            NPM_CONFIG_PROVENANCE=true
-            ACTIONS_ID_TOKEN_REQUEST_TOKEN=${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
-            ACTIONS_ID_TOKEN_REQUEST_URL=${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+      - name: Setup Node for NPM publishing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Publish to NPM
+        run: npm publish --provenance --access public
