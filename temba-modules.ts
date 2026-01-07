@@ -76,6 +76,7 @@ import { MessageEditor } from './src/form/MessageEditor';
 import './src/form/BaseListEditor'; // Import base class
 import { FloatingTab } from './src/display/FloatingTab';
 import { FloatingWindow } from './src/layout/FloatingWindow';
+import { Simulator } from './src/simulator/Simulator';
 
 export function addCustomElement(name: string, comp: any) {
   if (!window.customElements.get(name)) {
@@ -162,3 +163,4 @@ addCustomElement('temba-array-editor', TembaArrayEditor);
 addCustomElement('temba-message-editor', MessageEditor);
 addCustomElement('temba-floating-tab', FloatingTab);
 addCustomElement('temba-floating-window', FloatingWindow);
+addCustomElement('temba-simulator', Simulator);
