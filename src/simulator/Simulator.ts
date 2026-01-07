@@ -8,7 +8,7 @@ import { postJSON } from '../utils';
 
 interface Contact {
   uuid: string;
-  name: string;
+  name?: string;
   urns: string[];
   fields?: { [key: string]: any };
   groups?: any[];
@@ -51,16 +51,176 @@ export class Simulator extends RapidElement {
   static get styles() {
     return css`
       .phone-simulator {
-        padding: 30px;
+        padding-left: 467px;
+        padding-top: 30px;
+        padding-bottom: 30px;
         position: relative;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .option-pane {
+        margin-top: 30px;
+        margin-left: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .option-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 12px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: white;
+      }
+      .option-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+      }
+      .option-btn:active {
+        transform: scale(0.95);
+      }
+      .option-btn.active {
+        background: var(--color-link-primary);
+        color: white;
+      }
+      .option-btn.active:hover {
+        background: var(--color-link-primary);
       }
       .phone-frame {
+        width: 300px;
         border-radius: 40px;
         border: 8px solid #1f2937;
         box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
         background: #000;
         position: relative;
         overflow: hidden;
+        z-index: 2;
+      }
+
+      .context-explorer {
+        width: 420px;
+        height: 520px;
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        position: absolute;
+        left: 332px;
+        top: 70px;
+        z-index: 1;
+        font-size: 13px;
+        color: #374151;
+        transition: left 0.3s ease-out, opacity 0.3s ease-out;
+        opacity: 0;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: row;
+        padding: 12px;
+      }
+
+      .context-explorer-scroll {
+        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.3);
+        scrollbar-width: thin;
+        height: 100%;
+        overflow-y: scroll;
+        padding-right: 20px;
+        margin-right: 30px;
+        flex-grow: 1;
+      }
+
+      .context-explorer-bleed {
+        height: 100%;
+        width: 0px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar {
+        width: 18px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .context-explorer.open {
+        left: 60px;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .context-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 2px 4px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .context-item:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .context-item-expandable {
+        display: flex;
+        align-items: center;
+      }
+
+      .context-expand-icon {
+        width: 16px;
+        display: inline-block;
+        text-align: center;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+        color: #ffffff;
+      }
+
+      .context-expand-icon.expanded {
+        transform: rotate(90deg);
+      }
+
+      .context-key {
+        color: #ffffff;
+        flex-shrink: 0;
+        margin-right: 8px;
+      }
+
+      .context-key.has-value {
+        color: #e8b5e8;
+      }
+
+      .context-value {
+        color: #ffffff;
+        flex: 1;
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .context-children {
+        margin-left: 16px;
       }
 
       .phone-top {
@@ -77,7 +237,7 @@ export class Simulator extends RapidElement {
         position: relative;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         padding: 0 20px;
       }
       .phone-notch::before {
@@ -129,22 +289,6 @@ export class Simulator extends RapidElement {
         user-select: none;
         border-bottom: none;
         pointer-events: all;
-      }
-      .close-btn {
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 50%;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 29px;
-      }
-
-      .close-btn:hover {
-        color: rgba(0, 0, 0, 0.7);
       }
 
       .phone-screen {
@@ -260,9 +404,11 @@ export class Simulator extends RapidElement {
   private session: Session | null = null;
 
   @property({ type: Object })
+  private context: any = null;
+
+  @property({ type: Object })
   private contact: Contact = {
     uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
-    name: 'Simulator Contact',
     urns: ['tel:+12065551212'],
     fields: {},
     groups: [],
@@ -276,6 +422,15 @@ export class Simulator extends RapidElement {
 
   @property({ type: String })
   private inputValue = '';
+
+  @property({ type: Boolean })
+  private following = false;
+
+  @property({ type: Boolean })
+  private contextExplorerOpen = false;
+
+  @property({ type: Object })
+  private expandedPaths: Set<string> = new Set();
 
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -344,6 +499,11 @@ export class Simulator extends RapidElement {
       }
     }
 
+    // store the context from the response
+    if (runContext.context) {
+      this.context = runContext.context;
+    }
+
     if (runContext.events && runContext.events.length > 0) {
       this.events = [...this.events, ...runContext.events];
     }
@@ -381,6 +541,120 @@ export class Simulator extends RapidElement {
 
     const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
     phoneTab.hidden = false;
+  }
+
+  private handleReset() {
+    // reset simulation state
+    this.events = [];
+    this.session = null;
+    this.context = null;
+    this.inputValue = '';
+    this.sprinting = false;
+    this.previousEventCount = 0;
+
+    // restart the flow
+    this.startFlow();
+  }
+
+  private handleToggleFollow() {
+    this.following = !this.following;
+  }
+
+  private handleToggleContextExplorer() {
+    this.contextExplorerOpen = !this.contextExplorerOpen;
+  }
+
+  private togglePath(path: string) {
+    if (this.expandedPaths.has(path)) {
+      this.expandedPaths.delete(path);
+    } else {
+      this.expandedPaths.add(path);
+    }
+    this.requestUpdate();
+  }
+
+  private isExpandable(value: any): boolean {
+    if (value === null || typeof value !== 'object') {
+      return false;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    // check if object has keys other than __default__
+    const keys = Object.keys(value).filter((key) => key !== '__default__');
+    return keys.length > 0;
+  }
+
+  private renderContextValue(value: any): TemplateResult | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'boolean')
+      return html`<span class="context-value">${value}</span>`;
+    if (typeof value === 'number')
+      return html`<span class="context-value">${value}</span>`;
+    if (typeof value === 'string')
+      return html`<span class="context-value">${value}</span>`;
+    if (Array.isArray(value))
+      return html`<span class="context-value">[${value.length}]</span>`;
+    return '';
+  }
+
+  private renderContextTree(
+    obj: any,
+    path: string = ''
+  ): TemplateResult | TemplateResult[] {
+    if (!obj || typeof obj !== 'object') {
+      return html``;
+    }
+
+    const entries = Array.isArray(obj)
+      ? obj.map((v, i) => [String(i), v])
+      : Object.entries(obj).filter(([key]) => key !== '__default__');
+
+    return html`${entries.map(([key, value]) => {
+      const currentPath = path ? `${path}.${key}` : key;
+      const isExpanded = this.expandedPaths.has(currentPath);
+      const expandable = this.isExpandable(value);
+
+      // check if this object has a __default__ value
+      let displayValue = value;
+
+      if (
+        expandable &&
+        !Array.isArray(value) &&
+        value !== null &&
+        typeof value === 'object' &&
+        '__default__' in value
+      ) {
+        displayValue = value.__default__;
+      }
+
+      return html`
+        <div>
+          <div
+            class="context-item ${expandable ? 'context-item-expandable' : ''}"
+            @click=${() => expandable && this.togglePath(currentPath)}
+          >
+            ${expandable
+              ? html`<span
+                  class="context-expand-icon ${isExpanded ? 'expanded' : ''}"
+                  >›</span
+                >`
+              : html`<span class="context-expand-icon"></span>`}
+            <span class="context-key ${expandable ? 'has-value' : ''}"
+              >${key}</span
+            >
+            ${!isExpanded ? this.renderContextValue(displayValue) : html``}
+          </div>
+          ${isExpanded
+            ? html`<div class="context-children">
+                ${this.renderContextTree(value, currentPath)}
+              </div>`
+            : html``}
+        </div>
+      `;
+    })}`;
   }
 
   private async resume(text: string) {
@@ -649,20 +923,31 @@ export class Simulator extends RapidElement {
     return html`
       <temba-floating-window
         id="phone-window"
-        width="375"
+        width="849"
         height="720"
         top="60"
         chromeless
       >
         <div class="phone-simulator">
+          <div
+            class="context-explorer ${this.contextExplorerOpen ? 'open' : ''}"
+          >
+            <div class="context-explorer-scroll">
+              ${this.context
+                ? this.renderContextTree(this.context)
+                : html`<div
+                    style="color: #9ca3af; padding: 8px; text-align: center;"
+                  >
+                    No context available
+                  </div>`}
+            </div>
+            <div class="context-explorer-bleed"></div>
+          </div>
+
           <div class="phone-frame">
             <div class="phone-top drag-handle">
               <div class="phone-notch">
-                <div style="width:29px;"></div>
                 <div class="dynamic-island"></div>
-                <button class="close-btn" @click=${this.handleClose}>
-                  <temba-icon name="x" clickable size="2"></temba-icon>
-                </button>
               </div>
             </div>
             <div class="phone-screen">${this.renderMessages()}</div>
@@ -676,6 +961,30 @@ export class Simulator extends RapidElement {
                 ?disabled=${this.sprinting}
               />
             </div>
+          </div>
+          <div class="option-pane">
+            <button class="option-btn" @click=${this.handleClose} title="Close">
+              <temba-icon name="x" size="1.5"></temba-icon>
+            </button>
+            <button
+              class="option-btn ${this.contextExplorerOpen ? 'active' : ''}"
+              @click=${this.handleToggleContextExplorer}
+              title="Context Explorer"
+            >
+              <temba-icon name="expressions" size="1.5"></temba-icon>
+            </button>
+
+            <!--button
+              class="option-btn ${this.following ? 'active' : ''}"
+              @click=${this.handleToggleFollow}
+              title="${this.following ? 'Following' : 'Follow'}"
+            >
+              <temba-icon name="follow" size="1.5"></temba-icon>
+            </button-->
+
+            <button class="option-btn" @click=${this.handleReset} title="Reset">
+              <temba-icon name="delete" size="1.5"></temba-icon>
+            </button>
           </div>
         </div>
       </temba-floating-window>
