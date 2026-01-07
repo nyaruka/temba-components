@@ -92,11 +92,11 @@ export class Simulator extends RapidElement {
         transform: scale(0.95);
       }
       .option-btn.active {
-        background: var(--color-link-primary);
+        background: var(--color-secondary-dark);
         color: white;
       }
       .option-btn.active:hover {
-        background: var(--color-link-primary);
+        background: var(--color-secondary-dark);
       }
       .phone-frame {
         width: 300px;
@@ -132,7 +132,7 @@ export class Simulator extends RapidElement {
       }
 
       .context-explorer-scroll {
-        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.3);
+        scrollbar-color: rgba(255, 255, 255, 0.3) #4a4a4a;
         scrollbar-width: thin;
         height: 100%;
         overflow-y: scroll;
@@ -204,6 +204,7 @@ export class Simulator extends RapidElement {
         color: #ffffff;
         flex-shrink: 0;
         margin-right: 8px;
+        display: flex;
       }
 
       .context-key.has-value {
@@ -211,7 +212,7 @@ export class Simulator extends RapidElement {
       }
 
       .context-value {
-        color: #ffffff;
+        color: #aaa;
         flex: 1;
         text-align: right;
         overflow: hidden;
@@ -221,6 +222,49 @@ export class Simulator extends RapidElement {
 
       .context-children {
         margin-left: 16px;
+      }
+
+      .context-copy-icon {
+        opacity: 0;
+        margin-left: 4px;
+        transition: opacity 0.2s ease;
+        cursor: pointer;
+        color: #ccc;
+      }
+
+      .context-item:hover .context-copy-icon {
+        opacity: 1;
+      }
+
+      .context-toast {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #666;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        font-size: 13px;
+        z-index: 10;
+        animation: slideInUp 0.3s ease-out;
+      }
+
+      .context-toast .expression {
+        color: #e8b5e8;
+        font-weight: 600;
+      }
+
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
       }
 
       .phone-top {
@@ -432,6 +476,9 @@ export class Simulator extends RapidElement {
   @property({ type: Object })
   private expandedPaths: Set<string> = new Set();
 
+  @property({ type: String })
+  private copiedExpression = '';
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -600,6 +647,28 @@ export class Simulator extends RapidElement {
     return '';
   }
 
+  private buildExpression(path: string): string {
+    return `@${path}`;
+  }
+
+  private async handleCopyExpression(
+    path: string,
+    event: Event
+  ): Promise<void> {
+    event.stopPropagation();
+    const expression = this.buildExpression(path);
+    try {
+      await navigator.clipboard.writeText(expression);
+      this.copiedExpression = expression;
+      // clear the toast after 2 seconds
+      setTimeout(() => {
+        this.copiedExpression = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy expression:', err);
+    }
+  }
+
   private renderContextTree(
     obj: any,
     path: string = ''
@@ -643,8 +712,15 @@ export class Simulator extends RapidElement {
                 >`
               : html`<span class="context-expand-icon"></span>`}
             <span class="context-key ${expandable ? 'has-value' : ''}"
-              >${key}</span
-            >
+              >${key}
+              <temba-icon
+                class="context-copy-icon"
+                name="copy"
+                size="0.9"
+                @click=${(e: Event) =>
+                  this.handleCopyExpression(currentPath, e)}
+              ></temba-icon>
+            </span>
             ${!isExpanded ? this.renderContextValue(displayValue) : html``}
           </div>
           ${isExpanded
@@ -942,6 +1018,13 @@ export class Simulator extends RapidElement {
                   </div>`}
             </div>
             <div class="context-explorer-bleed"></div>
+            ${this.copiedExpression
+              ? html`<div class="context-toast">
+                  Copied
+                  <span class="expression">${this.copiedExpression}</span>
+                  to the clipboard
+                </div>`
+              : html``}
           </div>
 
           <div class="phone-frame">
