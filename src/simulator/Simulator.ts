@@ -268,7 +268,7 @@ export class Simulator extends RapidElement {
     groups: [],
     language: 'eng',
     status: 'active',
-    created_on: '2026-01-06T23:50:49.400Z'
+    created_on: new Date().toISOString()
   };
 
   @property({ type: Boolean })
@@ -300,6 +300,10 @@ export class Simulator extends RapidElement {
 
   private async startFlow() {
     const now = new Date().toISOString();
+
+    // set created_on to simulation start time
+    this.contact = { ...this.contact, created_on: now };
+
     const body = {
       contact: this.contact,
       trigger: {
