@@ -644,6 +644,17 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.previousEventCount = 0;
 
+    // reset contact to initial state
+    this.contact = {
+      uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
+      urns: ['tel:+12065551212'],
+      fields: {},
+      groups: [],
+      language: 'eng',
+      status: 'active',
+      created_on: new Date().toISOString()
+    };
+
     // restart the flow
     this.startFlow();
   }
