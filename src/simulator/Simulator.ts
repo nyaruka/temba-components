@@ -1084,6 +1084,9 @@ export class Simulator extends RapidElement {
       <temba-floating-window
         id="phone-window"
         width="849"
+        leftBoundaryMargin="467"
+        bottomBoundaryMargin="30"
+        topBoundaryMargin="30"
         height="720"
         top="60"
         chromeless
