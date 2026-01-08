@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { html, TemplateResult } from 'lit-html';
+import { property } from 'lit/decorators.js';
 import { Button } from './display/Button';
 import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
@@ -699,6 +700,58 @@ export const getCookie = (name: string) => {
 export const getCookieBoolean = (name: string) => {
   return (getCookie(name) || '') === 'true';
 };
+
+/**
+ * Custom Lit property decorator that binds a property to a cookie.
+ * The property value is loaded from the cookie on component connection
+ * and automatically saved to the cookie whenever it changes.
+ *
+ * @param cookieName - The name of the cookie to use for storage.
+ * @param defaultValue - Optional default value if cookie doesn't exist.
+ */
+export function fromCookie<T = unknown>(
+  cookieName: string,
+  defaultValue?: T
+): PropertyDecorator {
+  return (proto: any, propertyName: string | symbol) => {
+    // register as a reactive property
+    property()(proto, propertyName as string);
+
+    const connectedKey = 'connectedCallback';
+    const updatedKey = 'updated';
+
+    const userConnected = proto[connectedKey];
+    const userUpdated = proto[updatedKey];
+
+    // on connect, load value from cookie
+    proto[connectedKey] = function () {
+      const cookieValue = getCookie(cookieName);
+      if (cookieValue !== null) {
+        // parse boolean values
+        if (cookieValue === 'true') {
+          this[propertyName] = true;
+        } else if (cookieValue === 'false') {
+          this[propertyName] = false;
+        } else {
+          this[propertyName] = cookieValue;
+        }
+      } else if (defaultValue !== undefined) {
+        this[propertyName] = defaultValue;
+      }
+
+      if (userConnected) userConnected.call(this);
+    };
+
+    // on property change, save to cookie
+    proto[updatedKey] = function (changedProperties: Map<string, any>) {
+      if (changedProperties.has(propertyName as string)) {
+        setCookie(cookieName, this[propertyName]);
+      }
+
+      if (userUpdated) userUpdated.call(this, changedProperties);
+    };
+  };
+}
 
 export enum COOKIE_KEYS {
   SETTINGS = 'settings',
