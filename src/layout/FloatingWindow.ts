@@ -32,6 +32,11 @@ export class FloatingWindow extends RapidElement {
         background: transparent;
         border-radius: 0;
         box-shadow: none;
+        pointer-events: none;
+      }
+
+      .window.chromeless .body {
+        pointer-events: none;
       }
 
       .window.dragging {

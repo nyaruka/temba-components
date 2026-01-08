@@ -160,6 +160,7 @@ export class Simulator extends RapidElement {
         backdrop-filter: blur(10px);
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        pointer-events: all;
       }
       .option-btn {
         background: rgba(255, 255, 255, 0.1);
@@ -188,10 +189,11 @@ export class Simulator extends RapidElement {
       .option-btn.active:hover {
         background: var(--color-secondary-dark);
       }
+
       .phone-frame {
         width: var(--phone-width);
         border-radius: 40px;
-        border: 8px solid #1f2937;
+        border: 6px solid #1f2937;
         box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
         background: #000;
         position: relative;
@@ -600,6 +602,7 @@ export class Simulator extends RapidElement {
       .quick-reply-btn:hover {
         background: #007aff;
         color: white;
+        cursor: pointer;
       }
       .quick-reply-btn:active {
         transform: scale(0.95);
@@ -670,6 +673,9 @@ export class Simulator extends RapidElement {
 
   @property({ type: Array })
   private currentQuickReplies: any[] = [];
+
+  @property({ type: Boolean })
+  private isVisible = false;
 
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
@@ -774,6 +780,7 @@ export class Simulator extends RapidElement {
       'phone-window'
     ) as FloatingWindow;
     phoneWindow.show();
+    this.isVisible = true;
 
     // start the simulation if we haven't already
     if (this.events.length === 0) {
@@ -874,6 +881,7 @@ export class Simulator extends RapidElement {
       'phone-window'
     ) as FloatingWindow;
     phoneWindow.hide();
+    this.isVisible = false;
 
     const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
     phoneTab.hidden = false;
@@ -1467,7 +1475,10 @@ export class Simulator extends RapidElement {
               : html``}
           </div>
 
-          <div class="phone-frame">
+          <div
+            class="phone-frame"
+            style="pointer-events: ${this.isVisible ? 'all' : 'none'}"
+          >
             <div class="phone-top drag-handle">
               <div class="phone-notch">
                 <div class="dynamic-island"></div>
