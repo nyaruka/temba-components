@@ -30,7 +30,7 @@ interface Message {
   text?: string;
   urn: string;
   attachments?: string[];
-  quick_replies?: any[];
+  quick_replies?: string[];
 }
 
 interface Event {
