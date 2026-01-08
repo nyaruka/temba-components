@@ -8,7 +8,7 @@ import { postJSON } from '../utils';
 
 interface Contact {
   uuid: string;
-  name: string;
+  name?: string;
   urns: string[];
   fields?: { [key: string]: any };
   groups?: any[];
@@ -51,16 +51,259 @@ export class Simulator extends RapidElement {
   static get styles() {
     return css`
       .phone-simulator {
-        padding: 30px;
+        padding-left: 467px;
+        padding-top: 30px;
+        padding-bottom: 30px;
         position: relative;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .option-pane {
+        margin-top: 30px;
+        margin-left: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .option-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 12px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: white;
+      }
+      .option-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+      }
+      .option-btn:active {
+        transform: scale(0.95);
+      }
+      .option-btn.active {
+        background: var(--color-secondary-dark);
+        color: white;
+      }
+      .option-btn.active:hover {
+        background: var(--color-secondary-dark);
       }
       .phone-frame {
+        width: 300px;
         border-radius: 40px;
         border: 8px solid #1f2937;
         box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
         background: #000;
         position: relative;
         overflow: hidden;
+        z-index: 2;
+      }
+
+      .context-explorer {
+        width: 420px;
+        height: 520px;
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        position: absolute;
+        left: 332px;
+        top: 70px;
+        z-index: 1;
+        font-size: 13px;
+        color: #374151;
+        transition: left 0.3s ease-out, opacity 0.3s ease-out;
+        opacity: 0;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+      }
+
+      .context-gutter {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 4px;
+        margin-right: 32px;
+        margin-top: 8px;
+        flex-shrink: 0;
+      }
+
+      .context-gutter-btn {
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background 0.2s ease;
+        color: rgba(255, 255, 255, 0.6);
+        padding: 4px;
+      }
+
+      .context-gutter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .context-gutter-btn.active {
+        color: #c084fc;
+      }
+
+      .context-gutter-spacer {
+        flex: 1;
+      }
+
+      .context-explorer-scroll {
+        scrollbar-color: rgba(255, 255, 255, 0.3) #4a4a4a;
+        scrollbar-width: thin;
+        height: 100%;
+        overflow-y: scroll;
+        padding-right: 10px;
+        margin-right: 30px;
+        flex-grow: 1;
+      }
+
+      .context-explorer-bleed {
+        height: 100%;
+        width: 0px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar {
+        width: 18px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+      }
+
+      .context-explorer-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .context-explorer.open {
+        left: 60px;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .context-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 2px 4px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .context-item:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .context-item-expandable {
+        display: flex;
+        align-items: center;
+      }
+
+      .context-expand-icon {
+        width: 16px;
+        display: inline-block;
+        text-align: center;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+        color: #ffffff;
+      }
+
+      .context-expand-icon.expanded {
+        transform: rotate(90deg);
+      }
+
+      .context-key {
+        color: #ffffff;
+        flex-shrink: 0;
+        margin-right: 8px;
+        display: flex;
+      }
+
+      .context-key.has-value {
+        color: #e8b5e8;
+      }
+
+      .context-value {
+        color: #aaa;
+        flex: 1;
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .context-children {
+        margin-left: 16px;
+      }
+
+      .context-copy-icon {
+        opacity: 0;
+        margin-left: 4px;
+        transition: opacity 0.2s ease;
+        cursor: pointer;
+        color: #ccc;
+      }
+
+      .context-item:hover .context-copy-icon {
+        opacity: 1;
+      }
+
+      .context-toast {
+        position: absolute;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #666;
+        color: white;
+        padding: 12px 12px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        font-size: 13px;
+        z-index: 10;
+        animation: slideInUp 0.3s ease-out;
+      }
+
+      .context-toast .expression {
+        color: #e8b5e8;
+        font-weight: 600;
+      }
+
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
       }
 
       .phone-top {
@@ -77,7 +320,7 @@ export class Simulator extends RapidElement {
         position: relative;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         padding: 0 20px;
       }
       .phone-notch::before {
@@ -129,22 +372,6 @@ export class Simulator extends RapidElement {
         user-select: none;
         border-bottom: none;
         pointer-events: all;
-      }
-      .close-btn {
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 50%;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 29px;
-      }
-
-      .close-btn:hover {
-        color: rgba(0, 0, 0, 0.7);
       }
 
       .phone-screen {
@@ -260,9 +487,11 @@ export class Simulator extends RapidElement {
   private session: Session | null = null;
 
   @property({ type: Object })
+  private context: any = null;
+
+  @property({ type: Object })
   private contact: Contact = {
     uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
-    name: 'Simulator Contact',
     urns: ['tel:+12065551212'],
     fields: {},
     groups: [],
@@ -276,6 +505,24 @@ export class Simulator extends RapidElement {
 
   @property({ type: String })
   private inputValue = '';
+
+  @property({ type: Boolean })
+  private following = false;
+
+  @property({ type: Boolean })
+  private contextExplorerOpen = false;
+
+  @property({ type: Object })
+  private expandedPaths: Set<string> = new Set();
+
+  @property({ type: String })
+  private copiedExpression = '';
+
+  @property({ type: String })
+  private toastMessage = '';
+
+  @property({ type: Boolean })
+  private showAllKeys = true;
 
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
@@ -344,6 +591,11 @@ export class Simulator extends RapidElement {
       }
     }
 
+    // store the context from the response
+    if (runContext.context) {
+      this.context = runContext.context;
+    }
+
     if (runContext.events && runContext.events.length > 0) {
       this.events = [...this.events, ...runContext.events];
     }
@@ -381,6 +633,206 @@ export class Simulator extends RapidElement {
 
     const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
     phoneTab.hidden = false;
+  }
+
+  private handleReset() {
+    // reset simulation state
+    this.events = [];
+    this.session = null;
+    this.context = null;
+    this.inputValue = '';
+    this.sprinting = false;
+    this.previousEventCount = 0;
+
+    // reset contact to initial state
+    this.contact = {
+      uuid: 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286',
+      urns: ['tel:+12065551212'],
+      fields: {},
+      groups: [],
+      language: 'eng',
+      status: 'active',
+      created_on: new Date().toISOString()
+    };
+
+    // restart the flow
+    this.startFlow();
+  }
+
+  private handleToggleFollow() {
+    this.following = !this.following;
+  }
+
+  private handleToggleContextExplorer() {
+    this.contextExplorerOpen = !this.contextExplorerOpen;
+
+    // if opening the context explorer, ensure it's not off-screen
+    if (this.contextExplorerOpen) {
+      requestAnimationFrame(() => {
+        const phoneWindow = this.shadowRoot?.getElementById(
+          'phone-window'
+        ) as FloatingWindow;
+        if (phoneWindow) {
+          const padding = 20;
+          const contextExplorerLeft = 60; // from CSS .context-explorer.open
+          const minWindowLeft = padding - contextExplorerLeft;
+
+          if (phoneWindow.left < minWindowLeft) {
+            phoneWindow.left = minWindowLeft;
+          }
+        }
+      });
+    }
+  }
+
+  private togglePath(path: string) {
+    if (this.expandedPaths.has(path)) {
+      this.expandedPaths.delete(path);
+    } else {
+      this.expandedPaths.add(path);
+    }
+    this.requestUpdate();
+  }
+
+  private isExpandable(value: any): boolean {
+    if (value === null || typeof value !== 'object') {
+      return false;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    // check if object has keys other than __default__
+    const keys = Object.keys(value).filter((key) => key !== '__default__');
+    return keys.length > 0;
+  }
+
+  private renderContextValue(value: any): TemplateResult | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'boolean')
+      return html`<span class="context-value">${value}</span>`;
+    if (typeof value === 'number')
+      return html`<span class="context-value">${value}</span>`;
+    if (typeof value === 'string')
+      return html`<span class="context-value">${value}</span>`;
+    if (Array.isArray(value))
+      return html`<span class="context-value">[${value.length}]</span>`;
+    return '';
+  }
+
+  private buildExpression(path: string): string {
+    return `@${path}`;
+  }
+
+  private async handleCopyExpression(
+    path: string,
+    event: Event
+  ): Promise<void> {
+    event.stopPropagation();
+    const expression = this.buildExpression(path);
+    try {
+      await navigator.clipboard.writeText(expression);
+      this.copiedExpression = expression;
+      // clear the toast after 2 seconds
+      setTimeout(() => {
+        this.copiedExpression = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy expression:', err);
+    }
+  }
+
+  private handleToggleShowAllKeys() {
+    this.showAllKeys = !this.showAllKeys;
+    this.toastMessage = this.showAllKeys
+      ? 'Showing all keys'
+      : 'Filtering out keys without values';
+    // clear the toast after 2 seconds
+    setTimeout(() => {
+      this.toastMessage = '';
+    }, 2000);
+  }
+
+  private renderContextTree(
+    obj: any,
+    path: string = ''
+  ): TemplateResult | TemplateResult[] {
+    if (!obj || typeof obj !== 'object') {
+      return html``;
+    }
+
+    let entries = Array.isArray(obj)
+      ? obj.map((v, i) => [String(i), v])
+      : Object.entries(obj).filter(([key]) => key !== '__default__');
+
+    // filter out keys without values if showAllKeys is false
+    if (!this.showAllKeys) {
+      entries = entries.filter(([, value]) => {
+        // keep if expandable (has children)
+        if (this.isExpandable(value)) return true;
+        // keep if it has a displayable value (not null/undefined)
+        if (value === null || value === undefined) return false;
+        // keep primitives with values
+        return (
+          typeof value === 'boolean' ||
+          typeof value === 'number' ||
+          typeof value === 'string' ||
+          Array.isArray(value)
+        );
+      });
+    }
+
+    return html`${entries.map(([key, value]) => {
+      const currentPath = path ? `${path}.${key}` : key;
+      const isExpanded = this.expandedPaths.has(currentPath);
+      const expandable = this.isExpandable(value);
+
+      // check if this object has a __default__ value
+      let displayValue = value;
+
+      if (
+        expandable &&
+        !Array.isArray(value) &&
+        value !== null &&
+        typeof value === 'object' &&
+        '__default__' in value
+      ) {
+        displayValue = value.__default__;
+      }
+
+      return html`
+        <div>
+          <div
+            class="context-item ${expandable ? 'context-item-expandable' : ''}"
+            @click=${() => expandable && this.togglePath(currentPath)}
+          >
+            ${expandable
+              ? html`<span
+                  class="context-expand-icon ${isExpanded ? 'expanded' : ''}"
+                  >›</span
+                >`
+              : html`<span class="context-expand-icon"></span>`}
+            <span class="context-key ${expandable ? 'has-value' : ''}"
+              >${key}
+              <temba-icon
+                class="context-copy-icon"
+                name="copy"
+                size="0.9"
+                @click=${(e: Event) =>
+                  this.handleCopyExpression(currentPath, e)}
+              ></temba-icon>
+            </span>
+            ${!isExpanded ? this.renderContextValue(displayValue) : html``}
+          </div>
+          ${isExpanded
+            ? html`<div class="context-children">
+                ${this.renderContextTree(value, currentPath)}
+              </div>`
+            : html``}
+        </div>
+      `;
+    })}`;
   }
 
   private async resume(text: string) {
@@ -649,20 +1101,64 @@ export class Simulator extends RapidElement {
     return html`
       <temba-floating-window
         id="phone-window"
-        width="375"
+        width="849"
+        leftBoundaryMargin="467"
+        bottomBoundaryMargin="30"
+        topBoundaryMargin="30"
         height="720"
         top="60"
         chromeless
       >
         <div class="phone-simulator">
+          <div
+            class="context-explorer ${this.contextExplorerOpen ? 'open' : ''}"
+          >
+            <div class="context-explorer-scroll">
+              ${this.context
+                ? this.renderContextTree(this.context)
+                : html`<div
+                    style="color: #9ca3af; padding: 8px; text-align: center;"
+                  >
+                    No context available
+                  </div>`}
+            </div>
+            <div class="context-gutter">
+              <div
+                class="context-gutter-btn ${this.showAllKeys ? '' : 'active'}"
+                @click=${this.handleToggleShowAllKeys}
+                title="${this.showAllKeys
+                  ? 'Show keys with values only'
+                  : 'Show all keys'}"
+              >
+                <temba-icon
+                  name="${this.showAllKeys ? 'filter' : 'filter'}"
+                  size="1"
+                ></temba-icon>
+              </div>
+              <div class="context-gutter-spacer"></div>
+              <div
+                class="context-gutter-btn"
+                @click=${this.handleToggleContextExplorer}
+                title="Close"
+              >
+                <temba-icon name="x" size="1"></temba-icon>
+              </div>
+            </div>
+            ${this.copiedExpression
+              ? html`<div class="context-toast">
+                  Copied
+                  <span class="expression">${this.copiedExpression}</span>
+                  to the clipboard
+                </div>`
+              : this.toastMessage
+              ? html`<div class="context-toast">${this.toastMessage}</div>`
+              : html``}
+          </div>
+
           <div class="phone-frame">
             <div class="phone-top drag-handle">
               <div class="phone-notch">
-                <div style="width:29px;"></div>
                 <div class="dynamic-island"></div>
-                <button class="close-btn" @click=${this.handleClose}>
-                  <temba-icon name="x" clickable size="2"></temba-icon>
-                </button>
               </div>
             </div>
             <div class="phone-screen">${this.renderMessages()}</div>
@@ -676,6 +1172,30 @@ export class Simulator extends RapidElement {
                 ?disabled=${this.sprinting}
               />
             </div>
+          </div>
+          <div class="option-pane">
+            <button class="option-btn" @click=${this.handleClose} title="Close">
+              <temba-icon name="x" size="1.5"></temba-icon>
+            </button>
+            <button
+              class="option-btn ${this.contextExplorerOpen ? 'active' : ''}"
+              @click=${this.handleToggleContextExplorer}
+              title="Context Explorer"
+            >
+              <temba-icon name="expressions" size="1.5"></temba-icon>
+            </button>
+
+            <!--button
+              class="option-btn ${this.following ? 'active' : ''}"
+              @click=${this.handleToggleFollow}
+              title="${this.following ? 'Following' : 'Follow'}"
+            >
+              <temba-icon name="follow" size="1.5"></temba-icon>
+            </button-->
+
+            <button class="option-btn" @click=${this.handleReset} title="Reset">
+              <temba-icon name="delete" size="1.5"></temba-icon>
+            </button>
           </div>
         </div>
       </temba-floating-window>

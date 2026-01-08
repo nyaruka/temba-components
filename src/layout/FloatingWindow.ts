@@ -126,6 +126,18 @@ export class FloatingWindow extends RapidElement {
   @property({ type: String })
   color = '#6B7280';
 
+  @property({ type: Number })
+  leftBoundaryMargin = 0;
+
+  @property({ type: Number })
+  rightBoundaryMargin = 0;
+
+  @property({ type: Number })
+  topBoundaryMargin = 0;
+
+  @property({ type: Number })
+  bottomBoundaryMargin = 0;
+
   private dragStartX = 0;
   private dragStartY = 0;
   private dragOffsetX = 0;
@@ -258,8 +270,11 @@ export class FloatingWindow extends RapidElement {
     // keep window within viewport bounds with 20px padding
     const padding = 20;
     this.left = Math.max(
-      padding,
-      Math.min(this.left, window.innerWidth - this.width - padding)
+      padding - this.leftBoundaryMargin,
+      Math.min(
+        this.left,
+        window.innerWidth - this.width - padding + this.rightBoundaryMargin
+      )
     );
 
     // get the actual rendered height of the window element
@@ -269,10 +284,13 @@ export class FloatingWindow extends RapidElement {
     const currentHeight =
       windowElement?.offsetHeight || this.maxHeight || window.innerHeight;
     const maxTop = Math.max(
-      padding,
-      window.innerHeight - currentHeight - padding
+      padding - this.topBoundaryMargin,
+      window.innerHeight - currentHeight - padding + this.bottomBoundaryMargin
     );
-    this.top = Math.max(padding, Math.min(this.top, maxTop));
+    this.top = Math.max(
+      padding - this.topBoundaryMargin,
+      Math.min(this.top, maxTop)
+    );
   };
 
   private handleMouseUp = () => {
@@ -297,11 +315,13 @@ export class FloatingWindow extends RapidElement {
 
     // if positioned from right, always recalculate from right edge
     if (this.positionFromRight) {
-      this.left = window.innerWidth - this.width - padding;
+      this.left =
+        window.innerWidth - this.width - padding + this.rightBoundaryMargin;
     } else {
       // only adjust left if out of bounds
-      const minLeft = padding;
-      const maxLeft = window.innerWidth - this.width - padding;
+      const minLeft = padding - this.leftBoundaryMargin;
+      const maxLeft =
+        window.innerWidth - this.width - padding + this.rightBoundaryMargin;
 
       if (this.left < minLeft) {
         this.left = minLeft;
@@ -311,10 +331,10 @@ export class FloatingWindow extends RapidElement {
     }
 
     // only adjust top if out of bounds
-    const minTop = padding;
+    const minTop = padding - this.topBoundaryMargin;
     const maxTop = Math.max(
-      padding,
-      window.innerHeight - currentHeight - padding
+      padding - this.topBoundaryMargin,
+      window.innerHeight - currentHeight - padding + this.bottomBoundaryMargin
     );
 
     if (this.top < minTop) {
