@@ -665,6 +665,24 @@ export class Simulator extends RapidElement {
 
   private handleToggleContextExplorer() {
     this.contextExplorerOpen = !this.contextExplorerOpen;
+
+    // if opening the context explorer, ensure it's not off-screen
+    if (this.contextExplorerOpen) {
+      requestAnimationFrame(() => {
+        const phoneWindow = this.shadowRoot?.getElementById(
+          'phone-window'
+        ) as FloatingWindow;
+        if (phoneWindow) {
+          const padding = 20;
+          const contextExplorerLeft = 60; // from CSS .context-explorer.open
+          const minWindowLeft = padding - contextExplorerLeft;
+
+          if (phoneWindow.left < minWindowLeft) {
+            phoneWindow.left = minWindowLeft;
+          }
+        }
+      });
+    }
   }
 
   private togglePath(path: string) {
