@@ -578,6 +578,36 @@ export class Simulator extends RapidElement {
       .message-input input::placeholder {
         color: #8e8e93;
       }
+      .quick-replies {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 4px;
+        margin-bottom: 8px;
+      }
+      .quick-reply-btn {
+        background: white;
+        color: #007aff;
+        border: 1px solid #007aff;
+        border-radius: 18px;
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .quick-reply-btn:hover {
+        background: #007aff;
+        color: white;
+      }
+      .quick-reply-btn:active {
+        transform: scale(0.95);
+      }
+      .quick-reply-btn.animated {
+        animation: messageAppear 0.3s ease-out forwards;
+        opacity: 0;
+      }
     `;
   }
 
@@ -637,6 +667,9 @@ export class Simulator extends RapidElement {
   private showAllKeys = true;
 
   private previousWindowWidth = 0;
+
+  @property({ type: Array })
+  private currentQuickReplies: any[] = [];
 
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
@@ -801,6 +834,14 @@ export class Simulator extends RapidElement {
 
     if (runContext.events && runContext.events.length > 0) {
       this.events = [...this.events, ...runContext.events];
+
+      // extract quick replies from the most recent sprint
+      this.currentQuickReplies = [];
+      for (const event of runContext.events) {
+        if (event.type === 'msg_created' && event.msg?.quick_replies) {
+          this.currentQuickReplies = event.msg.quick_replies;
+        }
+      }
     }
 
     this.sprinting = false;
@@ -846,6 +887,7 @@ export class Simulator extends RapidElement {
     this.inputValue = '';
     this.sprinting = false;
     this.previousEventCount = 0;
+    this.currentQuickReplies = [];
 
     // reset contact to initial state
     this.contact = {
@@ -1056,6 +1098,7 @@ export class Simulator extends RapidElement {
 
     this.sprinting = true;
     this.inputValue = '';
+    this.currentQuickReplies = [];
 
     const now = new Date().toISOString();
     const msgInEvt: Event = {
@@ -1120,6 +1163,12 @@ export class Simulator extends RapidElement {
   private handleInput(evt: Event) {
     const input = evt.target as HTMLInputElement;
     this.inputValue = input.value;
+  }
+
+  private handleQuickReply(quickReply: string) {
+    if (!this.sprinting) {
+      this.resume(quickReply);
+    }
   }
 
   private getEventDescription(event: Event): string | null {
@@ -1187,8 +1236,6 @@ export class Simulator extends RapidElement {
         }
         break;
       }
-      case 'msg_wait':
-        return `Waiting for reply`;
       case 'email_created':
       case 'email_sent': {
         const recipients = (event as any).to || (event as any).addresses || [];
@@ -1255,59 +1302,88 @@ export class Simulator extends RapidElement {
       `;
     }
 
-    return html`
-      ${this.events.map((event, index) => {
-        // only animate messages that are new (beyond previous count)
-        const isNew = index >= this.previousEventCount;
-        const animatedClass = isNew ? 'animated' : '';
-        // stagger animations for new messages
-        const animationDelay = isNew
-          ? `${(index - this.previousEventCount) * 0.2}s`
-          : '0s';
+    const eventTemplates = this.events.map((event, index) => {
+      // only animate messages that are new (beyond previous count)
+      const isNew = index >= this.previousEventCount;
+      const animatedClass = isNew ? 'animated' : '';
+      // stagger animations for new messages
+      const animationDelay = isNew
+        ? `${(index - this.previousEventCount) * 0.2}s`
+        : '0s';
 
-        if (event.type === 'msg_received' && event.msg) {
+      if (event.type === 'msg_received' && event.msg) {
+        return html`
+          <div
+            class="message outgoing ${animatedClass}"
+            style="animation-delay: ${animationDelay}"
+          >
+            ${event.msg.text}
+          </div>
+        `;
+      } else if (event.type === 'msg_created' && event.msg) {
+        return html`
+          <div
+            class="message incoming ${animatedClass}"
+            style="animation-delay: ${animationDelay}"
+          >
+            ${event.msg.text}
+          </div>
+        `;
+      } else if (event.type === 'error') {
+        return html`
+          <div
+            class="message incoming ${animatedClass}"
+            style="background: #ff4444; color: white; animation-delay: ${animationDelay}"
+          >
+            ⚠️ ${(event as any).text || 'An error occurred'}
+          </div>
+        `;
+      } else {
+        // check if this is an event we should display
+        const description = this.getEventDescription(event);
+        if (description) {
           return html`
             <div
-              class="message outgoing ${animatedClass}"
+              class="event-info ${animatedClass}"
               style="animation-delay: ${animationDelay}"
             >
-              ${event.msg.text}
+              ${description}
             </div>
           `;
-        } else if (event.type === 'msg_created' && event.msg) {
-          return html`
-            <div
-              class="message incoming ${animatedClass}"
-              style="animation-delay: ${animationDelay}"
-            >
-              ${event.msg.text}
-            </div>
-          `;
-        } else if (event.type === 'error') {
-          return html`
-            <div
-              class="message incoming ${animatedClass}"
-              style="background: #ff4444; color: white; animation-delay: ${animationDelay}"
-            >
-              ⚠️ ${(event as any).text || 'An error occurred'}
-            </div>
-          `;
-        } else {
-          // check if this is an event we should display
-          const description = this.getEventDescription(event);
-          if (description) {
-            return html`
-              <div
-                class="event-info ${animatedClass}"
-                style="animation-delay: ${animationDelay}"
-              >
-                ${description}
-              </div>
-            `;
-          }
         }
-        return html``;
-      })}
+      }
+      return html``;
+    });
+
+    // render quick replies at the end if we have any from the most recent sprint
+    const hasQuickReplies = this.currentQuickReplies.length > 0;
+    const quickRepliesAnimationDelay =
+      this.events.length >= this.previousEventCount
+        ? `${(this.events.length - this.previousEventCount) * 0.2}s`
+        : '0s';
+
+    return html`
+      ${eventTemplates}
+      ${hasQuickReplies
+        ? html`
+            <div
+              class="quick-replies animated"
+              style="animation-delay: ${quickRepliesAnimationDelay}"
+            >
+              ${this.currentQuickReplies.map(
+                (qr: any) => html`
+                  <button
+                    class="quick-reply-btn animated"
+                    style="animation-delay: ${quickRepliesAnimationDelay}"
+                    @click=${() => this.handleQuickReply(qr.text)}
+                  >
+                    ${qr.text}
+                  </button>
+                `
+              )}
+            </div>
+          `
+        : html``}
     `;
   }
 
