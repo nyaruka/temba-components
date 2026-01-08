@@ -160,6 +160,7 @@ export class Simulator extends RapidElement {
         backdrop-filter: blur(10px);
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        pointer-events: all;
       }
       .option-btn {
         background: rgba(255, 255, 255, 0.1);
@@ -191,12 +192,13 @@ export class Simulator extends RapidElement {
       .phone-frame {
         width: var(--phone-width);
         border-radius: 40px;
-        border: 8px solid #1f2937;
+        border: 6px solid #1f2937;
         box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
         background: #000;
         position: relative;
         overflow: hidden;
         z-index: 2;
+        pointer-events: all;
       }
 
       .context-explorer {
@@ -467,7 +469,7 @@ export class Simulator extends RapidElement {
       .phone-screen {
         background: white;
         padding: 15px;
-        padding-top: calc(var(--cutout-height) + 8px);
+        padding-top: 75px;
         padding-bottom: 60px;
         height: var(--phone-screen-height);
         overflow-y: auto;
