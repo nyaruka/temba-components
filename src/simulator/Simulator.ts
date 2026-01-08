@@ -127,8 +127,43 @@ export class Simulator extends RapidElement {
         background: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(10px);
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         padding: 12px;
+      }
+
+      .context-gutter {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 4px;
+        margin-right: 32px;
+        margin-top: 8px;
+        flex-shrink: 0;
+      }
+
+      .context-gutter-btn {
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background 0.2s ease;
+        color: rgba(255, 255, 255, 0.6);
+        padding: 4px;
+      }
+
+      .context-gutter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .context-gutter-btn.active {
+        color: #c084fc;
       }
 
       .context-explorer-scroll {
@@ -136,7 +171,7 @@ export class Simulator extends RapidElement {
         scrollbar-width: thin;
         height: 100%;
         overflow-y: scroll;
-        padding-right: 20px;
+        padding-right: 10px;
         margin-right: 30px;
         flex-grow: 1;
       }
@@ -238,12 +273,12 @@ export class Simulator extends RapidElement {
 
       .context-toast {
         position: absolute;
-        bottom: 20px;
+        bottom: 60px;
         left: 50%;
         transform: translateX(-50%);
         background: #666;
         color: white;
-        padding: 12px 20px;
+        padding: 12px 12px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         font-size: 13px;
@@ -479,6 +514,12 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private copiedExpression = '';
 
+  @property({ type: String })
+  private toastMessage = '';
+
+  @property({ type: Boolean })
+  private showAllKeys = true;
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -669,6 +710,17 @@ export class Simulator extends RapidElement {
     }
   }
 
+  private handleToggleShowAllKeys() {
+    this.showAllKeys = !this.showAllKeys;
+    this.toastMessage = this.showAllKeys
+      ? 'Showing all keys'
+      : 'Filtering out keys without values';
+    // clear the toast after 2 seconds
+    setTimeout(() => {
+      this.toastMessage = '';
+    }, 2000);
+  }
+
   private renderContextTree(
     obj: any,
     path: string = ''
@@ -677,9 +729,26 @@ export class Simulator extends RapidElement {
       return html``;
     }
 
-    const entries = Array.isArray(obj)
+    let entries = Array.isArray(obj)
       ? obj.map((v, i) => [String(i), v])
       : Object.entries(obj).filter(([key]) => key !== '__default__');
+
+    // filter out keys without values if showAllKeys is false
+    if (!this.showAllKeys) {
+      entries = entries.filter(([, value]) => {
+        // keep if expandable (has children)
+        if (this.isExpandable(value)) return true;
+        // keep if it has a displayable value (not null/undefined)
+        if (value === null || value === undefined) return false;
+        // keep primitives with values
+        return (
+          typeof value === 'boolean' ||
+          typeof value === 'number' ||
+          typeof value === 'string' ||
+          Array.isArray(value)
+        );
+      });
+    }
 
     return html`${entries.map(([key, value]) => {
       const currentPath = path ? `${path}.${key}` : key;
@@ -1017,13 +1086,28 @@ export class Simulator extends RapidElement {
                     No context available
                   </div>`}
             </div>
-            <div class="context-explorer-bleed"></div>
+            <div class="context-gutter">
+              <div
+                class="context-gutter-btn ${this.showAllKeys ? '' : 'active'}"
+                @click=${this.handleToggleShowAllKeys}
+                title="${this.showAllKeys
+                  ? 'Show keys with values only'
+                  : 'Show all keys'}"
+              >
+                <temba-icon
+                  name="${this.showAllKeys ? 'filter' : 'filter'}"
+                  size="1"
+                ></temba-icon>
+              </div>
+            </div>
             ${this.copiedExpression
               ? html`<div class="context-toast">
                   Copied
                   <span class="expression">${this.copiedExpression}</span>
                   to the clipboard
                 </div>`
+              : this.toastMessage
+              ? html`<div class="context-toast">${this.toastMessage}</div>`
               : html``}
           </div>
 
