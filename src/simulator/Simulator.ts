@@ -4,7 +4,7 @@ import { FloatingWindow } from '../layout/FloatingWindow';
 import { FloatingTab } from '../display/FloatingTab';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { postJSON } from '../utils';
+import { postJSON, fromCookie } from '../utils';
 
 interface Contact {
   uuid: string;
@@ -47,21 +47,111 @@ interface RunContext {
   contact?: Contact;
 }
 
+interface SimulatorSize {
+  phoneWidth: number;
+  phoneHeight: number;
+  phoneTotalHeight: number;
+  phoneScreenHeight: number;
+  contextWidth: number;
+  contextHeight: number;
+  contextOffset: number;
+  optionPaneWidth: number;
+  optionPaneGap: number;
+  windowPadding: number;
+  cutoutHeight: number;
+  cutoutPadding: number;
+  cutoutFontSize: number;
+  cutoutIslandWidth: number;
+  cutoutIslandHeight: number;
+  cutoutIslandTop: number;
+}
+
+const SIMULATOR_SIZES: Record<string, SimulatorSize> = {
+  small: {
+    phoneWidth: 270,
+    phoneHeight: 576,
+    phoneTotalHeight: 576,
+    phoneScreenHeight: 376,
+    contextWidth: 336,
+    contextHeight: 416,
+    contextOffset: 48,
+    optionPaneWidth: 44,
+    optionPaneGap: 10,
+    windowPadding: 24,
+    cutoutHeight: 32,
+    cutoutPadding: 12,
+    cutoutFontSize: 10,
+    cutoutIslandWidth: 80,
+    cutoutIslandHeight: 20,
+    cutoutIslandTop: 6
+  },
+  medium: {
+    phoneWidth: 300,
+    phoneHeight: 720,
+    phoneTotalHeight: 720,
+    phoneScreenHeight: 470,
+    contextWidth: 420,
+    contextHeight: 520,
+    contextOffset: 60,
+    optionPaneWidth: 44,
+    optionPaneGap: 12,
+    windowPadding: 30,
+    cutoutHeight: 40,
+    cutoutPadding: 16,
+    cutoutFontSize: 12,
+    cutoutIslandWidth: 100,
+    cutoutIslandHeight: 24,
+    cutoutIslandTop: 8
+  },
+  large: {
+    phoneWidth: 360,
+    phoneHeight: 864,
+    phoneTotalHeight: 864,
+    phoneScreenHeight: 564,
+    contextWidth: 504,
+    contextHeight: 624,
+    contextOffset: 72,
+    optionPaneWidth: 44,
+    optionPaneGap: 14,
+    windowPadding: 36,
+    cutoutHeight: 50,
+    cutoutPadding: 20,
+    cutoutFontSize: 14,
+    cutoutIslandWidth: 120,
+    cutoutIslandHeight: 30,
+    cutoutIslandTop: 10
+  }
+};
+
 export class Simulator extends RapidElement {
   static get styles() {
     return css`
+      :host {
+        /* size-specific dimensions are set dynamically via inline styles */
+        --phone-width: 300px;
+        --phone-total-height: 720px;
+        --context-width: 420px;
+        --context-offset: 60px;
+        --option-pane-width: 44px;
+        --option-pane-gap: 12px;
+        --window-padding: 30px;
+        --phone-screen-height: 470px;
+        --context-height: 520px;
+        --context-closed-left: 332px;
+      }
+
       .phone-simulator {
-        padding-left: 467px;
-        padding-top: 30px;
-        padding-bottom: 30px;
+        padding-left: calc(var(--context-width) + var(--context-offset));
+        padding-top: var(--window-padding);
+        padding-bottom: var(--window-padding);
         position: relative;
         display: flex;
         align-items: flex-start;
       }
 
       .option-pane {
-        margin-top: 30px;
-        margin-left: 12px;
+        margin-top: var(--window-padding);
+        margin-left: var(--option-pane-gap);
         display: flex;
         flex-direction: column;
         gap: 6px;
@@ -99,7 +189,7 @@ export class Simulator extends RapidElement {
         background: var(--color-secondary-dark);
       }
       .phone-frame {
-        width: 300px;
+        width: var(--phone-width);
         border-radius: 40px;
         border: 8px solid #1f2937;
         box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
@@ -110,14 +200,14 @@ export class Simulator extends RapidElement {
       }
 
       .context-explorer {
-        width: 420px;
-        height: 520px;
+        width: var(--context-width);
+        height: var(--context-height);
         border-top-left-radius: 16px;
         border-bottom-left-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         position: absolute;
-        left: 332px;
-        top: 70px;
+        left: var(--context-closed-left);
+        top: calc(var(--window-padding) + 40px);
         z-index: 1;
         font-size: 13px;
         color: #374151;
@@ -204,7 +294,7 @@ export class Simulator extends RapidElement {
       }
 
       .context-explorer.open {
-        left: 60px;
+        left: var(--context-offset);
         opacity: 1;
         pointer-events: auto;
       }
@@ -316,12 +406,12 @@ export class Simulator extends RapidElement {
       }
       .phone-notch {
         background: transparent;
-        height: 50px;
+        height: var(--cutout-height);
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0 20px;
+        padding: 0 var(--cutout-padding);
       }
       .phone-notch::before {
         content: '';
@@ -339,18 +429,18 @@ export class Simulator extends RapidElement {
         z-index: -1;
       }
       .dynamic-island {
-        top: 10px;
+        top: var(--cutout-island-top);
         left: 50%;
 
-        width: 120px;
-        height: 30px;
+        width: var(--cutout-island-width);
+        height: var(--cutout-island-height);
         background: #000;
-        border-radius: 20px;
+        border-radius: calc(var(--cutout-island-height) / 1.5);
         z-index: 1;
       }
       .phone-notch .time {
         color: #000;
-        font-size: 14px;
+        font-size: var(--cutout-font-size);
         font-weight: 600;
       }
       .phone-notch .status-icons {
@@ -360,7 +450,7 @@ export class Simulator extends RapidElement {
       }
       .phone-notch .status-icons span {
         color: #000;
-        font-size: 14px;
+        font-size: var(--cutout-font-size);
       }
       .phone-header {
         background: transparent;
@@ -379,10 +469,29 @@ export class Simulator extends RapidElement {
         padding: 15px;
         padding-top: 75px;
         padding-bottom: 60px;
-        height: 470px;
+        height: var(--phone-screen-height);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+        scrollbar-width: thin;
+      }
+
+      .phone-screen::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .phone-screen::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .phone-screen::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+      }
+
+      .phone-screen::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
       }
 
       @keyframes messageAppear {
@@ -478,6 +587,9 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   endpoint = '';
 
+  @fromCookie('simulator-size', 'small')
+  size: 'small' | 'medium' | 'large';
+
   @property({ type: Array })
   private events: Event[] = [];
 
@@ -509,8 +621,8 @@ export class Simulator extends RapidElement {
   @property({ type: Boolean })
   private following = false;
 
-  @property({ type: Boolean })
-  private contextExplorerOpen = false;
+  @fromCookie('simulator-context-open', false)
+  private contextExplorerOpen: boolean;
 
   @property({ type: Object })
   private expandedPaths: Set<string> = new Set();
@@ -524,12 +636,103 @@ export class Simulator extends RapidElement {
   @property({ type: Boolean })
   private showAllKeys = true;
 
+  private previousWindowWidth = 0;
+
+  private get sizeConfig(): SimulatorSize {
+    return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
+  }
+
+  private get windowWidth(): number {
+    const config = this.sizeConfig;
+    return (
+      config.contextWidth +
+      config.phoneWidth +
+      config.optionPaneWidth +
+      config.optionPaneGap +
+      config.contextOffset
+    );
+  }
+
+  private get leftBoundaryMargin(): number {
+    const config = this.sizeConfig;
+    return config.contextWidth + config.contextOffset;
+  }
+
+  private get contextClosedLeft(): number {
+    const config = this.sizeConfig;
+    return config.contextWidth + config.contextOffset - config.phoneWidth;
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
     if (changes.has('flow') && this.flow) {
       this.endpoint = `/flow/simulate/${this.flow}/`;
+    }
+
+    // update floating window boundaries when size changes
+    if (changes.has('size')) {
+      requestAnimationFrame(() => {
+        const phoneWindow = this.shadowRoot?.getElementById(
+          'phone-window'
+        ) as FloatingWindow;
+        if (phoneWindow) {
+          // use the stored previous width since phoneWindow.width has already been updated
+          const oldWidth = this.previousWindowWidth || phoneWindow.width;
+          const oldRight = phoneWindow.left + oldWidth;
+
+          const config = this.sizeConfig;
+          const newWidth = this.windowWidth;
+
+          // store current width for next size change
+          this.previousWindowWidth = newWidth;
+
+          // update dimensions and boundaries
+          phoneWindow.width = newWidth;
+          phoneWindow.leftBoundaryMargin = this.leftBoundaryMargin;
+          phoneWindow.topBoundaryMargin = config.windowPadding;
+          phoneWindow.bottomBoundaryMargin = config.windowPadding;
+
+          // keep right edge in same position by adjusting left
+          let newLeft = oldRight - newWidth;
+
+          // apply same boundary logic as FloatingWindow.handleMouseMove
+          const padding = 20;
+          const minLeft = padding - this.leftBoundaryMargin;
+          const maxLeft =
+            window.innerWidth -
+            newWidth -
+            padding +
+            phoneWindow.rightBoundaryMargin;
+
+          // clamp to boundaries
+          newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+
+          phoneWindow.left = newLeft;
+
+          // adjust vertical position if needed
+          const windowElement = phoneWindow.shadowRoot?.querySelector(
+            '.window'
+          ) as HTMLElement;
+          const currentHeight =
+            windowElement?.offsetHeight || config.phoneTotalHeight;
+          const maxTop = Math.max(
+            padding - config.windowPadding,
+            window.innerHeight - currentHeight - padding + config.windowPadding
+          );
+
+          phoneWindow.top = Math.max(
+            padding - config.windowPadding,
+            Math.min(phoneWindow.top, maxTop)
+          );
+        }
+      });
+    } else {
+      // store initial width when first rendered
+      if (!this.previousWindowWidth) {
+        this.previousWindowWidth = this.windowWidth;
+      }
     }
   }
 
@@ -663,6 +866,17 @@ export class Simulator extends RapidElement {
     this.following = !this.following;
   }
 
+  private handleCycleSize() {
+    const sizes: Array<'small' | 'medium' | 'large'> = [
+      'small',
+      'medium',
+      'large'
+    ];
+    const currentIndex = sizes.indexOf(this.size);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    this.size = sizes[nextIndex];
+  }
+
   private handleToggleContextExplorer() {
     this.contextExplorerOpen = !this.contextExplorerOpen;
 
@@ -674,7 +888,7 @@ export class Simulator extends RapidElement {
         ) as FloatingWindow;
         if (phoneWindow) {
           const padding = 20;
-          const contextExplorerLeft = 60; // from CSS .context-explorer.open
+          const contextExplorerLeft = this.sizeConfig.contextOffset;
           const minWindowLeft = padding - contextExplorerLeft;
 
           if (phoneWindow.left < minWindowLeft) {
@@ -1098,18 +1312,40 @@ export class Simulator extends RapidElement {
   }
 
   protected render(): TemplateResult {
+    const config = this.sizeConfig;
+
+    // set CSS custom properties dynamically based on size
+    const styleVars = `
+      --phone-width: ${config.phoneWidth}px;
+      --phone-total-height: ${config.phoneTotalHeight}px;
+      --context-width: ${config.contextWidth}px;
+      --context-offset: ${config.contextOffset}px;
+      --option-pane-width: ${config.optionPaneWidth}px;
+      --option-pane-gap: ${config.optionPaneGap}px;
+      --window-padding: ${config.windowPadding}px;
+      --phone-screen-height: ${config.phoneScreenHeight}px;
+      --context-height: ${config.contextHeight}px;
+      --context-closed-left: ${this.contextClosedLeft}px;
+      --cutout-height: ${config.cutoutHeight}px;
+      --cutout-padding: ${config.cutoutPadding}px;
+      --cutout-font-size: ${config.cutoutFontSize}px;
+      --cutout-island-width: ${config.cutoutIslandWidth}px;
+      --cutout-island-height: ${config.cutoutIslandHeight}px;
+      --cutout-island-top: ${config.cutoutIslandTop}px;
+    `;
+
     return html`
       <temba-floating-window
         id="phone-window"
-        width="849"
-        leftBoundaryMargin="467"
-        bottomBoundaryMargin="30"
-        topBoundaryMargin="30"
-        height="720"
+        width="${this.windowWidth}"
+        leftBoundaryMargin="${this.leftBoundaryMargin}"
+        bottomBoundaryMargin="${config.windowPadding}"
+        topBoundaryMargin="${config.windowPadding}"
+        height="${config.phoneTotalHeight}"
         top="60"
         chromeless
       >
-        <div class="phone-simulator">
+        <div class="phone-simulator" style="${styleVars}">
           <div
             class="context-explorer ${this.contextExplorerOpen ? 'open' : ''}"
           >
@@ -1183,6 +1419,18 @@ export class Simulator extends RapidElement {
               title="Context Explorer"
             >
               <temba-icon name="expressions" size="1.5"></temba-icon>
+            </button>
+
+            <button
+              class="option-btn"
+              @click=${this.handleCycleSize}
+              title="Size: ${this.size}"
+            >
+              ${this.size === 'small'
+                ? 'S'
+                : this.size === 'medium'
+                ? 'M'
+                : 'L'}
             </button>
 
             <!--button
