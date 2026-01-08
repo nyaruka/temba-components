@@ -383,6 +383,25 @@ export class Simulator extends RapidElement {
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+        scrollbar-width: thin;
+      }
+
+      .phone-screen::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .phone-screen::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .phone-screen::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+      }
+
+      .phone-screen::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
       }
 
       @keyframes messageAppear {
