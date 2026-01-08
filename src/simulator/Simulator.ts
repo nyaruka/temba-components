@@ -166,6 +166,10 @@ export class Simulator extends RapidElement {
         color: #c084fc;
       }
 
+      .context-gutter-spacer {
+        flex: 1;
+      }
+
       .context-explorer-scroll {
         scrollbar-color: rgba(255, 255, 255, 0.3) #4a4a4a;
         scrollbar-width: thin;
@@ -1098,6 +1102,14 @@ export class Simulator extends RapidElement {
                   name="${this.showAllKeys ? 'filter' : 'filter'}"
                   size="1"
                 ></temba-icon>
+              </div>
+              <div class="context-gutter-spacer"></div>
+              <div
+                class="context-gutter-btn"
+                @click=${this.handleToggleContextExplorer}
+                title="Close"
+              >
+                <temba-icon name="x" size="1"></temba-icon>
               </div>
             </div>
             ${this.copiedExpression
