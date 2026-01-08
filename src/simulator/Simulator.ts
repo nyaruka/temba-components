@@ -189,6 +189,7 @@ export class Simulator extends RapidElement {
       .option-btn.active:hover {
         background: var(--color-secondary-dark);
       }
+
       .phone-frame {
         width: var(--phone-width);
         border-radius: 40px;
@@ -198,7 +199,6 @@ export class Simulator extends RapidElement {
         position: relative;
         overflow: hidden;
         z-index: 2;
-        pointer-events: all;
       }
 
       .context-explorer {
@@ -602,6 +602,7 @@ export class Simulator extends RapidElement {
       .quick-reply-btn:hover {
         background: #007aff;
         color: white;
+        cursor: pointer;
       }
       .quick-reply-btn:active {
         transform: scale(0.95);
@@ -672,6 +673,9 @@ export class Simulator extends RapidElement {
 
   @property({ type: Array })
   private currentQuickReplies: any[] = [];
+
+  @property({ type: Boolean })
+  private isVisible = false;
 
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
@@ -776,6 +780,7 @@ export class Simulator extends RapidElement {
       'phone-window'
     ) as FloatingWindow;
     phoneWindow.show();
+    this.isVisible = true;
 
     // start the simulation if we haven't already
     if (this.events.length === 0) {
@@ -876,6 +881,7 @@ export class Simulator extends RapidElement {
       'phone-window'
     ) as FloatingWindow;
     phoneWindow.hide();
+    this.isVisible = false;
 
     const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
     phoneTab.hidden = false;
@@ -1469,7 +1475,10 @@ export class Simulator extends RapidElement {
               : html``}
           </div>
 
-          <div class="phone-frame">
+          <div
+            class="phone-frame"
+            style="pointer-events: ${this.isVisible ? 'all' : 'none'}"
+          >
             <div class="phone-top drag-handle">
               <div class="phone-notch">
                 <div class="dynamic-island"></div>
