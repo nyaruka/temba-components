@@ -467,7 +467,7 @@ export class Simulator extends RapidElement {
       .phone-screen {
         background: white;
         padding: 15px;
-        padding-top: 75px;
+        padding-top: calc(var(--cutout-height) + 8px);
         padding-bottom: 60px;
         height: var(--phone-screen-height);
         overflow-y: auto;
