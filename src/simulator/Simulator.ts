@@ -669,7 +669,7 @@ export class Simulator extends RapidElement {
   private previousWindowWidth = 0;
 
   @property({ type: Array })
-  private currentQuickReplies: any[] = [];
+  private currentQuickReplies: string[] = [];
 
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
@@ -1371,13 +1371,13 @@ export class Simulator extends RapidElement {
               style="animation-delay: ${quickRepliesAnimationDelay}"
             >
               ${this.currentQuickReplies.map(
-                (qr: any) => html`
+                (qr: string) => html`
                   <button
                     class="quick-reply-btn animated"
                     style="animation-delay: ${quickRepliesAnimationDelay}"
-                    @click=${() => this.handleQuickReply(qr.text)}
+                    @click=${() => this.handleQuickReply(qr)}
                   >
-                    ${qr.text}
+                    ${qr}
                   </button>
                 `
               )}
