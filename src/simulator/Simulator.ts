@@ -492,10 +492,10 @@ export class Simulator extends RapidElement {
       .phone-screen {
         background: white;
         padding: 15px;
-        padding-top: 75px;
+        padding-top: calc(var(--cutout-height) + 10px);
         padding-bottom: 60px;
         height: var(--phone-screen-height);
-        overflow-y: auto;
+        overflow-y: scroll;
         display: flex;
         flex-direction: column;
         scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
