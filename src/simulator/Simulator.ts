@@ -6,6 +6,29 @@ import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie } from '../utils';
 
+// test attachment URLs
+const TEST_IMAGES = [
+  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_a.jpg',
+  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_b.jpg',
+  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_c.jpg',
+  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_image_d.jpg'
+];
+
+const TEST_VIDEOS = [
+  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_video_a.mp4'
+];
+
+const TEST_AUDIO = [
+  'https://s3.amazonaws.com/floweditor-assets.temba.io/simulator/sim_audio_a.mp3'
+];
+
+const TEST_LOCATIONS = [
+  'geo:47.6062,-122.3321', // Seattle
+  'geo:-0.1807,-78.4678', // Quito
+  'geo:-2.9001,-79.0059', // Cuenca
+  'geo:-1.9536,30.0606' // Kigali
+];
+
 interface Contact {
   uuid: string;
   name?: string;
@@ -536,6 +559,62 @@ export class Simulator extends RapidElement {
         text-align: left;
         border-bottom-right-radius: 4px;
       }
+      .attachment-wrapper {
+        max-width: 70%;
+        margin-bottom: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .attachment-wrapper.incoming {
+        margin-right: auto;
+        align-items: flex-start;
+      }
+      .attachment-wrapper.outgoing {
+        margin-left: auto;
+        align-items: flex-end;
+      }
+      .attachment-wrapper.animated {
+        animation: messageAppear 0.3s ease-out forwards;
+        opacity: 0;
+      }
+      .attachment {
+        border-radius: 12px;
+        overflow: hidden;
+        max-width: 100%;
+      }
+      .attachment img {
+        max-width: 100%;
+        display: block;
+        border-radius: 12px;
+      }
+      .attachment video {
+        max-width: 100%;
+        display: block;
+        border-radius: 12px;
+      }
+      .attachment-audio {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px;
+        background: white;
+        border: 1px solid #e5e5ea;
+        border-radius: 12px;
+        min-width: 160px;
+      }
+      .attachment-wrapper.outgoing .attachment-audio {
+        background: white;
+        border: none;
+      }
+      .attachment-audio audio {
+        flex: 1;
+        max-height: 30px;
+      }
+      .attachment-location {
+        border-radius: 12px;
+        overflow: hidden;
+      }
       .event-info {
         text-align: center;
         font-size: 11px;
@@ -555,7 +634,7 @@ export class Simulator extends RapidElement {
           rgba(0, 0, 0, 0.05) 70%,
           transparent 100%
         );
-        padding: 8px 16px;
+        padding: 8px 12px;
         border-top: none;
         display: flex;
         align-items: center;
@@ -579,6 +658,68 @@ export class Simulator extends RapidElement {
       }
       .message-input input::placeholder {
         color: #8e8e93;
+      }
+      .attachment-button {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #fff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-bottom: 5px;
+        transition: all 0.2s ease;
+        color: #000;
+      }
+      .attachment-button:hover {
+        background: #f8f8f8ff;
+        transform: scale(1.05);
+      }
+      .attachment-button:active {
+        transform: scale(0.95);
+      }
+      .attachment-menu {
+        position: absolute;
+        bottom: 55px;
+        left: 12px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(10px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 20;
+      }
+      .attachment-menu.open {
+        opacity: 1;
+        pointer-events: all;
+        transform: translateY(0);
+      }
+      .attachment-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        white-space: nowrap;
+        font-size: 14px;
+        color: #1f2937;
+      }
+      .attachment-menu-item:hover {
+        background: #f3f4f6;
+      }
+      .attachment-menu-item temba-icon {
+        color: #007aff;
       }
       .quick-replies {
         display: flex;
@@ -677,6 +818,17 @@ export class Simulator extends RapidElement {
   @property({ type: Boolean })
   private isVisible = false;
 
+  @property({ type: Boolean })
+  private attachmentMenuOpen = false;
+
+  private boundClickOutsideHandler: ((event: MouseEvent) => void) | null = null;
+
+  // attachment cycling indices - initialized randomly
+  private imageIndex = Math.floor(Math.random() * TEST_IMAGES.length);
+  private videoIndex = Math.floor(Math.random() * TEST_VIDEOS.length);
+  private audioIndex = Math.floor(Math.random() * TEST_AUDIO.length);
+  private locationIndex = Math.floor(Math.random() * TEST_LOCATIONS.length);
+
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
   }
@@ -708,6 +860,26 @@ export class Simulator extends RapidElement {
     super.updated(changes);
     if (changes.has('flow') && this.flow) {
       this.endpoint = `/flow/simulate/${this.flow}/`;
+    }
+
+    // handle attachment menu click outside listener
+    if (changes.has('attachmentMenuOpen')) {
+      if (this.attachmentMenuOpen) {
+        // create bound handler if it doesn't exist
+        if (!this.boundClickOutsideHandler) {
+          this.boundClickOutsideHandler =
+            this.handleClickOutsideAttachmentMenu.bind(this);
+        }
+        // add listener when menu opens
+        setTimeout(() => {
+          document.addEventListener('click', this.boundClickOutsideHandler);
+        }, 0);
+      } else {
+        // remove listener when menu closes
+        if (this.boundClickOutsideHandler) {
+          document.removeEventListener('click', this.boundClickOutsideHandler);
+        }
+      }
     }
 
     // update floating window boundaries when size changes
@@ -772,6 +944,14 @@ export class Simulator extends RapidElement {
       if (!this.previousWindowWidth) {
         this.previousWindowWidth = this.windowWidth;
       }
+    }
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    // clean up event listener when component is removed
+    if (this.boundClickOutsideHandler) {
+      document.removeEventListener('click', this.boundClickOutsideHandler);
     }
   }
 
@@ -1099,14 +1279,15 @@ export class Simulator extends RapidElement {
     })}`;
   }
 
-  private async resume(text: string) {
-    if (!text || !this.session) {
+  private async resume(text: string, attachment?: string) {
+    if ((!text && !attachment) || !this.session) {
       return;
     }
 
     this.sprinting = true;
     this.inputValue = '';
     this.currentQuickReplies = [];
+    this.attachmentMenuOpen = false;
 
     const now = new Date().toISOString();
     const msgInEvt: Event = {
@@ -1115,9 +1296,9 @@ export class Simulator extends RapidElement {
       created_on: now,
       msg: {
         uuid: crypto.randomUUID(),
-        text,
+        text: text || '',
         urn: this.contact.urns[0],
-        attachments: []
+        attachments: attachment ? [attachment] : []
       }
     };
 
@@ -1176,6 +1357,57 @@ export class Simulator extends RapidElement {
   private handleQuickReply(quickReply: string) {
     if (!this.sprinting) {
       this.resume(quickReply);
+    }
+  }
+
+  private handleToggleAttachmentMenu() {
+    this.attachmentMenuOpen = !this.attachmentMenuOpen;
+  }
+
+  private handleClickOutsideAttachmentMenu(event: MouseEvent) {
+    if (!this.attachmentMenuOpen) {
+      return;
+    }
+
+    const menu = this.shadowRoot?.querySelector('.attachment-menu');
+    const button = this.shadowRoot?.querySelector('.attachment-button');
+
+    if (!menu || !button) {
+      return;
+    }
+
+    // check if click is outside both menu and button
+    const clickedInsideMenu = menu.contains(event.target as Node);
+    const clickedInsideButton = button.contains(event.target as Node);
+
+    if (!clickedInsideMenu && !clickedInsideButton) {
+      this.attachmentMenuOpen = false;
+    }
+  }
+
+  private handleSendAttachment(attachmentType: string) {
+    let attachment = '';
+    switch (attachmentType) {
+      case 'image':
+        attachment = `image/jpeg:${TEST_IMAGES[this.imageIndex]}`;
+        this.imageIndex = (this.imageIndex + 1) % TEST_IMAGES.length;
+        break;
+      case 'video':
+        attachment = `video/mp4:${TEST_VIDEOS[this.videoIndex]}`;
+        this.videoIndex = (this.videoIndex + 1) % TEST_VIDEOS.length;
+        break;
+      case 'audio':
+        attachment = `audio/mp3:${TEST_AUDIO[this.audioIndex]}`;
+        this.audioIndex = (this.audioIndex + 1) % TEST_AUDIO.length;
+        break;
+      case 'location':
+        attachment = TEST_LOCATIONS[this.locationIndex];
+        this.locationIndex = (this.locationIndex + 1) % TEST_LOCATIONS.length;
+        break;
+    }
+
+    if (attachment) {
+      this.resume('', attachment);
     }
   }
 
@@ -1303,6 +1535,56 @@ export class Simulator extends RapidElement {
     return null;
   }
 
+  private renderAttachment(attachment: string): TemplateResult {
+    // parse attachment format: "type/subtype:url" or "geo:lat,long"
+    const parts = attachment.split(':');
+    const type = parts[0];
+    const content = parts.slice(1).join(':'); // rejoin in case url has colons
+
+    if (type === 'geo') {
+      // use temba-thumbnail for location to get map image
+      return html`
+        <div class="attachment-location">
+          <temba-thumbnail attachment="${attachment}"></temba-thumbnail>
+        </div>
+      `;
+    } else if (type.startsWith('image/')) {
+      // custom image rendering
+      return html`
+        <div class="attachment">
+          <img src="${content}" alt="Image attachment" />
+        </div>
+      `;
+    } else if (type.startsWith('video/')) {
+      // custom video rendering
+      return html`
+        <div class="attachment">
+          <video controls>
+            <source src="${content}" type="${type}" />
+          </video>
+        </div>
+      `;
+    } else if (type.startsWith('audio/')) {
+      // custom audio rendering
+      return html`
+        <div class="attachment">
+          <div class="attachment-audio">
+            <audio controls>
+              <source src="${content}" type="${type}" />
+            </audio>
+          </div>
+        </div>
+      `;
+    }
+
+    // fallback for unknown types
+    return html`
+      <div class="attachment">
+        <span>Attachment</span>
+      </div>
+    `;
+  }
+
   private renderMessages(): TemplateResult {
     if (this.events.length === 0) {
       return html`
@@ -1320,22 +1602,62 @@ export class Simulator extends RapidElement {
         : '0s';
 
       if (event.type === 'msg_received' && event.msg) {
+        const hasAttachments =
+          event.msg.attachments && event.msg.attachments.length > 0;
+        const hasText = event.msg.text && event.msg.text.trim().length > 0;
+
         return html`
-          <div
-            class="message outgoing ${animatedClass}"
-            style="animation-delay: ${animationDelay}"
-          >
-            ${event.msg.text}
-          </div>
+          ${hasAttachments
+            ? html`
+                <div
+                  class="attachment-wrapper outgoing ${animatedClass}"
+                  style="animation-delay: ${animationDelay}"
+                >
+                  ${event.msg.attachments.map((att: string) =>
+                    this.renderAttachment(att)
+                  )}
+                </div>
+              `
+            : html``}
+          ${hasText
+            ? html`
+                <div
+                  class="message outgoing ${animatedClass}"
+                  style="animation-delay: ${animationDelay}"
+                >
+                  ${event.msg.text}
+                </div>
+              `
+            : html``}
         `;
       } else if (event.type === 'msg_created' && event.msg) {
+        const hasAttachments =
+          event.msg.attachments && event.msg.attachments.length > 0;
+        const hasText = event.msg.text && event.msg.text.trim().length > 0;
+
         return html`
-          <div
-            class="message incoming ${animatedClass}"
-            style="animation-delay: ${animationDelay}"
-          >
-            ${event.msg.text}
-          </div>
+          ${hasAttachments
+            ? html`
+                <div
+                  class="attachment-wrapper incoming ${animatedClass}"
+                  style="animation-delay: ${animationDelay}"
+                >
+                  ${event.msg.attachments.map((att: string) =>
+                    this.renderAttachment(att)
+                  )}
+                </div>
+              `
+            : html``}
+          ${hasText
+            ? html`
+                <div
+                  class="message incoming ${animatedClass}"
+                  style="animation-delay: ${animationDelay}"
+                >
+                  ${event.msg.text}
+                </div>
+              `
+            : html``}
         `;
       } else if (event.type === 'error') {
         return html`
@@ -1486,6 +1808,13 @@ export class Simulator extends RapidElement {
             </div>
             <div class="phone-screen">${this.renderMessages()}</div>
             <div class="message-input">
+              <button
+                class="attachment-button"
+                @click=${this.handleToggleAttachmentMenu}
+                ?disabled=${this.sprinting}
+              >
+                <temba-icon name="plus" size="1.5"></temba-icon>
+              </button>
               <input
                 type="text"
                 placeholder="Enter Message"
@@ -1494,6 +1823,41 @@ export class Simulator extends RapidElement {
                 @keyup=${this.handleKeyUp}
                 ?disabled=${this.sprinting}
               />
+              <div
+                class="attachment-menu ${this.attachmentMenuOpen ? 'open' : ''}"
+              >
+                <div
+                  class="attachment-menu-item"
+                  @click=${() => this.handleSendAttachment('image')}
+                >
+                  <temba-icon name="attachment_image" size="1.2"></temba-icon>
+                  <span>Image</span>
+                </div>
+                <div
+                  class="attachment-menu-item"
+                  @click=${() => this.handleSendAttachment('video')}
+                >
+                  <temba-icon name="attachment_video" size="1.2"></temba-icon>
+                  <span>Video</span>
+                </div>
+                <div
+                  class="attachment-menu-item"
+                  @click=${() => this.handleSendAttachment('audio')}
+                >
+                  <temba-icon name="attachment_audio" size="1.2"></temba-icon>
+                  <span>Audio</span>
+                </div>
+                <div
+                  class="attachment-menu-item"
+                  @click=${() => this.handleSendAttachment('location')}
+                >
+                  <temba-icon
+                    name="attachment_location"
+                    size="1.2"
+                  ></temba-icon>
+                  <span>Location</span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="option-pane">
