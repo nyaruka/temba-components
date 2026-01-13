@@ -43,7 +43,7 @@ export class CanvasNode extends RapidElement {
   )
   private includeCategoriesInTranslation!: boolean;
 
-  @fromStore(zustand, (state: AppState) => state.activity)
+  @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activity!: any;
 
   // Track exits that are in "removing" state

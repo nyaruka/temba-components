@@ -1072,8 +1072,8 @@ export class Simulator extends RapidElement {
       }
     }
 
-    // Update activity in the store
-    getStore().getState().updateActivity({
+    // Update simulator activity in the store
+    getStore().getState().updateSimulatorActivity({
       segments: pathCounts,
       nodes: nodeCounts
     });
@@ -1121,8 +1121,8 @@ export class Simulator extends RapidElement {
     this.previousEventCount = 0;
     this.currentQuickReplies = [];
 
-    // Clear activity data
-    getStore().getState().updateActivity({
+    // Clear simulator activity data
+    getStore().getState().updateSimulatorActivity({
       segments: {},
       nodes: {}
     });

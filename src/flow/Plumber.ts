@@ -12,6 +12,7 @@ import {
   INTERCEPT_BEFORE_DETACH,
   EVENT_CONNECTION_DETACHED
 } from '@jsplumb/browser-ui';
+import { getStore } from '../store/Store';
 
 const CONNECTOR_DEFAULTS = {
   type: FlowchartConnector.type,
@@ -282,11 +283,13 @@ export class Plumber {
           // If still not found, query the DOM directly
           if (!overlayElement) {
             const overlays = connection.getOverlays();
-            for (const ovl of overlays) {
-              if (ovl.id === 'activity-label') {
-                overlayElement =
-                  ovl.canvas || ovl.element || ovl.getElement?.();
-                break;
+            if (Array.isArray(overlays)) {
+              for (const ovl of overlays) {
+                if (ovl.id === 'activity-label') {
+                  overlayElement =
+                    ovl.canvas || ovl.element || ovl.getElement?.();
+                  break;
+                }
               }
             }
           }
@@ -301,6 +304,12 @@ export class Plumber {
             overlayElement.style.cursor = 'pointer';
             overlayElement.setAttribute('data-activity-key', activityKey);
             overlayElement.addEventListener('mouseenter', () => {
+              // Don't show recent contacts when simulator is active
+              const store = getStore();
+              if (store?.getState().simulatorActive) {
+                return;
+              }
+
               // Get flow UUID from the editor element
               const editor = document.querySelector('temba-flow-editor') as any;
               const flowUuid = editor?.definition?.uuid;
@@ -391,6 +400,12 @@ export class Plumber {
   }
 
   private async showRecentContacts(activityKey: string, flowUuid: string) {
+    // Don't show recent contacts when simulator is active
+    const store = getStore();
+    if (store?.getState().simulatorActive) {
+      return;
+    }
+
     // Find the overlay element fresh to avoid stale references
     const overlayElement = this.findOverlayElement(activityKey);
     if (!overlayElement) {

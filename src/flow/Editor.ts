@@ -149,7 +149,7 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.workspace)
   private workspace!: Workspace;
 
-  @fromStore(zustand, (state: AppState) => state.activity)
+  @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activityData!: any;
 
   // Drag state
@@ -946,7 +946,11 @@ export class Editor extends RapidElement {
     }
 
     const activityEndpoint = `/flow/activity/${this.definition.uuid}/`;
-    const state = getStore().getState();
+    const store = getStore();
+    if (!store) {
+      return;
+    }
+    const state = store.getState();
     state.fetchActivity(activityEndpoint).then(() => {
       // Schedule next fetch with exponential backoff (max 5 minutes)
       this.activityInterval = Math.min(60000 * 5, this.activityInterval + 100);

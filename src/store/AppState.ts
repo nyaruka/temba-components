@@ -84,15 +84,18 @@ export interface AppState {
 
   canvasSize: { width: number; height: number };
   activity: Activity | null;
+  simulatorActivity: Activity | null;
   activityEndpoint: string | null;
   simulatorActive: boolean;
 
+  getCurrentActivity: () => Activity | null;
   fetchRevision: (endpoint: string, id?: string) => void;
   fetchWorkspace: (endpoint: string) => Promise<void>;
   fetchAllLanguages: (endpoint: string) => Promise<void>;
   fetchActivity: (endpoint: string) => Promise<void>;
   setActivityEndpoint: (endpoint: string) => void;
   updateActivity: (activity: Activity) => void;
+  updateSimulatorActivity: (activity: Activity) => void;
   setSimulatorActive: (active: boolean) => void;
 
   getFlowResults: () => InfoResult[];
@@ -147,6 +150,7 @@ export const zustand = createStore<AppState>()(
       isTranslating: false,
       dirtyDate: null,
       activity: null,
+      simulatorActivity: null,
       activityEndpoint: null,
       simulatorActive: false,
 
@@ -217,8 +221,17 @@ export const zustand = createStore<AppState>()(
         set({ activity });
       },
 
+      updateSimulatorActivity: (activity: Activity) => {
+        set({ simulatorActivity: activity });
+      },
+
       setSimulatorActive: (active: boolean) => {
         set({ simulatorActive: active });
+      },
+
+      getCurrentActivity: () => {
+        const state = get();
+        return state.simulatorActive ? state.simulatorActivity : state.activity;
       },
 
       getFlowResults: () => {
