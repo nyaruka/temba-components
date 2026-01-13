@@ -131,6 +131,9 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private definition!: FlowDefinition;
 
+  @fromStore(zustand, (state: AppState) => state.simulatorActive)
+  private simulatorActive!: boolean;
+
   @fromStore(zustand, (state: AppState) => state.canvasSize)
   private canvasSize!: { width: number; height: number };
 
@@ -398,6 +401,25 @@ export class Editor extends RapidElement {
         cursor: pointer;
         z-index: 500;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Active contact count on nodes */
+      .active-count {
+        position: absolute;
+        background: var(--color-primary-dark, #3498db);
+        border: 1px solid var(--color-primary-darker, #2980b9);
+        border-radius: 12px;
+        padding: 3px 5px;
+        color: #fff;
+        font-weight: 500;
+        top: -10px;
+        left: -10px;
+        font-size: 13px;
+        min-width: 22px;
+        text-align: center;
+        z-index: 600;
+        line-height: 1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
       }
 
       /* Recent contacts popup */
@@ -805,6 +827,17 @@ export class Editor extends RapidElement {
       }
     }
 
+    if (changes.has('simulatorActive')) {
+      if (this.simulatorActive) {
+        // Stop polling when simulator becomes active
+        this.stopActivityFetching();
+      } else {
+        // Resume polling and refresh activity when simulator closes
+        this.activityInterval = 100; // Reset to fast initial interval
+        this.startActivityFetching();
+      }
+    }
+
     if (changes.has('activityData')) {
       // Update plumber with new activity data
       if (this.plumber) {
@@ -887,12 +920,28 @@ export class Editor extends RapidElement {
   }
 
   private startActivityFetching(): void {
+    // Don't start if simulator is active
+    if (this.simulatorActive) {
+      return;
+    }
     // Fetch immediately
     this.fetchActivityData();
   }
 
+  private stopActivityFetching(): void {
+    if (this.activityTimer !== null) {
+      clearTimeout(this.activityTimer);
+      this.activityTimer = null;
+    }
+  }
+
   private fetchActivityData(): void {
     if (!this.definition?.uuid) {
+      return;
+    }
+
+    // Don't fetch if simulator is active
+    if (this.simulatorActive) {
       return;
     }
 

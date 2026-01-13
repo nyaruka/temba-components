@@ -68,6 +68,7 @@ export interface CanvasPositions {
 
 export interface Activity {
   segments: { [exitToDestinationKey: string]: number };
+  nodes: { [nodeUuid: string]: number };
 }
 
 export interface AppState {
@@ -84,6 +85,7 @@ export interface AppState {
   canvasSize: { width: number; height: number };
   activity: Activity | null;
   activityEndpoint: string | null;
+  simulatorActive: boolean;
 
   fetchRevision: (endpoint: string, id?: string) => void;
   fetchWorkspace: (endpoint: string) => Promise<void>;
@@ -91,6 +93,7 @@ export interface AppState {
   fetchActivity: (endpoint: string) => Promise<void>;
   setActivityEndpoint: (endpoint: string) => void;
   updateActivity: (activity: Activity) => void;
+  setSimulatorActive: (active: boolean) => void;
 
   getFlowResults: () => InfoResult[];
   getResultByKey(id: any): InfoResult;
@@ -145,6 +148,7 @@ export const zustand = createStore<AppState>()(
       dirtyDate: null,
       activity: null,
       activityEndpoint: null,
+      simulatorActive: false,
 
       setDirtyDate: (date: Date) => {
         set((state: AppState) => {
@@ -211,6 +215,10 @@ export const zustand = createStore<AppState>()(
 
       updateActivity: (activity: Activity) => {
         set({ activity });
+      },
+
+      setSimulatorActive: (active: boolean) => {
+        set({ simulatorActive: active });
       },
 
       getFlowResults: () => {

@@ -265,7 +265,7 @@ export class Plumber {
         const overlay = connection.addOverlay({
           type: 'Label',
           options: {
-            label: count.toString(),
+            label: count.toLocaleString(),
             id: 'activity-label',
             cssClass: 'activity-overlay',
             location: 20 // Fixed pixel distance from the start (exit point)

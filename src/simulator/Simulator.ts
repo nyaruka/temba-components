@@ -5,6 +5,7 @@ import { FloatingTab } from '../display/FloatingTab';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie } from '../utils';
+import { getStore } from '../store/Store';
 
 // test attachment URLs
 const TEST_IMAGES = [
@@ -961,6 +962,7 @@ export class Simulator extends RapidElement {
     ) as FloatingWindow;
     phoneWindow.show();
     this.isVisible = true;
+    getStore().getState().setSimulatorActive(true);
 
     // start the simulation if we haven't already
     if (this.events.length === 0) {
@@ -1034,6 +1036,47 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.requestUpdate();
     this.scrollToBottom();
+    this.updateActivity();
+  }
+
+  private updateActivity() {
+    if (!this.session) {
+      return;
+    }
+
+    const pathCounts: { [key: string]: number } = {};
+    const nodeCounts: { [nodeUUID: string]: number } = {};
+
+    // iterate through all runs to get path segment counts
+    for (const run of this.session.runs) {
+      if (run.path) {
+        for (let i = 0; i < run.path.length - 1; i++) {
+          const step = run.path[i];
+          const nextStep = run.path[i + 1];
+          if (step.exit_uuid && nextStep.node_uuid) {
+            const key = step.exit_uuid + ':' + nextStep.node_uuid;
+            pathCounts[key] = (pathCounts[key] || 0) + 1;
+          }
+        }
+      }
+
+      // set node counts on the last step of any active/waiting runs
+      if (run.status === 'active' || run.status === 'waiting') {
+        if (run.path && run.path.length > 0) {
+          const finalStep = run.path[run.path.length - 1];
+          if (finalStep && finalStep.node_uuid) {
+            nodeCounts[finalStep.node_uuid] =
+              (nodeCounts[finalStep.node_uuid] || 0) + 1;
+          }
+        }
+      }
+    }
+
+    // Update activity in the store
+    getStore().getState().updateActivity({
+      segments: pathCounts,
+      nodes: nodeCounts
+    });
   }
 
   private scrollToBottom() {
@@ -1062,6 +1105,7 @@ export class Simulator extends RapidElement {
     ) as FloatingWindow;
     phoneWindow.hide();
     this.isVisible = false;
+    getStore().getState().setSimulatorActive(false);
 
     const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
     phoneTab.hidden = false;
@@ -1076,6 +1120,12 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.previousEventCount = 0;
     this.currentQuickReplies = [];
+
+    // Clear activity data
+    getStore().getState().updateActivity({
+      segments: {},
+      nodes: {}
+    });
 
     // reset contact to initial state
     this.contact = {

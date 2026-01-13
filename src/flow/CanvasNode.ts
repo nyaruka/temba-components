@@ -43,6 +43,9 @@ export class CanvasNode extends RapidElement {
   )
   private includeCategoriesInTranslation!: boolean;
 
+  @fromStore(zustand, (state: AppState) => state.activity)
+  private activity!: any;
+
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
 
@@ -1572,6 +1575,10 @@ export class CanvasNode extends RapidElement {
       supportsLocalization &&
       !this.includeCategoriesInTranslation;
 
+    // Get active contact count for this node
+    const activeCount =
+      (this.activity?.nodes && this.activity.nodes[this.node.uuid]) || 0;
+
     return html`
       <div
         id="${this.node.uuid}"
@@ -1582,6 +1589,11 @@ export class CanvasNode extends RapidElement {
         })}
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
+        ${activeCount > 0
+          ? html`<div class="active-count">
+              ${activeCount.toLocaleString()}
+            </div>`
+          : ''}
         ${nodeConfig && nodeConfig.type !== 'execute_actions'
           ? html`<div class="router" style="position: relative;">
               <div
