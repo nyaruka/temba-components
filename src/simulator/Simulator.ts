@@ -1106,7 +1106,7 @@ export class Simulator extends RapidElement {
       const finalStep = activeRun.path[activeRun.path.length - 1];
       if (finalStep && finalStep.node_uuid) {
         this.fireCustomEvent(CustomEventType.FollowSimulation, {
-          flowUuid: activeRun.flow_uuid,
+          flowUuid: activeRun.flow?.uuid || this.flow,
           nodeUuid: finalStep.node_uuid
         });
       }
