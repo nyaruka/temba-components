@@ -66,6 +66,10 @@ export interface CanvasPositions {
   [uuid: string]: FlowPosition;
 }
 
+export interface Activity {
+  segments: { [exitToDestinationKey: string]: number };
+}
+
 export interface AppState {
   flowDefinition: FlowDefinition;
   flowInfo: FlowInfo;
@@ -78,10 +82,15 @@ export interface AppState {
   dirtyDate: Date | null;
 
   canvasSize: { width: number; height: number };
+  activity: Activity | null;
+  activityEndpoint: string | null;
 
   fetchRevision: (endpoint: string, id?: string) => void;
   fetchWorkspace: (endpoint: string) => Promise<void>;
   fetchAllLanguages: (endpoint: string) => Promise<void>;
+  fetchActivity: (endpoint: string) => Promise<void>;
+  setActivityEndpoint: (endpoint: string) => void;
+  updateActivity: (activity: Activity) => void;
 
   getFlowResults: () => InfoResult[];
   getResultByKey(id: any): InfoResult;
@@ -134,6 +143,8 @@ export const zustand = createStore<AppState>()(
       flowInfo: null,
       isTranslating: false,
       dirtyDate: null,
+      activity: null,
+      activityEndpoint: null,
 
       setDirtyDate: (date: Date) => {
         set((state: AppState) => {
@@ -179,6 +190,27 @@ export const zustand = createStore<AppState>()(
         {});
 
         set({ languageNames: allLanguages });
+      },
+
+      setActivityEndpoint: (endpoint: string) => {
+        set({ activityEndpoint: endpoint });
+      },
+
+      fetchActivity: async (endpoint: string) => {
+        try {
+          const response = await fetch(endpoint);
+          if (!response.ok) {
+            return;
+          }
+          const data = await response.json();
+          set({ activity: data });
+        } catch (error) {
+          console.error('Failed to fetch activity:', error);
+        }
+      },
+
+      updateActivity: (activity: Activity) => {
+        set({ activity });
       },
 
       getFlowResults: () => {

@@ -79,7 +79,7 @@ describe('Editor', () => {
       // Test that calling firstUpdated doesn't throw (without getStore)
       expect(() => {
         // Only test the plumber initialization part
-        (editor as any).plumber = new Plumber(mockCanvas);
+        (editor as any).plumber = new Plumber(mockCanvas, editor);
       }).to.not.throw();
     });
 
