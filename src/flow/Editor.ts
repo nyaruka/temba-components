@@ -3128,6 +3128,44 @@ export class Editor extends RapidElement {
     `;
   }
 
+  /**
+   * Focus on a specific node by smoothly scrolling it to the center of the canvas
+   */
+  public focusNode(nodeUuid: string) {
+    const nodeElement = this.querySelector(
+      `temba-flow-node[uuid="${nodeUuid}"]`
+    ) as HTMLElement;
+    if (!nodeElement) {
+      return;
+    }
+
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) {
+      return;
+    }
+
+    // Get the editor's dimensions and scroll position
+    const editorRect = editor.getBoundingClientRect();
+    const editorCenterX = editorRect.width / 2;
+    const editorCenterY = editorRect.height / 2;
+
+    // Get node position relative to the editor's scroll container
+    const nodeRect = nodeElement.getBoundingClientRect();
+    const nodeCenterX = nodeElement.offsetLeft + nodeRect.width / 2;
+    const nodeCenterY = nodeElement.offsetTop + nodeRect.height / 2;
+
+    // Calculate the scroll position needed to center the node
+    const targetScrollX = nodeCenterX - editorCenterX;
+    const targetScrollY = nodeCenterY - editorCenterY;
+
+    // Smooth scroll the editor container to the target position
+    editor.scrollTo({
+      left: Math.max(0, targetScrollX),
+      top: Math.max(0, targetScrollY),
+      behavior: 'smooth'
+    });
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>

@@ -6,6 +6,7 @@ import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie } from '../utils';
 import { getStore } from '../store/Store';
+import { CustomEventType } from '../interfaces';
 
 // test attachment URLs
 const TEST_IMAGES = [
@@ -207,11 +208,11 @@ export class Simulator extends RapidElement {
         transform: scale(0.95);
       }
       .option-btn.active {
-        background: var(--color-secondary-dark);
+        background: var(--color-primary-dark);
         color: white;
       }
       .option-btn.active:hover {
-        background: var(--color-secondary-dark);
+        background: var(--color-primary-dark);
       }
 
       .phone-frame {
@@ -793,8 +794,8 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private inputValue = '';
 
-  @property({ type: Boolean })
-  private following = false;
+  @fromCookie('simulator-follow', true)
+  private following: boolean;
 
   @fromCookie('simulator-context-open', false)
   private contextExplorerOpen: boolean;
@@ -1077,6 +1078,39 @@ export class Simulator extends RapidElement {
       segments: pathCounts,
       nodes: nodeCounts
     });
+
+    // Fire follow event if following is enabled
+    if (this.following) {
+      this.fireFollowEvent();
+    }
+  }
+
+  private fireFollowEvent() {
+    if (!this.session || !this.session.runs || this.session.runs.length === 0) {
+      return;
+    }
+
+    // Find the first active or waiting run
+    let activeRun = this.session.runs.find(
+      (run: any) => run.status === 'active' || run.status === 'waiting'
+    );
+
+    // If no active/waiting run and simulation has ended, use the first completed run
+    if (!activeRun) {
+      activeRun = this.session.runs.find(
+        (run: any) => run.status === 'completed'
+      );
+    }
+
+    if (activeRun && activeRun.path && activeRun.path.length > 0) {
+      const finalStep = activeRun.path[activeRun.path.length - 1];
+      if (finalStep && finalStep.node_uuid) {
+        this.fireCustomEvent(CustomEventType.FollowSimulation, {
+          flowUuid: activeRun.flow_uuid,
+          nodeUuid: finalStep.node_uuid
+        });
+      }
+    }
   }
 
   private scrollToBottom() {
@@ -1915,6 +1949,14 @@ export class Simulator extends RapidElement {
               <temba-icon name="x" size="1.5"></temba-icon>
             </button>
             <button
+              class="option-btn ${this.following ? 'active' : ''}"
+              @click=${this.handleToggleFollow}
+              title="${this.following ? 'Following' : 'Follow'}"
+            >
+              <temba-icon name="follow" size="1.5"></temba-icon>
+            </button>
+
+            <button
               class="option-btn ${this.contextExplorerOpen ? 'active' : ''}"
               @click=${this.handleToggleContextExplorer}
               title="Context Explorer"
@@ -1933,14 +1975,6 @@ export class Simulator extends RapidElement {
                 ? 'M'
                 : 'L'}
             </button>
-
-            <!--button
-              class="option-btn ${this.following ? 'active' : ''}"
-              @click=${this.handleToggleFollow}
-              title="${this.following ? 'Following' : 'Follow'}"
-            >
-              <temba-icon name="follow" size="1.5"></temba-icon>
-            </button-->
 
             <button class="option-btn" @click=${this.handleReset} title="Reset">
               <temba-icon name="delete" size="1.5"></temba-icon>
