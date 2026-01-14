@@ -16,8 +16,11 @@ describe('Plumber - Connection Management', () => {
     const mockElement = document.createElement('div');
     stub(document, 'getElementById').returns(mockElement);
 
+    // Create a mock editor with fireCustomEvent
+    const mockEditor = { fireCustomEvent: stub() };
+
     // Create a new plumber instance
-    plumber = new Plumber(mockCanvas);
+    plumber = new Plumber(mockCanvas, mockEditor);
 
     // Replace the internal jsPlumb instance with mocks
     (plumber as any).jsPlumb = {

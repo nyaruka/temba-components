@@ -5,6 +5,8 @@ import { FloatingTab } from '../display/FloatingTab';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie } from '../utils';
+import { getStore } from '../store/Store';
+import { CustomEventType } from '../interfaces';
 
 // test attachment URLs
 const TEST_IMAGES = [
@@ -161,6 +163,7 @@ export class Simulator extends RapidElement {
         --phone-screen-height: 470px;
         --context-height: 520px;
         --context-closed-left: 332px;
+        --animation-time: 200ms;
       }
 
       .phone-simulator {
@@ -195,7 +198,7 @@ export class Simulator extends RapidElement {
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all var(--animation-time) ease;
         color: white;
       }
       .option-btn:hover {
@@ -206,11 +209,11 @@ export class Simulator extends RapidElement {
         transform: scale(0.95);
       }
       .option-btn.active {
-        background: var(--color-secondary-dark);
+        background: var(--color-primary-dark);
         color: white;
       }
       .option-btn.active:hover {
-        background: var(--color-secondary-dark);
+        background: var(--color-primary-dark);
       }
 
       .phone-frame {
@@ -236,7 +239,8 @@ export class Simulator extends RapidElement {
         z-index: 1;
         font-size: 13px;
         color: #374151;
-        transition: left 0.3s ease-out, opacity 0.3s ease-out;
+        transition: left calc(var(--animation-time) * 1.5) ease-out,
+          opacity calc(var(--animation-time) * 1.5) ease-out;
         opacity: 0;
         pointer-events: none;
         background: rgba(0, 0, 0, 0.7);
@@ -267,7 +271,7 @@ export class Simulator extends RapidElement {
         justify-content: center;
         cursor: pointer;
         border-radius: 6px;
-        transition: background 0.2s ease;
+        transition: background var(--animation-time) ease;
         color: rgba(255, 255, 255, 0.6);
         padding: 4px;
       }
@@ -346,7 +350,7 @@ export class Simulator extends RapidElement {
         display: inline-block;
         text-align: center;
         flex-shrink: 0;
-        transition: transform 0.2s ease;
+        transition: transform var(--animation-time) ease;
         color: #ffffff;
       }
 
@@ -381,7 +385,7 @@ export class Simulator extends RapidElement {
       .context-copy-icon {
         opacity: 0;
         margin-left: 4px;
-        transition: opacity 0.2s ease;
+        transition: opacity var(--animation-time) ease;
         cursor: pointer;
         color: #ccc;
       }
@@ -402,7 +406,7 @@ export class Simulator extends RapidElement {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         font-size: 13px;
         z-index: 10;
-        animation: slideInUp 0.3s ease-out;
+        animation: slideInUp var(--animation-time) ease-out;
       }
 
       .context-toast .expression {
@@ -543,7 +547,7 @@ export class Simulator extends RapidElement {
         line-height: 1.2;
       }
       .message.animated {
-        animation: messageAppear 0.3s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
       .message.incoming {
@@ -575,7 +579,7 @@ export class Simulator extends RapidElement {
         align-items: flex-end;
       }
       .attachment-wrapper.animated {
-        animation: messageAppear 0.3s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
       .attachment {
@@ -624,7 +628,7 @@ export class Simulator extends RapidElement {
         line-height: 1.3;
       }
       .event-info.animated {
-        animation: messageAppear 0.2s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
       .message-input {
@@ -671,7 +675,7 @@ export class Simulator extends RapidElement {
         cursor: pointer;
         flex-shrink: 0;
         margin-bottom: 5px;
-        transition: all 0.2s ease;
+        transition: all var(--animation-time) ease;
         color: #000;
       }
       .attachment-button:hover {
@@ -695,7 +699,7 @@ export class Simulator extends RapidElement {
         opacity: 0;
         pointer-events: none;
         transform: translateY(10px);
-        transition: opacity 0.2s ease, transform 0.2s ease;
+        transition: opacity var(--animation-time) ease, transform 0.2s ease;
         z-index: 20;
       }
       .attachment-menu.open {
@@ -710,7 +714,7 @@ export class Simulator extends RapidElement {
         padding: 8px 12px;
         border-radius: 8px;
         cursor: pointer;
-        transition: background 0.2s ease;
+        transition: background var(--animation-time) ease;
         white-space: nowrap;
         font-size: 14px;
         color: #1f2937;
@@ -737,7 +741,7 @@ export class Simulator extends RapidElement {
         padding: 4px 8px;
         font-size: 11px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all var(--animation-time) ease;
         white-space: nowrap;
       }
       .quick-reply-btn:hover {
@@ -749,7 +753,7 @@ export class Simulator extends RapidElement {
         transform: scale(0.95);
       }
       .quick-reply-btn.animated {
-        animation: messageAppear 0.3s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
     `;
@@ -760,6 +764,9 @@ export class Simulator extends RapidElement {
 
   @property({ type: String })
   endpoint = '';
+
+  @property({ type: Number })
+  animationTime = 200;
 
   @fromCookie('simulator-size', 'small')
   size: 'small' | 'medium' | 'large';
@@ -792,8 +799,8 @@ export class Simulator extends RapidElement {
   @property({ type: String })
   private inputValue = '';
 
-  @property({ type: Boolean })
-  private following = false;
+  @fromCookie('simulator-follow', true)
+  private following: boolean;
 
   @fromCookie('simulator-context-open', false)
   private contextExplorerOpen: boolean;
@@ -828,6 +835,14 @@ export class Simulator extends RapidElement {
   private videoIndex = Math.floor(Math.random() * TEST_VIDEOS.length);
   private audioIndex = Math.floor(Math.random() * TEST_AUDIO.length);
   private locationIndex = Math.floor(Math.random() * TEST_LOCATIONS.length);
+
+  // method to reset attachment indices for testing
+  public resetAttachmentIndices() {
+    this.imageIndex = 2;
+    this.videoIndex = 0;
+    this.audioIndex = 0;
+    this.locationIndex = 0;
+  }
 
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
@@ -961,6 +976,7 @@ export class Simulator extends RapidElement {
     ) as FloatingWindow;
     phoneWindow.show();
     this.isVisible = true;
+    getStore().getState().setSimulatorActive(true);
 
     // start the simulation if we haven't already
     if (this.events.length === 0) {
@@ -1034,6 +1050,80 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.requestUpdate();
     this.scrollToBottom();
+    this.updateActivity();
+  }
+
+  private updateActivity() {
+    if (!this.session) {
+      return;
+    }
+
+    const pathCounts: { [key: string]: number } = {};
+    const nodeCounts: { [nodeUUID: string]: number } = {};
+
+    // iterate through all runs to get path segment counts
+    for (const run of this.session.runs) {
+      if (run.path) {
+        for (let i = 0; i < run.path.length - 1; i++) {
+          const step = run.path[i];
+          const nextStep = run.path[i + 1];
+          if (step.exit_uuid && nextStep.node_uuid) {
+            const key = step.exit_uuid + ':' + nextStep.node_uuid;
+            pathCounts[key] = (pathCounts[key] || 0) + 1;
+          }
+        }
+      }
+
+      // set node counts on the last step of any active/waiting runs
+      if (run.status === 'active' || run.status === 'waiting') {
+        if (run.path && run.path.length > 0) {
+          const finalStep = run.path[run.path.length - 1];
+          if (finalStep && finalStep.node_uuid) {
+            nodeCounts[finalStep.node_uuid] =
+              (nodeCounts[finalStep.node_uuid] || 0) + 1;
+          }
+        }
+      }
+    }
+
+    // Update simulator activity in the store
+    getStore().getState().updateSimulatorActivity({
+      segments: pathCounts,
+      nodes: nodeCounts
+    });
+
+    // Fire follow event if following is enabled
+    if (this.following) {
+      this.fireFollowEvent();
+    }
+  }
+
+  private fireFollowEvent() {
+    if (!this.session || !this.session.runs || this.session.runs.length === 0) {
+      return;
+    }
+
+    // Find the first active or waiting run
+    let activeRun = this.session.runs.find(
+      (run: any) => run.status === 'active' || run.status === 'waiting'
+    );
+
+    // If no active/waiting run and simulation has ended, use the first completed run
+    if (!activeRun) {
+      activeRun = this.session.runs.find(
+        (run: any) => run.status === 'completed'
+      );
+    }
+
+    if (activeRun && activeRun.path && activeRun.path.length > 0) {
+      const finalStep = activeRun.path[activeRun.path.length - 1];
+      if (finalStep && finalStep.node_uuid) {
+        this.fireCustomEvent(CustomEventType.FollowSimulation, {
+          flowUuid: activeRun.flow?.uuid || this.flow,
+          nodeUuid: finalStep.node_uuid
+        });
+      }
+    }
   }
 
   private scrollToBottom() {
@@ -1062,6 +1152,7 @@ export class Simulator extends RapidElement {
     ) as FloatingWindow;
     phoneWindow.hide();
     this.isVisible = false;
+    getStore().getState().setSimulatorActive(false);
 
     const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
     phoneTab.hidden = false;
@@ -1076,6 +1167,12 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.previousEventCount = 0;
     this.currentQuickReplies = [];
+
+    // Clear simulator activity data
+    getStore().getState().updateSimulatorActivity({
+      segments: {},
+      nodes: {}
+    });
 
     // reset contact to initial state
     this.contact = {
@@ -1865,6 +1962,14 @@ export class Simulator extends RapidElement {
               <temba-icon name="x" size="1.5"></temba-icon>
             </button>
             <button
+              class="option-btn ${this.following ? 'active' : ''}"
+              @click=${this.handleToggleFollow}
+              title="${this.following ? 'Following' : 'Follow'}"
+            >
+              <temba-icon name="follow" size="1.5"></temba-icon>
+            </button>
+
+            <button
               class="option-btn ${this.contextExplorerOpen ? 'active' : ''}"
               @click=${this.handleToggleContextExplorer}
               title="Context Explorer"
@@ -1883,14 +1988,6 @@ export class Simulator extends RapidElement {
                 ? 'M'
                 : 'L'}
             </button>
-
-            <!--button
-              class="option-btn ${this.following ? 'active' : ''}"
-              @click=${this.handleToggleFollow}
-              title="${this.following ? 'Following' : 'Follow'}"
-            >
-              <temba-icon name="follow" size="1.5"></temba-icon>
-            </button-->
 
             <button class="option-btn" @click=${this.handleReset} title="Reset">
               <temba-icon name="delete" size="1.5"></temba-icon>

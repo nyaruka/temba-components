@@ -125,8 +125,14 @@ export class Editor extends RapidElement {
   @property({ type: Array })
   public features: string[] = [];
 
+  private activityTimer: number | null = null;
+  private activityInterval = 100; // Start with 100ms interval for fast initial load
+
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private definition!: FlowDefinition;
+
+  @fromStore(zustand, (state: AppState) => state.simulatorActive)
+  private simulatorActive!: boolean;
 
   @fromStore(zustand, (state: AppState) => state.canvasSize)
   private canvasSize!: { width: number; height: number };
@@ -142,6 +148,9 @@ export class Editor extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.workspace)
   private workspace!: Workspace;
+
+  @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
+  private activityData!: any;
 
   // Drag state
   @state()
@@ -379,6 +388,125 @@ export class Editor extends RapidElement {
         z-index: 10;
       }
 
+      /* Activity overlays on connections */
+      .jtk-overlay.activity-overlay {
+        background: #f3f3f3;
+        border: 1px solid #d9d9d9;
+        color: #333;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 0.9;
+        cursor: pointer;
+        z-index: 500;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Active contact count on nodes */
+      .active-count {
+        position: absolute;
+        background: var(--color-primary-dark, #3498db);
+        border: 1px solid var(--color-primary-darker, #2980b9);
+        border-radius: 12px;
+        padding: 3px 5px;
+        color: #fff;
+        font-weight: 500;
+        top: -10px;
+        left: -10px;
+        font-size: 13px;
+        min-width: 22px;
+        text-align: center;
+        z-index: 600;
+        line-height: 1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Recent contacts popup */
+      @keyframes popupBounceIn {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .recent-contacts-popup {
+        display: none;
+        position: absolute;
+        width: 200px;
+        background: #f3f3f3;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px 1px rgba(130, 130, 130, 0.2);
+        z-index: 1015;
+        transform-origin: top center;
+      }
+
+      .recent-contacts-popup.show {
+        display: block;
+        animation: popupBounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .recent-contacts-popup .popup-title {
+        background: #999;
+        color: #fff;
+        padding: 6px 0;
+        text-align: center;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        font-size: 12px;
+      }
+
+      .recent-contacts-popup .no-contacts-message {
+        padding: 15px;
+        text-align: center;
+        color: #999;
+        font-size: 12px;
+      }
+
+      .recent-contacts-popup .contact-row {
+        padding: 8px 10px;
+        border-top: 1px solid #e0e0e0;
+        text-align: left;
+      }
+
+      .recent-contacts-popup .contact-row:last-child {
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      .recent-contacts-popup .contact-name {
+        display: block;
+        font-weight: 500;
+        font-size: 12px;
+        color: var(--color-link-primary, #1d4ed8);
+        cursor: pointer;
+      }
+
+      .recent-contacts-popup .contact-name:hover {
+        text-decoration: underline;
+        color: var(--color-link-primary, #1d4ed8);
+      }
+
+      .recent-contacts-popup .contact-operand {
+        padding-top: 3px;
+        font-size: 11px;
+        color: #666;
+        word-wrap: break-word;
+      }
+
+      .recent-contacts-popup .contact-time {
+        padding-top: 3px;
+        font-size: 10px;
+        color: #999;
+      }
+
       /* Connection dragging feedback */
       body svg.jtk-connector.jtk-dragging {
         z-index: 99999 !important;
@@ -612,7 +740,7 @@ export class Editor extends RapidElement {
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.firstUpdated(changes);
-    this.plumber = new Plumber(this.querySelector('#canvas'));
+    this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.setupGlobalEventListeners();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
@@ -692,6 +820,29 @@ export class Editor extends RapidElement {
       }
 
       this.translationCache.clear();
+
+      // Start fetching activity data when definition is loaded
+      if (this.definition?.uuid) {
+        this.startActivityFetching();
+      }
+    }
+
+    if (changes.has('simulatorActive')) {
+      if (this.simulatorActive) {
+        // Stop polling when simulator becomes active
+        this.stopActivityFetching();
+      } else {
+        // Resume polling and refresh activity when simulator closes
+        this.activityInterval = 100; // Reset to fast initial interval
+        this.startActivityFetching();
+      }
+    }
+
+    if (changes.has('activityData')) {
+      // Update plumber with new activity data
+      if (this.plumber) {
+        this.plumber.setActivityData(this.activityData);
+      }
     }
 
     if (changes.has('dirtyDate')) {
@@ -768,6 +919,52 @@ export class Editor extends RapidElement {
     getStore().getState().setDirtyDate(null);
   }
 
+  private startActivityFetching(): void {
+    // Don't start if simulator is active
+    if (this.simulatorActive) {
+      return;
+    }
+    // Fetch immediately
+    this.fetchActivityData();
+  }
+
+  private stopActivityFetching(): void {
+    if (this.activityTimer !== null) {
+      clearTimeout(this.activityTimer);
+      this.activityTimer = null;
+    }
+  }
+
+  private fetchActivityData(): void {
+    if (!this.definition?.uuid) {
+      return;
+    }
+
+    // Don't fetch if simulator is active
+    if (this.simulatorActive) {
+      return;
+    }
+
+    const activityEndpoint = `/flow/activity/${this.definition.uuid}/`;
+    const store = getStore();
+    if (!store) {
+      return;
+    }
+    const state = store.getState();
+    state.fetchActivity(activityEndpoint).then(() => {
+      // Schedule next fetch with exponential backoff (max 5 minutes)
+      this.activityInterval = Math.min(60000 * 5, this.activityInterval + 100);
+
+      if (this.activityTimer !== null) {
+        clearTimeout(this.activityTimer);
+      }
+
+      this.activityTimer = window.setTimeout(() => {
+        this.fetchActivityData();
+      }, this.activityInterval);
+    });
+  }
+
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
 
@@ -784,6 +981,10 @@ export class Editor extends RapidElement {
     if (this.saveTimer !== null) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
+    }
+    if (this.activityTimer !== null) {
+      clearTimeout(this.activityTimer);
+      this.activityTimer = null;
     }
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
@@ -2925,6 +3126,44 @@ export class Editor extends RapidElement {
         @temba-button-clicked=${this.handleLocalizationTabClick}
       ></temba-floating-tab>
     `;
+  }
+
+  /**
+   * Focus on a specific node by smoothly scrolling it to the center of the canvas
+   */
+  public focusNode(nodeUuid: string) {
+    const nodeElement = this.querySelector(
+      `temba-flow-node[uuid="${nodeUuid}"]`
+    ) as HTMLElement;
+    if (!nodeElement) {
+      return;
+    }
+
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) {
+      return;
+    }
+
+    // Get the editor's dimensions and scroll position
+    const editorRect = editor.getBoundingClientRect();
+    const editorCenterX = editorRect.width / 2;
+    const editorCenterY = editorRect.height / 2;
+
+    // Get node position relative to the editor's scroll container
+    const nodeRect = nodeElement.getBoundingClientRect();
+    const nodeCenterX = nodeElement.offsetLeft + nodeRect.width / 2;
+    const nodeCenterY = nodeElement.offsetTop + nodeRect.height / 2;
+
+    // Calculate the scroll position needed to center the node
+    const targetScrollX = nodeCenterX - editorCenterX;
+    const targetScrollY = nodeCenterY - editorCenterY;
+
+    // Smooth scroll the editor container to the target position
+    editor.scrollTo({
+      left: Math.max(0, targetScrollX),
+      top: Math.max(0, targetScrollY),
+      behavior: 'smooth'
+    });
   }
 
   public render(): TemplateResult {
