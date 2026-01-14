@@ -163,6 +163,7 @@ export class Simulator extends RapidElement {
         --phone-screen-height: 470px;
         --context-height: 520px;
         --context-closed-left: 332px;
+        --animation-time: 200ms;
       }
 
       .phone-simulator {
@@ -197,7 +198,7 @@ export class Simulator extends RapidElement {
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all var(--animation-time) ease;
         color: white;
       }
       .option-btn:hover {
@@ -238,7 +239,8 @@ export class Simulator extends RapidElement {
         z-index: 1;
         font-size: 13px;
         color: #374151;
-        transition: left 0.3s ease-out, opacity 0.3s ease-out;
+        transition: left calc(var(--animation-time) * 1.5) ease-out,
+          opacity calc(var(--animation-time) * 1.5) ease-out;
         opacity: 0;
         pointer-events: none;
         background: rgba(0, 0, 0, 0.7);
@@ -269,7 +271,7 @@ export class Simulator extends RapidElement {
         justify-content: center;
         cursor: pointer;
         border-radius: 6px;
-        transition: background 0.2s ease;
+        transition: background var(--animation-time) ease;
         color: rgba(255, 255, 255, 0.6);
         padding: 4px;
       }
@@ -348,7 +350,7 @@ export class Simulator extends RapidElement {
         display: inline-block;
         text-align: center;
         flex-shrink: 0;
-        transition: transform 0.2s ease;
+        transition: transform var(--animation-time) ease;
         color: #ffffff;
       }
 
@@ -383,7 +385,7 @@ export class Simulator extends RapidElement {
       .context-copy-icon {
         opacity: 0;
         margin-left: 4px;
-        transition: opacity 0.2s ease;
+        transition: opacity var(--animation-time) ease;
         cursor: pointer;
         color: #ccc;
       }
@@ -404,7 +406,7 @@ export class Simulator extends RapidElement {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         font-size: 13px;
         z-index: 10;
-        animation: slideInUp 0.3s ease-out;
+        animation: slideInUp var(--animation-time) ease-out;
       }
 
       .context-toast .expression {
@@ -545,7 +547,7 @@ export class Simulator extends RapidElement {
         line-height: 1.2;
       }
       .message.animated {
-        animation: messageAppear 0.3s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
       .message.incoming {
@@ -577,7 +579,7 @@ export class Simulator extends RapidElement {
         align-items: flex-end;
       }
       .attachment-wrapper.animated {
-        animation: messageAppear 0.3s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
       .attachment {
@@ -626,7 +628,7 @@ export class Simulator extends RapidElement {
         line-height: 1.3;
       }
       .event-info.animated {
-        animation: messageAppear 0.2s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
       .message-input {
@@ -673,7 +675,7 @@ export class Simulator extends RapidElement {
         cursor: pointer;
         flex-shrink: 0;
         margin-bottom: 5px;
-        transition: all 0.2s ease;
+        transition: all var(--animation-time) ease;
         color: #000;
       }
       .attachment-button:hover {
@@ -697,7 +699,7 @@ export class Simulator extends RapidElement {
         opacity: 0;
         pointer-events: none;
         transform: translateY(10px);
-        transition: opacity 0.2s ease, transform 0.2s ease;
+        transition: opacity var(--animation-time) ease, transform 0.2s ease;
         z-index: 20;
       }
       .attachment-menu.open {
@@ -712,7 +714,7 @@ export class Simulator extends RapidElement {
         padding: 8px 12px;
         border-radius: 8px;
         cursor: pointer;
-        transition: background 0.2s ease;
+        transition: background var(--animation-time) ease;
         white-space: nowrap;
         font-size: 14px;
         color: #1f2937;
@@ -739,7 +741,7 @@ export class Simulator extends RapidElement {
         padding: 4px 8px;
         font-size: 11px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all var(--animation-time) ease;
         white-space: nowrap;
       }
       .quick-reply-btn:hover {
@@ -751,7 +753,7 @@ export class Simulator extends RapidElement {
         transform: scale(0.95);
       }
       .quick-reply-btn.animated {
-        animation: messageAppear 0.3s ease-out forwards;
+        animation: messageAppear var(--animation-time) ease-out forwards;
         opacity: 0;
       }
     `;
@@ -762,6 +764,9 @@ export class Simulator extends RapidElement {
 
   @property({ type: String })
   endpoint = '';
+
+  @property({ type: Number })
+  animationTime = 200;
 
   @fromCookie('simulator-size', 'small')
   size: 'small' | 'medium' | 'large';
@@ -830,6 +835,14 @@ export class Simulator extends RapidElement {
   private videoIndex = Math.floor(Math.random() * TEST_VIDEOS.length);
   private audioIndex = Math.floor(Math.random() * TEST_AUDIO.length);
   private locationIndex = Math.floor(Math.random() * TEST_LOCATIONS.length);
+
+  // method to reset attachment indices for testing
+  public resetAttachmentIndices() {
+    this.imageIndex = 2;
+    this.videoIndex = 0;
+    this.audioIndex = 0;
+    this.locationIndex = 0;
+  }
 
   private get sizeConfig(): SimulatorSize {
     return SIMULATOR_SIZES[this.size] || SIMULATOR_SIZES.medium;
