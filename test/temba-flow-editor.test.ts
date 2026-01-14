@@ -521,4 +521,301 @@ describe('Editor', () => {
       expect(expectedPosition).to.deep.equal({ left: 260, top: 160 });
     });
   });
+
+  describe('flow-start indicator', () => {
+    it('should mark the first node as flow-start', async () => {
+      const { zustand } = await import('../src/store/AppState');
+
+      // create a flow definition with multiple nodes
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        nodes: [
+          {
+            uuid: 'node-1',
+            actions: [
+              { type: 'send_msg', uuid: 'action-1', text: 'Message 1' }
+            ],
+            exits: [{ uuid: 'exit-1', destination_uuid: null }]
+          },
+          {
+            uuid: 'node-2',
+            actions: [
+              { type: 'send_msg', uuid: 'action-2', text: 'Message 2' }
+            ],
+            exits: [{ uuid: 'exit-2', destination_uuid: null }]
+          },
+          {
+            uuid: 'node-3',
+            actions: [
+              { type: 'send_msg', uuid: 'action-3', text: 'Message 3' }
+            ],
+            exits: [{ uuid: 'exit-3', destination_uuid: null }]
+          }
+        ],
+        uuid: 'test-uuid',
+        type: 'messaging' as const,
+        revision: 1,
+        spec_version: '14.3',
+        _ui: {
+          nodes: {
+            'node-1': { position: { left: 100, top: 100 }, type: 'send_msg' },
+            'node-2': { position: { left: 200, top: 200 }, type: 'send_msg' },
+            'node-3': { position: { left: 300, top: 300 }, type: 'send_msg' }
+          },
+          languages: []
+        }
+      };
+
+      zustand.getState().setFlowContents({
+        definition: mockFlowDefinition as any,
+        info: {
+          results: [],
+          dependencies: [],
+          counts: { nodes: 3, languages: 1 },
+          locals: []
+        }
+      });
+
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      await editor.updateComplete;
+
+      // get all flow nodes
+      const flowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(flowNodes.length).to.equal(3);
+
+      // first node should have flow-start class
+      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+
+      // other nodes should not have flow-start class
+      expect(flowNodes[1].classList.contains('flow-start')).to.be.false;
+      expect(flowNodes[2].classList.contains('flow-start')).to.be.false;
+    });
+
+    it('should update flow-start when node positions change', async () => {
+      const { zustand } = await import('../src/store/AppState');
+
+      // create a flow with nodes in a specific order
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        nodes: [
+          {
+            uuid: 'node-1',
+            actions: [
+              { type: 'send_msg', uuid: 'action-1', text: 'Message 1' }
+            ],
+            exits: [{ uuid: 'exit-1', destination_uuid: null }]
+          },
+          {
+            uuid: 'node-2',
+            actions: [
+              { type: 'send_msg', uuid: 'action-2', text: 'Message 2' }
+            ],
+            exits: [{ uuid: 'exit-2', destination_uuid: null }]
+          }
+        ],
+        uuid: 'test-uuid',
+        type: 'messaging' as const,
+        revision: 1,
+        spec_version: '14.3',
+        _ui: {
+          nodes: {
+            'node-1': { position: { left: 100, top: 200 }, type: 'send_msg' },
+            'node-2': { position: { left: 100, top: 100 }, type: 'send_msg' }
+          },
+          languages: []
+        }
+      };
+
+      zustand.getState().setFlowContents({
+        definition: mockFlowDefinition as any,
+        info: {
+          results: [],
+          dependencies: [],
+          counts: { nodes: 2, languages: 1 },
+          locals: []
+        }
+      });
+
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      await editor.updateComplete;
+
+      // node-2 should be first (top: 100 < top: 200)
+      const flowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(flowNodes[0].getAttribute('uuid')).to.equal('node-2');
+      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+      expect(flowNodes[1].classList.contains('flow-start')).to.be.false;
+
+      // move node-1 to the top
+      zustand.getState().updateCanvasPositions({
+        'node-1': { left: 100, top: 50 }
+      });
+
+      await editor.updateComplete;
+
+      // now node-1 should be first
+      const updatedFlowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(updatedFlowNodes[0].getAttribute('uuid')).to.equal('node-1');
+      expect(updatedFlowNodes[0].classList.contains('flow-start')).to.be.true;
+      expect(updatedFlowNodes[1].classList.contains('flow-start')).to.be.false;
+    });
+
+    it('should maintain flow-start when nodes are added', async () => {
+      const { zustand } = await import('../src/store/AppState');
+
+      // start with one node
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        nodes: [
+          {
+            uuid: 'node-1',
+            actions: [
+              { type: 'send_msg', uuid: 'action-1', text: 'Message 1' }
+            ],
+            exits: [{ uuid: 'exit-1', destination_uuid: null }]
+          }
+        ],
+        uuid: 'test-uuid',
+        type: 'messaging' as const,
+        revision: 1,
+        spec_version: '14.3',
+        _ui: {
+          nodes: {
+            'node-1': { position: { left: 100, top: 200 }, type: 'send_msg' }
+          },
+          languages: []
+        }
+      };
+
+      zustand.getState().setFlowContents({
+        definition: mockFlowDefinition as any,
+        info: {
+          results: [],
+          dependencies: [],
+          counts: { nodes: 1, languages: 1 },
+          locals: []
+        }
+      });
+
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      await editor.updateComplete;
+
+      let flowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+
+      // add a new node at the top
+      const newNode = {
+        uuid: 'node-2',
+        actions: [
+          { type: 'send_msg' as const, uuid: 'action-2', text: 'Message 2' }
+        ],
+        exits: [{ uuid: 'exit-2', destination_uuid: null }]
+      };
+      const newNodeUI = {
+        position: { left: 100, top: 100 },
+        type: 'send_msg' as const
+      };
+
+      zustand.getState().addNode(newNode, newNodeUI);
+
+      await editor.updateComplete;
+
+      // new node should now be the flow-start
+      flowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(flowNodes[0].getAttribute('uuid')).to.equal('node-2');
+      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+      expect(flowNodes[1].classList.contains('flow-start')).to.be.false;
+    });
+
+    it('should handle flow-start when first node is removed', async () => {
+      const { zustand } = await import('../src/store/AppState');
+
+      // create flow with multiple nodes
+      const mockFlowDefinition = {
+        language: 'en',
+        localization: {},
+        name: 'Test Flow',
+        nodes: [
+          {
+            uuid: 'node-1',
+            actions: [
+              { type: 'send_msg', uuid: 'action-1', text: 'Message 1' }
+            ],
+            exits: [{ uuid: 'exit-1', destination_uuid: null }]
+          },
+          {
+            uuid: 'node-2',
+            actions: [
+              { type: 'send_msg', uuid: 'action-2', text: 'Message 2' }
+            ],
+            exits: [{ uuid: 'exit-2', destination_uuid: null }]
+          }
+        ],
+        uuid: 'test-uuid',
+        type: 'messaging' as const,
+        revision: 1,
+        spec_version: '14.3',
+        _ui: {
+          nodes: {
+            'node-1': { position: { left: 100, top: 100 }, type: 'send_msg' },
+            'node-2': { position: { left: 100, top: 200 }, type: 'send_msg' }
+          },
+          languages: []
+        }
+      };
+
+      zustand.getState().setFlowContents({
+        definition: mockFlowDefinition as any,
+        info: {
+          results: [],
+          dependencies: [],
+          counts: { nodes: 2, languages: 1 },
+          locals: []
+        }
+      });
+
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      await editor.updateComplete;
+
+      let flowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(flowNodes[0].getAttribute('uuid')).to.equal('node-1');
+      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+
+      // remove the first node
+      zustand.getState().removeNodes(['node-1']);
+
+      await editor.updateComplete;
+
+      // node-2 should now be the flow-start
+      flowNodes = editor.querySelectorAll('temba-flow-node');
+      expect(flowNodes.length).to.equal(1);
+      expect(flowNodes[0].getAttribute('uuid')).to.equal('node-2');
+      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+    });
+  });
 });

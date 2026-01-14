@@ -98,6 +98,22 @@ export class CanvasNode extends RapidElement {
 
       }
 
+      /* Flow start indicator */
+      temba-flow-node.flow-start .node::before {
+        content: 'FLOW START';
+        position: absolute;
+        top: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: var(--color-primary-dark, #3b82f6);
+        opacity: 0.7;
+        z-index: 10;
+        white-space: nowrap;
+      }
+
       /* Cap width for execute_actions nodes */
       .node.execute-actions {
         max-width: 200px;
@@ -283,11 +299,12 @@ export class CanvasNode extends RapidElement {
       .categories {
         display: flex;
         flex-direction: row;
+        border-collapse: collapse;
 
       }
 
       .category {
-        margin:-1px -0.5px;
+        border-collapse: collapse;
         border: 1px solid #f3f3f3;
         padding: 0.75em;
         flex-grow:1;
