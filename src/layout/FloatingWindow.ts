@@ -238,7 +238,7 @@ export class FloatingWindow extends RapidElement {
     }
   }
 
-  private handleClose() {
+  public handleClose() {
     this.hidden = true;
     // show all tabs when window is closed
     FloatingTab.showAllTabs();

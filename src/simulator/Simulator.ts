@@ -1,7 +1,6 @@
 import { html, TemplateResult } from 'lit-html';
 import { RapidElement } from '../RapidElement';
 import { FloatingWindow } from '../layout/FloatingWindow';
-import { FloatingTab } from '../display/FloatingTab';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie } from '../utils';
@@ -1150,12 +1149,11 @@ export class Simulator extends RapidElement {
     const phoneWindow = this.shadowRoot.getElementById(
       'phone-window'
     ) as FloatingWindow;
-    phoneWindow.hide();
+    // phoneWindow.hide();
+
+    phoneWindow.handleClose();
     this.isVisible = false;
     getStore().getState().setSimulatorActive(false);
-
-    const phoneTab = this.shadowRoot.getElementById('phone-tab') as FloatingTab;
-    phoneTab.hidden = false;
   }
 
   private handleReset() {
@@ -1632,6 +1630,48 @@ export class Simulator extends RapidElement {
     return null;
   }
 
+  private renderAlertMessage(
+    type: 'error' | 'warning' | 'failure',
+    text: string,
+    animatedClass: string,
+    animationDelay: string
+  ): TemplateResult {
+    const config = {
+      error: {
+        icon: '❗',
+        bgColor: '#fee2e2',
+        textColor: '#991b1b',
+        defaultText: 'An error occurred'
+      },
+      warning: {
+        icon: '⚠️',
+        bgColor: '#fef3c7',
+        textColor: 'rgba(125, 87, 18, 0.8)',
+        defaultText: 'A warning occurred'
+      },
+      failure: {
+        icon: '💥',
+        bgColor: '#fee2e2',
+        textColor: '#991b1b',
+        defaultText: 'A failure occurred'
+      }
+    }[type];
+
+    return html`
+      <div
+        class="event-info ${animatedClass}"
+        style="display:flex; align-items:center; background: ${config.bgColor}; color: ${config.textColor}; padding: 6px; margin: 4px 12px; border-radius: 8px; animation-delay: ${animationDelay}"
+      >
+        <div style="padding:4px;margin-right:6px;font-size:15px">
+          ${config.icon}
+        </div>
+        <div style="padding-right:2px;text-align:left">
+          ${text || config.defaultText}
+        </div>
+      </div>
+    `;
+  }
+
   private renderAttachment(attachment: string): TemplateResult {
     // parse attachment format: "type/subtype:url" or "geo:lat,long"
     const parts = attachment.split(':');
@@ -1756,15 +1796,27 @@ export class Simulator extends RapidElement {
               `
             : html``}
         `;
+      } else if (event.type === 'failure') {
+        return this.renderAlertMessage(
+          'failure',
+          (event as any).text,
+          animatedClass,
+          animationDelay
+        );
+      } else if (event.type === 'warning') {
+        return this.renderAlertMessage(
+          'warning',
+          (event as any).text,
+          animatedClass,
+          animationDelay
+        );
       } else if (event.type === 'error') {
-        return html`
-          <div
-            class="message incoming ${animatedClass}"
-            style="background: #ff4444; color: white; animation-delay: ${animationDelay}"
-          >
-            ⚠️ ${(event as any).text || 'An error occurred'}
-          </div>
-        `;
+        return this.renderAlertMessage(
+          'error',
+          (event as any).text,
+          animatedClass,
+          animationDelay
+        );
       } else {
         // check if this is an event we should display
         const description = this.getEventDescription(event);
@@ -1845,7 +1897,7 @@ export class Simulator extends RapidElement {
         bottomBoundaryMargin="${config.windowPadding}"
         topBoundaryMargin="${config.windowPadding}"
         height="${config.phoneTotalHeight}"
-        top="60"
+        top="0"
         chromeless
       >
         <div class="phone-simulator" style="${styleVars}">
@@ -2001,6 +2053,7 @@ export class Simulator extends RapidElement {
         icon="simulator"
         label="Phone Simulator"
         color="#10b981"
+        .hidden=${this.isVisible}
         @temba-button-clicked=${this.handleShow}
       ></temba-floating-tab>
     `;

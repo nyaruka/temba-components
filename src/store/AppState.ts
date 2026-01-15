@@ -18,6 +18,32 @@ import { produce } from 'immer';
 export const FLOW_SPEC_VERSION = '14.3';
 const CANVAS_PADDING = 800;
 
+/**
+ * Sorts nodes by their position - first by y (top), then by x (left)
+ */
+function sortNodesByPosition(
+  nodes: Node[],
+  nodePositions: Record<string, NodeUI>
+): void {
+  nodes.sort((a, b) => {
+    const posA = nodePositions[a.uuid]?.position;
+    const posB = nodePositions[b.uuid]?.position;
+
+    // if either position is missing, maintain current order
+    if (!posA || !posB) {
+      return 0;
+    }
+
+    // sort by y (top) first
+    if (posA.top !== posB.top) {
+      return posA.top - posB.top;
+    }
+
+    // if y is same, sort by x (left)
+    return posA.left - posB.left;
+  });
+}
+
 export interface InfoResult {
   key: string;
   name: string;
@@ -261,6 +287,14 @@ export const zustand = createStore<AppState>()(
           // Reset to the flow's default language when loading a new flow
           state.languageCode = flowLang;
           state.isTranslating = false;
+
+          // Sort nodes by position when loading flow
+          if (state.flowDefinition?.nodes && state.flowDefinition?._ui?.nodes) {
+            sortNodesByPosition(
+              state.flowDefinition.nodes,
+              state.flowDefinition._ui.nodes
+            );
+          }
         });
       },
 
@@ -313,6 +347,13 @@ export const zustand = createStore<AppState>()(
                 positions[uuid];
             }
           }
+
+          // Sort nodes by position since positions may have changed
+          sortNodesByPosition(
+            state.flowDefinition.nodes,
+            state.flowDefinition._ui.nodes
+          );
+
           state.dirtyDate = new Date();
         });
       },
@@ -371,6 +412,9 @@ export const zustand = createStore<AppState>()(
                 }
               });
             });
+
+            // Sort nodes by position
+            sortNodesByPosition(draft.nodes, draft._ui.nodes);
           });
 
           state.dirtyDate = new Date();
@@ -505,6 +549,12 @@ export const zustand = createStore<AppState>()(
             config: {}
           };
 
+          // Sort nodes by position
+          sortNodesByPosition(
+            state.flowDefinition.nodes,
+            state.flowDefinition._ui.nodes
+          );
+
           state.dirtyDate = new Date();
         });
 
@@ -522,6 +572,12 @@ export const zustand = createStore<AppState>()(
           }
 
           state.flowDefinition._ui.nodes[node.uuid] = nodeUI;
+
+          // Sort nodes by position
+          sortNodesByPosition(
+            state.flowDefinition.nodes,
+            state.flowDefinition._ui.nodes
+          );
 
           state.dirtyDate = new Date();
         });

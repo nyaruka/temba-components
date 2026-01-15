@@ -64,7 +64,7 @@ export class FloatingTab extends RapidElement {
     `;
   }
 
-  static TAB_HEIGHT = 56; // height of tab for auto-stacking
+  static TAB_HEIGHT = 50; // height of tab for auto-stacking
   static allTabs: FloatingTab[] = [];
 
   @property({ type: String })
@@ -99,18 +99,13 @@ export class FloatingTab extends RapidElement {
   }
 
   private updatePosition() {
-    // if top is manually set, use it
-    if (this.top !== -1) {
-      return;
-    }
-
     // auto-calculate position based on index
     const index = FloatingTab.allTabs.indexOf(this);
     if (index === -1) {
       this.top = 100; // default fallback
     } else {
       // start at 100px and stack with 10px gap between tabs
-      this.top = 100 + index * (FloatingTab.TAB_HEIGHT + 10);
+      this.top = 100 + index * (FloatingTab.TAB_HEIGHT + 0);
     }
   }
 

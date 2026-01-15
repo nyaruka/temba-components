@@ -406,8 +406,8 @@ export class Editor extends RapidElement {
       /* Active contact count on nodes */
       .active-count {
         position: absolute;
-        background: var(--color-primary-dark, #3498db);
-        border: 1px solid var(--color-primary-darker, #2980b9);
+        background: #3498db;
+        border: 1px solid #2980b9;
         border-radius: 12px;
         padding: 3px 5px;
         color: #fff;
@@ -2956,7 +2956,7 @@ export class Editor extends RapidElement {
         header="Translations"
         .width=${360}
         .maxHeight=${600}
-        .top=${170}
+        .top=${75}
         color="#6b7280"
         .hidden=${this.localizationWindowHidden}
         @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
@@ -3188,7 +3188,7 @@ export class Editor extends RapidElement {
               ? repeat(
                   this.definition.nodes,
                   (node) => node.uuid,
-                  (node) => {
+                  (node, index) => {
                     const position = this.definition._ui?.nodes[node.uuid]
                       ?.position || {
                       left: 0,
@@ -3201,10 +3201,13 @@ export class Editor extends RapidElement {
 
                     const selected = this.selectedItems.has(node.uuid);
 
+                    // first node is the flow start (nodes are sorted by position)
+                    const isFlowStart = index === 0;
+
                     return html`<temba-flow-node
                       class="draggable ${dragging ? 'dragging' : ''} ${selected
                         ? 'selected'
-                        : ''}"
+                        : ''} ${isFlowStart ? 'flow-start' : ''}"
                       @mousedown=${this.handleMouseDown.bind(this)}
                       uuid=${node.uuid}
                       data-node-uuid=${node.uuid}
