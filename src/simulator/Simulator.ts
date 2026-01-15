@@ -1897,6 +1897,7 @@ export class Simulator extends RapidElement {
         bottomBoundaryMargin="${config.windowPadding}"
         topBoundaryMargin="${config.windowPadding}"
         height="${config.phoneTotalHeight}"
+        top="0"
         chromeless
       >
         <div class="phone-simulator" style="${styleVars}">

@@ -2956,7 +2956,7 @@ export class Editor extends RapidElement {
         header="Translations"
         .width=${360}
         .maxHeight=${600}
-        .top=${170}
+        .top=${75}
         color="#6b7280"
         .hidden=${this.localizationWindowHidden}
         @temba-dialog-hidden=${this.handleLocalizationWindowClosed}
