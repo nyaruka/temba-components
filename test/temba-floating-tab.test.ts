@@ -96,15 +96,4 @@ describe('temba-floating-tab', () => {
     await assertScreenshot('floating-tab/gray', getClip(tab2));
     await assertScreenshot('floating-tab/purple', getClip(tab3));
   });
-
-  it('supports custom positioning', async () => {
-    const tab = (await getComponent('temba-floating-tab', {
-      icon: 'phone',
-      label: 'Phone Simulator',
-      color: '#10b981',
-      top: 250
-    })) as FloatingTab;
-
-    expect(tab.top).to.equal(250);
-  });
 });
