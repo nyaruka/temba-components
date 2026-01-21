@@ -1331,7 +1331,6 @@ export class NodeEditor extends RapidElement {
     return html`
       <div class="optional-field-link">
         <a
-          href="#"
           @click="${(e: Event) => {
             e.preventDefault();
             this.revealOptionalField(fieldName);
