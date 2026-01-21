@@ -7,7 +7,7 @@ import { postJSON, fromCookie, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
 import { Chat, ContactEvent, MessageType } from '../display/Chat';
-import { Events, renderSimulatorEvent } from '../events/eventRenderers';
+import { Events, renderEvent } from '../events/eventRenderers';
 
 // test attachment URLs
 const TEST_IMAGES = [
@@ -1291,7 +1291,7 @@ export class Simulator extends RapidElement {
     // handle simulator-specific events (errors, warnings, failures)
     if (event.type === 'error' || event.type === 'failure') {
       event._rendered = {
-        html: renderSimulatorEvent(event),
+        html: renderEvent(event, true),
         type: MessageType.Error
       };
       return;
@@ -1299,14 +1299,14 @@ export class Simulator extends RapidElement {
 
     if (event.type === 'warning') {
       event._rendered = {
-        html: renderSimulatorEvent(event),
+        html: renderEvent(event, true),
         type: MessageType.Note
       };
       return;
     }
 
     // try to render as a standard event
-    const rendered = renderSimulatorEvent(event);
+    const rendered = renderEvent(event, true);
     if (rendered) {
       event._rendered = {
         html: rendered,
@@ -1607,7 +1607,7 @@ export class Simulator extends RapidElement {
       const response = await postJSON(this.endpoint, body);
 
       // add a small delay before showing the reply to simulate typing
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       // pass null for msgInEvt since we already added it
       this.updateRunContext(response.json as RunContext, null);

@@ -18,40 +18,15 @@ import {
 } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
 import { Compose, ComposeValue } from '../form/Compose';
-import {
-  AirtimeTransferredEvent,
-  CallEvent,
-  ChatStartedEvent,
-  ContactGroupsEvent,
-  ContactHistoryPage,
-  ContactLanguageChangedEvent,
-  ContactStatusChangedEvent,
-  NameChangedEvent,
-  OptInEvent,
-  RunEvent,
-  TicketEvent,
-  UpdateFieldEvent,
-  URNsChangedEvent
-} from '../events';
+import { ContactHistoryPage } from '../events';
 import { Chat, MessageType, ContactEvent } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
 import {
-  Events,
-  renderRunEvent,
-  renderChatStartedEvent,
-  renderUpdateEvent,
-  renderNameChanged,
-  renderContactURNsChanged,
+  renderEvent,
   renderTicketAction,
-  renderTicketAssigneeChanged,
-  renderContactGroupsEvent,
-  renderAirtimeTransferredEvent,
-  renderContactLanguageChangedEvent,
-  renderContactStatusChangedEvent,
-  renderCallEvent,
-  renderOptInEvent
+  renderTicketAssigneeChanged
 } from '../events/eventRenderers';
 
 /*
@@ -485,123 +460,14 @@ export class ContactChat extends ContactStoreElement {
   }
 
   public prerender(event: ContactEvent) {
-    switch (event.type) {
-      case Events.AIRTIME_TRANSFERRED:
-        event._rendered = {
-          html: renderAirtimeTransferredEvent(event as AirtimeTransferredEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CALL_CREATED:
-      case Events.CALL_MISSED:
-      case Events.CALL_RECEIVED:
-        event._rendered = {
-          html: renderCallEvent(event as CallEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CHAT_STARTED:
-        event._rendered = {
-          html: renderChatStartedEvent(event as ChatStartedEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CONTACT_FIELD_CHANGED:
-        event._rendered = {
-          html: renderUpdateEvent(event as UpdateFieldEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CONTACT_GROUPS_CHANGED:
-        event._rendered = {
-          html: renderContactGroupsEvent(event as ContactGroupsEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CONTACT_LANGUAGE_CHANGED:
-        event._rendered = {
-          html: renderContactLanguageChangedEvent(
-            event as ContactLanguageChangedEvent
-          ),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CONTACT_NAME_CHANGED:
-        event._rendered = {
-          html: renderNameChanged(event as NameChangedEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CONTACT_STATUS_CHANGED:
-        event._rendered = {
-          html: renderContactStatusChangedEvent(
-            event as ContactStatusChangedEvent
-          ),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.CONTACT_URNS_CHANGED:
-        event._rendered = {
-          html: renderContactURNsChanged(event as URNsChangedEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.OPTIN_REQUESTED:
-      case Events.OPTIN_STARTED:
-      case Events.OPTIN_STOPPED:
-        event._rendered = {
-          html: renderOptInEvent(event as OptInEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.RUN_STARTED:
-      case Events.RUN_ENDED:
-        event._rendered = {
-          html: renderRunEvent(event as RunEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.TICKET_ASSIGNEE_CHANGED:
-        event._rendered = {
-          html: renderTicketAssigneeChanged(event as TicketEvent),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.TICKET_CLOSED:
-        event._rendered = {
-          html: renderTicketAction(event as TicketEvent, 'closed'),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.TICKET_OPENED:
-        event._rendered = {
-          html: renderTicketAction(event as TicketEvent, 'opened'),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.TICKET_NOTE_ADDED:
-        event._rendered = {
-          html: renderTicketAction(event as TicketEvent, 'noted'),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.TICKET_REOPENED:
-        event._rendered = {
-          html: renderTicketAction(event as TicketEvent, 'reopened'),
-          type: MessageType.Inline
-        };
-        break;
-      case Events.TICKET_TOPIC_CHANGED:
-        event._rendered = {
-          html: html`<div>
-            Topic changed to
-            <strong>${(event as TicketEvent).topic.name}</strong>
-          </div>`,
-          type: MessageType.Inline
-        };
-        break;
-      default:
-      // console.error('Unknown event type', event);
+    // use the unified renderEvent function with isSimulation = false
+    const rendered = renderEvent(event, false);
+
+    if (rendered) {
+      event._rendered = {
+        html: rendered,
+        type: MessageType.Inline
+      };
     }
   }
 

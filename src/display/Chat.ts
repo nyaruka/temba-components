@@ -326,13 +326,13 @@ export class Chat extends RapidElement {
       .failed .bubble,
       .error .bubble {
         border: none;
-        background: #fee2e2;
-        color: #991b1b;
+        background: #fee3e3;
+        color: #c01829;
       }
 
       .error .bubble .name,
       .failed .bubble .name {
-        color: rgba(153, 27, 27, 0.6);
+        color: rgba(192, 24, 41, 0.6);
       }
 
       .deleted .bubble {
