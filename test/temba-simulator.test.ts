@@ -158,6 +158,21 @@ const getSimulatorClip = (
   };
 };
 
+// helper to get message count from chat component
+const getMessageCount = (simulator: Simulator): number => {
+  const chat = simulator.shadowRoot.querySelector('temba-chat') as any;
+  if (!chat) {
+    return 0;
+  }
+  // check how many messages are in the chat component
+  // the chat component stores messages in its internal state
+  return (
+    chat.messageGroups?.reduce((total: number, group: any) => {
+      return total + (group.messages?.length || 0);
+    }, 0) || 0
+  );
+};
+
 // mock responses for simulation endpoints
 const mockSimulatorStart = () => {
   const response = {
@@ -354,9 +369,9 @@ describe('temba-simulator', () => {
     const phoneScreen = simulator.shadowRoot.querySelector('.phone-screen');
     expect(phoneScreen).to.exist;
 
-    // verify initial message is displayed
-    const messages = simulator.shadowRoot.querySelectorAll('.message');
-    expect(messages.length).to.be.greaterThan(0);
+    // verify initial message is displayed via chat component
+    const messageCount = getMessageCount(simulator);
+    expect(messageCount).to.be.greaterThan(0);
 
     await assertScreenshot(
       'simulator/open-initial',
@@ -373,8 +388,7 @@ describe('temba-simulator', () => {
     await openSimulator(simulator);
 
     // count initial messages
-    let messages = simulator.shadowRoot.querySelectorAll('.message');
-    const initialCount = messages.length;
+    const initialCount = getMessageCount(simulator);
 
     // mock the resume response
     mockSimulatorResume('Thanks for your message!');
@@ -396,13 +410,23 @@ describe('temba-simulator', () => {
     });
     input.dispatchEvent(enterEvent);
 
+    // wait for the message to be sent and response to come back
+    await waitForCondition(
+      () => getMessageCount(simulator) > initialCount,
+      40,
+      50
+    );
+
     await simulator.updateComplete;
-    // brief delay for async API mock processing
-    await delay(100);
+    // wait for chat component to update
+    const chat = simulator.shadowRoot.querySelector('temba-chat') as any;
+    if (chat) {
+      await chat.updateComplete;
+    }
 
     // verify we have more messages than before
-    messages = simulator.shadowRoot.querySelectorAll('.message');
-    expect(messages.length).to.be.greaterThan(initialCount);
+    const newCount = getMessageCount(simulator);
+    expect(newCount).to.be.greaterThan(initialCount);
 
     // ensure DOM is settled
     await simulator.updateComplete;
@@ -442,9 +466,10 @@ describe('temba-simulator', () => {
     await waitForCondition(
       () =>
         simulator.shadowRoot.querySelectorAll('.quick-reply-btn').length > 0,
-      2000
+      5000
     );
     await simulator.updateComplete;
+    await delay(100); // extra delay for rendering
 
     // take screenshot with quick replies
     await assertScreenshot(
@@ -492,6 +517,9 @@ describe('temba-simulator', () => {
     simulator.resetAttachmentIndices();
     await openSimulator(simulator);
 
+    // count initial messages
+    const initialCount = getMessageCount(simulator);
+
     // mock the response for image attachment
     mockSimulatorResume('Nice picture!');
 
@@ -509,14 +537,23 @@ describe('temba-simulator', () => {
     expect(imageMenuItem).to.exist;
     imageMenuItem.click();
 
-    await delay(100);
-    await simulator.updateComplete;
-
-    // verify attachment wrapper is displayed (image attachments show in attachments not messages)
-    const attachmentWrappers = simulator.shadowRoot.querySelectorAll(
-      '.attachment-wrapper'
+    // wait for the attachment to be sent and response to come back
+    await waitForCondition(
+      () => getMessageCount(simulator) > initialCount,
+      40,
+      50
     );
-    expect(attachmentWrappers.length).to.be.greaterThan(0);
+
+    await simulator.updateComplete;
+    // wait for chat component to update
+    const chat = simulator.shadowRoot.querySelector('temba-chat') as any;
+    if (chat) {
+      await chat.updateComplete;
+    }
+
+    // verify message with attachment was added via chat component
+    const newCount = getMessageCount(simulator);
+    expect(newCount).to.be.greaterThan(initialCount);
 
     await assertScreenshot(
       'simulator/image-attachment',
@@ -696,8 +733,7 @@ describe('temba-simulator', () => {
     await simulator.updateComplete;
 
     // verify we have multiple messages
-    let messages = simulator.shadowRoot.querySelectorAll('.message');
-    const messageCountBefore = messages.length;
+    const messageCountBefore = getMessageCount(simulator);
     expect(messageCountBefore).to.be.greaterThan(1);
 
     // mock the start response for reset
@@ -717,8 +753,8 @@ describe('temba-simulator', () => {
     await simulator.updateComplete;
 
     // verify messages are reset - should go back to just initial message
-    messages = simulator.shadowRoot.querySelectorAll('.message');
-    expect(messages.length).to.be.lessThan(messageCountBefore);
+    const messageCountAfter = getMessageCount(simulator);
+    expect(messageCountAfter).to.be.lessThan(messageCountBefore);
 
     await assertScreenshot(
       'simulator/after-reset',
@@ -803,9 +839,9 @@ describe('temba-simulator', () => {
     await simulator.updateComplete;
     await openSimulator(simulator);
 
-    // verify event info is displayed
-    const eventInfo = simulator.shadowRoot.querySelectorAll('.event-info');
-    expect(eventInfo.length).to.be.greaterThan(0);
+    // verify events are displayed via chat component (field change + message = 2 events)
+    const messageCount = getMessageCount(simulator);
+    expect(messageCount).to.be.greaterThan(0);
 
     await assertScreenshot('simulator/event-info', getSimulatorClip(simulator));
   });

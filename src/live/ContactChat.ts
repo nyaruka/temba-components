@@ -12,7 +12,6 @@ import {
   fetchResults,
   generateUUIDv7,
   getUrl,
-  oxfordFn,
   postJSON,
   postUrl,
   WebResponse
@@ -38,6 +37,22 @@ import { Chat, MessageType, ContactEvent } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { UserSelect } from '../form/select/UserSelect';
 import { Select } from '../form/select/Select';
+import {
+  Events,
+  renderRunEvent,
+  renderChatStartedEvent,
+  renderUpdateEvent,
+  renderNameChanged,
+  renderContactURNsChanged,
+  renderTicketAction,
+  renderTicketAssigneeChanged,
+  renderContactGroupsEvent,
+  renderAirtimeTransferredEvent,
+  renderContactLanguageChangedEvent,
+  renderContactStatusChangedEvent,
+  renderCallEvent,
+  renderOptInEvent
+} from '../events/eventRenderers';
 
 /*
 export const SCROLL_THRESHOLD = 100;
@@ -47,249 +62,8 @@ export const MIN_CHAT_REFRESH = 500;
 export const BODY_SNIPPET_LENGTH = 250;
 */
 
-export enum Events {
-  AIRTIME_TRANSFERRED = 'airtime_transferred',
-  BROADCAST_CREATED = 'broadcast_created',
-  CALL_CREATED = 'call_created',
-  CALL_MISSED = 'call_missed',
-  CALL_RECEIVED = 'call_received',
-  CHAT_STARTED = 'chat_started',
-  CONTACT_FIELD_CHANGED = 'contact_field_changed',
-  CONTACT_GROUPS_CHANGED = 'contact_groups_changed',
-  CONTACT_LANGUAGE_CHANGED = 'contact_language_changed',
-  CONTACT_NAME_CHANGED = 'contact_name_changed',
-  CONTACT_STATUS_CHANGED = 'contact_status_changed',
-  CONTACT_URNS_CHANGED = 'contact_urns_changed',
-  IVR_CREATED = 'ivr_created',
-  MSG_CREATED = 'msg_created',
-  MSG_RECEIVED = 'msg_received',
-  OPTIN_REQUESTED = 'optin_requested',
-  OPTIN_STARTED = 'optin_started',
-  OPTIN_STOPPED = 'optin_stopped',
-  RUN_ENDED = 'run_ended',
-  RUN_STARTED = 'run_started',
-  TICKET_ASSIGNEE_CHANGED = 'ticket_assignee_changed',
-  TICKET_CLOSED = 'ticket_closed',
-  TICKET_NOTE_ADDED = 'ticket_note_added',
-  TICKET_OPENED = 'ticket_opened',
-  TICKET_REOPENED = 'ticket_reopened',
-  TICKET_TOPIC_CHANGED = 'ticket_topic_changed'
-}
-
-const renderInfoList = (
-  singular: string,
-  plural: string,
-  items: any[]
-): TemplateResult => {
-  if (items.length === 1) {
-    return html`<div>${singular} <strong>${items[0].name}</strong></div>`;
-  } else {
-    const list = items.map((item) => item.name);
-    if (list.length === 2) {
-      return html`<div>
-        ${plural} <strong>${list[0]}</strong> and <strong>${list[1]}</strong>
-      </div>`;
-    } else {
-      const last = list.pop();
-      const middle = list.map(
-        (name, index) =>
-          html`<strong>${name}</strong>${index < list.length - 1 ? ', ' : ''}`
-      );
-      return html`<div>${plural} ${middle}, and <strong>${last}</strong></div>`;
-    }
-  }
-};
-
-const renderRunEvent = (event: RunEvent): TemplateResult => {
-  let verb = 'Started';
-  if (event.type === Events.RUN_ENDED) {
-    if (event.status === 'completed') {
-      verb = 'Completed';
-    } else if (event.status === 'expired') {
-      verb = 'Expired from';
-    } else {
-      verb = 'Interrupted';
-    }
-  }
-
-  return html`<div>
-    ${verb}
-    <a href="/flow/editor/${event.flow.uuid}/"
-      ><strong>${event.flow.name}</strong></a
-    >
-  </div>`;
-};
-
-const renderChatStartedEvent = (event: ChatStartedEvent): TemplateResult => {
-  if (event.params) {
-    return html`<div>Chat referral</div>`;
-  } else {
-    return html`<div>Chat started</div>`;
-  }
-};
-
-const renderUpdateEvent = (event: UpdateFieldEvent): TemplateResult => {
-  return event.value
-    ? html`<div>
-        Updated <strong>${event.field.name}</strong> to
-        <strong>${event.value.text}</strong>
-      </div>`
-    : html`<div>Cleared <strong>${event.field.name}</strong></div>`;
-};
-
-const renderNameChanged = (event: NameChangedEvent): TemplateResult => {
-  return html`<div>
-    Updated <strong>name</strong> to <strong>${event.name}</strong>
-  </div>`;
-};
-
-const renderContactURNsChanged = (event: URNsChangedEvent): TemplateResult => {
-  return html`<div>
-    Updated <strong>URNs</strong> to
-    ${oxfordFn(
-      event.urns,
-      (urn: string) => html`<strong>${urn.split(':')[1].split('?')[0]}</strong>`
-    )}
-  </div>`;
-};
-
-export const renderTicketAction = (
-  event: TicketEvent,
-  action: string
-): TemplateResult => {
-  const ticketUUID = event.ticket?.uuid || event.ticket_uuid;
-
-  const actionNote = event.note
-    ? html`<div
-        style="width:85%; background: #fffac3; padding: 1em;margin-bottom: 1em;margin-top:1em; border: 1px solid #ffe97f;border-radius: var(--curvature);line-height: 1.2em; word-break: break-word;"
-      >
-        <div style="color: #8e830fff; font-size: 1em;margin-bottom:0.25em; ">
-          <strong>${event._user ? event._user.name : 'Someone'}</strong> added a
-          note
-          <temba-date
-            value=${event.created_on.toISOString()}
-            display="relative"
-          ></temba-date>
-        </div>
-        <div style="white-space: pre-wrap;">${event.note}</div>
-      </div>`
-    : null;
-
-  if (action === 'noted') {
-    return html`${actionNote}`;
-  }
-
-  const description = event._user
-    ? html`<div>
-        <strong>${event._user.name}</strong> ${action} a
-        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
-      </div>`
-    : html`<div>
-        A
-        <strong><a href="/ticket/all/closed/${ticketUUID}/">ticket</a></strong>
-        was <strong>${action}</strong>
-      </div>`;
-
-  return html`<div style="${actionNote ? 'margin-bottom: 1em;' : ''}">
-      ${description}
-    </div>
-    ${actionNote}`;
-};
-
-export const renderTicketAssigneeChanged = (
-  event: TicketEvent
-): TemplateResult => {
-  if (event._user) {
-    if (event.assignee) {
-      return html`<div>
-        <strong>${event._user.name}</strong> assigned this ticket to
-        <strong>${event.assignee.name}</strong>
-      </div>`;
-    } else {
-      return html`<div>
-        <strong>${event._user.name}</strong> unassigned this ticket
-      </div>`;
-    }
-  } else {
-    if (event.assignee) {
-      return html`<div>
-        This ticket was assigned to <strong>${event.assignee.name}</strong>
-      </div>`;
-    } else {
-      return html`<div>This ticket was unassigned</div>`;
-    }
-  }
-};
-
-export const renderTicketOpened = (event: TicketEvent): TemplateResult => {
-  return html`<div>${event.ticket.topic.name} ticket was opened</div>`;
-};
-
-export const renderContactGroupsEvent = (
-  event: ContactGroupsEvent
-): TemplateResult => {
-  const groupsEvent = event as ContactGroupsEvent;
-  if (groupsEvent.groups_added) {
-    return renderInfoList(
-      'Added to group',
-      'Added to groups',
-      groupsEvent.groups_added
-    );
-  } else if (groupsEvent.groups_removed) {
-    return renderInfoList(
-      'Removed from group',
-      'Removed from groups',
-      groupsEvent.groups_removed
-    );
-  }
-};
-
-export const renderAirtimeTransferredEvent = (
-  event: AirtimeTransferredEvent
-): TemplateResult => {
-  if (parseFloat(event.amount) === 0) {
-    return html`<div>Airtime transfer failed</div>`;
-  }
-  return html`<div>
-    Transferred <strong>${event.amount}</strong> ${event.currency} of airtime
-  </div>`;
-};
-
-export const renderContactLanguageChangedEvent = (
-  event: ContactLanguageChangedEvent
-): TemplateResult => {
-  return html`<div>
-    Language updated to <strong>${event.language}</strong>
-  </div>`;
-};
-
-export const renderContactStatusChangedEvent = (
-  event: ContactStatusChangedEvent
-): TemplateResult => {
-  return html`<div>Status updated to <strong>${event.status}</strong></div>`;
-};
-
-export const renderCallEvent = (event: CallEvent): TemplateResult => {
-  if (event.type === Events.CALL_CREATED) {
-    return html`<div>Call started</div>`;
-  } else if (event.type === Events.CALL_MISSED) {
-    return html`<div>Call missed</div>`;
-  } else if (event.type === Events.CALL_RECEIVED) {
-    return html`<div>Call answered</div>`;
-  }
-};
-
-export const renderOptInEvent = (event: OptInEvent): TemplateResult => {
-  if (event.type === Events.OPTIN_REQUESTED) {
-    return html`<div>
-      Requested opt-in for <strong>${event.optin.name}</strong>
-    </div>`;
-  } else if (event.type === Events.OPTIN_STARTED) {
-    return html`<div>Opted in to <strong>${event.optin.name}</strong></div>`;
-  } else if (event.type === Events.OPTIN_STOPPED) {
-    return html`<div>Opted out of <strong>${event.optin.name}</strong></div>`;
-  }
-};
+// re-export for backwards compatibility
+export { renderTicketAction, renderTicketAssigneeChanged };
 
 export class ContactChat extends ContactStoreElement {
   public static get styles() {
@@ -1116,6 +890,7 @@ export class ContactChat extends ContactStoreElement {
               @temba-fetch-complete=${this.fetchComplete}
               avatar=${this.avatar}
               agent
+              avatars
               ?hasFooter=${inFlow}
               .showMessageLogsAfter=${this.showMessageLogsAfter}
             >
