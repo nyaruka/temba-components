@@ -79,7 +79,7 @@ export class ShortcutList extends StoreMonitorElement {
         style="
           overflow: hidden;
           text-overflow: ellipsis;
-          width:100px; 
+          width:175px; 
           padding-right: 10px;
           white-space: nowrap;"
       >

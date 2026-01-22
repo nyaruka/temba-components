@@ -3,9 +3,11 @@ import { RapidElement } from '../RapidElement';
 import { FloatingWindow } from '../layout/FloatingWindow';
 import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
-import { postJSON, fromCookie } from '../utils';
+import { postJSON, fromCookie, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
+import { Chat, ContactEvent, MessageType } from '../display/Chat';
+import { Events, renderEvent } from '../events/eventRenderers';
 
 // test attachment URLs
 const TEST_IMAGES = [
@@ -73,7 +75,6 @@ interface RunContext {
 
 interface SimulatorSize {
   phoneWidth: number;
-  phoneHeight: number;
   phoneTotalHeight: number;
   phoneScreenHeight: number;
   contextWidth: number;
@@ -93,8 +94,7 @@ interface SimulatorSize {
 const SIMULATOR_SIZES: Record<string, SimulatorSize> = {
   small: {
     phoneWidth: 270,
-    phoneHeight: 576,
-    phoneTotalHeight: 576,
+    phoneTotalHeight: 530,
     phoneScreenHeight: 376,
     contextWidth: 336,
     contextHeight: 416,
@@ -111,8 +111,7 @@ const SIMULATOR_SIZES: Record<string, SimulatorSize> = {
   },
   medium: {
     phoneWidth: 300,
-    phoneHeight: 720,
-    phoneTotalHeight: 720,
+    phoneTotalHeight: 600,
     phoneScreenHeight: 470,
     contextWidth: 420,
     contextHeight: 520,
@@ -129,8 +128,7 @@ const SIMULATOR_SIZES: Record<string, SimulatorSize> = {
   },
   large: {
     phoneWidth: 360,
-    phoneHeight: 864,
-    phoneTotalHeight: 864,
+    phoneTotalHeight: 700,
     phoneScreenHeight: 564,
     contextWidth: 504,
     contextHeight: 624,
@@ -217,6 +215,7 @@ export class Simulator extends RapidElement {
 
       .phone-frame {
         width: var(--phone-width);
+        height: var(--phone-total-height);
         border-radius: 40px;
         border: 6px solid #1f2937;
         box-shadow: 0 0px 30px rgba(0, 0, 0, 0.4);
@@ -319,6 +318,39 @@ export class Simulator extends RapidElement {
 
       .context-explorer-scroll::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.5);
+      }
+
+      /* Custom scrollbar for chat area to allow content to flow behind input */
+      .custom-scrollbar-container {
+        position: absolute;
+        top: 40px;
+        bottom: var(--bottom-input-height, 60px);
+        right: 4px;
+        width: 10px;
+        z-index: 20;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .custom-scrollbar-container::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .custom-scrollbar-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .custom-scrollbar-container::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+
+      .custom-scrollbar-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.4);
+      }
+
+      .custom-scrollbar-content {
+        width: 100%;
       }
 
       .context-explorer.open {
@@ -493,170 +525,95 @@ export class Simulator extends RapidElement {
       }
 
       .phone-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         background: white;
-        padding: 15px;
-        padding-top: calc(var(--cutout-height) + 10px);
-        padding-bottom: 60px;
-        height: var(--phone-screen-height);
-        overflow-y: scroll;
         display: flex;
         flex-direction: column;
-        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-        scrollbar-width: thin;
       }
 
-      .phone-screen::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      .phone-screen::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .phone-screen::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-      }
-
-      .phone-screen::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 0, 0, 0.3);
-      }
-
-      @keyframes messageAppear {
-        0% {
-          opacity: 0;
-          transform: scale(0.8);
-        }
-        70% {
-          opacity: 1;
-          transform: scale(1.05);
-        }
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-
-      .message {
-        padding: 10px 14px;
-        margin-bottom: 8px;
-        border-radius: 18px;
-        max-width: 70%;
-        font-size: 13px;
-        line-height: 1.2;
-      }
-      .message.animated {
-        animation: messageAppear var(--animation-time) ease-out forwards;
-        opacity: 0;
-      }
-      .message.incoming {
-        background: #e5e5ea;
-        color: #000;
-        margin-right: auto;
-        border-bottom-left-radius: 4px;
-      }
-      .message.outgoing {
-        background: #007aff;
-        color: white;
-        margin-left: auto;
-        text-align: left;
-        border-bottom-right-radius: 4px;
-      }
-      .attachment-wrapper {
-        max-width: 70%;
-        margin-bottom: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .attachment-wrapper.incoming {
-        margin-right: auto;
-        align-items: flex-start;
-      }
-      .attachment-wrapper.outgoing {
-        margin-left: auto;
-        align-items: flex-end;
-      }
-      .attachment-wrapper.animated {
-        animation: messageAppear var(--animation-time) ease-out forwards;
-        opacity: 0;
-      }
-      .attachment {
-        border-radius: 12px;
-        overflow: hidden;
-        max-width: 100%;
-      }
-      .attachment img {
-        max-width: 100%;
-        display: block;
-        border-radius: 12px;
-      }
-      .attachment video {
-        max-width: 100%;
-        display: block;
-        border-radius: 12px;
-      }
-      .attachment-audio {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px;
-        background: white;
-        border: 1px solid #e5e5ea;
-        border-radius: 12px;
-        min-width: 160px;
-      }
-      .attachment-wrapper.outgoing .attachment-audio {
-        background: white;
-        border: none;
-      }
-      .attachment-audio audio {
+      temba-chat {
         flex: 1;
-        max-height: 30px;
-      }
-      .attachment-location {
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .event-info {
-        text-align: center;
-        font-size: 11px;
-        color: #8e8e93;
-        margin: 4px 0;
-        padding: 0 10px;
-        line-height: 1.3;
-      }
-      .event-info.animated {
-        animation: messageAppear var(--animation-time) ease-out forwards;
-        opacity: 0;
-      }
-      .message-input {
-        background: linear-gradient(
-          to top,
-          rgba(0, 0, 0, 0.1) 0%,
-          rgba(0, 0, 0, 0.05) 70%,
-          transparent 100%
-        );
-        padding: 8px 12px;
-        border-top: none;
         display: flex;
-        align-items: center;
-        gap: 8px;
+        flex-direction: column;
+        min-height: 0;
+        --color-chat-in: #e5e5ea;
+        --color-chat-out: #007aff;
+        --chat-top-padding: calc(var(--cutout-height));
+        --chat-bottom-padding: calc(var(--bottom-input-height, 80px) - 10px);
+      }
+
+      .bottom-input-container {
         position: absolute;
         bottom: 0px;
         left: 0px;
         right: 0px;
         z-index: 10;
       }
+
+      .bottom-input-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(10px);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 20px);
+        mask-image: linear-gradient(to bottom, transparent, black 20px);
+        z-index: -1;
+      }
+
+      .quick-replies-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        z-index: 9;
+      }
+
+      .quick-reply-btn {
+        padding: 4px 8px;
+        border-radius: 18px;
+        border: 1px solid var(--color-primary, #007aff);
+        background: white;
+        color: var(--color-primary, #007aff);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .quick-reply-btn:hover:not(:disabled) {
+        background: var(--color-primary, #007aff);
+        color: white;
+      }
+
+      .quick-reply-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .message-input {
+        padding: 8px 12px;
+        border-top: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 10;
+      }
       .message-input input {
         flex: 1;
-        border: 1px solid #c6c6c8;
+        border: 1px solid #c6c6c857;
         border-radius: 20px;
         padding: 8px 15px;
         font-size: 15px;
         margin-bottom: 5px;
-        background: white;
-        border: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         outline: none;
       }
       .message-input input::placeholder {
@@ -667,7 +624,7 @@ export class Simulator extends RapidElement {
         height: 30px;
         border-radius: 50%;
         background: #fff;
-        border: none;
+        border: 1px solid #c6c6c857;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -675,6 +632,7 @@ export class Simulator extends RapidElement {
         flex-shrink: 0;
         margin-bottom: 5px;
         transition: all var(--animation-time) ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         color: #000;
       }
       .attachment-button:hover {
@@ -724,37 +682,6 @@ export class Simulator extends RapidElement {
       .attachment-menu-item temba-icon {
         color: #007aff;
       }
-      .quick-replies {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 4px;
-        margin-bottom: 8px;
-      }
-      .quick-reply-btn {
-        background: white;
-        color: #007aff;
-        border: 1px solid #007aff;
-        border-radius: 18px;
-        padding: 4px 8px;
-        font-size: 11px;
-        cursor: pointer;
-        transition: all var(--animation-time) ease;
-        white-space: nowrap;
-      }
-      .quick-reply-btn:hover {
-        background: #007aff;
-        color: white;
-        cursor: pointer;
-      }
-      .quick-reply-btn:active {
-        transform: scale(0.95);
-      }
-      .quick-reply-btn.animated {
-        animation: messageAppear var(--animation-time) ease-out forwards;
-        opacity: 0;
-      }
     `;
   }
 
@@ -771,9 +698,10 @@ export class Simulator extends RapidElement {
   size: 'small' | 'medium' | 'large';
 
   @property({ type: Array })
-  private events: Event[] = [];
+  private events: ContactEvent[] = [];
 
   private previousEventCount = 0;
+  private chat: Chat = null;
 
   @property({ type: Object })
   private session: Session | null = null;
@@ -868,10 +796,130 @@ export class Simulator extends RapidElement {
     return config.contextWidth + config.contextOffset - config.phoneWidth;
   }
 
+  public connectedCallback() {
+    super.connectedCallback();
+  }
+
+  protected firstUpdated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.firstUpdated(changes);
+    this.chat = this.shadowRoot.querySelector('temba-chat');
+
+    // if we have events that were collected before chat was ready, add them now
+    if (this.chat && this.events.length > 0) {
+      this.chat.addMessages(this.events, null, true);
+    }
+
+    this.setupCustomScrollbar();
+  }
+
+  private setupCustomScrollbar() {
+    const chat = this.shadowRoot?.querySelector('temba-chat') as Chat;
+    const scrollContainer = this.shadowRoot?.querySelector(
+      '.custom-scrollbar-container'
+    ) as HTMLElement;
+    const scrollContent = this.shadowRoot?.querySelector(
+      '.custom-scrollbar-content'
+    ) as HTMLElement;
+
+    if (!chat || !scrollContainer || !scrollContent) return;
+
+    chat.updateComplete.then(() => {
+      const chatScroll = chat.shadowRoot?.querySelector(
+        '.scroll'
+      ) as HTMLElement;
+      if (!chatScroll) return;
+
+      let ignoreScroll = false;
+
+      // Sync from chat to custom scrollbar
+      chatScroll.addEventListener('scroll', () => {
+        if (!ignoreScroll) {
+          ignoreScroll = true;
+          // Chat: 0 (bottom) ... -Max (top) (Negative scrolling)
+          // Custom: Max (bottom) ... 0 (top) (Positive scrolling)
+
+          const maxScroll =
+            scrollContainer.scrollHeight - scrollContainer.clientHeight;
+          // Math.abs to handle negative scrollTop
+          const distanceFromBottom = Math.abs(chatScroll.scrollTop);
+          const newCustomScrollTop = maxScroll - distanceFromBottom;
+
+          scrollContainer.scrollTop = newCustomScrollTop;
+
+          requestAnimationFrame(() => (ignoreScroll = false));
+        }
+      });
+
+      // Sync from custom scrollbar to chat
+      scrollContainer.addEventListener('scroll', () => {
+        if (!ignoreScroll) {
+          ignoreScroll = true;
+
+          const maxScroll =
+            scrollContainer.scrollHeight - scrollContainer.clientHeight;
+          const distanceFromBottom = maxScroll - scrollContainer.scrollTop;
+
+          // chat scrollTop should be -distanceFromBottom
+          chatScroll.scrollTop = -distanceFromBottom;
+
+          requestAnimationFrame(() => (ignoreScroll = false));
+        }
+      });
+
+      // Sync height
+      const syncHeight = () => {
+        const chatMaxScroll = chatScroll.scrollHeight - chatScroll.clientHeight;
+        const customClientHeight = scrollContainer.clientHeight;
+
+        // ensure minimum height
+        if (chatMaxScroll <= 0) {
+          scrollContent.style.height = '100%';
+          return;
+        }
+
+        const newHeight = chatMaxScroll + customClientHeight;
+        scrollContent.style.height = `${newHeight}px`;
+
+        // If we were effectively at the bottom, stay at the bottom
+        // This is a heuristic, assuming if we're close enough we're "at bottom"
+        // But the Chat component handles scrollToBottom on new messages, which fires scroll event,
+        // which updates us. So we might not need to force it here unless resize happens without message.
+        if (Math.abs(chatScroll.scrollTop) < 5) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      };
+
+      // Observe changes
+      const observer = new MutationObserver(syncHeight);
+      observer.observe(chatScroll, {
+        childList: true,
+        subtree: true,
+        attributes: true
+      });
+
+      const resizeObserver = new ResizeObserver(syncHeight);
+      resizeObserver.observe(chatScroll);
+
+      // Initial sync
+      syncHeight();
+    });
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
+
+    if (
+      changes.has('currentQuickReplies') ||
+      changes.has('keyboardVisible') ||
+      changes.has('attachmentMenuOpen')
+    ) {
+      this.updateBottomInputHeight();
+    }
+
     if (changes.has('flow') && this.flow) {
       this.endpoint = `/flow/simulate/${this.flow}/`;
     }
@@ -977,8 +1025,13 @@ export class Simulator extends RapidElement {
     this.isVisible = true;
     getStore().getState().setSimulatorActive(true);
 
+    // ensure chat component is available
+    if (!this.chat) {
+      this.chat = this.shadowRoot.querySelector('temba-chat');
+    }
+
     // start the simulation if we haven't already
-    if (this.events.length === 0) {
+    if (!this.session) {
       this.startFlow();
     }
   }
@@ -1004,20 +1057,37 @@ export class Simulator extends RapidElement {
       this.updateRunContext(response.json as RunContext);
     } catch (error) {
       console.error('Failed to start simulation:', error);
-      this.events = [
-        ...this.events,
-        {
-          type: 'error',
-          created_on: now,
-          text: 'Failed to start simulation'
-        } as any
-      ];
+      const errorEvent = {
+        uuid: generateUUIDv7(),
+        type: 'error',
+        created_on: new Date(now),
+        _rendered: {
+          html: html`<p>Failed to start simulation</p>`,
+          type: MessageType.Error
+        }
+      } as ContactEvent;
+      if (this.chat) {
+        this.chat.addMessages([errorEvent], null, true);
+      } else {
+        this.events = [...this.events, errorEvent];
+      }
     }
   }
 
-  private updateRunContext(runContext: RunContext, msgInEvt?: Event) {
+  private updateRunContext(runContext: RunContext, msgInEvt?: ContactEvent) {
+    const newEvents: ContactEvent[] = [];
+
+    // add the user's message if provided
     if (msgInEvt) {
-      this.events = [...this.events, msgInEvt];
+      // ensure it has a UUID
+      if (!msgInEvt.uuid) {
+        msgInEvt.uuid = generateUUIDv7();
+      }
+      // ensure created_on is a Date object
+      if (typeof msgInEvt.created_on === 'string') {
+        msgInEvt.created_on = new Date(msgInEvt.created_on);
+      }
+      newEvents.push(msgInEvt);
     }
 
     if (runContext.session) {
@@ -1034,20 +1104,70 @@ export class Simulator extends RapidElement {
       this.context = runContext.context;
     }
 
-    if (runContext.events && runContext.events.length > 0) {
-      this.events = [...this.events, ...runContext.events];
+    // extract quick replies from the most recent sprint
+    this.currentQuickReplies = [];
 
-      // extract quick replies from the most recent sprint
-      this.currentQuickReplies = [];
-      for (const event of runContext.events) {
-        if (event.type === 'msg_created' && event.msg?.quick_replies) {
-          this.currentQuickReplies = event.msg.quick_replies;
+    if (runContext.events && runContext.events.length > 0) {
+      for (const rawEvent of runContext.events) {
+        // skip msg_received events from the server since we already added the user's message
+        if (rawEvent.type === 'msg_received') {
+          continue;
         }
+
+        // skip msg_created events without a proper msg property
+        if (rawEvent.type === 'msg_created' && !(rawEvent as any).msg) {
+          continue;
+        }
+
+        // convert to ContactEvent
+        const event: ContactEvent = {
+          ...rawEvent,
+          uuid: rawEvent.uuid || generateUUIDv7(),
+          created_on:
+            typeof rawEvent.created_on === 'string'
+              ? new Date(rawEvent.created_on)
+              : rawEvent.created_on
+        } as ContactEvent;
+
+        // pre-render non-message events
+        this.prerenderEvent(event);
+
+        // extract quick replies from msg_created events
+        if (event.type === 'msg_created' && (event as any).msg?.quick_replies) {
+          this.currentQuickReplies = (event as any).msg.quick_replies;
+        }
+
+        const isMessage = event.type === 'msg_created';
+        const msg = (event as any).msg;
+
+        // Check if the event should be displayed.
+        // 1. If it's a message, it must have text or attachments
+        if (isMessage) {
+          const hasText = msg.text && msg.text.trim().length > 0;
+          const hasAttachments = msg.attachments && msg.attachments.length > 0;
+          if (!hasText && !hasAttachments) {
+            continue;
+          }
+        }
+        // 2. If it's not a message, it must have been rendered by prerenderEvent
+        else if (!event._rendered) {
+          continue;
+        }
+
+        newEvents.push(event);
       }
     }
 
+    // add all new events to chat component if it exists
+    if (this.chat) {
+      this.chat.addMessages(newEvents, null, true);
+    } else {
+      // fallback: store events and add them once chat is ready
+      this.events = [...this.events, ...newEvents];
+    }
+
     this.sprinting = false;
-    this.requestUpdate();
+    this.requestUpdate(); // trigger re-render for quick replies
     this.scrollToBottom();
     this.updateActivity();
   }
@@ -1126,6 +1246,19 @@ export class Simulator extends RapidElement {
   }
 
   private scrollToBottom() {
+    if (this.chat) {
+      // chat component handles scrolling, but we still need to focus input
+      this.chat.scrollToBottom();
+      setTimeout(() => {
+        const input = this.shadowRoot?.querySelector(
+          '.message-input input'
+        ) as HTMLInputElement;
+        if (input) {
+          input.focus();
+        }
+      }, 50);
+      return;
+    }
     // wait for render, then scroll to bottom
     setTimeout(() => {
       const screen = this.shadowRoot?.querySelector('.phone-screen');
@@ -1143,6 +1276,43 @@ export class Simulator extends RapidElement {
         input.focus();
       }
     }, 50);
+  }
+
+  private prerenderEvent(event: ContactEvent) {
+    // skip if already rendered or is a message event
+    if (
+      event._rendered ||
+      event.type === Events.MSG_CREATED ||
+      event.type === Events.MSG_RECEIVED
+    ) {
+      return;
+    }
+
+    // handle simulator-specific events (errors, warnings, failures)
+    if (event.type === 'error' || event.type === 'failure') {
+      event._rendered = {
+        html: renderEvent(event, true),
+        type: MessageType.Error
+      };
+      return;
+    }
+
+    if (event.type === 'warning') {
+      event._rendered = {
+        html: renderEvent(event, true),
+        type: MessageType.Note
+      };
+      return;
+    }
+
+    // try to render as a standard event
+    const rendered = renderEvent(event, true);
+    if (rendered) {
+      event._rendered = {
+        html: rendered,
+        type: MessageType.Inline
+      };
+    }
   }
 
   private handleClose() {
@@ -1165,6 +1335,11 @@ export class Simulator extends RapidElement {
     this.sprinting = false;
     this.previousEventCount = 0;
     this.currentQuickReplies = [];
+
+    // reset chat component
+    if (this.chat) {
+      this.chat.reset();
+    }
 
     // Clear simulator activity data
     getStore().getState().updateSimulatorActivity({
@@ -1385,20 +1560,36 @@ export class Simulator extends RapidElement {
     this.attachmentMenuOpen = false;
 
     const now = new Date().toISOString();
-    const msgInEvt: Event = {
-      uuid: crypto.randomUUID(),
+
+    // create the event for the API (with ISO string date)
+    const msgInEvtForAPI = {
+      uuid: generateUUIDv7(),
       type: 'msg_received',
       created_on: now,
       msg: {
-        uuid: crypto.randomUUID(),
+        uuid: generateUUIDv7(),
         text: text || '',
         urn: this.contact.urns[0],
-        attachments: attachment ? [attachment] : []
+        direction: 'in',
+        type: 'text',
+        attachments: attachment ? [attachment] : [],
+        quick_replies: [],
+        channel: { uuid: generateUUIDv7(), name: 'Simulator' }
       }
     };
 
-    // show user's message immediately
-    this.events = [...this.events, msgInEvt];
+    // create the ContactEvent for display (with Date object)
+    const msgInEvt = {
+      ...msgInEvtForAPI,
+      created_on: new Date(now)
+    } as ContactEvent;
+
+    // show user's message immediately via chat component
+    if (this.chat) {
+      this.chat.addMessages([msgInEvt], null, true);
+    } else {
+      this.events = [...this.events, msgInEvt];
+    }
     this.requestUpdate();
     this.scrollToBottom();
 
@@ -1407,7 +1598,7 @@ export class Simulator extends RapidElement {
       contact: this.contact,
       resume: {
         type: 'msg',
-        event: msgInEvt,
+        event: msgInEvtForAPI,
         resumed_on: now
       }
     };
@@ -1422,14 +1613,20 @@ export class Simulator extends RapidElement {
       this.updateRunContext(response.json as RunContext, null);
     } catch (error) {
       console.error('Failed to resume simulation:', error);
-      this.events = [
-        ...this.events,
-        {
-          type: 'error',
-          created_on: now,
-          text: 'Failed to send message'
-        } as any
-      ];
+      const errorEvent = {
+        uuid: generateUUIDv7(),
+        type: 'error',
+        created_on: new Date(now),
+        _rendered: {
+          html: html`<p>Failed to send message</p>`,
+          type: MessageType.Error
+        }
+      } as ContactEvent;
+      if (this.chat) {
+        this.chat.addMessages([errorEvent], null, true);
+      } else {
+        this.events = [...this.events, errorEvent];
+      }
       this.sprinting = false;
     }
   }
@@ -1449,9 +1646,9 @@ export class Simulator extends RapidElement {
     this.inputValue = input.value;
   }
 
-  private handleQuickReply(quickReply: string) {
-    if (!this.sprinting) {
-      this.resume(quickReply);
+  private handleQuickReplyClick(text: string) {
+    if (!this.sprinting && text) {
+      this.resume(text);
     }
   }
 
@@ -1506,364 +1703,16 @@ export class Simulator extends RapidElement {
     }
   }
 
-  private getEventDescription(event: Event): string | null {
-    switch (event.type) {
-      case 'contact_groups_changed': {
-        const groups = (event as any).groups_added || [];
-        const removedGroups = (event as any).groups_removed || [];
-        if (groups.length > 0) {
-          const groupNames = groups.map((g: any) => `"${g.name}"`).join(', ');
-          return `Added to ${groupNames}`;
-        }
-        if (removedGroups.length > 0) {
-          const groupNames = removedGroups
-            .map((g: any) => `"${g.name}"`)
-            .join(', ');
-          return `Removed from ${groupNames}`;
-        }
-        break;
+  private updateBottomInputHeight() {
+    requestAnimationFrame(() => {
+      const bottomContainer = this.shadowRoot?.querySelector(
+        '.bottom-input-container'
+      ) as HTMLElement;
+      if (bottomContainer) {
+        const height = bottomContainer.offsetHeight;
+        this.style.setProperty('--bottom-input-height', `${height}px`);
       }
-      case 'contact_field_changed': {
-        const field = (event as any).field;
-        const value = (event as any).value;
-        const valueText = value ? value.text || value : '';
-        if (field) {
-          if (valueText) {
-            return `Set contact "${field.name}" to "${valueText}"`;
-          } else {
-            return `Cleared contact "${field.name}"`;
-          }
-        }
-        break;
-      }
-      case 'contact_language_changed':
-        return `Set preferred language to "${(event as any).language}"`;
-      case 'contact_name_changed':
-        return `Set contact name to "${(event as any).name}"`;
-      case 'contact_status_changed':
-        return `Set status to "${(event as any).status}"`;
-      case 'contact_urns_changed':
-        return `Added a URN for the contact`;
-      case 'input_labels_added': {
-        const labels = (event as any).labels || [];
-        if (labels.length > 0) {
-          const labelNames = labels.map((l: any) => `"${l.name}"`).join(', ');
-          return `Message labeled with ${labelNames}`;
-        }
-        break;
-      }
-      case 'run_result_changed':
-        return `Set result "${(event as any).name}" to "${
-          (event as any).value
-        }"`;
-      case 'run_started':
-      case 'flow_entered': {
-        const flow = (event as any).flow;
-        if (flow) {
-          return `Entered flow "${flow.name}"`;
-        }
-        break;
-      }
-      case 'run_ended': {
-        const flow = (event as any).flow;
-        if (flow) {
-          return `Exited flow "${flow.name}"`;
-        }
-        break;
-      }
-      case 'email_created':
-      case 'email_sent': {
-        const recipients = (event as any).to || (event as any).addresses || [];
-        const subject = (event as any).subject;
-        const recipientList = recipients
-          .map((r: string) => `"${r}"`)
-          .join(', ');
-        return `Sent email to ${recipientList} with subject "${subject}"`;
-      }
-      case 'broadcast_created': {
-        const translations = (event as any).translations;
-        const baseLanguage = (event as any).base_language;
-        if (translations && translations[baseLanguage]) {
-          return `Sent broadcast: "${translations[baseLanguage].text}"`;
-        }
-        return `Sent broadcast`;
-      }
-      case 'session_triggered': {
-        const flow = (event as any).flow;
-        if (flow) {
-          return `Started somebody else in "${flow.name}"`;
-        }
-        break;
-      }
-      case 'ticket_opened': {
-        const ticket = (event as any).ticket;
-        if (ticket && ticket.topic) {
-          return `Ticket opened with topic "${ticket.topic.name}"`;
-        }
-        return `Ticket opened`;
-      }
-      case 'resthook_called':
-        return `Triggered flow event "${(event as any).resthook}"`;
-      case 'webhook_called':
-        return `Called ${(event as any).url}`;
-      case 'service_called': {
-        const service = (event as any).service;
-        if (service === 'classifier') {
-          return `Called classifier`;
-        }
-        return `Called ${service}`;
-      }
-      case 'airtime_transferred': {
-        const amount = (event as any).actual_amount;
-        const currency = (event as any).currency;
-        const recipient = (event as any).recipient;
-        if (amount && currency && recipient) {
-          return `Transferred ${amount} ${currency} to ${recipient}`;
-        }
-        break;
-      }
-      case 'info':
-        return (event as any).text;
-      case 'warning':
-        return `⚠️ ${(event as any).text}`;
-    }
-    return null;
-  }
-
-  private renderAlertMessage(
-    type: 'error' | 'warning' | 'failure',
-    text: string,
-    animatedClass: string,
-    animationDelay: string
-  ): TemplateResult {
-    const config = {
-      error: {
-        icon: '❗',
-        bgColor: '#fee2e2',
-        textColor: '#991b1b',
-        defaultText: 'An error occurred'
-      },
-      warning: {
-        icon: '⚠️',
-        bgColor: '#fef3c7',
-        textColor: 'rgba(125, 87, 18, 0.8)',
-        defaultText: 'A warning occurred'
-      },
-      failure: {
-        icon: '💥',
-        bgColor: '#fee2e2',
-        textColor: '#991b1b',
-        defaultText: 'A failure occurred'
-      }
-    }[type];
-
-    return html`
-      <div
-        class="event-info ${animatedClass}"
-        style="display:flex; align-items:center; background: ${config.bgColor}; color: ${config.textColor}; padding: 6px; margin: 4px 12px; border-radius: 8px; animation-delay: ${animationDelay}"
-      >
-        <div style="padding:4px;margin-right:6px;font-size:15px">
-          ${config.icon}
-        </div>
-        <div style="padding-right:2px;text-align:left">
-          ${text || config.defaultText}
-        </div>
-      </div>
-    `;
-  }
-
-  private renderAttachment(attachment: string): TemplateResult {
-    // parse attachment format: "type/subtype:url" or "geo:lat,long"
-    const parts = attachment.split(':');
-    const type = parts[0];
-    const content = parts.slice(1).join(':'); // rejoin in case url has colons
-
-    if (type === 'geo') {
-      // use temba-thumbnail for location to get map image
-      return html`
-        <div class="attachment-location">
-          <temba-thumbnail attachment="${attachment}"></temba-thumbnail>
-        </div>
-      `;
-    } else if (type.startsWith('image/')) {
-      // custom image rendering
-      return html`
-        <div class="attachment">
-          <img src="${content}" alt="Image attachment" />
-        </div>
-      `;
-    } else if (type.startsWith('video/')) {
-      // custom video rendering
-      return html`
-        <div class="attachment">
-          <video controls>
-            <source src="${content}" type="${type}" />
-          </video>
-        </div>
-      `;
-    } else if (type.startsWith('audio/')) {
-      // custom audio rendering
-      return html`
-        <div class="attachment">
-          <div class="attachment-audio">
-            <audio controls>
-              <source src="${content}" type="${type}" />
-            </audio>
-          </div>
-        </div>
-      `;
-    }
-
-    // fallback for unknown types
-    return html`
-      <div class="attachment">
-        <span>Attachment</span>
-      </div>
-    `;
-  }
-
-  private renderMessages(): TemplateResult {
-    if (this.events.length === 0) {
-      return html`
-        <div class="message incoming">👋 Welcome! Starting simulation...</div>
-      `;
-    }
-
-    const eventTemplates = this.events.map((event, index) => {
-      // only animate messages that are new (beyond previous count)
-      const isNew = index >= this.previousEventCount;
-      const animatedClass = isNew ? 'animated' : '';
-      // stagger animations for new messages
-      const animationDelay = isNew
-        ? `${(index - this.previousEventCount) * 0.2}s`
-        : '0s';
-
-      if (event.type === 'msg_received' && event.msg) {
-        const hasAttachments =
-          event.msg.attachments && event.msg.attachments.length > 0;
-        const hasText = event.msg.text && event.msg.text.trim().length > 0;
-
-        return html`
-          ${hasAttachments
-            ? html`
-                <div
-                  class="attachment-wrapper outgoing ${animatedClass}"
-                  style="animation-delay: ${animationDelay}"
-                >
-                  ${event.msg.attachments.map((att: string) =>
-                    this.renderAttachment(att)
-                  )}
-                </div>
-              `
-            : html``}
-          ${hasText
-            ? html`
-                <div
-                  class="message outgoing ${animatedClass}"
-                  style="animation-delay: ${animationDelay}"
-                >
-                  ${event.msg.text}
-                </div>
-              `
-            : html``}
-        `;
-      } else if (event.type === 'msg_created' && event.msg) {
-        const hasAttachments =
-          event.msg.attachments && event.msg.attachments.length > 0;
-        const hasText = event.msg.text && event.msg.text.trim().length > 0;
-
-        return html`
-          ${hasAttachments
-            ? html`
-                <div
-                  class="attachment-wrapper incoming ${animatedClass}"
-                  style="animation-delay: ${animationDelay}"
-                >
-                  ${event.msg.attachments.map((att: string) =>
-                    this.renderAttachment(att)
-                  )}
-                </div>
-              `
-            : html``}
-          ${hasText
-            ? html`
-                <div
-                  class="message incoming ${animatedClass}"
-                  style="animation-delay: ${animationDelay}"
-                >
-                  ${event.msg.text}
-                </div>
-              `
-            : html``}
-        `;
-      } else if (event.type === 'failure') {
-        return this.renderAlertMessage(
-          'failure',
-          (event as any).text,
-          animatedClass,
-          animationDelay
-        );
-      } else if (event.type === 'warning') {
-        return this.renderAlertMessage(
-          'warning',
-          (event as any).text,
-          animatedClass,
-          animationDelay
-        );
-      } else if (event.type === 'error') {
-        return this.renderAlertMessage(
-          'error',
-          (event as any).text,
-          animatedClass,
-          animationDelay
-        );
-      } else {
-        // check if this is an event we should display
-        const description = this.getEventDescription(event);
-        if (description) {
-          return html`
-            <div
-              class="event-info ${animatedClass}"
-              style="animation-delay: ${animationDelay}"
-            >
-              ${description}
-            </div>
-          `;
-        }
-      }
-      return html``;
     });
-
-    // render quick replies at the end if we have any from the most recent sprint
-    const hasQuickReplies = this.currentQuickReplies.length > 0;
-    const quickRepliesAnimationDelay =
-      this.events.length >= this.previousEventCount
-        ? `${(this.events.length - this.previousEventCount) * 0.2}s`
-        : '0s';
-
-    return html`
-      ${eventTemplates}
-      ${hasQuickReplies
-        ? html`
-            <div
-              class="quick-replies animated"
-              style="animation-delay: ${quickRepliesAnimationDelay}"
-            >
-              ${this.currentQuickReplies.map(
-                (qr: any) => html`
-                  <button
-                    class="quick-reply-btn animated"
-                    style="animation-delay: ${quickRepliesAnimationDelay}"
-                    @click=${() => this.handleQuickReply(qr.text)}
-                  >
-                    ${qr.text}
-                  </button>
-                `
-              )}
-            </div>
-          `
-        : html``}
-    `;
   }
 
   protected render(): TemplateResult {
@@ -1887,10 +1736,12 @@ export class Simulator extends RapidElement {
       --cutout-island-width: ${config.cutoutIslandWidth}px;
       --cutout-island-height: ${config.cutoutIslandHeight}px;
       --cutout-island-top: ${config.cutoutIslandTop}px;
+      --animation-time: ${this.animationTime}ms;
     `;
 
     return html`
       <temba-floating-window
+        style="--transition-duration: ${this.animationTime}ms"
         id="phone-window"
         width="${this.windowWidth}"
         leftBoundaryMargin="${this.leftBoundaryMargin}"
@@ -1955,56 +1806,80 @@ export class Simulator extends RapidElement {
                 <div class="dynamic-island"></div>
               </div>
             </div>
-            <div class="phone-screen">${this.renderMessages()}</div>
-            <div class="message-input">
-              <button
-                class="attachment-button"
-                @click=${this.handleToggleAttachmentMenu}
-                ?disabled=${this.sprinting}
-              >
-                <temba-icon name="plus" size="1.5"></temba-icon>
-              </button>
-              <input
-                type="text"
-                placeholder="Enter Message"
-                .value=${this.inputValue}
-                @input=${this.handleInput}
-                @keyup=${this.handleKeyUp}
-                ?disabled=${this.sprinting}
-              />
-              <div
-                class="attachment-menu ${this.attachmentMenuOpen ? 'open' : ''}"
-              >
-                <div
-                  class="attachment-menu-item"
-                  @click=${() => this.handleSendAttachment('image')}
+            <temba-chat class="phone-screen" .showTimestamps=${false}>
+            </temba-chat>
+            <div class="custom-scrollbar-container">
+              <div class="custom-scrollbar-content"></div>
+            </div>
+
+            <div class="bottom-input-container">
+              ${this.currentQuickReplies.length > 0
+                ? html`<div class="quick-replies-container">
+                    ${this.currentQuickReplies.map(
+                      (qr) => html`
+                        <button
+                          class="quick-reply-btn"
+                          @click=${() => this.handleQuickReplyClick(qr.text)}
+                          ?disabled=${this.sprinting}
+                        >
+                          ${qr.text}
+                        </button>
+                      `
+                    )}
+                  </div>`
+                : null}
+              <div class="message-input">
+                <button
+                  class="attachment-button"
+                  @click=${this.handleToggleAttachmentMenu}
+                  ?disabled=${this.sprinting}
                 >
-                  <temba-icon name="attachment_image" size="1.2"></temba-icon>
-                  <span>Image</span>
-                </div>
+                  <temba-icon name="plus" size="1.5"></temba-icon>
+                </button>
+                <input
+                  type="text"
+                  placeholder="Enter Message"
+                  .value=${this.inputValue}
+                  @input=${this.handleInput}
+                  @keyup=${this.handleKeyUp}
+                  ?disabled=${this.sprinting}
+                />
                 <div
-                  class="attachment-menu-item"
-                  @click=${() => this.handleSendAttachment('video')}
+                  class="attachment-menu ${this.attachmentMenuOpen
+                    ? 'open'
+                    : ''}"
                 >
-                  <temba-icon name="attachment_video" size="1.2"></temba-icon>
-                  <span>Video</span>
-                </div>
-                <div
-                  class="attachment-menu-item"
-                  @click=${() => this.handleSendAttachment('audio')}
-                >
-                  <temba-icon name="attachment_audio" size="1.2"></temba-icon>
-                  <span>Audio</span>
-                </div>
-                <div
-                  class="attachment-menu-item"
-                  @click=${() => this.handleSendAttachment('location')}
-                >
-                  <temba-icon
-                    name="attachment_location"
-                    size="1.2"
-                  ></temba-icon>
-                  <span>Location</span>
+                  <div
+                    class="attachment-menu-item"
+                    @click=${() => this.handleSendAttachment('image')}
+                  >
+                    <temba-icon name="attachment_image" size="1.2"></temba-icon>
+                    <span>Image</span>
+                  </div>
+                  <div
+                    class="attachment-menu-item"
+                    @click=${() => this.handleSendAttachment('video')}
+                  >
+                    <temba-icon name="attachment_video" size="1.2"></temba-icon>
+                    <span>Video</span>
+                  </div>
+                  <div
+                    class="attachment-menu-item"
+                    @click=${() => this.handleSendAttachment('audio')}
+                  >
+                    <temba-icon name="attachment_audio" size="1.2"></temba-icon>
+                    <span>Audio</span>
+                  </div>
+                  <div
+                    class="attachment-menu-item"
+                    @click=${() => this.handleSendAttachment('location')}
+                  >
+                    <temba-icon
+                      name="attachment_location"
+                      size="1.2"
+                    ></temba-icon>
+                    <span>Location</span>
+                  </div>
                 </div>
               </div>
             </div>

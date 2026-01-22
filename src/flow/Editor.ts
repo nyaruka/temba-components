@@ -309,6 +309,7 @@ export class Editor extends RapidElement {
         background-position: 10px 10px;
         width: 100%;
         display: flex;
+        padding-top: 20px;
       }
 
       #canvas {
@@ -409,13 +410,13 @@ export class Editor extends RapidElement {
         background: #3498db;
         border: 1px solid #2980b9;
         border-radius: 12px;
-        padding: 3px 5px;
+        padding: 3px 6px;
         color: #fff;
         font-weight: 500;
         top: -10px;
         left: -10px;
         font-size: 13px;
-        min-width: 22px;
+
         text-align: center;
         z-index: 600;
         line-height: 1;

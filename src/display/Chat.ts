@@ -219,7 +219,13 @@ export class Chat extends RapidElement {
         display: flex;
         flex-direction: row;
         align-items: flex-start;
-        margin-bottom: 0.25em;
+        margin-bottom: 8px;
+      }
+
+      .row.is-event {
+        margin-bottom: 2px;
+        margin-left: 0px !important;
+        margin-right: 4px !important;
       }
 
       .input-panel {
@@ -263,10 +269,9 @@ export class Chat extends RapidElement {
       }
 
       .bubble {
-        padding: 0.75em;
-        padding-bottom: 0.25em;
-        background: var(--color-chat-in, #f1f1f1);
-        border-radius: var(--curvature);
+        padding: 10px 14px;
+        background: var(--color-chat-in, #e5e5ea);
+        border-radius: 18px;
         border: var(--chat-border-in, none);
       }
 
@@ -278,7 +283,7 @@ export class Chat extends RapidElement {
       }
 
       .outgoing .latest .bubble {
-        border-bottom-left-radius: 0;
+        border-bottom-left-radius: 4px;
       }
 
       .incoming .bubble-wrap {
@@ -286,13 +291,13 @@ export class Chat extends RapidElement {
       }
 
       .incoming .bubble {
-        background: var(--color-chat-out, #3c92dd);
+        background: var(--color-chat-out, #007aff);
         border: var(--chat-border-out, none);
         color: white;
       }
 
       .incoming .latest .bubble {
-        border-bottom-right-radius: 0;
+        border-bottom-right-radius: 4px;
       }
 
       .incoming .bubble .name {
@@ -308,16 +313,26 @@ export class Chat extends RapidElement {
         color: rgba(0, 0, 0, 0.5);
       }
 
+      .warning .bubble {
+        background: #fef3c7;
+        color: rgba(125, 87, 18, 0.8);
+        border: none;
+      }
+
+      .warning .bubble .name {
+        color: rgba(125, 87, 18, 0.6);
+      }
+
       .failed .bubble,
       .error .bubble {
-        border: 1px solid var(--color-error);
-        background: #ffe6e6;
-        color: #ad4747ff;
+        border: none;
+        background: #fee3e3;
+        color: #c01829;
       }
 
       .error .bubble .name,
       .failed .bubble .name {
-        color: #ad47479a;
+        color: rgba(192, 24, 41, 0.6);
       }
 
       .deleted .bubble {
@@ -332,15 +347,48 @@ export class Chat extends RapidElement {
 
       .message-text {
         white-space: pre-wrap;
-        margin-bottom: 0.5em;
-        line-height: 1.2em;
+        margin-bottom: 0;
+        line-height: 1.2;
         word-break: break-word;
+        font-size: 13px;
       }
 
       .message-deleted {
         font-style: italic;
-        margin-bottom: 0.5em;
-        line-height: 1.2em;
+        margin-bottom: 0;
+        line-height: 1.2;
+        font-size: 13px;
+      }
+
+      .quick-replies {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 0;
+        margin: 0 auto;
+        max-width: 90%;
+      }
+
+      .quick-reply-btn {
+        padding: 4px 8px;
+        border-radius: 18px;
+        border: 1px solid var(--color-chat-out, #007aff);
+        background: white;
+        color: var(--color-chat-out, #007aff);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .quick-reply-btn:hover:not(:disabled) {
+        background: var(--color-chat-out, #007aff);
+        color: white;
+      }
+
+      .quick-reply-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       .chat {
@@ -381,10 +429,19 @@ export class Chat extends RapidElement {
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         overflow-scrolling: touch;
-        padding: 1em 1em 1em 1em;
-        padding-bottom: 2.5em;
+        padding: var(--chat-top-padding, 1em) 1em
+          var(--chat-bottom-padding, 2.5em) 1em;
         display: flex;
         flex-direction: column-reverse;
+      }
+
+      :host(.phone-screen) .scroll {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      :host(.phone-screen) .scroll::-webkit-scrollbar {
+        display: none;
       }
 
       .messages:before {
@@ -520,6 +577,9 @@ export class Chat extends RapidElement {
         display: flex;
         flex-direction: column;
         align-items: center;
+        text-align: center;
+        font-size: 11px;
+        color: #8e8e93;
       }
 
       .event p {
@@ -650,6 +710,9 @@ export class Chat extends RapidElement {
   @property({ type: Boolean })
   agent = false;
 
+  @property({ type: Boolean })
+  avatars = false;
+
   @property({ type: Boolean, attribute: false })
   endOfHistory = false;
 
@@ -664,6 +727,9 @@ export class Chat extends RapidElement {
 
   @property({ type: Boolean })
   hasFooter = false;
+
+  @property({ type: Boolean })
+  showTimestamps = true;
 
   private msgMap = new Map<string, ContactEvent>();
   private metadataCache = new Map<string, ContactEvent>();
@@ -890,7 +956,7 @@ export class Chat extends RapidElement {
     }
   }
 
-  private scrollToBottom() {
+  public scrollToBottom() {
     const scroll = this.shadowRoot.querySelector('.scroll');
     if (scroll) {
       scroll.scrollTop = 0;
@@ -934,10 +1000,11 @@ export class Chat extends RapidElement {
     const name = currentMsg._user?.name;
 
     const showAvatar =
-      ((currentMsg.type === 'msg_received' ||
+      this.avatars &&
+      (((currentMsg.type === 'msg_received' ||
         currentMsg.type === 'msg_created') &&
         this.agent) ||
-      !incoming;
+        !incoming);
 
     const isSystem = !currentMsg._user?.uuid;
 
@@ -1000,8 +1067,10 @@ export class Chat extends RapidElement {
                   (statusClass === 'failed' || statusClass === 'errored'));
               const unsendableClass = hasError ? 'error' : '';
               const deletedClass = msgEvent._deleted ? 'deleted' : '';
+              const latestClass = index === msgIds.length - 1 ? 'latest' : '';
+              const eventClass = msg._rendered ? 'is-event' : '';
               return html`<div
-                class="row message ${statusClass} ${unsendableClass} ${deletedClass}"
+                class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${latestClass} ${eventClass}"
               >
                 ${this.renderMessage(msg, index == 0 ? name : null)}
               </div>`;
@@ -1035,6 +1104,12 @@ export class Chat extends RapidElement {
     }
 
     const message = event as MsgEvent;
+
+    // safety check: if msg doesn't exist, return nothing
+    if (!message.msg) {
+      return html``;
+    }
+
     const unsendableReason = message.msg?.unsendable_reason;
     const statusReason = message._status?.reason;
     const errorMessage = unsendableReason
@@ -1069,28 +1144,32 @@ export class Chat extends RapidElement {
 
     return html`
       <div class="bubble-wrap">
-        <div class="popup" style="white-space: nowrap;">
-          ${errorMessage
-            ? html`<div style="color: var(--color-error); margin-right: 1em;">
-                ${errorMessage}
-              </div>`
-            : null}
-          <temba-date
-            value="${message.created_on.toISOString()}"
-            display="relative"
-          ></temba-date>
-          ${logsURL
-            ? html`<a
-                style="margin-left: 1em; color: var(--color-primary-dark);"
-                href="${logsURL}"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><temba-icon name="log"></temba-icon
-              ></a>`
-            : null}
+        ${this.showTimestamps
+          ? html`<div class="popup" style="white-space: nowrap;">
+              ${errorMessage
+                ? html`<div
+                    style="color: var(--color-error); margin-right: 1em;"
+                  >
+                    ${errorMessage}
+                  </div>`
+                : null}
+              <temba-date
+                value="${message.created_on.toISOString()}"
+                display="relative"
+              ></temba-date>
+              ${logsURL
+                ? html`<a
+                    style="margin-left: 1em; color: var(--color-primary-dark);"
+                    href="${logsURL}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    ><temba-icon name="log"></temba-icon
+                  ></a>`
+                : null}
 
-          <div class="arrow">▼</div>
-        </div>
+              <div class="arrow">▼</div>
+            </div>`
+          : null}
         ${isDeleted
           ? html`<div class="bubble">
               ${name ? html`<div class="name">${name}</div>` : null}
