@@ -48,7 +48,7 @@ const openSimulator = async (simulator: Simulator) => {
   tab.dispatchEvent(new CustomEvent('temba-button-clicked', { bubbles: true }));
 
   await simulator.updateComplete;
-  // brief delay for async API mock processing
+  // brief delay for async API response processing
   await delay(50);
 };
 
@@ -148,12 +148,14 @@ const getSimulatorClip = (
 
   const frameBounds = phoneFrame.getBoundingClientRect();
 
-  // add padding around the phone frame
+  // clip to just the phone frame area
   const padding = 10;
+
   return {
     x: frameBounds.x - padding,
     y: frameBounds.y - padding,
-    width: frameBounds.width + padding * 2,
+    // only add padding to the left to avoid capturing option pane on right
+    width: frameBounds.width + padding,
     height: frameBounds.height + padding * 2
   };
 };
@@ -355,8 +357,6 @@ describe('temba-simulator', () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
-    // ensure consistent size for screenshot
-    simulator.size = 'medium';
     await simulator.updateComplete;
     await openSimulator(simulator);
 
@@ -383,7 +383,6 @@ describe('temba-simulator', () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
-    simulator.size = 'medium';
     await simulator.updateComplete;
     await openSimulator(simulator);
 
@@ -441,7 +440,6 @@ describe('temba-simulator', () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
-    simulator.size = 'medium';
     await simulator.updateComplete;
     await openSimulator(simulator);
 
@@ -482,7 +480,6 @@ describe('temba-simulator', () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
-    simulator.size = 'medium';
     await simulator.updateComplete;
     await openSimulator(simulator);
 
@@ -511,7 +508,6 @@ describe('temba-simulator', () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
-    simulator.size = 'medium';
     await simulator.updateComplete;
     // reset attachment indices for deterministic testing
     simulator.resetAttachmentIndices();
@@ -711,7 +707,6 @@ describe('temba-simulator', () => {
     mockSimulatorStart();
 
     const simulator: Simulator = await createSimulator();
-    simulator.size = 'medium';
     await simulator.updateComplete;
     await openSimulator(simulator);
 
@@ -835,7 +830,6 @@ describe('temba-simulator', () => {
     mockPOST(/\/flow\/simulate\/.*\//, responseWithEvents);
 
     const simulator: Simulator = await createSimulator();
-    simulator.size = 'medium';
     await simulator.updateComplete;
     await openSimulator(simulator);
 

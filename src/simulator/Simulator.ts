@@ -1736,10 +1736,12 @@ export class Simulator extends RapidElement {
       --cutout-island-width: ${config.cutoutIslandWidth}px;
       --cutout-island-height: ${config.cutoutIslandHeight}px;
       --cutout-island-top: ${config.cutoutIslandTop}px;
+      --animation-time: ${this.animationTime}ms;
     `;
 
     return html`
       <temba-floating-window
+        style="--transition-duration: ${this.animationTime}ms"
         id="phone-window"
         width="${this.windowWidth}"
         leftBoundaryMargin="${this.leftBoundaryMargin}"
