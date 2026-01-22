@@ -3187,9 +3187,11 @@ export class Editor extends RapidElement {
           <div id="canvas">
             ${this.definition
               ? repeat(
-                  this.definition.nodes,
+                  [...this.definition.nodes].sort((a, b) =>
+                    a.uuid.localeCompare(b.uuid)
+                  ),
                   (node) => node.uuid,
-                  (node, index) => {
+                  (node) => {
                     const position = this.definition._ui?.nodes[node.uuid]
                       ?.position || {
                       left: 0,
@@ -3203,7 +3205,9 @@ export class Editor extends RapidElement {
                     const selected = this.selectedItems.has(node.uuid);
 
                     // first node is the flow start (nodes are sorted by position)
-                    const isFlowStart = index === 0;
+                    const isFlowStart =
+                      this.definition.nodes.length > 0 &&
+                      this.definition.nodes[0].uuid === node.uuid;
 
                     return html`<temba-flow-node
                       class="draggable ${dragging ? 'dragging' : ''} ${selected

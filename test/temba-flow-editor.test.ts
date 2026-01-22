@@ -653,11 +653,14 @@ describe('Editor', () => {
 
       await editor.updateComplete;
 
-      // node-2 should be first (top: 100 < top: 200)
-      const flowNodes = editor.querySelectorAll('temba-flow-node');
-      expect(flowNodes[0].getAttribute('uuid')).to.equal('node-2');
-      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
-      expect(flowNodes[1].classList.contains('flow-start')).to.be.false;
+      // node-2 is at top (top: 100 < top: 200) so it should be flow-start
+      const node1 = editor.querySelector('temba-flow-node[uuid="node-1"]');
+      const node2 = editor.querySelector('temba-flow-node[uuid="node-2"]');
+
+      expect(node2).to.exist;
+      expect(node1).to.exist;
+      expect(node2.classList.contains('flow-start')).to.be.true;
+      expect(node1.classList.contains('flow-start')).to.be.false;
 
       // move node-1 to the top
       zustand.getState().updateCanvasPositions({
@@ -720,7 +723,7 @@ describe('Editor', () => {
 
       await editor.updateComplete;
 
-      let flowNodes = editor.querySelectorAll('temba-flow-node');
+      const flowNodes = editor.querySelectorAll('temba-flow-node');
       expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
 
       // add a new node at the top
@@ -741,10 +744,13 @@ describe('Editor', () => {
       await editor.updateComplete;
 
       // new node should now be the flow-start
-      flowNodes = editor.querySelectorAll('temba-flow-node');
-      expect(flowNodes[0].getAttribute('uuid')).to.equal('node-2');
-      expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
-      expect(flowNodes[1].classList.contains('flow-start')).to.be.false;
+      const node1 = editor.querySelector('temba-flow-node[uuid="node-1"]');
+      const node2 = editor.querySelector('temba-flow-node[uuid="node-2"]');
+
+      expect(node2).to.exist;
+      expect(node1).to.exist;
+      expect(node2.classList.contains('flow-start')).to.be.true;
+      expect(node1.classList.contains('flow-start')).to.be.false;
     });
 
     it('should handle flow-start when first node is removed', async () => {
