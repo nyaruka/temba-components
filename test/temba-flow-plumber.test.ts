@@ -4,51 +4,36 @@ import { stub, useFakeTimers, SinonFakeTimers } from 'sinon';
 
 describe('Plumber', () => {
   let plumber: Plumber;
-  let mockJsPlumb: any;
   let mockCanvas: HTMLElement;
   let clock: SinonFakeTimers;
+  let mockElement: HTMLElement;
 
   beforeEach(() => {
     // Use fake timers to control setTimeout
     clock = useFakeTimers();
 
-    // Create mock canvas and make getElementById return a mock element
+    // Create mock canvas
     mockCanvas = document.createElement('div');
-    const mockElement = document.createElement('div');
-    stub(document, 'getElementById').returns(mockElement);
-
+    document.body.appendChild(mockCanvas);
+    
+    // Create mock elements with IDs
+    mockElement = document.createElement('div');
+    mockElement.id = 'test-element';
+    mockCanvas.appendChild(mockElement);
+    
     // Create a mock editor with fireCustomEvent
     const mockEditor = { fireCustomEvent: stub() };
 
     // Create a new plumber instance
     plumber = new Plumber(mockCanvas, mockEditor);
-
-    // Replace the internal jsPlumb instance with mocks
-    mockJsPlumb = {
-      getConnections: stub().returns([]),
-      addClass: stub(),
-      removeClass: stub(),
-      batch: stub().callsFake((fn) => fn()),
-      addEndpoint: stub().returns({}),
-      connect: stub(),
-      selectEndpoints: stub().returns({
-        deleteAll: stub()
-      }),
-      deleteConnection: stub(),
-      removeAllEndpoints: stub(),
-      repaintEverything: stub(),
-      revalidate: stub(),
-      bind: stub()
-    };
-
-    (plumber as any).jsPlumb = mockJsPlumb;
-    // Reset the connectionWait to avoid timing issues
-    (plumber as any).connectionWait = null;
   });
 
   afterEach(() => {
-    // Restore the original document.getElementById
-    (document.getElementById as any).restore?.();
+    // Clean up
+    if (plumber) {
+      plumber.destroy();
+    }
+    document.body.removeChild(mockCanvas);
     clock.restore();
   });
 
@@ -56,84 +41,137 @@ describe('Plumber', () => {
     it('creates a new plumber instance', () => {
       expect(plumber).to.be.instanceOf(Plumber);
     });
+
+    it('creates SVG container in canvas', () => {
+      const svg = mockCanvas.querySelector('svg');
+      expect(svg).to.exist;
+      expect(svg?.classList.contains('connections-svg')).to.be.true;
+    });
   });
 
   describe('makeTarget', () => {
-    it('creates a target endpoint for the specified element', () => {
-      plumber.makeTarget('test-target');
-      expect(mockJsPlumb.addEndpoint).to.have.been.called;
+    it('marks element as target', () => {
+      plumber.makeTarget('test-element');
+      expect(mockElement.dataset.isTarget).to.equal('true');
     });
   });
 
   describe('makeSource', () => {
-    it('creates a source endpoint for the specified element', () => {
-      plumber.makeSource('test-source');
-      expect(mockJsPlumb.addEndpoint).to.have.been.called;
+    it('marks element as source and adds class', () => {
+      plumber.makeSource('test-element');
+      expect(mockElement.dataset.isSource).to.equal('true');
+      expect(mockElement.classList.contains('plumb-source')).to.be.true;
     });
   });
 
   describe('connectIds', () => {
-    it('adds connection to pending connections and processes them', () => {
-      plumber.connectIds('test-node', 'test-from', 'test-to');
+    it('creates connection between source and target', () => {
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      exitElement.className = 'exit';
+      exitElement.style.cssText = 'position: absolute; left: 100px; top: 100px; width: 50px; height: 30px;';
+      mockCanvas.appendChild(exitElement);
 
-      // Verify pendingConnections has the new connection
-      expect((plumber as any).pendingConnections.length).to.equal(1);
+      const nodeElement = document.createElement('div');
+      nodeElement.id = 'node-1';
+      nodeElement.className = 'node';
+      nodeElement.style.cssText = 'position: absolute; left: 300px; top: 200px; width: 200px; height: 100px;';
+      mockCanvas.appendChild(nodeElement);
 
-      // Advance timer to trigger the timeout
-      clock.tick(51); // Just past the 50ms timeout
+      plumber.makeSource('exit-1');
+      plumber.makeTarget('node-1');
+      plumber.connectIds('test-scope', 'exit-1', 'node-1');
 
-      // Now the batch should have been called
-      expect(mockJsPlumb.batch).to.have.been.called;
+      // Advance timer to process pending connections
+      clock.tick(51);
+
+      // Check SVG connection was created
+      const svg = mockCanvas.querySelector('svg');
+      const connection = svg?.querySelector('.connection');
+      expect(connection).to.exist;
+      expect(connection?.getAttribute('data-source')).to.equal('exit-1');
+      expect(connection?.getAttribute('data-target')).to.equal('node-1');
     });
   });
 
-  describe('processPendingConnections', () => {
-    it('processes pending connections with timeout', () => {
-      // Add a connection to pending connections
-      plumber.connectIds('test-node', 'test-from', 'test-to');
+  describe('removeExitConnection', () => {
+    it('removes connection for exit', () => {
+      // Setup connection first
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      exitElement.className = 'exit';
+      mockCanvas.appendChild(exitElement);
 
-      // Fast-forward clock past the timeout
-      clock.tick(51); // Just past the 50ms timeout
+      const nodeElement = document.createElement('div');
+      nodeElement.id = 'node-1';
+      nodeElement.className = 'node';
+      mockCanvas.appendChild(nodeElement);
 
-      expect(mockJsPlumb.batch).to.have.been.called;
+      plumber.makeSource('exit-1');
+      plumber.makeTarget('node-1');
+      plumber.connectIds('test', 'exit-1', 'node-1');
+      clock.tick(51);
+
+      // Verify connection exists
+      let connection = mockCanvas.querySelector('.connection');
+      expect(connection).to.exist;
+
+      // Remove connection
+      const removed = plumber.removeExitConnection('exit-1');
+      expect(removed).to.be.true;
+
+      // Verify connection is gone
+      connection = mockCanvas.querySelector('.connection');
+      expect(connection).to.not.exist;
     });
 
-    it('creates endpoints and connections for pending connections', () => {
-      plumber.connectIds('test-node', 'test-from', 'test-to');
+    it('returns false when no connection exists', () => {
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      mockCanvas.appendChild(exitElement);
 
-      // Fast-forward clock past the timeout
-      clock.tick(51); // Just past the 50ms timeout
+      const removed = plumber.removeExitConnection('exit-1');
+      expect(removed).to.be.false;
+    });
+  });
 
-      expect(mockJsPlumb.addEndpoint).to.have.been.called;
-      expect(mockJsPlumb.connect).to.have.been.called;
+  describe('setConnectionRemovingState', () => {
+    it('adds removing class to connection', () => {
+      // Setup connection
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      exitElement.className = 'exit';
+      mockCanvas.appendChild(exitElement);
+
+      const nodeElement = document.createElement('div');
+      nodeElement.id = 'node-1';
+      nodeElement.className = 'node';
+      mockCanvas.appendChild(nodeElement);
+
+      plumber.makeSource('exit-1');
+      plumber.makeTarget('node-1');
+      plumber.connectIds('test', 'exit-1', 'node-1');
+      clock.tick(51);
+
+      const connection = mockCanvas.querySelector('.connection');
+      expect(connection?.classList.contains('removing')).to.be.false;
+
+      // Set removing state
+      plumber.setConnectionRemovingState('exit-1', true);
+      expect(connection?.classList.contains('removing')).to.be.true;
+
+      // Clear removing state
+      plumber.setConnectionRemovingState('exit-1', false);
+      expect(connection?.classList.contains('removing')).to.be.false;
     });
 
-    it('clears existing timeout when called multiple times', () => {
-      // Set up spies for window.setTimeout and window.clearTimeout
-      const clearTimeoutSpy = stub(window, 'clearTimeout');
-      const setTimeoutSpy = stub(window, 'setTimeout').returns(123 as any);
+    it('returns false when no connection exists', () => {
+      const exitElement = document.createElement('div');
+      exitElement.id = 'exit-1';
+      mockCanvas.appendChild(exitElement);
 
-      // Call twice
-      plumber.processPendingConnections();
-      plumber.processPendingConnections();
-
-      // Should have called clearTimeout once and setTimeout twice
-      expect(clearTimeoutSpy).to.have.been.calledOnce;
-      expect(setTimeoutSpy).to.have.been.calledTwice;
-
-      // Clean up
-      clearTimeoutSpy.restore();
-      setTimeoutSpy.restore();
-    });
-
-    it('handles empty pending connections', () => {
-      // Call without adding any connections
-      plumber.processPendingConnections();
-
-      // Fast-forward clock past the timeout
-      clock.tick(51); // Just past the 50ms timeout
-
-      expect(mockJsPlumb.batch).to.have.been.called;
+      const result = plumber.setConnectionRemovingState('exit-1', true);
+      expect(result).to.be.false;
     });
   });
 
