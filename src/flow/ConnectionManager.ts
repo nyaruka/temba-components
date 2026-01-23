@@ -1,6 +1,6 @@
 /**
  * ConnectionManager - Custom connection library to replace jsPlumb
- * 
+ *
  * This class manages SVG-based connections between flow nodes, replacing
  * the jsPlumb dependency with a lighter, purpose-built solution.
  */
@@ -42,12 +42,17 @@ export class ConnectionManager {
   private connections: Map<string, Connection> = new Map();
   private sourceElements: Set<string> = new Set();
   private targetElements: Set<string> = new Set();
-  private eventListeners: Map<string, Array<(info: ConnectionInfo) => void>> = new Map();
+  private eventListeners: Map<string, Array<(info: ConnectionInfo) => void>> =
+    new Map();
   public connectionDragging = false;
-  
-  private pendingConnections: Array<{ scope: string; fromId: string; toId: string }> = [];
+
+  private pendingConnections: Array<{
+    scope: string;
+    fromId: string;
+    toId: string;
+  }> = [];
   private connectionWait: number | null = null;
-  
+
   private activityData: { segments: { [key: string]: number } } | null = null;
   private hoveredActivityKey: string | null = null;
   private recentContactsPopup: HTMLElement | null = null;
@@ -72,7 +77,10 @@ export class ConnectionManager {
   }
 
   private createSVGContainer(): void {
-    this.svgContainer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.svgContainer = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg'
+    );
     this.svgContainer.style.position = 'absolute';
     this.svgContainer.style.top = '0';
     this.svgContainer.style.left = '0';
@@ -90,7 +98,7 @@ export class ConnectionManager {
 
     this.sourceElements.add(elementId);
     element.dataset.isSource = 'true';
-    
+
     // add class for styling
     element.classList.add('plumb-source');
   }
@@ -129,30 +137,32 @@ export class ConnectionManager {
 
   private createConnection(scope: string, fromId: string, toId: string): void {
     const connectionId = `${fromId}-${toId}`;
-    
+
     // Remove any existing connection from this source
     this.removeConnectionsFromSource(fromId);
 
     const fromElement = document.getElementById(fromId);
     const toElement = document.getElementById(toId);
-    
+
     if (!fromElement || !toElement) return;
 
     // Create SVG elements
     const svgGroup = this.createConnectionSVG(fromId, toId, scope);
-    
+
     const connection: Connection = {
       id: connectionId,
       sourceId: fromId,
       targetId: toId,
       scope,
       svgGroup,
-      pathElement: svgGroup.querySelector('path.plumb-connector') as SVGPathElement,
+      pathElement: svgGroup.querySelector(
+        'path.plumb-connector'
+      ) as SVGPathElement,
       arrowElement: svgGroup.querySelector('path.plumb-arrow') as SVGPathElement
     };
 
     this.connections.set(connectionId, connection);
-    
+
     // Update source to show connected state
     fromElement.classList.add('connected');
 
@@ -160,7 +170,11 @@ export class ConnectionManager {
     this.updateConnectionPath(connection);
   }
 
-  private createConnectionSVG(fromId: string, toId: string, scope: string): SVGGElement {
+  private createConnectionSVG(
+    fromId: string,
+    toId: string,
+    scope: string
+  ): SVGGElement {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', 'connection jtk-connector plumb-connector');
     group.setAttribute('data-source', fromId);
@@ -173,17 +187,20 @@ export class ConnectionManager {
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke-width', '3');
 
-    // Create arrow element  
-    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    // Create arrow element
+    const arrow = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
     arrow.setAttribute('class', 'plumb-arrow');
     arrow.setAttribute('fill', 'currentColor');
 
     group.appendChild(path);
     group.appendChild(arrow);
-    
+
     // Make connectors hoverable for visual feedback
     group.style.pointerEvents = 'stroke';
-    
+
     this.svgContainer.appendChild(group);
 
     return group;
@@ -205,21 +222,32 @@ export class ConnectionManager {
     const startY = sourceRect.bottom - containerRect.top;
 
     // Calculate best target point using continuous anchor logic
-    const endPoint = this.calculateBestTargetPoint(targetRect, containerRect, startX, startY);
+    const endPoint = this.calculateBestTargetPoint(
+      targetRect,
+      containerRect,
+      startX,
+      startY
+    );
 
     // Calculate flowchart path
     const pathData = this.calculateFlowchartPath(
       { x: startX, y: startY },
       endPoint,
       20, // start stub
-      10, // end stub  
-      5   // corner radius
+      10, // end stub
+      5 // corner radius
     );
 
     connection.pathElement.setAttribute('d', pathData);
 
     // Calculate arrow position and rotation
-    const arrowTransform = this.calculateArrowTransform(endPoint, startX, startY, endPoint.x, endPoint.y);
+    const arrowTransform = this.calculateArrowTransform(
+      endPoint,
+      startX,
+      startY,
+      endPoint.x,
+      endPoint.y
+    );
     connection.arrowElement.setAttribute('d', 'M 0,0 L -6.5,-6.5 L -6.5,6.5 Z');
     connection.arrowElement.setAttribute('transform', arrowTransform);
   }
@@ -230,14 +258,24 @@ export class ConnectionManager {
     sourceX: number,
     sourceY: number
   ): Point {
-    const targetCenterX = targetRect.left - containerRect.left + targetRect.width / 2;
-    const targetCenterY = targetRect.top - containerRect.top + targetRect.height / 2;
+    const targetCenterX =
+      targetRect.left - containerRect.left + targetRect.width / 2;
+    const targetCenterY =
+      targetRect.top - containerRect.top + targetRect.height / 2;
 
     // Check which face is best (top, left, or right)
     const faces = [
       { x: targetCenterX, y: targetRect.top - containerRect.top, face: 'top' },
-      { x: targetRect.left - containerRect.left, y: targetCenterY, face: 'left' },
-      { x: targetRect.right - containerRect.left, y: targetCenterY, face: 'right' }
+      {
+        x: targetRect.left - containerRect.left,
+        y: targetCenterY,
+        face: 'left'
+      },
+      {
+        x: targetRect.right - containerRect.left,
+        y: targetCenterY,
+        face: 'right'
+      }
     ];
 
     // Choose face with shortest distance
@@ -277,7 +315,6 @@ export class ConnectionManager {
 
     // Determine direction to end point
     const dx = end.x - stubStart.x;
-    const dy = end.y - stubStart.y;
 
     // Calculate stub end point (approaching target)
     const stubEnd = { x: end.x, y: end.y - endStub };
@@ -293,15 +330,19 @@ export class ConnectionManager {
         segments.push(`L ${stubStart.x},${corner1Y}`);
 
         // First turn (rounded corner)
-        const turn1X = dx > 0 ? stubStart.x + cornerRadius : stubStart.x - cornerRadius;
+        const turn1X =
+          dx > 0 ? stubStart.x + cornerRadius : stubStart.x - cornerRadius;
         segments.push(`Q ${stubStart.x},${midY} ${turn1X},${midY}`);
 
         // Horizontal segment
-        const corner2X = dx > 0 ? stubEnd.x - cornerRadius : stubEnd.x + cornerRadius;
+        const corner2X =
+          dx > 0 ? stubEnd.x - cornerRadius : stubEnd.x + cornerRadius;
         segments.push(`L ${corner2X},${midY}`);
 
         // Second turn (rounded corner)
-        segments.push(`Q ${stubEnd.x},${midY} ${stubEnd.x},${midY + cornerRadius}`);
+        segments.push(
+          `Q ${stubEnd.x},${midY} ${stubEnd.x},${midY + cornerRadius}`
+        );
       }
     }
 
@@ -314,28 +355,34 @@ export class ConnectionManager {
     return segments.join(' ');
   }
 
-  private calculateArrowTransform(endPoint: Point, startX: number, startY: number, endX: number, endY: number): string {
+  private calculateArrowTransform(
+    endPoint: Point,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ): string {
     // Calculate angle based on the direction of approach
     let angle = -90; // Default: pointing up
-    
+
     const dx = endX - startX;
     const dy = endY - startY;
-    
+
     // Determine direction based on final approach
     if (Math.abs(dx) > Math.abs(dy)) {
       // Horizontal approach
       angle = dx > 0 ? 0 : 180; // Right or left
     }
-    
+
     return `translate(${endPoint.x}, ${endPoint.y}) rotate(${angle})`;
   }
 
   public removeExitConnection(exitId: string): boolean {
     const connections = this.getConnectionsFromSource(exitId);
-    
+
     if (connections.length === 0) return false;
 
-    connections.forEach(connection => {
+    connections.forEach((connection) => {
       this.svgContainer.removeChild(connection.svgGroup);
       this.connections.delete(connection.id);
     });
@@ -352,13 +399,13 @@ export class ConnectionManager {
   public removeNodeConnections(nodeId: string): void {
     // Remove inbound connections (where this node is target)
     const inboundConnections = Array.from(this.connections.values()).filter(
-      conn => conn.targetId === nodeId
+      (conn) => conn.targetId === nodeId
     );
-    
-    inboundConnections.forEach(conn => {
+
+    inboundConnections.forEach((conn) => {
       this.svgContainer.removeChild(conn.svgGroup);
       this.connections.delete(conn.id);
-      
+
       // Update source
       const sourceElement = document.getElementById(conn.sourceId);
       if (sourceElement) {
@@ -369,15 +416,17 @@ export class ConnectionManager {
     // Remove outbound connections (where exits of this node are sources)
     const nodeElement = document.getElementById(nodeId);
     if (nodeElement) {
-      const exitIds = Array.from(nodeElement.querySelectorAll('.exit')).map(exit => exit.id);
-      
-      exitIds.forEach(exitId => {
+      const exitIds = Array.from(nodeElement.querySelectorAll('.exit')).map(
+        (exit) => exit.id
+      );
+
+      exitIds.forEach((exitId) => {
         const connections = this.getConnectionsFromSource(exitId);
-        connections.forEach(conn => {
+        connections.forEach((conn) => {
           this.svgContainer.removeChild(conn.svgGroup);
           this.connections.delete(conn.id);
         });
-        
+
         const exitElement = document.getElementById(exitId);
         if (exitElement) {
           exitElement.classList.remove('connected');
@@ -386,12 +435,15 @@ export class ConnectionManager {
     }
   }
 
-  public setConnectionRemovingState(exitId: string, isRemoving: boolean): boolean {
+  public setConnectionRemovingState(
+    exitId: string,
+    isRemoving: boolean
+  ): boolean {
     const connections = this.getConnectionsFromSource(exitId);
-    
+
     if (connections.length === 0) return false;
 
-    connections.forEach(connection => {
+    connections.forEach((connection) => {
       if (isRemoving) {
         connection.svgGroup.classList.add('removing');
       } else {
@@ -404,13 +456,13 @@ export class ConnectionManager {
 
   private getConnectionsFromSource(sourceId: string): Connection[] {
     return Array.from(this.connections.values()).filter(
-      conn => conn.sourceId === sourceId
+      (conn) => conn.sourceId === sourceId
     );
   }
 
   private removeConnectionsFromSource(sourceId: string): void {
     const connections = this.getConnectionsFromSource(sourceId);
-    connections.forEach(conn => {
+    connections.forEach((conn) => {
       if (conn.svgGroup.parentNode) {
         this.svgContainer.removeChild(conn.svgGroup);
       }
@@ -421,26 +473,26 @@ export class ConnectionManager {
   public revalidate(elementIds: string[]): void {
     // Use RAF to batch updates
     requestAnimationFrame(() => {
-      elementIds.forEach(id => {
+      elementIds.forEach((id) => {
         // Update connections where this element is source
         const sourceConnections = this.getConnectionsFromSource(id);
-        sourceConnections.forEach(conn => this.updateConnectionPath(conn));
+        sourceConnections.forEach((conn) => this.updateConnectionPath(conn));
 
         // Update connections where this element is target
         const targetConnections = Array.from(this.connections.values()).filter(
-          conn => conn.targetId === id
+          (conn) => conn.targetId === id
         );
-        targetConnections.forEach(conn => this.updateConnectionPath(conn));
+        targetConnections.forEach((conn) => this.updateConnectionPath(conn));
       });
     });
   }
 
   public repaintEverything(): void {
     requestAnimationFrame(() => {
-      this.connections.forEach(connection => {
+      this.connections.forEach((connection) => {
         this.updateConnectionPath(connection);
       });
-      
+
       // Update activity overlays if present
       if (this.activityData) {
         this.updateActivityOverlays();
@@ -455,7 +507,10 @@ export class ConnectionManager {
     this.eventListeners.get(eventName)!.push(callback);
   }
 
-  public off(eventName: string, callback: (info: ConnectionInfo) => void): void {
+  public off(
+    eventName: string,
+    callback: (info: ConnectionInfo) => void
+  ): void {
     const listeners = this.eventListeners.get(eventName);
     if (!listeners) return;
 
@@ -467,7 +522,7 @@ export class ConnectionManager {
 
   private fireEvent(eventName: string, info: ConnectionInfo): void {
     const listeners = this.eventListeners.get(eventName) || [];
-    listeners.forEach(listener => listener(info));
+    listeners.forEach((listener) => listener(info));
   }
 
   public batch(fn: () => void): void {
@@ -475,7 +530,9 @@ export class ConnectionManager {
   }
 
   // Activity overlay methods
-  public setActivityData(data: { segments: { [key: string]: number } } | null): void {
+  public setActivityData(
+    data: { segments: { [key: string]: number } } | null
+  ): void {
     this.activityData = data;
     this.clearRecentContactsCache();
     this.updateActivityOverlays();
@@ -484,7 +541,7 @@ export class ConnectionManager {
   private updateActivityOverlays(): void {
     if (!this.activityData) {
       // Remove all overlays
-      this.connections.forEach(connection => {
+      this.connections.forEach((connection) => {
         if (connection.overlayGroup) {
           connection.overlayGroup.remove();
           connection.overlayGroup = undefined;
@@ -493,7 +550,7 @@ export class ConnectionManager {
       return;
     }
 
-    this.connections.forEach(connection => {
+    this.connections.forEach((connection) => {
       const activityKey = `${connection.sourceId}:${connection.targetId}`;
       const count = this.activityData!.segments[activityKey];
 
@@ -505,13 +562,24 @@ export class ConnectionManager {
 
       if (count && count > 0) {
         // Create overlay
-        connection.overlayGroup = this.createActivityOverlay(connection, count, activityKey);
+        connection.overlayGroup = this.createActivityOverlay(
+          connection,
+          count,
+          activityKey
+        );
       }
     });
   }
 
-  private createActivityOverlay(connection: Connection, count: number, activityKey: string): SVGGElement {
-    const overlayGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  private createActivityOverlay(
+    connection: Connection,
+    count: number,
+    activityKey: string
+  ): SVGGElement {
+    const overlayGroup = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'g'
+    );
     overlayGroup.setAttribute('class', 'activity-overlay jtk-overlay');
     overlayGroup.setAttribute('data-activity-key', activityKey);
     overlayGroup.style.cursor = 'pointer';
@@ -528,7 +596,10 @@ export class ConnectionManager {
       // Background rect
       const labelText = count.toLocaleString();
       const textWidth = labelText.length * 7 + 8;
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      const rect = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'rect'
+      );
       rect.setAttribute('x', String(x - textWidth / 2));
       rect.setAttribute('y', String(y - 8));
       rect.setAttribute('width', String(textWidth));
@@ -539,7 +610,10 @@ export class ConnectionManager {
       rect.setAttribute('stroke-width', '1');
 
       // Text
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      const text = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'text'
+      );
       text.setAttribute('x', String(x));
       text.setAttribute('y', String(y + 4));
       text.setAttribute('text-anchor', 'middle');
@@ -552,8 +626,12 @@ export class ConnectionManager {
       overlayGroup.appendChild(text);
 
       // Add hover events
-      overlayGroup.addEventListener('mouseenter', () => this.handleOverlayMouseEnter(activityKey));
-      overlayGroup.addEventListener('mouseleave', () => this.handleOverlayMouseLeave());
+      overlayGroup.addEventListener('mouseenter', () =>
+        this.handleOverlayMouseEnter(activityKey)
+      );
+      overlayGroup.addEventListener('mouseleave', () =>
+        this.handleOverlayMouseLeave()
+      );
 
       connection.svgGroup.appendChild(overlayGroup);
     }
@@ -586,8 +664,14 @@ export class ConnectionManager {
     this.hideRecentContacts();
   }
 
-  private async fetchRecentContacts(activityKey: string, flowUuid: string): Promise<void> {
-    if (this.recentContactsCache[activityKey] || this.pendingFetches[activityKey]) {
+  private async fetchRecentContacts(
+    activityKey: string,
+    flowUuid: string
+  ): Promise<void> {
+    if (
+      this.recentContactsCache[activityKey] ||
+      this.pendingFetches[activityKey]
+    ) {
       return;
     }
 
@@ -615,13 +699,18 @@ export class ConnectionManager {
     }
   }
 
-  private async showRecentContacts(activityKey: string, flowUuid: string): Promise<void> {
+  private async showRecentContacts(
+    activityKey: string,
+    flowUuid: string
+  ): Promise<void> {
     const store = (window as any).getStore?.();
     if (store?.getState().simulatorActive) {
       return;
     }
 
-    const overlayElement = this.svgContainer.querySelector(`[data-activity-key="${activityKey}"]`) as HTMLElement;
+    const overlayElement = this.svgContainer.querySelector(
+      `[data-activity-key="${activityKey}"]`
+    ) as HTMLElement;
     if (!overlayElement) return;
 
     if (this.hideContactsTimeout) {
@@ -661,7 +750,9 @@ export class ConnectionManager {
           this.hideRecentContacts(false);
           const contactUuid = target.getAttribute('data-uuid');
           if (contactUuid && this.editor) {
-            this.editor.fireCustomEvent('temba-contact-clicked', { uuid: contactUuid });
+            this.editor.fireCustomEvent('temba-contact-clicked', {
+              uuid: contactUuid
+            });
           }
         }
       };
@@ -671,7 +762,8 @@ export class ConnectionManager {
       this.renderRecentContactsPopup(this.recentContactsCache[activityKey]);
       this.positionPopup(overlayElement);
     } else {
-      this.recentContactsPopup.innerHTML = '<div class="no-contacts-message">Loading...</div>';
+      this.recentContactsPopup.innerHTML =
+        '<div class="no-contacts-message">Loading...</div>';
       this.positionPopup(overlayElement);
       await this.fetchRecentContacts(activityKey, flowUuid);
       if (this.hoveredActivityKey === activityKey) {
@@ -687,7 +779,9 @@ export class ConnectionManager {
 
     const rect = overlayElement.getBoundingClientRect();
     this.recentContactsPopup.style.left = `${rect.left + window.scrollX}px`;
-    this.recentContactsPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    this.recentContactsPopup.style.top = `${
+      rect.bottom + window.scrollY + 5
+    }px`;
     this.recentContactsPopup.style.display = '';
     this.recentContactsPopup.classList.remove('show');
     void this.recentContactsPopup.offsetWidth;
@@ -698,7 +792,8 @@ export class ConnectionManager {
     if (!this.recentContactsPopup) return;
 
     if (recentContacts.length === 0) {
-      this.recentContactsPopup.innerHTML = '<div class="no-contacts-message">No Recent Contacts</div>';
+      this.recentContactsPopup.innerHTML =
+        '<div class="no-contacts-message">No Recent Contacts</div>';
       return;
     }
 
@@ -752,22 +847,29 @@ export class ConnectionManager {
 
   public clearRecentContactsCache(): void {
     this.recentContactsCache = {};
-    Object.values(this.pendingFetches).forEach(controller => controller.abort());
+    Object.values(this.pendingFetches).forEach((controller) =>
+      controller.abort()
+    );
     this.pendingFetches = {};
   }
 
   // Drag and Drop Implementation
   private setupDragHandlers(): void {
-    this.container.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    this.container.addEventListener(
+      'mousedown',
+      this.handleMouseDown.bind(this)
+    );
     document.addEventListener('mousemove', this.handleMouseMove.bind(this));
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
   }
 
   private handleMouseDown(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    
+
     // Check if clicking on a source (exit element)
-    const exitElement = target.closest('.exit[data-is-source="true"]') as HTMLElement;
+    const exitElement = target.closest(
+      '.exit[data-is-source="true"]'
+    ) as HTMLElement;
     if (!exitElement) return;
 
     this.isDragging = true;
@@ -795,8 +897,10 @@ export class ConnectionManager {
 
     // Find target under cursor
     const elements = document.elementsFromPoint(event.clientX, event.clientY);
-    const targetNode = elements.find(el => 
-      el.classList.contains('node') && el.getAttribute('data-is-target') === 'true'
+    const targetNode = elements.find(
+      (el) =>
+        el.classList.contains('node') &&
+        el.getAttribute('data-is-target') === 'true'
     ) as HTMLElement | undefined;
 
     // Update target highlighting
@@ -810,7 +914,7 @@ export class ConnectionManager {
     }
   }
 
-  private handleMouseUp(event: MouseEvent): void {
+  private handleMouseUp(_event: MouseEvent): void {
     if (!this.isDragging) return;
 
     this.isDragging = false;
@@ -836,7 +940,7 @@ export class ConnectionManager {
       } else {
         // Check if we're re-dragging an existing connection
         const hadConnection = this.dragSource.classList.contains('connected');
-        
+
         if (hadConnection) {
           // Fire detach event for the old connection
           this.fireEvent(ConnectionEvent.CONNECTION_DETACHED, {
@@ -844,7 +948,7 @@ export class ConnectionManager {
             source: this.dragSource
           });
         }
-        
+
         // Fire connection event
         this.fireEvent(ConnectionEvent.CONNECTION, {
           sourceId: this.dragSource.id,
@@ -871,8 +975,14 @@ export class ConnectionManager {
   }
 
   private createTempLine(): void {
-    this.tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    this.tempLine.setAttribute('class', 'temp-drag-line jtk-connector jtk-dragging');
+    this.tempLine = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    this.tempLine.setAttribute(
+      'class',
+      'temp-drag-line jtk-connector jtk-dragging'
+    );
     this.tempLine.setAttribute('stroke', 'var(--color-connectors, #ccc)');
     this.tempLine.setAttribute('stroke-width', '3');
     this.tempLine.setAttribute('fill', 'none');
@@ -898,10 +1008,10 @@ export class ConnectionManager {
 
   private highlightTarget(target: HTMLElement): void {
     if (!this.dragSource) return;
-    
+
     const sourceNode = this.dragSource.closest('.node');
     const isValid = sourceNode?.id !== target.id;
-    
+
     if (isValid) {
       target.classList.add('connection-target-valid');
     } else {
@@ -910,9 +1020,13 @@ export class ConnectionManager {
   }
 
   private clearTargetHighlight(): void {
-    document.querySelectorAll('.connection-target-valid, .connection-target-invalid')
-      .forEach(el => {
-        el.classList.remove('connection-target-valid', 'connection-target-invalid');
+    document
+      .querySelectorAll('.connection-target-valid, .connection-target-invalid')
+      .forEach((el) => {
+        el.classList.remove(
+          'connection-target-valid',
+          'connection-target-invalid'
+        );
       });
   }
 }

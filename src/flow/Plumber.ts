@@ -1,11 +1,15 @@
 /**
  * Plumber - Connection management wrapper
- * 
+ *
  * This class provides backward-compatible API using ConnectionManager
  * instead of jsPlumb, maintaining the same interface for existing code.
  */
 
-import { ConnectionManager, SOURCE_DEFAULTS as CM_SOURCE_DEFAULTS, TARGET_DEFAULTS as CM_TARGET_DEFAULTS } from './ConnectionManager';
+import {
+  ConnectionManager,
+  SOURCE_DEFAULTS as CM_SOURCE_DEFAULTS,
+  TARGET_DEFAULTS as CM_TARGET_DEFAULTS
+} from './ConnectionManager';
 
 // Re-export constants for backward compatibility
 export const SOURCE_DEFAULTS = CM_SOURCE_DEFAULTS;
@@ -18,7 +22,7 @@ export class Plumber {
 
   constructor(canvas: HTMLElement, editor: any) {
     this.connectionManager = new ConnectionManager(canvas, editor);
-    
+
     // Sync connection dragging state
     this.syncInterval = window.setInterval(() => {
       this.connectionDragging = this.connectionManager.connectionDragging;
@@ -49,7 +53,9 @@ export class Plumber {
     this.connectionManager.connectIds(scope, fromId, toId);
   }
 
-  public setActivityData(activityData: { segments: { [key: string]: number } } | null) {
+  public setActivityData(
+    activityData: { segments: { [key: string]: number } } | null
+  ) {
     this.connectionManager.setActivityData(activityData);
   }
 
@@ -69,8 +75,14 @@ export class Plumber {
     return this.connectionManager.removeExitConnection(exitId);
   }
 
-  public setConnectionRemovingState(exitId: string, isRemoving: boolean): boolean {
-    return this.connectionManager.setConnectionRemovingState(exitId, isRemoving);
+  public setConnectionRemovingState(
+    exitId: string,
+    isRemoving: boolean
+  ): boolean {
+    return this.connectionManager.setConnectionRemovingState(
+      exitId,
+      isRemoving
+    );
   }
 
   public clearRecentContactsCache() {

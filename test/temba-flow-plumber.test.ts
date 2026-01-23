@@ -15,12 +15,12 @@ describe('Plumber', () => {
     // Create mock canvas
     mockCanvas = document.createElement('div');
     document.body.appendChild(mockCanvas);
-    
+
     // Create mock elements with IDs
     mockElement = document.createElement('div');
     mockElement.id = 'test-element';
     mockCanvas.appendChild(mockElement);
-    
+
     // Create a mock editor with fireCustomEvent
     const mockEditor = { fireCustomEvent: stub() };
 
@@ -69,13 +69,15 @@ describe('Plumber', () => {
       const exitElement = document.createElement('div');
       exitElement.id = 'exit-1';
       exitElement.className = 'exit';
-      exitElement.style.cssText = 'position: absolute; left: 100px; top: 100px; width: 50px; height: 30px;';
+      exitElement.style.cssText =
+        'position: absolute; left: 100px; top: 100px; width: 50px; height: 30px;';
       mockCanvas.appendChild(exitElement);
 
       const nodeElement = document.createElement('div');
       nodeElement.id = 'node-1';
       nodeElement.className = 'node';
-      nodeElement.style.cssText = 'position: absolute; left: 300px; top: 200px; width: 200px; height: 100px;';
+      nodeElement.style.cssText =
+        'position: absolute; left: 300px; top: 200px; width: 200px; height: 100px;';
       mockCanvas.appendChild(nodeElement);
 
       plumber.makeSource('exit-1');
