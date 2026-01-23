@@ -21,7 +21,6 @@ import { Checkbox } from '../form/Checkbox';
 import { Plumber } from './Plumber';
 import { CanvasNode } from './CanvasNode';
 import { Dialog } from '../layout/Dialog';
-import { Connection } from '@jsplumb/browser-ui';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import {
@@ -747,7 +746,7 @@ export class Editor extends RapidElement {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
     }
 
-    this.plumber.on('connection:drag', (info: Connection) => {
+    this.plumber.on('connection:drag', (info: any) => {
       this.dragFromNodeId = document
         .getElementById(info.sourceId)
         .closest('.node').id;
