@@ -591,10 +591,6 @@ export class ConnectionManager {
       return;
     }
 
-    if (this.pendingFetches[activityKey]) {
-      this.pendingFetches[activityKey].abort();
-    }
-
     const controller = new AbortController();
     this.pendingFetches[activityKey] = controller;
 
@@ -951,7 +947,7 @@ export const TARGET_DEFAULTS = {
     type: 'Continuous',
     options: {
       faces: ['top', 'left', 'right'],
-      cssClass: 'continuos plumb-target-anchor'
+      cssClass: 'continuous plumb-target-anchor'
     }
   },
   deleteOnEmpty: true,
