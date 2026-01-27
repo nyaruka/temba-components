@@ -52,6 +52,17 @@ export const SOURCE_DEFAULTS = {
   dragAllowedWhenFull: false
 };
 
+export const SOURCE_CONNECTED = {
+  ...SOURCE_DEFAULTS,
+  endpoint: {
+    ...SOURCE_DEFAULTS.endpoint,
+    options: {
+      ...SOURCE_DEFAULTS.endpoint.options,
+      cssClass: 'plumb-source connected'
+    }
+  }
+};
+
 export const TARGET_DEFAULTS = {
   endpoint: {
     type: RectangleEndpoint.type,
@@ -88,51 +99,57 @@ export class Plumber {
   private hideContactsTimeout: number | null = null;
   private showContactsTimeout: number | null = null;
   private editor: any;
+  private canvas: HTMLElement;
+
+  initializeJSPlumb() {
+    this.jsPlumb = newInstance({
+      container: this.canvas,
+      connectionsDetachable: true,
+      endpointStyle: {
+        fill: 'green'
+      },
+      connector: CONNECTOR_DEFAULTS,
+      connectionOverlays: OVERLAYS_DEFAULTS
+    });
+
+    // Bind to connection events
+    this.jsPlumb.bind(EVENT_CONNECTION, (info) => {
+      this.connectionDragging = false;
+      this.notifyListeners(EVENT_CONNECTION, info);
+    });
+
+    // Bind to connection drag events
+    this.jsPlumb.bind(EVENT_CONNECTION_DRAG, (info) => {
+      this.connectionDragging = true;
+      this.notifyListeners(EVENT_CONNECTION_DRAG, info);
+    });
+
+    this.jsPlumb.bind(EVENT_CONNECTION_ABORT, (info) => {
+      this.connectionDragging = false;
+      this.notifyListeners(EVENT_CONNECTION_ABORT, info);
+    });
+
+    this.jsPlumb.bind(EVENT_CONNECTION_DETACHED, (info) => {
+      this.connectionDragging = false;
+      this.notifyListeners(EVENT_CONNECTION_DETACHED, info);
+    });
+
+    this.jsPlumb.bind(EVENT_REVERT, (info) => {
+      this.notifyListeners(EVENT_REVERT, info);
+    });
+
+    this.jsPlumb.bind(INTERCEPT_BEFORE_DROP, () => {
+      // we always deny automatic connections
+      return false;
+    });
+    this.jsPlumb.bind(INTERCEPT_BEFORE_DETACH, () => {});
+  }
 
   constructor(canvas: HTMLElement, editor: any) {
     this.editor = editor;
+    this.canvas = canvas;
     ready(() => {
-      this.jsPlumb = newInstance({
-        container: canvas,
-        connectionsDetachable: true,
-        endpointStyle: {
-          fill: 'green'
-        },
-        connector: CONNECTOR_DEFAULTS,
-        connectionOverlays: OVERLAYS_DEFAULTS
-      });
-
-      // Bind to connection events
-      this.jsPlumb.bind(EVENT_CONNECTION, (info) => {
-        this.connectionDragging = false;
-        this.notifyListeners(EVENT_CONNECTION, info);
-      });
-
-      // Bind to connection drag events
-      this.jsPlumb.bind(EVENT_CONNECTION_DRAG, (info) => {
-        this.connectionDragging = true;
-        this.notifyListeners(EVENT_CONNECTION_DRAG, info);
-      });
-
-      this.jsPlumb.bind(EVENT_CONNECTION_ABORT, (info) => {
-        this.connectionDragging = false;
-        this.notifyListeners(EVENT_CONNECTION_ABORT, info);
-      });
-
-      this.jsPlumb.bind(EVENT_CONNECTION_DETACHED, (info) => {
-        this.connectionDragging = false;
-        this.notifyListeners(EVENT_CONNECTION_DETACHED, info);
-      });
-
-      this.jsPlumb.bind(EVENT_REVERT, (info) => {
-        this.notifyListeners(EVENT_REVERT, info);
-      });
-
-      this.jsPlumb.bind(INTERCEPT_BEFORE_DROP, () => {
-        // we always deny automatic connections
-        return false;
-      });
-      this.jsPlumb.bind(INTERCEPT_BEFORE_DETACH, () => {});
+      this.initializeJSPlumb();
     });
   }
 
@@ -159,12 +176,14 @@ export class Plumber {
 
   public makeTarget(uuid: string) {
     const element = document.getElementById(uuid);
-    this.jsPlumb.addEndpoint(element, TARGET_DEFAULTS);
+    if (!element) return;
+    return this.jsPlumb.addEndpoint(element, TARGET_DEFAULTS);
   }
 
   public makeSource(uuid: string) {
     const element = document.getElementById(uuid);
-    this.jsPlumb.addEndpoint(element, SOURCE_DEFAULTS);
+    if (!element) return;
+    return this.jsPlumb.addEndpoint(element, SOURCE_DEFAULTS);
   }
 
   // we'll process our pending connections, but we want to debounce this
@@ -180,27 +199,40 @@ export class Plumber {
       this.jsPlumb.batch(() => {
         this.pendingConnections.forEach((connection) => {
           const { scope, fromId, toId } = connection;
-          const fromElement = document.getElementById(fromId);
-          const toElement = document.getElementById(toId);
 
-          // delete any existing endpoints
-          this.jsPlumb.selectEndpoints({ source: fromId }).deleteAll();
+          // sources and targets must exist
+          const source = document.getElementById(fromId);
+          // const target = document.getElementById(toId);
 
-          const source = this.jsPlumb.addEndpoint(fromElement, {
-            ...SOURCE_DEFAULTS,
-            endpoint: {
-              ...SOURCE_DEFAULTS.endpoint,
-              options: {
-                ...SOURCE_DEFAULTS.endpoint.options,
-                cssClass: 'plumb-source connected'
-              }
-            }
-          });
+          this.revalidate([fromId, toId]);
 
-          const target = this.jsPlumb.addEndpoint(toElement, TARGET_DEFAULTS);
+          // we need to find the source endpoint
+          const sourceEndpoint = this.jsPlumb
+            .getEndpoints(source)
+            ?.find((endpoint) =>
+              endpoint.elementId === fromId ? true : false
+            );
+
+          // update endpoint have connect css class
+          if (sourceEndpoint) {
+            sourceEndpoint.addClass('connected');
+          }
+
+          // each connection needs its own target endpoint
+          const targetEndpoint = this.makeTarget(toId);
+
+          if (!sourceEndpoint || !targetEndpoint) {
+            console.warn(
+              `Plumber: Cannot connect ${fromId} to ${toId}. Element(s) missing.`
+            );
+            return;
+          }
+
+          // delete connections
+          this.jsPlumb.select({ source, targetEndpoint }).deleteAll();
           this.jsPlumb.connect({
-            source,
-            target,
+            source: source,
+            target: targetEndpoint,
             connector: {
               ...CONNECTOR_DEFAULTS,
               options: { ...CONNECTOR_DEFAULTS.options, gap: [0, 5] }
@@ -212,7 +244,15 @@ export class Plumber {
         });
         this.pendingConnections = [];
       });
-    }, 50);
+
+      // Force a repaint to ensure connections are positioned correctly
+      // especially after bulk updates or view switching
+      window.requestAnimationFrame(() => {
+        if (this.jsPlumb) {
+          this.jsPlumb.repaintEverything();
+        }
+      });
+    }, 0);
   }
 
   public connectIds(scope: string, fromId: string, toId: string) {
@@ -597,20 +637,44 @@ export class Plumber {
     });
   }
 
-  public removeNodeConnections(nodeId: string) {
+  public reset() {
+    if (this.connectionWait) {
+      clearTimeout(this.connectionWait);
+      this.connectionWait = null;
+    }
+    this.pendingConnections = [];
+    this.jsPlumb.select().deleteAll();
+    this.jsPlumb._managedElements = {};
+  }
+
+  public forgetNode(nodeId: string) {
+    if (!this.jsPlumb) return;
+    const element = document.getElementById(nodeId);
+    if (!element) return;
+
+    this.jsPlumb.deleteConnectionsForElement(element);
+    this.jsPlumb.removeAllEndpoints(element);
+    this.jsPlumb.unmanage(element);
+  }
+
+  public removeNodeConnections(nodeId: string, exitIds?: string[]) {
     if (!this.jsPlumb) return;
 
     const inbound = this.jsPlumb.select({ target: nodeId });
-    const exitIds =
+
+    // Use provided exitIds or try to find them in DOM (fallback)
+    const exits =
+      exitIds ||
       Array.from(
         document.getElementById(nodeId)?.querySelectorAll('.exit') || []
       ).map((exit) => {
         return exit.id;
-      }) || [];
+      }) ||
+      [];
 
     inbound.deleteAll();
-    this.jsPlumb.select({ source: exitIds }).deleteAll();
-    this.jsPlumb.selectEndpoints({ source: exitIds }).deleteAll();
+    this.jsPlumb.select({ source: exits }).deleteAll();
+    this.jsPlumb.selectEndpoints({ source: exits }).deleteAll();
   }
 
   public removeExitConnection(exitId: string) {
@@ -627,11 +691,14 @@ export class Plumber {
       this.jsPlumb.deleteConnection(connection);
     });
 
-    // Re-create the source endpoint (now without connection)
-    this.jsPlumb.removeAllEndpoints(exitElement);
-    this.makeSource(exitId);
-
     return connections.length > 0;
+  }
+
+  public removeAllEndpoints(nodeId: string) {
+    if (!this.jsPlumb) return;
+    const element = document.getElementById(nodeId);
+    if (!element) return;
+    this.jsPlumb.removeAllEndpoints(element, true);
   }
 
   /**

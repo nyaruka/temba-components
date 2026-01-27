@@ -49,6 +49,8 @@ export class CanvasNode extends RapidElement {
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
 
+  private connectionTimeout: number | null = null;
+
   // Set of exit UUIDs that are in the removing state
   private exitRemovingState: Set<string> = new Set();
 
@@ -530,23 +532,31 @@ export class CanvasNode extends RapidElement {
     if (changes.has('node')) {
       // Only proceed if plumber is available (for tests that don't set it up)
       if (this.plumber) {
-        this.plumber.removeNodeConnections(this.node.uuid);
-        // make our initial connections
-        for (const exit of this.node.exits) {
-          if (!exit.destination_uuid) {
-            // if we have no destination, then we are a source
-            // so make our source endpoint
-            this.plumber.makeSource(exit.uuid);
-          } else {
-            this.plumber.connectIds(
-              this.node.uuid,
-              exit.uuid,
-              exit.destination_uuid
-            );
-          }
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
         }
 
-        this.plumber.revalidate([this.node.uuid]);
+        // Pass exit IDs explicitly to avoid DOM querying dependency
+        const exitIds = this.node.exits.map((e) => e.uuid);
+        this.plumber.removeNodeConnections(this.node.uuid, exitIds);
+
+        // make our initial connections
+        // We use setTimeout to allow for DOM updates to complete before querying for exits
+        this.connectionTimeout = window.setTimeout(() => {
+          for (const exit of this.node.exits) {
+            this.plumber.makeSource(exit.uuid);
+            if (exit.destination_uuid) {
+              this.plumber.connectIds(
+                this.node.uuid,
+                exit.uuid,
+                exit.destination_uuid
+              );
+            }
+          }
+          // Note: revalidation is handled by plumber's processPendingConnections which calls repaintEverything
+          this.connectionTimeout = null;
+          this.plumber.revalidate([this.node.uuid]);
+        }, 0);
       }
 
       const ele = this.parentElement;
@@ -564,6 +574,15 @@ export class CanvasNode extends RapidElement {
   }
 
   disconnectedCallback() {
+    // Force cleanup of connections for this node
+    if (this.plumber && this.node) {
+      if (this.connectionTimeout) {
+        clearTimeout(this.connectionTimeout);
+        this.connectionTimeout = null;
+      }
+      this.plumber.forgetNode(this.node.uuid);
+    }
+
     // Remove the event listener when the component is removed
     super.disconnectedCallback();
 

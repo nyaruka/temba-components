@@ -9,12 +9,31 @@ import {
   NodeUI
 } from '../store/flow-definition';
 import { getStore } from '../store/Store';
-import { AppState, fromStore, zustand } from '../store/AppState';
+import {
+  AppState,
+  fromStore,
+  zustand,
+  FLOW_SPEC_VERSION
+} from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, Workspace } from '../interfaces';
-import { generateUUID, postJSON } from '../utils';
+import { generateUUID, postJSON, fetchResults } from '../utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
+
+interface Revision {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    name?: string;
+  };
+  created_on: string;
+  comment?: string;
+}
+
 import { ACTION_GROUP_METADATA } from './types';
 import { Checkbox } from '../form/Checkbox';
 
@@ -212,6 +231,23 @@ export class Editor extends RapidElement {
   @state()
   private autoTranslateError: string | null = null;
 
+  @state()
+  private revisionsWindowHidden = true;
+
+  @state()
+  private revisions: Revision[] = [];
+
+  @state()
+  private viewingRevision: Revision | null = null;
+
+  @state()
+  private isLoadingRevisions = false;
+
+  private preRevertState: {
+    definition: FlowDefinition;
+    dirtyDate: Date | null;
+  } | null = null;
+
   private translationCache = new Map<string, string>();
 
   // NodeEditor state - handles both node and action editing
@@ -327,6 +363,19 @@ export class Editor extends RapidElement {
       #canvas > .dragging {
         z-index: 99999 !important;
         transition: none !important;
+      }
+
+      #canvas.read-only {
+        pointer-events: none;
+      }
+
+      #grid.read-only {
+        background-color: #fff9fc;
+        background-image: radial-gradient(
+          circle,
+          rgba(166, 38, 164, 0.2) 1px,
+          transparent 1px
+        );
       }
 
       body .jtk-endpoint {
@@ -677,6 +726,18 @@ export class Editor extends RapidElement {
         width: 100%;
       }
 
+      .revert-button {
+        background: var(--color-primary-dark);
+        border: none;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: var(--curvature);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
       .auto-translate-button {
         background: var(--color-primary-dark);
         border: none;
@@ -895,10 +956,11 @@ export class Editor extends RapidElement {
     }, SAVE_QUIET_TIME);
   }
 
-  private saveChanges(): void {
+  private saveChanges(definitionOverride?: FlowDefinition): void {
+    const definition = definitionOverride || this.definition;
     // post the flow definition to the server
     getStore()
-      .postJSON(`/flow/revisions/${this.flow}/`, this.definition)
+      .postJSON(`/flow/revisions/${this.flow}/`, definition)
       .then((response) => {
         // Update flow info and revision with the response data
         if (response.json) {
@@ -961,7 +1023,7 @@ export class Editor extends RapidElement {
       }
 
       this.activityTimer = window.setTimeout(() => {
-        this.fetchActivityData();
+        // this.fetchActivityData();
       }, this.activityInterval);
     });
   }
@@ -1215,6 +1277,7 @@ export class Editor extends RapidElement {
     // Clean up jsPlumb connections for nodes before removing them
     uuids.forEach((uuid) => {
       this.plumber.removeNodeConnections(uuid);
+      this.plumber.removeAllEndpoints(uuid);
     });
 
     // Now remove them from the definition
@@ -1735,6 +1798,11 @@ export class Editor extends RapidElement {
   }
 
   private handleCanvasContextMenu(event: MouseEvent): void {
+    if (this.viewingRevision) {
+      event.preventDefault();
+      return;
+    }
+
     // Check if we right-clicked on empty canvas space
     const target = event.target as HTMLElement;
     if (target.id !== 'canvas') {
@@ -2654,6 +2722,7 @@ export class Editor extends RapidElement {
     }
 
     this.localizationWindowHidden = false;
+    this.revisionsWindowHidden = true;
 
     const alreadySelected = languages.some(
       (lang) => lang.code === this.languageCode
@@ -2916,6 +2985,208 @@ export class Editor extends RapidElement {
     this.autoTranslating = false;
   }
 
+  private handleRevisionsTabClick(): void {
+    if (this.revisionsWindowHidden) {
+      if (!this.revisions.length) {
+        this.fetchRevisions();
+      }
+      this.revisionsWindowHidden = false;
+      this.localizationWindowHidden = true; // Close other window
+    } else {
+      this.revisionsWindowHidden = true;
+    }
+  }
+
+  private handleRevisionsWindowClosed(): void {
+    this.revisionsWindowHidden = true;
+    if (this.viewingRevision) {
+      this.handleCancelRevisionView();
+    }
+  }
+
+  private async fetchRevisions() {
+    this.isLoadingRevisions = true;
+    try {
+      const results = await fetchResults(
+        `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
+      );
+      this.revisions = results.slice(1);
+    } catch (e) {
+      console.error('Error fetching revisions', e);
+    } finally {
+      this.isLoadingRevisions = false;
+    }
+  }
+
+  private async handleRevisionClick(revision: Revision) {
+    if (this.viewingRevision?.id === revision.id) {
+      return;
+    }
+
+    if (!this.viewingRevision) {
+      // Save current state first
+      this.preRevertState = {
+        definition: this.definition,
+        dirtyDate: this.dirtyDate
+      };
+    }
+
+    this.viewingRevision = revision;
+    this.isLoadingRevisions = true;
+    this.plumber?.reset();
+
+    try {
+      await getStore()
+        .getState()
+        .fetchRevision(`/flow/revisions/${this.flow}`, revision.id.toString());
+    } catch (e) {
+      console.error('Error fetching revision details', e);
+      this.handleCancelRevisionView();
+    } finally {
+      this.isLoadingRevisions = false;
+    }
+  }
+
+  private handleCancelRevisionView() {
+    this.plumber?.reset();
+    if (this.preRevertState) {
+      const currentInfo = getStore().getState().flowInfo;
+      getStore().getState().setFlowContents({
+        definition: this.preRevertState.definition,
+        info: currentInfo
+      });
+      if (this.preRevertState.dirtyDate) {
+        getStore().getState().setDirtyDate(this.preRevertState.dirtyDate);
+      }
+    } else {
+      // Fallback if no pre-revert definition
+      getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+    }
+
+    this.viewingRevision = null;
+    this.preRevertState = null;
+  }
+
+  private async handleRevertClick() {
+    if (!this.viewingRevision || !this.preRevertState) return;
+    this.plumber?.reset();
+
+    // Use the content of the viewing revision (this.definition)
+    // but the revision number of the current head (preRevertState)
+    // so the server accepts it as a valid update
+    const definitionToSave = {
+      ...this.definition,
+      revision: this.preRevertState.definition.revision
+    };
+
+    this.saveChanges(definitionToSave);
+    this.viewingRevision = null;
+    this.preRevertState = null;
+    this.revisionsWindowHidden = true;
+
+    // Refresh revisions list to show the new one
+    this.fetchRevisions();
+  }
+
+  private renderRevisionsTab(): TemplateResult | string {
+    return html`
+      <temba-floating-tab
+        id="revisions-tab"
+        icon="revisions"
+        label="Revisions"
+        color="rgb(142, 94, 167)"
+        top="105"
+        .hidden=${!this.revisionsWindowHidden && this.localizationWindowHidden}
+        @temba-button-clicked=${this.handleRevisionsTabClick}
+      ></temba-floating-tab>
+    `;
+  }
+
+  private renderRevisionsWindow(): TemplateResult | string {
+    return html`
+      <temba-floating-window
+        id="revisions-window"
+        header="Revisions"
+        .width=${360}
+        .maxHeight=${600}
+        .top=${75}
+        color="rgb(142, 94, 167)"
+        .hidden=${this.revisionsWindowHidden}
+        @temba-dialog-hidden=${this.handleRevisionsWindowClosed}
+      >
+        <div class="localization-window-content">
+          <div
+            class="revisions-list"
+            style="display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding-bottom:10px;"
+          >
+            ${this.isLoadingRevisions && !this.revisions.length
+              ? html`<temba-loading></temba-loading>`
+              : this.revisions.map((rev) => {
+                  const isSelected = this.viewingRevision?.id === rev.id;
+                  return html`
+                    <div
+                      class="revision-item ${isSelected ? 'selected' : ''}"
+                      style="padding:10px; border-radius:4px; cursor:pointer; background:${
+                        isSelected
+                          ? '#f0f6ff' // Light blue bg for selected
+                          : '#f9fafb'
+                      }; border:1px solid ${
+                    isSelected ? '#a4cafe' : '#e5e7eb'
+                  }; transition: all 0.2s ease;"
+                      @click=${() => this.handleRevisionClick(rev)}
+                    >
+                      <div
+                        style="display:flex; justify-content:space-between; align-items:center;"
+                      >
+                        <div
+                          class="revision-header"
+                          style="margin-bottom: 2px;"
+                        >
+                          <div
+                            style="font-weight:600; font-size:13px; color:#111827;"
+                          >
+                            <temba-date value=${
+                              rev.created_on
+                            } display="duration"></temba-date>
+                            
+                          </div>
+                          <div style="font-size:11px; color:#6b7280;">
+                            ${rev.user.name || rev.user.username}
+                          </div>
+                        </div>
+                        ${
+                          isSelected
+                            ? html`<button
+                                class="revert-button"
+                                @click=${this.handleRevertClick}
+                              >
+                                Revert
+                              </button>`
+                            : html``
+                        }
+                        
+                        </button>
+                      </div>
+
+                      ${
+                        rev.comment
+                          ? html`<div
+                              style="font-size:12px; color:#4b5563; margin-top:4px;"
+                            >
+                              ${rev.comment}
+                            </div>`
+                          : ''
+                      }
+                      
+                    </div>
+                  `;
+                })}
+          </div>
+        </div>
+      </temba-floating-window>
+    `;
+  }
+
   private renderLocalizationWindow(): TemplateResult | string {
     const languages = this.getLocalizationLanguages();
     if (!languages.length) {
@@ -3176,15 +3447,16 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style} ${this.renderLocalizationWindow()}
-      ${this.renderAutoTranslateDialog()}
+    return html`${style} ${this.renderRevisionsWindow()}
+      ${this.renderLocalizationWindow()} ${this.renderAutoTranslateDialog()}
       <div id="editor">
         <div
           id="grid"
+          class="${this.viewingRevision ? 'read-only' : ''}"
           style="min-width:100%;width:${this.canvasSize.width}px; height:${this
             .canvasSize.height}px"
         >
-          <div id="canvas">
+          <div id="canvas" class="${this.viewingRevision ? 'read-only' : ''}">
             ${this.definition
               ? repeat(
                   [...this.definition.nodes].sort((a, b) =>
@@ -3267,10 +3539,12 @@ export class Editor extends RapidElement {
         : ''}
 
       <temba-canvas-menu></temba-canvas-menu>
-      <temba-node-type-selector
-        .flowType=${this.flowType}
-        .features=${this.features}
-      ></temba-node-type-selector>
-      ${this.renderLocalizationTab()} `;
+      ${!this.viewingRevision
+        ? html`<temba-node-type-selector
+            .flowType=${this.flowType}
+            .features=${this.features}
+          ></temba-node-type-selector>`
+        : ''}
+      ${this.renderRevisionsTab()} ${this.renderLocalizationTab()} `;
   }
 }

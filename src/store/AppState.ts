@@ -282,7 +282,11 @@ export const zustand = createStore<AppState>()(
       setFlowContents: (flow: FlowContents) => {
         set((state: AppState) => {
           const flowLang = flow.definition.language;
-          state.flowDefinition = flow.definition;
+          // Clone to ensure mutable for sorting
+          state.flowDefinition = {
+            ...flow.definition,
+            nodes: [...(flow.definition.nodes || [])]
+          };
           state.flowInfo = flow.info;
           // Reset to the flow's default language when loading a new flow
           state.languageCode = flowLang;
