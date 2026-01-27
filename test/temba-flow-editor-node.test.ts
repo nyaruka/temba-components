@@ -835,7 +835,8 @@ describe('EditorNode', () => {
         makeTarget: stub(),
         makeSource: stub(),
         connectIds: stub(),
-        removeExitConnection: stub()
+        removeExitConnection: stub(),
+        forgetNode: stub()
       };
       editorNode['plumber'] = mockPlumber;
     });

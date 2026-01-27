@@ -33,6 +33,9 @@ export class CanvasNode extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.languageCode)
   private languageCode!: string;
 
+  @fromStore(zustand, (state: AppState) => state.viewingRevision)
+  private viewingRevision!: boolean;
+
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: any;
 
@@ -93,11 +96,8 @@ export class CanvasNode extends RapidElement {
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         min-width: 200px;
         border-radius: var(--curvature);
-        
         color: #333;
-        cursor: move;
         user-select: none;
-
       }
 
       /* Flow start indicator */
@@ -375,6 +375,12 @@ export class CanvasNode extends RapidElement {
       .exit.connected:hover {
         background-color: var(--color-connectors, #e6e6e6);
       }
+
+      .exit.connected.read-only, .exit.connected.read-only:hover {
+        background-color: #fff;
+        pointer-events: none !important;
+        cursor: default;
+      }
       
       .exit.removing, .exit.removing:hover {
         background-color: var(--color-error);
@@ -628,7 +634,6 @@ export class CanvasNode extends RapidElement {
   private handleExitClick(event: MouseEvent, exit: Exit) {
     event.preventDefault();
     event.stopPropagation();
-
     const exitId = exit.uuid;
 
     // If exit is not connected, do nothing
@@ -1301,23 +1306,19 @@ export class CanvasNode extends RapidElement {
     return html`<div class="cn-title" style="background:${color}">
       ${this.ui?.type === 'execute_actions'
         ? html`<temba-icon
-            class="drag-handle ${this.isTranslating
-              ? 'translating-hidden'
-              : ''}"
+            class="drag-handle ${this.isReadOnly() ? 'translating-hidden' : ''}"
             name="sort"
           ></temba-icon>`
         : this.node?.actions?.length > 1
         ? html`<temba-icon
-            class="drag-handle ${this.isTranslating
-              ? 'translating-hidden'
-              : ''}"
+            class="drag-handle ${this.isReadOnly() ? 'translating-hidden' : ''}"
             name="sort"
           ></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div
-        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
+        class="remove-button ${this.isReadOnly() ? 'translating-hidden' : ''}"
         @click=${(e: MouseEvent) =>
           this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
@@ -1351,7 +1352,7 @@ export class CanvasNode extends RapidElement {
           : html`${config.name}`}
       </div>
       <div
-        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
+        class="remove-button ${this.isReadOnly() ? 'translating-hidden' : ''}"
         @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
         title="Remove node"
       >
@@ -1590,11 +1591,16 @@ export class CanvasNode extends RapidElement {
         class=${getClasses({
           exit: true,
           connected: !!exit.destination_uuid,
-          removing: this.exitRemovingState.has(exit.uuid)
+          removing: this.exitRemovingState.has(exit.uuid),
+          'read-only': this.isReadOnly()
         })}
         @click=${(e: MouseEvent) => this.handleExitClick(e, exit)}
       ></div>
     </div>`;
+  }
+
+  private isReadOnly(): boolean {
+    return this.viewingRevision || this.isTranslating;
   }
 
   public render() {
@@ -1685,7 +1691,7 @@ export class CanvasNode extends RapidElement {
                 (exit) => this.renderExit(exit)
               )}
             </div>`}
-        ${this.ui.type === 'execute_actions' && !this.isTranslating
+        ${this.ui.type === 'execute_actions' && !this.isReadOnly()
           ? html`<div
               class="add-action-button"
               @click=${(e: MouseEvent) => this.handleAddActionClick(e)}

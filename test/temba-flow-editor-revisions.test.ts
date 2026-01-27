@@ -118,7 +118,7 @@ describe('Editor Revisions', () => {
     // Check tab color
     const tab = element.querySelector('#revisions-tab');
     expect(tab).to.exist;
-    expect(tab.getAttribute('color')).to.equal('#a626a4');
+    expect(tab.getAttribute('color')).to.equal('rgb(142, 94, 167)');
 
     // Check selected item styles
     const selectedItem = element.querySelector(

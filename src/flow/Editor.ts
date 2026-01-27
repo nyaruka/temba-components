@@ -18,7 +18,7 @@ import {
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, Workspace } from '../interfaces';
-import { generateUUID, postJSON, fetchResults } from '../utils';
+import { generateUUID, postJSON, fetchResults, getClasses } from '../utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 
 interface Revision {
@@ -365,17 +365,27 @@ export class Editor extends RapidElement {
         transition: none !important;
       }
 
-      #canvas.read-only {
+      #canvas.viewing-revision {
         pointer-events: none;
       }
 
-      #grid.read-only {
+      #canvas.read-only svg {
+        pointer-events: none;
+      }
+
+      #grid.viewing-revision {
         background-color: #fff9fc;
         background-image: radial-gradient(
           circle,
           rgba(166, 38, 164, 0.2) 1px,
           transparent 1px
         );
+      }
+
+      #grid.viewing-revision temba-flow-node,
+      #grid.viewing-revision svg.jtk-connector,
+      #grid.viewing-revision .activity-overlay {
+        opacity: 0.5;
       }
 
       body .jtk-endpoint {
@@ -432,10 +442,26 @@ export class Editor extends RapidElement {
         stroke-width: 3px;
       }
 
+      body #canvas.read-only-connections svg.jtk-connector.jtk-hover path {
+        stroke: var(--color-connectors) !important;
+      }
+
       body .plumb-connector.jtk-hover .plumb-arrow {
         fill: var(--color-success) !important;
         stroke-width: 0px;
         z-index: 10;
+      }
+
+      body
+        #canvas.read-only-connections
+        .plumb-connector.jtk-hover
+        .plumb-arrow {
+        fill: var(--color-connectors) !important;
+        ponter-events: none;
+      }
+
+      body #canvas.read-only-connections svg {
+        pointer-events: none;
       }
 
       /* Activity overlays on connections */
@@ -956,10 +982,10 @@ export class Editor extends RapidElement {
     }, SAVE_QUIET_TIME);
   }
 
-  private saveChanges(definitionOverride?: FlowDefinition): void {
+  private saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
     const definition = definitionOverride || this.definition;
     // post the flow definition to the server
-    getStore()
+    return getStore()
       .postJSON(`/flow/revisions/${this.flow}/`, definition)
       .then((response) => {
         // Update flow info and revision with the response data
@@ -972,6 +998,11 @@ export class Editor extends RapidElement {
 
           if (response.json.revision?.revision !== undefined) {
             state.setRevision(response.json.revision.revision);
+          }
+
+          // if the revisions window is open, refresh the list
+          if (!this.revisionsWindowHidden) {
+            this.fetchRevisions();
           }
         }
       })
@@ -1135,6 +1166,8 @@ export class Editor extends RapidElement {
     // ignore right clicks
     if (event.button !== 0) return;
 
+    if (this.isReadOnly()) return;
+
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
     const target = event.target as HTMLElement;
@@ -1204,6 +1237,8 @@ export class Editor extends RapidElement {
   }
 
   private handleCanvasMouseDown(event: MouseEvent): void {
+    if (this.isReadOnly()) return;
+
     const target = event.target as HTMLElement;
     if (target.id === 'canvas' || target.id === 'grid') {
       // Ignore clicks on exits
@@ -1798,7 +1833,7 @@ export class Editor extends RapidElement {
   }
 
   private handleCanvasContextMenu(event: MouseEvent): void {
-    if (this.viewingRevision) {
+    if (this.isReadOnly()) {
       event.preventDefault();
       return;
     }
@@ -2987,9 +3022,7 @@ export class Editor extends RapidElement {
 
   private handleRevisionsTabClick(): void {
     if (this.revisionsWindowHidden) {
-      if (!this.revisions.length) {
-        this.fetchRevisions();
-      }
+      this.fetchRevisions();
       this.revisionsWindowHidden = false;
       this.localizationWindowHidden = true; // Close other window
     } else {
@@ -3079,13 +3112,16 @@ export class Editor extends RapidElement {
       revision: this.preRevertState.definition.revision
     };
 
-    this.saveChanges(definitionToSave);
+    await this.saveChanges(definitionToSave);
     this.viewingRevision = null;
     this.preRevertState = null;
     this.revisionsWindowHidden = true;
 
     // Refresh revisions list to show the new one
     this.fetchRevisions();
+
+    // Fetch the latest version of the flow to ensure the store is up to date
+    getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
   }
 
   private renderRevisionsTab(): TemplateResult | string {
@@ -3438,6 +3474,10 @@ export class Editor extends RapidElement {
     });
   }
 
+  private isReadOnly(): boolean {
+    return this.viewingRevision !== null || this.isTranslating;
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
@@ -3452,11 +3492,18 @@ export class Editor extends RapidElement {
       <div id="editor">
         <div
           id="grid"
-          class="${this.viewingRevision ? 'read-only' : ''}"
+          class="${this.viewingRevision ? 'viewing-revision' : ''}"
           style="min-width:100%;width:${this.canvasSize.width}px; height:${this
             .canvasSize.height}px"
         >
-          <div id="canvas" class="${this.viewingRevision ? 'read-only' : ''}">
+          <div
+            id="canvas"
+            class="${getClasses({
+              'viewing-revision': !!this.viewingRevision,
+              'read-only-connections':
+                !!this.viewingRevision || this.isTranslating
+            })}"
+          >
             ${this.definition
               ? repeat(
                   [...this.definition.nodes].sort((a, b) =>

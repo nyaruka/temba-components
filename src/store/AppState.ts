@@ -105,6 +105,7 @@ export interface AppState {
   languageNames: { [code: string]: Language };
   workspace: Workspace;
   isTranslating: boolean;
+  viewingRevision: boolean;
 
   dirtyDate: Date | null;
 
@@ -174,6 +175,7 @@ export const zustand = createStore<AppState>()(
       flowDefinition: null,
       flowInfo: null,
       isTranslating: false,
+      viewingRevision: false,
       dirtyDate: null,
       activity: null,
       simulatorActivity: null,
@@ -187,6 +189,7 @@ export const zustand = createStore<AppState>()(
       },
 
       fetchRevision: async (endpoint: string, id: string = null) => {
+        const viewingRevision = !!id && id !== 'latest';
         if (!id) {
           id = 'latest';
         }
@@ -198,7 +201,11 @@ export const zustand = createStore<AppState>()(
           throw new Error('Network response was not ok');
         }
         const data = (await response.json()) as FlowContents;
-        set({ flowInfo: data.info, flowDefinition: data.definition });
+        set({
+          flowInfo: data.info,
+          flowDefinition: data.definition,
+          viewingRevision
+        });
       },
 
       fetchWorkspace: async (endpoint) => {
