@@ -52,17 +52,6 @@ export const SOURCE_DEFAULTS = {
   dragAllowedWhenFull: false
 };
 
-export const SOURCE_CONNECTED = {
-  ...SOURCE_DEFAULTS,
-  endpoint: {
-    ...SOURCE_DEFAULTS.endpoint,
-    options: {
-      ...SOURCE_DEFAULTS.endpoint.options,
-      cssClass: 'plumb-source connected'
-    }
-  }
-};
-
 export const TARGET_DEFAULTS = {
   endpoint: {
     type: RectangleEndpoint.type,
@@ -99,11 +88,10 @@ export class Plumber {
   private hideContactsTimeout: number | null = null;
   private showContactsTimeout: number | null = null;
   private editor: any;
-  private canvas: HTMLElement;
 
-  initializeJSPlumb() {
+  initializeJSPlumb(canvas: HTMLElement) {
     this.jsPlumb = newInstance({
-      container: this.canvas,
+      container: canvas,
       connectionsDetachable: true,
       endpointStyle: {
         fill: 'green'
@@ -147,9 +135,8 @@ export class Plumber {
 
   constructor(canvas: HTMLElement, editor: any) {
     this.editor = editor;
-    this.canvas = canvas;
     ready(() => {
-      this.initializeJSPlumb();
+      this.initializeJSPlumb(canvas);
     });
   }
 

@@ -180,7 +180,7 @@ export class CanvasNode extends RapidElement {
         opacity: 1;
       }
 
-      .translating-hidden {
+      .read-only-hidden {
         visibility: hidden !important;
         pointer-events: none !important;
       }
@@ -1306,19 +1306,19 @@ export class CanvasNode extends RapidElement {
     return html`<div class="cn-title" style="background:${color}">
       ${this.ui?.type === 'execute_actions'
         ? html`<temba-icon
-            class="drag-handle ${this.isReadOnly() ? 'translating-hidden' : ''}"
+            class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
             name="sort"
           ></temba-icon>`
         : this.node?.actions?.length > 1
         ? html`<temba-icon
-            class="drag-handle ${this.isReadOnly() ? 'translating-hidden' : ''}"
+            class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
             name="sort"
           ></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div
-        class="remove-button ${this.isReadOnly() ? 'translating-hidden' : ''}"
+        class="remove-button ${this.isReadOnly() ? 'read-only-hidden' : ''}"
         @click=${(e: MouseEvent) =>
           this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
@@ -1352,7 +1352,7 @@ export class CanvasNode extends RapidElement {
           : html`${config.name}`}
       </div>
       <div
-        class="remove-button ${this.isReadOnly() ? 'translating-hidden' : ''}"
+        class="remove-button ${this.isReadOnly() ? 'read-only-hidden' : ''}"
         @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
         title="Remove node"
       >
