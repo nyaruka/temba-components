@@ -9,12 +9,31 @@ import {
   NodeUI
 } from '../store/flow-definition';
 import { getStore } from '../store/Store';
-import { AppState, fromStore, zustand } from '../store/AppState';
+import {
+  AppState,
+  fromStore,
+  zustand,
+  FLOW_SPEC_VERSION
+} from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, Workspace } from '../interfaces';
-import { generateUUID, postJSON } from '../utils';
+import { generateUUID, postJSON, fetchResults, getClasses } from '../utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
+
+interface Revision {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    name?: string;
+  };
+  created_on: string;
+  comment?: string;
+}
+
 import { ACTION_GROUP_METADATA } from './types';
 import { Checkbox } from '../form/Checkbox';
 
@@ -212,6 +231,23 @@ export class Editor extends RapidElement {
   @state()
   private autoTranslateError: string | null = null;
 
+  @state()
+  private revisionsWindowHidden = true;
+
+  @state()
+  private revisions: Revision[] = [];
+
+  @state()
+  private viewingRevision: Revision | null = null;
+
+  @state()
+  private isLoadingRevisions = false;
+
+  private preRevertState: {
+    definition: FlowDefinition;
+    dirtyDate: Date | null;
+  } | null = null;
+
   private translationCache = new Map<string, string>();
 
   // NodeEditor state - handles both node and action editing
@@ -329,6 +365,29 @@ export class Editor extends RapidElement {
         transition: none !important;
       }
 
+      #canvas.viewing-revision {
+        pointer-events: none;
+      }
+
+      #canvas.read-only svg {
+        pointer-events: none;
+      }
+
+      #grid.viewing-revision {
+        background-color: #fff9fc;
+        background-image: radial-gradient(
+          circle,
+          rgba(166, 38, 164, 0.2) 1px,
+          transparent 1px
+        );
+      }
+
+      #grid.viewing-revision temba-flow-node,
+      #grid.viewing-revision svg.jtk-connector,
+      #grid.viewing-revision .activity-overlay {
+        opacity: 0.5;
+      }
+
       body .jtk-endpoint {
         width: initial;
         height: initial;
@@ -383,10 +442,26 @@ export class Editor extends RapidElement {
         stroke-width: 3px;
       }
 
+      body #canvas.read-only-connections svg.jtk-connector.jtk-hover path {
+        stroke: var(--color-connectors) !important;
+      }
+
       body .plumb-connector.jtk-hover .plumb-arrow {
         fill: var(--color-success) !important;
         stroke-width: 0px;
         z-index: 10;
+      }
+
+      body
+        #canvas.read-only-connections
+        .plumb-connector.jtk-hover
+        .plumb-arrow {
+        fill: var(--color-connectors) !important;
+        ponter-events: none;
+      }
+
+      body #canvas.read-only-connections svg {
+        pointer-events: none;
       }
 
       /* Activity overlays on connections */
@@ -677,6 +752,18 @@ export class Editor extends RapidElement {
         width: 100%;
       }
 
+      .revert-button {
+        background: var(--color-primary-dark);
+        border: none;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: var(--curvature);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
       .auto-translate-button {
         background: var(--color-primary-dark);
         border: none;
@@ -895,10 +982,11 @@ export class Editor extends RapidElement {
     }, SAVE_QUIET_TIME);
   }
 
-  private saveChanges(): void {
+  private saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
+    const definition = definitionOverride || this.definition;
     // post the flow definition to the server
-    getStore()
-      .postJSON(`/flow/revisions/${this.flow}/`, this.definition)
+    return getStore()
+      .postJSON(`/flow/revisions/${this.flow}/`, definition)
       .then((response) => {
         // Update flow info and revision with the response data
         if (response.json) {
@@ -910,6 +998,11 @@ export class Editor extends RapidElement {
 
           if (response.json.revision?.revision !== undefined) {
             state.setRevision(response.json.revision.revision);
+          }
+
+          // if the revisions window is open, refresh the list
+          if (!this.revisionsWindowHidden) {
+            this.fetchRevisions();
           }
         }
       })
@@ -961,7 +1054,7 @@ export class Editor extends RapidElement {
       }
 
       this.activityTimer = window.setTimeout(() => {
-        this.fetchActivityData();
+        // this.fetchActivityData();
       }, this.activityInterval);
     });
   }
@@ -1073,6 +1166,8 @@ export class Editor extends RapidElement {
     // ignore right clicks
     if (event.button !== 0) return;
 
+    if (this.isReadOnly()) return;
+
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
     const target = event.target as HTMLElement;
@@ -1142,6 +1237,8 @@ export class Editor extends RapidElement {
   }
 
   private handleCanvasMouseDown(event: MouseEvent): void {
+    if (this.isReadOnly()) return;
+
     const target = event.target as HTMLElement;
     if (target.id === 'canvas' || target.id === 'grid') {
       // Ignore clicks on exits
@@ -1215,6 +1312,7 @@ export class Editor extends RapidElement {
     // Clean up jsPlumb connections for nodes before removing them
     uuids.forEach((uuid) => {
       this.plumber.removeNodeConnections(uuid);
+      this.plumber.removeAllEndpoints(uuid);
     });
 
     // Now remove them from the definition
@@ -1735,6 +1833,11 @@ export class Editor extends RapidElement {
   }
 
   private handleCanvasContextMenu(event: MouseEvent): void {
+    if (this.isReadOnly()) {
+      event.preventDefault();
+      return;
+    }
+
     // Check if we right-clicked on empty canvas space
     const target = event.target as HTMLElement;
     if (target.id !== 'canvas') {
@@ -2654,6 +2757,7 @@ export class Editor extends RapidElement {
     }
 
     this.localizationWindowHidden = false;
+    this.revisionsWindowHidden = true;
 
     const alreadySelected = languages.some(
       (lang) => lang.code === this.languageCode
@@ -2916,6 +3020,209 @@ export class Editor extends RapidElement {
     this.autoTranslating = false;
   }
 
+  private handleRevisionsTabClick(): void {
+    if (this.revisionsWindowHidden) {
+      this.fetchRevisions();
+      this.revisionsWindowHidden = false;
+      this.localizationWindowHidden = true; // Close other window
+    } else {
+      this.revisionsWindowHidden = true;
+    }
+  }
+
+  private handleRevisionsWindowClosed(): void {
+    this.revisionsWindowHidden = true;
+    if (this.viewingRevision) {
+      this.handleCancelRevisionView();
+    }
+  }
+
+  private async fetchRevisions() {
+    this.isLoadingRevisions = true;
+    try {
+      const results = await fetchResults(
+        `/flow/revisions/${this.flow}/?version=${FLOW_SPEC_VERSION}`
+      );
+      this.revisions = results.slice(1);
+    } catch (e) {
+      console.error('Error fetching revisions', e);
+    } finally {
+      this.isLoadingRevisions = false;
+    }
+  }
+
+  private async handleRevisionClick(revision: Revision) {
+    if (this.viewingRevision?.id === revision.id) {
+      return;
+    }
+
+    if (!this.viewingRevision) {
+      // Save current state first
+      this.preRevertState = {
+        definition: this.definition,
+        dirtyDate: this.dirtyDate
+      };
+    }
+
+    this.viewingRevision = revision;
+    this.isLoadingRevisions = true;
+    this.plumber?.reset();
+
+    try {
+      await getStore()
+        .getState()
+        .fetchRevision(`/flow/revisions/${this.flow}`, revision.id.toString());
+    } catch (e) {
+      console.error('Error fetching revision details', e);
+      this.handleCancelRevisionView();
+    } finally {
+      this.isLoadingRevisions = false;
+    }
+  }
+
+  private handleCancelRevisionView() {
+    this.plumber?.reset();
+    if (this.preRevertState) {
+      const currentInfo = getStore().getState().flowInfo;
+      getStore().getState().setFlowContents({
+        definition: this.preRevertState.definition,
+        info: currentInfo
+      });
+      if (this.preRevertState.dirtyDate) {
+        getStore().getState().setDirtyDate(this.preRevertState.dirtyDate);
+      }
+    } else {
+      // Fallback if no pre-revert definition
+      getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+    }
+
+    this.viewingRevision = null;
+    this.preRevertState = null;
+  }
+
+  private async handleRevertClick() {
+    if (!this.viewingRevision || !this.preRevertState) return;
+    this.plumber?.reset();
+
+    // Use the content of the viewing revision (this.definition)
+    // but the revision number of the current head (preRevertState)
+    // so the server accepts it as a valid update
+    const definitionToSave = {
+      ...this.definition,
+      revision: this.preRevertState.definition.revision
+    };
+
+    await this.saveChanges(definitionToSave);
+    this.viewingRevision = null;
+    this.preRevertState = null;
+    this.revisionsWindowHidden = true;
+
+    // Refresh revisions list to show the new one
+    this.fetchRevisions();
+
+    // Fetch the latest version of the flow to ensure the store is up to date
+    getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+  }
+
+  private renderRevisionsTab(): TemplateResult | string {
+    return html`
+      <temba-floating-tab
+        id="revisions-tab"
+        icon="revisions"
+        label="Revisions"
+        color="rgb(142, 94, 167)"
+        top="105"
+        .hidden=${!this.revisionsWindowHidden && this.localizationWindowHidden}
+        @temba-button-clicked=${this.handleRevisionsTabClick}
+      ></temba-floating-tab>
+    `;
+  }
+
+  private renderRevisionsWindow(): TemplateResult | string {
+    return html`
+      <temba-floating-window
+        id="revisions-window"
+        header="Revisions"
+        .width=${360}
+        .maxHeight=${600}
+        .top=${75}
+        color="rgb(142, 94, 167)"
+        .hidden=${this.revisionsWindowHidden}
+        @temba-dialog-hidden=${this.handleRevisionsWindowClosed}
+      >
+        <div class="localization-window-content">
+          <div
+            class="revisions-list"
+            style="display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding-bottom:10px;"
+          >
+            ${this.isLoadingRevisions && !this.revisions.length
+              ? html`<temba-loading></temba-loading>`
+              : this.revisions.map((rev) => {
+                  const isSelected = this.viewingRevision?.id === rev.id;
+                  return html`
+                    <div
+                      class="revision-item ${isSelected ? 'selected' : ''}"
+                      style="padding:10px; border-radius:4px; cursor:pointer; background:${
+                        isSelected
+                          ? '#f0f6ff' // Light blue bg for selected
+                          : '#f9fafb'
+                      }; border:1px solid ${
+                    isSelected ? '#a4cafe' : '#e5e7eb'
+                  }; transition: all 0.2s ease;"
+                      @click=${() => this.handleRevisionClick(rev)}
+                    >
+                      <div
+                        style="display:flex; justify-content:space-between; align-items:center;"
+                      >
+                        <div
+                          class="revision-header"
+                          style="margin-bottom: 2px;"
+                        >
+                          <div
+                            style="font-weight:600; font-size:13px; color:#111827;"
+                          >
+                            <temba-date value=${
+                              rev.created_on
+                            } display="duration"></temba-date>
+                            
+                          </div>
+                          <div style="font-size:11px; color:#6b7280;">
+                            ${rev.user.name || rev.user.username}
+                          </div>
+                        </div>
+                        ${
+                          isSelected
+                            ? html`<button
+                                class="revert-button"
+                                @click=${this.handleRevertClick}
+                              >
+                                Revert
+                              </button>`
+                            : html``
+                        }
+                        
+                        </button>
+                      </div>
+
+                      ${
+                        rev.comment
+                          ? html`<div
+                              style="font-size:12px; color:#4b5563; margin-top:4px;"
+                            >
+                              ${rev.comment}
+                            </div>`
+                          : ''
+                      }
+                      
+                    </div>
+                  `;
+                })}
+          </div>
+        </div>
+      </temba-floating-window>
+    `;
+  }
+
   private renderLocalizationWindow(): TemplateResult | string {
     const languages = this.getLocalizationLanguages();
     if (!languages.length) {
@@ -3167,6 +3474,10 @@ export class Editor extends RapidElement {
     });
   }
 
+  private isReadOnly(): boolean {
+    return this.viewingRevision !== null || this.isTranslating;
+  }
+
   public render(): TemplateResult {
     // we have to embed our own style since we are in light DOM
     const style = html`<style>
@@ -3176,20 +3487,30 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style} ${this.renderLocalizationWindow()}
-      ${this.renderAutoTranslateDialog()}
+    return html`${style} ${this.renderRevisionsWindow()}
+      ${this.renderLocalizationWindow()} ${this.renderAutoTranslateDialog()}
       <div id="editor">
         <div
           id="grid"
+          class="${this.viewingRevision ? 'viewing-revision' : ''}"
           style="min-width:100%;width:${this.canvasSize.width}px; height:${this
             .canvasSize.height}px"
         >
-          <div id="canvas">
+          <div
+            id="canvas"
+            class="${getClasses({
+              'viewing-revision': !!this.viewingRevision,
+              'read-only-connections':
+                !!this.viewingRevision || this.isTranslating
+            })}"
+          >
             ${this.definition
               ? repeat(
-                  this.definition.nodes,
+                  [...this.definition.nodes].sort((a, b) =>
+                    a.uuid.localeCompare(b.uuid)
+                  ),
                   (node) => node.uuid,
-                  (node, index) => {
+                  (node) => {
                     const position = this.definition._ui?.nodes[node.uuid]
                       ?.position || {
                       left: 0,
@@ -3203,7 +3524,9 @@ export class Editor extends RapidElement {
                     const selected = this.selectedItems.has(node.uuid);
 
                     // first node is the flow start (nodes are sorted by position)
-                    const isFlowStart = index === 0;
+                    const isFlowStart =
+                      this.definition.nodes.length > 0 &&
+                      this.definition.nodes[0].uuid === node.uuid;
 
                     return html`<temba-flow-node
                       class="draggable ${dragging ? 'dragging' : ''} ${selected
@@ -3263,10 +3586,12 @@ export class Editor extends RapidElement {
         : ''}
 
       <temba-canvas-menu></temba-canvas-menu>
-      <temba-node-type-selector
-        .flowType=${this.flowType}
-        .features=${this.features}
-      ></temba-node-type-selector>
-      ${this.renderLocalizationTab()} `;
+      ${!this.viewingRevision
+        ? html`<temba-node-type-selector
+            .flowType=${this.flowType}
+            .features=${this.features}
+          ></temba-node-type-selector>`
+        : ''}
+      ${this.renderRevisionsTab()} ${this.renderLocalizationTab()} `;
   }
 }

@@ -29,7 +29,14 @@ describe('Plumber - Connection Management', () => {
       removeClass: stub(),
       batch: stub().callsFake((fn: any) => fn()),
       addEndpoint: stub().returns({}),
+      revalidate: stub(),
       connect: stub(),
+      getEndpoints: stub().returns([
+        { elementId: 'test-from', addClass: stub() }
+      ]),
+      select: stub().returns({
+        deleteAll: stub()
+      }),
       selectEndpoints: stub().returns({
         deleteAll: stub()
       }),
@@ -131,7 +138,6 @@ describe('Plumber - Connection Management', () => {
       expect(result).to.be.true;
       expect((plumber as any).jsPlumb.deleteConnection).to.have.been
         .calledTwice;
-      expect((plumber as any).jsPlumb.removeAllEndpoints).to.have.been.called;
     });
 
     it('returns false when no connections exist', () => {

@@ -31,6 +31,12 @@ describe('Plumber', () => {
       batch: stub().callsFake((fn) => fn()),
       addEndpoint: stub().returns({}),
       connect: stub(),
+      getEndpoints: stub().returns([
+        { elementId: 'test-from', addClass: stub() }
+      ]),
+      select: stub().returns({
+        deleteAll: stub()
+      }),
       selectEndpoints: stub().returns({
         deleteAll: stub()
       }),

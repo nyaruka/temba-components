@@ -33,6 +33,9 @@ export class CanvasNode extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.languageCode)
   private languageCode!: string;
 
+  @fromStore(zustand, (state: AppState) => state.viewingRevision)
+  private viewingRevision!: boolean;
+
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: any;
 
@@ -48,6 +51,8 @@ export class CanvasNode extends RapidElement {
 
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
+
+  private connectionTimeout: number | null = null;
 
   // Set of exit UUIDs that are in the removing state
   private exitRemovingState: Set<string> = new Set();
@@ -91,11 +96,8 @@ export class CanvasNode extends RapidElement {
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         min-width: 200px;
         border-radius: var(--curvature);
-        
         color: #333;
-        cursor: move;
         user-select: none;
-
       }
 
       /* Flow start indicator */
@@ -178,7 +180,7 @@ export class CanvasNode extends RapidElement {
         opacity: 1;
       }
 
-      .translating-hidden {
+      .read-only-hidden {
         visibility: hidden !important;
         pointer-events: none !important;
       }
@@ -373,6 +375,12 @@ export class CanvasNode extends RapidElement {
       .exit.connected:hover {
         background-color: var(--color-connectors, #e6e6e6);
       }
+
+      .exit.connected.read-only, .exit.connected.read-only:hover {
+        background-color: #fff;
+        pointer-events: none !important;
+        cursor: default;
+      }
       
       .exit.removing, .exit.removing:hover {
         background-color: var(--color-error);
@@ -530,23 +538,31 @@ export class CanvasNode extends RapidElement {
     if (changes.has('node')) {
       // Only proceed if plumber is available (for tests that don't set it up)
       if (this.plumber) {
-        this.plumber.removeNodeConnections(this.node.uuid);
-        // make our initial connections
-        for (const exit of this.node.exits) {
-          if (!exit.destination_uuid) {
-            // if we have no destination, then we are a source
-            // so make our source endpoint
-            this.plumber.makeSource(exit.uuid);
-          } else {
-            this.plumber.connectIds(
-              this.node.uuid,
-              exit.uuid,
-              exit.destination_uuid
-            );
-          }
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
         }
 
-        this.plumber.revalidate([this.node.uuid]);
+        // Pass exit IDs explicitly to avoid DOM querying dependency
+        const exitIds = this.node.exits.map((e) => e.uuid);
+        this.plumber.removeNodeConnections(this.node.uuid, exitIds);
+
+        // make our initial connections
+        // We use setTimeout to allow for DOM updates to complete before querying for exits
+        this.connectionTimeout = window.setTimeout(() => {
+          for (const exit of this.node.exits) {
+            this.plumber.makeSource(exit.uuid);
+            if (exit.destination_uuid) {
+              this.plumber.connectIds(
+                this.node.uuid,
+                exit.uuid,
+                exit.destination_uuid
+              );
+            }
+          }
+          // Note: revalidation is handled by plumber's processPendingConnections which calls repaintEverything
+          this.connectionTimeout = null;
+          this.plumber.revalidate([this.node.uuid]);
+        }, 0);
       }
 
       const ele = this.parentElement;
@@ -564,6 +580,15 @@ export class CanvasNode extends RapidElement {
   }
 
   disconnectedCallback() {
+    // Force cleanup of connections for this node
+    if (this.plumber && this.node) {
+      if (this.connectionTimeout) {
+        clearTimeout(this.connectionTimeout);
+        this.connectionTimeout = null;
+      }
+      this.plumber.forgetNode(this.node.uuid);
+    }
+
     // Remove the event listener when the component is removed
     super.disconnectedCallback();
 
@@ -609,7 +634,6 @@ export class CanvasNode extends RapidElement {
   private handleExitClick(event: MouseEvent, exit: Exit) {
     event.preventDefault();
     event.stopPropagation();
-
     const exitId = exit.uuid;
 
     // If exit is not connected, do nothing
@@ -1282,23 +1306,19 @@ export class CanvasNode extends RapidElement {
     return html`<div class="cn-title" style="background:${color}">
       ${this.ui?.type === 'execute_actions'
         ? html`<temba-icon
-            class="drag-handle ${this.isTranslating
-              ? 'translating-hidden'
-              : ''}"
+            class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
             name="sort"
           ></temba-icon>`
         : this.node?.actions?.length > 1
         ? html`<temba-icon
-            class="drag-handle ${this.isTranslating
-              ? 'translating-hidden'
-              : ''}"
+            class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
             name="sort"
           ></temba-icon>`
         : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div
-        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
+        class="remove-button ${this.isReadOnly() ? 'read-only-hidden' : ''}"
         @click=${(e: MouseEvent) =>
           this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
@@ -1332,7 +1352,7 @@ export class CanvasNode extends RapidElement {
           : html`${config.name}`}
       </div>
       <div
-        class="remove-button ${this.isTranslating ? 'translating-hidden' : ''}"
+        class="remove-button ${this.isReadOnly() ? 'read-only-hidden' : ''}"
         @click=${(e: MouseEvent) => this.handleNodeRemoveClick(e)}
         title="Remove node"
       >
@@ -1571,11 +1591,16 @@ export class CanvasNode extends RapidElement {
         class=${getClasses({
           exit: true,
           connected: !!exit.destination_uuid,
-          removing: this.exitRemovingState.has(exit.uuid)
+          removing: this.exitRemovingState.has(exit.uuid),
+          'read-only': this.isReadOnly()
         })}
         @click=${(e: MouseEvent) => this.handleExitClick(e, exit)}
       ></div>
     </div>`;
+  }
+
+  private isReadOnly(): boolean {
+    return this.viewingRevision || this.isTranslating;
   }
 
   public render() {
@@ -1666,7 +1691,7 @@ export class CanvasNode extends RapidElement {
                 (exit) => this.renderExit(exit)
               )}
             </div>`}
-        ${this.ui.type === 'execute_actions' && !this.isTranslating
+        ${this.ui.type === 'execute_actions' && !this.isReadOnly()
           ? html`<div
               class="add-action-button"
               @click=${(e: MouseEvent) => this.handleAddActionClick(e)}
