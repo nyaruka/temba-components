@@ -183,7 +183,6 @@ export class Simulator extends RapidElement {
         backdrop-filter: blur(10px);
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        pointer-events: all;
       }
       .option-btn {
         background: rgba(255, 255, 255, 0.1);
@@ -357,6 +356,10 @@ export class Simulator extends RapidElement {
         left: var(--context-offset);
         opacity: 1;
         pointer-events: auto;
+      }
+
+      .context-explorer.hidden {
+        pointer-events: none !important;
       }
 
       .context-item {
@@ -1319,8 +1322,6 @@ export class Simulator extends RapidElement {
     const phoneWindow = this.shadowRoot.getElementById(
       'phone-window'
     ) as FloatingWindow;
-    // phoneWindow.hide();
-
     phoneWindow.handleClose();
     this.isVisible = false;
     getStore().getState().setSimulatorActive(false);
@@ -1753,7 +1754,9 @@ export class Simulator extends RapidElement {
       >
         <div class="phone-simulator" style="${styleVars}">
           <div
-            class="context-explorer ${this.contextExplorerOpen ? 'open' : ''}"
+            class="context-explorer ${this.contextExplorerOpen
+              ? 'open'
+              : ''} ${this.isVisible ? 'visible' : 'hidden'}"
           >
             <div class="context-explorer-scroll">
               ${this.context
@@ -1884,7 +1887,10 @@ export class Simulator extends RapidElement {
               </div>
             </div>
           </div>
-          <div class="option-pane">
+          <div
+            class="option-pane"
+            style="pointer-events:${this.isVisible ? 'all' : 'none'}"
+          >
             <button class="option-btn" @click=${this.handleClose} title="Close">
               <temba-icon name="x" size="1.5"></temba-icon>
             </button>

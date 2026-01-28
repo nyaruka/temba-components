@@ -49,6 +49,7 @@ import {
   NodeBounds,
   nodesOverlap
 } from './utils';
+import { FloatingWindow } from '../layout/FloatingWindow';
 
 export function snapToGrid(value: number): number {
   const snapped = Math.round(value / 20) * 20;
@@ -3025,15 +3026,24 @@ export class Editor extends RapidElement {
       this.fetchRevisions();
       this.revisionsWindowHidden = false;
       this.localizationWindowHidden = true; // Close other window
-    } else {
-      this.revisionsWindowHidden = true;
     }
   }
 
   private handleRevisionsWindowClosed(): void {
+    this.resetRevisionsScroll();
     this.revisionsWindowHidden = true;
     if (this.viewingRevision) {
       this.handleCancelRevisionView();
+    }
+  }
+
+  private resetRevisionsScroll() {
+    const list =
+      this.querySelector('#revisions-window').shadowRoot?.querySelector(
+        '.body'
+      );
+    if (list) {
+      list.scrollTop = 0;
     }
   }
 
@@ -3117,6 +3127,11 @@ export class Editor extends RapidElement {
     this.preRevertState = null;
     this.revisionsWindowHidden = true;
 
+    const revisionsWindow = document.getElementById(
+      'revisions-window'
+    ) as FloatingWindow;
+    revisionsWindow.handleClose();
+
     // Refresh revisions list to show the new one
     this.fetchRevisions();
 
@@ -3162,7 +3177,7 @@ export class Editor extends RapidElement {
                   return html`
                     <div
                       class="revision-item ${isSelected ? 'selected' : ''}"
-                      style="padding:10px; border-radius:4px; cursor:pointer; background:${
+                      style="padding:8px; border-radius:4px; cursor:pointer; background:${
                         isSelected
                           ? '#f0f6ff' // Light blue bg for selected
                           : '#f9fafb'
