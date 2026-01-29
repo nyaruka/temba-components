@@ -836,26 +836,45 @@ export class Editor extends RapidElement {
     }
 
     this.plumber.on('connection:drag', (info: Connection) => {
+      // console.log('connection:drag', info);
       this.dragFromNodeId = document
         .getElementById(info.sourceId)
         .closest('.node').id;
       this.sourceId = info.sourceId;
     });
 
-    this.plumber.on('connection:abort', () => {
-      this.makeConnection();
+    this.plumber.on('connection:abort', (info) => {
+      // console.log('Connection aborted', info);
+      this.makeConnection(info);
     });
 
-    this.plumber.on('connection:detach', () => {
-      this.makeConnection();
+    this.plumber.on('connection:detach', (info) => {
+      // console.log('Connection detached', info);
+      this.makeConnection(info);
     });
   }
 
-  private makeConnection() {
+  private makeConnection(info) {
     if (this.sourceId && this.targetId && this.isValidTarget) {
       getStore()
         .getState()
         .updateConnection(this.dragFromNodeId, this.sourceId, this.targetId);
+    } else {
+      /*
+      console.log(
+        'Connection not made:',
+        this.sourceId,
+        this.targetId,
+        this.isValidTarget
+      );*/
+
+      if (this.sourceId && info.connection) {
+        this.plumber.connectIds(
+          info.connection.data.nodeId,
+          info.source.id,
+          info.target.id
+        );
+      }
     }
 
     // Clean up visual feedback
