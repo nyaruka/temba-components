@@ -853,18 +853,9 @@ export class Editor extends RapidElement {
 
   private makeConnection() {
     if (this.sourceId && this.targetId && this.isValidTarget) {
-      this.plumber.connectIds(
-        this.dragFromNodeId,
-        this.sourceId,
-        this.targetId
-      );
       getStore()
         .getState()
         .updateConnection(this.dragFromNodeId, this.sourceId, this.targetId);
-
-      setTimeout(() => {
-        this.plumber.repaintEverything();
-      }, 100);
     }
 
     // Clean up visual feedback
@@ -1062,13 +1053,6 @@ export class Editor extends RapidElement {
 
   private handleLanguageChange(languageCode: string): void {
     zustand.getState().setLanguageCode(languageCode);
-
-    // Repaint connections after language change since node sizes can change
-    if (this.plumber) {
-      requestAnimationFrame(() => {
-        this.plumber.repaintEverything();
-      });
-    }
   }
 
   disconnectedCallback(): void {
@@ -1310,14 +1294,8 @@ export class Editor extends RapidElement {
   }
 
   private deleteNodes(uuids: string[]): void {
-    // Clean up jsPlumb connections for nodes before removing them
-    uuids.forEach((uuid) => {
-      this.plumber.removeNodeConnections(uuid);
-      this.plumber.removeAllEndpoints(uuid);
-    });
-
-    // Now remove them from the definition
-    if (uuids.length > 0 && this.plumber) {
+    // Remove nodes from the definition - CanvasNode will handle plumber cleanup
+    if (uuids.length > 0) {
       getStore().getState().removeNodes(uuids);
     }
   }
