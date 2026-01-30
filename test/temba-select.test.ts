@@ -855,6 +855,7 @@ describe('temba-select', () => {
         })
       );
 
+      await openSelect(clock, select);
       await typeInto('temba-select', 're', false);
       await openSelect(clock, select);
       assert.equal(select.visibleOptions.length, 2);
