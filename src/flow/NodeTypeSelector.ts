@@ -259,8 +259,14 @@ export class NodeTypeSelector extends RapidElement {
     this.open = true;
   }
 
-  public close() {
-    this.open = false;
+  public close(fireCanceledEvent: boolean = true) {
+    if (this.open) {
+      this.open = false;
+      // Fire canceled event so parent can clean up, but only if not from a selection
+      if (fireCanceledEvent) {
+        this.fireCustomEvent(CustomEventType.Canceled, {});
+      }
+    }
   }
 
   /**
@@ -297,7 +303,8 @@ export class NodeTypeSelector extends RapidElement {
       nodeType,
       position: this.clickPosition
     } as NodeTypeSelection);
-    this.close();
+    // Close without firing canceled event since we made a selection
+    this.close(false);
   }
 
   private handleOverlayClick() {

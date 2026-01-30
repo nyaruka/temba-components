@@ -29,7 +29,11 @@ export const set_contact_field: ActionConfig = {
       endpoint: '/api/v2/fields.json',
       helpText: 'Select the contact field to update',
       allowCreate: true,
-      createArbitraryOption: (input: string) => ({ key: input, name: input })
+      createArbitraryOption: (input: string) => ({
+        key: input,
+        name: input,
+        type: 'text'
+      })
     },
     value: {
       type: 'text',

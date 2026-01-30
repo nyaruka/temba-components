@@ -629,6 +629,11 @@ export class CanvasNode extends RapidElement {
     // Clear the removing state
     this.exitRemovingState.clear();
     this.actionRemovingState.clear();
+
+    this.plumber.removeNodeConnections(
+      this.node.uuid,
+      this.node.exits.map((e) => e.uuid)
+    );
   }
 
   private handleExitClick(event: MouseEvent, exit: Exit) {
