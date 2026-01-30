@@ -207,6 +207,9 @@ export class Editor extends RapidElement {
   private dragFromNodeId: string | null = null;
 
   @state()
+  private originalConnectionTargetId: string | null = null;
+
+  @state()
   private isValidTarget = true;
 
   @state()
@@ -285,6 +288,20 @@ export class Editor extends RapidElement {
 
   // Track previous target node to clear placeholder when moving between nodes
   private previousActionDragTargetNodeUuid: string | null = null;
+
+  // Connection placeholder state for dropping connections on empty canvas
+  @state()
+  private connectionPlaceholder: {
+    position: FlowPosition;
+    visible: boolean;
+  } | null = null;
+
+  // Track pending connection when dropping on canvas
+  private pendingCanvasConnection: {
+    fromNodeId: string;
+    exitId: string;
+    position: FlowPosition;
+  } | null = null;
 
   private canvasMouseDown = false;
 
@@ -835,12 +852,13 @@ export class Editor extends RapidElement {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
     }
 
-    this.plumber.on('connection:drag', (info: Connection) => {
-      // console.log('connection:drag', info);
-      this.dragFromNodeId = document
-        .getElementById(info.sourceId)
-        .closest('.node').id;
-      this.sourceId = info.sourceId;
+    this.plumber.on('connection:drag', (connection: Connection) => {
+      // console.log('connection:drag', connection);
+      this.dragFromNodeId =
+        connection.data.nodeId ||
+        document.getElementById(connection.sourceId).closest('.node').id;
+      this.sourceId = connection.sourceId;
+      this.originalConnectionTargetId = connection.target.id;
     });
 
     this.plumber.on('connection:abort', (info) => {
@@ -856,25 +874,69 @@ export class Editor extends RapidElement {
 
   private makeConnection(info) {
     if (this.sourceId && this.targetId && this.isValidTarget) {
-      getStore()
-        .getState()
-        .updateConnection(this.dragFromNodeId, this.sourceId, this.targetId);
-    } else {
-      /*
-      console.log(
-        'Connection not made:',
-        this.sourceId,
-        this.targetId,
-        this.isValidTarget
-      );*/
-
-      if (this.sourceId && info.connection) {
+      // going to the same target, just put it back
+      if (info.target.id === this.targetId) {
         this.plumber.connectIds(
-          info.connection.data.nodeId,
-          info.source.id,
-          info.target.id
+          this.dragFromNodeId,
+          this.sourceId,
+          this.targetId
         );
       }
+      // otherwise update the connection
+      else {
+        getStore()
+          .getState()
+          .updateConnection(this.dragFromNodeId, this.sourceId, this.targetId);
+      }
+    } else if (
+      this.connectionPlaceholder &&
+      this.connectionPlaceholder.visible &&
+      this.sourceId
+    ) {
+      // Snap the placeholder position to grid
+      const snappedPosition = {
+        left: snapToGrid(this.connectionPlaceholder.position.left),
+        top: snapToGrid(this.connectionPlaceholder.position.top)
+      };
+
+      // Update the placeholder to the snapped position
+      this.connectionPlaceholder.position = snappedPosition;
+
+      // Store the pending connection info
+      this.pendingCanvasConnection = {
+        fromNodeId: this.dragFromNodeId,
+        exitId: this.sourceId,
+        position: snappedPosition
+      };
+
+      // Show the context menu just below the placeholder
+      const canvas = this.querySelector('#canvas');
+      if (canvas) {
+        const canvasRect = canvas.getBoundingClientRect();
+        const menuX = canvasRect.left + snappedPosition.left - 40; // center horizontally
+        const menuY = canvasRect.top + snappedPosition.top + 80; // just below placeholder
+
+        const canvasMenu = this.querySelector(
+          'temba-canvas-menu'
+        ) as CanvasMenu;
+        if (canvasMenu) {
+          canvasMenu.show(
+            menuX,
+            menuY,
+            {
+              x: snappedPosition.left,
+              y: snappedPosition.top
+            },
+            false
+          ); // Don't show sticky note option for connection drops
+        }
+      }
+
+      // Request update to render the connection line
+      this.requestUpdate();
+
+      // Don't clear placeholder or connection info yet - keep them for menu interaction
+      return;
     }
 
     // Clean up visual feedback
@@ -885,9 +947,12 @@ export class Editor extends RapidElement {
       );
     });
 
-    this.sourceId = null;
+    // Clear connection state (but keep sourceId/dragFromNodeId if we have a pending connection)
+    if (!this.pendingCanvasConnection) {
+      this.sourceId = null;
+      this.dragFromNodeId = null;
+    }
     this.targetId = null;
-    this.dragFromNodeId = null;
     this.isValidTarget = true;
   }
 
@@ -1137,6 +1202,16 @@ export class Editor extends RapidElement {
         this.handleCanvasMenuSelection(event);
       } else if (target.tagName === 'TEMBA-NODE-TYPE-SELECTOR') {
         this.handleNodeTypeSelection(event);
+      }
+    });
+
+    // Listen for canvas menu cancel (close without selection)
+    this.addEventListener(CustomEventType.Canceled, (event: CustomEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'TEMBA-CANVAS-MENU') {
+        this.handleCanvasMenuClosed();
+      } else if (target.tagName === 'TEMBA-NODE-TYPE-SELECTOR') {
+        this.handleNodeTypeSelectorClosed();
       }
     });
 
@@ -1491,6 +1566,111 @@ export class Editor extends RapidElement {
     </div>`;
   }
 
+  private renderConnectionPlaceholder(): TemplateResult | string {
+    if (!this.connectionPlaceholder || !this.connectionPlaceholder.visible)
+      return '';
+
+    const { position } = this.connectionPlaceholder;
+
+    // Render connection line when we have a pending connection (after drop)
+    let svgPath = null;
+    if (this.sourceId && this.dragFromNodeId && this.pendingCanvasConnection) {
+      const sourceElement = document.getElementById(this.sourceId);
+      if (sourceElement) {
+        const sourceRect = sourceElement.getBoundingClientRect();
+        const canvas = this.querySelector('#canvas');
+        const canvasRect = canvas.getBoundingClientRect();
+
+        // Source point (bottom center of exit)
+        const sourceX =
+          sourceRect.left + sourceRect.width / 2 - canvasRect.left;
+        const sourceY = sourceRect.bottom - canvasRect.top;
+
+        // Target point (top center of placeholder)
+        const targetX = position.left + 100; // 100 is half the placeholder width (200px)
+        const targetY = position.top;
+
+        // Use jsPlumb FlowchartConnector parameters: stub [20, 10], cornerRadius 5
+        const stubStart = 20;
+        const stubEnd = 10;
+        const cornerRadius = 5;
+
+        // Calculate flowchart path with corners
+        const verticalStart = sourceY + stubStart;
+        const verticalEnd = targetY - stubEnd;
+        const midY = (verticalStart + verticalEnd) / 2;
+
+        // Build path with rounded corners (flowchart style)
+        let pathData = `M ${sourceX} ${sourceY} L ${sourceX} ${verticalStart}`;
+
+        if (sourceX !== targetX) {
+          // Horizontal segment needed
+          if (Math.abs(verticalEnd - verticalStart) > cornerRadius * 2) {
+            // Enough space for corners
+            pathData += ` L ${sourceX} ${midY - cornerRadius}`;
+            pathData += ` Q ${sourceX} ${midY}, ${
+              sourceX + (targetX > sourceX ? cornerRadius : -cornerRadius)
+            } ${midY}`;
+            pathData += ` L ${
+              targetX - (targetX > sourceX ? cornerRadius : -cornerRadius)
+            } ${midY}`;
+            pathData += ` Q ${targetX} ${midY}, ${targetX} ${
+              midY + cornerRadius
+            }`;
+            pathData += ` L ${targetX} ${verticalEnd}`;
+          } else {
+            // Direct horizontal transition
+            pathData += ` L ${targetX} ${verticalStart}`;
+            pathData += ` L ${targetX} ${verticalEnd}`;
+          }
+        } else {
+          // Straight vertical line
+          pathData += ` L ${targetX} ${verticalEnd}`;
+        }
+
+        pathData += ` L ${targetX} ${targetY}`;
+
+        svgPath = html`
+          <svg
+            style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"
+          >
+            <path
+              d="${pathData}"
+              fill="none"
+              stroke="var(--color-connectors, #ccc)"
+              stroke-width="3"
+              class="plumb-connector"
+            />
+            <polygon
+              points="${targetX},${targetY} ${targetX - 6.5},${targetY -
+              13} ${targetX + 6.5},${targetY - 13}"
+              fill="var(--color-connectors, #ccc)"
+              class="plumb-arrow"
+            />
+          </svg>
+        `;
+      }
+    }
+
+    return html`${svgPath}
+      <div
+        class="connection-placeholder"
+        style="position: absolute; left: ${position.left}px; top: ${position.top}px; opacity: 0.6; pointer-events: none; z-index: 10000;"
+      >
+        <div
+          class="node execute-actions"
+          style="outline: 3px dashed var(--color-primary, #3b82f6); outline-offset: 2px; border-radius: var(--curvature); min-width: 200px;"
+        >
+          <div class="empty-node-placeholder" style="height: 60px;"></div>
+          <div class="action-exits">
+            <div class="exit-wrapper">
+              <div class="exit"></div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   /**
    * Checks for node collisions and reflows nodes as needed.
    * Nodes are only moved downward to resolve collisions.
@@ -1592,10 +1772,37 @@ export class Editor extends RapidElement {
         } else {
           targetNode.classList.add('connection-target-invalid');
         }
+
+        // Hide connection placeholder when over a node
+        this.connectionPlaceholder = null;
       } else {
         this.targetId = null;
         this.isValidTarget = true;
+
+        // Show connection placeholder when over empty canvas
+        // Calculate position: horizontally centered at mouse, vertically just below mouse
+        const canvas = this.querySelector('#canvas');
+        if (canvas) {
+          const canvasRect = canvas.getBoundingClientRect();
+          const relativeX = event.clientX - canvasRect.left;
+          const relativeY = event.clientY - canvasRect.top;
+
+          // offset the placeholder so it's centered horizontally and just below the mouse
+          const placeholderWidth = 200; // approximate node width
+          const placeholderOffset = 20; // distance below mouse cursor
+
+          this.connectionPlaceholder = {
+            position: {
+              left: relativeX - placeholderWidth / 2,
+              top: relativeY + placeholderOffset
+            },
+            visible: true
+          };
+        }
       }
+
+      // Force update to show/hide placeholder
+      this.requestUpdate();
     }
 
     // Handle item dragging
@@ -1880,6 +2087,11 @@ export class Editor extends RapidElement {
         left: selection.position.x,
         top: selection.position.y
       });
+      // Clear all pending connection state and placeholder
+      this.pendingCanvasConnection = null;
+      this.connectionPlaceholder = null;
+      this.sourceId = null;
+      this.dragFromNodeId = null;
     } else {
       // Show node type selector
       const selector = this.querySelector(
@@ -1888,11 +2100,54 @@ export class Editor extends RapidElement {
       if (selector) {
         selector.show(selection.action, selection.position);
       }
+      // Note: we don't clear pendingCanvasConnection or placeholder here,
+      // they will be used in handleNodeTypeSelection
     }
+  }
+
+  private cleanUpConnection(): void {
+    if (this.isCreatingNewNode) {
+      this.isCreatingNewNode = false;
+      this.pendingNodePosition = null;
+    }
+
+    // see if we need to put our connection back
+    if (this.originalConnectionTargetId) {
+      this.plumber.connectIds(
+        this.dragFromNodeId,
+        this.sourceId,
+        this.originalConnectionTargetId
+      );
+      this.originalConnectionTargetId = null;
+    }
+
+    // Menu closed without selection - clear placeholder and pending connection
+    if (this.pendingCanvasConnection) {
+      this.pendingCanvasConnection = null;
+      this.connectionPlaceholder = null;
+      this.sourceId = null;
+      this.dragFromNodeId = null;
+      this.originalConnectionTargetId = null;
+    }
+  }
+
+  private handleCanvasMenuClosed(): void {
+    this.cleanUpConnection();
+  }
+
+  private handleNodeTypeSelectorClosed(): void {
+    this.cleanUpConnection();
   }
 
   private handleNodeTypeSelection(event: CustomEvent): void {
     const selection = event.detail as NodeTypeSelection;
+
+    // Check if we have a pending canvas connection (from dropping on empty canvas)
+    if (this.pendingCanvasConnection) {
+      // Don't clear the placeholder yet - keep it visible while editing
+      // The position is already stored in pendingCanvasConnection
+      // Fall through to normal node creation flow below
+    }
 
     // Check if we're adding an action to an existing node
     if (this.addActionToNodeUuid) {
@@ -1968,20 +2223,24 @@ export class Editor extends RapidElement {
     }
 
     const tempNodeUI: NodeUI = {
-      position: {
-        left: selection.position.x,
-        top: selection.position.y
-      },
+      position: this.pendingCanvasConnection
+        ? this.pendingCanvasConnection.position
+        : {
+            left: selection.position.x,
+            top: selection.position.y
+          },
       type: nodeType as any,
       config: {}
     };
 
     // Mark that we're creating a new node and store the position
     this.isCreatingNewNode = true;
-    this.pendingNodePosition = {
-      left: selection.position.x,
-      top: selection.position.y
-    };
+    this.pendingNodePosition = this.pendingCanvasConnection
+      ? this.pendingCanvasConnection.position
+      : {
+          left: selection.position.x,
+          top: selection.position.y
+        };
 
     // Open the node editor with the temporary node
     this.editingNode = tempNode;
@@ -2089,6 +2348,23 @@ export class Editor extends RapidElement {
         // Add the node to the store
         store.getState().addNode(updatedNode, nodeUI);
 
+        // If we have a pending canvas connection, connect it to this new node
+        if (this.pendingCanvasConnection) {
+          store
+            .getState()
+            .updateConnection(
+              this.pendingCanvasConnection.fromNodeId,
+              this.pendingCanvasConnection.exitId,
+              updatedNode.uuid
+            );
+
+          // Clear the pending connection and placeholder
+          this.pendingCanvasConnection = null;
+          this.connectionPlaceholder = null;
+          this.sourceId = null;
+          this.dragFromNodeId = null;
+        }
+
         // Reset the creation flags
         this.isCreatingNewNode = false;
         this.pendingNodePosition = null;
@@ -2098,12 +2374,13 @@ export class Editor extends RapidElement {
           this.checkCollisionsAndReflow([updatedNode.uuid]);
         });
       } else {
+        const uuid = this.editingNode.uuid;
         // Update existing node in the store
-        getStore()?.getState().updateNode(this.editingNode.uuid, updatedNode);
+        getStore()?.getState().updateNode(uuid, updatedNode);
 
         // Check for collisions and reflow in case node size changed
         requestAnimationFrame(() => {
-          this.checkCollisionsAndReflow([this.editingNode.uuid]);
+          this.checkCollisionsAndReflow([uuid]);
         });
       }
     }
@@ -2118,10 +2395,7 @@ export class Editor extends RapidElement {
 
   private handleActionEditCanceled(): void {
     // If we were creating a new node, just discard it
-    if (this.isCreatingNewNode) {
-      this.isCreatingNewNode = false;
-      this.pendingNodePosition = null;
-    }
+    this.cleanUpConnection();
     this.closeNodeEditor();
   }
 
@@ -2142,6 +2416,23 @@ export class Editor extends RapidElement {
 
         // Add the node to the store
         store.getState().addNode(updatedNode, nodeUI);
+
+        // If we have a pending canvas connection, connect it to this new node
+        if (this.pendingCanvasConnection) {
+          store
+            .getState()
+            .updateConnection(
+              this.pendingCanvasConnection.fromNodeId,
+              this.pendingCanvasConnection.exitId,
+              updatedNode.uuid
+            );
+
+          // Clear the pending connection and placeholder
+          this.pendingCanvasConnection = null;
+          this.connectionPlaceholder = null;
+          this.sourceId = null;
+          this.dragFromNodeId = null;
+        }
 
         // Reset the creation flags
         this.isCreatingNewNode = false;
@@ -2190,11 +2481,7 @@ export class Editor extends RapidElement {
   }
 
   private handleNodeEditCanceled(): void {
-    // If we were creating a new node, just discard it
-    if (this.isCreatingNewNode) {
-      this.isCreatingNewNode = false;
-      this.pendingNodePosition = null;
-    }
+    this.cleanUpConnection();
     this.closeNodeEditor();
   }
 
@@ -2569,7 +2856,7 @@ export class Editor extends RapidElement {
     const bundles: TranslationBundle[] = [];
 
     this.definition.nodes.forEach((node) => {
-      node.actions.forEach((action) => {
+      node.actions?.forEach((action) => {
         const config = ACTION_CONFIG[action.type];
         if (!config?.localizable || config.localizable.length === 0) {
           return;
@@ -3580,6 +3867,7 @@ export class Editor extends RapidElement {
               }
             )}
             ${this.renderSelectionBox()} ${this.renderCanvasDropPreview()}
+            ${this.renderConnectionPlaceholder()}
           </div>
         </div>
       </div>
