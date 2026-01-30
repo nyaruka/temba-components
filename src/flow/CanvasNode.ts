@@ -629,6 +629,14 @@ export class CanvasNode extends RapidElement {
     // Clear the removing state
     this.exitRemovingState.clear();
     this.actionRemovingState.clear();
+
+    // only proceed if plumber is available (for tests that don't set it up)
+    if (this.plumber) {
+      this.plumber.removeNodeConnections(
+        this.node.uuid,
+        this.node.exits.map((e) => e.uuid)
+      );
+    }
   }
 
   private handleExitClick(event: MouseEvent, exit: Exit) {
