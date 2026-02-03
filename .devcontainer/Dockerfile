@@ -16,6 +16,4 @@ ENV MINIO_BUCKET=temba-attachments
 RUN apt-get update \
     && apt-get install chromium fonts-noto-color-emoji dnsutils curl -y --no-install-recommends -qq
 
-WORKDIR /workspaces/temba-components
-RUN yarn install
 USER node
