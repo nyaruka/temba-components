@@ -20,6 +20,6 @@ jobs:
           path-to-signatures: 'signatures/version1/cla.json'
           path-to-document: 'https://github.com/nyaruka/license/blob/main/TextIt_CLA.md'
           branch: 'main'
-          allowlist: bot*,*copilot*,*github*
+          allowlist: bot*,*copilot*,*github*,*claude*
           remote-organization-name: 'nyaruka'
           remote-repository-name: 'legal'
