@@ -1,5 +1,5 @@
 {
-  "name": "temba-components",
+  "name": "temba-components-${localWorkspaceFolderBasename}",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -8,13 +8,14 @@
     3010
   ],
   "runArgs": [
-    "--name=dev-components",
     "--network=textit_default",
     "--hostname=temba-components",
     "--add-host=minio:host-gateway"
   ],
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
   "remoteUser": "node",
-  "postCreateCommand": "sudo chown -R node /workspaces/temba-components/static/svg && sudo chown node /workspaces/temba-components && sudo chown node /workspaces/temba-components/screenshots && yarn install && echo 'Testing minio connection:' && curl -f http://minio:9000/minio/health/live || echo 'Minio connection failed - this is expected if minio is not running'",
+  "postCreateCommand": "sudo chown -R node /workspaces/${localWorkspaceFolderBasename}/static/svg && sudo chown node /workspaces/${localWorkspaceFolderBasename} && sudo chown node /workspaces/${localWorkspaceFolderBasename}/screenshots && yarn install && echo 'Testing minio connection:' && curl -f http://minio:9000/minio/health/live || echo 'Minio connection failed - this is expected if minio is not running'",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -27,7 +28,7 @@
           120
         ],
         "prettier": {
-          "configPath": "/workspaces/temba-components/.prettierrc",
+          "configPath": ".prettierrc",
           "documentSelectors": [
             "*.{ts,js}"
           ]
