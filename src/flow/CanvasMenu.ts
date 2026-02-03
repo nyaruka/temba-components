@@ -87,6 +87,9 @@ export class CanvasMenu extends RapidElement {
   @property({ type: Boolean })
   public open = false;
 
+  @property({ type: Boolean })
+  public showStickyNote = true;
+
   @state()
   private clickPosition = { x: 0, y: 0 };
 
@@ -115,10 +118,16 @@ export class CanvasMenu extends RapidElement {
     }
   }
 
-  public show(x: number, y: number, clickPosition: { x: number; y: number }) {
+  public show(
+    x: number,
+    y: number,
+    clickPosition: { x: number; y: number },
+    showStickyNote: boolean = true
+  ) {
     this.x = x;
     this.y = y;
     this.clickPosition = clickPosition;
+    this.showStickyNote = showStickyNote;
     this.open = true;
 
     // Adjust position after menu renders to ensure it fits on screen
@@ -156,8 +165,14 @@ export class CanvasMenu extends RapidElement {
     }
   }
 
-  public close() {
-    this.open = false;
+  public close(fireCanceledEvent: boolean = true) {
+    if (this.open) {
+      this.open = false;
+      // Fire close event so parent can clean up, but only if not from a selection
+      if (fireCanceledEvent) {
+        this.fireCustomEvent(CustomEventType.Canceled, {});
+      }
+    }
   }
 
   private handleMenuItemClick(action: 'sticky' | 'action' | 'split') {
@@ -165,7 +180,8 @@ export class CanvasMenu extends RapidElement {
       action,
       position: this.clickPosition
     } as CanvasMenuSelection);
-    this.close();
+    // Close without firing canceled event since we made a selection
+    this.close(false);
   }
 
   public render(): TemplateResult {
@@ -199,18 +215,24 @@ export class CanvasMenu extends RapidElement {
           </div>
         </div>
 
-        <div class="divider"></div>
+        ${this.showStickyNote
+          ? html`
+              <div class="divider"></div>
 
-        <div
-          class="menu-item"
-          @click=${() => this.handleMenuItemClick('sticky')}
-        >
-          <temba-icon name="note" size="1.25"></temba-icon>
-          <div class="menu-item-content">
-            <div class="menu-item-title">Add Sticky Note</div>
-            <div class="menu-item-description">Add a note to the canvas</div>
-          </div>
-        </div>
+              <div
+                class="menu-item"
+                @click=${() => this.handleMenuItemClick('sticky')}
+              >
+                <temba-icon name="note" size="1.25"></temba-icon>
+                <div class="menu-item-content">
+                  <div class="menu-item-title">Add Sticky Note</div>
+                  <div class="menu-item-description">
+                    Add a note to the canvas
+                  </div>
+                </div>
+              </div>
+            `
+          : ''}
       </div>
     `;
   }

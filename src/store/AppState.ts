@@ -484,6 +484,11 @@ export const zustand = createStore<AppState>()(
         exitUuid: string,
         destinationNodeUuid: string
       ) => {
+        /* console.log('Upating connection:', {
+          nodeUuid,
+          exitUuid,
+          destinationNodeUuid
+        });*/
         set((state: AppState) => {
           // Find the exit with this UUID
           const node = state.flowDefinition.nodes.find(

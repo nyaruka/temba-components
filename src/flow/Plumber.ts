@@ -208,7 +208,7 @@ export class Plumber {
           // each connection needs its own target endpoint
           const targetEndpoint = this.makeTarget(toId);
 
-          if (!sourceEndpoint || !targetEndpoint) {
+          if (!source || !targetEndpoint) {
             console.warn(
               `Plumber: Cannot connect ${fromId} to ${toId}. Element(s) missing.`
             );

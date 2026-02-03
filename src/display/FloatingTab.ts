@@ -115,7 +115,7 @@ export class FloatingTab extends RapidElement {
     // auto-calculate position based on index
     const index = FloatingTab.allTabs.indexOf(this);
     if (index === -1) {
-      this.top = 150; // default fallback
+      this.top = 100; // default fallback
     } else {
       // start at 150px and stack with TAB_HEIGHT gap between tabs
       this.top = 150 + index * (FloatingTab.TAB_HEIGHT + 0);
