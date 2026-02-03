@@ -2,7 +2,20 @@
 
 ## Running Tests
 
-All tests must be run inside the devcontainer to ensure screenshot test consistency. The devcontainer name is workspace-specific using the pattern `temba-components-{workspace}` where `{workspace}` is the basename of the workspace directory (e.g., `lisbon`).
+All tests must be run inside the devcontainer to ensure screenshot test consistency. The container should be named `temba-components-{workspace}` where `{workspace}` is the basename of the workspace directory (e.g., `temba-components-dublin`).
+
+### Starting the Devcontainer
+
+Before running tests, ensure the devcontainer is running:
+
+```bash
+# Check if container exists
+docker ps -a --format "{{.Names}}" | grep temba-components-{workspace}
+
+# If not, create and rename it
+devcontainer up --workspace-folder .
+docker rename $(docker ps -l --format "{{.Names}}") temba-components-{workspace}
+```
 
 ### Test Commands
 
@@ -10,19 +23,19 @@ Run tests inside the devcontainer using docker exec:
 
 ```bash
 # Run all tests
-docker exec -it temba-components-{workspace} yarn test
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn test
 
 # Run tests in fast mode (skips screenshot comparisons)
-docker exec -it temba-components-{workspace} yarn test:fast
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn test:fast
 
 # Run tests with coverage
-docker exec -it temba-components-{workspace} yarn test:coverage
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn test:coverage
 
 # Run a specific test file
-docker exec -it temba-components-{workspace} yarn test --files test/filename.test.ts
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn test --files test/filename.test.ts
 ```
 
-Replace `{workspace}` with the actual workspace basename (the directory name this repo is cloned into).
+Replace `{workspace}` with the actual workspace basename (e.g., `dublin`).
 
 ### Why Devcontainers?
 
@@ -34,11 +47,11 @@ Replace `{workspace}` with the actual workspace basename (the directory name thi
 
 ```bash
 # Build the project
-docker exec -it temba-components-{workspace} yarn build
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn build
 
 # Format code
-docker exec -it temba-components-{workspace} yarn format
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn format
 
 # Run validation (format + build + test with coverage)
-docker exec -it temba-components-{workspace} yarn validate
+docker exec -w /workspaces/{workspace} temba-components-{workspace} yarn validate
 ```
