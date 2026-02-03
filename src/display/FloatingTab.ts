@@ -82,10 +82,19 @@ export class FloatingTab extends RapidElement {
   @property({ type: Boolean })
   hidden = false;
 
+  private autoPositioned = false;
+
   connectedCallback() {
     super.connectedCallback();
     FloatingTab.allTabs.push(this);
-    this.updatePosition();
+  }
+
+  protected firstUpdated(): void {
+    // only auto-calculate position if no top was provided (still at default -1)
+    if (this.top === -1) {
+      this.autoPositioned = true;
+      this.updatePosition();
+    }
   }
 
   disconnectedCallback() {
@@ -94,8 +103,12 @@ export class FloatingTab extends RapidElement {
     if (index > -1) {
       FloatingTab.allTabs.splice(index, 1);
     }
-    // update positions of remaining tabs
-    FloatingTab.allTabs.forEach((tab) => tab.updatePosition());
+    // update positions of remaining tabs that use auto-positioning
+    FloatingTab.allTabs.forEach((tab) => {
+      if (tab.autoPositioned) {
+        tab.updatePosition();
+      }
+    });
   }
 
   private updatePosition() {
@@ -104,7 +117,7 @@ export class FloatingTab extends RapidElement {
     if (index === -1) {
       this.top = 150; // default fallback
     } else {
-      // start at 100px and stack with 10px gap between tabs
+      // start at 150px and stack with TAB_HEIGHT gap between tabs
       this.top = 150 + index * (FloatingTab.TAB_HEIGHT + 0);
     }
   }
@@ -115,9 +128,6 @@ export class FloatingTab extends RapidElement {
     super.updated(changes);
     if (changes.has('hidden')) {
       this.classList.toggle('hidden', this.hidden);
-    }
-    if (changes.has('top')) {
-      this.updatePosition();
     }
   }
 
