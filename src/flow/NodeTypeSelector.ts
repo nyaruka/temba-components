@@ -172,12 +172,13 @@ export class NodeTypeSelector extends RapidElement {
 
       .items-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 0.75em;
       }
 
       .node-item {
-        padding: 1em;
+        padding: 0.5em;
+        padding-left: 1em;
         border: 1px solid rgba(0, 0, 0, 0.1);
         border-radius: calc(var(--curvature) * 0.75);
         cursor: pointer;
@@ -211,7 +212,6 @@ export class NodeTypeSelector extends RapidElement {
         font-weight: 500;
         font-size: 1rem;
         color: var(--color-text-dark);
-        margin-bottom: 0.25em;
       }
 
       .node-item-type {
@@ -556,7 +556,6 @@ export class NodeTypeSelector extends RapidElement {
                                 <div class="node-item-title">
                                   ${item.config.name}
                                 </div>
-                                <div class="node-item-type">${item.type}</div>
                               </div>
                             `
                           )}
@@ -594,9 +593,6 @@ export class NodeTypeSelector extends RapidElement {
                                       <div class="node-item-title">
                                         ${item.config.name}
                                       </div>
-                                      <div class="node-item-type">
-                                        ${item.type}
-                                      </div>
                                     </div>
                                   `
                                 )}
@@ -629,7 +625,6 @@ export class NodeTypeSelector extends RapidElement {
                                 <div class="node-item-title">
                                   ${item.config.name}
                                 </div>
-                                <div class="node-item-type">${item.type}</div>
                               </div>
                             `
                           )}
