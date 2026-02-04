@@ -5,6 +5,9 @@
 ## system files
 .DS_Store
 
+CLAUDE.md
+start.sh
+
 ## npm
 /node_modules/
 /npm-debug.log
