@@ -1,14 +1,19 @@
 import { assert, expect } from '@open-wc/testing';
 import { ContactFields } from '../src/live/ContactFields';
-import { delay, getComponent, loadStore, mockPOST } from './utils.test';
+import {
+  getComponent,
+  loadStore,
+  mockPOST,
+  waitForCondition
+} from './utils.test';
 
 const TAG = 'temba-contact-fields';
 const getFields = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test-assets/contacts/';
   const fields = (await getComponent(TAG, attrs, '', 600)) as ContactFields;
 
-  // wait for our contact to load
-  await delay(100);
+  // wait for our contact data to load
+  await waitForCondition(() => fields.data !== undefined);
 
   return fields;
 };
