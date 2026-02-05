@@ -30,7 +30,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
-            yarn validate 2>&1 | tee validate_output.log
+            yarn install && yarn validate 2>&1 | tee validate_output.log
             exit ${PIPESTATUS[0]}
           push: never
           env: |
