@@ -179,7 +179,8 @@ export class RunList extends TembaList {
   public getRefreshEndpoint() {
     if (this.items.length > 0) {
       const modifiedOn = this.items[0].modified_on;
-      return this.endpoint + '&after=' + modifiedOn;
+      const separator = this.endpoint.includes('?') ? '&' : '?';
+      return this.endpoint + separator + 'after=' + modifiedOn;
     }
     return this.endpoint;
   }
