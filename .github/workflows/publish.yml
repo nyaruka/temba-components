@@ -24,7 +24,7 @@ jobs:
       - name: Build in dev container
         uses: devcontainers/ci@v0.3
         with:
-          runCmd: yarn run build
+          runCmd: yarn install && yarn run build
           push: never
           env: |
             CI=true
