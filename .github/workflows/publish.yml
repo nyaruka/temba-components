@@ -16,6 +16,11 @@ jobs:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
       - run: docker network create --driver bridge textit_default
+      - name: Set environment variables
+        run: |
+          echo "NYARUKA_HOME=$(dirname ${{ github.workspace }})" >> $GITHUB_ENV
+          echo "CONDUCTOR_HOME=/tmp/conductor" >> $GITHUB_ENV
+          mkdir -p /tmp/conductor/workspaces
       - name: Build in dev container
         uses: devcontainers/ci@v0.3
         with:
