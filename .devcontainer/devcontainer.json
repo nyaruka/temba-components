@@ -15,12 +15,11 @@
   ],
   "mounts": [
     "source=${localEnv:NYARUKA_HOME}/temba-components,target=/workspaces/temba-components,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/conductor/workspaces,target=/workspaces/conductor,type=bind,consistency=cached"
+    "source=${localEnv:CONDUCTOR_HOME}/workspaces,target=/workspaces/conductor,type=bind,consistency=cached"
   ],
   "workspaceMount": "",
   "workspaceFolder": "/workspaces/temba-components",
   "remoteUser": "node",
-  "postCreateCommand": "sudo chown -R node /workspaces/conductor/temba-components/${localWorkspaceFolderBasename}/static/svg && sudo chown node /workspaces/conductor/temba-components/${localWorkspaceFolderBasename} && sudo chown node /workspaces/conductor/temba-components/${localWorkspaceFolderBasename}/screenshots && yarn install && echo 'Testing minio connection:' && curl -f http://minio:9000/minio/health/live || echo 'Minio connection failed - this is expected if minio is not running'",
   "customizations": {
     "vscode": {
       "extensions": [
