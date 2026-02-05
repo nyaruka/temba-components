@@ -20,12 +20,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
       - run: docker network create --driver bridge textit_default
+      - name: Set environment variables
+        run: |
+          echo "NYARUKA_HOME=$(dirname ${{ github.workspace }})" >> $GITHUB_ENV
+          echo "CONDUCTOR_HOME=/tmp/conductor" >> $GITHUB_ENV
+          mkdir -p /tmp/conductor/workspaces
       - name: Build and run dev container task
         id: validate
         uses: devcontainers/ci@v0.3
-        env:
-          NYARUKA_HOME: ${{ github.workspace }}
-          CONDUCTOR_HOME: /tmp/conductor
         with:
           runCmd: |
             yarn validate 2>&1 | tee validate_output.log
