@@ -275,7 +275,7 @@ export class ContactChat extends ContactStoreElement {
   disableAssign = false;
 
   @property({ type: Boolean })
-  disableUnassignedReply = false;
+  disableReply = false;
 
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
@@ -615,7 +615,7 @@ export class ContactChat extends ContactStoreElement {
         if (!this.currentTicket.closed_on) {
           // hide compose if agent can't reply to unassigned tickets
           if (
-            this.disableUnassignedReply &&
+            this.disableReply &&
             (!this.currentTicket.assignee ||
               this.currentTicket.assignee.email !== this.agent)
           ) {
