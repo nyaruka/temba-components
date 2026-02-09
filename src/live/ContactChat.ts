@@ -271,6 +271,12 @@ export class ContactChat extends ContactStoreElement {
   @property({ type: Boolean })
   showInterrupt = false;
 
+  @property({ type: Boolean })
+  disableAssign = false;
+
+  @property({ type: Boolean })
+  disableUnassignedReply = false;
+
   @property({ type: String })
   avatar = DEFAULT_AVATAR;
 
@@ -607,6 +613,14 @@ export class ContactChat extends ContactStoreElement {
         return null;
       } else {
         if (!this.currentTicket.closed_on) {
+          // hide compose if agent can't reply to unassigned tickets
+          if (
+            this.disableUnassignedReply &&
+            (!this.currentTicket.assignee ||
+              this.currentTicket.assignee.email !== this.agent)
+          ) {
+            return null;
+          }
           //chatbox for active contacts with an open ticket
           return this.getCompose();
         } else {
@@ -676,6 +690,10 @@ export class ContactChat extends ContactStoreElement {
   }
 
   public assignTicket(email: string) {
+    if (this.disableAssign) {
+      return;
+    }
+
     // if its already assigned to use, it's a noop
     if (
       (this.currentTicket.assignee &&
@@ -803,7 +821,7 @@ export class ContactChat extends ContactStoreElement {
                         ? [this.currentTicket.assignee]
                         : []}
                       @change=${this.handleAssignmentChanged}
-                      ?disabled=${ticketClosed}
+                      ?disabled=${ticketClosed || this.disableAssign}
                     ></temba-user-select>
 
                     <temba-select
