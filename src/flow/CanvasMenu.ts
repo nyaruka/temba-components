@@ -116,7 +116,10 @@ export class CanvasMenu extends RapidElement {
   disconnectedCallback(): void {
     super.disconnectedCallback();
     if ((this as any)._clickOutsideHandler) {
-      document.removeEventListener('mousedown', (this as any)._clickOutsideHandler);
+      document.removeEventListener(
+        'mousedown',
+        (this as any)._clickOutsideHandler
+      );
     }
   }
 

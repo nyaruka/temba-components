@@ -720,7 +720,6 @@ export class Editor extends RapidElement {
     });
 
     this.plumber.on('connection:abort', (info) => {
-      console.log('Connection aborted', info);
       this.makeConnection(info);
     });
 
@@ -731,13 +730,6 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection(info) {
-    console.log('makeConnection', {
-      sourceId: this.sourceId,
-      targetId: this.targetId,
-      isValidTarget: this.isValidTarget,
-      connectionPlaceholder: this.connectionPlaceholder,
-      dragFromNodeId: this.dragFromNodeId
-    });
     if (this.sourceId && this.targetId && this.isValidTarget) {
       // going to the same target, just put it back
       if (info.target.id === this.targetId) {
@@ -1457,50 +1449,54 @@ export class Editor extends RapidElement {
       // When dragging up, connect to the placeholder bottom; otherwise to the top
       const targetY = dragUp ? position.top + 64 : position.top;
 
-        const routeFace: 'top' | 'left' | 'right' = dragUp
-          ? targetX < sourceX
-            ? 'left'
-            : 'right'
-          : 'top';
+      const routeFace: 'top' | 'left' | 'right' = dragUp
+        ? targetX < sourceX
+          ? 'left'
+          : 'right'
+        : 'top';
 
-        const pathData = calculateFlowchartPath(
-          sourceX,
-          sourceY,
-          targetX,
-          targetY,
-          20,
-          dragUp ? 0 : 10,
-          5,
-          routeFace
-        );
+      const pathData = calculateFlowchartPath(
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        20,
+        dragUp ? 0 : 10,
+        5,
+        routeFace
+      );
 
-        const aw = 6.5;
-        const al = 13;
-        let arrowPoints: string;
-        if (dragUp) {
-          // Arrow tip pointing up, base at placeholder bottom
-          arrowPoints = `${targetX},${targetY - al} ${targetX - aw},${targetY} ${targetX + aw},${targetY}`;
-        } else {
-          // Arrow pointing down into top of placeholder
-          arrowPoints = `${targetX},${targetY} ${targetX - aw},${targetY - al} ${targetX + aw},${targetY - al}`;
-        }
+      const aw = 6.5;
+      const al = 13;
+      let arrowPoints: string;
+      if (dragUp) {
+        // Arrow tip pointing up, base at placeholder bottom
+        arrowPoints = `${targetX},${targetY - al} ${targetX - aw},${targetY} ${
+          targetX + aw
+        },${targetY}`;
+      } else {
+        // Arrow pointing down into top of placeholder
+        arrowPoints = `${targetX},${targetY} ${targetX - aw},${targetY - al} ${
+          targetX + aw
+        },${targetY - al}`;
+      }
 
-        svgPath = html`
-          <svg
-            style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"
-          >
-            <path
-              d="${pathData}"
-              fill="none"
-              stroke="var(--color-connectors, #ccc)"
-              stroke-width="3"
-            />
-            <polygon
-              points="${arrowPoints}"
-              fill="var(--color-connectors, #ccc)"
-            />
-          </svg>
-        `;
+      svgPath = html`
+        <svg
+          style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"
+        >
+          <path
+            d="${pathData}"
+            fill="none"
+            stroke="var(--color-connectors, #ccc)"
+            stroke-width="3"
+          />
+          <polygon
+            points="${arrowPoints}"
+            fill="var(--color-connectors, #ccc)"
+          />
+        </svg>
+      `;
     }
 
     return html`${svgPath}
@@ -2235,8 +2231,8 @@ export class Editor extends RapidElement {
           this.pendingCanvasConnection = null;
           this.connectionPlaceholder = null;
           this.sourceId = null;
-      this.connectionSourceX = null;
-      this.connectionSourceY = null;
+          this.connectionSourceX = null;
+          this.connectionSourceY = null;
           this.dragFromNodeId = null;
         }
 
@@ -2306,8 +2302,8 @@ export class Editor extends RapidElement {
           this.pendingCanvasConnection = null;
           this.connectionPlaceholder = null;
           this.sourceId = null;
-      this.connectionSourceX = null;
-      this.connectionSourceY = null;
+          this.connectionSourceX = null;
+          this.connectionSourceY = null;
           this.dragFromNodeId = null;
         }
 

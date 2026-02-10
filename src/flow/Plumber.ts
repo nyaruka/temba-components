@@ -109,9 +109,7 @@ export function calculateFlowchartPath(
     // the stub — never dipping past the target and curving back up.
     // For non-backtrack, midY goes to targetY for a direct entry.
     const midY =
-      dirX === sideDir
-        ? exitY + r * 2
-        : Math.max(exitY + r * 2, targetY);
+      dirX === sideDir ? exitY + r * 2 : Math.max(exitY + r * 2, targetY);
 
     let d = `M ${sourceX} ${sourceY} L ${sourceX} ${exitY}`;
 
