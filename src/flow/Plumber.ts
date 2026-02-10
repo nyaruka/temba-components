@@ -1,144 +1,188 @@
-import {
-  DotEndpoint,
-  FlowchartConnector,
-  newInstance,
-  ready,
-  RectangleEndpoint,
-  EVENT_CONNECTION_DRAG,
-  EVENT_CONNECTION_ABORT,
-  INTERCEPT_BEFORE_DROP,
-  EVENT_CONNECTION,
-  EVENT_REVERT,
-  INTERCEPT_BEFORE_DETACH,
-  EVENT_CONNECTION_DETACHED
-} from '@jsplumb/browser-ui';
-import { getStore } from '../store/Store';
+type TargetFace = 'top' | 'left' | 'right';
 
-const CONNECTOR_DEFAULTS = {
-  type: FlowchartConnector.type,
-  options: {
-    stub: [20, 10],
-    midpoint: 0.5,
-    alwaysRespectStubs: true,
-    cornerRadius: 5,
-    cssClass: 'plumb-connector'
+interface ConnectionEndpoints {
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  targetFace: TargetFace;
+}
+
+interface ConnectionInfo {
+  scope: string; // nodeId
+  fromId: string; // exitId
+  toId: string; // target nodeId
+  svgEl: SVGSVGElement;
+  pathEl: SVGPathElement;
+  arrowEl: SVGPolygonElement;
+}
+
+interface DragState {
+  sourceId: string;
+  scope: string;
+  originalTargetId: string | null;
+  svgEl: SVGSVGElement;
+  pathEl: SVGPathElement;
+  arrowEl: SVGPolygonElement;
+  onMove: (e: MouseEvent) => void;
+  onUp: (e: MouseEvent) => void;
+}
+
+/**
+ * Calculate a flowchart-style SVG path between two points.
+ * Routes with right-angle segments, stubs at each end, and rounded corners.
+ * Supports entering the target from top, left, or right faces.
+ */
+export function calculateFlowchartPath(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  stubStart = 20,
+  stubEnd = 10,
+  cornerRadius = 5,
+  targetFace: TargetFace = 'top'
+): string {
+  const r = cornerRadius;
+
+  if (targetFace === 'top') {
+    // Target is below (or we treat it as such): exit down, horizontal jog, enter from top
+    const exitY = sourceY + stubStart;
+    const entryY = targetY - stubEnd;
+
+    let d = `M ${sourceX} ${sourceY}`;
+
+    if (sourceX === targetX) {
+      // Straight vertical — no turns needed
+      d += ` L ${targetX} ${entryY}`;
+    } else {
+      // L-shape: exit curves horizontal, then straight down to target.
+      // jogY is the horizontal level — must be above entryY so the
+      // final approach into the node is always downward (no backtracking).
+      const dirX = targetX > sourceX ? 1 : -1;
+      const jogY = Math.max(sourceY + r, Math.min(exitY, entryY - r));
+
+      // Corner 1: vertical→horizontal at jogY
+      const r1 = Math.min(r, jogY - sourceY);
+      if (r1 >= 1) {
+        d += ` L ${sourceX} ${jogY - r1}`;
+        d += ` Q ${sourceX} ${jogY}, ${sourceX + dirX * r1} ${jogY}`;
+      } else {
+        d += ` L ${sourceX} ${jogY}`;
+      }
+
+      // Corner 2: horizontal→vertical at targetX — leave minSeg of
+      // straight line after the curve before reaching entryY
+      const minSeg = 3;
+      const r2 = Math.min(r, Math.max(0, entryY - jogY - minSeg));
+      if (r2 >= 1) {
+        d += ` L ${targetX - dirX * r2} ${jogY}`;
+        d += ` Q ${targetX} ${jogY}, ${targetX} ${jogY + r2}`;
+      } else {
+        d += ` L ${targetX} ${jogY}`;
+      }
+      d += ` L ${targetX} ${entryY}`;
+    }
+
+    d += ` L ${targetX} ${targetY}`;
+    return d;
   }
-};
 
-const OVERLAYS_DEFAULTS = [
-  {
-    type: 'PlainArrow',
-    options: {
-      width: 13,
-      length: 13,
-      location: 0.999,
-      cssClass: 'plumb-arrow'
+  if (targetFace === 'left' || targetFace === 'right') {
+    // Route: exit down from source, horizontal jog, vertical to target Y, stub into side
+    // When target is above source, skip the exit stub so the path turns horizontal
+    // as quickly as possible (only the corner radius creates downward travel)
+    const goingUp = targetY < sourceY;
+    const exitY = sourceY + (goingUp ? 0 : stubStart);
+    const sideDir = targetFace === 'left' ? -1 : 1;
+    // Entry point is OUTSIDE the node boundary (stub behind arrowhead)
+    const entryX = targetX + sideDir * stubEnd;
+
+    const dirX = entryX > sourceX ? 1 : -1;
+
+    // Minimum straight segment after each curve
+    const minSeg = 3;
+
+    // When the horizontal approach would double-back over the stub
+    // (dirX matches sideDir), keep midY at the natural exit level so
+    // the path jogs horizontally ABOVE the target and descends into
+    // the stub — never dipping past the target and curving back up.
+    // For non-backtrack, midY goes to targetY for a direct entry.
+    const midY =
+      dirX === sideDir
+        ? exitY + r * 2
+        : Math.max(exitY + r * 2, targetY);
+
+    let d = `M ${sourceX} ${sourceY} L ${sourceX} ${exitY}`;
+
+    // Corner 1: vertical→horizontal at (sourceX, midY)
+    if (midY - exitY > r) {
+      d += ` L ${sourceX} ${midY - r}`;
+      d += ` Q ${sourceX} ${midY}, ${sourceX + dirX * r} ${midY}`;
     }
+
+    const vertGap = Math.abs(midY - targetY);
+
+    if (vertGap < 1) {
+      // midY ≈ targetY — horizontal to entryX, then stub into face
+      d += ` L ${entryX} ${targetY}`;
+      d += ` L ${targetX} ${targetY}`;
+    } else {
+      // Corners 2 and 3 — turnR is limited so that at least minSeg of
+      // straight line remains between the two corners and after corner 3
+      const turnDir = targetY < midY ? -1 : 1;
+      const turnR = Math.min(
+        r,
+        Math.max(0, Math.floor((vertGap - minSeg) / 2)),
+        Math.max(0, stubEnd - minSeg)
+      );
+
+      if (turnR >= 1) {
+        // Corner 2: horizontal→vertical at (entryX, midY)
+        d += ` L ${entryX - dirX * turnR} ${midY}`;
+        d += ` Q ${entryX} ${midY}, ${entryX} ${midY + turnDir * turnR}`;
+        // Vertical toward targetY
+        d += ` L ${entryX} ${targetY - turnDir * turnR}`;
+        // Corner 3: vertical→horizontal into side face
+        d += ` Q ${entryX} ${targetY}, ${entryX - sideDir * turnR} ${targetY}`;
+      } else {
+        d += ` L ${entryX} ${midY}`;
+        d += ` L ${entryX} ${targetY}`;
+      }
+      // Horizontal stub into target face
+      d += ` L ${targetX} ${targetY}`;
+    }
+
+    return d;
   }
-];
 
-export const SOURCE_DEFAULTS = {
-  endpoint: {
-    type: DotEndpoint.type,
-    options: {
-      radius: 12,
-      cssClass: 'plumb-source',
-      hoverClass: 'plumb-source-hover'
-    }
-  },
-  anchors: ['Bottom', 'Continuous'],
-  maxConnections: 1,
-  source: true,
-  dragAllowedWhenFull: false
-};
-
-export const TARGET_DEFAULTS = {
-  endpoint: {
-    type: RectangleEndpoint.type,
-    options: {
-      width: 23,
-      height: 23,
-      cssClass: 'plumb-target',
-      hoverClass: 'plumb-target-hover'
-    }
-  },
-  anchor: {
-    type: 'Continuous',
-    options: {
-      faces: ['top', 'left', 'right'],
-      cssClass: 'continuos plumb-target-anchor'
-    }
-  },
-  deleteOnEmpty: true,
-  maxConnections: 1,
-  target: true
-};
+  return `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+}
 
 export class Plumber {
-  private jsPlumb = null;
-  private pendingConnections = [];
-  private connectionListeners = new Map();
-  public connectionDragging = false;
-  private connectionWait = null;
-  private activityData: { segments: { [key: string]: number } } | null = null;
-  private hoveredActivityKey: string | null = null;
-  private recentContactsPopup: HTMLElement | null = null;
-  private recentContactsCache: { [key: string]: any[] } = {};
-  private pendingFetches: { [key: string]: AbortController } = {};
-  private hideContactsTimeout: number | null = null;
-  private showContactsTimeout: number | null = null;
+  private connections: Map<string, ConnectionInfo> = new Map();
+  private sources: Map<string, () => void> = new Map(); // exitId → cleanup fn
+  private canvas: HTMLElement;
+  private pendingConnections: {
+    scope: string;
+    fromId: string;
+    toId: string;
+  }[] = [];
+  private connectionWait: number | null = null;
+  private connectionListeners: Map<string, ((info: any) => void)[]> = new Map();
+  private dragState: DragState | null = null;
   private editor: any;
+  private retryCount = 0;
+  private maxRetries = 3;
 
-  initializeJSPlumb(canvas: HTMLElement) {
-    this.jsPlumb = newInstance({
-      container: canvas,
-      connectionsDetachable: true,
-      endpointStyle: {
-        fill: 'green'
-      },
-      connector: CONNECTOR_DEFAULTS,
-      connectionOverlays: OVERLAYS_DEFAULTS
-    });
-
-    // Bind to connection events
-    this.jsPlumb.bind(EVENT_CONNECTION, (info) => {
-      this.connectionDragging = false;
-      this.notifyListeners(EVENT_CONNECTION, info);
-    });
-
-    // Bind to connection drag events
-    this.jsPlumb.bind(EVENT_CONNECTION_DRAG, (info) => {
-      this.connectionDragging = true;
-      this.notifyListeners(EVENT_CONNECTION_DRAG, info);
-    });
-
-    this.jsPlumb.bind(EVENT_CONNECTION_ABORT, (info) => {
-      this.connectionDragging = false;
-      this.notifyListeners(EVENT_CONNECTION_ABORT, info);
-    });
-
-    this.jsPlumb.bind(EVENT_CONNECTION_DETACHED, (info) => {
-      this.connectionDragging = false;
-      this.notifyListeners(EVENT_CONNECTION_DETACHED, info);
-    });
-
-    this.jsPlumb.bind(EVENT_REVERT, (info) => {
-      this.notifyListeners(EVENT_REVERT, info);
-    });
-
-    this.jsPlumb.bind(INTERCEPT_BEFORE_DROP, () => {
-      // we always deny automatic connections
-      return false;
-    });
-    this.jsPlumb.bind(INTERCEPT_BEFORE_DETACH, () => {});
-  }
+  public connectionDragging = false;
 
   constructor(canvas: HTMLElement, editor: any) {
+    this.canvas = canvas;
     this.editor = editor;
-    ready(() => {
-      this.initializeJSPlumb(canvas);
-    });
   }
+
+  // --- Event system ---
 
   private notifyListeners(eventName: string, info: any) {
     const listeners = this.connectionListeners.get(eventName) || [];
@@ -161,561 +205,758 @@ export class Plumber {
     }
   }
 
-  public makeTarget(uuid: string) {
-    const element = document.getElementById(uuid);
-    if (!element) return;
-    return this.jsPlumb.addEndpoint(element, TARGET_DEFAULTS);
-  }
+  // --- Source/Target registration ---
 
-  public makeSource(uuid: string) {
-    const element = document.getElementById(uuid);
+  public makeSource(exitId: string) {
+    const element = document.getElementById(exitId);
     if (!element) return;
-    return this.jsPlumb.addEndpoint(element, SOURCE_DEFAULTS);
-  }
 
-  // we'll process our pending connections, but we want to debounce this
-  public processPendingConnections() {
-    // if we have a pending connection wait, clear it
-    if (this.connectionWait) {
-      clearTimeout(this.connectionWait);
-      this.connectionWait = null;
+    // Clean up any existing listener for this exit
+    if (this.sources.has(exitId)) {
+      this.sources.get(exitId)();
     }
 
-    // debounce the connection processing
-    this.connectionWait = setTimeout(() => {
-      this.jsPlumb.batch(() => {
-        this.pendingConnections.forEach((connection) => {
-          const { scope, fromId, toId } = connection;
+    let pendingDrag: {
+      startX: number;
+      startY: number;
+      onMove: (e: MouseEvent) => void;
+      onUp: (e: MouseEvent) => void;
+    } | null = null;
 
-          // sources and targets must exist
-          const source = document.getElementById(fromId);
-          // const target = document.getElementById(toId);
+    const DRAG_THRESHOLD = 5;
 
-          this.revalidate([fromId, toId]);
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
 
-          // we need to find the source endpoint
-          const sourceEndpoint = this.jsPlumb
-            .getEndpoints(source)
-            ?.find((endpoint) =>
-              endpoint.elementId === fromId ? true : false
-            );
+      // Don't start drag from exit if it already has a connection —
+      // existing connections are picked up from the arrowhead instead
+      if (this.connections.has(exitId)) return;
 
-          // update endpoint have connect css class
-          if (sourceEndpoint) {
-            sourceEndpoint.addClass('connected');
-          }
+      const startX = e.clientX;
+      const startY = e.clientY;
 
-          // each connection needs its own target endpoint
-          const targetEndpoint = this.makeTarget(toId);
+      const nodeEl = element.closest('temba-flow-node');
+      const scope = nodeEl?.getAttribute('uuid') || '';
+      const originalTargetId: string | null = null;
 
-          if (!source || !targetEndpoint) {
-            console.warn(
-              `Plumber: Cannot connect ${fromId} to ${toId}. Element(s) missing.`
-            );
-            return;
-          }
-
-          // delete connections
-          this.jsPlumb.select({ source, targetEndpoint }).deleteAll();
-          this.jsPlumb.connect({
-            source: source,
-            target: targetEndpoint,
-            connector: {
-              ...CONNECTOR_DEFAULTS,
-              options: { ...CONNECTOR_DEFAULTS.options, gap: [0, 5] }
-            },
-            data: {
-              nodeId: scope
-            }
-          });
-        });
-        this.pendingConnections = [];
-      });
-
-      // Force a repaint to ensure connections are positioned correctly
-      // especially after bulk updates or view switching
-      window.requestAnimationFrame(() => {
-        if (this.jsPlumb) {
-          this.jsPlumb.repaintEverything();
+      const onMove = (me: MouseEvent) => {
+        const dx = me.clientX - startX;
+        const dy = me.clientY - startY;
+        if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+          // Exceeded threshold — start actual drag
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          pendingDrag = null;
+          this.startDrag(exitId, scope, originalTargetId, me);
         }
-      });
-    }, 0);
+      };
+
+      const onUp = () => {
+        // Mouse released without dragging — let click handler fire
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        pendingDrag = null;
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      pendingDrag = { startX, startY, onMove, onUp };
+    };
+
+    element.addEventListener('mousedown', onMouseDown);
+    this.sources.set(exitId, () => {
+      element.removeEventListener('mousedown', onMouseDown);
+      if (pendingDrag) {
+        document.removeEventListener('mousemove', pendingDrag.onMove);
+        document.removeEventListener('mouseup', pendingDrag.onUp);
+        pendingDrag = null;
+      }
+    });
   }
+
+  public makeTarget(_nodeId: string) {
+    // No-op: target detection happens via DOM hover during drag
+  }
+
+  // --- Connection creation ---
 
   public connectIds(scope: string, fromId: string, toId: string) {
     this.pendingConnections.push({ scope, fromId, toId });
     this.processPendingConnections();
   }
 
-  public setActivityData(
-    activityData: { segments: { [key: string]: number } } | null
-  ) {
-    this.activityData = activityData;
-    // Clear recent contacts cache when activity data changes
-    this.clearRecentContactsCache();
-    this.updateActivityOverlays();
-  }
-
-  private updateActivityOverlays() {
-    if (!this.jsPlumb || !this.activityData) {
-      return;
+  public processPendingConnections() {
+    if (this.connectionWait) {
+      cancelAnimationFrame(this.connectionWait);
+      this.connectionWait = null;
     }
 
-    // Get all connections
-    const connections = this.jsPlumb.getConnections();
+    this.connectionWait = requestAnimationFrame(() => {
+      const failed: { scope: string; fromId: string; toId: string }[] = [];
+      const createdTargets = new Set<string>();
 
-    connections.forEach((connection: any) => {
-      // Get the source exit element
-      const sourceElement = connection.source;
-      if (!sourceElement) {
-        return;
-      }
+      this.pendingConnections.forEach((conn) => {
+        const { scope, fromId, toId } = conn;
+        // Remove existing connection from this exit if any
+        this.removeConnectionSVG(fromId);
+        if (!this.createConnectionSVG(fromId, scope, toId)) {
+          failed.push(conn);
+        } else {
+          createdTargets.add(toId);
+        }
+      });
+      this.pendingConnections = [];
 
-      // Get destination node
-      const targetElement = connection.target;
-      if (!targetElement) {
-        return;
-      }
-
-      // Create activity key: exitUuid:destinationUuid
-      const exitUuid = sourceElement.id;
-      const destinationUuid = targetElement.id;
-      const activityKey = `${exitUuid}:${destinationUuid}`;
-
-      // Get activity count for this segment
-      const count = this.activityData.segments[activityKey];
-
-      // Remove existing activity overlays
-      connection.removeOverlay('activity-label');
-
-      // Add new overlay if there's activity
-      if (count && count > 0) {
-        const overlay = connection.addOverlay({
-          type: 'Label',
-          options: {
-            label: count.toLocaleString(),
-            id: 'activity-label',
-            cssClass: 'activity-overlay',
-            location: 20 // Fixed pixel distance from the start (exit point)
+      // Repaint all connections that share a target with newly created ones
+      // so anchor distribution is correct after the full batch is processed
+      if (createdTargets.size > 0) {
+        this.connections.forEach((conn, exitId) => {
+          if (createdTargets.has(conn.toId)) {
+            this.updateConnectionSVG(exitId);
           }
         });
+      }
 
-        // Add hover events for recent contacts popup
-        // Use setTimeout to ensure the overlay is fully rendered
-        setTimeout(() => {
-          // Try multiple ways to get the overlay element
-          let overlayElement =
-            overlay.canvas || overlay.element || overlay.getElement?.();
-
-          // If still not found, query the DOM directly
-          if (!overlayElement) {
-            const overlays = connection.getOverlays();
-            if (Array.isArray(overlays)) {
-              for (const ovl of overlays) {
-                if (ovl.id === 'activity-label') {
-                  overlayElement =
-                    ovl.canvas || ovl.element || ovl.getElement?.();
-                  break;
-                }
-              }
-            }
-          }
-
-          // Also try querying by CSS class
-          if (!overlayElement && connection.canvas) {
-            overlayElement =
-              connection.canvas.querySelector('.activity-overlay');
-          }
-
-          if (overlayElement) {
-            overlayElement.style.cursor = 'pointer';
-            overlayElement.setAttribute('data-activity-key', activityKey);
-            overlayElement.addEventListener('mouseenter', () => {
-              // Don't show recent contacts when simulator is active
-              const store = getStore();
-              if (store?.getState().simulatorActive) {
-                return;
-              }
-
-              // Get flow UUID from the editor element
-              const editor = document.querySelector('temba-flow-editor') as any;
-              const flowUuid = editor?.definition?.uuid;
-              if (flowUuid) {
-                // Start fetching immediately
-                this.fetchRecentContacts(activityKey, flowUuid);
-
-                // But delay showing the popup by half a second
-                this.showContactsTimeout = window.setTimeout(() => {
-                  this.showRecentContacts(activityKey, flowUuid);
-                }, 500);
-              }
-            });
-            overlayElement.addEventListener('mouseleave', () => {
-              // Cancel the show timeout if still pending
-              if (this.showContactsTimeout) {
-                clearTimeout(this.showContactsTimeout);
-                this.showContactsTimeout = null;
-              }
-              this.hoveredActivityKey = null;
-              this.hideRecentContacts();
-            });
-          }
-        }, 50);
+      // Retry failed connections (elements may not be laid out yet)
+      if (failed.length > 0 && this.retryCount < this.maxRetries) {
+        this.retryCount++;
+        this.pendingConnections = failed;
+        this.processPendingConnections();
+      } else {
+        this.retryCount = 0;
       }
     });
-
-    // Force repaint to ensure overlays are positioned correctly
-    this.repaintEverything();
   }
 
-  private findOverlayElement(activityKey: string): HTMLElement | null {
-    // Find overlay by data attribute
-    const overlays = document.querySelectorAll('.activity-overlay');
-    for (const overlay of overlays) {
-      if (overlay.getAttribute('data-activity-key') === activityKey) {
-        return overlay as HTMLElement;
-      }
+  // --- Anchor point distribution ---
+
+  private determineTargetFace(
+    sourceX: number,
+    sourceY: number,
+    targetRect: DOMRect,
+    canvasRect: DOMRect
+  ): TargetFace {
+    const targetCenterX =
+      targetRect.left + targetRect.width / 2 - canvasRect.left;
+    const targetTop = targetRect.top - canvasRect.top;
+    const verticalGap = targetTop - sourceY;
+
+    // Top face requires enough vertical room for the exit stub, entry stub,
+    // arrow, and curved corners. Below this threshold the path components
+    // overlap and the connection backtracks, so use a side face instead.
+    if (verticalGap > 30) {
+      return 'top';
     }
-    return null;
+
+    // Source is level with, below, or too close to target — connect to a side face
+    if (sourceX < targetCenterX) {
+      return 'left';
+    }
+    return 'right';
   }
 
-  private async fetchRecentContacts(activityKey: string, flowUuid: string) {
-    // Skip if already cached or currently fetching
-    if (
-      this.recentContactsCache[activityKey] ||
-      this.pendingFetches[activityKey]
-    ) {
-      return;
-    }
+  private getConnectionEndpoints(
+    fromId: string,
+    toId: string
+  ): ConnectionEndpoints | null {
+    const fromEl = document.getElementById(fromId);
+    const toEl = document.getElementById(toId);
+    if (!fromEl || !toEl) return null;
 
-    // Cancel any pending fetch for this key
-    if (this.pendingFetches[activityKey]) {
-      this.pendingFetches[activityKey].abort();
-    }
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
 
-    // Fetch recent contacts from endpoint
-    const controller = new AbortController();
-    this.pendingFetches[activityKey] = controller;
+    if (fromRect.width === 0 || toRect.width === 0) return null;
 
-    try {
-      // Parse exit UUID and destination UUID from activity key
-      const [exitUuid, destinationUuid] = activityKey.split(':');
+    const sourceX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+    const sourceY = fromRect.bottom - canvasRect.top;
 
-      const endpoint = `/flow/recent_contacts/${flowUuid}/${exitUuid}/${destinationUuid}/`;
-
-      const response = await fetch(endpoint, {
-        signal: controller.signal
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      // API returns array directly, not wrapped in results
-      const recentContacts = Array.isArray(data) ? data : data.results || [];
-
-      // Cache the results
-      this.recentContactsCache[activityKey] = recentContacts;
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        console.error('Failed to fetch recent contacts:', error);
-      }
-    } finally {
-      delete this.pendingFetches[activityKey];
-    }
-  }
-
-  private async showRecentContacts(activityKey: string, flowUuid: string) {
-    // Don't show recent contacts when simulator is active
-    const store = getStore();
-    if (store?.getState().simulatorActive) {
-      return;
-    }
-
-    // Find the overlay element fresh to avoid stale references
-    const overlayElement = this.findOverlayElement(activityKey);
-    if (!overlayElement) {
-      console.warn('Could not find overlay element for activity:', activityKey);
-      return;
-    }
-    // Clear any pending hide timeout
-    if (this.hideContactsTimeout) {
-      clearTimeout(this.hideContactsTimeout);
-      this.hideContactsTimeout = null;
-    }
-
-    this.hoveredActivityKey = activityKey;
-
-    // Create popup if it doesn't exist
-    if (!this.recentContactsPopup) {
-      this.recentContactsPopup = document.createElement('div');
-      this.recentContactsPopup.className = 'recent-contacts-popup';
-      // Add inline styles to ensure visibility
-      this.recentContactsPopup.style.position = 'absolute';
-      this.recentContactsPopup.style.width = '200px';
-      this.recentContactsPopup.style.background = '#f3f3f3';
-      this.recentContactsPopup.style.borderRadius = '10px';
-      this.recentContactsPopup.style.boxShadow =
-        '0 1px 3px 1px rgba(130, 130, 130, 0.2)';
-      this.recentContactsPopup.style.zIndex = '1015';
-      this.recentContactsPopup.style.display = 'none';
-      document.body.appendChild(this.recentContactsPopup);
-    }
-
-    // Add hover events to keep popup open (only needs to be done once)
-    if (!this.recentContactsPopup.onmouseenter) {
-      this.recentContactsPopup.onmouseenter = () => {
-        if (this.hideContactsTimeout) {
-          clearTimeout(this.hideContactsTimeout);
-          this.hideContactsTimeout = null;
-        }
-      };
-      this.recentContactsPopup.onmouseleave = () => {
-        this.hoveredActivityKey = null;
-        this.hideRecentContacts();
-      };
-
-      // Add click event listener for contact names
-      this.recentContactsPopup.onclick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-
-        if (target.classList.contains('contact-name')) {
-          this.hideRecentContacts(false);
-          const contactUuid = target.getAttribute('data-uuid');
-          if (contactUuid) {
-            // Fire custom event through editor
-            this.editor.fireCustomEvent('temba-contact-clicked', {
-              uuid: contactUuid
-            });
-          }
-        }
-      };
-    }
-
-    // Check cache first
-    if (this.recentContactsCache[activityKey]) {
-      this.renderRecentContactsPopup(this.recentContactsCache[activityKey]);
-      this.positionPopup(overlayElement);
-    } else {
-      // Show loading state if data isn't ready yet
-      this.recentContactsPopup.innerHTML =
-        '<div class="no-contacts-message">Loading...</div>';
-      this.positionPopup(overlayElement);
-
-      // Wait for the fetch to complete
-      await this.fetchRecentContacts(activityKey, flowUuid);
-
-      // Render if still hovering over this activity
-      if (this.hoveredActivityKey === activityKey) {
-        const contacts = this.recentContactsCache[activityKey] || [];
-        this.renderRecentContactsPopup(contacts);
-        this.positionPopup(overlayElement);
-      }
-    }
-  }
-
-  private positionPopup(overlayElement: HTMLElement) {
-    if (!this.recentContactsPopup) return;
-
-    // Position popup near the overlay
-    const rect = overlayElement.getBoundingClientRect();
-    this.recentContactsPopup.style.left = `${rect.left + window.scrollX}px`;
-    this.recentContactsPopup.style.top = `${
-      rect.bottom + window.scrollY + 5
-    }px`;
-
-    // Remove inline display style so CSS class can work
-    this.recentContactsPopup.style.display = '';
-
-    // Trigger animation by adding class
-    this.recentContactsPopup.classList.remove('show');
-    // Force reflow to restart animation
-    void this.recentContactsPopup.offsetWidth;
-    this.recentContactsPopup.classList.add('show');
-  }
-
-  private renderRecentContactsPopup(recentContacts: any[]) {
-    if (!this.recentContactsPopup) return;
-
-    const hasContacts = recentContacts.length > 0;
-
-    if (!hasContacts) {
-      // Simple message when no contacts
-      this.recentContactsPopup.innerHTML =
-        '<div class="no-contacts-message">No Recent Contacts</div>';
-      return;
-    }
-
-    let html = `<div class="popup-title">Recent Contacts</div>`;
-
-    recentContacts.forEach((contact: any) => {
-      html += `<div class="contact-row">`;
-      html += `<div class="contact-name" data-uuid="${contact.contact.uuid}">${contact.contact.name}</div>`;
-      if (contact.operand) {
-        html += `<div class="contact-operand">${contact.operand}</div>`;
-      }
-      if (contact.time) {
-        const time = new Date(contact.time);
-        const now = new Date();
-        const diffMs = now.getTime() - time.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        let timeStr = '';
-        if (diffMins < 1) timeStr = 'just now';
-        else if (diffMins < 60) timeStr = `${diffMins}m ago`;
-        else if (diffHours < 24) timeStr = `${diffHours}h ago`;
-        else timeStr = `${diffDays}d ago`;
-
-        html += `<div class="contact-time">${timeStr}</div>`;
-      }
-      html += `</div>`;
-    });
-
-    this.recentContactsPopup.innerHTML = html;
-  }
-
-  private hideRecentContacts(wait = true) {
-    if (!wait) {
-      if (this.recentContactsPopup) {
-        this.recentContactsPopup.classList.remove('show');
-        this.recentContactsPopup.style.display = 'none';
-        this.hoveredActivityKey = null;
-      }
-      return;
-    }
-
-    this.hideContactsTimeout = window.setTimeout(() => {
-      // Check if we're still hovering over an activity
-      if (!this.hoveredActivityKey && this.recentContactsPopup) {
-        this.recentContactsPopup.classList.remove('show');
-        this.recentContactsPopup.style.display = 'none';
-        this.hoveredActivityKey = null;
-      }
-    }, 200); // Small delay to allow moving between overlay and popup
-  }
-
-  public clearRecentContactsCache() {
-    this.recentContactsCache = {};
-    // Cancel any pending fetches
-    Object.values(this.pendingFetches).forEach((controller) =>
-      controller.abort()
+    const targetFace = this.determineTargetFace(
+      sourceX,
+      sourceY,
+      toRect,
+      canvasRect
     );
-    this.pendingFetches = {};
+
+    // Find all connections targeting the same node, grouped by face
+    // Track source position for spatial sorting
+    const faceConnections: Map<
+      TargetFace,
+      { fromId: string; sortPos: number }[]
+    > = new Map();
+    this.connections.forEach((conn) => {
+      if (conn.toId === toId) {
+        const connFromEl = document.getElementById(conn.fromId);
+        if (connFromEl) {
+          const connFromRect = connFromEl.getBoundingClientRect();
+          const connSourceX =
+            connFromRect.left + connFromRect.width / 2 - canvasRect.left;
+          const connSourceY = connFromRect.bottom - canvasRect.top;
+          const face = this.determineTargetFace(
+            connSourceX,
+            connSourceY,
+            toRect,
+            canvasRect
+          );
+          if (!faceConnections.has(face)) {
+            faceConnections.set(face, []);
+          }
+          // Sort position: X for top face, Y for side faces
+          const sortPos = face === 'top' ? connSourceX : connSourceY;
+          faceConnections.get(face).push({ fromId: conn.fromId, sortPos });
+        }
+      }
+    });
+
+    // Add current connection to its face group if not already tracked
+    if (!faceConnections.has(targetFace)) {
+      faceConnections.set(targetFace, []);
+    }
+    const faceGroup = faceConnections.get(targetFace);
+    if (!faceGroup.find((e) => e.fromId === fromId)) {
+      const sortPos = targetFace === 'top' ? sourceX : sourceY;
+      faceGroup.push({ fromId, sortPos });
+    }
+
+    // Sort by spatial position so connections don't cross
+    faceGroup.sort((a, b) => a.sortPos - b.sortPos);
+    const index = faceGroup.findIndex((e) => e.fromId === fromId);
+    const count = faceGroup.length;
+
+    // Calculate anchor point on the chosen face
+    const targetLeft = toRect.left - canvasRect.left;
+    const targetTop = toRect.top - canvasRect.top;
+    const targetW = toRect.width;
+    const targetH = toRect.height;
+
+    let targetX: number;
+    let targetY: number;
+
+    if (targetFace === 'top') {
+      // Distribute across top face (middle 60% of width)
+      const margin = targetW * 0.2;
+      const span = targetW * 0.6;
+      targetX =
+        count === 1
+          ? targetLeft + targetW / 2
+          : targetLeft + margin + (span * (index + 0.5)) / count;
+      targetY = targetTop;
+    } else if (targetFace === 'left') {
+      targetX = targetLeft;
+      // Distribute along left face (middle 60% of height)
+      const margin = targetH * 0.2;
+      const span = targetH * 0.6;
+      targetY =
+        count === 1
+          ? targetTop + targetH / 2
+          : targetTop + margin + (span * (index + 0.5)) / count;
+    } else {
+      // right
+      targetX = targetLeft + targetW;
+      const margin = targetH * 0.2;
+      const span = targetH * 0.6;
+      targetY =
+        count === 1
+          ? targetTop + targetH / 2
+          : targetTop + margin + (span * (index + 0.5)) / count;
+    }
+
+    return { sourceX, sourceY, targetX, targetY, targetFace };
   }
+
+  // --- SVG creation and management ---
+
+  private createSVGElement(): {
+    svgEl: SVGSVGElement;
+    pathEl: SVGPathElement;
+    arrowEl: SVGPolygonElement;
+  } {
+    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgEl.classList.add('plumb-connector');
+    svgEl.style.position = 'absolute';
+    svgEl.style.left = '0';
+    svgEl.style.top = '0';
+    svgEl.style.width = '100%';
+    svgEl.style.height = '100%';
+    svgEl.style.pointerEvents = 'none';
+    svgEl.style.overflow = 'visible';
+
+    const pathEl = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    pathEl.setAttribute('fill', 'none');
+    pathEl.setAttribute('stroke', 'var(--color-connectors)');
+    pathEl.setAttribute('stroke-width', '3');
+    pathEl.style.pointerEvents = 'stroke';
+
+    const arrowEl = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'polygon'
+    );
+    arrowEl.setAttribute('fill', 'var(--color-connectors)');
+    arrowEl.classList.add('plumb-arrow');
+    arrowEl.style.pointerEvents = 'fill';
+    arrowEl.style.cursor = 'pointer';
+
+    svgEl.appendChild(pathEl);
+    svgEl.appendChild(arrowEl);
+
+    // Hover support
+    const addHover = () => svgEl.classList.add('hover');
+    const removeHover = () => svgEl.classList.remove('hover');
+    pathEl.addEventListener('mouseenter', addHover);
+    pathEl.addEventListener('mouseleave', removeHover);
+    arrowEl.addEventListener('mouseenter', addHover);
+    arrowEl.addEventListener('mouseleave', removeHover);
+
+    return { svgEl, pathEl, arrowEl };
+  }
+
+  private updateSVGPath(
+    pathEl: SVGPathElement,
+    arrowEl: SVGPolygonElement,
+    sourceX: number,
+    sourceY: number,
+    targetX: number,
+    targetY: number,
+    targetFace: TargetFace = 'top'
+  ) {
+    // Arrow dimensions
+    const aw = 6.5;
+    const al = 13;
+    // Visible line length behind the arrow
+    const stubBehindArrow = 8;
+
+    // Path ends at arrow BASE (not tip) so the line never pokes through the front.
+    // The arrow polygon covers from base to the node edge (tip).
+    let pathTargetX = targetX;
+    let pathTargetY = targetY;
+    if (targetFace === 'top') {
+      pathTargetY = targetY - al;
+    } else if (targetFace === 'left') {
+      pathTargetX = targetX - al;
+    } else if (targetFace === 'right') {
+      pathTargetX = targetX + al;
+    }
+
+    const effectiveStub = stubBehindArrow;
+    const d = calculateFlowchartPath(
+      sourceX,
+      sourceY,
+      pathTargetX,
+      pathTargetY,
+      20,
+      effectiveStub,
+      5,
+      targetFace
+    );
+    pathEl.setAttribute('d', d);
+
+    // Arrow tip at node edge, base extends outward
+    if (targetFace === 'top') {
+      arrowEl.setAttribute(
+        'points',
+        `${targetX},${targetY} ${targetX - aw},${targetY - al} ${
+          targetX + aw
+        },${targetY - al}`
+      );
+    } else if (targetFace === 'left') {
+      arrowEl.setAttribute(
+        'points',
+        `${targetX},${targetY} ${targetX - al},${targetY - aw} ${
+          targetX - al
+        },${targetY + aw}`
+      );
+    } else {
+      arrowEl.setAttribute(
+        'points',
+        `${targetX},${targetY} ${targetX + al},${targetY - aw} ${
+          targetX + al
+        },${targetY + aw}`
+      );
+    }
+  }
+
+  private createConnectionSVG(
+    exitId: string,
+    scope: string,
+    toId: string
+  ): boolean {
+    const endpoints = this.getConnectionEndpoints(exitId, toId);
+    if (!endpoints) return false;
+
+    const { svgEl, pathEl, arrowEl } = this.createSVGElement();
+    this.updateSVGPath(
+      pathEl,
+      arrowEl,
+      endpoints.sourceX,
+      endpoints.sourceY,
+      endpoints.targetX,
+      endpoints.targetY,
+      endpoints.targetFace
+    );
+    this.canvas.appendChild(svgEl);
+
+    this.connections.set(exitId, {
+      scope,
+      fromId: exitId,
+      toId,
+      svgEl,
+      pathEl,
+      arrowEl
+    });
+
+    // Make arrowhead draggable for picking up existing connections
+    const DRAG_THRESHOLD = 5;
+    const onArrowMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+
+      const onMove = (me: MouseEvent) => {
+        const dx = me.clientX - startX;
+        const dy = me.clientY - startY;
+        if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          this.startDrag(exitId, scope, toId, me);
+        }
+      };
+
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+    arrowEl.addEventListener('mousedown', onArrowMouseDown);
+
+    // Mark the exit element as connected
+    const exitEl = document.getElementById(exitId);
+    if (exitEl) {
+      exitEl.classList.add('connected');
+    }
+
+    return true;
+  }
+
+  private updateConnectionSVG(exitId: string) {
+    const conn = this.connections.get(exitId);
+    if (!conn) return;
+
+    const endpoints = this.getConnectionEndpoints(conn.fromId, conn.toId);
+    if (!endpoints) return;
+
+    this.updateSVGPath(
+      conn.pathEl,
+      conn.arrowEl,
+      endpoints.sourceX,
+      endpoints.sourceY,
+      endpoints.targetX,
+      endpoints.targetY,
+      endpoints.targetFace
+    );
+  }
+
+  private removeConnectionSVG(exitId: string) {
+    const conn = this.connections.get(exitId);
+    if (!conn) return;
+
+    conn.svgEl.remove();
+    this.connections.delete(exitId);
+  }
+
+  // --- Repaint ---
 
   public repaintEverything() {
-    if (this.jsPlumb) {
-      this.jsPlumb.repaintEverything();
-    }
+    this.connections.forEach((_conn, exitId) => {
+      this.updateConnectionSVG(exitId);
+    });
   }
 
   public revalidate(ids: string[]) {
-    if (!this.jsPlumb) return;
-    this.jsPlumb.batch(() => {
-      ids.forEach((id) => {
-        const element = document.getElementById(id);
-        if (element) {
-          this.jsPlumb.revalidate(element);
-        }
-      });
+    // Find all connections directly involving the given IDs
+    const directExits: string[] = [];
+    const affectedTargets = new Set<string>();
+
+    this.connections.forEach((conn, exitId) => {
+      if (
+        ids.includes(conn.fromId) ||
+        ids.includes(conn.toId) ||
+        ids.includes(conn.scope)
+      ) {
+        directExits.push(exitId);
+        affectedTargets.add(conn.toId);
+      }
+    });
+
+    // Also repaint sibling connections that share a target
+    // (so anchor distribution stays correct during drag)
+    const allExitsToRepaint = new Set(directExits);
+    this.connections.forEach((conn, exitId) => {
+      if (affectedTargets.has(conn.toId)) {
+        allExitsToRepaint.add(exitId);
+      }
+    });
+
+    allExitsToRepaint.forEach((exitId) => {
+      this.updateConnectionSVG(exitId);
     });
   }
 
-  public reset() {
-    if (this.connectionWait) {
-      clearTimeout(this.connectionWait);
-      this.connectionWait = null;
-    }
-    this.pendingConnections = [];
-    this.jsPlumb.select().deleteAll();
-    this.jsPlumb._managedElements = {};
-  }
+  // --- Connection removal ---
 
   public forgetNode(nodeId: string) {
-    if (!this.jsPlumb) return;
-    const element = document.getElementById(nodeId);
-    if (!element) return;
+    // Remove all connections where this node is source or target
+    const toRemove: string[] = [];
+    this.connections.forEach((conn, exitId) => {
+      if (conn.scope === nodeId || conn.toId === nodeId) {
+        toRemove.push(exitId);
+      }
+    });
+    toRemove.forEach((exitId) => this.removeConnectionSVG(exitId));
 
-    this.jsPlumb.deleteConnectionsForElement(element);
-    this.jsPlumb.removeAllEndpoints(element);
-    this.jsPlumb.unmanage(element);
+    // Remove source listeners for exits of this node
+    const exitEls = document.getElementById(nodeId)?.querySelectorAll('.exit');
+    if (exitEls) {
+      exitEls.forEach((el) => {
+        const id = el.id;
+        if (this.sources.has(id)) {
+          this.sources.get(id)();
+          this.sources.delete(id);
+        }
+      });
+    }
   }
 
   public removeNodeConnections(nodeId: string, exitIds?: string[]) {
-    if (!this.jsPlumb) return;
-
-    const inbound = this.jsPlumb.select({ target: nodeId });
-
-    // Use provided exitIds or try to find them in DOM (fallback)
+    // Only remove outbound connections from this node's exits.
+    // Inbound connections are managed by their source nodes and
+    // will repaint correctly on the next revalidate.
     const exits =
       exitIds ||
       Array.from(
         document.getElementById(nodeId)?.querySelectorAll('.exit') || []
-      ).map((exit) => {
-        return exit.id;
-      }) ||
-      [];
+      ).map((el) => el.id);
 
-    inbound.deleteAll();
-    this.jsPlumb.select({ source: exits }).deleteAll();
-    this.jsPlumb.selectEndpoints({ source: exits }).deleteAll();
+    exits.forEach((exitId) => this.removeConnectionSVG(exitId));
   }
 
-  public removeExitConnection(exitId: string) {
-    if (!this.jsPlumb) return;
-
-    const exitElement = document.getElementById(exitId);
-    if (!exitElement) return;
-
-    // Get all connections from this exit
-    const connections = this.jsPlumb.getConnections({ source: exitElement });
-
-    // Remove the connections
-    connections.forEach((connection) => {
-      this.jsPlumb.deleteConnection(connection);
-    });
-
-    return connections.length > 0;
+  public removeExitConnection(exitId: string): boolean {
+    if (!this.connections.has(exitId)) return false;
+    this.removeConnectionSVG(exitId);
+    return true;
   }
 
   public removeAllEndpoints(nodeId: string) {
-    if (!this.jsPlumb) return;
-    const element = document.getElementById(nodeId);
-    if (!element) return;
-    this.jsPlumb.removeAllEndpoints(element, true);
+    // Remove source listeners for this node's exits
+    const exitEls = document.getElementById(nodeId)?.querySelectorAll('.exit');
+    if (exitEls) {
+      exitEls.forEach((el) => {
+        const id = el.id;
+        if (this.sources.has(id)) {
+          this.sources.get(id)();
+          this.sources.delete(id);
+        }
+      });
+    }
   }
 
-  /**
-   * Set the removing state for an exit's connection
-   * @param exitId The ID of the exit whose connections should be marked as removing
-   * @returns true if connections were found and updated, false otherwise
-   */
+  // --- Connection state ---
+
   public setConnectionRemovingState(
     exitId: string,
     isRemoving: boolean
   ): boolean {
-    if (!this.jsPlumb) return false;
+    const conn = this.connections.get(exitId);
+    if (!conn) return false;
 
-    const exitElement = document.getElementById(exitId);
-    if (!exitElement) return false;
-
-    // Get all connections from this exit
-    const connections = this.jsPlumb.getConnections({ source: exitElement });
-
-    if (connections.length === 0) return false;
-
-    // Update the connections' CSS classes
-    connections.forEach((connection) => {
-      if (isRemoving) {
-        connection.addClass('removing');
-      } else {
-        connection.removeClass('removing');
-      }
-    });
-
+    if (isRemoving) {
+      conn.svgEl.classList.add('removing');
+    } else {
+      conn.svgEl.classList.remove('removing');
+    }
     return true;
+  }
+
+  // --- Activity overlays (deferred) ---
+
+  public setActivityData(
+    _activityData: { segments: { [key: string]: number } } | null
+  ) {
+    // No-op stub — activity overlays will be implemented in a follow-up
+  }
+
+  public clearRecentContactsCache() {
+    // No-op stub
+  }
+
+  // --- Drag-and-drop ---
+
+  private startDrag(
+    exitId: string,
+    scope: string,
+    originalTargetId: string | null,
+    e: MouseEvent
+  ) {
+    // Remove existing connection SVG for this exit (the connection is being dragged away)
+    this.removeConnectionSVG(exitId);
+
+    const { svgEl, pathEl, arrowEl } = this.createSVGElement();
+    svgEl.classList.add('dragging');
+    // Ensure the drag SVG never intercepts mouse events (e.g. hover detection on nodes)
+    pathEl.style.pointerEvents = 'none';
+    arrowEl.style.pointerEvents = 'none';
+    this.canvas.appendChild(svgEl);
+
+    // Calculate source point
+    const exitEl = document.getElementById(exitId);
+    if (!exitEl) return;
+
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const exitRect = exitEl.getBoundingClientRect();
+    const sourceX = exitRect.left + exitRect.width / 2 - canvasRect.left;
+    const sourceY = exitRect.bottom - canvasRect.top;
+
+    const aw = 6.5;
+    const al = 13;
+    const stubBehindArrow = 8;
+
+    // Update the drag path and arrow based on cursor position.
+    // Arrow trails just before the cursor (between source and cursor).
+    const cursorGap = 1;
+    const updateDragPath = (cx: number, cy: number) => {
+      const goingUp = cy < sourceY;
+
+      let routeFace: TargetFace = 'top';
+      if (goingUp) {
+        routeFace = cx < sourceX ? 'left' : 'right';
+      }
+
+      // Position the arrow so its top edge sits just before the cursor.
+      // "Top" = smallest Y on screen, which is the base for a downward
+      // arrow and the tip for an upward arrow.
+      let arrowBaseY: number;
+      if (goingUp) {
+        // Arrow points up: tip just below cursor, base below that
+        arrowBaseY = cy + cursorGap + al;
+      } else {
+        // Arrow points down: base just above cursor, tip below
+        arrowBaseY = cy - cursorGap;
+      }
+
+      const d = calculateFlowchartPath(
+        sourceX,
+        sourceY,
+        cx,
+        arrowBaseY,
+        20,
+        goingUp ? 0 : stubBehindArrow,
+        5,
+        routeFace
+      );
+      pathEl.setAttribute('d', d);
+
+      if (goingUp) {
+        const tipY = cy + cursorGap;
+        arrowEl.setAttribute(
+          'points',
+          `${cx},${tipY} ${cx - aw},${arrowBaseY} ${cx + aw},${arrowBaseY}`
+        );
+      } else {
+        const tipY = arrowBaseY + al;
+        arrowEl.setAttribute(
+          'points',
+          `${cx},${tipY} ${cx - aw},${arrowBaseY} ${cx + aw},${arrowBaseY}`
+        );
+      }
+    };
+
+    // Initial path to cursor
+    const cursorX = e.clientX - canvasRect.left;
+    const cursorY = e.clientY - canvasRect.top;
+    updateDragPath(cursorX, cursorY);
+
+    this.connectionDragging = true;
+
+    const onMove = (me: MouseEvent) => {
+      const cx = me.clientX - canvasRect.left;
+      const cy = me.clientY - canvasRect.top;
+      updateDragPath(cx, cy);
+    };
+
+    const onUp = (_me: MouseEvent) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+
+      // Remove the drag SVG
+      svgEl.remove();
+      this.connectionDragging = false;
+      this.dragState = null;
+
+      // Fire abort event so Editor can handle connection logic
+      this.notifyListeners('connection:abort', {
+        source: exitEl,
+        sourceId: exitId,
+        target: { id: originalTargetId },
+        data: { nodeId: scope }
+      });
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+
+    this.dragState = {
+      sourceId: exitId,
+      scope,
+      originalTargetId,
+      svgEl,
+      pathEl,
+      arrowEl,
+      onMove,
+      onUp
+    };
+
+    // Fire drag event so Editor knows a drag has started
+    this.notifyListeners('connection:drag', {
+      sourceId: exitId,
+      sourceX,
+      sourceY,
+      data: { nodeId: scope },
+      target: { id: originalTargetId }
+    });
+  }
+
+  // --- Reset ---
+
+  public reset() {
+    if (this.connectionWait) {
+      cancelAnimationFrame(this.connectionWait);
+      this.connectionWait = null;
+    }
+    this.pendingConnections = [];
+
+    // Remove all connection SVGs
+    this.connections.forEach((conn) => conn.svgEl.remove());
+    this.connections.clear();
+
+    // Remove all source listeners
+    this.sources.forEach((cleanup) => cleanup());
+    this.sources.clear();
+
+    // Clean up any active drag
+    if (this.dragState) {
+      document.removeEventListener('mousemove', this.dragState.onMove);
+      document.removeEventListener('mouseup', this.dragState.onUp);
+      this.dragState.svgEl.remove();
+      this.dragState = null;
+      this.connectionDragging = false;
+    }
   }
 }

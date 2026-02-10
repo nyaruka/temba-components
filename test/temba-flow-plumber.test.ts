@@ -1,60 +1,30 @@
 import { expect } from '@open-wc/testing';
-import { Plumber, SOURCE_DEFAULTS, TARGET_DEFAULTS } from '../src/flow/Plumber';
+import { Plumber, calculateFlowchartPath } from '../src/flow/Plumber';
 import { stub, useFakeTimers, SinonFakeTimers } from 'sinon';
 
 describe('Plumber', () => {
   let plumber: Plumber;
-  let mockJsPlumb: any;
   let mockCanvas: HTMLElement;
   let clock: SinonFakeTimers;
+  let mockElement: HTMLElement;
 
   beforeEach(() => {
-    // Use fake timers to control setTimeout
     clock = useFakeTimers();
 
-    // Create mock canvas and make getElementById return a mock element
     mockCanvas = document.createElement('div');
-    const mockElement = document.createElement('div');
-    stub(document, 'getElementById').returns(mockElement);
+    mockCanvas.id = 'canvas';
+    document.body.appendChild(mockCanvas);
 
-    // Create a mock editor with fireCustomEvent
+    mockElement = document.createElement('div');
+    mockElement.id = 'test-exit';
+    mockCanvas.appendChild(mockElement);
+
     const mockEditor = { fireCustomEvent: stub() };
-
-    // Create a new plumber instance
     plumber = new Plumber(mockCanvas, mockEditor);
-
-    // Replace the internal jsPlumb instance with mocks
-    mockJsPlumb = {
-      getConnections: stub().returns([]),
-      addClass: stub(),
-      removeClass: stub(),
-      batch: stub().callsFake((fn) => fn()),
-      addEndpoint: stub().returns({}),
-      connect: stub(),
-      getEndpoints: stub().returns([
-        { elementId: 'test-from', addClass: stub() }
-      ]),
-      select: stub().returns({
-        deleteAll: stub()
-      }),
-      selectEndpoints: stub().returns({
-        deleteAll: stub()
-      }),
-      deleteConnection: stub(),
-      removeAllEndpoints: stub(),
-      repaintEverything: stub(),
-      revalidate: stub(),
-      bind: stub()
-    };
-
-    (plumber as any).jsPlumb = mockJsPlumb;
-    // Reset the connectionWait to avoid timing issues
-    (plumber as any).connectionWait = null;
   });
 
   afterEach(() => {
-    // Restore the original document.getElementById
-    (document.getElementById as any).restore?.();
+    mockCanvas.remove();
     clock.restore();
   });
 
@@ -64,98 +34,141 @@ describe('Plumber', () => {
     });
   });
 
-  describe('makeTarget', () => {
-    it('creates a target endpoint for the specified element', () => {
-      plumber.makeTarget('test-target');
-      expect(mockJsPlumb.addEndpoint).to.have.been.called;
+  describe('makeSource', () => {
+    it('registers a mousedown listener on the exit element', () => {
+      const exitEl = document.createElement('div');
+      exitEl.id = 'exit-1';
+      mockCanvas.appendChild(exitEl);
+
+      plumber.makeSource('exit-1');
+
+      // Source should be tracked
+      expect((plumber as any).sources.has('exit-1')).to.be.true;
+
+      exitEl.remove();
+    });
+
+    it('cleans up previous listener when called again', () => {
+      const exitEl = document.createElement('div');
+      exitEl.id = 'exit-2';
+      mockCanvas.appendChild(exitEl);
+
+      plumber.makeSource('exit-2');
+      plumber.makeSource('exit-2');
+
+      expect((plumber as any).sources.has('exit-2')).to.be.true;
+
+      exitEl.remove();
     });
   });
 
-  describe('makeSource', () => {
-    it('creates a source endpoint for the specified element', () => {
-      plumber.makeSource('test-source');
-      expect(mockJsPlumb.addEndpoint).to.have.been.called;
+  describe('makeTarget', () => {
+    it('is a no-op', () => {
+      // Should not throw
+      plumber.makeTarget('test-node');
     });
   });
 
   describe('connectIds', () => {
     it('adds connection to pending connections and processes them', () => {
       plumber.connectIds('test-node', 'test-from', 'test-to');
-
-      // Verify pendingConnections has the new connection
       expect((plumber as any).pendingConnections.length).to.equal(1);
-
-      // Advance timer to trigger the timeout
-      clock.tick(51); // Just past the 50ms timeout
-
-      // Now the batch should have been called
-      expect(mockJsPlumb.batch).to.have.been.called;
     });
   });
 
   describe('processPendingConnections', () => {
-    it('processes pending connections with timeout', () => {
-      // Add a connection to pending connections
-      plumber.connectIds('test-node', 'test-from', 'test-to');
+    it('clears existing rAF when called multiple times', () => {
+      const cancelSpy = stub(window, 'cancelAnimationFrame');
+      const rafSpy = stub(window, 'requestAnimationFrame').returns(123 as any);
 
-      // Fast-forward clock past the timeout
-      clock.tick(51); // Just past the 50ms timeout
-
-      expect(mockJsPlumb.batch).to.have.been.called;
-    });
-
-    it('creates endpoints and connections for pending connections', () => {
-      plumber.connectIds('test-node', 'test-from', 'test-to');
-
-      // Fast-forward clock past the timeout
-      clock.tick(51); // Just past the 50ms timeout
-
-      expect(mockJsPlumb.addEndpoint).to.have.been.called;
-      expect(mockJsPlumb.connect).to.have.been.called;
-    });
-
-    it('clears existing timeout when called multiple times', () => {
-      // Set up spies for window.setTimeout and window.clearTimeout
-      const clearTimeoutSpy = stub(window, 'clearTimeout');
-      const setTimeoutSpy = stub(window, 'setTimeout').returns(123 as any);
-
-      // Call twice
       plumber.processPendingConnections();
       plumber.processPendingConnections();
 
-      // Should have called clearTimeout once and setTimeout twice
-      expect(clearTimeoutSpy).to.have.been.calledOnce;
-      expect(setTimeoutSpy).to.have.been.calledTwice;
+      expect(cancelSpy).to.have.been.calledOnce;
+      expect(rafSpy).to.have.been.calledTwice;
 
-      // Clean up
-      clearTimeoutSpy.restore();
-      setTimeoutSpy.restore();
-    });
-
-    it('handles empty pending connections', () => {
-      // Call without adding any connections
-      plumber.processPendingConnections();
-
-      // Fast-forward clock past the timeout
-      clock.tick(51); // Just past the 50ms timeout
-
-      expect(mockJsPlumb.batch).to.have.been.called;
+      cancelSpy.restore();
+      rafSpy.restore();
     });
   });
 
-  describe('constants', () => {
-    it('has correct properties in SOURCE_DEFAULTS', () => {
-      expect(SOURCE_DEFAULTS).to.have.property('endpoint');
-      expect(SOURCE_DEFAULTS).to.have.property('anchors');
-      expect(SOURCE_DEFAULTS).to.have.property('maxConnections');
-      expect(SOURCE_DEFAULTS).to.have.property('source');
-    });
+  describe('event system', () => {
+    it('supports on/off/notify pattern', () => {
+      let received = null;
+      const handler = (info: any) => {
+        received = info;
+      };
 
-    it('has correct properties in TARGET_DEFAULTS', () => {
-      expect(TARGET_DEFAULTS).to.have.property('endpoint');
-      expect(TARGET_DEFAULTS).to.have.property('anchor');
-      expect(TARGET_DEFAULTS).to.have.property('maxConnections');
-      expect(TARGET_DEFAULTS).to.have.property('target');
+      plumber.on('test-event', handler);
+      (plumber as any).notifyListeners('test-event', { data: 'test' });
+      expect(received).to.deep.equal({ data: 'test' });
+
+      received = null;
+      plumber.off('test-event', handler);
+      (plumber as any).notifyListeners('test-event', { data: 'test2' });
+      expect(received).to.be.null;
     });
+  });
+
+  describe('reset', () => {
+    it('clears all state', () => {
+      plumber.connectIds('test-node', 'test-from', 'test-to');
+      plumber.reset();
+
+      expect((plumber as any).pendingConnections.length).to.equal(0);
+      expect((plumber as any).connections.size).to.equal(0);
+      expect((plumber as any).sources.size).to.equal(0);
+    });
+  });
+});
+
+describe('calculateFlowchartPath', () => {
+  it('generates a straight vertical path when source and target are aligned', () => {
+    const path = calculateFlowchartPath(100, 0, 100, 100);
+    expect(path).to.include('M 100 0');
+    expect(path).to.include('L 100 100');
+    // Should not contain Q (quadratic curve) for aligned points
+    expect(path).to.not.include('Q');
+  });
+
+  it('generates a path with corners when source and target are offset', () => {
+    const path = calculateFlowchartPath(50, 0, 150, 200);
+    expect(path).to.include('M 50 0');
+    expect(path).to.include('Q'); // Should have rounded corners
+    expect(path).to.include('L 150 200');
+  });
+
+  it('handles custom stub and corner radius', () => {
+    const path = calculateFlowchartPath(0, 0, 100, 100, 30, 15, 10);
+    expect(path).to.include('M 0 0');
+    expect(path).to.include('L 100 100');
+  });
+
+  it('handles cases where vertical space is tight by using reduced-radius corners', () => {
+    // With stubs of 20+10=30, and only 35 total vertical space, there's only 5px for corners
+    const path = calculateFlowchartPath(50, 0, 150, 35);
+    expect(path).to.include('M 50 0');
+    // Should still use rounded corners (L-shape with curves)
+    expect(path).to.include('Q');
+  });
+
+  it('enforces midY is always below source exit for top face', () => {
+    // Target above source — midY should not go above sourceY + stubStart
+    const path = calculateFlowchartPath(50, 100, 150, 50);
+    expect(path).to.include('M 50 100');
+    // Should still exit downward with a curve at exitY (120)
+    expect(path).to.include('Q');
+  });
+
+  it('generates a path entering from the left face', () => {
+    const path = calculateFlowchartPath(50, 0, 150, 100, 20, 10, 5, 'left');
+    expect(path).to.include('M 50 0');
+    expect(path).to.include('L 150 100'); // ends at target
+  });
+
+  it('generates a path entering from the right face', () => {
+    const path = calculateFlowchartPath(150, 0, 50, 100, 20, 10, 5, 'right');
+    expect(path).to.include('M 150 0');
+    expect(path).to.include('L 50 100'); // ends at target
   });
 });

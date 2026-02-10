@@ -98,14 +98,16 @@ export class CanvasMenu extends RapidElement {
   ): void {
     super.firstUpdated(_changedProperties);
 
-    // Close menu when clicking outside
+    // Close menu when clicking outside — use mousedown instead of click
+    // to avoid being triggered by the click synthesized from a drag-and-drop
+    // (mousedown on exit + mouseup on canvas = click on common ancestor)
     const handleClickOutside = (e: MouseEvent) => {
       if (this.open && !this.contains(e.target as Node)) {
         this.close();
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
 
     // Store cleanup function
     (this as any)._clickOutsideHandler = handleClickOutside;
@@ -114,7 +116,7 @@ export class CanvasMenu extends RapidElement {
   disconnectedCallback(): void {
     super.disconnectedCallback();
     if ((this as any)._clickOutsideHandler) {
-      document.removeEventListener('click', (this as any)._clickOutsideHandler);
+      document.removeEventListener('mousedown', (this as any)._clickOutsideHandler);
     }
   }
 

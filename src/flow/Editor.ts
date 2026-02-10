@@ -37,10 +37,10 @@ interface Revision {
 import { ACTION_GROUP_METADATA } from './types';
 import { Checkbox } from '../form/Checkbox';
 
-import { Plumber } from './Plumber';
+import { Plumber, calculateFlowchartPath } from './Plumber';
 import { CanvasNode } from './CanvasNode';
 import { Dialog } from '../layout/Dialog';
-import { Connection } from '@jsplumb/browser-ui';
+
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import {
@@ -122,7 +122,7 @@ const DROP_PREVIEW_OFFSET_X = 20;
 const DROP_PREVIEW_OFFSET_Y = 20;
 
 export class Editor extends RapidElement {
-  // unfortunately, jsplumb requires that we be in light DOM
+  // connection SVGs are appended directly to the canvas, so we need light DOM
   createRenderRoot() {
     return this;
   }
@@ -212,6 +212,10 @@ export class Editor extends RapidElement {
   @state()
   private isValidTarget = true;
 
+  // Canvas-relative source exit position (set at drag start)
+  private connectionSourceX: number | null = null;
+  private connectionSourceY: number | null = null;
+
   @state()
   private localizationWindowHidden = true;
 
@@ -294,6 +298,7 @@ export class Editor extends RapidElement {
   private connectionPlaceholder: {
     position: FlowPosition;
     visible: boolean;
+    dragUp?: boolean;
   } | null = null;
 
   // Track pending connection when dropping on canvas
@@ -401,100 +406,54 @@ export class Editor extends RapidElement {
       }
 
       #grid.viewing-revision temba-flow-node,
-      #grid.viewing-revision svg.jtk-connector,
-      #grid.viewing-revision .activity-overlay {
+      #grid.viewing-revision svg.plumb-connector {
         opacity: 0.5;
       }
 
-      body .jtk-endpoint {
-        width: initial;
-        height: initial;
+      svg.plumb-connector {
+        z-index: 10;
       }
 
-      .jtk-endpoint {
-        z-index: 600;
-        opacity: 0;
-      }
-
-      .plumb-source {
-        z-index: 600;
-        cursor: pointer;
-        opacity: 0;
-      }
-
-      .plumb-source.connected {
-        border-radius: 50%;
-        pointer-events: none;
-      }
-
-      .plumb-source circle {
-        fill: purple;
-      }
-
-      .plumb-target {
-        z-index: 600;
-        opacity: 0;
-        cursor: pointer;
-        fill: transparent;
-      }
-
-      body svg.jtk-connector.plumb-connector path {
-        stroke: var(--color-connectors) !important;
-        stroke-width: 3px;
-      }
-
-      body .plumb-connector {
-        z-index: 10 !important;
-      }
-
-      body .plumb-connector .plumb-arrow {
-        fill: var(--color-connectors);
+      svg.plumb-connector path {
         stroke: var(--color-connectors);
-        stroke-width: 0px !important;
-        margin-top: 6px;
-        z-index: 10;
-      }
-
-      body svg.jtk-connector.jtk-hover path {
-        stroke: var(--color-success) !important;
         stroke-width: 3px;
       }
 
-      body #canvas.read-only-connections svg.jtk-connector.jtk-hover path {
-        stroke: var(--color-connectors) !important;
+      svg.plumb-connector .plumb-arrow {
+        fill: var(--color-connectors);
+        stroke: none;
       }
 
-      body .plumb-connector.jtk-hover .plumb-arrow {
-        fill: var(--color-success) !important;
-        stroke-width: 0px;
-        z-index: 10;
+      svg.plumb-connector.hover path {
+        stroke: var(--color-success);
       }
 
-      body
-        #canvas.read-only-connections
-        .plumb-connector.jtk-hover
-        .plumb-arrow {
-        fill: var(--color-connectors) !important;
-        ponter-events: none;
+      svg.plumb-connector.hover .plumb-arrow {
+        fill: var(--color-success);
       }
 
-      body #canvas.read-only-connections svg {
+      #canvas.read-only-connections svg.plumb-connector.hover path {
+        stroke: var(--color-connectors);
+      }
+
+      #canvas.read-only-connections svg.plumb-connector.hover .plumb-arrow {
+        fill: var(--color-connectors);
+      }
+
+      #canvas.read-only-connections svg.plumb-connector {
         pointer-events: none;
       }
 
-      /* Activity overlays on connections */
-      .jtk-overlay.activity-overlay {
-        background: #f3f3f3;
-        border: 1px solid #d9d9d9;
-        color: #333;
-        border-radius: 4px;
-        padding: 2px 4px;
-        font-size: 10px;
-        font-weight: 600;
-        line-height: 0.9;
-        cursor: pointer;
-        z-index: 500;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      svg.plumb-connector.removing path {
+        stroke: var(--color-error);
+      }
+
+      svg.plumb-connector.removing .plumb-arrow {
+        fill: var(--color-error);
+      }
+
+      svg.plumb-connector.dragging {
+        z-index: 99999;
       }
 
       /* Active contact count on nodes */
@@ -514,102 +473,6 @@ export class Editor extends RapidElement {
         z-index: 600;
         line-height: 1;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      }
-
-      /* Recent contacts popup */
-      @keyframes popupBounceIn {
-        0% {
-          transform: scale(0.8);
-          opacity: 0;
-        }
-        50% {
-          transform: scale(1.05);
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      .recent-contacts-popup {
-        display: none;
-        position: absolute;
-        width: 200px;
-        background: #f3f3f3;
-        border-radius: 10px;
-        box-shadow: 0 1px 3px 1px rgba(130, 130, 130, 0.2);
-        z-index: 1015;
-        transform-origin: top center;
-      }
-
-      .recent-contacts-popup.show {
-        display: block;
-        animation: popupBounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      }
-
-      .recent-contacts-popup .popup-title {
-        background: #999;
-        color: #fff;
-        padding: 6px 0;
-        text-align: center;
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-        font-size: 12px;
-      }
-
-      .recent-contacts-popup .no-contacts-message {
-        padding: 15px;
-        text-align: center;
-        color: #999;
-        font-size: 12px;
-      }
-
-      .recent-contacts-popup .contact-row {
-        padding: 8px 10px;
-        border-top: 1px solid #e0e0e0;
-        text-align: left;
-      }
-
-      .recent-contacts-popup .contact-row:last-child {
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-      }
-
-      .recent-contacts-popup .contact-name {
-        display: block;
-        font-weight: 500;
-        font-size: 12px;
-        color: var(--color-link-primary, #1d4ed8);
-        cursor: pointer;
-      }
-
-      .recent-contacts-popup .contact-name:hover {
-        text-decoration: underline;
-        color: var(--color-link-primary, #1d4ed8);
-      }
-
-      .recent-contacts-popup .contact-operand {
-        padding-top: 3px;
-        font-size: 11px;
-        color: #666;
-        word-wrap: break-word;
-      }
-
-      .recent-contacts-popup .contact-time {
-        padding-top: 3px;
-        font-size: 10px;
-        color: #999;
-      }
-
-      /* Connection dragging feedback */
-      body svg.jtk-connector.jtk-dragging {
-        z-index: 99999 !important;
-      }
-
-      .katavorio-drag-no-select svg.jtk-connector path,
-      .katavorio-drag-no-select svg.jtk-endpoint path {
-        pointer-events: none !important;
-        border: 1px solid purple;
       }
 
       /* Connection target feedback */
@@ -639,10 +502,6 @@ export class Editor extends RapidElement {
         outline: 3px solid #6298f0ff;
         outline-offset: 0px;
         border-radius: var(--curvature);
-      }
-
-      .jtk-floating-endpoint {
-        pointer-events: none;
       }
 
       .localization-window-content {
@@ -852,17 +711,16 @@ export class Editor extends RapidElement {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
     }
 
-    this.plumber.on('connection:drag', (connection: Connection) => {
-      // console.log('connection:drag', connection);
-      this.dragFromNodeId =
-        connection.data.nodeId ||
-        document.getElementById(connection.sourceId).closest('.node').id;
+    this.plumber.on('connection:drag', (connection: any) => {
+      this.dragFromNodeId = connection.data.nodeId;
       this.sourceId = connection.sourceId;
+      this.connectionSourceX = connection.sourceX;
+      this.connectionSourceY = connection.sourceY;
       this.originalConnectionTargetId = connection.target.id;
     });
 
     this.plumber.on('connection:abort', (info) => {
-      // console.log('Connection aborted', info);
+      console.log('Connection aborted', info);
       this.makeConnection(info);
     });
 
@@ -873,6 +731,13 @@ export class Editor extends RapidElement {
   }
 
   private makeConnection(info) {
+    console.log('makeConnection', {
+      sourceId: this.sourceId,
+      targetId: this.targetId,
+      isValidTarget: this.isValidTarget,
+      connectionPlaceholder: this.connectionPlaceholder,
+      dragFromNodeId: this.dragFromNodeId
+    });
     if (this.sourceId && this.targetId && this.isValidTarget) {
       // going to the same target, just put it back
       if (info.target.id === this.targetId) {
@@ -898,6 +763,7 @@ export class Editor extends RapidElement {
         left: snapToGrid(this.connectionPlaceholder.position.left),
         top: snapToGrid(this.connectionPlaceholder.position.top)
       };
+      const isDragUp = !!this.connectionPlaceholder.dragUp;
 
       // Update the placeholder to the snapped position
       this.connectionPlaceholder.position = snappedPosition;
@@ -909,12 +775,14 @@ export class Editor extends RapidElement {
         position: snappedPosition
       };
 
-      // Show the context menu just below the placeholder
+      // Show the context menu near the placeholder
       const canvas = this.querySelector('#canvas');
       if (canvas) {
         const canvasRect = canvas.getBoundingClientRect();
-        const menuX = canvasRect.left + snappedPosition.left - 40; // center horizontally
-        const menuY = canvasRect.top + snappedPosition.top + 80; // just below placeholder
+        const menuX = canvasRect.left + snappedPosition.left - 40;
+        const menuY = isDragUp
+          ? canvasRect.top + snappedPosition.top + 74 // just below placeholder bottom
+          : canvasRect.top + snappedPosition.top + 80; // just below placeholder
 
         const canvasMenu = this.querySelector(
           'temba-canvas-menu'
@@ -950,6 +818,8 @@ export class Editor extends RapidElement {
     // Clear connection state (but keep sourceId/dragFromNodeId if we have a pending connection)
     if (!this.pendingCanvasConnection) {
       this.sourceId = null;
+      this.connectionSourceX = null;
+      this.connectionSourceY = null;
       this.dragFromNodeId = null;
     }
     this.targetId = null;
@@ -1570,65 +1440,50 @@ export class Editor extends RapidElement {
     if (!this.connectionPlaceholder || !this.connectionPlaceholder.visible)
       return '';
 
-    const { position } = this.connectionPlaceholder;
+    const { position, dragUp } = this.connectionPlaceholder;
 
     // Render connection line when we have a pending connection (after drop)
     let svgPath = null;
-    if (this.sourceId && this.dragFromNodeId && this.pendingCanvasConnection) {
-      const sourceElement = document.getElementById(this.sourceId);
-      if (sourceElement) {
-        const sourceRect = sourceElement.getBoundingClientRect();
-        const canvas = this.querySelector('#canvas');
-        const canvasRect = canvas.getBoundingClientRect();
+    if (
+      this.sourceId &&
+      this.dragFromNodeId &&
+      this.pendingCanvasConnection &&
+      this.connectionSourceX != null &&
+      this.connectionSourceY != null
+    ) {
+      const sourceX = this.connectionSourceX;
+      const sourceY = this.connectionSourceY;
+      const targetX = position.left + 100;
+      // When dragging up, connect to the placeholder bottom; otherwise to the top
+      const targetY = dragUp ? position.top + 64 : position.top;
 
-        // Source point (bottom center of exit)
-        const sourceX =
-          sourceRect.left + sourceRect.width / 2 - canvasRect.left;
-        const sourceY = sourceRect.bottom - canvasRect.top;
+        const routeFace: 'top' | 'left' | 'right' = dragUp
+          ? targetX < sourceX
+            ? 'left'
+            : 'right'
+          : 'top';
 
-        // Target point (top center of placeholder)
-        const targetX = position.left + 100; // 100 is half the placeholder width (200px)
-        const targetY = position.top;
+        const pathData = calculateFlowchartPath(
+          sourceX,
+          sourceY,
+          targetX,
+          targetY,
+          20,
+          dragUp ? 0 : 10,
+          5,
+          routeFace
+        );
 
-        // Use jsPlumb FlowchartConnector parameters: stub [20, 10], cornerRadius 5
-        const stubStart = 20;
-        const stubEnd = 10;
-        const cornerRadius = 5;
-
-        // Calculate flowchart path with corners
-        const verticalStart = sourceY + stubStart;
-        const verticalEnd = targetY - stubEnd;
-        const midY = (verticalStart + verticalEnd) / 2;
-
-        // Build path with rounded corners (flowchart style)
-        let pathData = `M ${sourceX} ${sourceY} L ${sourceX} ${verticalStart}`;
-
-        if (sourceX !== targetX) {
-          // Horizontal segment needed
-          if (Math.abs(verticalEnd - verticalStart) > cornerRadius * 2) {
-            // Enough space for corners
-            pathData += ` L ${sourceX} ${midY - cornerRadius}`;
-            pathData += ` Q ${sourceX} ${midY}, ${
-              sourceX + (targetX > sourceX ? cornerRadius : -cornerRadius)
-            } ${midY}`;
-            pathData += ` L ${
-              targetX - (targetX > sourceX ? cornerRadius : -cornerRadius)
-            } ${midY}`;
-            pathData += ` Q ${targetX} ${midY}, ${targetX} ${
-              midY + cornerRadius
-            }`;
-            pathData += ` L ${targetX} ${verticalEnd}`;
-          } else {
-            // Direct horizontal transition
-            pathData += ` L ${targetX} ${verticalStart}`;
-            pathData += ` L ${targetX} ${verticalEnd}`;
-          }
+        const aw = 6.5;
+        const al = 13;
+        let arrowPoints: string;
+        if (dragUp) {
+          // Arrow tip pointing up, base at placeholder bottom
+          arrowPoints = `${targetX},${targetY - al} ${targetX - aw},${targetY} ${targetX + aw},${targetY}`;
         } else {
-          // Straight vertical line
-          pathData += ` L ${targetX} ${verticalEnd}`;
+          // Arrow pointing down into top of placeholder
+          arrowPoints = `${targetX},${targetY} ${targetX - aw},${targetY - al} ${targetX + aw},${targetY - al}`;
         }
-
-        pathData += ` L ${targetX} ${targetY}`;
 
         svgPath = html`
           <svg
@@ -1639,17 +1494,13 @@ export class Editor extends RapidElement {
               fill="none"
               stroke="var(--color-connectors, #ccc)"
               stroke-width="3"
-              class="plumb-connector"
             />
             <polygon
-              points="${targetX},${targetY} ${targetX - 6.5},${targetY -
-              13} ${targetX + 6.5},${targetY - 13}"
+              points="${arrowPoints}"
               fill="var(--color-connectors, #ccc)"
-              class="plumb-arrow"
             />
           </svg>
         `;
-      }
     }
 
     return html`${svgPath}
@@ -1780,23 +1631,41 @@ export class Editor extends RapidElement {
         this.isValidTarget = true;
 
         // Show connection placeholder when over empty canvas
-        // Calculate position: horizontally centered at mouse, vertically just below mouse
         const canvas = this.querySelector('#canvas');
         if (canvas) {
           const canvasRect = canvas.getBoundingClientRect();
           const relativeX = event.clientX - canvasRect.left;
           const relativeY = event.clientY - canvasRect.top;
 
-          // offset the placeholder so it's centered horizontally and just below the mouse
-          const placeholderWidth = 200; // approximate node width
-          const placeholderOffset = 20; // distance below mouse cursor
+          const placeholderWidth = 200;
+          const placeholderHeight = 64;
+          const arrowLength = 13; // must match Plumber's al
+          const cursorGap = 1; // must match Plumber's cursorGap
+
+          // Determine if cursor is above the source exit using stored sourceY
+          const dragUp =
+            this.connectionSourceY != null
+              ? relativeY < this.connectionSourceY
+              : false;
+
+          let top: number;
+          if (dragUp) {
+            // Arrow points up: tip at cy + cursorGap.
+            // Placeholder bottom should sit just above the arrow tip.
+            top = relativeY + cursorGap - placeholderHeight;
+          } else {
+            // Arrow points down: tip at cy - cursorGap + arrowLength.
+            // Placeholder top sits just below the arrow tip.
+            top = relativeY - cursorGap + arrowLength;
+          }
 
           this.connectionPlaceholder = {
             position: {
               left: relativeX - placeholderWidth / 2,
-              top: relativeY + placeholderOffset
+              top
             },
-            visible: true
+            visible: true,
+            dragUp
           };
         }
       }
@@ -2091,6 +1960,8 @@ export class Editor extends RapidElement {
       this.pendingCanvasConnection = null;
       this.connectionPlaceholder = null;
       this.sourceId = null;
+      this.connectionSourceX = null;
+      this.connectionSourceY = null;
       this.dragFromNodeId = null;
     } else {
       // Show node type selector
@@ -2126,6 +1997,8 @@ export class Editor extends RapidElement {
       this.pendingCanvasConnection = null;
       this.connectionPlaceholder = null;
       this.sourceId = null;
+      this.connectionSourceX = null;
+      this.connectionSourceY = null;
       this.dragFromNodeId = null;
       this.originalConnectionTargetId = null;
     }
@@ -2362,6 +2235,8 @@ export class Editor extends RapidElement {
           this.pendingCanvasConnection = null;
           this.connectionPlaceholder = null;
           this.sourceId = null;
+      this.connectionSourceX = null;
+      this.connectionSourceY = null;
           this.dragFromNodeId = null;
         }
 
@@ -2431,6 +2306,8 @@ export class Editor extends RapidElement {
           this.pendingCanvasConnection = null;
           this.connectionPlaceholder = null;
           this.sourceId = null;
+      this.connectionSourceX = null;
+      this.connectionSourceY = null;
           this.dragFromNodeId = null;
         }
 

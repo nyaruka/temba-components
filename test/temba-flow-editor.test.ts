@@ -30,8 +30,6 @@ describe('Editor', () => {
       expect(styles.cssText).to.contain('#editor');
       expect(styles.cssText).to.contain('#grid');
       expect(styles.cssText).to.contain('#canvas');
-      expect(styles.cssText).to.contain('.plumb-source');
-      expect(styles.cssText).to.contain('.plumb-target');
       expect(styles.cssText).to.contain('.plumb-connector');
     });
 

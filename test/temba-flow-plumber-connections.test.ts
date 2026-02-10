@@ -8,144 +8,144 @@ describe('Plumber - Connection Management', () => {
   let clock: SinonFakeTimers;
 
   beforeEach(() => {
-    // Use fake timers to control setTimeout
     clock = useFakeTimers();
 
-    // Create mock canvas and make getElementById return a mock element
     mockCanvas = document.createElement('div');
-    const mockElement = document.createElement('div');
-    stub(document, 'getElementById').returns(mockElement);
+    mockCanvas.id = 'canvas';
+    document.body.appendChild(mockCanvas);
 
-    // Create a mock editor with fireCustomEvent
     const mockEditor = { fireCustomEvent: stub() };
-
-    // Create a new plumber instance
     plumber = new Plumber(mockCanvas, mockEditor);
-
-    // Replace the internal jsPlumb instance with mocks
-    (plumber as any).jsPlumb = {
-      getConnections: stub().returns([]),
-      addClass: stub(),
-      removeClass: stub(),
-      batch: stub().callsFake((fn: any) => fn()),
-      addEndpoint: stub().returns({}),
-      revalidate: stub(),
-      connect: stub(),
-      getEndpoints: stub().returns([
-        { elementId: 'test-from', addClass: stub() }
-      ]),
-      select: stub().returns({
-        deleteAll: stub()
-      }),
-      selectEndpoints: stub().returns({
-        deleteAll: stub()
-      }),
-      deleteConnection: stub(),
-      removeAllEndpoints: stub(),
-      repaintEverything: stub()
-    };
   });
 
   afterEach(() => {
-    // Restore the original document.getElementById
-    (document.getElementById as any).restore?.();
+    mockCanvas.remove();
     clock.restore();
   });
 
   describe('setConnectionRemovingState', () => {
-    it('returns false when no connections are found', () => {
-      const result = plumber.setConnectionRemovingState('test-exit', true);
+    it('returns false when no connection exists for the exit', () => {
+      const result = plumber.setConnectionRemovingState('nonexistent', true);
       expect(result).to.be.false;
-      expect((plumber as any).jsPlumb.getConnections).to.have.been.called;
     });
 
-    it('sets removing class on connections when isRemoving is true', () => {
-      const mockConnections = [
-        { id: 'conn1', addClass: stub() },
-        { id: 'conn2', addClass: stub() }
-      ];
+    it('adds removing class when isRemoving is true', () => {
+      // Create mock elements for a connection
+      const exitEl = document.createElement('div');
+      exitEl.id = 'exit-1';
+      const targetEl = document.createElement('div');
+      targetEl.id = 'target-1';
+      mockCanvas.appendChild(exitEl);
+      mockCanvas.appendChild(targetEl);
 
-      (plumber as any).jsPlumb.getConnections = stub().returns(mockConnections);
+      // Create a connection
+      plumber.connectIds('node-1', 'exit-1', 'target-1');
+      clock.tick(16);
 
-      const result = plumber.setConnectionRemovingState('test-exit', true);
+      const result = plumber.setConnectionRemovingState('exit-1', true);
       expect(result).to.be.true;
-      expect(mockConnections[0].addClass).to.have.been.calledWith('removing');
-      expect(mockConnections[1].addClass).to.have.been.calledWith('removing');
+
+      const conn = (plumber as any).connections.get('exit-1');
+      expect(conn.svgEl.classList.contains('removing')).to.be.true;
+
+      exitEl.remove();
+      targetEl.remove();
     });
 
-    it('removes removing class from connections when isRemoving is false', () => {
-      const mockConnections = [
-        { id: 'conn1', removeClass: stub() },
-        { id: 'conn2', removeClass: stub() }
-      ];
+    it('removes removing class when isRemoving is false', () => {
+      const exitEl = document.createElement('div');
+      exitEl.id = 'exit-2';
+      const targetEl = document.createElement('div');
+      targetEl.id = 'target-2';
+      mockCanvas.appendChild(exitEl);
+      mockCanvas.appendChild(targetEl);
 
-      (plumber as any).jsPlumb.getConnections = stub().returns(mockConnections);
+      plumber.connectIds('node-1', 'exit-2', 'target-2');
+      clock.tick(16);
 
-      const result = plumber.setConnectionRemovingState('test-exit', false);
+      plumber.setConnectionRemovingState('exit-2', true);
+      plumber.setConnectionRemovingState('exit-2', false);
+
+      const conn = (plumber as any).connections.get('exit-2');
+      expect(conn.svgEl.classList.contains('removing')).to.be.false;
+
+      exitEl.remove();
+      targetEl.remove();
+    });
+  });
+
+  describe('removeExitConnection', () => {
+    it('removes a connection for an exit', () => {
+      const exitEl = document.createElement('div');
+      exitEl.id = 'exit-3';
+      const targetEl = document.createElement('div');
+      targetEl.id = 'target-3';
+      mockCanvas.appendChild(exitEl);
+      mockCanvas.appendChild(targetEl);
+
+      plumber.connectIds('node-1', 'exit-3', 'target-3');
+      clock.tick(16);
+
+      expect((plumber as any).connections.has('exit-3')).to.be.true;
+
+      const result = plumber.removeExitConnection('exit-3');
       expect(result).to.be.true;
-      expect(mockConnections[0].removeClass).to.have.been.calledWith(
-        'removing'
-      );
-      expect(mockConnections[1].removeClass).to.have.been.calledWith(
-        'removing'
-      );
+      expect((plumber as any).connections.has('exit-3')).to.be.false;
+
+      exitEl.remove();
+      targetEl.remove();
+    });
+
+    it('returns false when no connection exists', () => {
+      const result = plumber.removeExitConnection('nonexistent');
+      expect(result).to.be.false;
     });
   });
 
   describe('connectIds and processPendingConnections', () => {
     it('adds connection to pending connections', () => {
-      // Call connectIds which should add to pending connections
       plumber.connectIds('test-node', 'test-from', 'test-to');
-
-      // Verify pendingConnections has the new connection
       expect((plumber as any).pendingConnections.length).to.equal(1);
-
-      // Advance timer to trigger the timeout
-      clock.tick(51); // Just past the 50ms timeout
-
-      // Now the batch should have been called
-      expect((plumber as any).jsPlumb.batch).to.have.been.called;
-      expect((plumber as any).jsPlumb.addEndpoint).to.have.been.called;
-      expect((plumber as any).jsPlumb.connect).to.have.been.called;
     });
 
-    it('clears previous timeout when called multiple times', () => {
-      // Set up spies for window.setTimeout and window.clearTimeout instead of global
-      const clearTimeoutSpy = stub(window, 'clearTimeout');
-      const setTimeoutSpy = stub(window, 'setTimeout').returns(123 as any);
+    it('clears previous rAF when called multiple times', () => {
+      const cancelSpy = stub(window, 'cancelAnimationFrame');
+      const rafSpy = stub(window, 'requestAnimationFrame').returns(123 as any);
 
-      // Call twice
       plumber.processPendingConnections();
       plumber.processPendingConnections();
 
-      // Should have called clearTimeout once and setTimeout twice
-      expect(clearTimeoutSpy).to.have.been.calledOnce;
-      expect(setTimeoutSpy).to.have.been.calledTwice;
+      expect(cancelSpy).to.have.been.calledOnce;
+      expect(rafSpy).to.have.been.calledTwice;
 
-      // Clean up
-      clearTimeoutSpy.restore();
-      setTimeoutSpy.restore();
+      cancelSpy.restore();
+      rafSpy.restore();
     });
   });
 
-  describe('removeExitConnection', () => {
-    it('removes connections for an exit', () => {
-      const mockConnections = [{ id: 'conn1' }, { id: 'conn2' }];
-      (plumber as any).jsPlumb.getConnections = stub().returns(mockConnections);
+  describe('removeNodeConnections', () => {
+    it('removes inbound and outbound connections for a node', () => {
+      const exitEl = document.createElement('div');
+      exitEl.id = 'exit-4';
+      exitEl.classList.add('exit');
+      const nodeEl = document.createElement('div');
+      nodeEl.id = 'node-1';
+      nodeEl.appendChild(exitEl);
+      const targetEl = document.createElement('div');
+      targetEl.id = 'target-4';
+      mockCanvas.appendChild(nodeEl);
+      mockCanvas.appendChild(targetEl);
 
-      const result = plumber.removeExitConnection('test-exit');
+      plumber.connectIds('node-1', 'exit-4', 'target-4');
+      clock.tick(16);
 
-      expect(result).to.be.true;
-      expect((plumber as any).jsPlumb.deleteConnection).to.have.been
-        .calledTwice;
-    });
+      expect((plumber as any).connections.size).to.equal(1);
 
-    it('returns false when no connections exist', () => {
-      (plumber as any).jsPlumb.getConnections = stub().returns([]);
+      plumber.removeNodeConnections('node-1', ['exit-4']);
+      expect((plumber as any).connections.size).to.equal(0);
 
-      const result = plumber.removeExitConnection('test-exit');
-
-      expect(result).to.be.false;
+      nodeEl.remove();
+      targetEl.remove();
     });
   });
 });
