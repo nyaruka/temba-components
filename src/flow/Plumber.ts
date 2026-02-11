@@ -1,4 +1,9 @@
-type TargetFace = 'top' | 'left' | 'right';
+export type TargetFace = 'top' | 'left' | 'right';
+
+// Shared arrow/drag constants used by both Plumber and Editor
+export const ARROW_LENGTH = 13;
+export const ARROW_HALF_WIDTH = 6.5;
+export const CURSOR_GAP = 1;
 
 interface ConnectionEndpoints {
   sourceX: number;
@@ -521,10 +526,8 @@ export class Plumber {
     targetY: number,
     targetFace: TargetFace = 'top'
   ) {
-    // Arrow dimensions
-    const aw = 6.5;
-    const al = 13;
-    // Visible line length behind the arrow
+    const aw = ARROW_HALF_WIDTH;
+    const al = ARROW_LENGTH;
     const stubBehindArrow = 8;
 
     // Path ends at arrow BASE (not tip) so the line never pokes through the front.
@@ -815,20 +818,23 @@ export class Plumber {
 
     // Calculate source point
     const exitEl = document.getElementById(exitId);
-    if (!exitEl) return;
+    if (!exitEl) {
+      svgEl.remove();
+      return;
+    }
 
     const canvasRect = this.canvas.getBoundingClientRect();
     const exitRect = exitEl.getBoundingClientRect();
     const sourceX = exitRect.left + exitRect.width / 2 - canvasRect.left;
     const sourceY = exitRect.bottom - canvasRect.top;
 
-    const aw = 6.5;
-    const al = 13;
+    const aw = ARROW_HALF_WIDTH;
+    const al = ARROW_LENGTH;
     const stubBehindArrow = 8;
 
     // Update the drag path and arrow based on cursor position.
     // Arrow trails just before the cursor (between source and cursor).
-    const cursorGap = 1;
+    const cursorGap = CURSOR_GAP;
     const updateDragPath = (cx: number, cy: number) => {
       const goingUp = cy < sourceY;
 

@@ -37,7 +37,13 @@ interface Revision {
 import { ACTION_GROUP_METADATA } from './types';
 import { Checkbox } from '../form/Checkbox';
 
-import { Plumber, calculateFlowchartPath } from './Plumber';
+import {
+  Plumber,
+  calculateFlowchartPath,
+  ARROW_LENGTH,
+  ARROW_HALF_WIDTH,
+  CURSOR_GAP
+} from './Plumber';
 import { CanvasNode } from './CanvasNode';
 import { Dialog } from '../layout/Dialog';
 
@@ -1466,8 +1472,8 @@ export class Editor extends RapidElement {
         routeFace
       );
 
-      const aw = 6.5;
-      const al = 13;
+      const aw = ARROW_HALF_WIDTH;
+      const al = ARROW_LENGTH;
       let arrowPoints: string;
       if (dragUp) {
         // Arrow tip pointing up, base at placeholder bottom
@@ -1635,8 +1641,8 @@ export class Editor extends RapidElement {
 
           const placeholderWidth = 200;
           const placeholderHeight = 64;
-          const arrowLength = 13; // must match Plumber's al
-          const cursorGap = 1; // must match Plumber's cursorGap
+          const arrowLength = ARROW_LENGTH;
+          const cursorGap = CURSOR_GAP;
 
           // Determine if cursor is above the source exit using stored sourceY
           const dragUp =
