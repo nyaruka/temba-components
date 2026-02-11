@@ -13,7 +13,10 @@ export class TicketList extends TembaList {
       const lastActivity = this.items[0].ticket.last_activity_on;
       const separator = this.endpoint.includes('?') ? '&' : '?';
       return (
-        this.endpoint + separator + 'after=' + new Date(lastActivity).getTime() * 1000
+        this.endpoint +
+        separator +
+        'after=' +
+        new Date(lastActivity).getTime() * 1000
       );
     }
     return this.endpoint;

@@ -360,11 +360,7 @@ export class CanvasNode extends RapidElement {
         position: relative;
         box-shadow: 0 2px 2px rgba(0, 0, 0, .1);
         cursor: pointer;
-        pointer-events: none;
-      }
-
-      .exit.jtk-connected {
-        background: var(--color-connectors, #e6e6e6);
+        pointer-events: all;
       }
 
       .exit.connected {
@@ -376,10 +372,13 @@ export class CanvasNode extends RapidElement {
         background-color: var(--color-connectors, #e6e6e6);
       }
 
-      .exit.connected.read-only, .exit.connected.read-only:hover {
-        background-color: #fff;
+      .exit.read-only, .exit.read-only:hover {
         pointer-events: none !important;
         cursor: default;
+      }
+
+      .exit.connected.read-only, .exit.connected.read-only:hover {
+        background-color: #fff;
       }
       
       .exit.removing, .exit.removing:hover {

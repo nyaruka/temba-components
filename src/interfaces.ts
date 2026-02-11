@@ -303,5 +303,6 @@ export enum CustomEventType {
   NodeEditRequested = 'temba-node-edit-requested',
   NodeSaved = 'temba-node-saved',
   NodeEditCancelled = 'temba-node-edit-cancelled',
-  FollowSimulation = 'temba-follow-simulation'
+  FollowSimulation = 'temba-follow-simulation',
+  ContactClicked = 'temba-contact-clicked'
 }
