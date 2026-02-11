@@ -4,6 +4,7 @@ export type TargetFace = 'top' | 'left' | 'right';
 export const ARROW_LENGTH = 13;
 export const ARROW_HALF_WIDTH = 6.5;
 export const CURSOR_GAP = 1;
+export const EXIT_STUB = 30;
 
 interface ConnectionEndpoints {
   sourceX: number;
@@ -177,6 +178,16 @@ export class Plumber {
   private editor: any;
   private retryCount = 0;
   private maxRetries = 3;
+
+  // Activity overlay state
+  private activityData: { segments: { [key: string]: number } } | null = null;
+  private overlays: Map<string, HTMLElement> = new Map();
+  private hoveredActivityKey: string | null = null;
+  private recentContactsPopup: HTMLElement | null = null;
+  private recentContactsCache: { [key: string]: any[] } = {};
+  private pendingFetches: { [key: string]: AbortController } = {};
+  private hideContactsTimeout: number | null = null;
+  private showContactsTimeout: number | null = null;
 
   public connectionDragging = false;
 
@@ -548,7 +559,7 @@ export class Plumber {
       sourceY,
       pathTargetX,
       pathTargetY,
-      20,
+      EXIT_STUB,
       effectiveStub,
       5,
       targetFace
@@ -644,6 +655,18 @@ export class Plumber {
       exitEl.classList.add('connected');
     }
 
+    // Create activity overlay if activity data exists for this segment
+    if (this.activityData) {
+      const activityKey = `${exitId}:${toId}`;
+      const count = this.activityData.segments[activityKey];
+      if (count && count > 0) {
+        const overlayEl = this.createOverlayElement(count, activityKey);
+        this.canvas.appendChild(overlayEl);
+        this.overlays.set(exitId, overlayEl);
+        this.updateOverlayPosition(exitId);
+      }
+    }
+
     return true;
   }
 
@@ -663,11 +686,18 @@ export class Plumber {
       endpoints.targetY,
       endpoints.targetFace
     );
+    this.updateOverlayPosition(exitId);
   }
 
   private removeConnectionSVG(exitId: string) {
     const conn = this.connections.get(exitId);
     if (!conn) return;
+
+    const overlay = this.overlays.get(exitId);
+    if (overlay) {
+      overlay.remove();
+      this.overlays.delete(exitId);
+    }
 
     conn.svgEl.remove();
     this.connections.delete(exitId);
@@ -786,16 +816,281 @@ export class Plumber {
     return true;
   }
 
-  // --- Activity overlays (deferred) ---
+  // --- Activity overlays ---
 
   public setActivityData(
-    _activityData: { segments: { [key: string]: number } } | null
+    activityData: { segments: { [key: string]: number } } | null
   ) {
-    // No-op stub — activity overlays will be implemented in a follow-up
+    this.activityData = activityData;
+    this.clearRecentContactsCache();
+    this.updateActivityOverlays();
+  }
+
+  private updateActivityOverlays() {
+    if (!this.activityData) {
+      this.overlays.forEach((el) => el.remove());
+      this.overlays.clear();
+      return;
+    }
+
+    const activeExitIds = new Set<string>();
+
+    this.connections.forEach((conn, exitId) => {
+      const activityKey = `${conn.fromId}:${conn.toId}`;
+      const count = this.activityData.segments[activityKey];
+
+      if (count && count > 0) {
+        activeExitIds.add(exitId);
+        let overlayEl = this.overlays.get(exitId);
+
+        if (!overlayEl) {
+          overlayEl = this.createOverlayElement(count, activityKey);
+          this.canvas.appendChild(overlayEl);
+          this.overlays.set(exitId, overlayEl);
+        } else {
+          overlayEl.textContent = count.toLocaleString();
+          overlayEl.setAttribute('data-activity-key', activityKey);
+        }
+
+        this.updateOverlayPosition(exitId);
+      }
+    });
+
+    // Remove overlays for connections that no longer have activity
+    this.overlays.forEach((el, exitId) => {
+      if (!activeExitIds.has(exitId)) {
+        el.remove();
+        this.overlays.delete(exitId);
+      }
+    });
+  }
+
+  private createOverlayElement(
+    count: number,
+    activityKey: string
+  ): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'activity-overlay';
+    el.textContent = count.toLocaleString();
+    el.setAttribute('data-activity-key', activityKey);
+
+    el.addEventListener('mouseenter', () => {
+      const flowUuid = this.getFlowUuid();
+      if (flowUuid) {
+        this.fetchRecentContacts(activityKey, flowUuid);
+        this.showContactsTimeout = window.setTimeout(() => {
+          this.showRecentContacts(activityKey, flowUuid);
+        }, 500);
+      }
+    });
+
+    el.addEventListener('mouseleave', () => {
+      if (this.showContactsTimeout) {
+        clearTimeout(this.showContactsTimeout);
+        this.showContactsTimeout = null;
+      }
+      this.hoveredActivityKey = null;
+      this.hideRecentContacts();
+    });
+
+    return el;
+  }
+
+  private updateOverlayPosition(exitId: string) {
+    const overlayEl = this.overlays.get(exitId);
+    const conn = this.connections.get(exitId);
+    if (!overlayEl || !conn) return;
+
+    const endpoints = this.getConnectionEndpoints(conn.fromId, conn.toId);
+    if (!endpoints) return;
+
+    overlayEl.style.position = 'absolute';
+    overlayEl.style.left = `${endpoints.sourceX}px`;
+    overlayEl.style.top = `${endpoints.sourceY + EXIT_STUB / 2}px`;
+    overlayEl.style.transform = 'translate(-50%, -50%)';
+  }
+
+  private getFlowUuid(): string | null {
+    return this.editor?.definition?.uuid || null;
+  }
+
+  // --- Recent contacts ---
+
+  private async fetchRecentContacts(activityKey: string, flowUuid: string) {
+    if (
+      this.recentContactsCache[activityKey] ||
+      this.pendingFetches[activityKey]
+    ) {
+      return;
+    }
+
+    const controller = new AbortController();
+    this.pendingFetches[activityKey] = controller;
+
+    try {
+      const [exitUuid, destinationUuid] = activityKey.split(':');
+      const endpoint = `/flow/recent_contacts/${flowUuid}/${exitUuid}/${destinationUuid}/`;
+      const response = await fetch(endpoint, { signal: controller.signal });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      this.recentContactsCache[activityKey] = Array.isArray(data)
+        ? data
+        : data.results || [];
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        console.error('Failed to fetch recent contacts:', error);
+      }
+    } finally {
+      delete this.pendingFetches[activityKey];
+    }
+  }
+
+  private async showRecentContacts(activityKey: string, flowUuid: string) {
+    const overlayElement = this.findOverlayForActivityKey(activityKey);
+    if (!overlayElement) return;
+
+    if (this.hideContactsTimeout) {
+      clearTimeout(this.hideContactsTimeout);
+      this.hideContactsTimeout = null;
+    }
+
+    this.hoveredActivityKey = activityKey;
+
+    if (!this.recentContactsPopup) {
+      this.recentContactsPopup = document.createElement('div');
+      this.recentContactsPopup.className = 'recent-contacts-popup';
+      this.recentContactsPopup.style.position = 'absolute';
+      this.recentContactsPopup.style.zIndex = '1015';
+      this.recentContactsPopup.style.display = 'none';
+      document.body.appendChild(this.recentContactsPopup);
+
+      this.recentContactsPopup.onmouseenter = () => {
+        if (this.hideContactsTimeout) {
+          clearTimeout(this.hideContactsTimeout);
+          this.hideContactsTimeout = null;
+        }
+      };
+      this.recentContactsPopup.onmouseleave = () => {
+        this.hoveredActivityKey = null;
+        this.hideRecentContacts();
+      };
+
+      this.recentContactsPopup.onclick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('contact-name')) {
+          this.hideRecentContacts(false);
+          const contactUuid = target.getAttribute('data-uuid');
+          if (contactUuid) {
+            this.editor.fireCustomEvent('temba-contact-clicked', {
+              uuid: contactUuid
+            });
+          }
+        }
+      };
+    }
+
+    if (this.recentContactsCache[activityKey]) {
+      this.renderRecentContactsPopup(this.recentContactsCache[activityKey]);
+      this.positionPopup(overlayElement);
+    } else {
+      this.recentContactsPopup.innerHTML =
+        '<div class="no-contacts-message">Loading...</div>';
+      this.positionPopup(overlayElement);
+      await this.fetchRecentContacts(activityKey, flowUuid);
+      if (this.hoveredActivityKey === activityKey) {
+        this.renderRecentContactsPopup(
+          this.recentContactsCache[activityKey] || []
+        );
+        this.positionPopup(overlayElement);
+      }
+    }
+  }
+
+  private findOverlayForActivityKey(activityKey: string): HTMLElement | null {
+    for (const [, el] of this.overlays) {
+      if (el.getAttribute('data-activity-key') === activityKey) {
+        return el;
+      }
+    }
+    return null;
+  }
+
+  private positionPopup(overlayElement: HTMLElement) {
+    if (!this.recentContactsPopup) return;
+    const rect = overlayElement.getBoundingClientRect();
+    this.recentContactsPopup.style.left = `${rect.left + window.scrollX}px`;
+    this.recentContactsPopup.style.top = `${
+      rect.bottom + window.scrollY + 5
+    }px`;
+    this.recentContactsPopup.style.display = '';
+    this.recentContactsPopup.classList.remove('show');
+    void this.recentContactsPopup.offsetWidth;
+    this.recentContactsPopup.classList.add('show');
+  }
+
+  private renderRecentContactsPopup(recentContacts: any[]) {
+    if (!this.recentContactsPopup) return;
+
+    if (recentContacts.length === 0) {
+      this.recentContactsPopup.innerHTML =
+        '<div class="no-contacts-message">No Recent Contacts</div>';
+      return;
+    }
+
+    let html = '<div class="popup-title">Recent Contacts</div>';
+    recentContacts.forEach((contact: any) => {
+      html += '<div class="contact-row">';
+      html += `<div class="contact-name" data-uuid="${contact.contact.uuid}">${contact.contact.name}</div>`;
+      if (contact.operand) {
+        html += `<div class="contact-operand">${contact.operand}</div>`;
+      }
+      if (contact.time) {
+        const time = new Date(contact.time);
+        const diffMs = Date.now() - time.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        let timeStr = '';
+        if (diffMins < 1) timeStr = 'just now';
+        else if (diffMins < 60) timeStr = `${diffMins}m ago`;
+        else if (diffHours < 24) timeStr = `${diffHours}h ago`;
+        else timeStr = `${diffDays}d ago`;
+        html += `<div class="contact-time">${timeStr}</div>`;
+      }
+      html += '</div>';
+    });
+    this.recentContactsPopup.innerHTML = html;
+  }
+
+  private hideRecentContacts(wait = true) {
+    if (!wait) {
+      if (this.recentContactsPopup) {
+        this.recentContactsPopup.classList.remove('show');
+        this.recentContactsPopup.style.display = 'none';
+        this.hoveredActivityKey = null;
+      }
+      return;
+    }
+
+    this.hideContactsTimeout = window.setTimeout(() => {
+      if (!this.hoveredActivityKey && this.recentContactsPopup) {
+        this.recentContactsPopup.classList.remove('show');
+        this.recentContactsPopup.style.display = 'none';
+        this.hoveredActivityKey = null;
+      }
+    }, 200);
   }
 
   public clearRecentContactsCache() {
-    // No-op stub
+    this.recentContactsCache = {};
+    Object.values(this.pendingFetches).forEach((controller) =>
+      controller.abort()
+    );
+    this.pendingFetches = {};
   }
 
   // --- Drag-and-drop ---
@@ -860,7 +1155,7 @@ export class Plumber {
         sourceY,
         cx,
         arrowBaseY,
-        20,
+        EXIT_STUB,
         goingUp ? 0 : stubBehindArrow,
         5,
         routeFace
@@ -949,6 +1244,20 @@ export class Plumber {
     // Remove all connection SVGs
     this.connections.forEach((conn) => conn.svgEl.remove());
     this.connections.clear();
+
+    // Remove all activity overlays
+    this.overlays.forEach((el) => el.remove());
+    this.overlays.clear();
+
+    // Clean up recent contacts popup
+    this.hideRecentContacts(false);
+    if (this.recentContactsPopup) {
+      this.recentContactsPopup.remove();
+      this.recentContactsPopup = null;
+    }
+    this.recentContactsCache = {};
+    Object.values(this.pendingFetches).forEach((c) => c.abort());
+    this.pendingFetches = {};
 
     // Remove all source listeners
     this.sources.forEach((cleanup) => cleanup());

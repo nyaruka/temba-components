@@ -446,8 +446,10 @@ export class Editor extends RapidElement {
         fill: var(--color-connectors);
       }
 
-      #canvas.read-only-connections svg.plumb-connector {
-        pointer-events: none;
+      #canvas.read-only-connections svg.plumb-connector,
+      #canvas.read-only-connections svg.plumb-connector * {
+        pointer-events: none !important;
+        cursor: default !important;
       }
 
       svg.plumb-connector.removing path {
@@ -479,6 +481,114 @@ export class Editor extends RapidElement {
         z-index: 600;
         line-height: 1;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Activity overlay badges on connection exit stubs */
+      .activity-overlay {
+        position: absolute;
+        background: #f3f3f3;
+        border: 1px solid #d9d9d9;
+        color: #333;
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 0.9;
+        cursor: pointer;
+        z-index: 500;
+        pointer-events: auto;
+        white-space: nowrap;
+        user-select: none;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      #grid.viewing-revision .activity-overlay {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      /* Recent contacts popup */
+      @keyframes popupBounceIn {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .recent-contacts-popup {
+        display: none;
+        position: absolute;
+        width: 200px;
+        background: #f3f3f3;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px 1px rgba(130, 130, 130, 0.2);
+        z-index: 1015;
+        transform-origin: top center;
+      }
+
+      .recent-contacts-popup.show {
+        display: block;
+        animation: popupBounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .recent-contacts-popup .popup-title {
+        background: #999;
+        color: #fff;
+        padding: 6px 0;
+        text-align: center;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        font-size: 12px;
+      }
+
+      .recent-contacts-popup .no-contacts-message {
+        padding: 15px;
+        text-align: center;
+        color: #999;
+        font-size: 12px;
+      }
+
+      .recent-contacts-popup .contact-row {
+        padding: 8px 10px;
+        border-top: 1px solid #e0e0e0;
+        text-align: left;
+      }
+
+      .recent-contacts-popup .contact-row:last-child {
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      .recent-contacts-popup .contact-name {
+        display: block;
+        font-weight: 500;
+        font-size: 12px;
+        color: var(--color-link-primary, #1d4ed8);
+        cursor: pointer;
+      }
+
+      .recent-contacts-popup .contact-name:hover {
+        text-decoration: underline;
+      }
+
+      .recent-contacts-popup .contact-operand {
+        padding-top: 3px;
+        font-size: 11px;
+        color: #666;
+        word-wrap: break-word;
+      }
+
+      .recent-contacts-popup .contact-time {
+        padding-top: 3px;
+        font-size: 10px;
+        color: #999;
       }
 
       /* Connection target feedback */
@@ -998,7 +1108,7 @@ export class Editor extends RapidElement {
       }
 
       this.activityTimer = window.setTimeout(() => {
-        // this.fetchActivityData();
+        this.fetchActivityData();
       }, this.activityInterval);
     });
   }
