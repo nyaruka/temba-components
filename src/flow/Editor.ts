@@ -3419,7 +3419,7 @@ export class Editor extends RapidElement {
         icon="revisions"
         label="Revisions"
         color="rgb(142, 94, 167)"
-        top="105"
+        order="1"
         .hidden=${!this.revisionsWindowHidden && this.localizationWindowHidden}
         @temba-button-clicked=${this.handleRevisionsTabClick}
       ></temba-floating-tab>
@@ -3717,7 +3717,7 @@ export class Editor extends RapidElement {
         icon="language"
         label="Translate Flow"
         color="#6b7280"
-        top="180"
+        order="2"
         .hidden=${!this.localizationWindowHidden}
         @temba-button-clicked=${this.handleLocalizationTabClick}
       ></temba-floating-tab>

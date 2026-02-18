@@ -1,5 +1,5 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { getClasses } from '../utils';
@@ -14,7 +14,6 @@ export class FloatingTab extends RapidElement {
         position: fixed;
         right: 0;
         z-index: 4998;
-        transition: transform var(--transition-duration, 300ms) ease-in-out;
         display: flex;
         align-items: center;
         padding: 12px;
@@ -22,8 +21,11 @@ export class FloatingTab extends RapidElement {
         border-bottom-left-radius: 8px;
         cursor: pointer;
         box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
-        transition: all calc(var(--transition-duration, 300ms) * 0.7)
-          ease-in-out;
+        transition: transform calc(var(--transition-duration, 300ms) * 0.7)
+            ease-in-out,
+          padding-right calc(var(--transition-duration, 300ms) * 0.7)
+            ease-in-out,
+          box-shadow calc(var(--transition-duration, 300ms) * 0.7) ease-in-out;
         user-select: none;
       }
 
@@ -64,7 +66,9 @@ export class FloatingTab extends RapidElement {
     `;
   }
 
-  static TAB_HEIGHT = 50; // height of tab for auto-stacking
+  static TAB_HEIGHT = 50;
+  static TAB_GAP = 10;
+  static START_TOP = 100;
   static allTabs: FloatingTab[] = [];
 
   @property({ type: String })
@@ -77,24 +81,18 @@ export class FloatingTab extends RapidElement {
   color = '#6B7280';
 
   @property({ type: Number })
-  top = -1; // -1 means auto-calculate position
+  order = 0;
+
+  @state()
+  top = 100;
 
   @property({ type: Boolean })
   hidden = false;
 
-  private autoPositioned = false;
-
   connectedCallback() {
     super.connectedCallback();
     FloatingTab.allTabs.push(this);
-  }
-
-  protected firstUpdated(): void {
-    // only auto-calculate position if no top was provided (still at default -1)
-    if (this.top === -1) {
-      this.autoPositioned = true;
-      this.updatePosition();
-    }
+    FloatingTab.updateAllPositions();
   }
 
   disconnectedCallback() {
@@ -103,23 +101,16 @@ export class FloatingTab extends RapidElement {
     if (index > -1) {
       FloatingTab.allTabs.splice(index, 1);
     }
-    // update positions of remaining tabs that use auto-positioning
-    FloatingTab.allTabs.forEach((tab) => {
-      if (tab.autoPositioned) {
-        tab.updatePosition();
-      }
-    });
+    FloatingTab.updateAllPositions();
   }
 
-  private updatePosition() {
-    // auto-calculate position based on index
-    const index = FloatingTab.allTabs.indexOf(this);
-    if (index === -1) {
-      this.top = 100; // default fallback
-    } else {
-      // start at 150px and stack with TAB_HEIGHT gap between tabs
-      this.top = 150 + index * (FloatingTab.TAB_HEIGHT + 0);
-    }
+  private static updateAllPositions() {
+    const sorted = [...FloatingTab.allTabs].sort((a, b) => a.order - b.order);
+    sorted.forEach((tab, index) => {
+      tab.top =
+        FloatingTab.START_TOP +
+        index * (FloatingTab.TAB_HEIGHT + FloatingTab.TAB_GAP);
+    });
   }
 
   public updated(

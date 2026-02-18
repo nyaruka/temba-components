@@ -1934,6 +1934,7 @@ export class Simulator extends RapidElement {
         icon="simulator"
         label="Phone Simulator"
         color="#10b981"
+        order="3"
         .hidden=${this.isVisible}
         @temba-button-clicked=${this.handleShow}
       ></temba-floating-tab>

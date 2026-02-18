@@ -7,15 +7,13 @@ describe('temba-floating-tab', () => {
     const tab = (await getComponent('temba-floating-tab', {
       icon: 'phone',
       label: 'Phone Simulator',
-      color: '#10b981',
-      top: 100
+      color: '#10b981'
     })) as FloatingTab;
 
     assert.instanceOf(tab, FloatingTab);
     expect(tab.icon).to.equal('phone');
     expect(tab.label).to.equal('Phone Simulator');
     expect(tab.color).to.equal('#10b981');
-    expect(tab.top).to.equal(100);
     expect(tab.hidden).to.equal(false);
 
     await assertScreenshot('floating-tab/default', getClip(tab));
@@ -75,21 +73,21 @@ describe('temba-floating-tab', () => {
       icon: 'phone',
       label: 'Phone',
       color: '#10b981',
-      top: 100
+      order: 1
     })) as FloatingTab;
 
     const tab2 = (await getComponent('temba-floating-tab', {
       icon: 'globe',
       label: 'Translation',
       color: '#6b7280',
-      top: 200
+      order: 2
     })) as FloatingTab;
 
     const tab3 = (await getComponent('temba-floating-tab', {
       icon: 'clock',
       label: 'History',
       color: '#8b5cf6',
-      top: 300
+      order: 3
     })) as FloatingTab;
 
     await assertScreenshot('floating-tab/green', getClip(tab1));
