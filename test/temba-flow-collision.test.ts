@@ -454,10 +454,11 @@ describe('Collision Detection Utilities', () => {
       expect(newPos.left).to.equal(100); // horizontal position unchanged
     });
 
-    it('prefers direction with fewer cascading collisions', () => {
+    it('prefers axis-matching direction even with a cascade', () => {
       // Sacred at (100,100)-(200,200), collider at (100,150)-(200,250)
-      // A node sits below at (100,280)-(200,380) blocking the downward path
-      // Down causes cascade, right does not
+      // Overlap is 100w x 50h (wide) = vertical collision = prefer down
+      // A blocker sits below at (100,280)-(200,380), so down causes a cascade
+      // But axis bias still prefers down over moving right
       const allBounds: NodeBounds[] = [
         {
           uuid: 'sacred',
@@ -491,9 +492,10 @@ describe('Collision Detection Utilities', () => {
       const positions = calculateReflowPositions(['sacred'], allBounds);
 
       expect(positions.has('collider')).to.be.true;
-      // Should avoid moving down (would cascade into blocker)
-      // blocker should not need to move
-      expect(positions.has('blocker')).to.be.false;
+      const newPos = positions.get('collider')!;
+      // Axis bias prefers down (vertical) even though it cascades into blocker
+      expect(newPos.top).to.be.greaterThan(200);
+      expect(newPos.left).to.equal(100); // horizontal position unchanged
     });
 
     it('resolves cascading collisions', () => {
@@ -695,6 +697,284 @@ describe('Collision Detection Utilities', () => {
       const newPos = positions.get('collider')!;
       expect(newPos.left).to.be.at.least(0);
       expect(newPos.top).to.be.at.least(0);
+    });
+
+    it('does not move a lower node above the sacred node', () => {
+      // Collider is below sacred (collider.top > sacred.top)
+      // Up should be filtered, so collider goes down or to the side
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 100,
+          top: 180,
+          right: 200,
+          bottom: 280,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should NOT move above the sacred node's top
+      expect(newPos.top).to.be.at.least(100);
+    });
+
+    it('does not move a right-of node left of the sacred node', () => {
+      // Collider is to the right of sacred (collider.left > sacred.left)
+      // Left should be filtered
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 180,
+          top: 100,
+          right: 280,
+          bottom: 200,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should NOT move left of the sacred node's left
+      expect(newPos.left).to.be.at.least(100);
+    });
+
+    it('prefers vertical for wide overlap (vertical collision)', () => {
+      // Nodes stacked: same horizontal position, slight vertical overlap
+      // Overlap: 100w x 30h (wider than tall) = vertical collision = prefer up/down
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 100,
+          top: 170,
+          right: 200,
+          bottom: 270,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should move vertically (down since collider is below)
+      expect(newPos.top).to.be.greaterThan(200);
+      expect(newPos.left).to.equal(100); // horizontal position unchanged
+    });
+
+    it('prefers horizontal for tall overlap (horizontal collision)', () => {
+      // Nodes side-by-side: same vertical position, slight horizontal overlap
+      // Overlap: 30w x 100h (taller than wide) = horizontal collision = prefer left/right
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 170,
+          top: 100,
+          right: 270,
+          bottom: 200,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should move horizontally (right since collider is right of sacred)
+      expect(newPos.left).to.be.greaterThan(200);
+      expect(newPos.top).to.equal(100); // vertical position unchanged
+    });
+
+    it('axis bias tolerates a few cascading collisions', () => {
+      // Sacred at (100,100)-(200,200), collider at (100,170)-(200,270)
+      // Overlap: 100w x 30h = vertical collision = prefer down
+      // Two blockers below: moving down causes 2 cascades
+      // Moving right causes 0 cascades but is axis-mismatched
+      // Axis bias should still prefer down with 2 cascades
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 100,
+          top: 170,
+          right: 200,
+          bottom: 270,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'blocker1',
+          left: 100,
+          top: 260,
+          right: 200,
+          bottom: 360,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'blocker2',
+          left: 100,
+          top: 350,
+          right: 200,
+          bottom: 450,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should still prefer down (axis match) despite 2 cascades
+      expect(newPos.top).to.be.greaterThan(200);
+      expect(newPos.left).to.equal(100);
+    });
+
+    it('sacred node yields to existing top node when dropped below its top', () => {
+      // Existing node at top of canvas, sacred dropped overlapping from below
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'existing',
+          left: 100,
+          top: 0,
+          right: 200,
+          bottom: 100,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'dropped',
+          left: 100,
+          top: 50,
+          right: 200,
+          bottom: 150,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['dropped'], allBounds);
+
+      // Sacred (dropped) should yield since it didn't drop above existing
+      // and existing has no room to move up
+      expect(positions.has('dropped')).to.be.true;
+      expect(positions.has('existing')).to.be.false;
+
+      const newPos = positions.get('dropped')!;
+      expect(newPos.top).to.be.greaterThanOrEqual(100); // moved below existing
+    });
+
+    it('sacred keeps position when dropped above existing node', () => {
+      // Sacred node dropped above existing node - sacred gets priority
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'existing',
+          left: 100,
+          top: 50,
+          right: 200,
+          bottom: 150,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'dropped',
+          left: 100,
+          top: 0,
+          right: 200,
+          bottom: 100,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['dropped'], allBounds);
+
+      // Sacred dropped above existing, so it keeps priority
+      expect(positions.has('dropped')).to.be.false;
+      expect(positions.has('existing')).to.be.true;
+    });
+
+    it('sacred keeps position when dropped at same top as existing node', () => {
+      // Both at top=0 - sacred keeps priority since it's not below existing
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'existing',
+          left: 100,
+          top: 0,
+          right: 200,
+          bottom: 100,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'dropped',
+          left: 100,
+          top: 0,
+          right: 200,
+          bottom: 100,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['dropped'], allBounds);
+
+      // Sacred at same top keeps priority - existing node moves
+      expect(positions.has('dropped')).to.be.false;
+      expect(positions.has('existing')).to.be.true;
     });
   });
 

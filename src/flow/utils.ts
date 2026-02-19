@@ -346,6 +346,25 @@ export const calculateReflowPositions = (
     currentBounds.set(b.uuid, { ...b });
   }
 
+  // A sacred node yields to an existing node at the top of the canvas when
+  // the sacred wasn't dropped above it. The existing node keeps its top
+  // position and the sacred node moves below instead.
+  for (const sacredUuid of [...sacredSet]) {
+    const sacred = currentBounds.get(sacredUuid);
+    if (!sacred) continue;
+
+    for (const [uuid, bounds] of currentBounds) {
+      if (uuid === sacredUuid || sacredSet.has(uuid)) continue;
+      if (!nodesOverlap(sacred, bounds)) continue;
+
+      if (sacred.top > bounds.top && bounds.top < MIN_NODE_SPACING) {
+        sacredSet.delete(sacredUuid);
+        sacredSet.add(uuid);
+        break;
+      }
+    }
+  }
+
   // Seed the queue with non-sacred nodes that overlap any sacred node
   const queue: string[] = [];
   const inQueue = new Set<string>();
@@ -387,11 +406,48 @@ export const calculateReflowPositions = (
 
     if (fixedOverlaps.length === 0) continue;
 
-    // Try each direction, pick the one with least disruption
+    // Determine direction constraints and axis bias from sacred node overlaps
+    const sacredOverlaps = fixedOverlaps.filter((f) => sacredSet.has(f.uuid));
+    const allowedDirections: Direction[] = [...DIRECTIONS];
+    let axisBias: 'vertical' | 'horizontal' | null = null;
+
+    if (sacredOverlaps.length > 0) {
+      // Rule 1: don't move a lower node above the sacred node
+      // Rule 2: don't move a right-of node to the left of the sacred node
+      for (const sacred of sacredOverlaps) {
+        if (collider.top > sacred.top) {
+          const idx = allowedDirections.indexOf('up');
+          if (idx !== -1) allowedDirections.splice(idx, 1);
+        }
+        if (collider.left > sacred.left) {
+          const idx = allowedDirections.indexOf('left');
+          if (idx !== -1) allowedDirections.splice(idx, 1);
+        }
+      }
+
+      // Rule 3: bias direction based on overlap shape
+      let totalOverlapWidth = 0;
+      let totalOverlapHeight = 0;
+      for (const sacred of sacredOverlaps) {
+        totalOverlapWidth +=
+          Math.min(collider.right, sacred.right) -
+          Math.max(collider.left, sacred.left);
+        totalOverlapHeight +=
+          Math.min(collider.bottom, sacred.bottom) -
+          Math.max(collider.top, sacred.top);
+      }
+      if (totalOverlapWidth > totalOverlapHeight) {
+        axisBias = 'vertical'; // wide overlap = nodes stacked = prefer up/down
+      } else if (totalOverlapHeight > totalOverlapWidth) {
+        axisBias = 'horizontal'; // tall overlap = nodes side-by-side = prefer left/right
+      }
+    }
+
+    // Try each allowed direction, pick the one with least disruption
     let bestPos: { left: number; top: number } | null = null;
     let bestScore = Infinity;
 
-    for (const dir of DIRECTIONS) {
+    for (const dir of allowedDirections) {
       const candidate = computeDirectionalClearance(
         collider,
         fixedOverlaps,
@@ -423,7 +479,21 @@ export const calculateReflowPositions = (
       const distance =
         Math.abs(candidate.left - collider.left) +
         Math.abs(candidate.top - collider.top);
-      const score = cascadeCount * 10000 + distance;
+
+      // When colliding with sacred nodes, use axis bias scoring;
+      // for cascading collisions (no sacred overlap), use original scoring
+      let score: number;
+      if (sacredOverlaps.length > 0) {
+        const isVerticalDir = dir === 'up' || dir === 'down';
+        const axisMatch =
+          axisBias === null ||
+          (axisBias === 'vertical' && isVerticalDir) ||
+          (axisBias === 'horizontal' && !isVerticalDir);
+        const axisPenalty = axisMatch ? 0 : 5000;
+        score = cascadeCount * 2000 + axisPenalty + distance;
+      } else {
+        score = cascadeCount * 10000 + distance;
+      }
 
       if (score < bestScore) {
         bestScore = score;
