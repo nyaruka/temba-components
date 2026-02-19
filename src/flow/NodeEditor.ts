@@ -447,7 +447,13 @@ export class NodeEditor extends RapidElement {
   private initializeFormData(): void {
     const nodeConfig = this.getNodeConfig();
 
-    if ((!nodeConfig || nodeConfig.type === 'execute_actions') && this.action) {
+    // Temporary: terminal nodes defer to action configs, same as execute_actions
+    if (
+      (!nodeConfig ||
+        nodeConfig.type === 'execute_actions' ||
+        nodeConfig.type === 'terminal') &&
+      this.action
+    ) {
       // Action editing mode - use action config
       const actionConfig = ACTION_CONFIG[this.action.type];
 
@@ -597,8 +603,13 @@ export class NodeEditor extends RapidElement {
     if (this.node && this.nodeUI) {
       const nodeConfig = this.getNodeConfig();
 
-      // For execute_actions nodes, defer to action editing if an action is selected
-      if (this.nodeUI.type === 'execute_actions' && this.action) {
+      // Temporary: terminal nodes defer to action configs for editing, same as execute_actions
+      // For execute_actions/terminal nodes, defer to action editing if an action is selected
+      if (
+        (this.nodeUI.type === 'execute_actions' ||
+          this.nodeUI.type === ('terminal' as any)) &&
+        this.action
+      ) {
         return ACTION_CONFIG[this.action.type] || null;
       }
 

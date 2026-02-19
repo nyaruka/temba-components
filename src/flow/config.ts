@@ -20,6 +20,7 @@ import { remove_contact_groups } from './actions/remove_contact_groups';
 import { request_optin } from './actions/request_optin';
 import { say_msg } from './actions/say_msg';
 import { play_audio } from './actions/play_audio';
+import { enter_flow } from './actions/enter_flow';
 
 // Import all node configurations
 import { execute_actions } from './nodes/execute_actions';
@@ -31,6 +32,7 @@ import { split_by_random } from './nodes/split_by_random';
 import { split_by_run_result } from './nodes/split_by_run_result';
 import { split_by_scheme } from './nodes/split_by_scheme';
 import { split_by_subflow } from './nodes/split_by_subflow';
+import { terminal } from './nodes/terminal';
 import { split_by_ticket } from './nodes/split_by_ticket';
 import { split_by_webhook } from './nodes/split_by_webhook';
 import { split_by_resthook } from './nodes/split_by_resthook';
@@ -59,7 +61,8 @@ export const ACTION_CONFIG: {
   set_contact_status,
   add_contact_urn,
   add_input_labels,
-  request_optin
+  request_optin,
+  enter_flow
 });
 
 // Helper to register a config and its aliases
@@ -99,5 +102,6 @@ export const NODE_CONFIG: {
   wait_for_digits,
   wait_for_menu,
   wait_for_response,
-  split_by_airtime
+  split_by_airtime,
+  terminal // Temporary: legacy support for terminal nodes (see AppState.ts)
 });
