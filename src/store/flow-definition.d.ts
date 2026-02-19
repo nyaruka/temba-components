@@ -28,6 +28,7 @@ export type ActionType =
   | 'send_email'
   | 'send_broadcast'
   | 'enter_flow'
+  | 'terminal'
   | 'start_session'
   | 'transfer_airtime'
   | 'split_by_airtime'
@@ -152,6 +153,7 @@ export interface SendBroadcast extends Action {
 
 export interface EnterFlow extends Action {
   flow: NamedObject;
+  terminal?: boolean;
 }
 
 export interface StartSession extends Action {

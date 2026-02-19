@@ -19,6 +19,31 @@ export const FLOW_SPEC_VERSION = '14.3';
 const CANVAS_PADDING = 800;
 
 /**
+ * Temporary: Reclassify nodes based on whether they contain terminal actions.
+ * - execute_actions nodes with a terminal action become "terminal"
+ * - terminal nodes that no longer have a terminal action become "execute_actions"
+ * This can be removed once we stop supporting terminal nodes.
+ */
+function reclassifyTerminalNodes(definition: FlowDefinition): void {
+  if (!definition?.nodes || !definition?._ui?.nodes) return;
+
+  for (const node of definition.nodes) {
+    const nodeUI = definition._ui.nodes[node.uuid];
+    if (!nodeUI) continue;
+
+    const hasTerminalAction = node.actions?.some(
+      (action) => (action as any).terminal === true
+    );
+
+    if (nodeUI.type === 'execute_actions' && hasTerminalAction) {
+      nodeUI.type = 'terminal' as any;
+    } else if (nodeUI.type === ('terminal' as any) && !hasTerminalAction) {
+      nodeUI.type = 'execute_actions';
+    }
+  }
+}
+
+/**
  * Sorts nodes by their position - first by y (top), then by x (left)
  */
 function sortNodesByPosition(
@@ -201,6 +226,7 @@ export const zustand = createStore<AppState>()(
           throw new Error('Network response was not ok');
         }
         const data = (await response.json()) as FlowContents;
+        reclassifyTerminalNodes(data.definition);
         set({
           flowInfo: data.info,
           flowDefinition: data.definition,
@@ -298,6 +324,8 @@ export const zustand = createStore<AppState>()(
           // Reset to the flow's default language when loading a new flow
           state.languageCode = flowLang;
           state.isTranslating = false;
+
+          reclassifyTerminalNodes(state.flowDefinition);
 
           // Sort nodes by position when loading flow
           if (state.flowDefinition?.nodes && state.flowDefinition?._ui?.nodes) {

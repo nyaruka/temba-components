@@ -548,14 +548,17 @@ export class CanvasNode extends RapidElement {
         // make our initial connections
         // We use setTimeout to allow for DOM updates to complete before querying for exits
         this.connectionTimeout = window.setTimeout(() => {
-          for (const exit of this.node.exits) {
-            this.plumber.makeSource(exit.uuid);
-            if (exit.destination_uuid) {
-              this.plumber.connectIds(
-                this.node.uuid,
-                exit.uuid,
-                exit.destination_uuid
-              );
+          // Terminal nodes have no visible exits
+          if (this.ui?.type !== 'terminal') {
+            for (const exit of this.node.exits) {
+              this.plumber.makeSource(exit.uuid);
+              if (exit.destination_uuid) {
+                this.plumber.connectIds(
+                  this.node.uuid,
+                  exit.uuid,
+                  exit.destination_uuid
+                );
+              }
             }
           }
           // Note: revalidation is handled by plumber's processPendingConnections which calls repaintEverything
@@ -1310,13 +1313,12 @@ export class CanvasNode extends RapidElement {
     const color = config.group
       ? ACTION_GROUP_METADATA[config.group]?.color
       : '#aaaaaa';
+    const isTerminal = this.ui?.type === 'terminal';
     return html`<div class="cn-title" style="background:${color}">
-      ${this.ui?.type === 'execute_actions'
-        ? html`<temba-icon
-            class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
-            name="sort"
-          ></temba-icon>`
-        : this.node?.actions?.length > 1
+      ${isTerminal
+        ? html`<div class="title-spacer"></div>`
+        : this.ui?.type === 'execute_actions' ||
+          this.node?.actions?.length > 1
         ? html`<temba-icon
             class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
             name="sort"
@@ -1325,7 +1327,9 @@ export class CanvasNode extends RapidElement {
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div
-        class="remove-button ${this.isReadOnly() ? 'read-only-hidden' : ''}"
+        class="remove-button ${isTerminal || this.isReadOnly()
+          ? 'read-only-hidden'
+          : ''}"
         @click=${(e: MouseEvent) =>
           this.handleActionRemoveClick(e, action, index)}
         title="Remove action"
@@ -1643,7 +1647,9 @@ export class CanvasNode extends RapidElement {
               ${activeCount.toLocaleString()}
             </div>`
           : ''}
-        ${nodeConfig && nodeConfig.type !== 'execute_actions'
+        ${nodeConfig &&
+        nodeConfig.type !== 'execute_actions' &&
+        nodeConfig.type !== 'terminal'
           ? html`<div class="router" style="position: relative;">
               <div
                 @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
@@ -1661,7 +1667,7 @@ export class CanvasNode extends RapidElement {
                   : null}
               </div>
             </div>`
-          : this.node.actions.length > 0
+          : this.node.actions?.length > 0
           ? this.ui.type === 'execute_actions'
             ? html`<temba-sortable-list
                   dragHandle="drag-handle"
@@ -1691,6 +1697,8 @@ export class CanvasNode extends RapidElement {
               ${this.renderRouter(this.node.router, this.ui)}
               ${this.renderCategories(this.node)}
             </div>`
+          : this.ui.type === 'terminal'
+          ? ''
           : html`<div class="action-exits">
               ${repeat(
                 this.node.exits,
