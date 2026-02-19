@@ -357,6 +357,10 @@ export class Editor extends RapidElement {
         -webkit-font-smoothing: antialiased;
       }
 
+      temba-floating-tab {
+        --floating-tab-right: 15px;
+      }
+
       #grid {
         position: relative;
         background-color: #f9f9f9;

@@ -8,11 +8,11 @@ export class FloatingTab extends RapidElement {
   static get styles() {
     return css`
       .tab.hidden {
-        transform: translateX(100%);
+        transform: translateX(calc(100% + var(--floating-tab-right, 0px)));
       }
       .tab {
         position: fixed;
-        right: 0;
+        right: var(--floating-tab-right, 0px);
         z-index: 4998;
         display: flex;
         align-items: center;
@@ -67,7 +67,7 @@ export class FloatingTab extends RapidElement {
   }
 
   static TAB_HEIGHT = 50;
-  static TAB_GAP = 10;
+  static TAB_GAP = 4;
   static START_TOP = 100;
   static allTabs: FloatingTab[] = [];
 
