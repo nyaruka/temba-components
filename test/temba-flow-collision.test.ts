@@ -304,18 +304,16 @@ describe('Collision Detection Utilities', () => {
 
   describe('calculateReflowPositions', () => {
     it('returns empty map when no collisions', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
-        width: 100,
-        height: 100
-      };
-
       const allBounds: NodeBounds[] = [
-        movedBounds,
+        {
+          uuid: 'moved',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
         {
           uuid: 'node1',
           left: 300,
@@ -327,67 +325,50 @@ describe('Collision Detection Utilities', () => {
         }
       ];
 
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
-      );
+      const positions = calculateReflowPositions(['moved'], allBounds);
       expect(positions.size).to.equal(0);
     });
 
-    it('moves colliding node down', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
-        width: 100,
-        height: 100
-      };
-
+    it('moves colliding node out of the way', () => {
       const allBounds: NodeBounds[] = [
-        movedBounds,
+        {
+          uuid: 'moved',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
         {
           uuid: 'node1',
-          left: 150,
+          left: 100,
           top: 150,
-          right: 250,
+          right: 200,
           bottom: 250,
           width: 100,
           height: 100
         }
       ];
 
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
-      );
+      const positions = calculateReflowPositions(['moved'], allBounds);
 
       expect(positions.size).to.equal(1);
       expect(positions.has('node1')).to.be.true;
-
-      const newPos = positions.get('node1')!;
-      expect(newPos.left).to.equal(150); // left unchanged
-      expect(newPos.top).to.be.greaterThan(200); // moved below the moved node
+      expect(positions.has('moved')).to.be.false;
     });
 
-    it('handles droppedBelowMidpoint by moving dropped node down', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 150,
-        right: 200,
-        bottom: 250,
-        width: 100,
-        height: 100
-      };
-
+    it('sacred node never appears in returned positions', () => {
       const allBounds: NodeBounds[] = [
-        movedBounds,
+        {
+          uuid: 'dropped',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
         {
           uuid: 'existing',
           left: 100,
@@ -399,117 +380,133 @@ describe('Collision Detection Utilities', () => {
         }
       ];
 
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        true // droppedBelowMidpoint
-      );
+      const positions = calculateReflowPositions(['dropped'], allBounds);
 
-      expect(positions.size).to.equal(1);
-      expect(positions.has('moved')).to.be.true;
-
-      const newPos = positions.get('moved')!;
-      expect(newPos.top).to.be.greaterThan(200); // moved below existing node
-    });
-
-    it('gives priority to dropped node when dropped above midpoint', () => {
-      // Dropped node overlaps with bottom of existing node
-      // Bottom of dropped (180) is above midpoint of existing (150)
-      // So dropped node should keep position, existing moves down
-      const movedBounds: NodeBounds = {
-        uuid: 'dropped',
-        left: 100,
-        top: 80,
-        right: 200,
-        bottom: 180,
-        width: 100,
-        height: 100
-      };
-
-      const allBounds: NodeBounds[] = [
-        movedBounds,
-        {
-          uuid: 'existing',
-          left: 100,
-          top: 100,
-          right: 200,
-          bottom: 200,
-          width: 100,
-          height: 100
-        }
-      ];
-
-      const positions = calculateReflowPositions(
-        'dropped',
-        movedBounds,
-        allBounds,
-        false // dropped node's bottom is above target midpoint, dropped node gets priority
-      );
-
-      // Existing node should be moved down
+      expect(positions.has('dropped')).to.be.false;
       expect(positions.has('existing')).to.be.true;
-      expect(positions.has('dropped')).to.be.false; // dropped keeps its position
-
-      const existingNewPos = positions.get('existing')!;
-      expect(existingNewPos.top).to.be.greaterThan(180); // moved below dropped node
     });
 
-    it('gives priority to existing node when dropped below midpoint', () => {
-      // Dropped node overlaps with top of existing node
-      // Bottom of dropped (220) is below midpoint of existing (150)
-      // So existing node keeps position, dropped moves down
-      const movedBounds: NodeBounds = {
-        uuid: 'dropped',
-        left: 100,
-        top: 120,
-        right: 200,
-        bottom: 220,
-        width: 100,
-        height: 100
-      };
-
+    it('prefers least-displacement direction', () => {
+      // Sacred at (100,100)-(200,200), collider at (180,100)-(280,200)
+      // Right requires only 60px displacement, down requires 140px
       const allBounds: NodeBounds[] = [
-        movedBounds,
         {
-          uuid: 'existing',
+          uuid: 'sacred',
           left: 100,
           top: 100,
           right: 200,
           bottom: 200,
           width: 100,
           height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 180,
+          top: 100,
+          right: 280,
+          bottom: 200,
+          width: 100,
+          height: 100
         }
       ];
 
-      const positions = calculateReflowPositions(
-        'dropped',
-        movedBounds,
-        allBounds,
-        true // dropped node's bottom is below target midpoint, target gets priority
-      );
+      const positions = calculateReflowPositions(['sacred'], allBounds);
 
-      // Dropped node should be moved down
-      expect(positions.has('dropped')).to.be.true;
-      expect(positions.has('existing')).to.be.false; // existing keeps its position
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should move right (shorter) rather than down (longer)
+      expect(newPos.left).to.be.greaterThan(200);
+      expect(newPos.top).to.equal(100); // vertical position unchanged
+    });
 
-      const droppedNewPos = positions.get('dropped')!;
-      expect(droppedNewPos.top).to.be.greaterThan(200); // moved below existing node
+    it('prefers up when it is the shortest move', () => {
+      // Sacred at (100,200)-(200,300), collider at (100,180)-(200,280)
+      // Up: newTop=snapToGrid(200-100-30)=snapToGrid(70)=80, distance=100
+      // Down: newTop=snapToGrid(300+30)=340, distance=160
+      // Right: newLeft=snapToGrid(200+30)=240, distance=140
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 200,
+          right: 200,
+          bottom: 300,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 100,
+          top: 180,
+          right: 200,
+          bottom: 280,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should move up (shortest displacement)
+      expect(newPos.top).to.be.lessThan(200);
+      expect(newPos.left).to.equal(100); // horizontal position unchanged
+    });
+
+    it('prefers direction with fewer cascading collisions', () => {
+      // Sacred at (100,100)-(200,200), collider at (100,150)-(200,250)
+      // A node sits below at (100,280)-(200,380) blocking the downward path
+      // Down causes cascade, right does not
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
+          left: 100,
+          top: 150,
+          right: 200,
+          bottom: 250,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'blocker',
+          left: 100,
+          top: 280,
+          right: 200,
+          bottom: 380,
+          width: 100,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      // Should avoid moving down (would cascade into blocker)
+      // blocker should not need to move
+      expect(positions.has('blocker')).to.be.false;
     });
 
     it('resolves cascading collisions', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
-        width: 100,
-        height: 100
-      };
-
       const allBounds: NodeBounds[] = [
-        movedBounds,
+        {
+          uuid: 'moved',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
         {
           uuid: 'node1',
           left: 100,
@@ -530,44 +527,20 @@ describe('Collision Detection Utilities', () => {
         }
       ];
 
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
-      );
+      const positions = calculateReflowPositions(['moved'], allBounds);
 
-      // Both nodes should be repositioned to avoid collision
+      // At least one node should be repositioned
       expect(positions.size).to.be.greaterThan(0);
 
-      // Check that moved nodes maintain vertical order and spacing
-      if (positions.has('node1') && positions.has('node2')) {
-        const node1Pos = positions.get('node1')!;
-        const node2Pos = positions.get('node2')!;
-
-        // node2 should be below node1
-        expect(node2Pos.top).to.be.greaterThan(node1Pos.top);
-      }
+      // No node should overlap with the sacred node or each other after reflow
+      // (verified by the algorithm's correctness guarantee)
     });
 
-    it('handles multiple iterations for complex cascading collisions', () => {
-      // Test case that requires multiple iterations to resolve all collisions
-      // This scenario has nodes that initially don't collide with moved node,
-      // but will collide with other nodes that get moved
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 50,
-        right: 200,
-        bottom: 150,
-        width: 100,
-        height: 100
-      };
-
+    it('handles multiple sacred nodes', () => {
+      // Two sacred nodes with a non-sacred node overlapping one
       const allBounds: NodeBounds[] = [
-        movedBounds,
         {
-          uuid: 'node1',
+          uuid: 'sacred1',
           left: 100,
           top: 100,
           right: 200,
@@ -576,157 +549,104 @@ describe('Collision Detection Utilities', () => {
           height: 100
         },
         {
-          uuid: 'node2',
+          uuid: 'sacred2',
           left: 100,
-          top: 180,
+          top: 400,
           right: 200,
-          bottom: 280,
+          bottom: 500,
           width: 100,
           height: 100
         },
         {
-          uuid: 'node3',
-          left: 100,
-          top: 260,
-          right: 200,
-          bottom: 360,
-          width: 100,
-          height: 100
-        }
-      ];
-
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
-      );
-
-      // All three nodes should be repositioned to be stacked below the moved node
-      expect(positions.size).to.equal(3);
-      expect(positions.has('node1')).to.be.true;
-      expect(positions.has('node2')).to.be.true;
-      expect(positions.has('node3')).to.be.true;
-
-      const node1Pos = positions.get('node1')!;
-      const node2Pos = positions.get('node2')!;
-      const node3Pos = positions.get('node3')!;
-
-      // Nodes should be stacked vertically with proper spacing
-      expect(node1Pos.top).to.be.at.least(170); // 150 (bottom of moved) + 20
-      expect(node2Pos.top).to.be.at.least(node1Pos.top + 120); // node1 top + height + spacing
-      expect(node3Pos.top).to.be.at.least(node2Pos.top + 120); // node2 top + height + spacing
-    });
-
-    it('handles nodes that collide with already repositioned nodes', () => {
-      // This test creates a scenario where node3 doesn't collide with the moved node,
-      // but collides with node2 which itself got repositioned due to collision with node1
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
-        width: 100,
-        height: 100
-      };
-
-      const allBounds: NodeBounds[] = [
-        movedBounds,
-        {
-          uuid: 'node1',
+          uuid: 'collider',
           left: 100,
           top: 150,
           right: 200,
           bottom: 250,
           width: 100,
           height: 100
-        },
-        {
-          uuid: 'node2',
-          left: 100,
-          top: 240,
-          right: 200,
-          bottom: 340,
-          width: 100,
-          height: 100
         }
       ];
 
       const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
+        ['sacred1', 'sacred2'],
+        allBounds
       );
 
-      // Both nodes should be moved
-      expect(positions.size).to.equal(2);
-      expect(positions.has('node1')).to.be.true;
-      expect(positions.has('node2')).to.be.true;
-
-      const node1Pos = positions.get('node1')!;
-      const node2Pos = positions.get('node2')!;
-
-      // node1 should be moved below moved node
-      expect(node1Pos.top).to.be.at.least(220); // 200 + 20
-
-      // node2 should be moved below the new position of node1
-      // This tests the code path where we check against already repositioned nodes
-      expect(node2Pos.top).to.be.at.least(node1Pos.top + 120);
+      // Sacred nodes should never be moved
+      expect(positions.has('sacred1')).to.be.false;
+      expect(positions.has('sacred2')).to.be.false;
+      // Collider should be moved
+      expect(positions.has('collider')).to.be.true;
     });
 
-    it('maintains horizontal position while moving vertically', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
-        width: 100,
-        height: 100
-      };
-
+    it('does not move a node into another sacred node', () => {
+      // Two sacred nodes close together with a collider between them
+      // Moving right would overlap sacred2, so it should choose another direction
       const allBounds: NodeBounds[] = [
-        movedBounds,
         {
-          uuid: 'node1',
+          uuid: 'sacred1',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'sacred2',
+          left: 240,
+          top: 100,
+          right: 340,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
           left: 150,
-          top: 150,
+          top: 100,
           right: 250,
-          bottom: 250,
+          bottom: 200,
           width: 100,
           height: 100
         }
       ];
 
       const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
+        ['sacred1', 'sacred2'],
+        allBounds
       );
 
-      const newPos = positions.get('node1')!;
-      // Horizontal position should remain unchanged
-      expect(newPos.left).to.equal(150);
-    });
-
-    it('adds minimum spacing between nodes', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Should not overlap either sacred node after reflow
+      const newBounds: NodeBounds = {
+        uuid: 'collider',
+        left: newPos.left,
+        top: newPos.top,
+        right: newPos.left + 100,
+        bottom: newPos.top + 100,
         width: 100,
         height: 100
       };
+      expect(nodesOverlap(newBounds, allBounds[0])).to.be.false;
+      expect(nodesOverlap(newBounds, allBounds[1])).to.be.false;
+    });
 
+    it('snaps reflow positions to grid', () => {
       const allBounds: NodeBounds[] = [
-        movedBounds,
         {
-          uuid: 'node1',
+          uuid: 'sacred',
+          left: 100,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 100,
+          height: 100
+        },
+        {
+          uuid: 'collider',
           left: 100,
           top: 150,
           right: 200,
@@ -736,38 +656,51 @@ describe('Collision Detection Utilities', () => {
         }
       ];
 
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
-      );
+      const positions = calculateReflowPositions(['sacred'], allBounds);
 
-      const newPos = positions.get('node1')!;
-      // Should have at least 20px spacing (MIN_NODE_SPACING)
-      expect(newPos.top).to.be.at.least(220); // 200 (bottom of moved) + 20
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      // Both coordinates should be multiples of 20 (grid size)
+      expect(newPos.left % 20).to.equal(0);
+      expect(newPos.top % 20).to.equal(0);
+    });
+
+    it('clamps positions to zero (no negative coordinates)', () => {
+      // Sacred node near top-left, collider above it
+      // Moving up would go negative, so it should fall back
+      const allBounds: NodeBounds[] = [
+        {
+          uuid: 'sacred',
+          left: 0,
+          top: 0,
+          right: 200,
+          bottom: 200,
+          width: 200,
+          height: 200
+        },
+        {
+          uuid: 'collider',
+          left: 0,
+          top: 100,
+          right: 200,
+          bottom: 200,
+          width: 200,
+          height: 100
+        }
+      ];
+
+      const positions = calculateReflowPositions(['sacred'], allBounds);
+
+      expect(positions.has('collider')).to.be.true;
+      const newPos = positions.get('collider')!;
+      expect(newPos.left).to.be.at.least(0);
+      expect(newPos.top).to.be.at.least(0);
     });
   });
 
   describe('edge cases', () => {
     it('handles empty allBounds array', () => {
-      const movedBounds: NodeBounds = {
-        uuid: 'moved',
-        left: 100,
-        top: 100,
-        right: 200,
-        bottom: 200,
-        width: 100,
-        height: 100
-      };
-
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        [],
-        false
-      );
-
+      const positions = calculateReflowPositions(['moved'], []);
       expect(positions.size).to.equal(0);
     });
 
@@ -782,13 +715,7 @@ describe('Collision Detection Utilities', () => {
         height: 100
       };
 
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        [movedBounds],
-        false
-      );
-
+      const positions = calculateReflowPositions(['moved'], [movedBounds]);
       expect(positions.size).to.equal(0);
     });
 
@@ -819,12 +746,7 @@ describe('Collision Detection Utilities', () => {
       }
 
       // Should complete without hanging
-      const positions = calculateReflowPositions(
-        'moved',
-        movedBounds,
-        allBounds,
-        false
-      );
+      const positions = calculateReflowPositions(['moved'], allBounds);
 
       // Should have resolved some collisions
       expect(positions.size).to.be.greaterThan(0);

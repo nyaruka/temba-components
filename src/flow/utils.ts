@@ -1,6 +1,13 @@
 import { html } from 'lit-html';
 import { NamedObject, FlowPosition } from '../store/flow-definition';
 
+const GRID_SIZE = 20;
+
+export function snapToGrid(value: number): number {
+  const snapped = Math.round(value / GRID_SIZE) * GRID_SIZE;
+  return Math.max(snapped, 0);
+}
+
 /**
  * Renders a single line item with optional icon
  */
@@ -264,110 +271,181 @@ export const detectCollisions = (
   );
 };
 
+type Direction = 'down' | 'up' | 'right' | 'left';
+
+const DIRECTIONS: Direction[] = ['down', 'up', 'right', 'left'];
+
 /**
- * Calculates the new positions needed to resolve all collisions
- * Nodes are only moved downward, never up, left, or right
- * Returns a map of node UUIDs to their new positions
+ * Creates a new NodeBounds at a different position
+ */
+const makeBoundsAt = (
+  original: NodeBounds,
+  left: number,
+  top: number
+): NodeBounds => ({
+  ...original,
+  left,
+  top,
+  right: left + original.width,
+  bottom: top + original.height
+});
+
+/**
+ * Computes the minimum position needed to clear all fixed nodes in a given direction.
+ * Returns null if the direction is not viable (e.g., would require negative coordinates
+ * and still overlap).
+ */
+const computeDirectionalClearance = (
+  collider: NodeBounds,
+  fixedNodes: NodeBounds[],
+  direction: Direction
+): { left: number; top: number } | null => {
+  switch (direction) {
+    case 'down': {
+      const maxBottom = Math.max(...fixedNodes.map((f) => f.bottom));
+      const newTop = snapToGrid(maxBottom + MIN_NODE_SPACING);
+      return { left: collider.left, top: newTop };
+    }
+    case 'up': {
+      const minTop = Math.min(...fixedNodes.map((f) => f.top));
+      const newTop = snapToGrid(minTop - collider.height - MIN_NODE_SPACING);
+      if (newTop < 0) return { left: collider.left, top: 0 };
+      return { left: collider.left, top: newTop };
+    }
+    case 'right': {
+      const maxRight = Math.max(...fixedNodes.map((f) => f.right));
+      const newLeft = snapToGrid(maxRight + MIN_NODE_SPACING);
+      return { left: newLeft, top: collider.top };
+    }
+    case 'left': {
+      const minLeft = Math.min(...fixedNodes.map((f) => f.left));
+      const newLeft = snapToGrid(minLeft - collider.width - MIN_NODE_SPACING);
+      if (newLeft < 0) return { left: 0, top: collider.top };
+      return { left: newLeft, top: collider.top };
+    }
+  }
+};
+
+/**
+ * Calculates new positions to resolve all collisions using multi-directional reflow.
+ *
+ * Sacred nodes (the ones just dropped/created) keep their positions. All other
+ * colliding nodes are moved in whichever direction requires the least displacement
+ * and causes the fewest cascading collisions.
  */
 export const calculateReflowPositions = (
-  movedNodeUuid: string,
-  movedNodeBounds: NodeBounds,
-  allBounds: NodeBounds[],
-  droppedBelowMidpoint: boolean = false
+  sacredNodeUuids: string[],
+  allBounds: NodeBounds[]
 ): Map<string, FlowPosition> => {
   const newPositions = new Map<string, FlowPosition>();
+  const sacredSet = new Set(sacredNodeUuids);
 
-  // If dropped below midpoint, the moved node should move down instead
-  if (droppedBelowMidpoint) {
-    // Find all nodes that collide with the moved node
-    const collisions = detectCollisions(movedNodeBounds, allBounds);
+  // Mutable map of current bounds, updated as collisions are resolved
+  const currentBounds = new Map<string, NodeBounds>();
+  for (const b of allBounds) {
+    currentBounds.set(b.uuid, { ...b });
+  }
 
-    if (collisions.length > 0) {
-      // Find the highest bottom position of all colliding nodes
-      const maxBottom = Math.max(...collisions.map((b) => b.bottom));
+  // Seed the queue with non-sacred nodes that overlap any sacred node
+  const queue: string[] = [];
+  const inQueue = new Set<string>();
 
-      // Move the dropped node below all colliding nodes
-      const newTop = maxBottom + MIN_NODE_SPACING;
-      newPositions.set(movedNodeUuid, {
-        left: movedNodeBounds.left,
-        top: newTop
-      });
-
-      // Update the moved node bounds for further collision checks
-      movedNodeBounds = {
-        ...movedNodeBounds,
-        top: newTop,
-        bottom: newTop + movedNodeBounds.height
-      };
+  for (const sacredUuid of sacredSet) {
+    const sacred = currentBounds.get(sacredUuid);
+    if (!sacred) continue;
+    for (const [uuid, bounds] of currentBounds) {
+      if (sacredSet.has(uuid) || inQueue.has(uuid)) continue;
+      if (nodesOverlap(sacred, bounds)) {
+        queue.push(uuid);
+        inQueue.add(uuid);
+      }
     }
   }
 
-  // Now check for any remaining collisions and move other nodes down
-  const processedNodes = new Set<string>();
-  processedNodes.add(movedNodeUuid);
-
-  // Keep checking for collisions until none remain
-  let hasCollisions = true;
+  const resolved = new Set<string>();
   let iterations = 0;
-  const maxIterations = 100; // Prevent infinite loops
+  const maxIterations = 200;
 
-  while (hasCollisions && iterations < maxIterations) {
-    hasCollisions = false;
+  while (queue.length > 0 && iterations < maxIterations) {
     iterations++;
+    const uuid = queue.shift()!;
 
-    // Check all nodes for collisions
-    for (const bounds of allBounds) {
-      if (processedNodes.has(bounds.uuid)) {
-        continue;
-      }
+    if (resolved.has(uuid)) continue;
 
-      // Use original bounds since we skip already processed nodes
-      const currentBounds = bounds;
+    const collider = currentBounds.get(uuid)!;
 
-      // Check if this node collides with the moved node or any already repositioned nodes
-      let collisionFound = false;
-      let maxCollisionBottom = 0;
-
-      // Check against moved node
-      if (nodesOverlap(currentBounds, movedNodeBounds)) {
-        collisionFound = true;
-        maxCollisionBottom = Math.max(
-          maxCollisionBottom,
-          movedNodeBounds.bottom
-        );
-      }
-
-      // Check against other repositioned nodes
-      for (const [otherUuid, otherPosition] of newPositions.entries()) {
-        if (otherUuid === bounds.uuid) continue;
-
-        const otherBounds = allBounds.find((b) => b.uuid === otherUuid);
-        if (!otherBounds) continue;
-
-        const otherUpdatedBounds = {
-          ...otherBounds,
-          top: otherPosition.top,
-          bottom: otherPosition.top + otherBounds.height
-        };
-
-        if (nodesOverlap(currentBounds, otherUpdatedBounds)) {
-          collisionFound = true;
-          maxCollisionBottom = Math.max(
-            maxCollisionBottom,
-            otherUpdatedBounds.bottom
-          );
+    // Find all fixed nodes (sacred + already-resolved) that overlap this node
+    const fixedOverlaps: NodeBounds[] = [];
+    for (const [otherUuid, otherBounds] of currentBounds) {
+      if (otherUuid === uuid) continue;
+      if (sacredSet.has(otherUuid) || resolved.has(otherUuid)) {
+        if (nodesOverlap(collider, otherBounds)) {
+          fixedOverlaps.push(otherBounds);
         }
       }
+    }
 
-      if (collisionFound) {
-        // Move this node down below the collision
-        const newTop = maxCollisionBottom + MIN_NODE_SPACING;
-        newPositions.set(bounds.uuid, {
-          left: bounds.left,
-          top: newTop
-        });
-        hasCollisions = true;
-        processedNodes.add(bounds.uuid);
+    if (fixedOverlaps.length === 0) continue;
+
+    // Try each direction, pick the one with least disruption
+    let bestPos: { left: number; top: number } | null = null;
+    let bestScore = Infinity;
+
+    for (const dir of DIRECTIONS) {
+      const candidate = computeDirectionalClearance(
+        collider,
+        fixedOverlaps,
+        dir
+      );
+      if (!candidate) continue;
+
+      const candidateBounds = makeBoundsAt(
+        collider,
+        candidate.left,
+        candidate.top
+      );
+
+      // Verify no overlap with any sacred or resolved node
+      let stillOverlaps = false;
+      let cascadeCount = 0;
+      for (const [otherUuid, otherBounds] of currentBounds) {
+        if (otherUuid === uuid) continue;
+        if (!nodesOverlap(candidateBounds, otherBounds)) continue;
+
+        if (sacredSet.has(otherUuid) || resolved.has(otherUuid)) {
+          stillOverlaps = true;
+          break;
+        }
+        cascadeCount++;
+      }
+      if (stillOverlaps) continue;
+
+      const distance =
+        Math.abs(candidate.left - collider.left) +
+        Math.abs(candidate.top - collider.top);
+      const score = cascadeCount * 10000 + distance;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestPos = candidate;
+      }
+    }
+
+    if (bestPos) {
+      newPositions.set(uuid, { left: bestPos.left, top: bestPos.top });
+      const newBounds = makeBoundsAt(collider, bestPos.left, bestPos.top);
+      currentBounds.set(uuid, newBounds);
+      resolved.add(uuid);
+
+      // Enqueue any new cascading collisions
+      for (const [otherUuid, otherBounds] of currentBounds) {
+        if (otherUuid === uuid) continue;
+        if (sacredSet.has(otherUuid) || resolved.has(otherUuid)) continue;
+        if (inQueue.has(otherUuid)) continue;
+        if (nodesOverlap(newBounds, otherBounds)) {
+          queue.push(otherUuid);
+          inQueue.add(otherUuid);
+        }
       }
     }
   }

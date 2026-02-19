@@ -53,14 +53,9 @@ import {
   getNodeBounds,
   calculateReflowPositions,
   NodeBounds,
-  nodesOverlap
+  snapToGrid
 } from './utils';
 import { FloatingWindow } from '../layout/FloatingWindow';
-
-export function snapToGrid(value: number): number {
-  const snapped = Math.round(value / 20) * 20;
-  return Math.max(snapped, 0);
-}
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -1636,22 +1631,13 @@ export class Editor extends RapidElement {
 
   /**
    * Checks for node collisions and reflows nodes as needed.
-   * Nodes are only moved downward to resolve collisions.
-   *
-   * @param movedNodeUuids - UUIDs of nodes that were just moved/dropped
-   * @param droppedNodeUuid - UUID of the specific node that was dropped (if applicable)
-   * @param dropTargetBounds - Bounds of the node that was dropped onto (if applicable)
+   * Sacred nodes (just moved/dropped) keep their positions while
+   * other nodes are moved in the least-disruptive direction.
    */
-  private checkCollisionsAndReflow(
-    movedNodeUuids: string[],
-    droppedNodeUuid: string | null = null,
-    dropTargetBounds: NodeBounds | null = null
-  ): void {
+  private checkCollisionsAndReflow(sacredNodeUuids: string[]): void {
     if (!this.definition) return;
 
-    // Get all node bounds (only for actual nodes, not stickies)
     const allBounds: NodeBounds[] = [];
-
     for (const node of this.definition.nodes) {
       const nodeUI = this.definition._ui?.nodes[node.uuid];
       if (!nodeUI?.position) continue;
@@ -1662,45 +1648,17 @@ export class Editor extends RapidElement {
       }
     }
 
-    // Check if we need to determine midpoint priority for a dropped node
-    let targetHasPriority = false;
-    if (droppedNodeUuid && dropTargetBounds) {
-      const droppedBounds = allBounds.find((b) => b.uuid === droppedNodeUuid);
-      if (droppedBounds) {
-        // Check if the bottom of the dropped node is below the midpoint of the target
-        // If bottom is above midpoint, dropped node gets preference (targetHasPriority = false)
-        // If bottom is below midpoint, target gets preference (targetHasPriority = true)
-        const droppedBottom = droppedBounds.bottom;
-        const targetMidpoint =
-          dropTargetBounds.top + dropTargetBounds.height / 2;
-        targetHasPriority = droppedBottom > targetMidpoint;
-      }
-    }
+    const reflowPositions = calculateReflowPositions(
+      sacredNodeUuids,
+      allBounds
+    );
 
-    // Calculate reflow positions for each moved node
-    const allReflowPositions: { [uuid: string]: FlowPosition } = {};
-
-    for (const movedUuid of movedNodeUuids) {
-      const movedBounds = allBounds.find((b) => b.uuid === movedUuid);
-      if (!movedBounds) continue;
-
-      // Calculate reflow for this moved node
-      const reflowPositions = calculateReflowPositions(
-        movedUuid,
-        movedBounds,
-        allBounds,
-        droppedNodeUuid === movedUuid ? targetHasPriority : false
-      );
-
-      // Merge into all reflow positions
+    if (reflowPositions.size > 0) {
+      const positions: { [uuid: string]: FlowPosition } = {};
       for (const [uuid, position] of reflowPositions.entries()) {
-        allReflowPositions[uuid] = position;
+        positions[uuid] = position;
       }
-    }
-
-    // If there are positions to update, apply them
-    if (Object.keys(allReflowPositions).length > 0) {
-      getStore().getState().updateCanvasPositions(allReflowPositions);
+      getStore().getState().updateCanvasPositions(positions);
     }
   }
 
@@ -1905,49 +1863,7 @@ export class Editor extends RapidElement {
         if (nodeUuids.length > 0) {
           // Allow DOM to update before checking collisions
           setTimeout(() => {
-            // If only one node was moved, detect which node it might have been dropped onto
-            let droppedNodeUuid: string | null = null;
-            let dropTargetBounds: NodeBounds | null = null;
-
-            if (nodeUuids.length === 1) {
-              droppedNodeUuid = nodeUuids[0];
-              const droppedNodeUI = this.definition._ui?.nodes[droppedNodeUuid];
-
-              if (droppedNodeUI?.position) {
-                const droppedBounds = getNodeBounds(
-                  droppedNodeUuid,
-                  droppedNodeUI.position
-                );
-
-                if (droppedBounds) {
-                  // Find which node (if any) the dropped node overlaps with
-                  for (const node of this.definition.nodes) {
-                    if (node.uuid === droppedNodeUuid) continue;
-
-                    const nodeUI = this.definition._ui?.nodes[node.uuid];
-                    if (!nodeUI?.position) continue;
-
-                    const targetBounds = getNodeBounds(
-                      node.uuid,
-                      nodeUI.position
-                    );
-                    if (
-                      targetBounds &&
-                      nodesOverlap(droppedBounds, targetBounds)
-                    ) {
-                      dropTargetBounds = targetBounds;
-                      break; // Use the first overlapping node
-                    }
-                  }
-                }
-              }
-            }
-
-            this.checkCollisionsAndReflow(
-              nodeUuids,
-              droppedNodeUuid,
-              dropTargetBounds
-            );
+            this.checkCollisionsAndReflow(nodeUuids);
           }, 0);
         } else {
           // No nodes moved, just repaint connections
