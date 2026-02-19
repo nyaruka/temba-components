@@ -490,7 +490,7 @@ export class Editor extends RapidElement {
         font-weight: 600;
         line-height: 0.9;
         cursor: pointer;
-        z-index: 500;
+        z-index: 10;
         pointer-events: auto;
         white-space: nowrap;
         user-select: none;
