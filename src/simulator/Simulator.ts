@@ -148,6 +148,10 @@ const SIMULATOR_SIZES: Record<string, SimulatorSize> = {
 export class Simulator extends RapidElement {
   static get styles() {
     return css`
+      temba-floating-tab {
+        --floating-tab-right: 15px;
+      }
+
       :host {
         /* size-specific dimensions are set dynamically via inline styles */
         --phone-width: 300px;
