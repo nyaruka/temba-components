@@ -11,6 +11,7 @@ import {
 import { getStore } from '../store/Store';
 import {
   AppState,
+  FlowIssue,
   fromStore,
   zustand,
   FLOW_SPEC_VERSION
@@ -19,6 +20,13 @@ import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, Workspace } from '../interfaces';
 import { generateUUID, postJSON, fetchResults, getClasses } from '../utils';
+import {
+  formatIssueMessage,
+  getNodeBounds,
+  calculateReflowPositions,
+  NodeBounds,
+  snapToGrid
+} from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 
 interface Revision {
@@ -49,12 +57,6 @@ import { Dialog } from '../layout/Dialog';
 
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
-import {
-  getNodeBounds,
-  calculateReflowPositions,
-  NodeBounds,
-  snapToGrid
-} from './utils';
 import { FloatingWindow } from '../layout/FloatingWindow';
 
 export function findNodeForExit(
@@ -173,6 +175,9 @@ export class Editor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activityData!: any;
 
+  @fromStore(zustand, (state: AppState) => state.flowInfo?.issues || [])
+  private flowIssues!: FlowIssue[];
+
   // Drag state
   @state()
   private isDragging = false;
@@ -216,6 +221,9 @@ export class Editor extends RapidElement {
   // Canvas-relative source exit position (set at drag start)
   private connectionSourceX: number | null = null;
   private connectionSourceY: number | null = null;
+
+  @state()
+  private issuesWindowHidden = true;
 
   @state()
   private localizationWindowHidden = true;
@@ -808,6 +816,26 @@ export class Editor extends RapidElement {
         font-size: 13px;
         color: #9ca3af;
         white-space: nowrap;
+      }
+
+      .issue-list-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #333;
+      }
+
+      .issue-list-item:hover {
+        background: #fff5f5;
+      }
+
+      .issue-list-item temba-icon {
+        color: tomato;
+        flex-shrink: 0;
       }
     `;
   }
@@ -2952,6 +2980,7 @@ export class Editor extends RapidElement {
 
     this.localizationWindowHidden = false;
     this.revisionsWindowHidden = true;
+    this.issuesWindowHidden = true;
 
     const alreadySelected = languages.some(
       (lang) => lang.code === this.languageCode
@@ -3214,11 +3243,47 @@ export class Editor extends RapidElement {
     this.autoTranslating = false;
   }
 
+  private handleIssuesTabClick(): void {
+    this.issuesWindowHidden = false;
+    this.revisionsWindowHidden = true;
+    this.localizationWindowHidden = true;
+  }
+
+  private handleIssuesWindowClosed(): void {
+    this.issuesWindowHidden = true;
+  }
+
+  private handleIssueItemClick(issue: FlowIssue): void {
+    const issuesWindow = document.getElementById(
+      'issues-window'
+    ) as FloatingWindow;
+    issuesWindow?.handleClose();
+    this.issuesWindowHidden = true;
+
+    this.focusNode(issue.node_uuid);
+
+    const node = this.definition.nodes.find((n) => n.uuid === issue.node_uuid);
+    if (!node) return;
+
+    if (issue.action_uuid) {
+      const action = node.actions?.find((a) => a.uuid === issue.action_uuid);
+      if (action) {
+        this.editingAction = action;
+        this.editingNode = node;
+        this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
+      }
+    } else {
+      this.editingNode = node;
+      this.editingNodeUI = this.definition._ui.nodes[issue.node_uuid];
+    }
+  }
+
   private handleRevisionsTabClick(): void {
     if (this.revisionsWindowHidden) {
       this.fetchRevisions();
       this.revisionsWindowHidden = false;
-      this.localizationWindowHidden = true; // Close other window
+      this.issuesWindowHidden = true;
+      this.localizationWindowHidden = true;
     }
   }
 
@@ -3332,6 +3397,51 @@ export class Editor extends RapidElement {
     getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
   }
 
+  private renderIssuesTab(): TemplateResult | string {
+    if (!this.flowIssues?.length) return '';
+    return html`
+      <temba-floating-tab
+        id="issues-tab"
+        icon="alert_warning"
+        label="Flow Issues"
+        color="tomato"
+        order="1"
+        .hidden=${!this.issuesWindowHidden}
+        @temba-button-clicked=${this.handleIssuesTabClick}
+      ></temba-floating-tab>
+    `;
+  }
+
+  private renderIssuesWindow(): TemplateResult | string {
+    if (!this.flowIssues?.length) return '';
+    return html`
+      <temba-floating-window
+        id="issues-window"
+        header="Flow Issues"
+        .width=${360}
+        .maxHeight=${600}
+        .top=${75}
+        color="tomato"
+        .hidden=${this.issuesWindowHidden}
+        @temba-dialog-hidden=${this.handleIssuesWindowClosed}
+      >
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          ${this.flowIssues.map(
+            (issue) => html`
+              <div
+                class="issue-list-item"
+                @click=${() => this.handleIssueItemClick(issue)}
+              >
+                <temba-icon name="alert_warning" size="1.2"></temba-icon>
+                <span>${formatIssueMessage(issue)}</span>
+              </div>
+            `
+          )}
+        </div>
+      </temba-floating-window>
+    `;
+  }
+
   private renderRevisionsTab(): TemplateResult | string {
     return html`
       <temba-floating-tab
@@ -3339,7 +3449,7 @@ export class Editor extends RapidElement {
         icon="revisions"
         label="Revisions"
         color="rgb(142, 94, 167)"
-        order="1"
+        order="2"
         .hidden=${!this.revisionsWindowHidden && this.localizationWindowHidden}
         @temba-button-clicked=${this.handleRevisionsTabClick}
       ></temba-floating-tab>
@@ -3637,7 +3747,7 @@ export class Editor extends RapidElement {
         icon="language"
         label="Translate Flow"
         color="#6b7280"
-        order="2"
+        order="3"
         .hidden=${!this.localizationWindowHidden}
         @temba-button-clicked=${this.handleLocalizationTabClick}
       ></temba-floating-tab>
@@ -3695,8 +3805,9 @@ export class Editor extends RapidElement {
 
     const stickies = this.definition?._ui?.stickies || {};
 
-    return html`${style} ${this.renderRevisionsWindow()}
-      ${this.renderLocalizationWindow()} ${this.renderAutoTranslateDialog()}
+    return html`${style} ${this.renderIssuesWindow()}
+      ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
+      ${this.renderAutoTranslateDialog()}
       <div id="editor">
         <div
           id="grid"
@@ -3801,6 +3912,7 @@ export class Editor extends RapidElement {
             .features=${this.features}
           ></temba-node-type-selector>`
         : ''}
-      ${this.renderRevisionsTab()} ${this.renderLocalizationTab()} `;
+      ${this.renderIssuesTab()} ${this.renderRevisionsTab()}
+      ${this.renderLocalizationTab()} `;
   }
 }
