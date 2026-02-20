@@ -394,6 +394,9 @@ export class NodeEditor extends RapidElement {
   @property({ type: Object })
   nodeUI?: NodeUI;
 
+  @property({ attribute: false })
+  dialogOrigin?: { x: number; y: number };
+
   @property({ type: Boolean })
   isOpen: boolean = false;
 
@@ -2133,6 +2136,8 @@ export class NodeEditor extends RapidElement {
       <temba-dialog
         header="${header}"
         .open="${this.isOpen}"
+        .originX=${this.dialogOrigin?.x ?? null}
+        .originY=${this.dialogOrigin?.y ?? null}
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="Save"
         cancelButtonName="Cancel"

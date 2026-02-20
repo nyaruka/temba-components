@@ -269,6 +269,8 @@ export class Editor extends RapidElement {
   @state()
   private editingAction: Action | null = null;
 
+  private dialogOrigin: { x: number; y: number } | null = null;
+
   @state()
   private isCreatingNewNode = false;
 
@@ -2164,6 +2166,10 @@ export class Editor extends RapidElement {
   private handleActionEditRequested(event: CustomEvent): void {
     // For action editing, we set the action and find the corresponding node
     this.editingAction = event.detail.action;
+    this.dialogOrigin =
+      event.detail.originX != null
+        ? { x: event.detail.originX, y: event.detail.originY }
+        : null;
 
     // Find the node that contains this action
     const nodeUuid = event.detail.nodeUuid;
@@ -2209,6 +2215,10 @@ export class Editor extends RapidElement {
   private handleNodeEditRequested(event: CustomEvent): void {
     this.editingNode = event.detail.node;
     this.editingNodeUI = event.detail.nodeUI;
+    this.dialogOrigin =
+      event.detail.originX != null
+        ? { x: event.detail.originX, y: event.detail.originY }
+        : null;
   }
 
   private handleNodeDeleted(event: CustomEvent): void {
@@ -2298,6 +2308,7 @@ export class Editor extends RapidElement {
     this.editingNode = null;
     this.editingNodeUI = null;
     this.editingAction = null;
+    this.dialogOrigin = null;
   }
 
   private handleActionEditCanceled(): void {
@@ -3786,6 +3797,7 @@ export class Editor extends RapidElement {
             .node=${this.editingNode}
             .nodeUI=${this.editingNodeUI}
             .action=${this.editingAction}
+            .dialogOrigin=${this.dialogOrigin}
             @temba-node-saved=${(e: CustomEvent) =>
               this.handleNodeSaved(e.detail.node, e.detail.uiConfig)}
             @temba-action-saved=${(e: CustomEvent) =>

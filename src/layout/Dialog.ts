@@ -95,8 +95,9 @@ export class Dialog extends ResizeElement {
       }
 
       .dialog-mask .dialog-container {
+        
         position: relative;
-        transition: transform var(--transition-speed) var(--bounce),
+        transition: transform var(--transition-speed) ease-in-out,
           opacity ease-in-out calc(var(--transition-speed) - 50ms);
         border-radius: var(--curvature);
         box-shadow: 0px 0px 2px 4px rgba(0, 0, 0, 0.06);
@@ -124,7 +125,7 @@ export class Dialog extends ResizeElement {
       }
 
       .dialog-mask.dialog-animation-end .dialog-container {
-        transform: scale(1) !important;
+        transform: scale(1) translate(0, 0) !important;
       }
 
       .dialog-mask.dialog-ready .dialog-container {
@@ -253,6 +254,12 @@ export class Dialog extends ResizeElement {
   @property({ attribute: false })
   onButtonClicked: (button: Button) => void;
 
+  @property({ type: Number })
+  originX: number | null = null;
+
+  @property({ type: Number })
+  originY: number | null = null;
+
   scrollOffset: any = 0;
 
   public constructor() {
@@ -289,11 +296,49 @@ export class Dialog extends ResizeElement {
       const body = document.querySelector('body');
 
       if (this.open) {
-        this.animationEnd = true;
-        window.setTimeout(() => {
-          this.ready = true;
-          this.animationEnd = false;
-        }, 400);
+        if (this.originX != null && this.originY != null) {
+          // Spring-from-origin animation: measure final position, then
+          // set initial transform at click point and transition to center
+          const ox = this.originX;
+          const oy = this.originY;
+          this.originX = null;
+          this.originY = null;
+
+          requestAnimationFrame(() => {
+            const container = this.shadowRoot?.querySelector(
+              '.dialog-container'
+            ) as HTMLElement;
+            if (container) {
+              const rect = container.getBoundingClientRect();
+              const cx = rect.left + rect.width / 2;
+              const cy = rect.top + rect.height / 2;
+              const dx = ox - cx;
+              const dy = oy - cy;
+
+              // Disable transition so we can set the start position instantly
+              container.style.transition = 'none';
+              container.style.transform = `translate(${dx}px, ${dy}px) scale(0.2)`;
+              // Force reflow to register the start position
+              container.getBoundingClientRect();
+
+              // Re-enable transition and trigger animation to final position
+              container.style.transition = '';
+              this.animationEnd = true;
+              window.setTimeout(() => {
+                this.ready = true;
+                this.animationEnd = false;
+                container.style.transform = '';
+              }, 400);
+            }
+          });
+        } else {
+          // Default animation (no origin)
+          this.animationEnd = true;
+          window.setTimeout(() => {
+            this.ready = true;
+            this.animationEnd = false;
+          }, 400);
+        }
 
         this.scrollOffset = -document.documentElement.scrollTop;
         body.style.position = 'fixed';
