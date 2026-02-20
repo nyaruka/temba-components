@@ -90,11 +90,44 @@ export interface Language {
   name: string;
 }
 
+export interface FlowIssue {
+  type: string;
+  node_uuid: string;
+  action_uuid?: string;
+  description: string;
+  dependency?: {
+    key: string;
+    name: string;
+    type: string;
+  };
+}
+
 export interface FlowInfo {
   results: InfoResult[];
   dependencies: TypedObjectRef[];
   counts: { nodes: number; languages: number };
   locals: string[];
+  issues?: FlowIssue[];
+}
+
+function buildIssueMaps(issues: FlowIssue[] = []): {
+  byNode: Map<string, FlowIssue[]>;
+  byAction: Map<string, FlowIssue[]>;
+} {
+  const byNode = new Map<string, FlowIssue[]>();
+  const byAction = new Map<string, FlowIssue[]>();
+  for (const issue of issues) {
+    if (issue.action_uuid) {
+      const actionList = byAction.get(issue.action_uuid) || [];
+      actionList.push(issue);
+      byAction.set(issue.action_uuid, actionList);
+    } else {
+      const nodeList = byNode.get(issue.node_uuid) || [];
+      nodeList.push(issue);
+      byNode.set(issue.node_uuid, nodeList);
+    }
+  }
+  return { byNode, byAction };
 }
 
 export interface FlowContents {
@@ -125,6 +158,8 @@ export interface Activity {
 export interface AppState {
   flowDefinition: FlowDefinition;
   flowInfo: FlowInfo;
+  issuesByNode: Map<string, FlowIssue[]>;
+  issuesByAction: Map<string, FlowIssue[]>;
 
   languageCode: string;
   languageNames: { [code: string]: Language };
@@ -199,6 +234,8 @@ export const zustand = createStore<AppState>()(
       workspace: null,
       flowDefinition: null,
       flowInfo: null,
+      issuesByNode: new Map(),
+      issuesByAction: new Map(),
       isTranslating: false,
       viewingRevision: false,
       dirtyDate: null,
@@ -227,10 +264,13 @@ export const zustand = createStore<AppState>()(
         }
         const data = (await response.json()) as FlowContents;
         reclassifyTerminalNodes(data.definition);
+        const issueMaps = buildIssueMaps(data.info?.issues);
         set({
           flowInfo: data.info,
           flowDefinition: data.definition,
-          viewingRevision
+          viewingRevision,
+          issuesByNode: issueMaps.byNode,
+          issuesByAction: issueMaps.byAction
         });
       },
 
@@ -321,6 +361,9 @@ export const zustand = createStore<AppState>()(
             nodes: [...(flow.definition.nodes || [])]
           };
           state.flowInfo = flow.info;
+          const issueMaps = buildIssueMaps(flow.info?.issues);
+          state.issuesByNode = issueMaps.byNode;
+          state.issuesByAction = issueMaps.byAction;
           // Reset to the flow's default language when loading a new flow
           state.languageCode = flowLang;
           state.isTranslating = false;
@@ -340,6 +383,9 @@ export const zustand = createStore<AppState>()(
       setFlowInfo: (info: FlowInfo) => {
         set((state: AppState) => {
           state.flowInfo = info;
+          const issueMaps = buildIssueMaps(info?.issues);
+          state.issuesByNode = issueMaps.byNode;
+          state.issuesByAction = issueMaps.byAction;
         });
       },
 

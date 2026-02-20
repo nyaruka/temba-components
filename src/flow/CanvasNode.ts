@@ -9,7 +9,7 @@ import { getClasses } from '../utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
-import { AppState, fromStore, zustand } from '../store/AppState';
+import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
 
 const DRAG_THRESHOLD = 5;
 
@@ -48,6 +48,12 @@ export class CanvasNode extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.getCurrentActivity())
   private activity!: any;
+
+  @fromStore(zustand, (state: AppState) => state.issuesByNode)
+  private issuesByNode!: Map<string, FlowIssue[]>;
+
+  @fromStore(zustand, (state: AppState) => state.issuesByAction)
+  private issuesByAction!: Map<string, FlowIssue[]>;
 
   // Track exits that are in "removing" state
   private exitRemovalTimeouts: Map<string, number> = new Map();
@@ -183,6 +189,12 @@ export class CanvasNode extends RapidElement {
       .read-only-hidden {
         visibility: hidden !important;
         pointer-events: none !important;
+      }
+
+      /* Issue indicators - hatched red title bar */
+      .action-content.has-issues .cn-title,
+      .node.has-issues > .router .cn-title {
+        background: repeating-linear-gradient(120deg, tomato, tomato 6px, #ff7056 0, #ff7056 18px) !important;
       }
 
       .action.sortable {
@@ -1317,8 +1329,7 @@ export class CanvasNode extends RapidElement {
     return html`<div class="cn-title" style="background:${color}">
       ${isTerminal
         ? html`<div class="title-spacer"></div>`
-        : this.ui?.type === 'execute_actions' ||
-          this.node?.actions?.length > 1
+        : this.ui?.type === 'execute_actions' || this.node?.actions?.length > 1
         ? html`<temba-icon
             class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
             name="sort"
@@ -1442,6 +1453,7 @@ export class CanvasNode extends RapidElement {
     const displayAction = this.getLocalizedAction(action);
 
     if (config) {
+      const hasIssues = this.issuesByAction?.has(action.uuid);
       const classes = [
         'action',
         'sortable',
@@ -1456,7 +1468,7 @@ export class CanvasNode extends RapidElement {
 
       return html`<div class="${classes}" id="action-${index}">
         <div
-          class="action-content"
+          class="action-content ${hasIssues ? 'has-issues' : ''}"
           @mousedown=${(e: MouseEvent) =>
             !isDisabled && this.handleActionMouseDown(e, action)}
           @mouseup=${(e: MouseEvent) =>
@@ -1632,13 +1644,19 @@ export class CanvasNode extends RapidElement {
     const activeCount =
       (this.activity?.nodes && this.activity.nodes[this.node.uuid]) || 0;
 
+    // Check for node-level issues or action-level issues on any action in this node
+    const nodeHasIssues =
+      this.issuesByNode?.has(this.node.uuid) ||
+      this.node.actions?.some((a) => this.issuesByAction?.has(a.uuid));
+
     return html`
       <div
         id="${this.node.uuid}"
         class=${getClasses({
           node: true,
           'execute-actions': this.ui.type === 'execute_actions',
-          'non-localizable': isNodeDisabled
+          'non-localizable': isNodeDisabled,
+          'has-issues': nodeHasIssues
         })}
         style="left:${this.ui.position.left}px;top:${this.ui.position.top}px"
       >
