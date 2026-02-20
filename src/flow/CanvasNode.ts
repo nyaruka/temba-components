@@ -964,6 +964,11 @@ export class CanvasNode extends RapidElement {
     this.requestUpdate();
   }
 
+  private getTopCenter(el: Element): { x: number; y: number } {
+    const rect = el.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top };
+  }
+
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
     // Don't handle clicks on the remove button, drag handle, or when action is in removing state
     const target = event.target as HTMLElement;
@@ -1017,10 +1022,18 @@ export class CanvasNode extends RapidElement {
       // Only fire the action edit event if we haven't dragged beyond the threshold
       // AND either there's no Editor parent (test case) or the Editor didn't drag the node
       if (distance <= DRAG_THRESHOLD && (!editor || !editorWasDragging)) {
+        // Use top-center of the action element as the dialog origin
+        const actionEl = event.currentTarget as Element;
+        const origin = actionEl
+          ? this.getTopCenter(actionEl)
+          : { x: event.clientX, y: event.clientY };
+
         // Fire event to request action editing
         this.fireCustomEvent(CustomEventType.ActionEditRequested, {
           action,
-          nodeUuid: this.node.uuid
+          nodeUuid: this.node.uuid,
+          originX: origin.x,
+          originY: origin.y
         });
       }
     }
@@ -1140,17 +1153,24 @@ export class CanvasNode extends RapidElement {
         // Using literal 5 instead of DRAG_THRESHOLD since it's not imported
         // Fire event to request node editing if the node has a router
         if (this.node.router) {
+          // Use top-center of the node as the dialog origin
+          const origin = this.getTopCenter(this);
+
           // If router node has exactly one action, open the action editor directly
           if (this.node.actions && this.node.actions.length === 1) {
             this.fireCustomEvent(CustomEventType.ActionEditRequested, {
               action: this.node.actions[0],
-              nodeUuid: this.node.uuid
+              nodeUuid: this.node.uuid,
+              originX: origin.x,
+              originY: origin.y
             });
           } else {
             // Otherwise open the node editor as before
             this.fireCustomEvent(CustomEventType.NodeEditRequested, {
               node: this.node,
-              nodeUI: this.ui
+              nodeUI: this.ui,
+              originX: origin.x,
+              originY: origin.y
             });
           }
         }
