@@ -22,7 +22,7 @@ import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
-import { AppState, fromStore, zustand } from '../store/AppState';
+import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
 import { getStore } from '../store/Store';
 
 export class NodeEditor extends RapidElement {
@@ -53,6 +53,19 @@ export class NodeEditor extends RapidElement {
         font-size: 12px;
         margin-left: 5px;
         margin-top: 15px;
+      }
+
+      .issue-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-error, tomato);
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .issue-warning:hover .issue-text {
+        text-decoration: underline;
       }
 
       .form-actions {
@@ -410,6 +423,12 @@ export class NodeEditor extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.flowDefinition)
   private flowDefinition!: FlowDefinition;
+
+  @fromStore(zustand, (state: AppState) => state.issuesByNode)
+  private issuesByNode!: Map<string, FlowIssue[]>;
+
+  @fromStore(zustand, (state: AppState) => state.issuesByAction)
+  private issuesByAction!: Map<string, FlowIssue[]>;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -2049,6 +2068,48 @@ export class NodeEditor extends RapidElement {
     `;
   }
 
+  private formatIssueMessage(issue: FlowIssue): string {
+    if (issue.dependency) {
+      const name = issue.dependency.name || issue.dependency.key;
+      return `Cannot find a ${issue.dependency.type} for ${name}`;
+    }
+    return issue.description;
+  }
+
+  private handleIssueClick(issue: FlowIssue): void {
+    this.fireCustomEvent(CustomEventType.ShowIssue, { issue });
+  }
+
+  private renderIssueWarnings(): TemplateResult | string {
+    const issues: FlowIssue[] = [];
+
+    // Check for action-level issues
+    if (this.action && this.issuesByAction?.has(this.action.uuid)) {
+      issues.push(...this.issuesByAction.get(this.action.uuid));
+    }
+
+    // Check for node-level issues (issues without action_uuid)
+    if (this.node && this.issuesByNode?.has(this.node.uuid)) {
+      issues.push(...this.issuesByNode.get(this.node.uuid));
+    }
+
+    if (issues.length === 0) return '';
+
+    return html`
+      ${issues.map(
+        (issue) => html`
+          <div
+            class="issue-warning"
+            @click=${() => this.handleIssueClick(issue)}
+          >
+            <temba-icon name="alert_warning" size="1.2"></temba-icon>
+            <span class="issue-text">${this.formatIssueMessage(issue)}</span>
+          </div>
+        `
+      )}
+    `;
+  }
+
   render(): TemplateResult {
     if (!this.isOpen) {
       return html``;
@@ -2083,6 +2144,7 @@ export class NodeEditor extends RapidElement {
           ${this.getNodeConfig()?.router?.configurable
             ? this.renderRouterSection()
             : null}
+          ${this.renderIssueWarnings()}
         </div>
 
         <div slot="gutter">${this.renderGutter()}</div>

@@ -1162,5 +1162,29 @@
         }
       }
     }
+  },
+  "info": {
+    "results": [],
+    "dependencies": [],
+    "counts": { "nodes": 5, "languages": 3 },
+    "locals": [],
+    "issues": [
+      {
+        "type": "missing_dependency",
+        "node_uuid": "fb7bbf99-65cd-4e08-825a-68fc7293cc05",
+        "action_uuid": "0020495f-f919-41bc-b0a7-5e109e72a6ac",
+        "description": "missing field dependency 'profile_pic'",
+        "dependency": {
+          "key": "profile_pic",
+          "name": "Profile Pic",
+          "type": "field"
+        }
+      },
+      {
+        "type": "missing_dependency",
+        "node_uuid": "ef1a5b06-1331-4c0d-9f46-58b1e5baf671",
+        "description": "missing flow dependency 'eb6e5fbb-510a-4ce7-8cca-e994f9cebebc'"
+      }
+    ]
   }
 }
