@@ -20,6 +20,7 @@ import {
 } from './types';
 import { CustomEventType } from '../interfaces';
 import { generateUUID } from '../utils';
+import { formatIssueMessage } from './utils';
 import { FieldRenderer } from '../form/FieldRenderer';
 import { renderMarkdownInline } from '../markdown';
 import { AppState, FlowIssue, fromStore, zustand } from '../store/AppState';
@@ -2068,14 +2069,6 @@ export class NodeEditor extends RapidElement {
     `;
   }
 
-  private formatIssueMessage(issue: FlowIssue): string {
-    if (issue.dependency) {
-      const name = issue.dependency.name || issue.dependency.key;
-      return `Cannot find a ${issue.dependency.type} for ${name}`;
-    }
-    return issue.description;
-  }
-
   private handleIssueClick(issue: FlowIssue): void {
     this.fireCustomEvent(CustomEventType.ShowIssue, { issue });
   }
@@ -2103,7 +2096,7 @@ export class NodeEditor extends RapidElement {
             @click=${() => this.handleIssueClick(issue)}
           >
             <temba-icon name="alert_warning" size="1.2"></temba-icon>
-            <span class="issue-text">${this.formatIssueMessage(issue)}</span>
+            <span class="issue-text">${formatIssueMessage(issue)}</span>
           </div>
         `
       )}
