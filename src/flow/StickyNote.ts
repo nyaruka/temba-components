@@ -305,7 +305,7 @@ export class StickyNote extends RapidElement {
 
   private handleBodyBlur(event: FocusEvent): void {
     const target = event.target as HTMLElement;
-    const newBody = target.textContent || '';
+    const newBody = target.innerText || '';
 
     if (this.data && newBody !== this.data.body) {
       getStore()
@@ -328,7 +328,17 @@ export class StickyNote extends RapidElement {
     event.stopPropagation();
   }
 
-  private handleKeyDown(event: KeyboardEvent): void {
+  private handleTitleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      (event.target as HTMLElement).blur();
+    }
+    if (event.key === 'Escape') {
+      (event.target as HTMLElement).blur();
+    }
+  }
+
+  private handleBodyKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       (event.target as HTMLElement).blur();
@@ -386,7 +396,7 @@ export class StickyNote extends RapidElement {
             class="sticky-title"
             contenteditable="${!this.isTranslating}"
             @blur="${this.handleTitleBlur}"
-            @keydown="${this.handleKeyDown}"
+            @keydown="${this.handleTitleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
             .textContent="${this.data.title}"
           ></div>
@@ -396,7 +406,7 @@ export class StickyNote extends RapidElement {
             class="sticky-body"
             contenteditable="${!this.isTranslating}"
             @blur="${this.handleBodyBlur}"
-            @keydown="${this.handleKeyDown}"
+            @keydown="${this.handleBodyKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
             .textContent="${this.data.body}"
           ></div>

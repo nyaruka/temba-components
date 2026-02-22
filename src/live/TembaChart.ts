@@ -759,7 +759,7 @@ export class TembaChart extends RapidElement {
   private getValueAxisConfig() {
     return {
       min: 0,
-      ...(this.showPercent && { max: this.getInflatedMax() }),
+      ...(this.showPercent && { max:this.getInflatedMax() }),
       stacked: true,
       grid: {
         color: 'rgba(0,0,0,0.04)',
