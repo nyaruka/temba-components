@@ -1223,6 +1223,7 @@ export class Editor extends RapidElement {
     if (event.button !== 0) return;
 
     if (this.isReadOnly()) return;
+    this.blurActiveContentEditable();
 
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
@@ -1292,8 +1293,22 @@ export class Editor extends RapidElement {
     this.handleCanvasMouseDown(event);
   }
 
+  private blurActiveContentEditable(): void {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) {
+      active = active.shadowRoot.activeElement;
+    }
+    if (
+      active instanceof HTMLElement &&
+      active.getAttribute('contenteditable') === 'true'
+    ) {
+      active.blur();
+    }
+  }
+
   private handleCanvasMouseDown(event: MouseEvent): void {
     if (this.isReadOnly()) return;
+    this.blurActiveContentEditable();
 
     const target = event.target as HTMLElement;
     if (target.id === 'canvas' || target.id === 'grid') {
