@@ -2,8 +2,13 @@ name: 'Copilot Setup Steps'
 
 # Triggers: Run on pull requests and pushes to prepare environment for agent tasks
 on:
-  pull_request:
+  workflow_dispatch:
   push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
 
 jobs:
   copilot-setup-steps:
