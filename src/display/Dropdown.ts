@@ -40,10 +40,12 @@ export class Dropdown extends RapidElement {
         opacity: 0;
         border-radius: calc(var(--curvature) * 1.5);
         background: #fff;
-        transition: all calc(0.8 * var(--transition-speed)) var(--bounce);
+        transition: opacity calc(0.8 * var(--transition-speed)) var(--bounce),
+          transform calc(0.8 * var(--transition-speed)) var(--bounce);
         user-select: none;
         margin-top: 0px;
         margin-left: 0px;
+        transform: translateY(0) scale(1);
         box-shadow: var(--dropdown-shadow);
       }
 
