@@ -1,6 +1,6 @@
 import { PropertyValueMap, css, html } from 'lit';
 import { RapidElement } from '../RapidElement';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { getClasses } from '../utils';
 import { Lightbox } from './Lightbox';
 import { WebChatIcon } from '../webchat';
@@ -67,9 +67,55 @@ export class Thumbnail extends RapidElement {
       }
 
       .thumb.document,
-      .thumb.audio,
       .thumb.video {
         border: 1px solid #eee;
+      }
+
+      .audio-player {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: var(--curvature);
+        cursor: default;
+      }
+
+      .audio-play-btn {
+        cursor: pointer;
+        color: #666;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .audio-play-btn:hover {
+        color: #333;
+      }
+
+      .audio-progress-bar {
+        flex: 1;
+        height: 3px;
+        background: #ddd;
+        border-radius: 2px;
+        overflow: hidden;
+        min-width: 60px;
+        cursor: pointer;
+      }
+
+      .audio-progress-fill {
+        height: 100%;
+        background: var(--color-primary, #2387ca);
+        border-radius: 2px;
+        transition: width 0.15s linear;
+      }
+
+      .audio-time {
+        font-size: 11px;
+        color: #999;
+        flex-shrink: 0;
+        min-width: 28px;
+        text-align: right;
       }
 
       .wrapper:hover .thumb.icon {
@@ -132,6 +178,74 @@ export class Thumbnail extends RapidElement {
   // cached tile URL for location thumbnails
   @property({ type: String, attribute: false })
   private tileUrl: string = '';
+
+  // audio player state
+  private audio: HTMLAudioElement | null = null;
+
+  @state()
+  private audioPlaying = false;
+
+  @state()
+  private audioProgress = 0;
+
+  @state()
+  private audioDuration = 0;
+
+  private handleAudioPlayClick(e: Event) {
+    e.stopPropagation();
+
+    if (!this.audio) {
+      this.audio = new Audio(this.url);
+      this.audio.addEventListener('timeupdate', () => {
+        if (this.audio.duration) {
+          this.audioProgress = this.audio.currentTime / this.audio.duration;
+          this.audioDuration = this.audio.duration;
+        }
+      });
+      this.audio.addEventListener('ended', () => {
+        this.audioPlaying = false;
+        this.audioProgress = 0;
+      });
+      this.audio.addEventListener('error', () => {
+        this.audioPlaying = false;
+        this.audioProgress = 0;
+      });
+    }
+
+    if (this.audioPlaying) {
+      this.audio.pause();
+      this.audioPlaying = false;
+    } else {
+      this.audio.play().catch(() => {
+        this.audioPlaying = false;
+      });
+      this.audioPlaying = true;
+    }
+  }
+
+  private handleProgressClick(e: MouseEvent) {
+    e.stopPropagation();
+    if (!this.audio || !this.audio.duration) return;
+    const bar = e.currentTarget as HTMLElement;
+    const rect = bar.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    this.audio.currentTime = pct * this.audio.duration;
+  }
+
+  private formatTime(seconds: number): string {
+    const s = Math.floor(seconds);
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}:${rem.toString().padStart(2, '0')}`;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.audio) {
+      this.audio.pause();
+      this.audio = null;
+    }
+  }
 
   // convert lat/lng to tile coordinates for OSM
   private latLngToTile(lat: number, lng: number, zoom: number) {
@@ -227,6 +341,8 @@ export class Thumbnail extends RapidElement {
       // open location in openstreetmap
       const osmUrl = `https://www.openstreetmap.org/?mlat=${this.latitude}&mlon=${this.longitude}#map=15/${this.latitude}/${this.longitude}`;
       window.open(osmUrl, '_blank');
+    } else if (this.contentType === ThumbnailContentType.AUDIO) {
+      // audio has inline controls, no click action needed
     } else {
       window.open(this.url, '_blank');
     }
@@ -245,6 +361,7 @@ export class Thumbnail extends RapidElement {
       <div
         @click=${this.handleThumbnailClicked.bind(this)}
         class="${getClasses({ wrapper: true, zoom: this.zoom })}"
+        style="${this.contentType === ThumbnailContentType.AUDIO ? 'cursor: default;' : ''}"
         url=${this.url}
       >
         ${this.contentType === ThumbnailContentType.IMAGE && this.preview
@@ -254,6 +371,18 @@ export class Thumbnail extends RapidElement {
           class="observe thumb ${this.contentType}"
           src="${this.url}"
         ></img></div>`
+          : this.contentType === ThumbnailContentType.AUDIO
+          ? html`<div class="audio-player">
+              <div class="audio-play-btn" @click=${this.handleAudioPlayClick}>
+                ${this.audioPlaying
+                  ? html`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>`
+                  : html`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>`}
+              </div>
+              <div class="audio-progress-bar" @click=${this.handleProgressClick}>
+                <div class="audio-progress-fill" style="width: ${this.audioProgress * 100}%"></div>
+              </div>
+              <div class="audio-time">${this.audioDuration ? this.formatTime(this.audioPlaying || this.audioProgress > 0 ? this.audio?.currentTime || 0 : this.audioDuration) : ''}</div>
+            </div>`
           : html`
               ${this.contentType === ThumbnailContentType.LOCATION
                 ? html`<img

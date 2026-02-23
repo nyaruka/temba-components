@@ -2,6 +2,7 @@ import { expect } from '@open-wc/testing';
 import { wait_for_digits } from '../../src/flow/nodes/wait_for_digits';
 import { Node } from '../../src/store/flow-definition';
 import { NodeTest } from '../NodeHelper';
+import { createOperatorOption } from '../../src/flow/operators';
 
 /**
  * Test suite for the wait_for_digits node configuration.
@@ -20,15 +21,22 @@ describe('wait_for_digits node config', () => {
       expect(wait_for_digits.type).to.equal('wait_for_digits');
     });
 
-    it('has correct group', () => {
-      expect(wait_for_digits.group).to.exist;
+    it('is voice-only', () => {
+      expect(wait_for_digits.flowTypes).to.deep.equal(['voice']);
     });
 
-    it('is a simple node config without form or layout', () => {
-      expect(wait_for_digits.form).to.be.undefined;
-      expect(wait_for_digits.layout).to.be.undefined;
-      expect(wait_for_digits.toFormData).to.be.undefined;
-      expect(wait_for_digits.fromFormData).to.be.undefined;
+    it('has form with rules and result_name', () => {
+      expect(wait_for_digits.form).to.exist;
+      expect(wait_for_digits.form!.rules).to.exist;
+      expect(wait_for_digits.form!.result_name).to.exist;
+    });
+
+    it('has layout configuration', () => {
+      expect(wait_for_digits.layout).to.deep.equal(['rules', 'result_name']);
+    });
+
+    it('has large dialog size', () => {
+      expect(wait_for_digits.dialogSize).to.equal('large');
     });
   });
 
@@ -40,157 +48,266 @@ describe('wait_for_digits node config', () => {
           actions: [],
           router: {
             type: 'switch',
+            operand: '@input.text',
             wait: {
               type: 'msg',
               hint: {
-                type: 'digits',
-                count: 4
+                type: 'digits'
               }
             },
             result_name: 'digits',
+            default_category_uuid: 'all-cat',
+            cases: [],
             categories: [
               {
-                uuid: 'digits-cat-1',
-                name: 'Has Number',
-                exit_uuid: 'digits-exit-1'
-              },
-              {
-                uuid: 'digits-cat-2',
-                name: 'Other',
-                exit_uuid: 'digits-exit-2'
+                uuid: 'all-cat',
+                name: 'All Responses',
+                exit_uuid: 'all-exit'
               }
             ]
           },
-          exits: [
-            { uuid: 'digits-exit-1', destination_uuid: null },
-            { uuid: 'digits-exit-2', destination_uuid: null }
-          ]
+          exits: [{ uuid: 'all-exit', destination_uuid: null }]
         } as Node,
         { type: 'wait_for_digits' },
         'basic-digits-wait'
       );
     });
 
-    it('renders single digit with timeout', async () => {
+    it('renders digits with rules', async () => {
       await helper.testNode(
         {
           uuid: 'test-digits-node-2',
           actions: [],
           router: {
             type: 'switch',
+            operand: '@input.text',
             wait: {
               type: 'msg',
               hint: {
-                type: 'digits',
-                count: 1
-              },
-              timeout: {
-                category_uuid: 'timeout-cat',
-                seconds: 30
+                type: 'digits'
               }
             },
-            result_name: 'pin_digit',
+            result_name: 'pin',
+            default_category_uuid: 'other-cat',
+            cases: [
+              {
+                uuid: 'case-1',
+                type: 'has_number_eq',
+                arguments: ['1234'],
+                category_uuid: 'valid-cat'
+              }
+            ],
             categories: [
               {
-                uuid: 'digits-cat-1',
-                name: 'Has Number',
-                exit_uuid: 'digits-exit-1'
+                uuid: 'valid-cat',
+                name: 'Valid PIN',
+                exit_uuid: 'valid-exit'
               },
               {
-                uuid: 'timeout-cat',
-                name: 'No Response',
-                exit_uuid: 'timeout-exit'
-              },
-              {
-                uuid: 'digits-cat-2',
+                uuid: 'other-cat',
                 name: 'Other',
-                exit_uuid: 'digits-exit-2'
+                exit_uuid: 'other-exit'
               }
             ]
           },
           exits: [
-            { uuid: 'digits-exit-1', destination_uuid: null },
-            { uuid: 'timeout-exit', destination_uuid: null },
-            { uuid: 'digits-exit-2', destination_uuid: null }
+            { uuid: 'valid-exit', destination_uuid: null },
+            { uuid: 'other-exit', destination_uuid: null }
           ]
         } as Node,
         { type: 'wait_for_digits' },
-        'single-digit-with-timeout'
+        'digits-with-rules'
       );
     });
+  });
 
-    it('renders phone number collection', async () => {
-      await helper.testNode(
-        {
-          uuid: 'test-digits-node-3',
-          actions: [],
-          router: {
-            type: 'switch',
-            wait: {
-              type: 'msg',
-              hint: {
-                type: 'digits',
-                count: 10
-              }
+  describe('data transformation', () => {
+    it('converts node to form data', () => {
+      const node: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'digits',
+          operand: '@input.text',
+          categories: [
+            {
+              uuid: 'valid-cat',
+              name: 'Valid',
+              exit_uuid: 'valid-exit'
             },
-            result_name: 'phone_number',
-            categories: [
-              {
-                uuid: 'phone-cat-1',
-                name: 'Valid Phone',
-                exit_uuid: 'phone-exit-1'
-              },
-              {
-                uuid: 'phone-cat-2',
-                name: 'Invalid',
-                exit_uuid: 'phone-exit-2'
-              },
-              { uuid: 'phone-cat-3', name: 'Other', exit_uuid: 'phone-exit-3' }
-            ]
-          },
-          exits: [
-            { uuid: 'phone-exit-1', destination_uuid: null },
-            { uuid: 'phone-exit-2', destination_uuid: null },
-            { uuid: 'phone-exit-3', destination_uuid: null }
+            {
+              uuid: 'other-cat',
+              name: 'Other',
+              exit_uuid: 'other-exit'
+            }
+          ],
+          cases: [
+            {
+              uuid: 'case-1',
+              type: 'has_number_eq',
+              arguments: ['1234'],
+              category_uuid: 'valid-cat'
+            }
           ]
-        } as Node,
-        { type: 'wait_for_digits' },
-        'phone-number-collection'
-      );
+        },
+        exits: [
+          { uuid: 'valid-exit', destination_uuid: null },
+          { uuid: 'other-exit', destination_uuid: null }
+        ]
+      };
+
+      const formData = wait_for_digits.toFormData!(node);
+
+      expect(formData.uuid).to.equal('test-node');
+      expect(formData.result_name).to.equal('digits');
+      expect(formData.rules).to.have.length(1);
+      expect(formData.rules[0]).to.deep.equal({
+        operator: createOperatorOption('has_number_eq'),
+        value1: '1234',
+        value2: '',
+        category: 'Valid'
+      });
     });
 
-    it('renders verification code', async () => {
-      await helper.testNode(
-        {
-          uuid: 'test-digits-node-4',
-          actions: [],
-          router: {
-            type: 'switch',
-            wait: {
-              type: 'msg',
-              hint: {
-                type: 'digits',
-                count: 6
-              }
+    it('converts node with no rules to form data', () => {
+      const node: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          result_name: 'digits',
+          categories: []
+        },
+        exits: []
+      };
+
+      const formData = wait_for_digits.toFormData!(node);
+      expect(formData.rules).to.deep.equal([]);
+      expect(formData.result_name).to.equal('digits');
+    });
+
+    it('converts form data to node with rules', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'digits',
+        rules: [
+          {
+            operator: { value: 'has_number_eq', name: 'is equal to' },
+            value1: '1234',
+            value2: '',
+            category: 'Valid PIN'
+          }
+        ]
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [],
+        router: { type: 'switch', categories: [] }
+      };
+
+      const result = wait_for_digits.fromFormData!(formData, originalNode);
+
+      expect(result.uuid).to.equal('test-node');
+      expect(result.router?.result_name).to.equal('digits');
+      expect(result.router?.operand).to.equal('@input.text');
+      expect(result.router?.categories).to.have.length(2); // Valid PIN, Other
+      expect(result.router?.cases).to.have.length(1);
+      expect(result.exits).to.have.length(2);
+
+      // Check wait config has digits hint (without count)
+      expect(result.router?.wait?.type).to.equal('msg');
+      expect(result.router?.wait?.hint?.type).to.equal('digits');
+      expect(result.router?.wait?.hint?.count).to.be.undefined;
+    });
+
+    it('converts form data with no rules', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'digits',
+        rules: []
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: [],
+        router: { type: 'switch', categories: [] }
+      };
+
+      const result = wait_for_digits.fromFormData!(formData, originalNode);
+
+      // Should have just "All Responses" default category (no user rules)
+      expect(result.router?.categories).to.have.length(1);
+      expect(result.router!.categories[0].name).to.equal('All Responses');
+      expect(result.router?.cases).to.have.length(0);
+      expect(result.router?.wait?.hint?.type).to.equal('digits');
+    });
+
+    it('preserves category UUIDs', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'digits',
+        rules: [
+          {
+            operator: { value: 'has_number_eq', name: 'is equal to' },
+            value1: '1234',
+            value2: '',
+            category: 'Valid'
+          }
+        ]
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          categories: [
+            {
+              uuid: 'orig-valid',
+              name: 'Valid',
+              exit_uuid: 'orig-valid-exit'
             },
-            result_name: 'verification_code',
-            categories: [
-              {
-                uuid: 'code-cat-1',
-                name: 'Valid Code',
-                exit_uuid: 'code-exit-1'
-              },
-              { uuid: 'code-cat-2', name: 'Other', exit_uuid: 'code-exit-2' }
-            ]
-          },
-          exits: [
-            { uuid: 'code-exit-1', destination_uuid: null },
-            { uuid: 'code-exit-2', destination_uuid: null }
+            {
+              uuid: 'orig-other',
+              name: 'Other',
+              exit_uuid: 'orig-other-exit'
+            }
+          ],
+          cases: [
+            {
+              uuid: 'orig-case',
+              type: 'has_number_eq',
+              arguments: ['1234'],
+              category_uuid: 'orig-valid'
+            }
           ]
-        } as Node,
-        { type: 'wait_for_digits' },
-        'verification-code'
-      );
+        },
+        exits: [
+          { uuid: 'orig-valid-exit', destination_uuid: 'dest-1' },
+          { uuid: 'orig-other-exit', destination_uuid: null }
+        ]
+      };
+
+      const result = wait_for_digits.fromFormData!(formData, originalNode);
+
+      const valid = result.router!.categories.find((c) => c.name === 'Valid');
+      expect(valid?.uuid).to.equal('orig-valid');
+      expect(valid?.exit_uuid).to.equal('orig-valid-exit');
+
+      const other = result.router!.categories.find((c) => c.name === 'Other');
+      expect(other?.uuid).to.equal('orig-other');
+    });
+  });
+
+  describe('validation', () => {
+    it('validates with no errors', () => {
+      const formData = { rules: [] };
+      const result = wait_for_digits.validate!(formData);
+      expect(result.valid).to.be.true;
     });
   });
 });

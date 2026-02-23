@@ -1121,8 +1121,11 @@ export class Simulator extends RapidElement {
           continue;
         }
 
-        // skip msg_created events without a proper msg property
-        if (rawEvent.type === 'msg_created' && !(rawEvent as any).msg) {
+        // skip msg_created/ivr_created events without a proper msg property
+        if (
+          (rawEvent.type === 'msg_created' || rawEvent.type === 'ivr_created') &&
+          !(rawEvent as any).msg
+        ) {
           continue;
         }
 
@@ -1144,7 +1147,8 @@ export class Simulator extends RapidElement {
           this.currentQuickReplies = (event as any).msg.quick_replies;
         }
 
-        const isMessage = event.type === 'msg_created';
+        const isMessage =
+          event.type === 'msg_created' || event.type === 'ivr_created';
         const msg = (event as any).msg;
 
         // Check if the event should be displayed.

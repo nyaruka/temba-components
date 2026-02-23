@@ -132,7 +132,7 @@ export const createRulesItemConfig = () => ({
     multi: false,
     options: [], // Will be set by the caller
     flavor: 'xsmall' as const,
-    width: '200px'
+    width: '220px'
   },
   value1: {
     type: 'text' as const,

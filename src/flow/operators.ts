@@ -44,11 +44,7 @@ export const OPERATORS: OperatorConfig[] = [
     operands: 0,
     categoryName: 'Has Text'
   },
-  {
-    type: 'has_pattern',
-    name: 'matches regex',
-    operands: 1
-  },
+
 
   // Number operators
   {
@@ -180,7 +176,12 @@ export const OPERATORS: OperatorConfig[] = [
     operands: 0,
     categoryName: 'Not Empty',
     visibility: 'hidden'
-  }
+  },
+  {
+    type: 'has_pattern',
+    name: 'matches regex',
+    operands: 1
+  },
 ];
 
 // Get operators suitable for wait_for_response rules
@@ -188,6 +189,24 @@ export const getWaitForResponseOperators = (): OperatorConfig[] => {
   return OPERATORS.filter(
     (op) => op.visibility !== 'hidden' && !op.filter // For now, exclude location operators unless we support feature detection
   );
+};
+
+// Number operator types used for digit-based routing
+const DIGIT_OPERATOR_TYPES = new Set([
+  'has_beginning',
+  'has_number',
+  'has_number_between',
+  'has_number_lt',
+  'has_number_lte',
+  'has_number_eq',
+  'has_number_gte',
+  'has_number_gt',
+  'has_pattern'
+]);
+
+// Get operators suitable for wait_for_digits rules (number operators + regex)
+export const getDigitOperators = (): OperatorConfig[] => {
+  return OPERATORS.filter((op) => DIGIT_OPERATOR_TYPES.has(op.type));
 };
 
 // Get operator configuration by type

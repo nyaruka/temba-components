@@ -38,6 +38,8 @@ import { split_by_webhook } from './nodes/split_by_webhook';
 import { split_by_resthook } from './nodes/split_by_resthook';
 import { split_by_llm } from './nodes/split_by_llm';
 import { split_by_llm_categorize } from './nodes/split_by_llm_categorize';
+import { wait_for_audio } from './nodes/wait_for_audio';
+import { wait_for_dial } from './nodes/wait_for_dial';
 import { wait_for_digits } from './nodes/wait_for_digits';
 import { wait_for_menu } from './nodes/wait_for_menu';
 import { wait_for_response } from './nodes/wait_for_response';
@@ -99,6 +101,8 @@ export const NODE_CONFIG: {
   split_by_ticket,
   split_by_webhook,
   split_by_resthook,
+  wait_for_audio,
+  wait_for_dial,
   wait_for_digits,
   wait_for_menu,
   wait_for_response,
