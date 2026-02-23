@@ -1,5 +1,14 @@
 import { html } from 'lit-html';
 import { NamedObject, FlowPosition } from '../store/flow-definition';
+import { FlowIssue } from '../store/AppState';
+
+export function formatIssueMessage(issue: FlowIssue): string {
+  if (issue.dependency) {
+    const name = issue.dependency.name || issue.dependency.key;
+    return `Cannot find a ${issue.dependency.type} for ${name}`;
+  }
+  return issue.description;
+}
 
 const GRID_SIZE = 20;
 
