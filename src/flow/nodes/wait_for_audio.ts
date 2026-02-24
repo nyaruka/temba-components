@@ -9,11 +9,17 @@ import {
 
 export const wait_for_audio: NodeConfig = {
   type: 'wait_for_audio',
-  name: 'Wait for Audio',
+  name: 'Make Recording',
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   form: {
-    result_name: resultNameField
+    result_name:  {
+      type: 'text',
+      label: 'Result Name',
+      required: false,
+      placeholder: '(optional)',
+      helpText: 'The name to use to reference this result in the flow',
+    }
   },
   layout: ['result_name'],
   toFormData: (node: Node) => {

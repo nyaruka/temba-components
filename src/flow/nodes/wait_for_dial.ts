@@ -20,7 +20,7 @@ const DIAL_CASES = [
 
 export const wait_for_dial: NodeConfig = {
   type: 'wait_for_dial',
-  name: 'Wait for Dial',
+  name: 'Redirect Call',
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   router: {

@@ -101,10 +101,10 @@ export const NODE_CONFIG: {
   split_by_ticket,
   split_by_webhook,
   split_by_resthook,
+  wait_for_menu,
+  wait_for_digits,
   wait_for_audio,
   wait_for_dial,
-  wait_for_digits,
-  wait_for_menu,
   wait_for_response,
   split_by_airtime,
   terminal // Temporary: legacy support for terminal nodes (see AppState.ts)
