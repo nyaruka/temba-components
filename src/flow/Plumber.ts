@@ -12,6 +12,7 @@ interface ConnectionEndpoints {
   targetX: number;
   targetY: number;
   targetFace: TargetFace;
+  jogYOffset: number;
 }
 
 interface ConnectionInfo {
@@ -47,7 +48,8 @@ export function calculateFlowchartPath(
   stubStart = 20,
   stubEnd = 10,
   cornerRadius = 5,
-  targetFace: TargetFace = 'top'
+  targetFace: TargetFace = 'top',
+  jogYOffset = 0
 ): string {
   const r = cornerRadius;
 
@@ -66,7 +68,11 @@ export function calculateFlowchartPath(
       // jogY is the horizontal level — must be above entryY so the
       // final approach into the node is always downward (no backtracking).
       const dirX = targetX > sourceX ? 1 : -1;
-      const jogY = Math.max(sourceY + r, Math.min(exitY, entryY - r));
+      const baseJogY = Math.max(sourceY + r, Math.min(exitY, entryY - r));
+      const jogY = Math.max(
+        sourceY + r,
+        Math.min(baseJogY + jogYOffset, entryY - r - 3)
+      );
 
       // Corner 1: vertical→horizontal at jogY
       const r1 = Math.min(r, jogY - sourceY);
@@ -321,11 +327,17 @@ export class Plumber {
       });
       this.pendingConnections = [];
 
-      // Repaint all connections that share a target with newly created ones
-      // so anchor distribution is correct after the full batch is processed
+      // Repaint all connections that share a target or source with newly
+      // created ones so anchor distribution and jogY offsets are correct
       if (createdTargets.size > 0) {
-        this.connections.forEach((conn, exitId) => {
+        const createdScopes = new Set<string>();
+        this.connections.forEach((conn) => {
           if (createdTargets.has(conn.toId)) {
+            createdScopes.add(conn.scope);
+          }
+        });
+        this.connections.forEach((conn, exitId) => {
+          if (createdTargets.has(conn.toId) || createdScopes.has(conn.scope)) {
             this.updateConnectionSVG(exitId);
           }
         });
@@ -371,7 +383,8 @@ export class Plumber {
 
   private getConnectionEndpoints(
     fromId: string,
-    toId: string
+    toId: string,
+    scope?: string
   ): ConnectionEndpoints | null {
     const fromEl = document.getElementById(fromId);
     const toEl = document.getElementById(toId);
@@ -476,7 +489,55 @@ export class Plumber {
           : targetTop + margin + (span * (index + 0.5)) / count;
     }
 
-    return { sourceX, sourceY, targetX, targetY, targetFace };
+    // Compute jogYOffset: stagger horizontal segments for sibling exits
+    // from the same source node so paths don't overlap
+    let jogYOffset = 0;
+    if (targetFace === 'top' && scope) {
+      const SIBLING_SPACING = 8;
+      const MAX_SPREAD = 50;
+
+      const siblings: { fromId: string; targetX: number }[] = [];
+      this.connections.forEach((conn) => {
+        if (conn.scope === scope && conn.toId !== toId) {
+          const connFromEl = document.getElementById(conn.fromId);
+          const connToEl = document.getElementById(conn.toId);
+          if (connFromEl && connToEl) {
+            const connFromRect = connFromEl.getBoundingClientRect();
+            const connToRect = connToEl.getBoundingClientRect();
+            const connSourceX =
+              connFromRect.left + connFromRect.width / 2 - canvasRect.left;
+            const connSourceY = connFromRect.bottom - canvasRect.top;
+            const connFace = this.determineTargetFace(
+              connSourceX,
+              connSourceY,
+              connToRect,
+              canvasRect
+            );
+            if (connFace === 'top') {
+              const connTargetLeft = connToRect.left - canvasRect.left;
+              const connTargetW = connToRect.width;
+              siblings.push({
+                fromId: conn.fromId,
+                targetX: connTargetLeft + connTargetW / 2
+              });
+            }
+          }
+        }
+      });
+
+      if (siblings.length > 0) {
+        siblings.push({ fromId, targetX });
+        siblings.sort((a, b) => a.targetX - b.targetX);
+        const idx = siblings.findIndex((s) => s.fromId === fromId);
+        const sibCount = siblings.length;
+        const rawSpread = (sibCount - 1) * SIBLING_SPACING;
+        const spacing =
+          rawSpread > MAX_SPREAD ? MAX_SPREAD / (sibCount - 1) : SIBLING_SPACING;
+        jogYOffset = (idx - (sibCount - 1) / 2) * spacing;
+      }
+    }
+
+    return { sourceX, sourceY, targetX, targetY, targetFace, jogYOffset };
   }
 
   // --- SVG creation and management ---
@@ -535,7 +596,8 @@ export class Plumber {
     sourceY: number,
     targetX: number,
     targetY: number,
-    targetFace: TargetFace = 'top'
+    targetFace: TargetFace = 'top',
+    jogYOffset = 0
   ) {
     const aw = ARROW_HALF_WIDTH;
     const al = ARROW_LENGTH;
@@ -562,7 +624,8 @@ export class Plumber {
       EXIT_STUB,
       effectiveStub,
       5,
-      targetFace
+      targetFace,
+      jogYOffset
     );
     pathEl.setAttribute('d', d);
 
@@ -596,7 +659,7 @@ export class Plumber {
     scope: string,
     toId: string
   ): boolean {
-    const endpoints = this.getConnectionEndpoints(exitId, toId);
+    const endpoints = this.getConnectionEndpoints(exitId, toId, scope);
     if (!endpoints) return false;
 
     const { svgEl, pathEl, arrowEl } = this.createSVGElement();
@@ -607,7 +670,8 @@ export class Plumber {
       endpoints.sourceY,
       endpoints.targetX,
       endpoints.targetY,
-      endpoints.targetFace
+      endpoints.targetFace,
+      endpoints.jogYOffset
     );
     this.canvas.appendChild(svgEl);
 
@@ -674,7 +738,11 @@ export class Plumber {
     const conn = this.connections.get(exitId);
     if (!conn) return;
 
-    const endpoints = this.getConnectionEndpoints(conn.fromId, conn.toId);
+    const endpoints = this.getConnectionEndpoints(
+      conn.fromId,
+      conn.toId,
+      conn.scope
+    );
     if (!endpoints) return;
 
     this.updateSVGPath(
@@ -684,7 +752,8 @@ export class Plumber {
       endpoints.sourceY,
       endpoints.targetX,
       endpoints.targetY,
-      endpoints.targetFace
+      endpoints.targetFace,
+      endpoints.jogYOffset
     );
     this.updateOverlayPosition(exitId);
   }
@@ -901,7 +970,11 @@ export class Plumber {
     const conn = this.connections.get(exitId);
     if (!overlayEl || !conn) return;
 
-    const endpoints = this.getConnectionEndpoints(conn.fromId, conn.toId);
+    const endpoints = this.getConnectionEndpoints(
+      conn.fromId,
+      conn.toId,
+      conn.scope
+    );
     if (!endpoints) return;
 
     overlayEl.style.position = 'absolute';

@@ -171,4 +171,34 @@ describe('calculateFlowchartPath', () => {
     expect(path).to.include('M 150 0');
     expect(path).to.include('L 50 100'); // ends at target
   });
+
+  it('applies jogYOffset to shift the horizontal jog level', () => {
+    const pathNoOffset = calculateFlowchartPath(
+      50, 0, 150, 200, 20, 10, 5, 'top', 0
+    );
+    const pathPosOffset = calculateFlowchartPath(
+      50, 0, 150, 200, 20, 10, 5, 'top', 10
+    );
+    const pathNegOffset = calculateFlowchartPath(
+      50, 0, 150, 200, 20, 10, 5, 'top', -10
+    );
+    expect(pathNoOffset).to.not.equal(pathPosOffset);
+    expect(pathNoOffset).to.not.equal(pathNegOffset);
+    expect(pathPosOffset).to.not.equal(pathNegOffset);
+  });
+
+  it('produces same path with jogYOffset=0 as without offset', () => {
+    const pathDefault = calculateFlowchartPath(50, 0, 150, 200);
+    const pathZero = calculateFlowchartPath(
+      50, 0, 150, 200, 20, 10, 5, 'top', 0
+    );
+    expect(pathDefault).to.equal(pathZero);
+  });
+
+  it('clamps jogYOffset to valid bounds', () => {
+    // Large positive offset should not push jogY past entryY
+    const path = calculateFlowchartPath(50, 0, 150, 50, 20, 10, 5, 'top', 1000);
+    expect(path).to.include('M 50 0');
+    expect(path).to.include('L 150 50'); // should still reach target
+  });
 });
