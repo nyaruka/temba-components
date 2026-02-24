@@ -839,6 +839,56 @@ export class Editor extends RapidElement {
         color: tomato;
         flex-shrink: 0;
       }
+
+      .empty-flow {
+        position: sticky;
+        top: 80px;
+        left: 0;
+        right: 0;
+        height: 0;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 50;
+      }
+
+      .empty-flow-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        text-align: center;
+        pointer-events: auto;
+      }
+
+      .empty-flow-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .empty-flow-description {
+        font-size: 14px;
+        color: #6b7280;
+        max-width: 320px;
+        line-height: 1.5;
+      }
+
+      .empty-flow-button {
+        background: var(--color-primary-dark);
+        border: none;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: var(--curvature);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .empty-flow-button:hover {
+        opacity: 0.9;
+      }
     `;
   }
 
@@ -854,6 +904,7 @@ export class Editor extends RapidElement {
     this.setupGlobalEventListeners();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
+      this.fetchRevisions();
     }
 
     this.plumber.on('connection:drag', (connection: any) => {
@@ -1083,10 +1134,8 @@ export class Editor extends RapidElement {
             state.setRevision(response.json.revision.revision);
           }
 
-          // if the revisions window is open, refresh the list
-          if (!this.revisionsWindowHidden) {
-            this.fetchRevisions();
-          }
+          // Refresh revisions list so the tab visibility stays up to date
+          this.fetchRevisions();
         }
       })
       .catch((error) => {
@@ -2020,6 +2069,23 @@ export class Editor extends RapidElement {
         x: snappedLeft,
         y: snappedTop
       });
+    }
+  }
+
+  private handleEmptyFlowClick(event: MouseEvent): void {
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) return;
+
+    // Scroll to top-left
+    editor.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+
+    // Place node at top-left of the canvas
+    const nodeLeft = 0;
+    const nodeTop = 0;
+
+    const canvasMenu = this.querySelector('temba-canvas-menu') as CanvasMenu;
+    if (canvasMenu) {
+      canvasMenu.show(event.clientX, event.clientY, { x: nodeLeft, y: nodeTop }, false);
     }
   }
 
@@ -3424,7 +3490,7 @@ export class Editor extends RapidElement {
   }
 
   private renderIssuesTab(): TemplateResult | string {
-    if (!this.flowIssues?.length) return '';
+    if (!this.flowIssues?.length || !this.revisionsWindowHidden) return '';
     return html`
       <temba-floating-tab
         id="issues-tab"
@@ -3469,6 +3535,7 @@ export class Editor extends RapidElement {
   }
 
   private renderRevisionsTab(): TemplateResult | string {
+    if (this.revisions.length <= 1) return '';
     return html`
       <temba-floating-tab
         id="revisions-tab"
@@ -3762,6 +3829,8 @@ export class Editor extends RapidElement {
   }
 
   private renderLocalizationTab(): TemplateResult | string {
+    if (!this.revisionsWindowHidden) return '';
+    if (this.definition?.nodes.length === 0) return '';
     const languages = this.getLocalizationLanguages();
     if (!languages.length) {
       return html``;
@@ -3835,6 +3904,23 @@ export class Editor extends RapidElement {
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       ${this.renderAutoTranslateDialog()}
       <div id="editor">
+        ${this.definition && this.definition.nodes.length === 0 && !this.isReadOnly()
+          ? html`<div class="empty-flow">
+              <div class="empty-flow-content">
+                <div class="empty-flow-title">This flow is empty</div>
+                <div class="empty-flow-description">
+                  Get started by adding your first action or split to
+                  define how this flow will work.
+                </div>
+                <button
+                  class="empty-flow-button"
+                  @click=${this.handleEmptyFlowClick}
+                >
+                  Add first step
+                </button>
+              </div>
+            </div>`
+          : ''}
         <div
           id="grid"
           class="${this.viewingRevision ? 'viewing-revision' : ''}"
@@ -3851,45 +3937,47 @@ export class Editor extends RapidElement {
           >
             ${this.definition
               ? repeat(
-                  [...this.definition.nodes].sort((a, b) =>
-                    a.uuid.localeCompare(b.uuid)
-                  ),
-                  (node) => node.uuid,
-                  (node) => {
-                    const position = this.definition._ui?.nodes[node.uuid]
-                      ?.position || {
-                      left: 0,
-                      top: 0
-                    };
+                    [...this.definition.nodes].sort((a, b) =>
+                      a.uuid.localeCompare(b.uuid)
+                    ),
+                    (node) => node.uuid,
+                    (node) => {
+                      const position = this.definition._ui?.nodes[node.uuid]
+                        ?.position || {
+                        left: 0,
+                        top: 0
+                      };
 
-                    const dragging =
-                      this.isDragging &&
-                      this.currentDragItem?.uuid === node.uuid;
+                      const dragging =
+                        this.isDragging &&
+                        this.currentDragItem?.uuid === node.uuid;
 
-                    const selected = this.selectedItems.has(node.uuid);
+                      const selected = this.selectedItems.has(node.uuid);
 
-                    // first node is the flow start (nodes are sorted by position)
-                    const isFlowStart =
-                      this.definition.nodes.length > 0 &&
-                      this.definition.nodes[0].uuid === node.uuid;
+                      // first node is the flow start (nodes are sorted by position)
+                      const isFlowStart =
+                        this.definition.nodes.length > 0 &&
+                        this.definition.nodes[0].uuid === node.uuid;
 
-                    return html`<temba-flow-node
-                      class="draggable ${dragging ? 'dragging' : ''} ${selected
-                        ? 'selected'
-                        : ''} ${isFlowStart ? 'flow-start' : ''}"
-                      @mousedown=${this.handleMouseDown.bind(this)}
-                      uuid=${node.uuid}
-                      data-node-uuid=${node.uuid}
-                      style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
-                      .plumber=${this.plumber}
-                      .node=${node}
-                      .ui=${this.definition._ui.nodes[node.uuid]}
-                      @temba-node-deleted=${(event) => {
-                        this.deleteNodes([event.detail.uuid]);
-                      }}
-                    ></temba-flow-node>`;
-                  }
-                )
+                      return html`<temba-flow-node
+                        class="draggable ${dragging
+                          ? 'dragging'
+                          : ''} ${selected
+                          ? 'selected'
+                          : ''} ${isFlowStart ? 'flow-start' : ''}"
+                        @mousedown=${this.handleMouseDown.bind(this)}
+                        uuid=${node.uuid}
+                        data-node-uuid=${node.uuid}
+                        style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
+                        .plumber=${this.plumber}
+                        .node=${node}
+                        .ui=${this.definition._ui.nodes[node.uuid]}
+                        @temba-node-deleted=${(event) => {
+                          this.deleteNodes([event.detail.uuid]);
+                        }}
+                      ></temba-flow-node>`;
+                    }
+                  )
               : html`<temba-loading></temba-loading>`}
             ${repeat(
               Object.entries(stickies),
