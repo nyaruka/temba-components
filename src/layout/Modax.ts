@@ -148,9 +148,22 @@ export class Modax extends RapidElement {
 
   @property({ type: Boolean })
   suspendSubmit = false;
+
+  @property({ type: Number })
+  originX: number | null = null;
+
+  @property({ type: Number })
+  originY: number | null = null;
+
   // private cancelToken: CancelTokenSource;
 
-  private handleSlotClicked(): void {
+  private handleSlotClicked(event: MouseEvent): void {
+    const el = event.currentTarget as Element;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      this.originX = rect.left + rect.width / 2;
+      this.originY = rect.top;
+    }
     this.open = true;
   }
 
@@ -173,6 +186,8 @@ export class Modax extends RapidElement {
             // clear the modal body out when closed, note that js functions declared on the
             // window will hang around
             this.setBody('');
+            this.originX = null;
+            this.originY = null;
           }
         }
       }
@@ -441,11 +456,13 @@ export class Modax extends RapidElement {
         .header=${this.header}
         .buttons=${this.buttons}
         ?open=${this.open}
-        ?loading=${this.fetching}
+        ?loading=${this.fetching && this.originX == null}
         ?submitting=${this.submitting}
         ?destructive=${this.isDestructive()}
         ?noFocus=${true}
         ?disabled=${this.disabled}
+        .originX=${this.originX}
+        .originY=${this.originY}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
