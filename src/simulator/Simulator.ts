@@ -5,6 +5,8 @@ import { css, PropertyValueMap } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
+import { AppState, fromStore, zustand } from '../store/AppState';
+import { FlowDefinition } from '../store/flow-definition';
 import { CustomEventType } from '../interfaces';
 import { Chat, ContactEvent, MessageType } from '../display/Chat';
 import { Events, renderEvent } from '../events/eventRenderers';
@@ -691,6 +693,12 @@ export class Simulator extends RapidElement {
       }
     `;
   }
+
+  @fromStore(zustand, (state: AppState) => state.flowDefinition)
+  private definition!: FlowDefinition;
+
+  @fromStore(zustand, (state: AppState) => state.viewingRevision)
+  private viewingRevision!: boolean;
 
   @property({ type: String })
   flow = '';
@@ -1726,6 +1734,10 @@ export class Simulator extends RapidElement {
   }
 
   protected render(): TemplateResult {
+    if (this.viewingRevision || this.definition?.nodes.length === 0) {
+      return html``;
+    }
+
     const config = this.sizeConfig;
 
     // set CSS custom properties dynamically based on size
