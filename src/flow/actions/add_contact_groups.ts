@@ -52,7 +52,10 @@ export const add_contact_groups: ActionConfig = {
     return {
       uuid: formData.uuid,
       type: 'add_contact_groups',
-      groups: formData.groups || []
+      groups: (formData.groups || []).map((g: any) => ({
+        uuid: g.uuid,
+        name: g.name
+      }))
     };
   }
 };

@@ -38,10 +38,10 @@ const getOperandForField = (field: any): string => {
   }
   // For system properties, use the id
   if (field.type === 'property') {
-    return `@contact.${field.id}`;
+    return `@contact.${field.id || field.value}`;
   }
-  // Fallback to key
-  return `@fields.${field.key}`;
+  // For custom fields, use key with fallbacks
+  return `@fields.${field.key || field.id || field.value}`;
 };
 
 export const split_by_contact_field: NodeConfig = {
@@ -98,7 +98,18 @@ export const split_by_contact_field: NodeConfig = {
   },
   toFormData: (node: Node, nodeUI?: any) => {
     // Get the field from the UI config operand (source of truth)
-    const field = nodeUI?.config?.operand || CONTACT_PROPERTIES.name;
+    const operand = nodeUI?.config?.operand || CONTACT_PROPERTIES.name;
+
+    // Normalize the field object to include properties expected by
+    // the Select component (valueKey: 'key') and getOperandForField.
+    // toUIConfig saves only { id, name, type }, so we need to add
+    // 'key' for custom fields and 'value' for static option matching.
+    const field = { ...operand };
+    if (field.type === 'field') {
+      if (!field.key) field.key = field.id;
+    } else {
+      if (!field.value) field.value = field.id;
+    }
 
     // Extract rules from router cases using shared function
     const rules = casesToFormRules(node);

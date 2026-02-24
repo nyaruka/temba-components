@@ -53,7 +53,10 @@ export const add_input_labels: ActionConfig = {
     return {
       uuid: formData.uuid,
       type: 'add_input_labels',
-      labels: formData.labels || []
+      labels: (formData.labels || []).map((l: any) => ({
+        uuid: l.uuid,
+        name: l.name
+      }))
     };
   }
 };

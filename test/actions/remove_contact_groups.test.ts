@@ -262,4 +262,33 @@ describe('remove_contact_groups action config', () => {
       expect(Object.keys(result.errors)).to.have.length(0);
     });
   });
+
+  describe('metadata stripping', () => {
+    it('should strip superfluous API metadata from groups', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        all_groups: false,
+        groups: [
+          {
+            uuid: 'group-1',
+            name: 'VIP Customers',
+            query: 'status = vip',
+            status: 'ready',
+            count: 150,
+            system: false
+          }
+        ]
+      };
+
+      const action = remove_contact_groups.fromFormData(
+        formData
+      ) as RemoveFromGroup;
+
+      expect(action.groups).to.have.lengthOf(1);
+      expect(action.groups[0]).to.deep.equal({
+        uuid: 'group-1',
+        name: 'VIP Customers'
+      });
+    });
+  });
 });

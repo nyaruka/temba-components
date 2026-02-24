@@ -70,8 +70,12 @@ export const send_broadcast: ActionConfig = {
 
   fromFormData: (formData: FormData): SendBroadcast => {
     const recipients = formData.recipients || [];
-    const contacts = recipients.filter((r: any) => !r.group);
-    const groups = recipients.filter((r: any) => r.group);
+    const contacts = recipients
+      .filter((r: any) => !r.group)
+      .map((c: any) => ({ uuid: c.uuid, name: c.name }));
+    const groups = recipients
+      .filter((r: any) => r.group)
+      .map((g: any) => ({ uuid: g.uuid, name: g.name }));
 
     const result: SendBroadcast = {
       uuid: formData.uuid,

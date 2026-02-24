@@ -86,4 +86,42 @@ describe('add_contact_groups action config', () => {
       'descriptive-group-names'
     );
   });
+
+  describe('metadata stripping', () => {
+    it('should strip superfluous API metadata from groups', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        groups: [
+          {
+            uuid: 'group-1',
+            name: 'VIP Customers',
+            query: 'status = vip',
+            status: 'ready',
+            count: 150,
+            system: false
+          },
+          {
+            uuid: 'group-2',
+            name: 'Beta Testers',
+            query: null,
+            status: 'ready',
+            count: 45,
+            system: false
+          }
+        ]
+      };
+
+      const action = add_contact_groups.fromFormData(formData) as AddToGroup;
+
+      expect(action.groups).to.have.lengthOf(2);
+      expect(action.groups[0]).to.deep.equal({
+        uuid: 'group-1',
+        name: 'VIP Customers'
+      });
+      expect(action.groups[1]).to.deep.equal({
+        uuid: 'group-2',
+        name: 'Beta Testers'
+      });
+    });
+  });
 });
