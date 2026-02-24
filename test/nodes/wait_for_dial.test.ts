@@ -13,7 +13,7 @@ describe('wait_for_dial node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(wait_for_dial.name).to.equal('Wait for Dial');
+      expect(wait_for_dial.name).to.equal('Redirect Call');
     });
 
     it('has correct type', () => {

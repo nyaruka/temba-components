@@ -32,7 +32,14 @@ describe('wait_for_digits node config', () => {
     });
 
     it('has layout configuration', () => {
-      expect(wait_for_digits.layout).to.deep.equal(['rules', 'result_name']);
+      expect(wait_for_digits.layout).to.deep.equal([
+        {
+          type: 'text',
+          text: 'Rules match against all digits pressed by the caller followed by the # sign.'
+        },
+        'rules',
+        'result_name'
+      ]);
     });
 
     it('has large dialog size', () => {

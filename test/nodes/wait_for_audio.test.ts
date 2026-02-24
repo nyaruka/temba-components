@@ -13,7 +13,7 @@ describe('wait_for_audio node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(wait_for_audio.name).to.equal('Wait for Audio');
+      expect(wait_for_audio.name).to.equal('Make Recording');
     });
 
     it('has correct type', () => {

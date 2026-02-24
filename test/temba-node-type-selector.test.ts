@@ -219,9 +219,9 @@ describe('temba-node-type-selector', () => {
     // voice flow should not have Wait for Response
     expect(titles).to.not.include('Wait for Response');
 
-    // but should have Wait for Digits and Wait for Menu Selection
+    // but should have Wait for Digits and Wait for Menu
     expect(titles).to.include('Wait for Digits');
-    expect(titles).to.include('Wait for Menu Selection');
+    expect(titles).to.include('Wait for Menu');
   });
 
   it('filters by features - AI feature enables AI splits', async () => {

@@ -13,7 +13,7 @@ describe('wait_for_menu node config', () => {
     helper.testBasicProperties();
 
     it('has correct name', () => {
-      expect(wait_for_menu.name).to.equal('Wait for Menu Selection');
+      expect(wait_for_menu.name).to.equal('Wait for Menu');
     });
 
     it('has correct type', () => {
