@@ -112,6 +112,7 @@ export class Dialog extends ResizeElement {
       .dialog-body {
         background: #fff;
         overflow-y: auto;
+        overflow-x: hidden;
         flex-grow: 1;
       }
 

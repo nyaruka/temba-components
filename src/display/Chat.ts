@@ -833,8 +833,14 @@ export class Chat extends RapidElement {
     }
 
     // for type equivalence, treat all non-message types as the same
-    const isMsg1 = msg1.type === 'msg_created' || msg1.type === 'msg_received';
-    const isMsg2 = msg2.type === 'msg_created' || msg2.type === 'msg_received';
+    const isMsg1 =
+      msg1.type === 'msg_created' ||
+      msg1.type === 'msg_received' ||
+      msg1.type === 'ivr_created';
+    const isMsg2 =
+      msg2.type === 'msg_created' ||
+      msg2.type === 'msg_received' ||
+      msg2.type === 'ivr_created';
     const typeMatch =
       isMsg1 && isMsg2 ? msg1.type === msg2.type : isMsg1 === isMsg2;
 
@@ -999,12 +1005,12 @@ export class Chat extends RapidElement {
 
     const name = currentMsg._user?.name;
 
+    const isMessageType =
+      currentMsg.type === 'msg_received' ||
+      currentMsg.type === 'msg_created' ||
+      currentMsg.type === 'ivr_created';
     const showAvatar =
-      this.avatars &&
-      (((currentMsg.type === 'msg_received' ||
-        currentMsg.type === 'msg_created') &&
-        this.agent) ||
-        !incoming);
+      this.avatars && ((isMessageType && this.agent) || !incoming);
 
     const isSystem = !currentMsg._user?.uuid;
 

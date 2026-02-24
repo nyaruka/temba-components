@@ -8,8 +8,11 @@ import {
   CheckboxFieldConfig,
   MessageEditorFieldConfig,
   KeyValueFieldConfig,
-  ArrayFieldConfig
+  ArrayFieldConfig,
+  MediaFieldConfig
 } from '../flow/types';
+import { Attachment } from '../interfaces';
+import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
 
 /**
  * FieldRenderer provides a consistent way to render field configurations
@@ -86,6 +89,14 @@ export class FieldRenderer {
         return FieldRenderer.renderMessageEditor(
           fieldName,
           config as MessageEditorFieldConfig,
+          value,
+          context
+        );
+
+      case 'media':
+        return FieldRenderer.renderMedia(
+          fieldName,
+          config as MediaFieldConfig,
           value,
           context
         );
@@ -365,6 +376,58 @@ export class FieldRenderer {
         ? html`<div class="field-errors">${errors.join(', ')}</div>`
         : ''}
     </div>`;
+  }
+
+  private static urlToAttachments(url: string): Attachment[] {
+    if (!url || !url.trim()) return [];
+    const filename = url.split('/').pop() || 'recording';
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    const contentTypes: Record<string, string> = {
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      ogg: 'audio/ogg',
+      m4a: 'audio/mp4'
+    };
+    return [
+      {
+        uuid: '',
+        content_type: contentTypes[ext] || 'audio/mpeg',
+        url,
+        filename,
+        size: 0,
+        error: ''
+      }
+    ];
+  }
+
+  private static renderMedia(
+    fieldName: string,
+    config: MediaFieldConfig,
+    value: any,
+    context: FieldRenderContext
+  ): TemplateResult {
+    const { onChange, showLabel = true } = context;
+    const endpoint = config.endpoint || DEFAULT_MEDIA_ENDPOINT;
+    const attachments = FieldRenderer.urlToAttachments(value);
+
+    return html`
+      <div>
+        ${showLabel && config.label
+          ? html`<label
+              style="margin-bottom: 5px; margin-left: 4px; display: block; font-weight: 400; font-size: var(--label-size); letter-spacing: 0.05em; line-height: normal; color: var(--color-label, #777);"
+              >${config.label}</label
+            >`
+          : ''}
+        <temba-media-picker
+          name="${fieldName}"
+          accept="${config.accept || ''}"
+          endpoint="${endpoint}"
+          max="1"
+          .attachments="${attachments}"
+          @change="${onChange || (() => {})}"
+        ></temba-media-picker>
+      </div>
+    `;
   }
 
   private static renderMessageEditor(

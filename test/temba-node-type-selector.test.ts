@@ -163,9 +163,9 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // voice flow should have Say Message and Play Audio
+    // voice flow should have Say Message and Play Recording
     expect(titles).to.include('Say Message');
-    expect(titles).to.include('Play Audio');
+    expect(titles).to.include('Play Recording');
   });
 
   it('filters actions by flow type - message flow should not show voice-only actions', async () => {
@@ -181,9 +181,9 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // message flow should not have Say Message or Play Audio
+    // message flow should not have Say Message or Play Recording
     expect(titles).to.not.include('Say Message');
-    expect(titles).to.not.include('Play Audio');
+    expect(titles).to.not.include('Play Recording');
   });
 
   it('filters splits by flow type - message flow should show wait for response', async () => {
@@ -219,9 +219,9 @@ describe('temba-node-type-selector', () => {
     // voice flow should not have Wait for Response
     expect(titles).to.not.include('Wait for Response');
 
-    // but should have Wait for Digits and Wait for Menu Selection
+    // but should have Wait for Digits and Wait for Menu
     expect(titles).to.include('Wait for Digits');
-    expect(titles).to.include('Wait for Menu Selection');
+    expect(titles).to.include('Wait for Menu');
   });
 
   it('filters by features - AI feature enables AI splits', async () => {

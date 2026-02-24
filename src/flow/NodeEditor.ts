@@ -126,10 +126,27 @@ export class NodeEditor extends RapidElement {
         color: var(--color-label, #777);
       }
 
+      .form-row-inline-label {
+        font-size: 20px;
+        font-weight: 300;
+        color: #ccc;
+        min-width: 20px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+      }
+
       .form-row-help {
         font-size: 12px;
         color: #666;
         margin-top: 6px;
+      }
+
+      .form-text {
+        color: #666;
+        font-size: 13px;
       }
 
       .form-group {
@@ -1496,6 +1513,11 @@ export class NodeEditor extends RapidElement {
         } else if (fieldName && config.type === 'message-editor') {
           // Special handling for message editor
           this.handleMessageEditorChange(fieldName, e);
+        } else if (fieldName && config.type === 'media') {
+          // Extract URL from media picker's attachment
+          const picker = e.target as any;
+          const url = picker.attachments?.[0]?.url || '';
+          this.handleNewFieldChange(fieldName, url);
         } else {
           // Default handling for most field types
           this.handleFormFieldChange(fieldName, e);
@@ -1609,6 +1631,12 @@ export class NodeEditor extends RapidElement {
       case 'group':
         return this.renderGroup(item, config, renderedFields);
 
+      case 'spacer':
+        return html``;
+
+      case 'text':
+        return html`<div class="form-text">${item.text}</div>`;
+
       default:
         return html``;
     }
@@ -1619,7 +1647,14 @@ export class NodeEditor extends RapidElement {
     config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
-    const { items, gap = '1rem', label, helpText } = rowConfig;
+    const {
+      items,
+      gap = '1rem',
+      label,
+      helpText,
+      inlineLabels,
+      marginBottom
+    } = rowConfig;
 
     // Collect all fields from this row for width calculations
     const fieldsInRow = this.collectFieldsFromItems(items);
@@ -1653,8 +1688,18 @@ export class NodeEditor extends RapidElement {
     });
 
     const rowContent = html`
-      <div class="form-row" style="display: flex; gap: ${gap};">
+      <div
+        class="form-row"
+        style="display: flex; gap: ${gap};${marginBottom
+          ? ` margin-bottom: ${marginBottom};`
+          : ''}"
+      >
         ${items.map((item) => {
+          // Spacer items render as empty flex children
+          if (typeof item !== 'string' && item.type === 'spacer') {
+            return html`<div style="flex: 1 1 0;"></div>`;
+          }
+
           // Get the field name from the item
           const fieldName =
             typeof item === 'string'
@@ -1675,10 +1720,22 @@ export class NodeEditor extends RapidElement {
             renderedFields
           );
 
+          // When inlineLabels is provided, render the label inline to the left
+          const inlineLabel =
+            inlineLabels && fieldName ? inlineLabels[fieldName] : null;
+
           // Wrap in a div with flex style if we have a flex style
-          return flexStyle
-            ? html`<div style="${flexStyle}">${itemContent}</div>`
-            : itemContent;
+          if (flexStyle) {
+            return inlineLabel
+              ? html`<div
+                  style="${flexStyle} display: flex; align-items: center; gap: 0.35rem;"
+                >
+                  <span class="form-row-inline-label">${inlineLabel}</span>
+                  <div style="flex: 1 1 0; min-width: 0;">${itemContent}</div>
+                </div>`
+              : html`<div style="${flexStyle}">${itemContent}</div>`;
+          }
+          return itemContent;
         })}
       </div>
     `;

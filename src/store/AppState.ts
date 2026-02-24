@@ -44,6 +44,34 @@ function reclassifyTerminalNodes(definition: FlowDefinition): void {
 }
 
 /**
+ * Reclassify wait_for_response nodes that are actually voice-specific wait types.
+ * The server stores all voice waits as wait_for_response, but we detect the specific
+ * type from the router's wait hint:
+ * - hint.type === 'digits' && hint.count === 1 → wait_for_menu
+ * - hint.type === 'digits' (no count) → wait_for_digits
+ * - hint.type === 'audio' → wait_for_audio
+ */
+function reclassifyVoiceWaitNodes(definition: FlowDefinition): void {
+  if (!definition?.nodes || !definition?._ui?.nodes) return;
+
+  for (const node of definition.nodes) {
+    const nodeUI = definition._ui.nodes[node.uuid];
+    if (!nodeUI || nodeUI.type !== 'wait_for_response') continue;
+
+    const hint = node.router?.wait?.hint;
+    if (!hint) continue;
+
+    if (hint.type === 'digits' && hint.count === 1) {
+      nodeUI.type = 'wait_for_menu' as any;
+    } else if (hint.type === 'digits') {
+      nodeUI.type = 'wait_for_digits' as any;
+    } else if (hint.type === 'audio') {
+      nodeUI.type = 'wait_for_audio' as any;
+    }
+  }
+}
+
+/**
  * Sorts nodes by their position - first by y (top), then by x (left)
  */
 function sortNodesByPosition(
@@ -264,6 +292,7 @@ export const zustand = createStore<AppState>()(
         }
         const data = (await response.json()) as FlowContents;
         reclassifyTerminalNodes(data.definition);
+        reclassifyVoiceWaitNodes(data.definition);
         const issueMaps = buildIssueMaps(data.info?.issues);
         set({
           flowInfo: data.info,
@@ -369,6 +398,7 @@ export const zustand = createStore<AppState>()(
           state.isTranslating = false;
 
           reclassifyTerminalNodes(state.flowDefinition);
+          reclassifyVoiceWaitNodes(state.flowDefinition);
 
           // Sort nodes by position when loading flow
           if (state.flowDefinition?.nodes && state.flowDefinition?._ui?.nodes) {

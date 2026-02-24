@@ -648,13 +648,15 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
       }
 
       .removable .remove-btn {
-        visibility: hidden;
+        opacity: 0.3;
         cursor: default;
+        pointer-events: none;
       }
 
       .removable .drag-handle {
-        visibility: hidden;
+        opacity: 0.3;
         cursor: default;
+        pointer-events: none;
       }
 
       .drag-handle {

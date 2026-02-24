@@ -114,6 +114,8 @@ export interface NodeConfig extends FormConfig {
     rules?: {
       type:
         | 'has_number_between'
+        | 'has_number_eq'
+        | 'has_only_text'
         | 'has_string'
         | 'has_value'
         | 'has_not_value'
@@ -253,6 +255,12 @@ export interface MessageEditorFieldConfig extends BaseFieldConfig {
   disableCompletion?: boolean;
 }
 
+export interface MediaFieldConfig extends BaseFieldConfig {
+  type: 'media';
+  accept?: string; // MIME filter, e.g. 'audio/*'
+  endpoint?: string; // upload endpoint, defaults to DEFAULT_MEDIA_ENDPOINT
+}
+
 export type FieldConfig =
   | TextFieldConfig
   | TextareaFieldConfig
@@ -260,7 +268,8 @@ export type FieldConfig =
   | KeyValueFieldConfig
   | ArrayFieldConfig
   | CheckboxFieldConfig
-  | MessageEditorFieldConfig;
+  | MessageEditorFieldConfig
+  | MediaFieldConfig;
 
 // Layout configurations for better form organization
 // Recursive layout system - any layout item can contain other layout items
@@ -276,6 +285,8 @@ export interface RowLayoutConfig {
   gap?: string; // CSS gap value, defaults to '1rem'
   label?: string; // optional label for the entire row
   helpText?: string; // optional help text for the entire row
+  inlineLabels?: Record<string, string>; // map of field name to inline label text
+  marginBottom?: string; // CSS margin-bottom for spacing below the row
 }
 
 export interface GroupLayoutConfig {
@@ -288,10 +299,21 @@ export interface GroupLayoutConfig {
   getGroupValueCount?: (formData: FormData) => number; // optional function to get count for bubble display
 }
 
+export interface SpacerLayoutConfig {
+  type: 'spacer';
+}
+
+export interface TextLayoutConfig {
+  type: 'text';
+  text: string;
+}
+
 export type LayoutItem =
   | FieldItemConfig
   | RowLayoutConfig
   | GroupLayoutConfig
+  | SpacerLayoutConfig
+  | TextLayoutConfig
   | string; // string is shorthand for field
 
 /**
