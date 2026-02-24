@@ -1136,6 +1136,106 @@ describe('split_by_run_result node config', () => {
     });
   });
 
+  describe('toFormData normalizes operand from toUIConfig', () => {
+    it('should handle round-trip when operand has only id (no value)', () => {
+      // Reproduces the bug: toUIConfig saves { id, name, type } without 'value',
+      // then toFormData loads it, and fromFormData must still produce a valid operand.
+      const originalNode: Node = {
+        uuid: 'test-node-uuid',
+        actions: [],
+        router: {
+          type: 'switch',
+          operand: '@results.favorite_color',
+          cases: [
+            {
+              uuid: 'case-1',
+              type: 'has_phrase',
+              arguments: ['red'],
+              category_uuid: 'cat-1'
+            }
+          ],
+          categories: [
+            { uuid: 'cat-1', name: 'Red', exit_uuid: 'exit-1' },
+            { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+          ],
+          default_category_uuid: 'cat-other',
+          result_name: ''
+        },
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-other', destination_uuid: null }
+        ]
+      };
+
+      // nodeUI as saved by toUIConfig - note: NO 'value' property, only 'id'
+      const nodeUI = {
+        config: {
+          operand: {
+            id: 'favorite_color',
+            name: 'Favorite Color',
+            type: 'result'
+          }
+        }
+      };
+
+      // Step 1: toFormData (opening the editor)
+      const formData = split_by_run_result.toFormData!(originalNode, nodeUI);
+
+      // The result should have 'value' normalized from 'id'
+      expect(formData.result[0].value).to.equal('favorite_color');
+
+      // Step 2: fromFormData (saving without re-selecting the result)
+      const updatedNode = split_by_run_result.fromFormData!(
+        formData,
+        originalNode
+      );
+
+      // The operand must NOT be @results.undefined
+      expect(updatedNode.router!.operand).to.equal('@results.favorite_color');
+    });
+
+    it('should handle round-trip with delimiter when operand has only id', () => {
+      const originalNode: Node = {
+        uuid: 'test-node-uuid',
+        actions: [],
+        router: {
+          type: 'switch',
+          operand: '@(field(results.favorite_color, 2, "."))',
+          cases: [],
+          categories: [
+            { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+          ],
+          default_category_uuid: 'cat-other',
+          result_name: ''
+        },
+        exits: [{ uuid: 'exit-other', destination_uuid: null }]
+      };
+
+      const nodeUI = {
+        config: {
+          operand: {
+            id: 'favorite_color',
+            name: 'Favorite Color',
+            type: 'result'
+          },
+          index: 2,
+          delimiter: '.'
+        }
+      };
+
+      const formData = split_by_run_result.toFormData!(originalNode, nodeUI);
+      expect(formData.result[0].value).to.equal('favorite_color');
+
+      const updatedNode = split_by_run_result.fromFormData!(
+        formData,
+        originalNode
+      );
+      expect(updatedNode.router!.operand).to.equal(
+        '@(field(results.favorite_color, 2, "."))'
+      );
+    });
+  });
+
   describe('backwards compatibility', () => {
     it('should support split_by_run_result_delimited type from old flows', () => {
       // Verify that split_by_run_result_delimited points to the same config as split_by_run_result

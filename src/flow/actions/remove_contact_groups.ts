@@ -69,7 +69,12 @@ export const remove_contact_groups: ActionConfig = {
     return {
       uuid: formData.uuid,
       type: 'remove_contact_groups',
-      groups: formData.all_groups ? [] : formData.groups || [],
+      groups: formData.all_groups
+        ? []
+        : (formData.groups || []).map((g: any) => ({
+            uuid: g.uuid,
+            name: g.name
+          })),
       all_groups: formData.all_groups || false
     };
   }

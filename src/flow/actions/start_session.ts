@@ -186,7 +186,10 @@ export const start_session: ActionConfig = {
     } = {
       uuid: formData.uuid,
       type: 'start_session',
-      flow: formData.flow[0],
+      flow: {
+        uuid: formData.flow[0].uuid || formData.flow[0].value,
+        name: formData.flow[0].name
+      },
       groups: [],
       contacts: []
     };
@@ -202,8 +205,12 @@ export const start_session: ActionConfig = {
     } else {
       // Manual selection - separate contacts and groups
       const recipients = formData.recipients || [];
-      action.contacts = recipients.filter((r: any) => !r.group);
-      action.groups = recipients.filter((r: any) => r.group);
+      action.contacts = recipients
+        .filter((r: any) => !r.group)
+        .map((c: any) => ({ uuid: c.uuid, name: c.name }));
+      action.groups = recipients
+        .filter((r: any) => r.group)
+        .map((g: any) => ({ uuid: g.uuid, name: g.name }));
     }
 
     // Add exclusions if set

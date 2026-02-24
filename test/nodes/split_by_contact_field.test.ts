@@ -448,4 +448,63 @@ describe('split_by_contact_field', () => {
     expect(uiConfig.operand.name).to.equal('Facebook');
     expect(uiConfig.operand.type).to.equal('scheme');
   });
+
+  it('should handle round-trip for custom field without re-selecting', () => {
+    // Reproduces the bug: toUIConfig saves { id, name, type } without 'key',
+    // then toFormData loads it, and fromFormData must still produce a valid operand.
+    const originalNode: Node = {
+      uuid: 'test-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        cases: [
+          {
+            uuid: 'case-1',
+            type: 'has_text',
+            arguments: ['red'],
+            category_uuid: 'cat-1'
+          }
+        ],
+        categories: [
+          { uuid: 'cat-1', name: 'Red', exit_uuid: 'exit-1' },
+          { uuid: 'cat-other', name: 'Other', exit_uuid: 'exit-other' }
+        ],
+        default_category_uuid: 'cat-other',
+        operand: '@fields.favorite_color',
+        result_name: ''
+      },
+      exits: [
+        { uuid: 'exit-1', destination_uuid: null },
+        { uuid: 'exit-other', destination_uuid: null }
+      ]
+    };
+
+    // nodeUI as saved by toUIConfig - note: NO 'key' property, only 'id'
+    const nodeUI = {
+      type: 'split_by_contact_field',
+      position: { left: 0, top: 0 },
+      config: {
+        operand: {
+          id: 'favorite_color',
+          name: 'Favorite Color',
+          type: 'field'
+        }
+      }
+    };
+
+    // Step 1: toFormData (opening the editor)
+    const formData = split_by_contact_field.toFormData!(originalNode, nodeUI);
+
+    // The field should have 'key' normalized from 'id'
+    expect(formData.field[0].key).to.equal('favorite_color');
+
+    // Step 2: fromFormData (saving without re-selecting the field)
+    const updatedNode = split_by_contact_field.fromFormData!(
+      formData,
+      originalNode
+    );
+
+    // The operand must NOT be @fields.undefined
+    expect(updatedNode.router!.operand).to.equal('@fields.favorite_color');
+  });
 });

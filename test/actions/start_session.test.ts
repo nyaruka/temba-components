@@ -148,4 +148,79 @@ describe('start_session action config', () => {
     expect(result.valid).to.be.true;
     expect(Object.keys(result.errors).length).to.equal(0);
   });
+
+  describe('metadata stripping', () => {
+    it('should strip superfluous API metadata from flow', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        flow: [
+          {
+            uuid: 'flow-1',
+            name: 'Registration Flow',
+            type: 'message',
+            archived: false,
+            labels: [],
+            expires: 720,
+            runs: { active: 0, waiting: 5, completed: 100, interrupted: 2, expired: 1, failed: 0 },
+            results: [],
+            parent_refs: [],
+            created_on: '2024-01-01T00:00:00.000Z',
+            modified_on: '2024-06-15T12:00:00.000Z'
+          }
+        ],
+        startType: [{ value: 'create', name: 'Create a new contact' }]
+      };
+
+      const action = start_session.fromFormData(formData) as StartSession;
+
+      expect(action.flow).to.deep.equal({
+        uuid: 'flow-1',
+        name: 'Registration Flow'
+      });
+    });
+
+    it('should strip superfluous API metadata from contacts and groups', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        flow: [{ uuid: 'flow-1', name: 'Test Flow' }],
+        startType: [{ value: 'manual', name: 'Select recipients manually' }],
+        recipients: [
+          {
+            uuid: 'contact-1',
+            name: 'Alice',
+            status: 'active',
+            language: 'eng',
+            urns: ['tel:+250788123456'],
+            groups: [{ uuid: 'g-1', name: 'G1' }],
+            fields: { age: '30' },
+            created_on: '2024-01-01T00:00:00.000Z',
+            modified_on: '2024-06-15T12:00:00.000Z',
+            last_seen_on: '2024-06-14T10:00:00.000Z'
+          },
+          {
+            uuid: 'group-1',
+            name: 'VIP',
+            group: true,
+            query: 'status = vip',
+            status: 'ready',
+            count: 42,
+            system: false
+          }
+        ]
+      };
+
+      const action = start_session.fromFormData(formData) as StartSession;
+
+      expect(action.contacts).to.have.lengthOf(1);
+      expect(action.contacts[0]).to.deep.equal({
+        uuid: 'contact-1',
+        name: 'Alice'
+      });
+      expect(action.groups).to.have.lengthOf(1);
+      expect(action.groups[0]).to.deep.equal({
+        uuid: 'group-1',
+        name: 'VIP'
+      });
+    });
+  });
 });

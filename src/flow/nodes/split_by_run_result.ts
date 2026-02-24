@@ -135,7 +135,12 @@ export const split_by_run_result: NodeConfig = {
   },
   toFormData: (node: Node, nodeUI?: any) => {
     // Get the result from the UI config operand (source of truth)
-    const result = nodeUI?.config?.operand;
+    // Normalize: toUIConfig saves { id, name, type } but the Select component
+    // (valueKey: 'value') and fromFormData expect a 'value' property.
+    const savedOperand = nodeUI?.config?.operand;
+    const result = savedOperand
+      ? { ...savedOperand, value: savedOperand.value || savedOperand.id }
+      : null;
 
     // Extract rules from router cases using shared function
     const rules = casesToFormRules(node);
@@ -180,6 +185,7 @@ export const split_by_run_result: NodeConfig = {
 
     // Build operand based on whether delimiter is selected
     let operand: string;
+    const resultKey = selectedResult.value || selectedResult.id;
     const delimitBy = formData.delimit_by?.[0]?.value;
     const hasDelimiter = delimitBy !== undefined && delimitBy !== '';
 
@@ -188,10 +194,10 @@ export const split_by_run_result: NodeConfig = {
       const delimitIndex = formData.delimit_index?.[0]?.value ?? '0';
 
       // Build operand with field() function
-      operand = `@(field(results.${selectedResult.value}, ${delimitIndex}, "${delimitBy}"))`;
+      operand = `@(field(results.${resultKey}, ${delimitIndex}, "${delimitBy}"))`;
     } else {
       // Standard operand without delimiter
-      operand = `@results.${selectedResult.value}`;
+      operand = `@results.${resultKey}`;
     }
 
     // Get user rules using shared extraction function

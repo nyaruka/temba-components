@@ -12,11 +12,13 @@ export const set_contact_status: ActionConfig = {
   },
   toFormData: (action: SetContactStatus) => {
     return {
-      ...action,
-      status: {
-        name: titleCase(action.status || 'active'),
-        value: action.status || 'active'
-      }
+      uuid: action.uuid,
+      status: [
+        {
+          name: titleCase(action.status || 'active'),
+          value: action.status || 'active'
+        }
+      ]
     };
   },
   fromFormData: (formData: FormData): SetContactStatus => {
