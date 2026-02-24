@@ -19,7 +19,13 @@ import {
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { CustomEventType, Workspace } from '../interfaces';
-import { generateUUID, postJSON, fetchResults, getClasses } from '../utils';
+import {
+  generateUUID,
+  postJSON,
+  fetchResults,
+  getClasses,
+  WebResponse
+} from '../utils';
 import {
   formatIssueMessage,
   getNodeBounds,
@@ -72,7 +78,7 @@ export function findNodeForExit(
   return null;
 }
 
-const SAVE_QUIET_TIME = 500;
+const SAVE_QUIET_TIME = 2000;
 
 export interface DraggableItem {
   uuid: string;
@@ -260,6 +266,12 @@ export class Editor extends RapidElement {
   @state()
   private isLoadingRevisions = false;
 
+  @state()
+  private isSaving = false;
+
+  @state()
+  private saveError: string | null = null;
+
   private preRevertState: {
     definition: FlowDefinition;
     dirtyDate: Date | null;
@@ -361,6 +373,13 @@ export class Editor extends RapidElement {
 
   static get styles() {
     return css`
+      #editor-container {
+        position: relative;
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
       #editor {
         overflow: scroll;
         flex: 1;
@@ -839,6 +858,21 @@ export class Editor extends RapidElement {
         color: tomato;
         flex-shrink: 0;
       }
+
+      .save-indicator {
+        position: absolute;
+        top: 8px;
+        right: 16px;
+        padding: 6px 10px;
+        z-index: 10000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s ease-in-out;
+      }
+
+      .save-indicator.visible {
+        opacity: 1;
+      }
     `;
   }
 
@@ -1018,8 +1052,14 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
+        this.isSaving = true;
         this.debouncedSave();
       }
+    }
+
+    if (changes.has('saveError') && this.saveError) {
+      this.showSaveErrorDialog(this.saveError);
+      this.saveError = null;
     }
 
     if (changes.has('languageCode')) {
@@ -1067,10 +1107,16 @@ export class Editor extends RapidElement {
 
   private saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
     const definition = definitionOverride || this.definition;
-    // post the flow definition to the server
+    this.isSaving = true;
+
     return getStore()
       .postJSON(`/flow/revisions/${this.flow}/`, definition)
       .then((response) => {
+        if (response.status < 200 || response.status >= 300) {
+          this.saveError = this.extractErrorMessage(response);
+          return;
+        }
+
         // Update flow info and revision with the response data
         if (response.json) {
           const state = getStore().getState();
@@ -1088,12 +1134,56 @@ export class Editor extends RapidElement {
             this.fetchRevisions();
           }
         }
+
+        getStore().getState().setDirtyDate(null);
       })
       .catch((error) => {
         console.error('Failed to save flow:', error);
+        if (error instanceof Response) {
+          this.saveError = `Server error (${error.status}). Your changes have not been saved.`;
+        } else {
+          this.saveError =
+            'Unable to reach the server. Please check your connection and try again.';
+        }
+      })
+      .finally(() => {
+        this.isSaving = false;
       });
+  }
 
-    getStore().getState().setDirtyDate(null);
+  private extractErrorMessage(response: WebResponse): string {
+    if (response.json) {
+      if (typeof response.json.detail === 'string') {
+        return response.json.detail;
+      }
+      if (typeof response.json.error === 'string') {
+        return response.json.error;
+      }
+      if (typeof response.json.description === 'string') {
+        return response.json.description;
+      }
+    }
+    return `Save failed with status ${response.status}.`;
+  }
+
+  private showSaveErrorDialog(message: string): void {
+    const dialog = document.createElement('temba-dialog') as Dialog;
+    dialog.header = 'Save Failed';
+    dialog.primaryButtonName = '';
+    dialog.cancelButtonName = 'Dismiss';
+
+    const content = document.createElement('div');
+    content.style.cssText =
+      'padding: 20px; font-size: 14px; line-height: 1.5;';
+    content.textContent = message;
+    dialog.appendChild(content);
+
+    document.body.appendChild(dialog);
+    dialog.open = true;
+
+    dialog.addEventListener('temba-dialog-hidden', () => {
+      document.body.removeChild(dialog);
+    });
   }
 
   private startActivityFetching(): void {
@@ -3834,12 +3924,13 @@ export class Editor extends RapidElement {
     return html`${style} ${this.renderIssuesWindow()}
       ${this.renderRevisionsWindow()} ${this.renderLocalizationWindow()}
       ${this.renderAutoTranslateDialog()}
-      <div id="editor">
-        <div
-          id="grid"
-          class="${this.viewingRevision ? 'viewing-revision' : ''}"
-          style="min-width:100%;width:${this.canvasSize.width}px; height:${this
-            .canvasSize.height}px"
+      <div id="editor-container">
+        <div id="editor">
+          <div
+            id="grid"
+            class="${this.viewingRevision ? 'viewing-revision' : ''}"
+            style="min-width:100%;width:${this.canvasSize.width}px; height:${this
+              .canvasSize.height}px"
         >
           <div
             id="canvas"
@@ -3914,7 +4005,11 @@ export class Editor extends RapidElement {
             )}
             ${this.renderSelectionBox()} ${this.renderCanvasDropPreview()}
             ${this.renderConnectionPlaceholder()}
+            </div>
           </div>
+        </div>
+        <div class="save-indicator ${this.isSaving ? 'visible' : ''}">
+          <temba-loading units="3" size="8"></temba-loading>
         </div>
       </div>
 
