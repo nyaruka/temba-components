@@ -1,8 +1,14 @@
 import { html, TemplateResult } from 'lit-html';
 
 // SVG paths for play and pause icons
-const PLAY_SVG = html`<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>`;
-const PAUSE_SVG = html`<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>`;
+const PLAY_SVG = html`<svg
+  viewBox="0 0 24 24"
+  width="16"
+  height="16"
+  fill="currentColor"
+>
+  <polygon points="6,3 20,12 6,21" />
+</svg>`;
 
 // Track active audio so only one plays at a time
 let activeAudio: HTMLAudioElement | null = null;
@@ -23,7 +29,9 @@ function stopActive() {
 function resetPlayer(container: HTMLElement) {
   const btn = container.querySelector('.audio-play-btn') as HTMLElement;
   const progress = container.querySelector('.audio-progress') as HTMLElement;
-  if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>';
+  if (btn)
+    btn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>';
   if (progress) progress.style.width = '0%';
 }
 

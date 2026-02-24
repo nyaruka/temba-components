@@ -1643,8 +1643,14 @@ export class NodeEditor extends RapidElement {
     config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
-    const { items, gap = '1rem', label, helpText, inlineLabels, marginBottom } =
-      rowConfig;
+    const {
+      items,
+      gap = '1rem',
+      label,
+      helpText,
+      inlineLabels,
+      marginBottom
+    } = rowConfig;
 
     // Collect all fields from this row for width calculations
     const fieldsInRow = this.collectFieldsFromItems(items);
@@ -1678,7 +1684,12 @@ export class NodeEditor extends RapidElement {
     });
 
     const rowContent = html`
-      <div class="form-row" style="display: flex; gap: ${gap};${marginBottom ? ` margin-bottom: ${marginBottom};` : ''}">
+      <div
+        class="form-row"
+        style="display: flex; gap: ${gap};${marginBottom
+          ? ` margin-bottom: ${marginBottom};`
+          : ''}"
+      >
         ${items.map((item) => {
           // Spacer items render as empty flex children
           if (typeof item !== 'string' && item.type === 'spacer') {

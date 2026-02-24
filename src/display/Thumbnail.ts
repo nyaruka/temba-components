@@ -361,7 +361,9 @@ export class Thumbnail extends RapidElement {
       <div
         @click=${this.handleThumbnailClicked.bind(this)}
         class="${getClasses({ wrapper: true, zoom: this.zoom })}"
-        style="${this.contentType === ThumbnailContentType.AUDIO ? 'cursor: default;' : ''}"
+        style="${this.contentType === ThumbnailContentType.AUDIO
+          ? 'cursor: default;'
+          : ''}"
         url=${this.url}
       >
         ${this.contentType === ThumbnailContentType.IMAGE && this.preview
@@ -375,13 +377,42 @@ export class Thumbnail extends RapidElement {
           ? html`<div class="audio-player">
               <div class="audio-play-btn" @click=${this.handleAudioPlayClick}>
                 ${this.audioPlaying
-                  ? html`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>`
-                  : html`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>`}
+                  ? html`<svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="currentColor"
+                    >
+                      <rect x="5" y="3" width="4" height="18" />
+                      <rect x="15" y="3" width="4" height="18" />
+                    </svg>`
+                  : html`<svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="currentColor"
+                    >
+                      <polygon points="6,3 20,12 6,21" />
+                    </svg>`}
               </div>
-              <div class="audio-progress-bar" @click=${this.handleProgressClick}>
-                <div class="audio-progress-fill" style="width: ${this.audioProgress * 100}%"></div>
+              <div
+                class="audio-progress-bar"
+                @click=${this.handleProgressClick}
+              >
+                <div
+                  class="audio-progress-fill"
+                  style="width: ${this.audioProgress * 100}%"
+                ></div>
               </div>
-              <div class="audio-time">${this.audioDuration ? this.formatTime(this.audioPlaying || this.audioProgress > 0 ? this.audio?.currentTime || 0 : this.audioDuration) : ''}</div>
+              <div class="audio-time">
+                ${this.audioDuration
+                  ? this.formatTime(
+                      this.audioPlaying || this.audioProgress > 0
+                        ? this.audio?.currentTime || 0
+                        : this.audioDuration
+                    )
+                  : ''}
+              </div>
             </div>`
           : html`
               ${this.contentType === ThumbnailContentType.LOCATION

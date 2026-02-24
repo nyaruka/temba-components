@@ -45,7 +45,6 @@ export const OPERATORS: OperatorConfig[] = [
     categoryName: 'Has Text'
   },
 
-
   // Number operators
   {
     type: 'has_number',
@@ -181,7 +180,7 @@ export const OPERATORS: OperatorConfig[] = [
     type: 'has_pattern',
     name: 'matches regex',
     operands: 1
-  },
+  }
 ];
 
 // Get operators suitable for wait_for_response rules

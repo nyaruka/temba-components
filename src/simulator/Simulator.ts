@@ -1123,7 +1123,8 @@ export class Simulator extends RapidElement {
 
         // skip msg_created/ivr_created events without a proper msg property
         if (
-          (rawEvent.type === 'msg_created' || rawEvent.type === 'ivr_created') &&
+          (rawEvent.type === 'msg_created' ||
+            rawEvent.type === 'ivr_created') &&
           !(rawEvent as any).msg
         ) {
           continue;

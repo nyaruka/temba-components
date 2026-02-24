@@ -2,7 +2,6 @@ import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import {
-  resultNameField,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -13,12 +12,12 @@ export const wait_for_audio: NodeConfig = {
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   form: {
-    result_name:  {
+    result_name: {
       type: 'text',
       label: 'Result Name',
       required: false,
       placeholder: '(optional)',
-      helpText: 'The name to use to reference this result in the flow',
+      helpText: 'The name to use to reference this result in the flow'
     }
   },
   layout: ['result_name'],
