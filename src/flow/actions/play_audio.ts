@@ -21,10 +21,10 @@ export const play_audio: ActionConfig = {
   },
   form: {
     audio_url: {
-      type: 'media',
-      label: 'Recording',
+      type: 'text',
+      label: 'Recording URL',
       required: true,
-      accept: 'audio/*'
+      evaluated: true
     }
   },
   layout: ['audio_url'],
