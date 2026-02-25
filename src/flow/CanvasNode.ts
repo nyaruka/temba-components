@@ -175,7 +175,7 @@ export class CanvasNode extends RapidElement {
         z-index: 10;
         transition: all 100ms ease-in-out;
         align-self: center;
-        margin-right:0.15em;
+        margin-right: 0.3em;
         border: 0px solid red;
         width: 1em;
         pointer-events: auto; /* Ensure remove button can receive events */

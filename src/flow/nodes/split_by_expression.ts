@@ -34,7 +34,7 @@ export const split_by_expression: NodeConfig = {
     },
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),
-      'Define rules to categorize the expression result'
+      ''
     ),
     result_name: resultNameField
   },

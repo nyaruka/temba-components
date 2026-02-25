@@ -2183,12 +2183,12 @@ export class Editor extends RapidElement {
 
     const canvasMenu = this.querySelector('temba-canvas-menu') as CanvasMenu;
     if (canvasMenu) {
-      canvasMenu.show(
-        event.clientX,
-        event.clientY,
-        { x: nodeLeft, y: nodeTop },
-        false
-      );
+      const button = event.currentTarget as HTMLElement;
+      const rect = button.getBoundingClientRect();
+      const menuWidth = 265;
+      const menuX = rect.left + rect.width / 2 - menuWidth / 2;
+      const menuY = rect.bottom + 8;
+      canvasMenu.show(menuX, menuY, { x: nodeLeft, y: nodeTop }, false);
     }
   }
 
