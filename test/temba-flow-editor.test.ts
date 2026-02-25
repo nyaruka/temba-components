@@ -2,6 +2,7 @@ import { html, fixture, expect } from '@open-wc/testing';
 import { Editor } from '../src/flow/Editor';
 import { Plumber } from '../src/flow/Plumber';
 import { stub, restore } from 'sinon';
+import { zustand } from '../src/store/AppState';
 
 // Register the component
 customElements.define('temba-flow-editor', Editor);
@@ -820,6 +821,205 @@ describe('Editor', () => {
       expect(flowNodes.length).to.equal(1);
       expect(flowNodes[0].getAttribute('uuid')).to.equal('node-2');
       expect(flowNodes[0].classList.contains('flow-start')).to.be.true;
+    });
+  });
+
+  describe('save feedback', () => {
+    let mockPostJSON: any;
+    let storeElement: HTMLElement;
+
+    before(() => {
+      // Create a mock temba-store element that getStore() will find
+      // Use the real zustand getState so all store interactions work
+      storeElement = document.createElement('temba-store');
+      (storeElement as any).getState = () => zustand.getState();
+      document.body.appendChild(storeElement);
+    });
+
+    after(() => {
+      storeElement.remove();
+    });
+
+    beforeEach(() => {
+      mockPostJSON = stub();
+      (storeElement as any).postJSON = mockPostJSON;
+    });
+
+    afterEach(() => {
+      // Clean up any dialogs left in the DOM
+      document.querySelectorAll('temba-dialog').forEach((d) => d.remove());
+    });
+
+    it('sets isSaving when dirtyDate changes', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).isSaving = false;
+
+      // Simulate a dirtyDate change via updated()
+      (editor as any).dirtyDate = new Date();
+      const changes = new Map();
+      changes.set('dirtyDate', null);
+      (editor as any).updated(changes);
+
+      expect((editor as any).isSaving).to.be.true;
+    });
+
+    it('renders save indicator with visible class when saving', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).isSaving = true;
+      await editor.updateComplete;
+
+      const indicator = editor.querySelector('.save-indicator');
+      expect(indicator).to.exist;
+      expect(indicator.classList.contains('visible')).to.be.true;
+    });
+
+    it('save indicator is not visible when not saving', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).canvasSize = { width: 800, height: 600 };
+      (editor as any).isSaving = false;
+      await editor.updateComplete;
+
+      const indicator = editor.querySelector('.save-indicator');
+      expect(indicator).to.exist;
+      expect(indicator.classList.contains('visible')).to.be.false;
+    });
+
+    it('clears isSaving after successful save', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      editor.flow = 'test-flow';
+      (editor as any).definition = { nodes: [], _ui: { nodes: {} } };
+
+      mockPostJSON.resolves({
+        status: 200,
+        json: {},
+        body: '{}',
+        headers: new Headers()
+      });
+
+      await (editor as any).saveChanges();
+
+      expect((editor as any).isSaving).to.be.false;
+    });
+
+    it('shows error dialog on non-200 response', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      editor.flow = 'test-flow';
+      (editor as any).definition = { nodes: [], _ui: { nodes: {} } };
+
+      mockPostJSON.resolves({
+        status: 400,
+        json: { detail: 'Invalid flow definition' },
+        body: '{"detail":"Invalid flow definition"}',
+        headers: new Headers()
+      });
+
+      await (editor as any).saveChanges();
+      await editor.updateComplete;
+
+      expect((editor as any).isSaving).to.be.false;
+      const dialog = document.querySelector('temba-dialog');
+      expect(dialog).to.exist;
+      expect(dialog.textContent).to.contain('Invalid flow definition');
+    });
+
+    it('shows error dialog on 500 server error', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      editor.flow = 'test-flow';
+      (editor as any).definition = { nodes: [], _ui: { nodes: {} } };
+
+      mockPostJSON.rejects(new Response(null, { status: 500 }));
+
+      await (editor as any).saveChanges();
+      await editor.updateComplete;
+
+      expect((editor as any).isSaving).to.be.false;
+      const dialog = document.querySelector('temba-dialog');
+      expect(dialog).to.exist;
+      expect(dialog.textContent).to.contain('Server error');
+    });
+
+    it('shows error dialog on network failure', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      editor.flow = 'test-flow';
+      (editor as any).definition = { nodes: [], _ui: { nodes: {} } };
+
+      mockPostJSON.rejects(new Error('Network error'));
+
+      await (editor as any).saveChanges();
+      await editor.updateComplete;
+
+      expect((editor as any).isSaving).to.be.false;
+      const dialog = document.querySelector('temba-dialog');
+      expect(dialog).to.exist;
+      expect(dialog.textContent).to.contain('Unable to reach the server');
+    });
+
+    it('extracts error message from response json fields', () => {
+      editor = new Editor();
+
+      expect(
+        (editor as any).extractErrorMessage({
+          status: 400,
+          json: { detail: 'Bad request' }
+        })
+      ).to.equal('Bad request');
+
+      expect(
+        (editor as any).extractErrorMessage({
+          status: 400,
+          json: { error: 'Something went wrong' }
+        })
+      ).to.equal('Something went wrong');
+
+      expect(
+        (editor as any).extractErrorMessage({
+          status: 400,
+          json: { description: 'Detailed error' }
+        })
+      ).to.equal('Detailed error');
+
+      expect(
+        (editor as any).extractErrorMessage({
+          status: 403,
+          json: {}
+        })
+      ).to.equal('Save failed with status 403.');
     });
   });
 });
