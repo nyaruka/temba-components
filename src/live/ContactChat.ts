@@ -162,6 +162,15 @@ export class ContactChat extends ContactStoreElement {
         opacity: 0.9;
       }
 
+      .flow-footer {
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .flow-footer .in-flow {
+        pointer-events: auto;
+      }
+
       .in-flow:hover {
         opacity: 1;
       }
@@ -780,7 +789,7 @@ export class ContactChat extends ContactStoreElement {
             >
               ${inFlow
                 ? html`
-                    <div slot="footer" style="text-align:center;">
+                    <div slot="footer" class="flow-footer">
                       <div class="in-flow">
                         <div class="flow-name">
                           <temba-icon name="flow" size="1.2"></temba-icon>

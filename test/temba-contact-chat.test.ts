@@ -116,6 +116,23 @@ describe('temba-contact-chat', () => {
     await assertScreenshot('contacts/chat-for-stopped-contact', getClip(chat));
   });
 
+  it('keeps flow footer from blocking scrollbar drag interactions', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const flowFooter = chat.shadowRoot.querySelector(
+      '.flow-footer'
+    ) as HTMLElement;
+    const inFlow = flowFooter.querySelector('.in-flow') as HTMLElement;
+
+    expect(flowFooter).to.exist;
+    expect(inFlow).to.exist;
+    expect(getComputedStyle(flowFooter).pointerEvents).to.equal('none');
+    expect(getComputedStyle(inFlow).pointerEvents).to.equal('auto');
+  });
+
   it('sends text without attachments', async () => {
     // we are a StoreElement, so load a store first
     await loadStore();
