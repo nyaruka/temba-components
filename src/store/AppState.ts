@@ -245,6 +245,7 @@ export interface AppState {
     actionUuid: string,
     localizationData: Record<string, any>
   ): void;
+  clearFlowData: () => void;
   setTranslationFilters: (filters: { categories: boolean }) => void;
   markAutoTranslated: (
     languageCode: string,
@@ -378,6 +379,20 @@ export const zustand = createStore<AppState>()(
         const languageCode = state.languageCode;
         const languageNames = state.languageNames;
         return { name: languageNames[languageCode], code: languageCode };
+      },
+
+      clearFlowData: () => {
+        set({
+          flowDefinition: null,
+          flowInfo: null,
+          issuesByNode: new Map(),
+          issuesByAction: new Map(),
+          activity: null,
+          simulatorActivity: null,
+          simulatorActive: false,
+          dirtyDate: null,
+          viewingRevision: false
+        });
       },
 
       // todo: eventually we should be doing the fetching

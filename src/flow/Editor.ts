@@ -1267,6 +1267,11 @@ export class Editor extends RapidElement {
     }
     const state = store.getState();
     state.fetchActivity(activityEndpoint).then(() => {
+      // Guard against responses arriving after the editor is disconnected
+      if (!this.isConnected) {
+        return;
+      }
+
       // Schedule next fetch with exponential backoff (max 5 minutes)
       this.activityInterval = Math.min(60000 * 5, this.activityInterval + 100);
 
@@ -1303,6 +1308,10 @@ export class Editor extends RapidElement {
     if (canvas) {
       canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
     }
+
+    // Clear all flow-specific data from the store so stale data
+    // isn't briefly visible when a different flow is opened.
+    zustand.getState().clearFlowData();
   }
 
   private setupGlobalEventListeners(): void {
