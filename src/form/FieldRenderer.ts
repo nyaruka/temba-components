@@ -357,9 +357,7 @@ export class FieldRenderer {
 
     return html`<div class="form-field">
       ${config.helpText
-        ? html`<div
-            style="color: #666; font-size: 13px; margin-bottom: 14px;"
-          >
+        ? html`<div style="color: #666; font-size: 13px; margin-bottom: 14px;">
             ${config.helpText}
           </div>`
         : ''}

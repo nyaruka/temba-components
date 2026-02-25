@@ -523,6 +523,11 @@ export class Compose extends FieldElement {
   }
 
   public triggerSend() {
+    // Recompute empty synchronously since the Lit update cycle that normally
+    // calls checkIfEmpty() in updated() may not have flushed yet (currentText
+    // is set synchronously in handleChatboxChange, but empty is only updated
+    // in the async updated() callback).
+    this.checkIfEmpty();
     if (!this.empty) {
       this.fireCustomEvent(CustomEventType.Submitted, {
         langValues: this.langValues
