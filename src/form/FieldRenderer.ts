@@ -356,6 +356,13 @@ export class FieldRenderer {
     } = context;
 
     return html`<div class="form-field">
+      ${config.helpText
+        ? html`<div
+            style="color: #666; font-size: 13px; margin-bottom: 14px;"
+          >
+            ${config.helpText}
+          </div>`
+        : ''}
       <temba-array-editor
         name="${fieldName}"
         .label="${showLabel ? config.label : ''}"
