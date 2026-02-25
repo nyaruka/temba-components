@@ -532,7 +532,9 @@ export class Plumber {
         const sibCount = siblings.length;
         const rawSpread = (sibCount - 1) * SIBLING_SPACING;
         const spacing =
-          rawSpread > MAX_SPREAD ? MAX_SPREAD / (sibCount - 1) : SIBLING_SPACING;
+          rawSpread > MAX_SPREAD
+            ? MAX_SPREAD / (sibCount - 1)
+            : SIBLING_SPACING;
         jogYOffset = (idx - (sibCount - 1) / 2) * spacing;
       }
     }

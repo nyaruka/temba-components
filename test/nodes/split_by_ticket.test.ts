@@ -64,10 +64,7 @@ describe('split_by_ticket node config', () => {
         note: 'Test note'
       };
 
-      const resultNode = split_by_ticket.fromFormData!(
-        formData,
-        originalNode
-      );
+      const resultNode = split_by_ticket.fromFormData!(formData, originalNode);
 
       expect(resultNode.uuid).to.equal('test-node');
       expect(resultNode.actions).to.have.lengthOf(1);
@@ -113,10 +110,7 @@ describe('split_by_ticket node config', () => {
         note: ''
       };
 
-      const resultNode = split_by_ticket.fromFormData!(
-        formData,
-        originalNode
-      );
+      const resultNode = split_by_ticket.fromFormData!(formData, originalNode);
 
       const action = resultNode.actions![0] as any;
       expect(action.topic).to.deep.equal({
@@ -151,10 +145,7 @@ describe('split_by_ticket node config', () => {
         note: ''
       };
 
-      const resultNode = split_by_ticket.fromFormData!(
-        formData,
-        originalNode
-      );
+      const resultNode = split_by_ticket.fromFormData!(formData, originalNode);
 
       const action = resultNode.actions![0] as any;
       expect(action.assignee).to.deep.equal({
