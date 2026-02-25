@@ -1304,6 +1304,10 @@ export class Editor extends RapidElement {
     if (canvas) {
       canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
     }
+
+    // Clear flow definition and activity from the store so stale data
+    // isn't briefly visible when a different flow is opened.
+    zustand.setState({ flowDefinition: null, activity: null });
   }
 
   private setupGlobalEventListeners(): void {
