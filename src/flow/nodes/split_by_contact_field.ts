@@ -79,7 +79,7 @@ export const split_by_contact_field: NodeConfig = {
     },
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),
-      'Define rules to split the contact field into categories'
+      ''
     ),
     result_name: resultNameField
   },

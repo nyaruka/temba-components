@@ -25,7 +25,8 @@ export const wait_for_digits: NodeConfig = {
   dialogSize: 'large',
   form: {
     rules: createRulesArrayConfig(
-      operatorsToSelectOptions(getDigitOperators())
+      operatorsToSelectOptions(getDigitOperators()),
+      ''
     ),
     result_name: resultNameField
   },
