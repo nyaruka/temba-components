@@ -1,7 +1,10 @@
-declare const __TEMBA_COMPONENTS_VERSION__: string | undefined;
+declare const __TEMBA_COMPONENTS_VERSION__: string;
 
-export const TEMBA_COMPONENTS_VERSION =
-  typeof __TEMBA_COMPONENTS_VERSION__ === 'string' &&
-  __TEMBA_COMPONENTS_VERSION__.length > 0
-    ? __TEMBA_COMPONENTS_VERSION__
-    : 'dev';
+let _version = 'dev';
+try {
+  _version = __TEMBA_COMPONENTS_VERSION__;
+} catch {
+  // not replaced by build tooling; keep default
+}
+
+export const TEMBA_COMPONENTS_VERSION = _version;
