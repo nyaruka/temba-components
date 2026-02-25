@@ -857,7 +857,12 @@ describe('temba-select', () => {
 
       await openSelect(clock, select);
       await typeInto('temba-select', 're', false);
-      await openSelect(clock, select);
+
+      // Ensure Lit has processed the input change and scheduled the debounced fetch
+      await select.updateComplete;
+      clock.runAll();
+      await select.updateComplete;
+
       assert.equal(select.visibleOptions.length, 2);
 
       await assertScreenshot('select/searching', getClipWithOptions(select));

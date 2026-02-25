@@ -220,7 +220,9 @@ export const delay = (millis: number) => {
   });
 };
 
-// Enhanced wait utility for more robust testing
+// Enhanced wait utility for more robust testing.
+// Uses the Puppeteer-provided waitFor (real time) instead of delay (which uses
+// window.setTimeout and breaks when sinon fake timers are active).
 export const waitForCondition = async (
   predicate: () => boolean,
   maxAttempts: number = 20,
@@ -228,7 +230,7 @@ export const waitForCondition = async (
 ): Promise<void> => {
   let attempts = 0;
   while (!predicate() && attempts < maxAttempts) {
-    await delay(delayMs);
+    await waitFor(delayMs);
     attempts++;
   }
   if (!predicate()) {
