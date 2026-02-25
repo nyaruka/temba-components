@@ -68,7 +68,7 @@ export class FloatingTab extends RapidElement {
 
   static TAB_HEIGHT = 50;
   static TAB_GAP = 4;
-  static START_TOP = 100;
+  static START_TOP = 115;
   static allTabs: FloatingTab[] = [];
 
   @property({ type: String })
