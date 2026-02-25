@@ -40,7 +40,9 @@ describe('split_by_webhook node config', () => {
       expect(formData.uuid).to.equal('test-node');
       expect(formData.method).to.equal('POST');
       expect(formData.url).to.equal('https://example.com/webhook');
-      expect(formData.headers).to.deep.equal({ Authorization: 'Bearer token123' });
+      expect(formData.headers).to.deep.equal({
+        Authorization: 'Bearer token123'
+      });
       expect(formData.body).to.equal('{"key": "value"}');
     });
 
@@ -59,10 +61,7 @@ describe('split_by_webhook node config', () => {
         body: ''
       };
 
-      const resultNode = split_by_webhook.fromFormData!(
-        formData,
-        originalNode
-      );
+      const resultNode = split_by_webhook.fromFormData!(formData, originalNode);
 
       expect(resultNode.uuid).to.equal('test-node');
       expect(resultNode.actions).to.have.lengthOf(1);
@@ -93,10 +92,7 @@ describe('split_by_webhook node config', () => {
         body: '{"data": "@contact.name"}'
       };
 
-      const resultNode = split_by_webhook.fromFormData!(
-        formData,
-        originalNode
-      );
+      const resultNode = split_by_webhook.fromFormData!(formData, originalNode);
 
       const action = resultNode.actions![0] as any;
       expect(action.method).to.equal('POST');
@@ -127,10 +123,7 @@ describe('split_by_webhook node config', () => {
         body: ''
       };
 
-      const resultNode = split_by_webhook.fromFormData!(
-        formData,
-        originalNode
-      );
+      const resultNode = split_by_webhook.fromFormData!(formData, originalNode);
 
       expect(resultNode.actions![0].uuid).to.equal('existing-action-uuid');
     });
