@@ -33,3 +33,6 @@ start.sh
 
 # dont check in diffs
 /screenshots/diff/
+
+# codex local artifacts
+CODEX.md

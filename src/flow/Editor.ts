@@ -26,6 +26,7 @@ import {
   getClasses,
   WebResponse
 } from '../utils';
+import { TEMBA_COMPONENTS_VERSION } from '../version';
 import {
   formatIssueMessage,
   getNodeBounds,
@@ -1156,8 +1157,20 @@ export class Editor extends RapidElement {
     }, SAVE_QUIET_TIME);
   }
 
+  private definitionForSave(definition: FlowDefinition): FlowDefinition {
+    return {
+      ...definition,
+      _ui: {
+        ...definition._ui,
+        editor: TEMBA_COMPONENTS_VERSION
+      }
+    };
+  }
+
   private saveChanges(definitionOverride?: FlowDefinition): Promise<void> {
-    const definition = definitionOverride || this.definition;
+    const definition = this.definitionForSave(
+      definitionOverride || this.definition
+    );
     this.isSaving = true;
 
     return getStore()
