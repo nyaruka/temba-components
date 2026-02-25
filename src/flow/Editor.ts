@@ -1307,7 +1307,12 @@ export class Editor extends RapidElement {
 
     // Clear flow definition and activity from the store so stale data
     // isn't briefly visible when a different flow is opened.
-    zustand.setState({ flowDefinition: null, activity: null });
+    zustand.setState({
+      flowDefinition: null,
+      activity: null,
+      simulatorActive: false,
+      simulatorActivity: null,
+    });
   }
 
   private setupGlobalEventListeners(): void {
