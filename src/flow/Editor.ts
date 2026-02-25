@@ -1222,8 +1222,7 @@ export class Editor extends RapidElement {
     dialog.cancelButtonName = 'Dismiss';
 
     const content = document.createElement('div');
-    content.style.cssText =
-      'padding: 20px; font-size: 14px; line-height: 1.5;';
+    content.style.cssText = 'padding: 20px; font-size: 14px; line-height: 1.5;';
     content.textContent = message;
     dialog.appendChild(content);
 
@@ -1268,6 +1267,11 @@ export class Editor extends RapidElement {
     }
     const state = store.getState();
     state.fetchActivity(activityEndpoint).then(() => {
+      // Guard against responses arriving after the editor is disconnected
+      if (!this.isConnected) {
+        return;
+      }
+
       // Schedule next fetch with exponential backoff (max 5 minutes)
       this.activityInterval = Math.min(60000 * 5, this.activityInterval + 100);
 
@@ -1305,14 +1309,9 @@ export class Editor extends RapidElement {
       canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
     }
 
-    // Clear flow definition and activity from the store so stale data
+    // Clear all flow-specific data from the store so stale data
     // isn't briefly visible when a different flow is opened.
-    zustand.setState({
-      flowDefinition: null,
-      activity: null,
-      simulatorActive: false,
-      simulatorActivity: null,
-    });
+    zustand.getState().clearFlowData();
   }
 
   private setupGlobalEventListeners(): void {
@@ -2184,7 +2183,12 @@ export class Editor extends RapidElement {
 
     const canvasMenu = this.querySelector('temba-canvas-menu') as CanvasMenu;
     if (canvasMenu) {
-      canvasMenu.show(event.clientX, event.clientY, { x: nodeLeft, y: nodeTop }, false);
+      canvasMenu.show(
+        event.clientX,
+        event.clientY,
+        { x: nodeLeft, y: nodeTop },
+        false
+      );
     }
   }
 
@@ -4004,13 +4008,15 @@ export class Editor extends RapidElement {
       ${this.renderAutoTranslateDialog()}
       <div id="editor-container">
         <div id="editor">
-          ${this.definition && this.definition.nodes.length === 0 && !this.isReadOnly()
+          ${this.definition &&
+          this.definition.nodes.length === 0 &&
+          !this.isReadOnly()
             ? html`<div class="empty-flow">
                 <div class="empty-flow-content">
                   <div class="empty-flow-title">This flow is empty</div>
                   <div class="empty-flow-description">
-                    Get started by adding your first action or split to
-                    define how this flow will work.
+                    Get started by adding your first action or split to define
+                    how this flow will work.
                   </div>
                   <button
                     class="empty-flow-button"
@@ -4024,19 +4030,19 @@ export class Editor extends RapidElement {
           <div
             id="grid"
             class="${this.viewingRevision ? 'viewing-revision' : ''}"
-            style="min-width:100%;width:${this.canvasSize.width}px; height:${this
-              .canvasSize.height}px"
-        >
-          <div
-            id="canvas"
-            class="${getClasses({
-              'viewing-revision': !!this.viewingRevision,
-              'read-only-connections':
-                !!this.viewingRevision || this.isTranslating
-            })}"
+            style="min-width:100%;width:${this.canvasSize
+              .width}px; height:${this.canvasSize.height}px"
           >
-            ${this.definition
-              ? repeat(
+            <div
+              id="canvas"
+              class="${getClasses({
+                'viewing-revision': !!this.viewingRevision,
+                'read-only-connections':
+                  !!this.viewingRevision || this.isTranslating
+              })}"
+            >
+              ${this.definition
+                ? repeat(
                     [...this.definition.nodes].sort((a, b) =>
                       a.uuid.localeCompare(b.uuid)
                     ),
@@ -4062,9 +4068,9 @@ export class Editor extends RapidElement {
                       return html`<temba-flow-node
                         class="draggable ${dragging
                           ? 'dragging'
-                          : ''} ${selected
-                          ? 'selected'
-                          : ''} ${isFlowStart ? 'flow-start' : ''}"
+                          : ''} ${selected ? 'selected' : ''} ${isFlowStart
+                          ? 'flow-start'
+                          : ''}"
                         @mousedown=${this.handleMouseDown.bind(this)}
                         uuid=${node.uuid}
                         data-node-uuid=${node.uuid}
@@ -4078,30 +4084,30 @@ export class Editor extends RapidElement {
                       ></temba-flow-node>`;
                     }
                   )
-              : html`<temba-loading></temba-loading>`}
-            ${repeat(
-              Object.entries(stickies),
-              ([uuid]) => uuid,
-              ([uuid, sticky]) => {
-                const position = sticky.position || { left: 0, top: 0 };
-                const dragging =
-                  this.isDragging && this.currentDragItem?.uuid === uuid;
-                const selected = this.selectedItems.has(uuid);
-                return html`<temba-sticky-note
-                  class="draggable ${dragging ? 'dragging' : ''} ${selected
-                    ? 'selected'
-                    : ''}"
-                  @mousedown=${this.handleMouseDown.bind(this)}
-                  style="left:${position.left}px; top:${position.top}px;"
-                  uuid=${uuid}
-                  .data=${sticky}
-                  .dragging=${dragging}
-                  .selected=${selected}
-                ></temba-sticky-note>`;
-              }
-            )}
-            ${this.renderSelectionBox()} ${this.renderCanvasDropPreview()}
-            ${this.renderConnectionPlaceholder()}
+                : html`<temba-loading></temba-loading>`}
+              ${repeat(
+                Object.entries(stickies),
+                ([uuid]) => uuid,
+                ([uuid, sticky]) => {
+                  const position = sticky.position || { left: 0, top: 0 };
+                  const dragging =
+                    this.isDragging && this.currentDragItem?.uuid === uuid;
+                  const selected = this.selectedItems.has(uuid);
+                  return html`<temba-sticky-note
+                    class="draggable ${dragging ? 'dragging' : ''} ${selected
+                      ? 'selected'
+                      : ''}"
+                    @mousedown=${this.handleMouseDown.bind(this)}
+                    style="left:${position.left}px; top:${position.top}px;"
+                    uuid=${uuid}
+                    .data=${sticky}
+                    .dragging=${dragging}
+                    .selected=${selected}
+                  ></temba-sticky-note>`;
+                }
+              )}
+              ${this.renderSelectionBox()} ${this.renderCanvasDropPreview()}
+              ${this.renderConnectionPlaceholder()}
             </div>
           </div>
         </div>

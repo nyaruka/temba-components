@@ -123,6 +123,46 @@ describe('Editor', () => {
     });
   });
 
+  describe('disconnectedCallback', () => {
+    it('clears flow data from the store when editor is removed', async () => {
+      // Set up some flow-specific state
+      zustand.setState({
+        flowDefinition: { nodes: [], _ui: { nodes: {} } } as any,
+        activity: { nodes: {}, segments: {} },
+        simulatorActivity: { nodes: {}, segments: {} },
+        simulatorActive: true,
+        flowInfo: {
+          results: [],
+          dependencies: [],
+          counts: { nodes: 0, languages: 0 },
+          locals: []
+        } as any,
+        dirtyDate: new Date()
+      });
+
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      // Verify state is populated
+      expect(zustand.getState().flowDefinition).to.not.be.null;
+      expect(zustand.getState().activity).to.not.be.null;
+
+      // Remove the editor from the DOM
+      editor.remove();
+
+      // Verify all flow-specific state has been cleared
+      expect(zustand.getState().flowDefinition).to.be.null;
+      expect(zustand.getState().activity).to.be.null;
+      expect(zustand.getState().simulatorActivity).to.be.null;
+      expect(zustand.getState().simulatorActive).to.be.false;
+      expect(zustand.getState().flowInfo).to.be.null;
+      expect(zustand.getState().dirtyDate).to.be.null;
+    });
+  });
+
   describe('render method', () => {
     it('renders loading when no definition', async () => {
       editor = await fixture(html`
