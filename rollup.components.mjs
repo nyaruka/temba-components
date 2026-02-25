@@ -5,6 +5,12 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import svg from 'rollup-plugin-svg-import';
 import copy from 'rollup-plugin-copy';
+import fs from 'fs';
+
+const packageJson = JSON.parse(
+    fs.readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
+);
+const TEMBA_COMPONENTS_VERSION = packageJson.version;
 
 
 export default {
@@ -41,6 +47,7 @@ export default {
         replace({
             preventAssignment: true,
             'process.env.NODE_ENV': JSON.stringify('development'),
+            '__TEMBA_COMPONENTS_VERSION__': JSON.stringify(TEMBA_COMPONENTS_VERSION)
           }),
 
         // inline our icons
@@ -68,4 +75,3 @@ export default {
         terser()
     ]
 };
-

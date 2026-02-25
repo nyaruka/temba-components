@@ -325,6 +325,7 @@ export interface FlowUI {
   languages: Record<string, string>[];
   translation_filters?: { categories: boolean };
   auto_translations?: Record<string, Record<string, string[]>>;
+  editor?: string;
 }
 
 export interface FlowDefinition {

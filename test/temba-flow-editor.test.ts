@@ -3,6 +3,7 @@ import { Editor } from '../src/flow/Editor';
 import { Plumber } from '../src/flow/Plumber';
 import { stub, restore } from 'sinon';
 import { zustand } from '../src/store/AppState';
+import { TEMBA_COMPONENTS_VERSION } from '../src/version';
 
 // Register the component
 customElements.define('temba-flow-editor', Editor);
@@ -960,6 +961,29 @@ describe('Editor', () => {
       await (editor as any).saveChanges();
 
       expect((editor as any).isSaving).to.be.false;
+    });
+
+    it('adds temba-components version under _ui.editor when saving', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      editor.flow = 'test-flow';
+      (editor as any).definition = { nodes: [], _ui: { nodes: {} } };
+
+      mockPostJSON.resolves({
+        status: 200,
+        json: {},
+        body: '{}',
+        headers: new Headers()
+      });
+
+      await (editor as any).saveChanges();
+
+      const payload = mockPostJSON.firstCall.args[1];
+      expect(payload._ui.editor).to.equal(TEMBA_COMPONENTS_VERSION);
     });
 
     it('shows error dialog on non-200 response', async () => {

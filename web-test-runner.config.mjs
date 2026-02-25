@@ -15,6 +15,9 @@ import replace from '@rollup/plugin-replace';
 import { fromRollup } from '@web/dev-server-rollup';
 
 const replacePlugin = fromRollup(replace);
+const TEMBA_COMPONENTS_VERSION = JSON.parse(
+  fs.readFileSync(path.resolve('./package.json'), 'utf-8')
+).version;
 
 const SCREENSHOTS = 'screenshots';
 const DIFF = 'diff';
@@ -320,6 +323,7 @@ export default {
     replacePlugin({
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('test'),
+      '__TEMBA_COMPONENTS_VERSION__': JSON.stringify(TEMBA_COMPONENTS_VERSION),
     }),
     {
       name: 'api-mock-server',
@@ -451,4 +455,3 @@ export default {
     }),
   ],
 };
-
