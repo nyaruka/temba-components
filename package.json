@@ -16,8 +16,8 @@
     "dev": "yarn build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
     "postversion": "git push --tags && git push origin main",
     "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
-    "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore",
-    "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" --config .prettierrc --write --ignore-path .gitignore",
+    "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore --ignore-pattern \"src/locales/\"",
+    "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" \"!src/locales/**\" --config .prettierrc --write --ignore-path .gitignore",
     "format": "yarn format:eslint && yarn format:prettier",
     "test": "wtr --node-resolve",
     "test:fast": "wtr --node-resolve --fast",
@@ -114,12 +114,6 @@
     "hooks": {
       "pre-commit": "yarn pre-commit"
     }
-  },
-  "lint-staged": {
-    "*.ts": [
-      "prettier --config .prettierrc --write",
-      "eslint"
-    ]
   },
   "resolutions": {
     "trim": "^0.0.3",
