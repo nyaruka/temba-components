@@ -161,7 +161,14 @@ describe('start_session action config', () => {
             archived: false,
             labels: [],
             expires: 720,
-            runs: { active: 0, waiting: 5, completed: 100, interrupted: 2, expired: 1, failed: 0 },
+            runs: {
+              active: 0,
+              waiting: 5,
+              completed: 100,
+              interrupted: 2,
+              expired: 1,
+              failed: 0
+            },
             results: [],
             parent_refs: [],
             created_on: '2024-01-01T00:00:00.000Z',

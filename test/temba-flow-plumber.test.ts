@@ -174,13 +174,37 @@ describe('calculateFlowchartPath', () => {
 
   it('applies jogYOffset to shift the horizontal jog level', () => {
     const pathNoOffset = calculateFlowchartPath(
-      50, 0, 150, 200, 20, 10, 5, 'top', 0
+      50,
+      0,
+      150,
+      200,
+      20,
+      10,
+      5,
+      'top',
+      0
     );
     const pathPosOffset = calculateFlowchartPath(
-      50, 0, 150, 200, 20, 10, 5, 'top', 10
+      50,
+      0,
+      150,
+      200,
+      20,
+      10,
+      5,
+      'top',
+      10
     );
     const pathNegOffset = calculateFlowchartPath(
-      50, 0, 150, 200, 20, 10, 5, 'top', -10
+      50,
+      0,
+      150,
+      200,
+      20,
+      10,
+      5,
+      'top',
+      -10
     );
     expect(pathNoOffset).to.not.equal(pathPosOffset);
     expect(pathNoOffset).to.not.equal(pathNegOffset);
@@ -190,7 +214,15 @@ describe('calculateFlowchartPath', () => {
   it('produces same path with jogYOffset=0 as without offset', () => {
     const pathDefault = calculateFlowchartPath(50, 0, 150, 200);
     const pathZero = calculateFlowchartPath(
-      50, 0, 150, 200, 20, 10, 5, 'top', 0
+      50,
+      0,
+      150,
+      200,
+      20,
+      10,
+      5,
+      'top',
+      0
     );
     expect(pathDefault).to.equal(pathZero);
   });
