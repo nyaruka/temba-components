@@ -11,6 +11,9 @@ import { generateFlowInfo, handleMinioUpload, handleEntityCreation } from './web
 const DEV_DATA_DIR = '/tmp/temba-dev-data';
 const DEV_FLOWS_DIR = path.join(DEV_DATA_DIR, 'flows');
 const DEV_API_DIR = path.join(DEV_DATA_DIR, 'api');
+const TEMBA_COMPONENTS_VERSION = JSON.parse(
+  fs.readFileSync(path.resolve('./package.json'), 'utf-8')
+).version;
 
 // Setup development data directories and copy defaults if needed
 function setupDevData() {
@@ -226,6 +229,7 @@ export default {
     replacePlugin({
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('development'),
+      '__TEMBA_COMPONENTS_VERSION__': JSON.stringify(TEMBA_COMPONENTS_VERSION),
       'process.env.MINIO_ENDPOINT': JSON.stringify('http://minio:9000'),
       'process.env.MINIO_PUBLIC_ENDPOINT': JSON.stringify('http://localhost:9000'),
       'process.env.MINIO_ACCESS_KEY': JSON.stringify('root'),
