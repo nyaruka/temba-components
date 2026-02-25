@@ -86,7 +86,7 @@ export const wait_for_response: NodeConfig = {
   form: {
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),
-      'Define rules to categorize responses'
+      'If the message from the contact...'
     ),
     timeout_enabled: {
       type: 'checkbox',

@@ -34,7 +34,6 @@ export const split_by_llm_categorize: NodeConfig = {
     },
     categories: {
       type: 'array',
-      label: 'Categories',
       helpText: 'Define the categories for classification',
       required: true,
       sortable: true,

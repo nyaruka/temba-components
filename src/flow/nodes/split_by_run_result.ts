@@ -105,7 +105,7 @@ export const split_by_run_result: NodeConfig = {
     },
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),
-      'Define rules to categorize the result'
+      ''
     ),
     result_name: resultNameField
   },
