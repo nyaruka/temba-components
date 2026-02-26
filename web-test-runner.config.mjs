@@ -26,9 +26,9 @@ const TRUTH = 'truth';
 
 const PNG = pngs.PNG;
 
-const fileExists = filename => {
+const fileExists = (filename) => {
   return new Promise((resolve, reject) => {
-    fs.access(filename, fs.F_OK, err => {
+    fs.access(filename, fs.F_OK, (err) => {
       if (err) {
         resolve(false);
       }
@@ -75,7 +75,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
           message: 'Screenshot was not the right size',
           expected: `${img1.width}x${img1.height}`,
           actual: `${img2.width}x${img2.height}`,
-          files: [testImg, truthImg, path.resolve(SCREENSHOTS)],
+          files: [testImg, truthImg, path.resolve(SCREENSHOTS)]
         });
         return;
       }
@@ -86,7 +86,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
         threshold: threshold || 0.3,
         includeAA: false,
         diffColor: [255, 0, 0],
-        aaColor: [0, 0, 255],
+        aaColor: [0, 0, 255]
       };
       const numDiffPixels =
         excluded != null && excluded.length != 0
@@ -115,7 +115,7 @@ const checkScreenshot = async (filename, excluded, threshold) => {
         diff.pack().pipe(fs.createWriteStream(diffImg));
         reject({
           message: 'Pixel match failed',
-          files: [diffImg, testImg, truthImg, path.resolve(SCREENSHOTS)],
+          files: [diffImg, testImg, truthImg, path.resolve(SCREENSHOTS)]
         });
       }
       resolve('success');
@@ -155,14 +155,16 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
         const truthFile = await getPath(TRUTH, filename);
 
         // Wait for network idle - use per-call parameter or fall back to global wait flag
-        try{
+        try {
           if (waitForNetwork || wait) {
-            await page.waitForNetworkIdle({idleTime: 500, timeout: 2000});
+            await page.waitForNetworkIdle({ idleTime: 500, timeout: 2000 });
           } else {
             await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
           }
         } catch (error) {
-          console.error('Error waiting for network idle, proceeding: ' + filename);
+          console.error(
+            'Error waiting for network idle, proceeding: ' + filename
+          );
         }
 
         if (!(await fileExists(truthFile))) {
@@ -205,7 +207,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
             if (replaceScreenshots) {
               await page.screenshot({ path: truthFile, clip });
               resolve();
-            } else  {
+            } else {
               reject(error);
             }
             return;
@@ -221,11 +223,11 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
     await page.waitForNetworkIdle();
   });
 
-  await page.exposeFunction('setViewport', async options => {
+  await page.exposeFunction('setViewport', async (options) => {
     await page.setViewport(options);
   });
 
-  await page.exposeFunction('waitFor', millis => {
+  await page.exposeFunction('waitFor', (millis) => {
     return page.waitForTimeout(millis);
   });
 
@@ -259,20 +261,19 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
     });
   });
 
-  await page.exposeFunction('click', async element => {
-    const frame = await page.frames().find(f => {
+  await page.exposeFunction('click', async (element) => {
+    const frame = await page.frames().find((f) => {
       return true;
     });
     const ele = await frame.$(element);
     await ele.click({});
   });
 
-
   await page.exposeFunction(
     'typeInto',
     async (selector, text, replace = false, enter = false) => {
       const selectors = selector.split(':');
-      const frame = await page.frames().find(f => {
+      const frame = await page.frames().find((f) => {
         return true;
       });
       await frame.$(selectors[0]);
@@ -283,7 +284,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
         codeSelector +=
           '.' +
           selectors
-            .map(entry => `shadowRoot.querySelector("${entry}")`)
+            .map((entry) => `shadowRoot.querySelector("${entry}")`)
             .join('.');
       }
 
@@ -303,7 +304,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
     }
   });
 
-  await page.exposeFunction('type', async text => {
+  await page.exposeFunction('type', async (text) => {
     await page.keyboard.type(text);
   });
 };
@@ -313,28 +314,34 @@ export default {
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
   concurrency: 4,
+  coverageConfig: {
+    exclude: ['**/node_modules/**']
+  },
   testFramework: {
     config: {
-      timeout: '5000',
-    },
+      timeout: '5000'
+    }
   },
 
   plugins: [
     replacePlugin({
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('test'),
-      '__TEMBA_COMPONENTS_VERSION__': JSON.stringify(TEMBA_COMPONENTS_VERSION),
+      __TEMBA_COMPONENTS_VERSION__: JSON.stringify(TEMBA_COMPONENTS_VERSION)
     }),
     {
       name: 'api-mock-server',
       serve(context) {
         // Handle API endpoints by serving static files
-        if (context.request.method === 'GET' && context.path.startsWith('/api/')) {
+        if (
+          context.request.method === 'GET' &&
+          context.path.startsWith('/api/')
+        ) {
           // Map API endpoints to static files
           const apiMappings = {
             '/api/v2/groups.json': './static/api/groups.json',
             '/api/v2/labels.json': './static/api/labels.json',
-            '/api/v2/fields.json': './static/api/fields.json', 
+            '/api/v2/fields.json': './static/api/fields.json',
             '/api/v2/globals.json': './static/api/globals.json',
             '/api/v2/completion.json': './static/mr/docs/en-us/editor.json',
             '/api/v2/functions.json': './static/api/functions.json',
@@ -353,7 +360,7 @@ export default {
           // Handle base path without query parameters
           const basePath = context.path.split('?')[0];
           const staticFile = apiMappings[basePath];
-          
+
           if (staticFile && fs.existsSync(path.resolve(staticFile))) {
             context.contentType = 'application/json';
             context.body = fs.readFileSync(path.resolve(staticFile), 'utf-8');
@@ -370,12 +377,12 @@ export default {
             body: context.body.replace(
               /<head>/,
               `<head><link rel="stylesheet" href="/test-assets/temba-components.css"/><link rel="stylesheet" href="/test-assets/style.css"/>`
-            ),
+            )
           };
         }
-      },
+      }
     },
-    esbuildPlugin({ ts: true }),
+    esbuildPlugin({ ts: true })
 
     /* importMapsPlugin({
       inject: {
@@ -421,12 +428,12 @@ export default {
           '--use-mock-keychain',
           '--disable-ipc-flooding-protection',
           '--disable-component-update',
-          '--disable-domain-reliability',
+          '--disable-domain-reliability'
         ],
-        headless: true,
+        headless: true
       },
       createPage: async ({ context, config }) => {
-        const params = (config['unknown'] || [])
+        const params = config['unknown'] || [];
         const wait = !params.includes('--fast');
         const replaceScreenshots = params.includes('--replace-screenshots');
 
@@ -434,16 +441,21 @@ export default {
         await page.setUserAgent(
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36'
         );
-        
+
         // detect if we're running in copilot's environment
-        const isCopilotEnvironment = process.env.COPILOT_API_URL || process.env.COPILOT_AGENT_CALLBACK_URL;
-        
+        const isCopilotEnvironment =
+          process.env.COPILOT_API_URL || process.env.COPILOT_AGENT_CALLBACK_URL;
+
         // inject script into every document that loads
-        await page.evaluateOnNewDocument((watched, copilotEnv) => {
-          window.watched = watched;
-          window.isCopilotEnvironment = copilotEnv;
-        }, config.watch, !!isCopilotEnvironment);
-        
+        await page.evaluateOnNewDocument(
+          (watched, copilotEnv) => {
+            window.watched = watched;
+            window.isCopilotEnvironment = copilotEnv;
+          },
+          config.watch,
+          !!isCopilotEnvironment
+        );
+
         await page.once('load', async () => {
           await wireScreenshots(page, context, wait, replaceScreenshots);
         });
@@ -451,7 +463,7 @@ export default {
         await page.emulateTimezone('GMT');
 
         return page;
-      },
-    }),
-  ],
+      }
+    })
+  ]
 };
