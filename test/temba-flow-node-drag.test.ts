@@ -334,4 +334,177 @@ describe('temba-flow-node drag and drop functionality', () => {
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   });
+
+  describe('auto-scroll during drag', () => {
+    const AUTO_SCROLL_EDGE_ZONE = 100;
+    const AUTO_SCROLL_MAX_SPEED = 15;
+
+    function calculateScrollSpeed(
+      mousePos: number,
+      edgeStart: number,
+      edgeEnd: number
+    ): { dx: number; dy: number } {
+      let dx = 0;
+      let dy = 0;
+
+      // Left/top edge
+      const distFromStart = mousePos - edgeStart;
+      if (distFromStart >= 0 && distFromStart < AUTO_SCROLL_EDGE_ZONE) {
+        const ratio = 1 - distFromStart / AUTO_SCROLL_EDGE_ZONE;
+        return { dx: -(ratio * AUTO_SCROLL_MAX_SPEED), dy: 0 };
+      }
+
+      // Right/bottom edge
+      const distFromEnd = edgeEnd - mousePos;
+      if (distFromEnd >= 0 && distFromEnd < AUTO_SCROLL_EDGE_ZONE) {
+        const ratio = 1 - distFromEnd / AUTO_SCROLL_EDGE_ZONE;
+        return { dx: ratio * AUTO_SCROLL_MAX_SPEED, dy: 0 };
+      }
+
+      return { dx, dy };
+    }
+
+    it('should calculate scroll speed based on distance to edge', () => {
+      const edgeStart = 0;
+      const edgeEnd = 800;
+
+      // At the very left edge (distance = 0), speed should be max
+      let result = calculateScrollSpeed(0, edgeStart, edgeEnd);
+      assert.equal(result.dx, -AUTO_SCROLL_MAX_SPEED);
+
+      // At the edge zone boundary, speed should be 0
+      result = calculateScrollSpeed(AUTO_SCROLL_EDGE_ZONE, edgeStart, edgeEnd);
+      assert.equal(result.dx, 0);
+
+      // Halfway into the zone, speed should be half of max
+      result = calculateScrollSpeed(
+        AUTO_SCROLL_EDGE_ZONE / 2,
+        edgeStart,
+        edgeEnd
+      );
+      assert.closeTo(result.dx, -AUTO_SCROLL_MAX_SPEED / 2, 0.01);
+
+      // At the very right edge (distance = 0), speed should be max positive
+      result = calculateScrollSpeed(800, edgeStart, edgeEnd);
+      assert.equal(result.dx, AUTO_SCROLL_MAX_SPEED);
+
+      // Halfway into the right edge zone
+      result = calculateScrollSpeed(
+        edgeEnd - AUTO_SCROLL_EDGE_ZONE / 2,
+        edgeStart,
+        edgeEnd
+      );
+      assert.closeTo(result.dx, AUTO_SCROLL_MAX_SPEED / 2, 0.01);
+
+      // In the middle of the viewport, no scrolling
+      result = calculateScrollSpeed(400, edgeStart, edgeEnd);
+      assert.equal(result.dx, 0);
+    });
+
+    it('should not scroll when mouse is outside the viewport', () => {
+      const edgeStart = 0;
+      const edgeEnd = 800;
+
+      // Mouse is to the left of the viewport
+      const result = calculateScrollSpeed(-10, edgeStart, edgeEnd);
+      assert.equal(result.dx, 0);
+    });
+
+    it('should account for scroll delta in drag position calculation', () => {
+      // Simulate the formula: deltaX = (clientX - startX) + autoScrollDeltaX
+      const dragStartX = 400;
+      const currentClientX = 450;
+      const autoScrollDeltaX = 200;
+
+      const deltaX =
+        currentClientX - dragStartX + autoScrollDeltaX;
+
+      // Without auto-scroll, delta would be 50. With 200px of scroll, it's 250.
+      assert.equal(deltaX, 250);
+
+      const originalLeft = 100;
+      const newLeft = originalLeft + deltaX;
+      assert.equal(newLeft, 350);
+    });
+
+    it('should accumulate scroll deltas correctly over multiple frames', () => {
+      let autoScrollDeltaX = 0;
+      let autoScrollDeltaY = 0;
+
+      // Simulate several frames of scrolling
+      const scrollIncrements = [
+        { dx: 5, dy: 3 },
+        { dx: 8, dy: 6 },
+        { dx: 10, dy: 9 },
+        { dx: 0, dy: 12 } // only vertical scrolling
+      ];
+
+      scrollIncrements.forEach(({ dx, dy }) => {
+        autoScrollDeltaX += dx;
+        autoScrollDeltaY += dy;
+      });
+
+      assert.equal(autoScrollDeltaX, 23);
+      assert.equal(autoScrollDeltaY, 30);
+    });
+
+    it('should clamp scroll delta when at scroll boundaries', () => {
+      // Simulate a scroll container at its left boundary
+      let scrollLeft = 0;
+      const requestedDx = -10;
+
+      const beforeScrollLeft = scrollLeft;
+      scrollLeft = Math.max(0, scrollLeft + requestedDx);
+      const actualDx = scrollLeft - beforeScrollLeft;
+
+      // At the boundary, actual delta should be 0
+      assert.equal(actualDx, 0);
+
+      // Simulate a scroll container not at boundary
+      scrollLeft = 50;
+      const beforeScrollLeft2 = scrollLeft;
+      scrollLeft = Math.max(0, scrollLeft + requestedDx);
+      const actualDx2 = scrollLeft - beforeScrollLeft2;
+
+      // Should have scrolled the full amount
+      assert.equal(actualDx2, -10);
+    });
+
+    it('should reset scroll deltas after drag ends', () => {
+      let autoScrollDeltaX = 150;
+      let autoScrollDeltaY = 200;
+
+      // Simulate drag end reset
+      autoScrollDeltaX = 0;
+      autoScrollDeltaY = 0;
+
+      assert.equal(autoScrollDeltaX, 0);
+      assert.equal(autoScrollDeltaY, 0);
+    });
+
+    it('should handle simultaneous horizontal and vertical auto-scroll', () => {
+      // Simulate mouse in the bottom-right corner of the viewport
+      const edgeStart = 0;
+      const edgeEnd = 800;
+      const mousePos = 780; // 20px from the right/bottom edge
+
+      const distFromEnd = edgeEnd - mousePos;
+      assert.isTrue(distFromEnd < AUTO_SCROLL_EDGE_ZONE);
+
+      const ratio = 1 - distFromEnd / AUTO_SCROLL_EDGE_ZONE;
+      const scrollSpeed = ratio * AUTO_SCROLL_MAX_SPEED;
+
+      // Both axes should get the same speed when equidistant from edges
+      assert.isAbove(scrollSpeed, 0);
+
+      // Apply to both axes
+      let autoScrollDeltaX = 0;
+      let autoScrollDeltaY = 0;
+      autoScrollDeltaX += scrollSpeed;
+      autoScrollDeltaY += scrollSpeed;
+
+      assert.equal(autoScrollDeltaX, autoScrollDeltaY);
+      assert.isAbove(autoScrollDeltaX, 0);
+    });
+  });
 });

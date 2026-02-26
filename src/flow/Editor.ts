@@ -97,7 +97,7 @@ export interface SelectionBox {
 }
 
 const DRAG_THRESHOLD = 5;
-const AUTO_SCROLL_EDGE_ZONE = 50;
+const AUTO_SCROLL_EDGE_ZONE = 100;
 const AUTO_SCROLL_MAX_SPEED = 15;
 
 type TranslationType = 'property' | 'category';
