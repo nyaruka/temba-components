@@ -249,9 +249,10 @@ export const getNodeBounds = (
     return null;
   }
 
-  const rect = nodeElement.getBoundingClientRect();
-  const width = rect.width;
-  const height = rect.height;
+  // Use offsetWidth/offsetHeight instead of getBoundingClientRect() so
+  // dimensions are in CSS-layout space and unaffected by ancestor transforms (zoom).
+  const width = nodeElement.offsetWidth;
+  const height = nodeElement.offsetHeight;
 
   return {
     uuid: nodeUuid,
