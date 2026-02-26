@@ -1,3 +1,5 @@
+import { isRightClick } from './utils';
+
 export type TargetFace = 'top' | 'left' | 'right';
 
 // Shared arrow/drag constants used by both Plumber and Editor
@@ -246,7 +248,7 @@ export class Plumber {
     const DRAG_THRESHOLD = 5;
 
     const onMouseDown = (e: MouseEvent) => {
-      if (e.button !== 0) return;
+      if (isRightClick(e)) return;
 
       // Don't start drag from exit if it already has a connection —
       // existing connections are picked up from the arrowhead instead
@@ -689,7 +691,7 @@ export class Plumber {
     // Make arrowhead draggable for picking up existing connections
     const DRAG_THRESHOLD = 5;
     const onArrowMouseDown = (e: MouseEvent) => {
-      if (e.button !== 0) return;
+      if (isRightClick(e)) return;
       e.stopPropagation();
 
       const startX = e.clientX;

@@ -31,6 +31,7 @@ import {
   formatIssueMessage,
   getNodeBounds,
   calculateReflowPositions,
+  isRightClick,
   NodeBounds,
   snapToGrid
 } from './utils';
@@ -1409,8 +1410,7 @@ export class Editor extends RapidElement {
   }
 
   private handleMouseDown(event: MouseEvent): void {
-    // ignore right clicks
-    if (event.button !== 0) return;
+    if (isRightClick(event)) return;
 
     if (this.isReadOnly()) return;
     this.blurActiveContentEditable();
@@ -1454,8 +1454,7 @@ export class Editor extends RapidElement {
   }
 
   private handleGlobalMouseDown(event: MouseEvent): void {
-    // ignore right clicks
-    if (event.button !== 0) return;
+    if (isRightClick(event)) return;
 
     // Check if the click is within our canvas
     const canvasRect = this.querySelector('#grid')?.getBoundingClientRect();
