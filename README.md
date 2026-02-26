@@ -22,10 +22,10 @@ Some of the components:
 
 ## Install
 
-We use yarn, so you'll want to install with that if you care about our lock file.
+We use pnpm, so you'll want to install with that if you care about our lock file.
 
 ```bash
-% yarn install
+% pnpm install
 ```
 
 ## Demo
@@ -33,7 +33,7 @@ We use yarn, so you'll want to install with that if you care about our lock file
 To view the interactive demo, use start.
 
 ```bash
-% yarn start
+% pnpm start
 ```
 
 ## Testing
@@ -43,7 +43,7 @@ comparision under [/screenshots](screenshots/truth). Running tests requires that
 installed.
 
 ```bash
-% yarn test
+% pnpm test
 ```
 
 ## Usage

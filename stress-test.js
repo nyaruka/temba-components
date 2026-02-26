@@ -27,9 +27,9 @@ for (let i = 0; i < args.length; i++) {
 
 // Validate test file
 if (!testFile) {
-  console.error('❌ Usage: yarn stress-test <test-file> [--runs=N]');
+  console.error('❌ Usage: pnpm stress-test <test-file> [--runs=N]');
   console.error(
-    '   Example: yarn stress-test test/temba-webchat.test.ts --runs=100'
+    '   Example: pnpm stress-test test/temba-webchat.test.ts --runs=100'
   );
   process.exit(1);
 }
@@ -60,7 +60,7 @@ try {
 
     try {
       // Run the test with minimal output
-      const result = execSync(`yarn test ${testFile}`, {
+      const result = execSync(`pnpm test ${testFile}`, {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe']
       });

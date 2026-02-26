@@ -25,37 +25,37 @@ When working with the Temba Components development server, demo flows and API da
 
 ## Available Commands
 
-### `yarn dev-data:status`
+### `pnpm dev-data:status`
 
 Shows the current state of development data:
 
 ```bash
-yarn dev-data:status
+pnpm dev-data:status
 ```
 
-### `yarn dev-data:copy` / `yarn dev-data:sync`
+### `pnpm dev-data:copy` / `pnpm dev-data:sync`
 
 Copies changes from development directory back to the project:
 
 ```bash
-yarn dev-data:copy
+pnpm dev-data:copy
 ```
 
 This is useful when you want to commit your development changes.
 
-### `yarn dev-data:reset` / `yarn dev-data:wipe`
+### `pnpm dev-data:reset` / `pnpm dev-data:wipe`
 
 Wipes development data and restores from project defaults:
 
 ```bash
-yarn dev-data:reset
+pnpm dev-data:reset
 ```
 
 This is useful when you want to start fresh or undo experimental changes.
 
 ## Typical Workflow
 
-1. **Start Development**: `yarn start`
+1. **Start Development**: `pnpm start`
 
    - Server automatically sets up external data directory with defaults
 
@@ -63,15 +63,15 @@ This is useful when you want to start fresh or undo experimental changes.
 
    - Changes are saved to `/tmp/temba-dev-data/`
 
-3. **Check Status**: `yarn dev-data:status`
+3. **Check Status**: `pnpm dev-data:status`
 
    - See what files are in development vs project directories
 
-4. **Commit Changes** (if desired): `yarn dev-data:copy`
+4. **Commit Changes** (if desired): `pnpm dev-data:copy`
 
    - Copies your changes back to the project for committing
 
-5. **Reset When Needed**: `yarn dev-data:reset`
+5. **Reset When Needed**: `pnpm dev-data:reset`
    - Start fresh with default data
 
 ## File Locations
@@ -84,6 +84,6 @@ This is useful when you want to start fresh or undo experimental changes.
 ## Notes
 
 - Development data doesn't survive container rebuilds
-- Always use `yarn dev-data:copy` before committing if you want to keep changes
+- Always use `pnpm dev-data:copy` before committing if you want to keep changes
 - The server prioritizes development files over project defaults when both exist
 - You can manually edit files in `/tmp/temba-dev-data/` if needed

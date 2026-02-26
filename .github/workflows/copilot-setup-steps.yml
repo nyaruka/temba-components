@@ -28,6 +28,10 @@ jobs:
         with:
           node-version: '20'
 
+      # Setup pnpm via corepack (reads version from packageManager field)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       # Setup Chrome browser for Puppeteer tests to avoid firewall issues
       # This uses the official Chrome setup that handles firewall restrictions
       - name: Setup Chrome
@@ -35,17 +39,17 @@ jobs:
         with:
           chrome-version: stable
 
-      # Cache yarn dependencies to speed up future runs
-      # Uses yarn.lock as the cache key for dependency consistency
-      - name: Cache yarn dependencies
+      # Cache pnpm dependencies to speed up future runs
+      # Uses pnpm-lock.yaml as the cache key for dependency consistency
+      - name: Cache pnpm dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.yarn
+            ~/.local/share/pnpm/store/v3
             node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-pnpm-
 
       # Cache Puppeteer browsers to avoid repeated downloads
       - name: Cache Puppeteer browsers
@@ -54,14 +58,14 @@ jobs:
           path: |
             ~/.cache/puppeteer
             node_modules/.cache/puppeteer
-          key: ${{ runner.os }}-puppeteer-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-puppeteer-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-puppeteer-
 
       # Install project dependencies including Puppeteer with Chromium
       # Now allows Puppeteer to download Chromium since we handle firewall issues
       - name: Install dependencies
-        run: yarn install
+        run: pnpm install
         env:
           # Set Puppeteer to use system Chrome if available to avoid downloads
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
@@ -69,12 +73,12 @@ jobs:
       # Pre-build the project to warm up the environment
       # This compiles TypeScript, processes SVG icons, and creates distribution files
       # - name: Build project
-      #  run: yarn build
+      #  run: pnpm build
 
       # Run tests to ensure Puppeteer setup works correctly
       # This validates that the browser dependencies are properly configured
       # - name: Validate Puppeteer setup
-      #  run: yarn test --reporter=summary
+      #  run: pnpm test --reporter=summary
       #  env:
       #    PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
 

@@ -71,8 +71,8 @@ Screenshots are automatically generated and stored in:
 
 ```bash
 # Run all node tests
-yarn test test/nodes/*.test.ts --no-watch
+pnpm test test/nodes/*.test.ts --no-watch
 
 # Run specific node test
-yarn test test/nodes/wait_for_response.test.ts --no-watch
+pnpm test test/nodes/wait_for_response.test.ts --no-watch
 ```

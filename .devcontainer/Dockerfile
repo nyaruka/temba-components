@@ -9,4 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install chromium fonts-noto-color-emoji dnsutils curl -y --no-install-recommends -qq
 
+# Enable corepack for pnpm support via packageManager field
+RUN corepack enable
+
 USER node

@@ -2,17 +2,17 @@
 
 ## Package Management
 
-We use **yarn** for package management. Always use yarn commands instead of npm:
+We use **pnpm** for package management. Always use pnpm commands instead of npm:
 
 ```bash
 # Install dependencies
-yarn install
+pnpm install
 
 # Add new dependencies
-yarn add <package-name>
+pnpm add <package-name>
 
 # Add dev dependencies
-yarn add -D <package-name>
+pnpm add -D <package-name>
 ```
 
 ## Testing
@@ -20,13 +20,13 @@ yarn add -D <package-name>
 All tests are run using:
 
 ```bash
-yarn test
+pnpm test
 ```
 
 To check for coverage, use:
 
 ```bash
-yarn test --coverage
+pnpm test --coverage
 ```
 
 
@@ -34,7 +34,7 @@ yarn test --coverage
 You also can run an idividual test file to speed up development:
 
 ```bash
-yarn test test/temba-textinput.test.ts
+pnpm test test/temba-textinput.test.ts
 ```
 
 You can isolate a specific test within a file you are working to speed things up by updating the method in the file from it(...) to it.only(...)
@@ -55,12 +55,12 @@ By doing this and only running the individual test file, you can drastically spe
 Before a PR is ready it must pass validation checks for linting, formatting, and tests. This will also report coverage and you need to manually verify coverage does not drop.
 
 ```bash
-yarn validate
+pnpm validate
 ```
 
 ### Making commits
 
-Before committing always run `yarn precommit` and include any changes it makes.
+Before committing always run `pnpm precommit` and include any changes it makes.
 
 ### Test Coverage Requirements
 
@@ -148,11 +148,11 @@ This ordering ensures:
 
 ## Development Workflow
 
-1. **Install dependencies:** `yarn install`
-2. **Start development server:** `yarn start`
-3. **Run tests during development:** `yarn test`
-4. **Pre-commit checks before committing:** `yarn pre-commit`
-5. **Validate changes:** `yarn validate`
+1. **Install dependencies:** `pnpm install`
+2. **Start development server:** `pnpm start`
+3. **Run tests during development:** `pnpm test`
+4. **Pre-commit checks before committing:** `pnpm pre-commit`
+5. **Validate changes:** `pnpm validate`
 6. **Check Coverage:** Once validated, check for 100% coverage
 
 ## Code Quality
