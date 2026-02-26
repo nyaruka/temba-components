@@ -344,8 +344,8 @@ describe('temba-flow-node drag and drop functionality', () => {
       edgeStart: number,
       edgeEnd: number
     ): { dx: number; dy: number } {
-      let dx = 0;
-      let dy = 0;
+      const dx = 0;
+      const dy = 0;
 
       // Left/top edge
       const distFromStart = mousePos - edgeStart;
@@ -416,8 +416,7 @@ describe('temba-flow-node drag and drop functionality', () => {
       const currentClientX = 450;
       const autoScrollDeltaX = 200;
 
-      const deltaX =
-        currentClientX - dragStartX + autoScrollDeltaX;
+      const deltaX = currentClientX - dragStartX + autoScrollDeltaX;
 
       // Without auto-scroll, delta would be 50. With 200px of scroll, it's 250.
       assert.equal(deltaX, 250);
@@ -484,7 +483,6 @@ describe('temba-flow-node drag and drop functionality', () => {
 
     it('should handle simultaneous horizontal and vertical auto-scroll', () => {
       // Simulate mouse in the bottom-right corner of the viewport
-      const edgeStart = 0;
       const edgeEnd = 800;
       const mousePos = 780; // 20px from the right/bottom edge
 
