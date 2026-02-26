@@ -130,6 +130,10 @@ interface LocalizationUpdate {
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
 
+// How long the reflow auto-save countdown runs (in ms).
+// Used in both the CSS animation and the JS setTimeout.
+const REFLOW_AUTO_SAVE_DELAY = 5000;
+
 // Offset for positioning dropped action node relative to mouse cursor
 // Keep small to make drop location close to cursor position
 const DROP_PREVIEW_OFFSET_X = 20;
@@ -290,6 +294,14 @@ export class Editor extends RapidElement {
   private reflowUnsaved = false;
 
   private savedReflowPositions: Record<string, FlowPosition> | null = null;
+  private reflowAutoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private clearReflowAutoSaveTimer(): void {
+    if (this.reflowAutoSaveTimer !== null) {
+      clearTimeout(this.reflowAutoSaveTimer);
+      this.reflowAutoSaveTimer = null;
+    }
+  }
 
   private preRevertState: {
     definition: FlowDefinition;
@@ -952,13 +964,19 @@ export class Editor extends RapidElement {
         background: rgba(0, 0, 0, 0.65);
         backdrop-filter: blur(8px);
         border-radius: 10px;
-        padding: 12px 16px;
+        padding: 12px 16px 8px;
         display: flex;
-        align-items: center;
-        gap: 10px;
+        flex-direction: column;
+        gap: 8px;
         color: white;
         font-size: 13px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .reflow-card .reflow-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
 
       .reflow-card .reflow-label {
@@ -980,14 +998,33 @@ export class Editor extends RapidElement {
         opacity: 0.85;
       }
 
-      .reflow-card .reflow-save {
-        background: var(--color-primary-dark, #3b82f6);
-        color: white;
-      }
-
       .reflow-card .reflow-discard {
         background: rgba(255, 255, 255, 0.2);
         color: white;
+      }
+
+      .reflow-meter {
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.15);
+        overflow: hidden;
+      }
+
+      .reflow-meter-fill {
+        height: 100%;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 2px;
+        animation: reflow-countdown ${unsafeCSS(REFLOW_AUTO_SAVE_DELAY / 1000)}s
+          linear forwards;
+      }
+
+      @keyframes reflow-countdown {
+        from {
+          width: 100%;
+        }
+        to {
+          width: 0%;
+        }
       }
     `;
   }
@@ -1178,6 +1215,7 @@ export class Editor extends RapidElement {
           if (this.reflowUnsaved) {
             this.reflowUnsaved = false;
             this.savedReflowPositions = null;
+            this.clearReflowAutoSaveTimer();
           }
           this.isSaving = true;
           this.debouncedSave();
@@ -1395,6 +1433,7 @@ export class Editor extends RapidElement {
       clearTimeout(this.activityTimer);
       this.activityTimer = null;
     }
+    this.clearReflowAutoSaveTimer();
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
@@ -1759,16 +1798,22 @@ export class Editor extends RapidElement {
     if (editor) {
       editor.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
     }
-  }
 
-  private handleReflowSave(): void {
-    this.reflowUnsaved = false;
-    this.savedReflowPositions = null;
-    this.saveChanges();
+    // Start auto-save countdown (duration shared with CSS animation)
+    this.clearReflowAutoSaveTimer();
+    this.reflowAutoSaveTimer = setTimeout(() => {
+      this.reflowAutoSaveTimer = null;
+      if (this.reflowUnsaved) {
+        this.reflowUnsaved = false;
+        this.savedReflowPositions = null;
+        this.saveChanges();
+      }
+    }, REFLOW_AUTO_SAVE_DELAY);
   }
 
   private handleReflowDiscard(): void {
     this.reflowUnsaved = false;
+    this.clearReflowAutoSaveTimer();
 
     if (this.savedReflowPositions) {
       // Cancel any pending save timer before reverting
@@ -4466,13 +4511,18 @@ export class Editor extends RapidElement {
         </div>
         ${this.reflowUnsaved
           ? html`<div class="reflow-card">
-              <span class="reflow-label">Unsaved layout changes</span>
-              <button class="reflow-discard" @click=${this.handleReflowDiscard}>
-                Discard
-              </button>
-              <button class="reflow-save" @click=${this.handleReflowSave}>
-                Save
-              </button>
+              <div class="reflow-top">
+                <span class="reflow-label">Unsaved layout changes</span>
+                <button
+                  class="reflow-discard"
+                  @click=${this.handleReflowDiscard}
+                >
+                  Discard
+                </button>
+              </div>
+              <div class="reflow-meter">
+                <div class="reflow-meter-fill"></div>
+              </div>
             </div>`
           : ''}
       </div>
