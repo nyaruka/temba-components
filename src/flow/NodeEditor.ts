@@ -221,7 +221,7 @@ export class NodeEditor extends RapidElement {
       }
 
       .form-group-content {
-        padding: 6px;
+        padding: var(--group-content-padding, 6px);
         display: flex;
         flex-direction: column;
         gap: 15px;
@@ -233,8 +233,8 @@ export class NodeEditor extends RapidElement {
 
       .form-group-content.collapsed {
         max-height: 0;
-        padding-top: 0;
-        padding-bottom: 0;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
         opacity: 0;
       }
 
@@ -1770,6 +1770,7 @@ export class NodeEditor extends RapidElement {
       collapsible = false,
       collapsed = false,
       helpText,
+      contentPadding,
       getGroupValueCount
     } = groupConfig;
 
@@ -1887,6 +1888,9 @@ export class NodeEditor extends RapidElement {
         </div>
         <div
           class="form-group-content ${isCollapsed ? 'collapsed' : 'expanded'}"
+          style="${contentPadding
+            ? `--group-content-padding: ${contentPadding}`
+            : ''}"
         >
           ${items.map((item) =>
             this.renderLayoutItem(item, config, renderedFields)
