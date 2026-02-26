@@ -322,14 +322,14 @@ export class SortableList extends RapidElement {
     // Copy dimensions from the original element (before it was hidden)
     if (this.originalElementRect) {
       const rect = this.originalElementRect;
-      this.dropPlaceholder.style.boxSizing = 'border-box';
       this.dropPlaceholder.style.width = rect.width + 'px';
       this.dropPlaceholder.style.height = rect.height + 'px';
       this.dropPlaceholder.style.minHeight = rect.height + 'px';
       this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
       this.dropPlaceholder.style.flexShrink = '0';
       this.dropPlaceholder.style.background = '#f3f4f6';
-      this.dropPlaceholder.style.border = '2px dashed #d1d5db';
+      this.dropPlaceholder.style.outline = '2px dashed #d1d5db';
+      this.dropPlaceholder.style.outlineOffset = '-2px';
     }
 
     // Insert the placeholder in the correct position in the DOM
@@ -355,14 +355,14 @@ export class SortableList extends RapidElement {
 
     // Copy dimensions from the original element
     const rect = this.originalElementRect;
-    this.dropPlaceholder.style.boxSizing = 'border-box';
     this.dropPlaceholder.style.width = rect.width + 'px';
     this.dropPlaceholder.style.height = rect.height + 'px';
     this.dropPlaceholder.style.minHeight = rect.height + 'px';
     this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
     this.dropPlaceholder.style.flexShrink = '0';
     this.dropPlaceholder.style.background = '#f3f4f6';
-    this.dropPlaceholder.style.border = '2px dashed #d1d5db';
+    this.dropPlaceholder.style.outline = '2px dashed #d1d5db';
+    this.dropPlaceholder.style.outlineOffset = '-2px';
 
     // Insert the placeholder right after the hidden original element
     this.downEle.insertAdjacentElement('afterend', this.dropPlaceholder);
