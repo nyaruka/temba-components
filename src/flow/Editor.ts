@@ -1212,6 +1212,12 @@ export class Editor extends RapidElement {
     }
 
     this.saveTimer = window.setTimeout(() => {
+      // Don't auto-save while a reflow preview is pending user confirmation
+      if (this.reflowUnsaved) {
+        this.saveTimer = null;
+        return;
+      }
+
       const now = new Date();
       const timeSinceLastChange = now.getTime() - this.dirtyDate.getTime();
 
@@ -1720,6 +1726,13 @@ export class Editor extends RapidElement {
       Object.assign(newPositions, stickyPositions);
     }
 
+    // Cancel any in-flight save timer so it doesn't persist the reflowed
+    // layout before the user has a chance to Save or Discard.
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+
     // Suppress the auto-save from this updateCanvasPositions call
     this.reflowPending = true;
     this.reflowUnsaved = true;
@@ -1750,6 +1763,12 @@ export class Editor extends RapidElement {
     this.reflowUnsaved = false;
 
     if (this.savedReflowPositions) {
+      // Cancel any pending save timer before reverting
+      if (this.saveTimer !== null) {
+        clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+
       // Suppress the auto-save from reverting positions
       this.reflowPending = true;
       getStore().getState().updateCanvasPositions(this.savedReflowPositions);
