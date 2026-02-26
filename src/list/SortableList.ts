@@ -81,7 +81,8 @@ export class SortableList extends RapidElement {
 
   ghostElement: HTMLDivElement = null;
   downEle: HTMLDivElement = null;
-  originalElementRect: DOMRect = null; // Store original dimensions
+  originalElementRect: DOMRect = null; // Store viewport dimensions for ghost
+  originalLayoutSize: { width: number; height: number } = null; // Store layout dimensions for placeholders
   originalDragIndex: number = -1; // Store original index before moving element
   xOffset = 0;
   yOffset = 0;
@@ -319,12 +320,12 @@ export class SortableList extends RapidElement {
 
     this.dropPlaceholder.className = 'drop-placeholder sortable';
 
-    // Copy dimensions from the original element (before it was hidden)
-    if (this.originalElementRect) {
-      const rect = this.originalElementRect;
-      this.dropPlaceholder.style.width = rect.width + 'px';
-      this.dropPlaceholder.style.height = rect.height + 'px';
-      this.dropPlaceholder.style.minHeight = rect.height + 'px';
+    // Use layout-space dimensions for placeholders (unaffected by ancestor transforms)
+    if (this.originalLayoutSize) {
+      const size = this.originalLayoutSize;
+      this.dropPlaceholder.style.width = size.width + 'px';
+      this.dropPlaceholder.style.height = size.height + 'px';
+      this.dropPlaceholder.style.minHeight = size.height + 'px';
       this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
       this.dropPlaceholder.style.flexShrink = '0';
       this.dropPlaceholder.style.background = '#f3f4f6';
@@ -353,11 +354,11 @@ export class SortableList extends RapidElement {
     this.dropPlaceholder = document.createElement('div');
     this.dropPlaceholder.className = 'drop-placeholder sortable';
 
-    // Copy dimensions from the original element
-    const rect = this.originalElementRect;
-    this.dropPlaceholder.style.width = rect.width + 'px';
-    this.dropPlaceholder.style.height = rect.height + 'px';
-    this.dropPlaceholder.style.minHeight = rect.height + 'px';
+    // Use layout-space dimensions for placeholders (unaffected by ancestor transforms)
+    const size = this.originalLayoutSize;
+    this.dropPlaceholder.style.width = size.width + 'px';
+    this.dropPlaceholder.style.height = size.height + 'px';
+    this.dropPlaceholder.style.minHeight = size.height + 'px';
     this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
     this.dropPlaceholder.style.flexShrink = '0';
     this.dropPlaceholder.style.background = '#f3f4f6';
@@ -389,7 +390,8 @@ export class SortableList extends RapidElement {
 
       // Use getBoundingClientRect for accurate offsets and store original dimensions
       const rect = ele.getBoundingClientRect();
-      this.originalElementRect = rect; // Store the original rect before hiding
+      this.originalElementRect = rect; // Store viewport rect for ghost positioning
+      this.originalLayoutSize = { width: ele.offsetWidth, height: ele.offsetHeight }; // Store layout dimensions for placeholders
       this.xOffset = event.clientX - rect.left;
       this.yOffset = event.clientY - rect.top;
       this.yDown = event.clientY;
@@ -426,17 +428,30 @@ export class SortableList extends RapidElement {
       // Style the clone as a ghost
       this.ghostElement.classList.add('ghost');
 
-      // Use the stored original dimensions for positioning
+      // Detect ancestor scale transform (e.g. zoom) by comparing viewport
+      // to layout dimensions, so the ghost renders content at the right scale
       const rect = this.originalElementRect;
+      const layoutSize = this.originalLayoutSize;
+      const ancestorScale = layoutSize.width > 0 ? rect.width / layoutSize.width : 1;
+      const hasAncestorScale = Math.abs(ancestorScale - 1) > 0.001;
 
       this.ghostElement.style.position = 'fixed';
       this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
       this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
-      this.ghostElement.style.width = rect.width + 'px';
-      this.ghostElement.style.height = rect.height + 'px';
       this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.opacity = '0.8';
-      this.ghostElement.style.transform = 'scale(1.03)';
+
+      if (hasAncestorScale) {
+        // Use layout dimensions with ancestor scale so content renders correctly
+        this.ghostElement.style.width = layoutSize.width + 'px';
+        this.ghostElement.style.height = layoutSize.height + 'px';
+        this.ghostElement.style.transform = `scale(${ancestorScale * 1.03})`;
+        this.ghostElement.style.transformOrigin = '0 0';
+      } else {
+        this.ghostElement.style.width = rect.width + 'px';
+        this.ghostElement.style.height = rect.height + 'px';
+        this.ghostElement.style.transform = 'scale(1.03)';
+      }
 
       // allow component to customize the ghost node
       if (this.prepareGhost) {
