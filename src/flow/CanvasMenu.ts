@@ -185,7 +185,9 @@ export class CanvasMenu extends RapidElement {
     }
   }
 
-  private handleMenuItemClick(action: 'sticky' | 'action' | 'split' | 'reflow') {
+  private handleMenuItemClick(
+    action: 'sticky' | 'action' | 'split' | 'reflow'
+  ) {
     this.fireCustomEvent(CustomEventType.Selection, {
       action,
       position: this.clickPosition

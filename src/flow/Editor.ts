@@ -35,7 +35,7 @@ import {
   snapToGrid
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
-import { calculateLayeredLayout } from './reflow';
+import { calculateLayeredLayout, placeStickyNotes } from './reflow';
 
 interface Revision {
   id: number;
@@ -1639,7 +1639,7 @@ export class Editor extends RapidElement {
   private performReflow(): void {
     if (!this.definition || this.definition.nodes.length === 0) return;
 
-    // Save current positions for discard
+    // Save current positions for discard (nodes + stickies)
     const savedPositions: Record<string, FlowPosition> = {};
     for (const node of this.definition.nodes) {
       const ui = this.definition._ui?.nodes[node.uuid];
@@ -1647,19 +1647,39 @@ export class Editor extends RapidElement {
         savedPositions[node.uuid] = { ...ui.position };
       }
     }
+    const stickies = this.definition._ui?.stickies || {};
+    for (const [uuid, sticky] of Object.entries(stickies)) {
+      if (sticky.position) {
+        savedPositions[uuid] = { ...sticky.position };
+      }
+    }
     this.savedReflowPositions = savedPositions;
+
+    // Save old node positions before reflow for sticky proximity calculation
+    const oldNodePositions: Record<string, FlowPosition> = {};
+    for (const node of this.definition.nodes) {
+      const ui = this.definition._ui?.nodes[node.uuid];
+      if (ui?.position) {
+        oldNodePositions[node.uuid] = { ...ui.position };
+      }
+    }
 
     // Identify start node (first in sorted array)
     const startNodeUuid = this.definition.nodes[0].uuid;
 
     // Gather node sizes from DOM
+    const nodeSizes = new Map<string, { width: number; height: number }>();
     const getNodeSize = (uuid: string): { width: number; height: number } => {
       const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
       if (element) {
         const rect = element.getBoundingClientRect();
-        return { width: rect.width, height: rect.height };
+        const size = { width: rect.width, height: rect.height };
+        nodeSizes.set(uuid, size);
+        return size;
       }
-      return { width: 200, height: 100 };
+      const fallback = { width: 200, height: 100 };
+      nodeSizes.set(uuid, fallback);
+      return fallback;
     };
 
     // Compute new layout
@@ -1669,6 +1689,36 @@ export class Editor extends RapidElement {
       startNodeUuid,
       getNodeSize
     );
+
+    // Place sticky notes next to their closest nodes
+    if (Object.keys(stickies).length > 0) {
+      const stickySizes = new Map<string, { width: number; height: number }>();
+      for (const uuid of Object.keys(stickies)) {
+        const el = this.querySelector(
+          `temba-sticky-note[uuid="${uuid}"]`
+        ) as HTMLElement;
+        if (el) {
+          stickySizes.set(uuid, {
+            width: el.clientWidth,
+            height: el.clientHeight
+          });
+        } else {
+          stickySizes.set(uuid, { width: 182, height: 100 });
+        }
+      }
+
+      const stickyPositions = placeStickyNotes(
+        stickies,
+        oldNodePositions,
+        newPositions,
+        nodeSizes,
+        stickySizes,
+        startNodeUuid
+      );
+
+      // Merge sticky positions into newPositions
+      Object.assign(newPositions, stickyPositions);
+    }
 
     // Suppress the auto-save from this updateCanvasPositions call
     this.reflowPending = true;
@@ -4290,10 +4340,7 @@ export class Editor extends RapidElement {
         ${this.reflowUnsaved
           ? html`<div class="reflow-card">
               <span class="reflow-label">Unsaved layout changes</span>
-              <button
-                class="reflow-discard"
-                @click=${this.handleReflowDiscard}
-              >
+              <button class="reflow-discard" @click=${this.handleReflowDiscard}>
                 Discard
               </button>
               <button class="reflow-save" @click=${this.handleReflowSave}>

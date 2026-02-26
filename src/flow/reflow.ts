@@ -1,8 +1,14 @@
-import { Node, FlowPosition, NodeUI } from '../store/flow-definition';
+import {
+  Node,
+  FlowPosition,
+  NodeUI,
+  StickyNote
+} from '../store/flow-definition';
 import { snapToGrid } from './utils';
 
 const VERTICAL_GAP = 80;
 const HORIZONTAL_GAP = 60;
+const STICKY_GAP = 20;
 
 interface NodeSize {
   width: number;
@@ -216,22 +222,20 @@ function orderNodesInLayers(
       continue;
     }
 
-    const barycenters: { uuid: string; value: number }[] = group.map(
-      (uuid) => {
-        // Only consider parents that are in layers above this one
-        const nodeParents = (parents.get(uuid) || []).filter((p) => {
-          const pl = layers.get(p);
-          return pl !== undefined && pl < layer;
-        });
-        if (nodeParents.length === 0) {
-          return { uuid, value: Infinity };
-        }
-        const sum = nodeParents.reduce((acc, p) => {
-          return acc + (indexInLayer.get(p) ?? 0);
-        }, 0);
-        return { uuid, value: sum / nodeParents.length };
+    const barycenters: { uuid: string; value: number }[] = group.map((uuid) => {
+      // Only consider parents that are in layers above this one
+      const nodeParents = (parents.get(uuid) || []).filter((p) => {
+        const pl = layers.get(p);
+        return pl !== undefined && pl < layer;
+      });
+      if (nodeParents.length === 0) {
+        return { uuid, value: Infinity };
       }
-    );
+      const sum = nodeParents.reduce((acc, p) => {
+        return acc + (indexInLayer.get(p) ?? 0);
+      }, 0);
+      return { uuid, value: sum / nodeParents.length };
+    });
 
     barycenters.sort((a, b) => a.value - b.value);
 
@@ -343,4 +347,158 @@ function computePositions(
   }
 
   return positions;
+}
+
+interface StickySize {
+  width: number;
+  height: number;
+}
+
+/**
+ * Places sticky notes next to the node they were closest to before reflow.
+ * If a sticky was to the left of the start node, it is placed to the right instead.
+ */
+export function placeStickyNotes(
+  stickies: Record<string, StickyNote>,
+  oldNodePositions: Record<string, FlowPosition>,
+  newNodePositions: Record<string, FlowPosition>,
+  nodeSizes: Map<string, NodeSize>,
+  stickySizes: Map<string, StickySize>,
+  startNodeUuid: string
+): Record<string, FlowPosition> {
+  const stickyPositions: Record<string, FlowPosition> = {};
+  const nodeUuids = Object.keys(newNodePositions);
+  if (nodeUuids.length === 0) return stickyPositions;
+
+  // For each sticky, find the closest node based on pre-reflow positions
+  const stickyToNode = new Map<string, string>();
+  const nodeStickies = new Map<string, { uuid: string; wasLeft: boolean }[]>();
+
+  for (const [stickyUuid, sticky] of Object.entries(stickies)) {
+    if (!sticky.position) continue;
+
+    const sx = sticky.position.left;
+    const sy = sticky.position.top;
+
+    let closestNode = nodeUuids[0];
+    let closestDist = Infinity;
+
+    for (const nodeUuid of nodeUuids) {
+      const np = oldNodePositions[nodeUuid];
+      if (!np) continue;
+      const dx = sx - np.left;
+      const dy = sy - np.top;
+      const dist = dx * dx + dy * dy;
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestNode = nodeUuid;
+      }
+    }
+
+    stickyToNode.set(stickyUuid, closestNode);
+
+    // Was the sticky to the left of the node?
+    const nodePos = oldNodePositions[closestNode];
+    const wasLeft = nodePos ? sx < nodePos.left : false;
+
+    const list = nodeStickies.get(closestNode) || [];
+    list.push({ uuid: stickyUuid, wasLeft });
+    nodeStickies.set(closestNode, list);
+  }
+
+  // Place stickies next to their associated nodes
+  // Collect all placed rectangles (nodes + stickies) for collision avoidance
+  const placed: { left: number; top: number; width: number; height: number }[] =
+    [];
+
+  // Add all nodes to placed rectangles
+  for (const nodeUuid of nodeUuids) {
+    const pos = newNodePositions[nodeUuid];
+    const size = nodeSizes.get(nodeUuid) || { width: 200, height: 100 };
+    placed.push({
+      left: pos.left,
+      top: pos.top,
+      width: size.width,
+      height: size.height
+    });
+  }
+
+  for (const [nodeUuid, stickyList] of nodeStickies) {
+    const nodePos = newNodePositions[nodeUuid];
+    if (!nodePos) continue;
+    const nodeSize = nodeSizes.get(nodeUuid) || { width: 200, height: 100 };
+
+    for (const { uuid: stickyUuid, wasLeft } of stickyList) {
+      const stickySize = stickySizes.get(stickyUuid) || {
+        width: 182,
+        height: 100
+      };
+
+      // Determine placement side: right of node if it's the start node and sticky
+      // was to the left, otherwise prefer the side it was on originally
+      const placeRight = (nodeUuid === startNodeUuid && wasLeft) || !wasLeft;
+
+      let candidateLeft: number;
+      if (placeRight) {
+        candidateLeft = nodePos.left + nodeSize.width + STICKY_GAP;
+      } else {
+        candidateLeft = nodePos.left - stickySize.width - STICKY_GAP;
+      }
+      let candidateTop = nodePos.top;
+
+      // Snap and clamp
+      candidateLeft = snapToGrid(Math.max(0, candidateLeft));
+      candidateTop = snapToGrid(Math.max(0, candidateTop));
+
+      // Nudge down if colliding with any placed rectangle
+      let maxAttempts = 50;
+      while (
+        maxAttempts-- > 0 &&
+        collidesWithAny(
+          candidateLeft,
+          candidateTop,
+          stickySize.width,
+          stickySize.height,
+          placed
+        )
+      ) {
+        candidateTop = snapToGrid(candidateTop + STICKY_GAP);
+      }
+
+      stickyPositions[stickyUuid] = {
+        left: candidateLeft,
+        top: candidateTop
+      };
+
+      // Add this sticky to placed rectangles
+      placed.push({
+        left: candidateLeft,
+        top: candidateTop,
+        width: stickySize.width,
+        height: stickySize.height
+      });
+    }
+  }
+
+  return stickyPositions;
+}
+
+function collidesWithAny(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  placed: { left: number; top: number; width: number; height: number }[]
+): boolean {
+  for (const r of placed) {
+    if (
+      left < r.left + r.width + STICKY_GAP &&
+      left + width + STICKY_GAP > r.left &&
+      top < r.top + r.height + STICKY_GAP &&
+      top + height + STICKY_GAP > r.top
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
