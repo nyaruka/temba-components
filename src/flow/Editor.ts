@@ -37,6 +37,7 @@ import {
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
 import { calculateLayeredLayout, placeStickyNotes } from './reflow';
+import { FloatingTab } from '../display/FloatingTab';
 
 interface Revision {
   id: number;
@@ -67,6 +68,7 @@ import { Dialog } from '../layout/Dialog';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FloatingWindow } from '../layout/FloatingWindow';
+import { Icon } from '../Icons';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -288,6 +290,12 @@ export class Editor extends RapidElement {
   private saveError: string | null = null;
 
   @state()
+  private zoom = 1.0;
+
+  @state()
+  private zoomFitted = false;
+
+  @state()
   private reflowPending = false;
 
   @state()
@@ -401,6 +409,7 @@ export class Editor extends RapidElement {
   private boundGlobalMouseDown = this.handleGlobalMouseDown.bind(this);
   private boundKeyDown = this.handleKeyDown.bind(this);
   private boundCanvasContextMenu = this.handleCanvasContextMenu.bind(this);
+  private boundWheel = this.handleWheel.bind(this);
 
   static get styles() {
     return css`
@@ -434,6 +443,7 @@ export class Editor extends RapidElement {
         width: 100%;
         display: flex;
         padding-top: 20px;
+        transform-origin: 0 0;
       }
 
       #canvas {
@@ -943,7 +953,7 @@ export class Editor extends RapidElement {
       .save-indicator {
         position: absolute;
         top: 8px;
-        right: 16px;
+        right: 240px;
         padding: 6px 10px;
         z-index: 10000;
         pointer-events: none;
@@ -953,6 +963,63 @@ export class Editor extends RapidElement {
 
       .save-indicator.visible {
         opacity: 1;
+      }
+
+      .zoom-controls {
+        position: absolute;
+        top: 8px;
+        right: 16px;
+        z-index: 4999;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: white;
+        border-radius: var(--curvature);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        padding: 4px;
+        user-select: none;
+      }
+
+      .zoom-controls button {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        border-radius: var(--curvature);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        color: #555;
+        font-size: 16px;
+        line-height: 1;
+        outline: none;
+      }
+
+      .zoom-controls button:hover {
+        background: rgba(0, 0, 0, 0.06);
+      }
+
+      .zoom-controls button:disabled {
+        opacity: 0.3;
+        cursor: default;
+        background: transparent;
+      }
+
+      .zoom-controls .zoom-level {
+        font-size: 12px;
+        min-width: 40px;
+        text-align: center;
+        color: #555;
+        font-weight: 500;
+      }
+
+      .zoom-controls .zoom-divider {
+        width: 1px;
+        height: 16px;
+        background: #e0e0e0;
+        margin: 0 2px;
       }
 
       .reflow-card {
@@ -1039,6 +1106,7 @@ export class Editor extends RapidElement {
     super.firstUpdated(changes);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.setupGlobalEventListeners();
+    this.updateZoomControlPositioning();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
       this.fetchRevisions();
@@ -1104,10 +1172,10 @@ export class Editor extends RapidElement {
       const canvas = this.querySelector('#canvas');
       if (canvas) {
         const canvasRect = canvas.getBoundingClientRect();
-        const menuX = canvasRect.left + snappedPosition.left - 40;
+        const menuX = canvasRect.left + snappedPosition.left * this.zoom - 40;
         const menuY = isDragUp
-          ? canvasRect.top + snappedPosition.top + 74 // just below placeholder bottom
-          : canvasRect.top + snappedPosition.top + 80; // just below placeholder
+          ? canvasRect.top + snappedPosition.top * this.zoom + 74 // just below placeholder bottom
+          : canvasRect.top + snappedPosition.top * this.zoom + 80; // just below placeholder
 
         const canvasMenu = this.querySelector(
           'temba-canvas-menu'
@@ -1444,6 +1512,11 @@ export class Editor extends RapidElement {
       canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
     }
 
+    const editor = this.querySelector('#editor');
+    if (editor) {
+      editor.removeEventListener('wheel', this.boundWheel);
+    }
+
     // Clear all flow-specific data from the store so stale data
     // isn't briefly visible when a different flow is opened.
     zustand.getState().clearFlowData();
@@ -1458,6 +1531,11 @@ export class Editor extends RapidElement {
     const canvas = this.querySelector('#canvas');
     if (canvas) {
       canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
+    }
+
+    const editor = this.querySelector('#editor');
+    if (editor) {
+      editor.addEventListener('wheel', this.boundWheel, { passive: false });
     }
 
     // Listen for action edit requests from flow nodes
@@ -1633,8 +1711,8 @@ export class Editor extends RapidElement {
         // Clear current selection
         this.selectedItems.clear();
 
-        const relativeX = event.clientX - canvasRect.left;
-        const relativeY = event.clientY - canvasRect.top;
+        const relativeX = (event.clientX - canvasRect.left) / this.zoom;
+        const relativeY = (event.clientY - canvasRect.top) / this.zoom;
 
         this.selectionBox = {
           startX: relativeX,
@@ -1658,6 +1736,154 @@ export class Editor extends RapidElement {
       this.selectedItems.clear();
       this.requestUpdate();
     }
+  }
+
+  // --- Zoom ---
+
+  private setZoom(
+    newZoom: number,
+    center?: { clientX: number; clientY: number }
+  ): void {
+    const clamped = Math.max(
+      0.1,
+      Math.min(1.0, Math.round(newZoom * 100) / 100)
+    );
+    if (clamped === this.zoom) return;
+
+    const editor = this.querySelector('#editor') as HTMLElement;
+    const oldZoom = this.zoom;
+    this.zoom = clamped;
+    this.plumber.zoom = clamped;
+    this.zoomFitted = false;
+
+    if (editor && center) {
+      const editorRect = editor.getBoundingClientRect();
+      const ox = center.clientX - editorRect.left;
+      const oy = center.clientY - editorRect.top;
+      // Canvas point under cursor at old zoom
+      const cx = (editor.scrollLeft + ox) / oldZoom;
+      const cy = (editor.scrollTop + oy) / oldZoom;
+
+      requestAnimationFrame(() => {
+        editor.scrollLeft = cx * clamped - ox;
+        editor.scrollTop = cy * clamped - oy;
+        this.plumber.repaintEverything();
+      });
+    } else {
+      requestAnimationFrame(() => this.plumber.repaintEverything());
+    }
+  }
+
+  private zoomIn(): void {
+    this.setZoom(this.zoom + 0.05);
+  }
+
+  private zoomOut(): void {
+    this.setZoom(this.zoom - 0.05);
+  }
+
+  private zoomToFit(): void {
+    if (!this.definition || this.definition.nodes.length === 0) return;
+
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) return;
+
+    // Calculate bounding box of all content in canvas coordinates
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    this.definition.nodes.forEach((node) => {
+      const ui = this.definition._ui?.nodes[node.uuid];
+      if (!ui?.position) return;
+      const el = this.querySelector(`[id="${node.uuid}"]`) as HTMLElement;
+      if (!el) return;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      minX = Math.min(minX, ui.position.left);
+      minY = Math.min(minY, ui.position.top);
+      maxX = Math.max(maxX, ui.position.left + w);
+      maxY = Math.max(maxY, ui.position.top + h);
+    });
+
+    const stickies = this.definition._ui?.stickies || {};
+    Object.entries(stickies).forEach(([uuid, sticky]) => {
+      if (!sticky.position) return;
+      const el = this.querySelector(
+        `temba-sticky-note[uuid="${uuid}"]`
+      ) as HTMLElement;
+      if (!el) return;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      minX = Math.min(minX, sticky.position.left);
+      minY = Math.min(minY, sticky.position.top);
+      maxX = Math.max(maxX, sticky.position.left + w);
+      maxY = Math.max(maxY, sticky.position.top + h);
+    });
+
+    if (minX === Infinity) return;
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    const padding = 40;
+
+    const availWidth = editor.clientWidth - padding * 2;
+    const availHeight = editor.clientHeight - padding * 2;
+
+    const scaleX = availWidth / contentWidth;
+    const scaleY = availHeight / contentHeight;
+    let fitZoom = Math.min(scaleX, scaleY, 1.0);
+    fitZoom = Math.max(fitZoom, 0.1);
+    fitZoom = Math.round(fitZoom * 20) / 20; // round to nearest 0.05
+
+    this.zoom = fitZoom;
+    this.plumber.zoom = fitZoom;
+    this.zoomFitted = true;
+
+    // Center of content in canvas coordinates, plus grid/canvas margin offset
+    const centerX = (minX + maxX) / 2 + 40;
+    const centerY = (minY + maxY) / 2 + 40;
+
+    requestAnimationFrame(() => {
+      editor.scrollLeft = centerX * fitZoom - editor.clientWidth / 2;
+      editor.scrollTop = centerY * fitZoom - editor.clientHeight / 2;
+      this.plumber.repaintEverything();
+    });
+  }
+
+  private zoomToFull(): void {
+    this.setZoom(1.0);
+  }
+
+  /** Adjust zoom control right offset and floating tab positions */
+  private updateZoomControlPositioning(): void {
+    requestAnimationFrame(() => {
+      const editor = this.querySelector('#editor') as HTMLElement;
+      const zoomControls = this.querySelector('.zoom-controls') as HTMLElement;
+      if (editor && zoomControls) {
+        // Match right spacing to the top spacing (8px) by accounting for
+        // the scrollbar width
+        const scrollbarWidth = editor.offsetWidth - editor.clientWidth;
+        zoomControls.style.right = `${8 + scrollbarWidth}px`;
+      }
+      if (zoomControls) {
+        const rect = zoomControls.getBoundingClientRect();
+        FloatingTab.START_TOP = rect.bottom + 8;
+        FloatingTab.updateAllPositions();
+      }
+    });
+  }
+
+  private handleWheel(event: WheelEvent): void {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+
+    const delta = event.deltaY > 0 ? -0.05 : 0.05;
+    this.setZoom(this.zoom + delta, {
+      clientX: event.clientX,
+      clientY: event.clientY
+    });
   }
 
   private showDeleteConfirmation(): void {
@@ -1725,8 +1951,10 @@ export class Editor extends RapidElement {
     const getNodeSize = (uuid: string): { width: number; height: number } => {
       const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
       if (element) {
-        const rect = element.getBoundingClientRect();
-        const size = { width: rect.width, height: rect.height };
+        const size = {
+          width: element.offsetWidth,
+          height: element.offsetHeight
+        };
         nodeSizes.set(uuid, size);
         return size;
       }
@@ -1752,8 +1980,8 @@ export class Editor extends RapidElement {
         ) as HTMLElement;
         if (el) {
           stickySizes.set(uuid, {
-            width: el.clientWidth,
-            height: el.clientHeight
+            width: el.offsetWidth,
+            height: el.offsetHeight
           });
         } else {
           stickySizes.set(uuid, { width: 182, height: 100 });
@@ -1868,8 +2096,8 @@ export class Editor extends RapidElement {
     const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
     if (!canvasRect) return;
 
-    const relativeX = event.clientX - canvasRect.left;
-    const relativeY = event.clientY - canvasRect.top;
+    const relativeX = (event.clientX - canvasRect.left) / this.zoom;
+    const relativeY = (event.clientY - canvasRect.top) / this.zoom;
 
     this.selectionBox = {
       ...this.selectionBox,
@@ -1896,19 +2124,20 @@ export class Editor extends RapidElement {
 
     // Check nodes
     this.definition?.nodes.forEach((node) => {
-      const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
+      const nodeElement = this.querySelector(
+        `[id="${node.uuid}"]`
+      ) as HTMLElement;
       if (nodeElement) {
         const position = this.definition._ui?.nodes[node.uuid]?.position;
         if (position) {
-          const rect = nodeElement.getBoundingClientRect();
           const canvasRect =
             this.querySelector('#canvas')?.getBoundingClientRect();
 
           if (canvasRect) {
             const nodeLeft = position.left;
             const nodeTop = position.top;
-            const nodeRight = nodeLeft + rect.width;
-            const nodeBottom = nodeTop + rect.height;
+            const nodeRight = nodeLeft + nodeElement.offsetWidth;
+            const nodeBottom = nodeTop + nodeElement.offsetHeight;
 
             // Check if selection box intersects with node
             if (
@@ -2183,8 +2412,8 @@ export class Editor extends RapidElement {
         const canvas = this.querySelector('#canvas');
         if (canvas) {
           const canvasRect = canvas.getBoundingClientRect();
-          const relativeX = event.clientX - canvasRect.left;
-          const relativeY = event.clientY - canvasRect.top;
+          const relativeX = (event.clientX - canvasRect.left) / this.zoom;
+          const relativeY = (event.clientY - canvasRect.top) / this.zoom;
 
           const placeholderWidth = 200;
           const placeholderHeight = 64;
@@ -2247,10 +2476,17 @@ export class Editor extends RapidElement {
   private updateDragPositions(): void {
     if (!this.currentDragItem || !this.lastMouseEvent) return;
 
+    // Convert screen + scroll delta to canvas delta
     const deltaX =
-      this.lastMouseEvent.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
+      (this.lastMouseEvent.clientX -
+        this.dragStartPos.x +
+        this.autoScrollDeltaX) /
+      this.zoom;
     const deltaY =
-      this.lastMouseEvent.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
+      (this.lastMouseEvent.clientY -
+        this.dragStartPos.y +
+        this.autoScrollDeltaY) /
+      this.zoom;
 
     const itemsToMove =
       this.selectedItems.has(this.currentDragItem.uuid) &&
@@ -2327,10 +2563,12 @@ export class Editor extends RapidElement {
         const beforeScrollTop = editor.scrollTop;
 
         // Expand canvas if scrolling toward bottom/right edges
+        // Convert from scroll space to canvas space for expandCanvas
         if (scrollDx > 0 || scrollDy > 0) {
-          const neededWidth = editor.scrollLeft + editor.clientWidth + scrollDx;
+          const neededWidth =
+            (editor.scrollLeft + editor.clientWidth + scrollDx) / this.zoom;
           const neededHeight =
-            editor.scrollTop + editor.clientHeight + scrollDy;
+            (editor.scrollTop + editor.clientHeight + scrollDy) / this.zoom;
           getStore().getState().expandCanvas(neededWidth, neededHeight);
         }
 
@@ -2384,10 +2622,13 @@ export class Editor extends RapidElement {
 
     // If we were actually dragging, handle the drag end
     if (this.isDragging) {
+      // Convert screen + scroll delta to canvas delta
       const deltaX =
-        event.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
+        (event.clientX - this.dragStartPos.x + this.autoScrollDeltaX) /
+        this.zoom;
       const deltaY =
-        event.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
+        (event.clientY - this.dragStartPos.y + this.autoScrollDeltaY) /
+        this.zoom;
 
       // Determine what items were moved
       const itemsToMove =
@@ -2475,11 +2716,19 @@ export class Editor extends RapidElement {
     this.definition.nodes.forEach((node) => {
       const ui = this.definition._ui.nodes[node.uuid];
       if (ui && ui.position) {
-        const nodeElement = this.querySelector(`[id="${node.uuid}"]`);
+        const nodeElement = this.querySelector(
+          `[id="${node.uuid}"]`
+        ) as HTMLElement;
         if (nodeElement) {
-          const rect = nodeElement.getBoundingClientRect();
-          maxWidth = Math.max(maxWidth, ui.position.left + rect.width);
-          maxHeight = Math.max(maxHeight, ui.position.top + rect.height);
+          // Use offsetWidth/offsetHeight (unaffected by ancestor transforms)
+          maxWidth = Math.max(
+            maxWidth,
+            ui.position.left + nodeElement.offsetWidth
+          );
+          maxHeight = Math.max(
+            maxHeight,
+            ui.position.top + nodeElement.offsetHeight
+          );
         }
       }
     });
@@ -2535,8 +2784,8 @@ export class Editor extends RapidElement {
     }
 
     const canvasRect = canvas.getBoundingClientRect();
-    const relativeX = event.clientX - canvasRect.left - 10;
-    const relativeY = event.clientY - canvasRect.top - 10;
+    const relativeX = (event.clientX - canvasRect.left) / this.zoom - 10;
+    const relativeY = (event.clientY - canvasRect.top) / this.zoom - 10;
 
     // Snap position to grid
     const snappedLeft = snapToGrid(relativeX);
@@ -3043,11 +3292,9 @@ export class Editor extends RapidElement {
 
     const canvasRect = canvas.getBoundingClientRect();
 
-    // calculate position relative to canvas
-    // canvasRect gives us the canvas position in the viewport, which already accounts for scroll
-    // so we just need mouseX/Y - canvasRect.left/top to get position within canvas
-    const left = mouseX - canvasRect.left - DROP_PREVIEW_OFFSET_X;
-    const top = mouseY - canvasRect.top - DROP_PREVIEW_OFFSET_Y;
+    // Convert viewport coordinates to canvas coordinates, accounting for zoom
+    const left = (mouseX - canvasRect.left) / this.zoom - DROP_PREVIEW_OFFSET_X;
+    const top = (mouseY - canvasRect.top) / this.zoom - DROP_PREVIEW_OFFSET_Y;
 
     // Apply grid snapping only if requested (for final drop position)
     if (applyGridSnapping) {
@@ -4368,14 +4615,15 @@ export class Editor extends RapidElement {
     const editorCenterX = editorRect.width / 2;
     const editorCenterY = editorRect.height / 2;
 
-    // Get node position relative to the editor's scroll container
-    const nodeRect = nodeElement.getBoundingClientRect();
-    const nodeCenterX = nodeElement.offsetLeft + nodeRect.width / 2;
-    const nodeCenterY = nodeElement.offsetTop + nodeRect.height / 2;
+    // Use offsetWidth/offsetHeight (unaffected by ancestor transforms)
+    const nodeCenterX = nodeElement.offsetLeft + nodeElement.offsetWidth / 2;
+    const nodeCenterY = nodeElement.offsetTop + nodeElement.offsetHeight / 2;
 
-    // Calculate the scroll position needed to center the node
-    const targetScrollX = nodeCenterX - editorCenterX;
-    const targetScrollY = nodeCenterY - editorCenterY;
+    // Calculate the scroll position needed to center the node.
+    // Multiply by zoom because scroll operates in visual (transformed) space
+    // while offsetLeft/offsetTop are in layout space.
+    const targetScrollX = nodeCenterX * this.zoom - editorCenterX;
+    const targetScrollY = nodeCenterY * this.zoom - editorCenterY;
 
     // Smooth scroll the editor container to the target position
     editor.scrollTo({
@@ -4425,8 +4673,9 @@ export class Editor extends RapidElement {
           <div
             id="grid"
             class="${this.viewingRevision ? 'viewing-revision' : ''}"
-            style="min-width:100%;width:${this.canvasSize
-              .width}px; height:${this.canvasSize.height}px"
+            style="min-width:${100 / this.zoom}%;min-height:${100 /
+            this.zoom}%;width:${this.canvasSize.width}px; height:${this
+              .canvasSize.height}px;transform:scale(${this.zoom})"
           >
             <div
               id="canvas"
@@ -4508,6 +4757,39 @@ export class Editor extends RapidElement {
         </div>
         <div class="save-indicator ${this.isSaving ? 'visible' : ''}">
           <temba-loading units="3" size="8"></temba-loading>
+        </div>
+        <div class="zoom-controls">
+          <button
+            @click=${this.zoomToFit}
+            ?disabled=${this.zoomFitted}
+            title="Zoom to fit"
+          >
+            <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
+          </button>
+          <div class="zoom-divider"></div>
+          <button
+            @click=${this.zoomOut}
+            ?disabled=${this.zoom <= 0.1}
+            title="Zoom out"
+          >
+            −
+          </button>
+          <span class="zoom-level">${Math.round(this.zoom * 100)}%</span>
+          <button
+            @click=${this.zoomIn}
+            ?disabled=${this.zoom >= 1.0}
+            title="Zoom in"
+          >
+            +
+          </button>
+          <div class="zoom-divider"></div>
+          <button
+            @click=${this.zoomToFull}
+            ?disabled=${this.zoom >= 1.0}
+            title="Zoom to 100%"
+          >
+            <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
+          </button>
         </div>
         ${this.reflowUnsaved
           ? html`<div class="reflow-card">

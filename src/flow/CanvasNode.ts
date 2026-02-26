@@ -874,8 +874,8 @@ export class CanvasNode extends RapidElement {
     const actionElement = this.querySelector(`#${actionId}`) as HTMLElement;
 
     if (actionElement) {
-      const rect = actionElement.getBoundingClientRect();
-      this.draggedActionHeight = rect.height;
+      // Use offsetHeight (unaffected by ancestor CSS transforms like zoom)
+      this.draggedActionHeight = actionElement.offsetHeight;
     } else {
       // Fallback to a reasonable default
       this.draggedActionHeight = 60;

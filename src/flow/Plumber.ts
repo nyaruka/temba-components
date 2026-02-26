@@ -198,6 +198,7 @@ export class Plumber {
   private showContactsTimeout: number | null = null;
 
   public connectionDragging = false;
+  public zoom = 1.0;
 
   constructor(canvas: HTMLElement, editor: any) {
     this.canvas = canvas;
@@ -358,15 +359,17 @@ export class Plumber {
 
   // --- Anchor point distribution ---
 
+  /** Convert a viewport-to-canvas rect difference to canvas coordinates */
+  private toCanvas(viewportDiff: number): number {
+    return viewportDiff / this.zoom;
+  }
+
   private determineTargetFace(
     sourceX: number,
     sourceY: number,
-    targetRect: DOMRect,
-    canvasRect: DOMRect
+    targetCenterX: number,
+    targetTop: number
   ): TargetFace {
-    const targetCenterX =
-      targetRect.left + targetRect.width / 2 - canvasRect.left;
-    const targetTop = targetRect.top - canvasRect.top;
     const verticalGap = targetTop - sourceY;
 
     // Top face requires enough vertical room for the exit stub, entry stub,
@@ -398,14 +401,23 @@ export class Plumber {
 
     if (fromRect.width === 0 || toRect.width === 0) return null;
 
-    const sourceX = fromRect.left + fromRect.width / 2 - canvasRect.left;
-    const sourceY = fromRect.bottom - canvasRect.top;
+    // All coordinates are converted to canvas space by dividing by zoom
+    const sourceX = this.toCanvas(
+      fromRect.left + fromRect.width / 2 - canvasRect.left
+    );
+    const sourceY = this.toCanvas(fromRect.bottom - canvasRect.top);
+
+    // Pre-compute target canvas-space values for determineTargetFace
+    const toCenterX = this.toCanvas(
+      toRect.left + toRect.width / 2 - canvasRect.left
+    );
+    const toTopCanvas = this.toCanvas(toRect.top - canvasRect.top);
 
     const targetFace = this.determineTargetFace(
       sourceX,
       sourceY,
-      toRect,
-      canvasRect
+      toCenterX,
+      toTopCanvas
     );
 
     // Find all connections targeting the same node, grouped by face
@@ -419,14 +431,17 @@ export class Plumber {
         const connFromEl = document.getElementById(conn.fromId);
         if (connFromEl) {
           const connFromRect = connFromEl.getBoundingClientRect();
-          const connSourceX =
-            connFromRect.left + connFromRect.width / 2 - canvasRect.left;
-          const connSourceY = connFromRect.bottom - canvasRect.top;
+          const connSourceX = this.toCanvas(
+            connFromRect.left + connFromRect.width / 2 - canvasRect.left
+          );
+          const connSourceY = this.toCanvas(
+            connFromRect.bottom - canvasRect.top
+          );
           const face = this.determineTargetFace(
             connSourceX,
             connSourceY,
-            toRect,
-            canvasRect
+            toCenterX,
+            toTopCanvas
           );
           if (!faceConnections.has(face)) {
             faceConnections.set(face, []);
@@ -453,11 +468,11 @@ export class Plumber {
     const index = faceGroup.findIndex((e) => e.fromId === fromId);
     const count = faceGroup.length;
 
-    // Calculate anchor point on the chosen face
-    const targetLeft = toRect.left - canvasRect.left;
-    const targetTop = toRect.top - canvasRect.top;
-    const targetW = toRect.width;
-    const targetH = toRect.height;
+    // Calculate anchor point on the chosen face (all in canvas space)
+    const targetLeft = this.toCanvas(toRect.left - canvasRect.left);
+    const targetTop = toTopCanvas;
+    const targetW = this.toCanvas(toRect.width);
+    const targetH = this.toCanvas(toRect.height);
 
     let targetX: number;
     let targetY: number;
@@ -506,18 +521,27 @@ export class Plumber {
           if (connFromEl && connToEl) {
             const connFromRect = connFromEl.getBoundingClientRect();
             const connToRect = connToEl.getBoundingClientRect();
-            const connSourceX =
-              connFromRect.left + connFromRect.width / 2 - canvasRect.left;
-            const connSourceY = connFromRect.bottom - canvasRect.top;
+            const connSourceX = this.toCanvas(
+              connFromRect.left + connFromRect.width / 2 - canvasRect.left
+            );
+            const connSourceY = this.toCanvas(
+              connFromRect.bottom - canvasRect.top
+            );
+            const connToCenterX = this.toCanvas(
+              connToRect.left + connToRect.width / 2 - canvasRect.left
+            );
+            const connToTop = this.toCanvas(connToRect.top - canvasRect.top);
             const connFace = this.determineTargetFace(
               connSourceX,
               connSourceY,
-              connToRect,
-              canvasRect
+              connToCenterX,
+              connToTop
             );
             if (connFace === 'top') {
-              const connTargetLeft = connToRect.left - canvasRect.left;
-              const connTargetW = connToRect.width;
+              const connTargetLeft = this.toCanvas(
+                connToRect.left - canvasRect.left
+              );
+              const connTargetW = this.toCanvas(connToRect.width);
               siblings.push({
                 fromId: conn.fromId,
                 targetX: connTargetLeft + connTargetW / 2
@@ -1197,8 +1221,10 @@ export class Plumber {
 
     const canvasRect = this.canvas.getBoundingClientRect();
     const exitRect = exitEl.getBoundingClientRect();
-    const sourceX = exitRect.left + exitRect.width / 2 - canvasRect.left;
-    const sourceY = exitRect.bottom - canvasRect.top;
+    const sourceX = this.toCanvas(
+      exitRect.left + exitRect.width / 2 - canvasRect.left
+    );
+    const sourceY = this.toCanvas(exitRect.bottom - canvasRect.top);
 
     const aw = ARROW_HALF_WIDTH;
     const al = ARROW_LENGTH;
@@ -1254,16 +1280,18 @@ export class Plumber {
       }
     };
 
-    // Initial path to cursor
-    const cursorX = e.clientX - canvasRect.left;
-    const cursorY = e.clientY - canvasRect.top;
+    // Initial path to cursor (convert viewport to canvas coordinates)
+    const cursorX = this.toCanvas(e.clientX - canvasRect.left);
+    const cursorY = this.toCanvas(e.clientY - canvasRect.top);
     updateDragPath(cursorX, cursorY);
 
     this.connectionDragging = true;
 
     const onMove = (me: MouseEvent) => {
-      const cx = me.clientX - canvasRect.left;
-      const cy = me.clientY - canvasRect.top;
+      // Re-read canvasRect each move since scroll may have changed
+      const rect = this.canvas.getBoundingClientRect();
+      const cx = this.toCanvas(me.clientX - rect.left);
+      const cy = this.toCanvas(me.clientY - rect.top);
       updateDragPath(cx, cy);
     };
 

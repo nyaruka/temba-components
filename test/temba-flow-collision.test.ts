@@ -37,6 +37,37 @@ describe('Collision Detection Utilities', () => {
 
       document.body.removeChild(mockElement);
     });
+
+    it('uses layout-space dimensions unaffected by ancestor CSS transform', () => {
+      // Simulate zoom: ancestor has transform: scale(0.5)
+      const container = document.createElement('div');
+      container.style.transform = 'scale(0.5)';
+      container.style.transformOrigin = '0 0';
+      document.body.appendChild(container);
+
+      const mockElement = document.createElement('div');
+      mockElement.id = 'zoom-test-node';
+      mockElement.style.width = '200px';
+      mockElement.style.height = '150px';
+      container.appendChild(mockElement);
+
+      const position = { left: 100, top: 200 };
+      const bounds = getNodeBounds('zoom-test-node', position, mockElement);
+
+      // getNodeBounds uses offsetWidth/offsetHeight which are layout-space
+      expect(bounds).to.not.be.null;
+      expect(bounds!.width).to.equal(200);
+      expect(bounds!.height).to.equal(150);
+      expect(bounds!.right).to.equal(300); // left + layout width
+      expect(bounds!.bottom).to.equal(350); // top + layout height
+
+      // Verify that getBoundingClientRect WOULD return scaled values
+      const rect = mockElement.getBoundingClientRect();
+      expect(rect.width).to.equal(100); // 200 * 0.5 scale
+      expect(rect.height).to.equal(75); // 150 * 0.5 scale
+
+      container.remove();
+    });
   });
 
   describe('nodesOverlap', () => {

@@ -104,7 +104,7 @@ export class FloatingTab extends RapidElement {
     FloatingTab.updateAllPositions();
   }
 
-  private static updateAllPositions() {
+  public static updateAllPositions() {
     const sorted = [...FloatingTab.allTabs].sort((a, b) => a.order - b.order);
     sorted.forEach((tab, index) => {
       tab.top =
