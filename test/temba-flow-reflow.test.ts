@@ -364,6 +364,53 @@ describe('Reflow Layout', () => {
       expect(result['A'].top).to.equal(0);
     });
 
+    it('wraps siblings to new rows when exceeding max width', () => {
+      // A -> B..H: 7 children at 200px each = 200*7 + 60*6 = 1760px
+      // Should split into rows of 4 (980px) and 3 (720px)
+      const childIds = ['B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      const nodes = [
+        makeNode(
+          'A',
+          childIds.map((id) => ({ destination_uuid: id }))
+        ),
+        ...childIds.map((id) => makeNode(id, []))
+      ];
+      const nodeUIs: Record<string, { position: { left: number; top: number } }> =
+        { A: { position: { left: 0, top: 0 } } };
+      childIds.forEach((id, i) => {
+        nodeUIs[id] = { position: { left: i * 260, top: 200 } };
+      });
+      const result = calculateLayeredLayout(
+        nodes,
+        nodeUIs,
+        'A',
+        constantSize(200, 100)
+      );
+
+      // All children should be below A
+      for (const id of childIds) {
+        expect(result[id].top).to.be.greaterThan(result['A'].top);
+      }
+
+      // Children should span multiple rows (not all the same top)
+      const tops = new Set(childIds.map((id) => result[id].top));
+      expect(tops.size).to.be.greaterThan(1);
+
+      // Each visual row should fit within 1200px
+      const rowsByTop = new Map<number, string[]>();
+      for (const id of childIds) {
+        const t = result[id].top;
+        const row = rowsByTop.get(t) || [];
+        row.push(id);
+        rowsByTop.set(t, row);
+      }
+      for (const [, row] of rowsByTop) {
+        const minLeft = Math.min(...row.map((id) => result[id].left));
+        const maxRight = Math.max(...row.map((id) => result[id].left + 200));
+        expect(maxRight - minLeft).to.be.at.most(1200);
+      }
+    });
+
     it('handles wider flows with multiple branches', () => {
       // A -> B, A -> C, A -> D
       const nodes = [
