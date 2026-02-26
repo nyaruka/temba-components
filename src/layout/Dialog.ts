@@ -165,6 +165,8 @@ export class Dialog extends ResizeElement {
 
       temba-button {
         margin-left: 10px;
+        --button-y: 0.4em;
+        --button-x: 1em;
       }
 
       .dialog-body temba-loading {

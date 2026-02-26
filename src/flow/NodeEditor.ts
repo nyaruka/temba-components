@@ -335,7 +335,7 @@ export class NodeEditor extends RapidElement {
       }
 
       .gutter-fields temba-select {
-        min-width: 120px;
+        min-width: 150px;
       }
 
       .optional-field-link {

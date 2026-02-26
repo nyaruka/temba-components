@@ -46,7 +46,7 @@ export class Button extends LitElement {
       }
 
       .secondary-button:hover .button-mask {
-        border: 1px solid var(--color-button-secondary);
+        border: 1px solid rgba(0, 0, 0, 0.15);
       }
 
       .button-mask:hover {
@@ -100,7 +100,7 @@ export class Button extends LitElement {
       }
 
       .secondary-button.active-button .button-mask {
-        border: none;
+        border: 1px solid transparent;
       }
 
       .button-container.secondary-button.active-button:focus .button-mask {
