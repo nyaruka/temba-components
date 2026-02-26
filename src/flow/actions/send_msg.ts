@@ -63,7 +63,6 @@ export const send_msg: ActionConfig = {
     },
     runtime_attachments: {
       type: 'array',
-      helpText: 'Add dynamic attachments using expressions',
       itemLabel: 'Attachment',
       sortable: true,
       maxItems: 10,
@@ -73,6 +72,7 @@ export const send_msg: ActionConfig = {
       itemConfig: {
         type: {
           type: 'select',
+          width: '140px',
           options: [
             { value: 'image', name: 'Image' },
             { value: 'audio', name: 'Audio' },
@@ -113,6 +113,7 @@ export const send_msg: ActionConfig = {
       collapsible: true,
       collapsed: true,
       helpText: 'Add dynamic attachments that are evaluated at runtime',
+      contentPadding: '12px',
       getGroupValueCount: (formData: FormData) => {
         return (
           formData.runtime_attachments?.filter(

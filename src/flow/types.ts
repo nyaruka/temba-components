@@ -296,6 +296,7 @@ export interface GroupLayoutConfig {
   collapsible?: boolean;
   collapsed?: boolean | ((formData: FormData) => boolean); // initial state if collapsible - can be a function
   helpText?: string;
+  contentPadding?: string; // CSS padding for group content area
   getGroupValueCount?: (formData: FormData) => number; // optional function to get count for bubble display
 }
 
