@@ -4628,9 +4628,9 @@ export class Editor extends RapidElement {
           <div
             id="grid"
             class="${this.viewingRevision ? 'viewing-revision' : ''}"
-            style="min-width:${100 / this.zoom}%;min-height:${100 / this.zoom}%;width:${this.canvasSize
-              .width}px; height:${this.canvasSize
-              .height}px;transform:scale(${this.zoom})"
+            style="min-width:${100 / this.zoom}%;min-height:${100 /
+            this.zoom}%;width:${this.canvasSize.width}px; height:${this
+              .canvasSize.height}px;transform:scale(${this.zoom})"
           >
             <div
               id="canvas"

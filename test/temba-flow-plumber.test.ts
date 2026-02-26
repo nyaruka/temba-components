@@ -120,6 +120,44 @@ describe('Plumber', () => {
       expect((plumber as any).sources.size).to.equal(0);
     });
   });
+
+  describe('zoom property', () => {
+    it('defaults to 1.0', () => {
+      expect(plumber.zoom).to.equal(1.0);
+    });
+
+    it('is writable', () => {
+      plumber.zoom = 0.75;
+      expect(plumber.zoom).to.equal(0.75);
+    });
+  });
+
+  describe('toCanvas', () => {
+    it('returns identity at zoom 1.0', () => {
+      plumber.zoom = 1.0;
+      expect((plumber as any).toCanvas(100)).to.equal(100);
+    });
+
+    it('divides by zoom at 0.5', () => {
+      plumber.zoom = 0.5;
+      expect((plumber as any).toCanvas(100)).to.equal(200);
+    });
+
+    it('handles minimum zoom 0.1', () => {
+      plumber.zoom = 0.1;
+      expect((plumber as any).toCanvas(50)).to.equal(500);
+    });
+
+    it('handles negative viewport diffs', () => {
+      plumber.zoom = 0.5;
+      expect((plumber as any).toCanvas(-100)).to.equal(-200);
+    });
+
+    it('handles zero', () => {
+      plumber.zoom = 0.5;
+      expect((plumber as any).toCanvas(0)).to.equal(0);
+    });
+  });
 });
 
 describe('calculateFlowchartPath', () => {

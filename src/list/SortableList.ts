@@ -391,7 +391,10 @@ export class SortableList extends RapidElement {
       // Use getBoundingClientRect for accurate offsets and store original dimensions
       const rect = ele.getBoundingClientRect();
       this.originalElementRect = rect; // Store viewport rect for ghost positioning
-      this.originalLayoutSize = { width: ele.offsetWidth, height: ele.offsetHeight }; // Store layout dimensions for placeholders
+      this.originalLayoutSize = {
+        width: ele.offsetWidth,
+        height: ele.offsetHeight
+      }; // Store layout dimensions for placeholders
       this.xOffset = event.clientX - rect.left;
       this.yOffset = event.clientY - rect.top;
       this.yDown = event.clientY;
@@ -432,7 +435,8 @@ export class SortableList extends RapidElement {
       // to layout dimensions, so the ghost renders content at the right scale
       const rect = this.originalElementRect;
       const layoutSize = this.originalLayoutSize;
-      const ancestorScale = layoutSize.width > 0 ? rect.width / layoutSize.width : 1;
+      const ancestorScale =
+        layoutSize.width > 0 ? rect.width / layoutSize.width : 1;
       const hasAncestorScale = Math.abs(ancestorScale - 1) > 0.001;
 
       this.ghostElement.style.position = 'fixed';
