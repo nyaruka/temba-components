@@ -101,7 +101,7 @@ export const wait_for_response: NodeConfig = {
       type: 'select',
       placeholder: '5 minutes',
       multi: false,
-      maxWidth: '100px',
+      maxWidth: '130px',
       flavor: 'xsmall',
       options: TIMEOUT_OPTIONS,
 

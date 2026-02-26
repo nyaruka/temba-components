@@ -328,7 +328,8 @@ export class SortableList extends RapidElement {
       this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
       this.dropPlaceholder.style.flexShrink = '0';
       this.dropPlaceholder.style.background = '#f3f4f6';
-      this.dropPlaceholder.style.border = '2px dashed #d1d5db';
+      this.dropPlaceholder.style.outline = '2px dashed #d1d5db';
+      this.dropPlaceholder.style.outlineOffset = '-2px';
     }
 
     // Insert the placeholder in the correct position in the DOM
@@ -360,7 +361,8 @@ export class SortableList extends RapidElement {
     this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
     this.dropPlaceholder.style.flexShrink = '0';
     this.dropPlaceholder.style.background = '#f3f4f6';
-    this.dropPlaceholder.style.border = '2px dashed #d1d5db';
+    this.dropPlaceholder.style.outline = '2px dashed #d1d5db';
+    this.dropPlaceholder.style.outlineOffset = '-2px';
 
     // Insert the placeholder right after the hidden original element
     this.downEle.insertAdjacentElement('afterend', this.dropPlaceholder);

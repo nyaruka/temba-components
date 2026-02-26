@@ -2617,8 +2617,9 @@ export class Editor extends RapidElement {
         }
 
         // Check for collisions and reflow in case node size changed
+        const nodeUuid = updatedNode.uuid;
         requestAnimationFrame(() => {
-          this.checkCollisionsAndReflow([this.editingNode.uuid]);
+          this.checkCollisionsAndReflow([nodeUuid]);
         });
       }
     }
