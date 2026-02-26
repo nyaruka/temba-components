@@ -1986,13 +1986,9 @@ export class Editor extends RapidElement {
     if (!this.currentDragItem || !this.lastMouseEvent) return;
 
     const deltaX =
-      this.lastMouseEvent.clientX -
-      this.dragStartPos.x +
-      this.autoScrollDeltaX;
+      this.lastMouseEvent.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
     const deltaY =
-      this.lastMouseEvent.clientY -
-      this.dragStartPos.y +
-      this.autoScrollDeltaY;
+      this.lastMouseEvent.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
 
     const itemsToMove =
       this.selectedItems.has(this.currentDragItem.uuid) &&
@@ -2003,8 +1999,7 @@ export class Editor extends RapidElement {
     itemsToMove.forEach((uuid) => {
       const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
       if (element) {
-        const type =
-          element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+        const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
         const position = this.getPosition(uuid, type);
 
         if (position) {
