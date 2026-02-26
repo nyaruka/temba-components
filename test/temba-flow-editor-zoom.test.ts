@@ -451,11 +451,11 @@ describe('Editor Zoom', () => {
         })
       };
 
-      stub(editor, 'querySelector').callsFake((selector: string) => {
+      stub(editor, 'querySelector').callsFake(((selector: string) => {
         if (selector === '#canvas') return mockCanvas;
         if (selector === 'temba-canvas-menu') return mockCanvasMenu;
         return null;
-      });
+      }) as any);
 
       const event = {
         clientX: 200,
@@ -487,10 +487,10 @@ describe('Editor Zoom', () => {
         })
       };
 
-      stub(editor, 'querySelector').callsFake((selector: string) => {
+      stub(editor, 'querySelector').callsFake(((selector: string) => {
         if (selector === '#canvas') return mockCanvas;
         return null;
-      });
+      }) as any);
 
       // DROP_PREVIEW_OFFSET_X = 20, DROP_PREVIEW_OFFSET_Y = 20
       const pos = (editor as any).calculateCanvasDropPosition(200, 300, true);
@@ -525,11 +525,11 @@ describe('Editor Zoom', () => {
         }
       };
 
-      stub(editor, 'querySelector').callsFake((selector: string) => {
+      stub(editor, 'querySelector').callsFake(((selector: string) => {
         if (selector.includes('temba-flow-node')) return mockNode;
         if (selector === '#editor') return mockEditor;
         return null;
-      });
+      }) as any);
 
       editor.focusNode('test-uuid');
 
@@ -565,11 +565,11 @@ describe('Editor Zoom', () => {
         }
       };
 
-      stub(editor, 'querySelector').callsFake((selector: string) => {
+      stub(editor, 'querySelector').callsFake(((selector: string) => {
         if (selector.includes('temba-flow-node')) return mockNode;
         if (selector === '#editor') return mockEditor;
         return null;
-      });
+      }) as any);
 
       editor.focusNode('distant-node');
 
