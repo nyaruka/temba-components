@@ -7,7 +7,7 @@ import { CustomEventType } from '../interfaces';
  * Event detail for canvas menu selection
  */
 export interface CanvasMenuSelection {
-  action: 'sticky' | 'action' | 'split';
+  action: 'sticky' | 'action' | 'split' | 'reflow';
   position: { x: number; y: number };
 }
 
@@ -90,6 +90,9 @@ export class CanvasMenu extends RapidElement {
   @property({ type: Boolean })
   public showStickyNote = true;
 
+  @property({ type: Boolean })
+  public showReflow = false;
+
   @state()
   private clickPosition = { x: 0, y: 0 };
 
@@ -127,12 +130,14 @@ export class CanvasMenu extends RapidElement {
     x: number,
     y: number,
     clickPosition: { x: number; y: number },
-    showStickyNote: boolean = true
+    showStickyNote: boolean = true,
+    showReflow: boolean = false
   ) {
     this.x = x;
     this.y = y;
     this.clickPosition = clickPosition;
     this.showStickyNote = showStickyNote;
+    this.showReflow = showReflow;
     this.open = true;
 
     // Adjust position after menu renders to ensure it fits on screen
@@ -180,7 +185,9 @@ export class CanvasMenu extends RapidElement {
     }
   }
 
-  private handleMenuItemClick(action: 'sticky' | 'action' | 'split') {
+  private handleMenuItemClick(
+    action: 'sticky' | 'action' | 'split' | 'reflow'
+  ) {
     this.fireCustomEvent(CustomEventType.Selection, {
       action,
       position: this.clickPosition
@@ -233,6 +240,24 @@ export class CanvasMenu extends RapidElement {
                   <div class="menu-item-title">Add Sticky Note</div>
                   <div class="menu-item-description">
                     Add a note to the canvas
+                  </div>
+                </div>
+              </div>
+            `
+          : ''}
+        ${this.showReflow
+          ? html`
+              <div class="divider"></div>
+
+              <div
+                class="menu-item"
+                @click=${() => this.handleMenuItemClick('reflow')}
+              >
+                <temba-icon name="flow" size="1.25"></temba-icon>
+                <div class="menu-item-content">
+                  <div class="menu-item-title">Reflow</div>
+                  <div class="menu-item-description">
+                    Auto-arrange nodes in this flow
                   </div>
                 </div>
               </div>
