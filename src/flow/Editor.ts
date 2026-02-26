@@ -36,6 +36,7 @@ import {
   snapToGrid
 } from './utils';
 import { ACTION_CONFIG, NODE_CONFIG } from './config';
+import { calculateLayeredLayout, placeStickyNotes } from './reflow';
 
 interface Revision {
   id: number;
@@ -273,6 +274,14 @@ export class Editor extends RapidElement {
 
   @state()
   private saveError: string | null = null;
+
+  @state()
+  private reflowPending = false;
+
+  @state()
+  private reflowUnsaved = false;
+
+  private savedReflowPositions: Record<string, FlowPosition> | null = null;
 
   private preRevertState: {
     definition: FlowDefinition;
@@ -925,6 +934,53 @@ export class Editor extends RapidElement {
       .save-indicator.visible {
         opacity: 1;
       }
+
+      .reflow-card {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(8px);
+        border-radius: 10px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: white;
+        font-size: 13px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .reflow-card .reflow-label {
+        white-space: nowrap;
+      }
+
+      .reflow-card button {
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: opacity 0.15s ease;
+      }
+
+      .reflow-card button:hover {
+        opacity: 0.85;
+      }
+
+      .reflow-card .reflow-save {
+        background: var(--color-primary-dark, #3b82f6);
+        color: white;
+      }
+
+      .reflow-card .reflow-discard {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
     `;
   }
 
@@ -1105,8 +1161,19 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        this.isSaving = true;
-        this.debouncedSave();
+        if (this.reflowPending) {
+          // This dirtyDate is from the reflow itself — suppress save
+          this.reflowPending = false;
+        } else {
+          // Normal change — if reflow card was showing, it goes away
+          // because these changes will be included in the save
+          if (this.reflowUnsaved) {
+            this.reflowUnsaved = false;
+            this.savedReflowPositions = null;
+          }
+          this.isSaving = true;
+          this.debouncedSave();
+        }
       }
     }
 
@@ -1146,6 +1213,12 @@ export class Editor extends RapidElement {
     }
 
     this.saveTimer = window.setTimeout(() => {
+      // Don't auto-save while a reflow preview is pending user confirmation
+      if (this.reflowUnsaved) {
+        this.saveTimer = null;
+        return;
+      }
+
       const now = new Date();
       const timeSinceLastChange = now.getTime() - this.dirtyDate.getTime();
 
@@ -1566,6 +1639,150 @@ export class Editor extends RapidElement {
     dialog.addEventListener('temba-dialog-hidden', () => {
       document.body.removeChild(dialog);
     });
+  }
+
+  private performReflow(): void {
+    if (!this.definition || this.definition.nodes.length === 0) return;
+
+    // Save current positions for discard (nodes + stickies)
+    const savedPositions: Record<string, FlowPosition> = {};
+    for (const node of this.definition.nodes) {
+      const ui = this.definition._ui?.nodes[node.uuid];
+      if (ui?.position) {
+        savedPositions[node.uuid] = { ...ui.position };
+      }
+    }
+    const stickies = this.definition._ui?.stickies || {};
+    for (const [uuid, sticky] of Object.entries(stickies)) {
+      if (sticky.position) {
+        savedPositions[uuid] = { ...sticky.position };
+      }
+    }
+    this.savedReflowPositions = savedPositions;
+
+    // Save old node positions before reflow for sticky proximity calculation
+    const oldNodePositions: Record<string, FlowPosition> = {};
+    for (const node of this.definition.nodes) {
+      const ui = this.definition._ui?.nodes[node.uuid];
+      if (ui?.position) {
+        oldNodePositions[node.uuid] = { ...ui.position };
+      }
+    }
+
+    // Identify start node (first in sorted array)
+    const startNodeUuid = this.definition.nodes[0].uuid;
+
+    // Gather node sizes from DOM
+    const nodeSizes = new Map<string, { width: number; height: number }>();
+    const getNodeSize = (uuid: string): { width: number; height: number } => {
+      const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const size = { width: rect.width, height: rect.height };
+        nodeSizes.set(uuid, size);
+        return size;
+      }
+      const fallback = { width: 200, height: 100 };
+      nodeSizes.set(uuid, fallback);
+      return fallback;
+    };
+
+    // Compute new layout
+    const newPositions = calculateLayeredLayout(
+      this.definition.nodes,
+      this.definition._ui.nodes,
+      startNodeUuid,
+      getNodeSize
+    );
+
+    // Place sticky notes next to their closest nodes
+    if (Object.keys(stickies).length > 0) {
+      const stickySizes = new Map<string, { width: number; height: number }>();
+      for (const uuid of Object.keys(stickies)) {
+        const el = this.querySelector(
+          `temba-sticky-note[uuid="${uuid}"]`
+        ) as HTMLElement;
+        if (el) {
+          stickySizes.set(uuid, {
+            width: el.clientWidth,
+            height: el.clientHeight
+          });
+        } else {
+          stickySizes.set(uuid, { width: 182, height: 100 });
+        }
+      }
+
+      const stickyPositions = placeStickyNotes(
+        stickies,
+        oldNodePositions,
+        newPositions,
+        nodeSizes,
+        stickySizes,
+        startNodeUuid
+      );
+
+      // Merge sticky positions into newPositions
+      Object.assign(newPositions, stickyPositions);
+    }
+
+    // Cancel any in-flight save timer so it doesn't persist the reflowed
+    // layout before the user has a chance to Save or Discard.
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+
+    // Suppress the auto-save from this updateCanvasPositions call
+    this.reflowPending = true;
+    this.reflowUnsaved = true;
+
+    // Apply new positions
+    getStore().getState().updateCanvasPositions(newPositions);
+
+    // Update canvas size and repaint connections
+    this.updateCanvasSize();
+    requestAnimationFrame(() => {
+      this.plumber.repaintEverything();
+    });
+
+    // Scroll to top-left so the start node is visible
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (editor) {
+      editor.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+    }
+  }
+
+  private handleReflowSave(): void {
+    this.reflowUnsaved = false;
+    this.savedReflowPositions = null;
+    this.saveChanges();
+  }
+
+  private handleReflowDiscard(): void {
+    this.reflowUnsaved = false;
+
+    if (this.savedReflowPositions) {
+      // Cancel any pending save timer before reverting
+      if (this.saveTimer !== null) {
+        clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+
+      // Suppress the auto-save from reverting positions
+      this.reflowPending = true;
+      getStore().getState().updateCanvasPositions(this.savedReflowPositions);
+      this.savedReflowPositions = null;
+
+      // Clear dirty state since we reverted to the saved version
+      setTimeout(() => {
+        getStore().getState().setDirtyDate(null);
+        this.isSaving = false;
+      }, 0);
+
+      requestAnimationFrame(() => {
+        this.plumber.repaintEverything();
+      });
+    }
   }
 
   private deleteNodes(uuids: string[]): void {
@@ -2175,10 +2392,17 @@ export class Editor extends RapidElement {
     // Show the canvas menu at the mouse position (use viewport coordinates)
     const canvasMenu = this.querySelector('temba-canvas-menu') as CanvasMenu;
     if (canvasMenu) {
-      canvasMenu.show(event.clientX, event.clientY, {
-        x: snappedLeft,
-        y: snappedTop
-      });
+      const hasNodes = this.definition && this.definition.nodes.length > 0;
+      canvasMenu.show(
+        event.clientX,
+        event.clientY,
+        {
+          x: snappedLeft,
+          y: snappedTop
+        },
+        true,
+        hasNodes
+      );
     }
   }
 
@@ -2207,6 +2431,11 @@ export class Editor extends RapidElement {
   private handleCanvasMenuSelection(event: CustomEvent): void {
     const selection = event.detail as CanvasMenuSelection;
     const store = getStore();
+
+    if (selection.action === 'reflow') {
+      this.performReflow();
+      return;
+    }
 
     if (selection.action === 'sticky') {
       // Create new sticky note
@@ -4127,6 +4356,17 @@ export class Editor extends RapidElement {
         <div class="save-indicator ${this.isSaving ? 'visible' : ''}">
           <temba-loading units="3" size="8"></temba-loading>
         </div>
+        ${this.reflowUnsaved
+          ? html`<div class="reflow-card">
+              <span class="reflow-label">Unsaved layout changes</span>
+              <button class="reflow-discard" @click=${this.handleReflowDiscard}>
+                Discard
+              </button>
+              <button class="reflow-save" @click=${this.handleReflowSave}>
+                Save
+              </button>
+            </div>`
+          : ''}
       </div>
 
       ${this.editingNode || this.editingAction
