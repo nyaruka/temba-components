@@ -98,6 +98,8 @@ export interface SelectionBox {
 }
 
 const DRAG_THRESHOLD = 5;
+const AUTO_SCROLL_EDGE_ZONE = 100;
+const AUTO_SCROLL_MAX_SPEED = 15;
 
 type TranslationType = 'property' | 'category';
 
@@ -201,6 +203,12 @@ export class Editor extends RapidElement {
   @state()
   private currentDragItem: DraggableItem | null = null;
   private startPos = { left: 0, top: 0 };
+
+  // Auto-scroll state
+  private autoScrollAnimationId: number | null = null;
+  private autoScrollDeltaX = 0;
+  private autoScrollDeltaY = 0;
+  private lastMouseEvent: MouseEvent | null = null;
 
   // Selection state
   @state()
@@ -1378,6 +1386,7 @@ export class Editor extends RapidElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.stopAutoScroll();
     if (this.saveTimer !== null) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
@@ -2172,46 +2181,138 @@ export class Editor extends RapidElement {
     // Handle item dragging
     if (!this.isMouseDown || !this.currentDragItem) return;
 
-    const deltaX = event.clientX - this.dragStartPos.x;
-    const deltaY = event.clientY - this.dragStartPos.y;
+    this.lastMouseEvent = event;
+
+    const deltaX = event.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
+    const deltaY = event.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
     // Only start dragging if we've moved beyond the threshold
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
+      this.startAutoScroll();
     }
 
     // If we're actually dragging, update positions
     if (this.isDragging) {
-      // Determine what items to move
-      const itemsToMove =
-        this.selectedItems.has(this.currentDragItem.uuid) &&
-        this.selectedItems.size > 1
-          ? Array.from(this.selectedItems)
-          : [this.currentDragItem.uuid];
+      this.updateDragPositions();
+    }
+  }
 
-      itemsToMove.forEach((uuid) => {
-        const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
-        if (element) {
-          const type =
-            element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
-          const position = this.getPosition(uuid, type);
+  private updateDragPositions(): void {
+    if (!this.currentDragItem || !this.lastMouseEvent) return;
 
-          if (position) {
-            const newLeft = position.left + deltaX;
-            const newTop = position.top + deltaY;
+    const deltaX =
+      this.lastMouseEvent.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
+    const deltaY =
+      this.lastMouseEvent.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
 
-            // Update the visual position during drag
-            element.style.left = `${newLeft}px`;
-            element.style.top = `${newTop}px`;
+    const itemsToMove =
+      this.selectedItems.has(this.currentDragItem.uuid) &&
+      this.selectedItems.size > 1
+        ? Array.from(this.selectedItems)
+        : [this.currentDragItem.uuid];
 
-            // Add dragging class to ensure highest z-index
-            element.classList.add('dragging');
-          }
+    itemsToMove.forEach((uuid) => {
+      const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+      if (element) {
+        const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+        const position = this.getPosition(uuid, type);
+
+        if (position) {
+          element.style.left = `${position.left + deltaX}px`;
+          element.style.top = `${position.top + deltaY}px`;
+          element.classList.add('dragging');
         }
-      });
+      }
+    });
 
-      this.plumber.revalidate(itemsToMove);
+    this.plumber.revalidate(itemsToMove);
+  }
+
+  private startAutoScroll(): void {
+    if (this.autoScrollAnimationId !== null) return;
+
+    const editor = this.querySelector('#editor') as HTMLElement;
+    if (!editor) return;
+
+    const tick = () => {
+      if (!this.isDragging || !this.lastMouseEvent) {
+        this.autoScrollAnimationId = null;
+        return;
+      }
+
+      const editorRect = editor.getBoundingClientRect();
+      const mouseX = this.lastMouseEvent.clientX;
+      const mouseY = this.lastMouseEvent.clientY;
+
+      let scrollDx = 0;
+      let scrollDy = 0;
+
+      // Left edge
+      const distFromLeft = mouseX - editorRect.left;
+      if (distFromLeft >= 0 && distFromLeft < AUTO_SCROLL_EDGE_ZONE) {
+        const ratio = 1 - distFromLeft / AUTO_SCROLL_EDGE_ZONE;
+        scrollDx = -(ratio * AUTO_SCROLL_MAX_SPEED);
+      }
+
+      // Right edge
+      const distFromRight = editorRect.right - mouseX;
+      if (distFromRight >= 0 && distFromRight < AUTO_SCROLL_EDGE_ZONE) {
+        const ratio = 1 - distFromRight / AUTO_SCROLL_EDGE_ZONE;
+        scrollDx = ratio * AUTO_SCROLL_MAX_SPEED;
+      }
+
+      // Top edge
+      const distFromTop = mouseY - editorRect.top;
+      if (distFromTop >= 0 && distFromTop < AUTO_SCROLL_EDGE_ZONE) {
+        const ratio = 1 - distFromTop / AUTO_SCROLL_EDGE_ZONE;
+        scrollDy = -(ratio * AUTO_SCROLL_MAX_SPEED);
+      }
+
+      // Bottom edge
+      const distFromBottom = editorRect.bottom - mouseY;
+      if (distFromBottom >= 0 && distFromBottom < AUTO_SCROLL_EDGE_ZONE) {
+        const ratio = 1 - distFromBottom / AUTO_SCROLL_EDGE_ZONE;
+        scrollDy = ratio * AUTO_SCROLL_MAX_SPEED;
+      }
+
+      if (scrollDx !== 0 || scrollDy !== 0) {
+        const beforeScrollLeft = editor.scrollLeft;
+        const beforeScrollTop = editor.scrollTop;
+
+        // Expand canvas if scrolling toward bottom/right edges
+        if (scrollDx > 0 || scrollDy > 0) {
+          const neededWidth = editor.scrollLeft + editor.clientWidth + scrollDx;
+          const neededHeight =
+            editor.scrollTop + editor.clientHeight + scrollDy;
+          getStore().getState().expandCanvas(neededWidth, neededHeight);
+        }
+
+        editor.scrollLeft += scrollDx;
+        editor.scrollTop += scrollDy;
+
+        // Track actual scroll delta (browser clamps at boundaries)
+        const actualDx = editor.scrollLeft - beforeScrollLeft;
+        const actualDy = editor.scrollTop - beforeScrollTop;
+        this.autoScrollDeltaX += actualDx;
+        this.autoScrollDeltaY += actualDy;
+
+        if (actualDx !== 0 || actualDy !== 0) {
+          this.updateDragPositions();
+        }
+      }
+
+      this.autoScrollAnimationId = requestAnimationFrame(tick);
+    };
+
+    this.autoScrollAnimationId = requestAnimationFrame(tick);
+  }
+
+  private stopAutoScroll(): void {
+    if (this.autoScrollAnimationId !== null) {
+      cancelAnimationFrame(this.autoScrollAnimationId);
+      this.autoScrollAnimationId = null;
     }
   }
 
@@ -2234,10 +2335,14 @@ export class Editor extends RapidElement {
     // Handle item drag completion
     if (!this.isMouseDown || !this.currentDragItem) return;
 
+    this.stopAutoScroll();
+
     // If we were actually dragging, handle the drag end
     if (this.isDragging) {
-      const deltaX = event.clientX - this.dragStartPos.x;
-      const deltaY = event.clientY - this.dragStartPos.y;
+      const deltaX =
+        event.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
+      const deltaY =
+        event.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
 
       // Determine what items were moved
       const itemsToMove =
@@ -2306,6 +2411,9 @@ export class Editor extends RapidElement {
     this.isMouseDown = false;
     this.currentDragItem = null;
     this.canvasMouseDown = false;
+    this.autoScrollDeltaX = 0;
+    this.autoScrollDeltaY = 0;
+    this.lastMouseEvent = null;
   }
 
   private updateCanvasSize(): void {
