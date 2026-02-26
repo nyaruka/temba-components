@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use yarn svg to update
-export const SVG_FINGERPRINT = '129c04a9f99f9f4e99c436a68bc95470';
+export const SVG_FINGERPRINT = 'de580a861152b5d164592ae63b65e5aa';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -198,6 +198,8 @@ export enum Icon {
   video = 'video-recorder',
   webhook = 'link-external-01',
   workspace = 'folder',
+  zoom_fit = 'maximize-02',
+  zoom_in = 'expand-06',
 
   // channel types
   channel_a = 'channel-android',

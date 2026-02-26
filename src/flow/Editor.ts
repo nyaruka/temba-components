@@ -68,6 +68,7 @@ import { Dialog } from '../layout/Dialog';
 import { CanvasMenu, CanvasMenuSelection } from './CanvasMenu';
 import { NodeTypeSelector, NodeTypeSelection } from './NodeTypeSelector';
 import { FloatingWindow } from '../layout/FloatingWindow';
+import { Icon } from '../Icons';
 
 export function findNodeForExit(
   definition: FlowDefinition,
@@ -278,6 +279,9 @@ export class Editor extends RapidElement {
 
   @state()
   private zoom = 1.0;
+
+  @state()
+  private zoomFitted = false;
 
   @state()
   private reflowPending = false;
@@ -945,7 +949,7 @@ export class Editor extends RapidElement {
         position: absolute;
         top: 8px;
         right: 16px;
-        z-index: 10000;
+        z-index: 4999;
         display: flex;
         align-items: center;
         gap: 2px;
@@ -1057,7 +1061,7 @@ export class Editor extends RapidElement {
     super.firstUpdated(changes);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.setupGlobalEventListeners();
-    this.updateFloatingTabPositions();
+    this.updateZoomControlPositioning();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
       this.fetchRevisions();
@@ -1702,6 +1706,7 @@ export class Editor extends RapidElement {
     const oldZoom = this.zoom;
     this.zoom = clamped;
     this.plumber.zoom = clamped;
+    this.zoomFitted = false;
 
     if (editor && center) {
       const editorRect = editor.getBoundingClientRect();
@@ -1761,8 +1766,8 @@ export class Editor extends RapidElement {
         `temba-sticky-note[uuid="${uuid}"]`
       ) as HTMLElement;
       if (!el) return;
-      const w = el.clientWidth;
-      const h = el.clientHeight;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
       minX = Math.min(minX, sticky.position.left);
       minY = Math.min(minY, sticky.position.top);
       maxX = Math.max(maxX, sticky.position.left + w);
@@ -1773,7 +1778,7 @@ export class Editor extends RapidElement {
 
     const contentWidth = maxX - minX;
     const contentHeight = maxY - minY;
-    const padding = 60;
+    const padding = 40;
 
     const availWidth = editor.clientWidth - padding * 2;
     const availHeight = editor.clientHeight - padding * 2;
@@ -1782,10 +1787,11 @@ export class Editor extends RapidElement {
     const scaleY = availHeight / contentHeight;
     let fitZoom = Math.min(scaleX, scaleY, 1.0);
     fitZoom = Math.max(fitZoom, 0.1);
-    fitZoom = Math.floor(fitZoom * 20) / 20; // round down to nearest 0.05
+    fitZoom = Math.round(fitZoom * 20) / 20; // round to nearest 0.05
 
     this.zoom = fitZoom;
     this.plumber.zoom = fitZoom;
+    this.zoomFitted = true;
 
     // Center of content in canvas coordinates, plus grid/canvas margin offset
     const centerX = (minX + maxX) / 2 + 40;
@@ -1802,10 +1808,17 @@ export class Editor extends RapidElement {
     this.setZoom(1.0);
   }
 
-  /** Position floating tabs just below the zoom controls with matching spacing */
-  private updateFloatingTabPositions(): void {
+  /** Adjust zoom control right offset and floating tab positions */
+  private updateZoomControlPositioning(): void {
     requestAnimationFrame(() => {
-      const zoomControls = this.querySelector('.zoom-controls');
+      const editor = this.querySelector('#editor') as HTMLElement;
+      const zoomControls = this.querySelector('.zoom-controls') as HTMLElement;
+      if (editor && zoomControls) {
+        // Match right spacing to the top spacing (8px) by accounting for
+        // the scrollbar width
+        const scrollbarWidth = editor.offsetWidth - editor.clientWidth;
+        zoomControls.style.right = `${8 + scrollbarWidth}px`;
+      }
       if (zoomControls) {
         const rect = zoomControls.getBoundingClientRect();
         FloatingTab.START_TOP = rect.bottom + 8;
@@ -1890,8 +1903,10 @@ export class Editor extends RapidElement {
     const getNodeSize = (uuid: string): { width: number; height: number } => {
       const element = this.querySelector(`[id="${uuid}"]`) as HTMLElement;
       if (element) {
-        const rect = element.getBoundingClientRect();
-        const size = { width: rect.width, height: rect.height };
+        const size = {
+          width: element.offsetWidth,
+          height: element.offsetHeight
+        };
         nodeSizes.set(uuid, size);
         return size;
       }
@@ -1917,8 +1932,8 @@ export class Editor extends RapidElement {
         ) as HTMLElement;
         if (el) {
           stickySizes.set(uuid, {
-            width: el.clientWidth,
-            height: el.clientHeight
+            width: el.offsetWidth,
+            height: el.offsetHeight
           });
         } else {
           stickySizes.set(uuid, { width: 182, height: 100 });
@@ -4446,9 +4461,11 @@ export class Editor extends RapidElement {
     const nodeCenterX = nodeElement.offsetLeft + nodeElement.offsetWidth / 2;
     const nodeCenterY = nodeElement.offsetTop + nodeElement.offsetHeight / 2;
 
-    // Calculate the scroll position needed to center the node
-    const targetScrollX = nodeCenterX - editorCenterX;
-    const targetScrollY = nodeCenterY - editorCenterY;
+    // Calculate the scroll position needed to center the node.
+    // Multiply by zoom because scroll operates in visual (transformed) space
+    // while offsetLeft/offsetTop are in layout space.
+    const targetScrollX = nodeCenterX * this.zoom - editorCenterX;
+    const targetScrollY = nodeCenterY * this.zoom - editorCenterY;
 
     // Smooth scroll the editor container to the target position
     editor.scrollTo({
@@ -4498,7 +4515,7 @@ export class Editor extends RapidElement {
           <div
             id="grid"
             class="${this.viewingRevision ? 'viewing-revision' : ''}"
-            style="min-width:100%;width:${this.canvasSize
+            style="min-width:${100 / this.zoom}%;min-height:${100 / this.zoom}%;width:${this.canvasSize
               .width}px; height:${this.canvasSize
               .height}px;transform:scale(${this.zoom})"
           >
@@ -4584,8 +4601,12 @@ export class Editor extends RapidElement {
           <temba-loading units="3" size="8"></temba-loading>
         </div>
         <div class="zoom-controls">
-          <button @click=${this.zoomToFit} title="Zoom to fit">
-            <temba-icon name="flow" size="1"></temba-icon>
+          <button
+            @click=${this.zoomToFit}
+            ?disabled=${this.zoomFitted}
+            title="Zoom to fit"
+          >
+            <temba-icon name=${Icon.zoom_fit} size="1"></temba-icon>
           </button>
           <div class="zoom-divider"></div>
           <button
@@ -4609,7 +4630,7 @@ export class Editor extends RapidElement {
             ?disabled=${this.zoom >= 1.0}
             title="Zoom to 100%"
           >
-            <temba-icon name="maximize-02" size="1"></temba-icon>
+            <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
           </button>
         </div>
         ${this.reflowUnsaved
