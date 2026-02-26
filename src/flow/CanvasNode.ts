@@ -6,6 +6,7 @@ import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
+import { isRightClick } from './utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
@@ -970,6 +971,8 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
+    if (isRightClick(event)) return;
+
     // Don't handle clicks on the remove button, drag handle, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
@@ -1097,6 +1100,8 @@ export class CanvasNode extends RapidElement {
   }
 
   private handleNodeMouseDown(event: MouseEvent): void {
+    if (isRightClick(event)) return;
+
     // Don't handle clicks on the remove button, exits, drag handle, or when node is in removing state
     const target = event.target as HTMLElement;
     if (

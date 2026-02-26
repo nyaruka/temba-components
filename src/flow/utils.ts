@@ -2,6 +2,21 @@ import { html } from 'lit-html';
 import { NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue } from '../store/AppState';
 
+const IS_MAC =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
+/**
+ * Returns true if the mouse event is a right-click or equivalent:
+ * - button !== 0 (actual right-click or middle-click on any platform)
+ * - ctrl+click on macOS (emulates right-click / context menu)
+ */
+export function isRightClick(event: MouseEvent): boolean {
+  if (event.button !== 0) return true;
+  if (IS_MAC && event.ctrlKey) return true;
+  return false;
+}
+
 export function formatIssueMessage(issue: FlowIssue): string {
   if (issue.dependency) {
     const name = issue.dependency.name || issue.dependency.key;
