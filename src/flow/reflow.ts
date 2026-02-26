@@ -9,6 +9,7 @@ import { snapToGrid } from './utils';
 const VERTICAL_GAP = 80;
 const HORIZONTAL_GAP = 60;
 const STICKY_GAP = 20;
+const MAX_WIDTH = 1200;
 
 interface NodeSize {
   width: number;
@@ -246,8 +247,42 @@ function orderNodesInLayers(
 }
 
 /**
+ * Splits a layer's nodes into sub-rows that each fit within MAX_WIDTH.
+ */
+function splitIntoRows(
+  group: string[],
+  sizes: Map<string, NodeSize>
+): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentWidth = 0;
+
+  for (const uuid of group) {
+    const nodeWidth = sizes.get(uuid)?.width || 200;
+    const additionalWidth =
+      currentRow.length > 0 ? HORIZONTAL_GAP + nodeWidth : nodeWidth;
+
+    if (currentRow.length > 0 && currentWidth + additionalWidth > MAX_WIDTH) {
+      rows.push(currentRow);
+      currentRow = [uuid];
+      currentWidth = nodeWidth;
+    } else {
+      currentRow.push(uuid);
+      currentWidth += additionalWidth;
+    }
+  }
+
+  if (currentRow.length > 0) {
+    rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+/**
  * Computes pixel positions for each node. Each node's ideal X is centered
  * under its parent(s), with overlap resolution to prevent collisions.
+ * Layers that exceed MAX_WIDTH are split into multiple rows.
  */
 function computePositions(
   sortedLayers: number[],
@@ -258,77 +293,72 @@ function computePositions(
   startNodeUuid: string
 ): Record<string, FlowPosition> {
   const positions: Record<string, FlowPosition> = {};
-
-  // Compute layer Y positions based on max node height per layer
-  const layerTops = new Map<number, number>();
   let currentTop = 0;
 
   for (const layer of sortedLayers) {
-    layerTops.set(layer, snapToGrid(currentTop));
-
     const group = layerGroups.get(layer)!;
-    const maxHeight = Math.max(
-      ...group.map((uuid) => sizes.get(uuid)?.height || 100)
-    );
-    currentTop += maxHeight + VERTICAL_GAP;
-  }
+    const subRows = splitIntoRows(group, sizes);
 
-  // Compute X positions layer by layer
-  for (const layer of sortedLayers) {
-    const group = layerGroups.get(layer)!;
-    const top = layerTops.get(layer)!;
+    for (const subRow of subRows) {
+      const top = snapToGrid(currentTop);
 
-    if (layer === sortedLayers[0]) {
-      // First layer: start node at top, others nudged down two grid squares
-      let x = 0;
-      for (const uuid of group) {
-        const nodeTop = uuid === startNodeUuid ? top : top + 40;
-        positions[uuid] = { left: snapToGrid(x), top: nodeTop };
-        x += (sizes.get(uuid)?.width || 200) + HORIZONTAL_GAP;
-      }
-      continue;
-    }
+      if (layer === sortedLayers[0]) {
+        // First layer: start node at top, others nudged down two grid squares
+        let x = 0;
+        for (const uuid of subRow) {
+          const nodeTop = uuid === startNodeUuid ? top : top + 40;
+          positions[uuid] = { left: snapToGrid(x), top: nodeTop };
+          x += (sizes.get(uuid)?.width || 200) + HORIZONTAL_GAP;
+        }
+      } else {
+        // Compute total width of this sub-row
+        let totalWidth = 0;
+        for (const uuid of subRow) {
+          totalWidth += sizes.get(uuid)?.width || 200;
+        }
+        totalWidth += HORIZONTAL_GAP * (subRow.length - 1);
 
-    // Compute total width of this row
-    let totalWidth = 0;
-    for (const uuid of group) {
-      totalWidth += sizes.get(uuid)?.width || 200;
-    }
-    totalWidth += HORIZONTAL_GAP * (group.length - 1);
+        // Find the center point to place this sub-row under: midpoint of
+        // the span of all parent centers for nodes in this sub-row
+        const parentCenters: number[] = [];
+        for (const uuid of subRow) {
+          const nodeParents = (parents.get(uuid) || []).filter((p) => {
+            const pl = layers.get(p);
+            return pl !== undefined && pl < layer;
+          });
+          for (const pUuid of nodeParents) {
+            const parentPos = positions[pUuid];
+            if (parentPos) {
+              const parentWidth = sizes.get(pUuid)?.width || 200;
+              parentCenters.push(parentPos.left + parentWidth / 2);
+            }
+          }
+        }
 
-    // Find the center point to place this row under: midpoint of
-    // the span of all parent centers for nodes in this layer
-    const parentCenters: number[] = [];
-    for (const uuid of group) {
-      const nodeParents = (parents.get(uuid) || []).filter((p) => {
-        const pl = layers.get(p);
-        return pl !== undefined && pl < layer;
-      });
-      for (const pUuid of nodeParents) {
-        const parentPos = positions[pUuid];
-        if (parentPos) {
-          const parentWidth = sizes.get(pUuid)?.width || 200;
-          parentCenters.push(parentPos.left + parentWidth / 2);
+        // Center the sub-row under the parent span, anchored left if not enough room
+        let rowLeft: number;
+        if (parentCenters.length > 0) {
+          const spanCenter =
+            (Math.min(...parentCenters) + Math.max(...parentCenters)) / 2;
+          rowLeft = Math.max(0, spanCenter - totalWidth / 2);
+        } else {
+          rowLeft = 0;
+        }
+
+        // Place nodes left-to-right starting from rowLeft
+        let x = rowLeft;
+        for (const uuid of subRow) {
+          const nodeWidth = sizes.get(uuid)?.width || 200;
+          positions[uuid] = { left: snapToGrid(x), top };
+          x = snapToGrid(x) + nodeWidth + HORIZONTAL_GAP;
         }
       }
-    }
 
-    // Center the row under the parent span, anchored left if not enough room
-    let rowLeft: number;
-    if (parentCenters.length > 0) {
-      const spanCenter =
-        (Math.min(...parentCenters) + Math.max(...parentCenters)) / 2;
-      rowLeft = Math.max(0, spanCenter - totalWidth / 2);
-    } else {
-      rowLeft = 0;
-    }
-
-    // Place nodes left-to-right starting from rowLeft
-    let x = rowLeft;
-    for (const uuid of group) {
-      const nodeWidth = sizes.get(uuid)?.width || 200;
-      positions[uuid] = { left: snapToGrid(x), top };
-      x = snapToGrid(x) + nodeWidth + HORIZONTAL_GAP;
+      // Advance past this sub-row
+      const maxHeight = Math.max(
+        ...subRow.map((uuid) => sizes.get(uuid)?.height || 100)
+      );
+      currentTop = top + maxHeight + VERTICAL_GAP;
     }
   }
 

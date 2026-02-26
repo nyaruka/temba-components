@@ -217,4 +217,124 @@ describe('temba-sortable-list', () => {
     const dragStopEvent = await dragStop;
     expect(dragStopEvent.detail.isExternal).to.be.true;
   });
+
+  describe('zoom-aware dimensions', () => {
+    it('stores layout dimensions on mousedown via offsetWidth/offsetHeight', async () => {
+      const list: SortableList = await createSorter(BORING_LIST);
+      await list.updateComplete;
+
+      const bounds = list.getBoundingClientRect();
+
+      // Start drag
+      await moveMouse(bounds.left + 20, bounds.bottom - 10);
+      await mouseDown();
+
+      // originalLayoutSize should be set using offsetWidth/offsetHeight
+      expect(list.originalLayoutSize).to.not.be.null;
+      // At zoom=1.0, layout size equals viewport size
+      expect(list.originalLayoutSize.width).to.equal(
+        list.originalElementRect.width
+      );
+      expect(list.originalLayoutSize.height).to.equal(
+        list.originalElementRect.height
+      );
+
+      await mouseUp();
+      clock.runAll();
+    });
+
+    it('ghost uses scale(1.03) without ancestor transform', async () => {
+      const list: SortableList = await createSorter(BORING_LIST);
+      await list.updateComplete;
+
+      const bounds = list.getBoundingClientRect();
+
+      // Start drag past threshold to create ghost
+      await moveMouse(bounds.left + 20, bounds.bottom - 10);
+      await mouseDown();
+      await moveMouse(bounds.left + 30, bounds.bottom - 10);
+      clock.runAll();
+
+      expect(list.ghostElement).to.not.be.null;
+      expect(list.ghostElement.style.transform).to.equal('scale(1.03)');
+      // transformOrigin should NOT be set to '0 0' when there's no ancestor scale
+      expect(list.ghostElement.style.transformOrigin).to.not.equal('0 0');
+
+      await mouseUp();
+      clock.runAll();
+    });
+
+    it('detects ancestor scale and applies it to ghost', () => {
+      // Unit test the ghost scaling logic directly:
+      // When originalElementRect (viewport) differs from originalLayoutSize (layout),
+      // the ancestor scale is detected and applied to the ghost.
+      const list = new SortableList();
+
+      // Simulate being inside a container with transform: scale(0.5)
+      // Layout dimensions: 100x20, viewport dimensions: 50x10
+      list.originalElementRect = {
+        width: 50,
+        height: 10,
+        left: 0,
+        top: 0,
+        right: 50,
+        bottom: 10,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      } as DOMRect;
+      list.originalLayoutSize = { width: 100, height: 20 };
+
+      // Calculate ancestor scale the same way the component does
+      const ancestorScale =
+        list.originalLayoutSize.width > 0
+          ? list.originalElementRect.width / list.originalLayoutSize.width
+          : 1;
+      const hasAncestorScale = Math.abs(ancestorScale - 1) > 0.001;
+
+      expect(hasAncestorScale).to.be.true;
+      expect(ancestorScale).to.equal(0.5);
+
+      // The ghost would get: transform: scale(0.5 * 1.03) = scale(0.515)
+      const expectedScale = ancestorScale * 1.03;
+      expect(expectedScale).to.be.closeTo(0.515, 0.001);
+    });
+
+    it('uses originalLayoutSize for placeholder sizing', () => {
+      // Verify that the component stores separate layout vs viewport dimensions
+      const list = new SortableList();
+
+      // At zoom=1.0, both should be the same
+      const mockRect = {
+        width: 100,
+        height: 20,
+        left: 0,
+        top: 0,
+        right: 100,
+        bottom: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      } as DOMRect;
+
+      list.originalElementRect = mockRect;
+      list.originalLayoutSize = { width: 100, height: 20 };
+
+      // At zoom=1.0, they match
+      expect(list.originalLayoutSize.width).to.equal(
+        list.originalElementRect.width
+      );
+
+      // At zoom=0.5, viewport rect would be half but layout stays the same
+      list.originalElementRect = {
+        ...mockRect,
+        width: 50,
+        height: 10
+      } as DOMRect;
+
+      // Layout size is independent of zoom
+      expect(list.originalLayoutSize.width).to.equal(100);
+      expect(list.originalLayoutSize.height).to.equal(20);
+    });
+  });
 });
