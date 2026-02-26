@@ -130,6 +130,10 @@ interface LocalizationUpdate {
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
 
+// How long the reflow auto-save countdown runs (in ms).
+// Used in both the CSS animation and the JS setTimeout.
+const REFLOW_AUTO_SAVE_DELAY = 5000;
+
 // Offset for positioning dropped action node relative to mouse cursor
 // Keep small to make drop location close to cursor position
 const DROP_PREVIEW_OFFSET_X = 20;
@@ -291,6 +295,13 @@ export class Editor extends RapidElement {
 
   private savedReflowPositions: Record<string, FlowPosition> | null = null;
   private reflowAutoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private clearReflowAutoSaveTimer(): void {
+    if (this.reflowAutoSaveTimer !== null) {
+      clearTimeout(this.reflowAutoSaveTimer);
+      this.reflowAutoSaveTimer = null;
+    }
+  }
 
   private preRevertState: {
     definition: FlowDefinition;
@@ -1003,7 +1014,8 @@ export class Editor extends RapidElement {
         height: 100%;
         background: rgba(255, 255, 255, 0.5);
         border-radius: 2px;
-        animation: reflow-countdown 5s linear forwards;
+        animation: reflow-countdown ${unsafeCSS(REFLOW_AUTO_SAVE_DELAY / 1000)}s
+          linear forwards;
       }
 
       @keyframes reflow-countdown {
@@ -1203,10 +1215,7 @@ export class Editor extends RapidElement {
           if (this.reflowUnsaved) {
             this.reflowUnsaved = false;
             this.savedReflowPositions = null;
-            if (this.reflowAutoSaveTimer !== null) {
-              clearTimeout(this.reflowAutoSaveTimer);
-              this.reflowAutoSaveTimer = null;
-            }
+            this.clearReflowAutoSaveTimer();
           }
           this.isSaving = true;
           this.debouncedSave();
@@ -1424,6 +1433,7 @@ export class Editor extends RapidElement {
       clearTimeout(this.activityTimer);
       this.activityTimer = null;
     }
+    this.clearReflowAutoSaveTimer();
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
@@ -1789,7 +1799,8 @@ export class Editor extends RapidElement {
       editor.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
     }
 
-    // Start auto-save countdown (matches the CSS animation duration)
+    // Start auto-save countdown (duration shared with CSS animation)
+    this.clearReflowAutoSaveTimer();
     this.reflowAutoSaveTimer = setTimeout(() => {
       this.reflowAutoSaveTimer = null;
       if (this.reflowUnsaved) {
@@ -1797,17 +1808,12 @@ export class Editor extends RapidElement {
         this.savedReflowPositions = null;
         this.saveChanges();
       }
-    }, 5000);
+    }, REFLOW_AUTO_SAVE_DELAY);
   }
 
   private handleReflowDiscard(): void {
     this.reflowUnsaved = false;
-
-    // Cancel the auto-save countdown
-    if (this.reflowAutoSaveTimer !== null) {
-      clearTimeout(this.reflowAutoSaveTimer);
-      this.reflowAutoSaveTimer = null;
-    }
+    this.clearReflowAutoSaveTimer();
 
     if (this.savedReflowPositions) {
       // Cancel any pending save timer before reverting
