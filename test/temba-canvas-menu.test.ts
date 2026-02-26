@@ -107,6 +107,61 @@ describe('temba-canvas-menu', () => {
     expect(menu.open).to.be.false;
   });
 
+  it('shows reflow option when showReflow is true', async () => {
+    const menu = await createCanvasMenu();
+    menu.show(100, 100, { x: 50, y: 50 }, true, true);
+    await menu.updateComplete;
+
+    const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
+    expect(menuItems?.length).to.equal(4);
+
+    const titles = Array.from(menuItems || []).map(
+      (item) => item.querySelector('.menu-item-title')?.textContent
+    );
+    expect(titles).to.deep.equal([
+      'Add Action',
+      'Add Split',
+      'Add Sticky Note',
+      'Reflow'
+    ]);
+  });
+
+  it('fires reflow selection event when reflow is clicked', async () => {
+    const menu = await createCanvasMenu();
+    menu.show(100, 100, { x: 50, y: 50 }, true, true);
+    await menu.updateComplete;
+
+    let selectionDetail = null;
+    menu.addEventListener('temba-selection', (event: any) => {
+      selectionDetail = event.detail;
+    });
+
+    const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
+    const reflowItem = menuItems?.[3] as HTMLElement;
+    reflowItem.click();
+    await menu.updateComplete;
+
+    expect(selectionDetail).to.deep.equal({
+      action: 'reflow',
+      position: { x: 50, y: 50 }
+    });
+    expect(menu.open).to.be.false;
+  });
+
+  it('hides reflow option by default', async () => {
+    const menu = await createCanvasMenu();
+    menu.show(100, 100, { x: 50, y: 50 });
+    await menu.updateComplete;
+
+    const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
+    expect(menuItems?.length).to.equal(3);
+
+    const titles = Array.from(menuItems || []).map(
+      (item) => item.querySelector('.menu-item-title')?.textContent
+    );
+    expect(titles).to.not.include('Reflow');
+  });
+
   it('adjusts position to stay within viewport bounds', async () => {
     const menu = await createCanvasMenu();
 
