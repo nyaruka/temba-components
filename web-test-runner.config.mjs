@@ -315,7 +315,7 @@ export default {
   nodeResolve: true,
   concurrency: 4,
   coverageConfig: {
-    exclude: ['**/node_modules/**']
+    include: ['src/**']
   },
   testFramework: {
     config: {
