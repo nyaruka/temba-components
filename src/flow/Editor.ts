@@ -1188,8 +1188,10 @@ export class Editor extends RapidElement {
               x: snappedPosition.left,
               y: snappedPosition.top
             },
-            false
-          ); // Don't show sticky note option for connection drops
+            false, // Don't show sticky note option for connection drops
+            false,
+            this.flowType === 'message'
+          );
         }
       }
 
@@ -2803,7 +2805,8 @@ export class Editor extends RapidElement {
           y: snappedTop
         },
         true,
-        hasNodes
+        hasNodes,
+        this.flowType === 'message'
       );
     }
   }
@@ -2826,7 +2829,14 @@ export class Editor extends RapidElement {
       const menuWidth = 265;
       const menuX = rect.left + rect.width / 2 - menuWidth / 2;
       const menuY = rect.bottom + 8;
-      canvasMenu.show(menuX, menuY, { x: nodeLeft, y: nodeTop }, false);
+      canvasMenu.show(
+        menuX,
+        menuY,
+        { x: nodeLeft, y: nodeTop },
+        false,
+        false,
+        this.flowType === 'message'
+      );
     }
   }
 
@@ -2852,6 +2862,19 @@ export class Editor extends RapidElement {
       this.connectionSourceX = null;
       this.connectionSourceY = null;
       this.dragFromNodeId = null;
+    } else if (
+      selection.action === 'send_msg' ||
+      selection.action === 'wait_for_response'
+    ) {
+      // Go directly to the node editor (skip node type selector)
+      this.handleNodeTypeSelection(
+        new CustomEvent(CustomEventType.Selection, {
+          detail: {
+            nodeType: selection.action,
+            position: selection.position
+          } as NodeTypeSelection
+        })
+      );
     } else {
       // Show node type selector
       const selector = this.querySelector(

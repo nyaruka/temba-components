@@ -451,12 +451,14 @@ export class NodeTypeSelector extends RapidElement {
         .filter(([type, config]) => {
           // exclude execute_actions (it's the default action-only node)
           // exclude nodes that have showAsAction=true (they appear in action mode)
+          // exclude nodes that have hideFromSplits=true (promoted to context menu)
           // exclude aliases (type won't match config.type for aliases)
           return (
             type !== 'execute_actions' &&
             type === config.type &&
             config.name &&
             !config.showAsAction &&
+            !config.hideFromSplits &&
             this.isConfigAvailable(config)
           );
         })

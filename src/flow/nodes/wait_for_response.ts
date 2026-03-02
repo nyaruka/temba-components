@@ -82,6 +82,7 @@ export const wait_for_response: NodeConfig = {
   name: 'Wait for Response',
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.MESSAGE],
+  hideFromSplits: true,
   dialogSize: 'large',
   form: {
     rules: createRulesArrayConfig(

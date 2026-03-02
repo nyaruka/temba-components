@@ -15,6 +15,7 @@ export const send_msg: ActionConfig = {
   name: 'Send Message',
   group: ACTION_GROUPS.send,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
+  hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`
