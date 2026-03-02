@@ -328,8 +328,7 @@ describe('split_by_run_result node config', () => {
       expect(resultNode.router!.cases![0].arguments).to.deep.equal(['red']);
       expect(resultNode.router!.cases![1].type).to.equal('has_any_word');
       expect(resultNode.router!.cases![1].arguments).to.deep.equal([
-        'blue',
-        'azure'
+        'blue azure'
       ]);
 
       // Verify categories
