@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
+import { renderClamped } from '../utils';
 
 export const send_msg: ActionConfig = {
   name: 'Send Message',
@@ -17,7 +18,7 @@ export const send_msg: ActionConfig = {
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`
-      ${unsafeHTML(text)}
+      ${renderClamped(html`${unsafeHTML(text)}`, action.text)}
       ${(action.quick_replies || [])?.length > 0
         ? html`<div class="quick-replies">
             ${(action.quick_replies || []).map((reply) => {

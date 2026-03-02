@@ -3,6 +3,7 @@ import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SayMsg } from '../../store/flow-definition';
 import { renderAudioPlayer } from './audio-player';
+import { renderClamped } from '../utils';
 
 export const say_msg: ActionConfig = {
   name: 'Say Message',
@@ -11,7 +12,7 @@ export const say_msg: ActionConfig = {
   render: (_node: Node, action: SayMsg) => {
     const text = (action.text || '').replace(/\n/g, '<br>');
     return html`
-      ${unsafeHTML(text)}
+      ${renderClamped(html`${unsafeHTML(text)}`, action.text || '')}
       ${action.audio_url
         ? html`<div style="margin-top: 0.5em;">
             ${renderAudioPlayer(action.audio_url)}

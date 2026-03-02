@@ -375,8 +375,10 @@ describe('Reflow Layout', () => {
         ),
         ...childIds.map((id) => makeNode(id, []))
       ];
-      const nodeUIs: Record<string, { position: { left: number; top: number } }> =
-        { A: { position: { left: 0, top: 0 } } };
+      const nodeUIs: Record<
+        string,
+        { position: { left: number; top: number } }
+      > = { A: { position: { left: 0, top: 0 } } };
       childIds.forEach((id, i) => {
         nodeUIs[id] = { position: { left: i * 260, top: 200 } };
       });

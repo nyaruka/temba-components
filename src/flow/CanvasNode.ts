@@ -6,7 +6,7 @@ import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
-import { isRightClick } from './utils';
+import { isRightClick, renderClamped } from './utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
@@ -349,6 +349,7 @@ export class CanvasNode extends RapidElement {
 
       .router .body {
         padding: 0.75em;
+        max-width: 180px;
       }
 
       .result-name {
@@ -1561,8 +1562,11 @@ export class CanvasNode extends RapidElement {
               @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
               style="cursor: pointer;"
             >
-              Save as
-              <div class="result-name">${router.result_name}</div>
+              ${renderClamped(
+                html`Save as
+                  <span class="result-name">${router.result_name}</span>`,
+                `Save as ${router.result_name}`
+              )}
             </div>`
           : null}
       </div>`;
@@ -1624,7 +1628,7 @@ export class CanvasNode extends RapidElement {
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
             style="cursor: pointer;"
           >
-            <div class="cn-title">${displayName}</div>
+            <div class="cn-title" title="${displayName}">${displayName}</div>
             ${this.renderExit(exit)}
           </div>`;
         }

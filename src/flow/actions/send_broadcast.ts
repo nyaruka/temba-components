@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
-import { renderStringList } from '../utils';
+import { renderStringList, renderClamped } from '../utils';
 import { Icon } from '../../Icons';
 
 export const send_broadcast: ActionConfig = {
@@ -17,11 +17,7 @@ export const send_broadcast: ActionConfig = {
     return html`<div>
       <div>${renderStringList(recipients, Icon.contacts)}</div>
       <div style="margin-top: 0.5em">
-        <div
-          style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-        >
-          ${action.text}
-        </div>
+        ${renderClamped(action.text, action.text)}
       </div>
     </div>`;
   },

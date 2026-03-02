@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
+import { renderClamped } from '../utils';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
@@ -17,9 +18,11 @@ export const set_contact_language: ActionConfig = {
     const languageNames = new Intl.DisplayNames(['en'], {
       type: 'language'
     });
-    return html`<div>
-      Set to <strong>${languageNames.of(action.language)}</strong>
-    </div>`;
+    const name = languageNames.of(action.language) || action.language;
+    return renderClamped(
+      html`Set to <strong>${name}</strong>`,
+      `Set to ${name}`
+    );
   },
   form: {
     language: {
