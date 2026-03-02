@@ -1410,27 +1410,20 @@ export const createRulesRouter = (
         // No operands needed
         arguments_ = [];
       } else if (operatorConfig.operands === 2) {
-        // Split value for two operands (e.g., "1 10" for between)
+        // Two operands (e.g., "1 10" for between) - split into separate arguments
         arguments_ = rule.value.split(' ').filter((arg: string) => arg.trim());
       } else {
-        // Single operand - but split words for operators that expect multiple words
+        // Single operand - keep as one argument string
         if (rule.value && rule.value.trim()) {
-          // Split on spaces and filter out empty strings
-          arguments_ = rule.value
-            .trim()
-            .split(/\s+/)
-            .filter((arg: string) => arg.length > 0);
+          arguments_ = [rule.value.trim()];
         } else {
           arguments_ = [];
         }
       }
     } else {
-      // Fallback for unknown operators - split on spaces if value exists
+      // Fallback for unknown operators
       if (rule.value && rule.value.trim()) {
-        arguments_ = rule.value
-          .trim()
-          .split(/\s+/)
-          .filter((arg: string) => arg.length > 0);
+        arguments_ = [rule.value.trim()];
       } else {
         arguments_ = [];
       }
