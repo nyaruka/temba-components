@@ -129,7 +129,7 @@ export class FieldRenderer {
         .errors="${errors}"
         .value="${value || ''}"
         placeholder="${config.placeholder || ''}"
-        expressions="session"
+        session
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${style}"
@@ -181,7 +181,7 @@ export class FieldRenderer {
         .value="${value || ''}"
         placeholder="${config.placeholder || ''}"
         textarea
-        expressions="session"
+        session
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${combinedStyle}"
@@ -462,6 +462,7 @@ export class FieldRenderer {
       ?autogrow="${config.autogrow}"
       ?gsm="${config.gsm}"
       ?disableCompletion="${config.disableCompletion}"
+      session
       counter="${config.counter || ''}"
       accept="${config.accept || ''}"
       endpoint="${config.endpoint || ''}"
