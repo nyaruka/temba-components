@@ -349,6 +349,7 @@ export class CanvasNode extends RapidElement {
 
       .router .body {
         padding: 0.75em;
+        max-width: 180px;
       }
 
       .result-name {
@@ -1624,7 +1625,7 @@ export class CanvasNode extends RapidElement {
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
             style="cursor: pointer;"
           >
-            <div class="cn-title">${displayName}</div>
+            <div class="cn-title" title="${displayName}">${displayName}</div>
             ${this.renderExit(exit)}
           </div>`;
         }

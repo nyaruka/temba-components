@@ -7,7 +7,7 @@ import {
   FlowTypes
 } from '../types';
 import { Node, AddContactUrn } from '../../store/flow-definition';
-import { SCHEMES } from '../utils';
+import { SCHEMES, renderClamped } from '../utils';
 
 export const add_contact_urn: ActionConfig = {
   name: 'Add URN',
@@ -16,11 +16,10 @@ export const add_contact_urn: ActionConfig = {
   render: (_node: Node, action: AddContactUrn) => {
     const schemeObj = SCHEMES.find((s) => s.scheme === action.scheme);
     const friendlyScheme = schemeObj?.path || action.scheme;
-    return html`<div
-      style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-    >
-      Add ${friendlyScheme} <strong>${action.path}</strong>
-    </div>`;
+    return renderClamped(
+      html`Add ${friendlyScheme} <strong>${action.path}</strong>`,
+      `Add ${friendlyScheme} ${action.path}`
+    );
   },
 
   toFormData: (action: AddContactUrn) => {

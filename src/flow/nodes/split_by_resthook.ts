@@ -7,6 +7,7 @@ import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
+import { renderClamped } from '../utils';
 
 export const split_by_resthook: NodeConfig = {
   type: 'split_by_resthook',
@@ -47,14 +48,8 @@ export const split_by_resthook: NodeConfig = {
     const callResthookAction = node.actions?.find(
       (action) => action.type === 'call_resthook'
     ) as CallResthook;
-    return html`
-      <div
-        class="body"
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-      >
-        ${callResthookAction?.resthook || 'Configure resthook'}
-      </div>
-    `;
+    const resthook = callResthookAction?.resthook || 'Configure resthook';
+    return html` <div class="body">${renderClamped(resthook, resthook)}</div> `;
   },
   toFormData: (node: Node) => {
     // extract data from the existing node structure

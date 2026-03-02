@@ -6,6 +6,7 @@ import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
+import { renderClamped } from '../utils';
 
 const defaultPost = `@(json(object(
   "contact", object(
@@ -125,14 +126,8 @@ export const split_by_webhook: NodeConfig = {
     const callWebhookAction = node.actions?.find(
       (action) => action.type === 'call_webhook'
     ) as CallWebhook;
-    return html`
-      <div
-        class="body"
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-      >
-        ${callWebhookAction?.url || 'Configure webhook'}
-      </div>
-    `;
+    const url = callWebhookAction?.url || 'Configure webhook';
+    return html` <div class="body">${renderClamped(url, url)}</div> `;
   },
   toFormData: (node: Node) => {
     // Extract data from the existing node structure

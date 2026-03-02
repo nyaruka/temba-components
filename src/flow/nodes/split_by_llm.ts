@@ -12,6 +12,7 @@ import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
+import { renderClamped } from '../utils';
 
 export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
@@ -24,12 +25,11 @@ export const split_by_llm: NodeConfig = {
     const callLlmAction = node.actions?.find(
       (action) => action.type === 'call_llm'
     ) as CallLLM;
+    const instructions =
+      callLlmAction?.instructions || 'Configure AI instructions';
     return html`
-      <div
-        class="body"
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; max-width: 180px; max-height: 6.2em; margin-bottom:10px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;"
-      >
-        ${callLlmAction?.instructions || 'Configure AI instructions'}
+      <div class="body" style="margin-bottom:10px;">
+        ${renderClamped(instructions, instructions)}
       </div>
     `;
   },

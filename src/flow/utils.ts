@@ -1,4 +1,4 @@
-import { html } from 'lit-html';
+import { html, TemplateResult } from 'lit-html';
 import { NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue } from '../store/AppState';
 
@@ -33,6 +33,23 @@ export function snapToGrid(value: number): number {
 }
 
 /**
+ * Renders content clamped to a maximum number of lines with ellipsis.
+ * Hovering shows the full text in a tooltip.
+ */
+export const renderClamped = (
+  content: TemplateResult | string,
+  titleText: string,
+  maxLines: number = 3
+) => {
+  return html`<div
+    style="display: -webkit-box; -webkit-line-clamp: ${maxLines}; -webkit-box-orient: vertical; overflow: hidden; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+    title="${titleText}"
+  >
+    ${content}
+  </div>`;
+};
+
+/**
  * Renders a single line item with optional icon
  */
 export const renderLineItem = (name: string, icon?: string) => {
@@ -42,6 +59,7 @@ export const renderLineItem = (name: string, icon?: string) => {
       : null}
     <div
       style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
+      title="${name}"
     >
       ${name}
     </div>
