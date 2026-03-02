@@ -186,7 +186,7 @@ describe('temba-node-type-selector', () => {
     expect(titles).to.not.include('Play Recording');
   });
 
-  it('filters splits by flow type - message flow should show wait for response', async () => {
+  it('filters splits by flow type - message flow should not show wait for response in split dialog', async () => {
     const selector = await createSelector();
     selector.flowType = 'message';
     await selector.updateComplete;
@@ -199,8 +199,8 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // message flow should have Wait for Response
-    expect(titles).to.include('Wait for Response');
+    // Wait for Response is now promoted to the context menu, not in split dialog
+    expect(titles).to.not.include('Wait for Response');
   });
 
   it('filters splits by flow type - voice flow should not show wait for response', async () => {

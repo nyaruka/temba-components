@@ -104,6 +104,7 @@ export interface NodeConfig extends FormConfig {
   dialogSize?: 'small' | 'medium' | 'large' | 'xlarge';
   action?: ActionConfig;
   showAsAction?: boolean; // if true, show in action dialog instead of splits (default: false - nodes show in splits)
+  hideFromSplits?: boolean; // if true, don't show in split dialog (e.g. promoted to context menu)
   flowTypes?: FlowType[]; // which flow types this node is available for (defaults to all if not specified)
   features?: Feature[]; // which features are required for this node (all must be present)
   router?: {
