@@ -1087,7 +1087,9 @@ export class Plumber {
           const contactUuid = target.getAttribute('data-uuid');
           if (contactUuid) {
             this.editor.fireCustomEvent('temba-contact-clicked', {
-              uuid: contactUuid
+              uuid: contactUuid,
+              metaKey: e.metaKey,
+              ctrlKey: e.ctrlKey
             });
           }
         }

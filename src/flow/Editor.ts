@@ -955,7 +955,7 @@ export class Editor extends RapidElement {
         top: 8px;
         right: 240px;
         padding: 6px 10px;
-        z-index: 10000;
+        z-index: 4999;
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.15s ease-in-out;
@@ -1619,7 +1619,11 @@ export class Editor extends RapidElement {
     const element = event.currentTarget as HTMLElement;
     // Only start dragging if clicking on the element itself, not on exits or other interactive elements
     const target = event.target as HTMLElement;
-    if (target.classList.contains('exit') || target.closest('.exit')) {
+    if (
+      target.classList.contains('exit') ||
+      target.closest('.exit') ||
+      target.closest('.linked-name')
+    ) {
       return;
     }
 
