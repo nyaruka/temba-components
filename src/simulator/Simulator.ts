@@ -1944,7 +1944,7 @@ export class Simulator extends RapidElement {
             </button>
 
             <button class="option-btn" @click=${this.handleReset} title="Reset">
-              <temba-icon name="delete" size="1.5"></temba-icon>
+              <temba-icon name="refresh" size="1.5"></temba-icon>
             </button>
           </div>
         </div>
