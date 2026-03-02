@@ -7,7 +7,13 @@ import { CustomEventType } from '../interfaces';
  * Event detail for canvas menu selection
  */
 export interface CanvasMenuSelection {
-  action: 'sticky' | 'action' | 'split' | 'wait_for_response' | 'reflow';
+  action:
+    | 'sticky'
+    | 'action'
+    | 'split'
+    | 'send_msg'
+    | 'wait_for_response'
+    | 'reflow';
   position: { x: number; y: number };
 }
 
@@ -190,9 +196,7 @@ export class CanvasMenu extends RapidElement {
     }
   }
 
-  private handleMenuItemClick(
-    action: 'sticky' | 'action' | 'split' | 'wait_for_response' | 'reflow'
-  ) {
+  private handleMenuItemClick(action: CanvasMenuSelection['action']) {
     this.fireCustomEvent(CustomEventType.Selection, {
       action,
       position: this.clickPosition
@@ -210,14 +214,12 @@ export class CanvasMenu extends RapidElement {
       <div class="menu" style="left: ${this.x}px; top: ${this.y}px;">
         <div
           class="menu-item"
-          @click=${() => this.handleMenuItemClick('action')}
+          @click=${() => this.handleMenuItemClick('send_msg')}
         >
-          <temba-icon name="action" size="1.25"></temba-icon>
+          <temba-icon name="send" size="1.25"></temba-icon>
           <div class="menu-item-content">
-            <div class="menu-item-title">Add Action</div>
-            <div class="menu-item-description">
-              Send messages, update contacts
-            </div>
+            <div class="menu-item-title">Send Message</div>
+            <div class="menu-item-description">Send the contact a message</div>
           </div>
         </div>
 
@@ -237,6 +239,19 @@ export class CanvasMenu extends RapidElement {
               </div>
             `
           : ''}
+
+        <div
+          class="menu-item"
+          @click=${() => this.handleMenuItemClick('action')}
+        >
+          <temba-icon name="action" size="1.25"></temba-icon>
+          <div class="menu-item-content">
+            <div class="menu-item-title">Add Action</div>
+            <div class="menu-item-description">
+              Update contacts, trigger flows
+            </div>
+          </div>
+        </div>
 
         <div
           class="menu-item"

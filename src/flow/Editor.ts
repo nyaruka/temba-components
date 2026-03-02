@@ -2862,12 +2862,15 @@ export class Editor extends RapidElement {
       this.connectionSourceX = null;
       this.connectionSourceY = null;
       this.dragFromNodeId = null;
-    } else if (selection.action === 'wait_for_response') {
-      // Go directly to the wait_for_response node editor (skip node type selector)
+    } else if (
+      selection.action === 'send_msg' ||
+      selection.action === 'wait_for_response'
+    ) {
+      // Go directly to the node editor (skip node type selector)
       this.handleNodeTypeSelection(
         new CustomEvent(CustomEventType.Selection, {
           detail: {
-            nodeType: 'wait_for_response',
+            nodeType: selection.action,
             position: selection.position
           } as NodeTypeSelection
         })

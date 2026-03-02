@@ -48,21 +48,22 @@ describe('temba-canvas-menu', () => {
     await assertScreenshot('canvas-menu/open', getClip(menu));
   });
 
-  it('has four menu items', async () => {
+  it('has five menu items', async () => {
     const menu = await createCanvasMenu();
     menu.show(100, 100, { x: 50, y: 50 });
     await menu.updateComplete;
 
     const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
-    expect(menuItems?.length).to.equal(4);
+    expect(menuItems?.length).to.equal(5);
 
     // check menu item titles
     const titles = Array.from(menuItems || []).map(
       (item) => item.querySelector('.menu-item-title')?.textContent
     );
     expect(titles).to.deep.equal([
-      'Add Action',
+      'Send Message',
       'Wait for Response',
+      'Add Action',
       'Add Split',
       'Add Sticky Note'
     ]);
@@ -94,9 +95,9 @@ describe('temba-canvas-menu', () => {
       selectionDetail = event.detail;
     });
 
-    // click on sticky note option (now the fourth item)
+    // click on sticky note option (now the fifth item)
     const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
-    const stickyItem = menuItems?.[3] as HTMLElement;
+    const stickyItem = menuItems?.[4] as HTMLElement;
     stickyItem.click();
     await menu.updateComplete;
 
@@ -114,14 +115,15 @@ describe('temba-canvas-menu', () => {
     await menu.updateComplete;
 
     const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
-    expect(menuItems?.length).to.equal(5);
+    expect(menuItems?.length).to.equal(6);
 
     const titles = Array.from(menuItems || []).map(
       (item) => item.querySelector('.menu-item-title')?.textContent
     );
     expect(titles).to.deep.equal([
-      'Add Action',
+      'Send Message',
       'Wait for Response',
+      'Add Action',
       'Add Split',
       'Add Sticky Note',
       'Reflow'
@@ -139,7 +141,7 @@ describe('temba-canvas-menu', () => {
     });
 
     const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
-    const reflowItem = menuItems?.[4] as HTMLElement;
+    const reflowItem = menuItems?.[5] as HTMLElement;
     reflowItem.click();
     await menu.updateComplete;
 
@@ -156,7 +158,7 @@ describe('temba-canvas-menu', () => {
     await menu.updateComplete;
 
     const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
-    expect(menuItems?.length).to.equal(4);
+    expect(menuItems?.length).to.equal(5);
 
     const titles = Array.from(menuItems || []).map(
       (item) => item.querySelector('.menu-item-title')?.textContent
@@ -202,8 +204,8 @@ describe('temba-canvas-menu', () => {
     });
 
     const menuItems = menu.shadowRoot?.querySelectorAll('.menu-item');
-    const actionItem = menuItems?.[0] as HTMLElement;
-    actionItem.click();
+    const sendMsgItem = menuItems?.[0] as HTMLElement;
+    sendMsgItem.click();
     await menu.updateComplete;
 
     expect(selectionFired).to.be.true;
