@@ -7,7 +7,7 @@ import { CustomEventType } from '../interfaces';
  * Event detail for canvas menu selection
  */
 export interface CanvasMenuSelection {
-  action: 'sticky' | 'action' | 'split' | 'reflow';
+  action: 'sticky' | 'action' | 'split' | 'wait_for_response' | 'reflow';
   position: { x: number; y: number };
 }
 
@@ -91,6 +91,9 @@ export class CanvasMenu extends RapidElement {
   public showStickyNote = true;
 
   @property({ type: Boolean })
+  public showWaitForResponse = true;
+
+  @property({ type: Boolean })
   public showReflow = false;
 
   @state()
@@ -131,13 +134,15 @@ export class CanvasMenu extends RapidElement {
     y: number,
     clickPosition: { x: number; y: number },
     showStickyNote: boolean = true,
-    showReflow: boolean = false
+    showReflow: boolean = false,
+    showWaitForResponse: boolean = true
   ) {
     this.x = x;
     this.y = y;
     this.clickPosition = clickPosition;
     this.showStickyNote = showStickyNote;
     this.showReflow = showReflow;
+    this.showWaitForResponse = showWaitForResponse;
     this.open = true;
 
     // Adjust position after menu renders to ensure it fits on screen
@@ -186,7 +191,7 @@ export class CanvasMenu extends RapidElement {
   }
 
   private handleMenuItemClick(
-    action: 'sticky' | 'action' | 'split' | 'reflow'
+    action: 'sticky' | 'action' | 'split' | 'wait_for_response' | 'reflow'
   ) {
     this.fireCustomEvent(CustomEventType.Selection, {
       action,
@@ -215,6 +220,23 @@ export class CanvasMenu extends RapidElement {
             </div>
           </div>
         </div>
+
+        ${this.showWaitForResponse
+          ? html`
+              <div
+                class="menu-item"
+                @click=${() => this.handleMenuItemClick('wait_for_response')}
+              >
+                <temba-icon name="message" size="1.25"></temba-icon>
+                <div class="menu-item-content">
+                  <div class="menu-item-title">Wait for Response</div>
+                  <div class="menu-item-description">
+                    Wait for the contact to respond
+                  </div>
+                </div>
+              </div>
+            `
+          : ''}
 
         <div
           class="menu-item"
