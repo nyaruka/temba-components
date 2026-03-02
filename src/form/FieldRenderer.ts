@@ -9,7 +9,8 @@ import {
   MessageEditorFieldConfig,
   KeyValueFieldConfig,
   ArrayFieldConfig,
-  MediaFieldConfig
+  MediaFieldConfig,
+  TemplateEditorFieldConfig
 } from '../flow/types';
 import { Attachment } from '../interfaces';
 import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
@@ -97,6 +98,14 @@ export class FieldRenderer {
         return FieldRenderer.renderMedia(
           fieldName,
           config as MediaFieldConfig,
+          value,
+          context
+        );
+
+      case 'template-editor':
+        return FieldRenderer.renderTemplateEditor(
+          fieldName,
+          config as TemplateEditorFieldConfig,
           value,
           context
         );
@@ -472,6 +481,25 @@ export class FieldRenderer {
       style="${style}"
       @change="${onChange || (() => {})}"
     ></temba-message-editor>`;
+  }
+
+  private static renderTemplateEditor(
+    _fieldName: string,
+    config: TemplateEditorFieldConfig,
+    value: any,
+    context: FieldRenderContext
+  ): TemplateResult {
+    const { onChange, additionalData = {} } = context;
+    const templateUuid = value?.uuid || '';
+    const variables = JSON.stringify(additionalData.template_variables || []);
+
+    return html`<temba-template-editor
+      url="${config.endpoint || '/api/internal/templates.json'}"
+      template="${templateUuid}"
+      variables="${variables}"
+      @temba-context-changed="${onChange || (() => {})}"
+      @temba-content-changed="${onChange || (() => {})}"
+    ></temba-template-editor>`;
   }
 }
 

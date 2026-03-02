@@ -262,6 +262,11 @@ export interface MediaFieldConfig extends BaseFieldConfig {
   endpoint?: string; // upload endpoint, defaults to DEFAULT_MEDIA_ENDPOINT
 }
 
+export interface TemplateEditorFieldConfig extends BaseFieldConfig {
+  type: 'template-editor';
+  endpoint?: string; // endpoint for fetching templates
+}
+
 export type FieldConfig =
   | TextFieldConfig
   | TextareaFieldConfig
@@ -270,7 +275,8 @@ export type FieldConfig =
   | ArrayFieldConfig
   | CheckboxFieldConfig
   | MessageEditorFieldConfig
-  | MediaFieldConfig;
+  | MediaFieldConfig
+  | TemplateEditorFieldConfig;
 
 // Layout configurations for better form organization
 // Recursive layout system - any layout item can contain other layout items
@@ -298,7 +304,9 @@ export interface GroupLayoutConfig {
   collapsed?: boolean | ((formData: FormData) => boolean); // initial state if collapsible - can be a function
   helpText?: string;
   contentPadding?: string; // CSS padding for group content area
-  getGroupValueCount?: (formData: FormData) => number; // optional function to get count for bubble display
+  bordered?: boolean; // whether to show border around the group (default: true)
+  reveal?: boolean; // one-way expand: once clicked, header disappears and items show directly
+  getGroupValueCount?: (formData: FormData) => number | boolean; // optional function to get count for bubble display
 }
 
 export interface SpacerLayoutConfig {
@@ -310,10 +318,24 @@ export interface TextLayoutConfig {
   text: string;
 }
 
+export interface AccordionSection {
+  label: string;
+  items: LayoutItem[];
+  collapsed?: boolean | ((formData: FormData) => boolean);
+  getValueCount?: (formData: FormData) => number | boolean;
+}
+
+export interface AccordionLayoutConfig {
+  type: 'accordion';
+  sections: AccordionSection[];
+  multi?: boolean; // allow multiple sections open at once (default: false)
+}
+
 export type LayoutItem =
   | FieldItemConfig
   | RowLayoutConfig
   | GroupLayoutConfig
+  | AccordionLayoutConfig
   | SpacerLayoutConfig
   | TextLayoutConfig
   | string; // string is shorthand for field
