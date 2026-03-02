@@ -56,24 +56,12 @@ export class CanvasMenu extends RapidElement {
 
       .menu-item temba-icon {
         --icon-color: var(--color-text);
-        margin-top: 0.15em;
-      }
-
-      .menu-item-content {
-        display: flex;
-        flex-direction: column;
-        gap: 0.15em;
       }
 
       .menu-item-title {
         font-weight: 500;
         font-size: 1rem;
         color: var(--color-text-dark);
-      }
-
-      .menu-item-description {
-        font-size: 0.85rem;
-        color: var(--color-text);
       }
 
       .divider {
@@ -217,10 +205,7 @@ export class CanvasMenu extends RapidElement {
           @click=${() => this.handleMenuItemClick('send_msg')}
         >
           <temba-icon name="send" size="1.25"></temba-icon>
-          <div class="menu-item-content">
-            <div class="menu-item-title">Send Message</div>
-            <div class="menu-item-description">Send the contact a message</div>
-          </div>
+          <div class="menu-item-title">Send Message</div>
         </div>
 
         ${this.showWaitForResponse
@@ -230,12 +215,7 @@ export class CanvasMenu extends RapidElement {
                 @click=${() => this.handleMenuItemClick('wait_for_response')}
               >
                 <temba-icon name="message" size="1.25"></temba-icon>
-                <div class="menu-item-content">
-                  <div class="menu-item-title">Wait for Response</div>
-                  <div class="menu-item-description">
-                    Wait for the contact to respond
-                  </div>
-                </div>
+                <div class="menu-item-title">Wait for Response</div>
               </div>
             `
           : ''}
@@ -245,12 +225,7 @@ export class CanvasMenu extends RapidElement {
           @click=${() => this.handleMenuItemClick('action')}
         >
           <temba-icon name="action" size="1.25"></temba-icon>
-          <div class="menu-item-content">
-            <div class="menu-item-title">Add Action</div>
-            <div class="menu-item-description">
-              Update contacts, trigger flows
-            </div>
-          </div>
+          <div class="menu-item-title">Add Action</div>
         </div>
 
         <div
@@ -258,10 +233,7 @@ export class CanvasMenu extends RapidElement {
           @click=${() => this.handleMenuItemClick('split')}
         >
           <temba-icon name="split" size="1.25"></temba-icon>
-          <div class="menu-item-content">
-            <div class="menu-item-title">Add Split</div>
-            <div class="menu-item-description">Branch based on conditions</div>
-          </div>
+          <div class="menu-item-title">Add Split</div>
         </div>
 
         ${this.showStickyNote
@@ -273,12 +245,7 @@ export class CanvasMenu extends RapidElement {
                 @click=${() => this.handleMenuItemClick('sticky')}
               >
                 <temba-icon name="note" size="1.25"></temba-icon>
-                <div class="menu-item-content">
-                  <div class="menu-item-title">Add Sticky Note</div>
-                  <div class="menu-item-description">
-                    Add a note to the canvas
-                  </div>
-                </div>
+                <div class="menu-item-title">Add Sticky Note</div>
               </div>
             `
           : ''}
@@ -291,12 +258,7 @@ export class CanvasMenu extends RapidElement {
                 @click=${() => this.handleMenuItemClick('reflow')}
               >
                 <temba-icon name="flow" size="1.25"></temba-icon>
-                <div class="menu-item-content">
-                  <div class="menu-item-title">Reflow</div>
-                  <div class="menu-item-description">
-                    Auto-arrange nodes in this flow
-                  </div>
-                </div>
+                <div class="menu-item-title">Reflow</div>
               </div>
             `
           : ''}
