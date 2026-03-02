@@ -343,7 +343,7 @@ describe('temba-node-editor', () => {
     expect(shadowRoot).to.not.be.null;
   });
 
-  it('displays bubble count for group value counts', async () => {
+  it('displays bubble count for accordion value counts', async () => {
     const action = {
       uuid: 'test-action-uuid',
       type: 'send_msg',
@@ -362,11 +362,11 @@ describe('temba-node-editor', () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
     await el.updateComplete;
 
-    // Check that bubble counts are displayed
+    // Check that bubble counts are displayed in accordion sections
     const shadowRoot = el.shadowRoot;
-    const bubbles = shadowRoot.querySelectorAll('.group-count-bubble');
+    const bubbles = shadowRoot.querySelectorAll('.accordion-count-bubble');
 
-    // Should have bubbles for groups with values
+    // Should have bubbles for sections with values
     expect(bubbles.length).to.be.greaterThan(0);
 
     // Check specific bubble values (trim to handle whitespace in rendered text)
@@ -374,12 +374,11 @@ describe('temba-node-editor', () => {
       bubble.textContent?.trim()
     );
 
-    // Runtime attachments group should show bubble when collapsed and has values
+    // Runtime attachments section should show bubble when collapsed and has values
     expect(bubbleTexts).to.include('2'); // 2 runtime attachments
-    // Note: Quick replies group auto-expands when it has content, so no bubble is shown
   });
 
-  it('shows arrow when group has no values', async () => {
+  it('shows arrow when accordion section has no values', async () => {
     const action = {
       uuid: 'test-action-uuid',
       type: 'send_msg',
@@ -399,13 +398,13 @@ describe('temba-node-editor', () => {
 
     // Check that arrows are displayed instead of bubbles
     const shadowRoot = el.shadowRoot;
-    const bubbles = shadowRoot.querySelectorAll('.group-count-bubble');
-    const arrows = shadowRoot.querySelectorAll('.group-toggle-icon');
+    const bubbles = shadowRoot.querySelectorAll('.accordion-count-bubble');
+    const arrows = shadowRoot.querySelectorAll('.accordion-toggle-icon');
 
     // Should have no bubbles when counts are 0
     expect(bubbles.length).to.equal(0);
 
-    // Should have arrows for collapsible groups
+    // Should have arrows for accordion sections
     expect(arrows.length).to.be.greaterThan(0);
   });
 

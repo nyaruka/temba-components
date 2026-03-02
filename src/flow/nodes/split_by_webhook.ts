@@ -91,34 +91,31 @@ export const split_by_webhook: NodeConfig = {
     }
   },
   layout: [
-    // Row with method and URL side by side
     { type: 'row', items: ['method', 'url'] },
-    // Advanced group with nested layouts
     {
-      type: 'group',
-      label: 'Headers',
-      items: ['headers'],
-      collapsible: true,
-      collapsed: true,
-      helpText: 'Configure authentication or custom headers',
-      getGroupValueCount: (formData: FormData) => {
-        return formData.headers?.length || 0;
-      }
-    },
-    {
-      type: 'group',
-      label: 'Body',
-      items: ['body'],
-      collapsible: true,
-      collapsed: true,
-      helpText: 'Configure the request payload',
-      getGroupValueCount: (formData: FormData) => {
-        return !!(
-          formData.body &&
-          formData.body.trim() !== '' &&
-          formData.body !== defaultPost
-        );
-      }
+      type: 'accordion',
+      sections: [
+        {
+          label: 'Headers',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return formData.headers?.length || 0;
+          },
+          items: ['headers']
+        },
+        {
+          label: 'Body',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return !!(
+              formData.body &&
+              formData.body.trim() !== '' &&
+              formData.body !== defaultPost
+            );
+          },
+          items: ['body']
+        }
+      ]
     }
   ],
   render: (node: Node) => {

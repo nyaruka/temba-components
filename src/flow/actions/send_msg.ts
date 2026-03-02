@@ -23,14 +23,14 @@ export const send_msg: ActionConfig = {
             ${(action.quick_replies || []).map((reply) => {
               return html`<div class="quick-reply">${reply}</div>`;
             })}
-            ${action.template
-              ? html`<div
-                  style="border: 1px solid var(--color-widget-border);padding: 0.5em;margin-top: 1em;border-radius: var(--curvature); display:flex;background: rgba(0,0,0,.03);"
-                >
-                  <temba-icon name="channel_wac"></temba-icon>
-                  <div style="margin-left:0.5em">${action.template.name}</div>
-                </div>`
-              : null}
+          </div>`
+        : null}
+      ${action.template
+        ? html`<div
+            style="border: 1px solid var(--color-widget-border);padding: 0.5em;margin-top: 1em;border-radius: var(--curvature); display:flex;background: rgba(0,0,0,.03);"
+          >
+            <temba-icon name="channel_wac"></temba-icon>
+            <div style="margin-left:0.5em">${action.template.name}</div>
           </div>`
         : null}
     `;
@@ -60,6 +60,10 @@ export const send_msg: ActionConfig = {
       placeholder: 'Add quick replies...',
       maxItems: 10,
       evaluated: true
+    },
+    template: {
+      type: 'template-editor',
+      endpoint: '/api/internal/templates.json'
     },
     runtime_attachments: {
       type: 'array',
@@ -94,34 +98,38 @@ export const send_msg: ActionConfig = {
   layout: [
     'text',
     {
-      type: 'group',
-      label: 'Quick Replies',
-      items: ['quick_replies'],
-      collapsible: true,
-      collapsed: (formData: FormData) => {
-        // Collapse only if there are no quick replies
-        return !formData.quick_replies || formData.quick_replies.length === 0;
-      },
-      getGroupValueCount: (formData: FormData) => {
-        return formData.quick_replies?.length || 0;
-      }
-    },
-    {
-      type: 'group',
-      label: 'Runtime Attachments',
-      items: ['runtime_attachments'],
-      collapsible: true,
-      collapsed: true,
-      helpText: 'Add dynamic attachments that are evaluated at runtime',
-      contentPadding: '12px',
-      getGroupValueCount: (formData: FormData) => {
-        return (
-          formData.runtime_attachments?.filter(
-            (item: any) =>
-              item && item.expression && item.expression.trim() !== ''
-          ).length || 0
-        );
-      }
+      type: 'accordion',
+      sections: [
+        {
+          label: 'Quick Replies',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return formData.quick_replies?.length || 0;
+          },
+          items: ['quick_replies']
+        },
+        {
+          label: 'WhatsApp Template',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return !!formData.template;
+          },
+          items: ['template']
+        },
+        {
+          label: 'Runtime Attachments',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return (
+              formData.runtime_attachments?.filter(
+                (item: any) =>
+                  item && item.expression && item.expression.trim() !== ''
+              ).length || 0
+            );
+          },
+          items: ['runtime_attachments']
+        }
+      ]
     }
   ],
   toFormData: (action: SendMsg) => {
@@ -159,7 +167,9 @@ export const send_msg: ActionConfig = {
       quick_replies: (action.quick_replies || []).map((reply) => ({
         name: reply,
         value: reply
-      }))
+      })),
+      template: action.template || null,
+      template_variables: action.template_variables || []
     };
   },
   fromFormData: (data: FormData) => {
@@ -194,6 +204,12 @@ export const send_msg: ActionConfig = {
     // Remove quick_replies if empty to match original format
     if (result.quick_replies.length === 0) {
       delete (result as any).quick_replies;
+    }
+
+    // Add template and template_variables if a template is selected
+    if (data.template) {
+      (result as any).template = data.template;
+      (result as any).template_variables = data.template_variables || [];
     }
 
     return result as SendMsg;
