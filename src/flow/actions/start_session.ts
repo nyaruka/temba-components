@@ -7,7 +7,7 @@ import {
   FlowTypes
 } from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
-import { renderNamedObjects } from '../utils';
+import { renderNamedObjects, renderFlowLinks } from '../utils';
 
 export const start_session: ActionConfig = {
   name: 'Start Flow',
@@ -43,7 +43,7 @@ export const start_session: ActionConfig = {
           ${recipientsDisplay}
         </div>
         <div style="padding: 0px 10px;">
-          ${renderNamedObjects([action.flow], 'flow')}
+          ${renderFlowLinks([action.flow], 'flow')}
         </div>
       </div>
     `;

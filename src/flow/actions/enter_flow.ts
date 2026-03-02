@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FlowTypes } from '../types';
 import { Node, EnterFlow } from '../../store/flow-definition';
-import { renderNamedObjects } from '../utils';
+import { renderFlowLinks } from '../utils';
 
 export const enter_flow: ActionConfig = {
   name: 'Enter a Flow',
@@ -9,7 +9,7 @@ export const enter_flow: ActionConfig = {
   hideFromActions: true,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: EnterFlow) => {
-    return html`${renderNamedObjects([action.flow], 'flow')}`;
+    return html`${renderFlowLinks([action.flow], 'flow')}`;
   },
   toFormData: (action: EnterFlow) => {
     return {
