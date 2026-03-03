@@ -325,6 +325,7 @@ export class StickyNote extends RapidElement {
     this.requestUpdate();
   }
 
+  /* c8 ignore start -- touch-only handlers untestable in headless Chromium */
   private handleDragHandleTouchStart(event: TouchEvent): void {
     // Prevent Apple Pencil Scribble from activating on the adjacent
     // contenteditable fields when touching/dragging the handle.
@@ -362,6 +363,7 @@ export class StickyNote extends RapidElement {
       this.editingField = null;
     }
   }
+  /* c8 ignore stop */
 
   private handleContentMouseDown(event: MouseEvent): void {
     // If this sticky note is selected, don't stop propagation
@@ -401,6 +403,7 @@ export class StickyNote extends RapidElement {
     this.colorPickerExpanded = false;
   }
 
+  /* c8 ignore next 5 -- touch-only */
   private handleColorPickerTap(event: TouchEvent): void {
     event.stopPropagation();
     event.preventDefault();

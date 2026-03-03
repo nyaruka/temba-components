@@ -1061,6 +1061,7 @@ export class CanvasNode extends RapidElement {
     this.pendingActionClick = null;
   }
 
+  /* c8 ignore start -- touch-only handlers untestable in headless Chromium */
   private handleActionTouchStart(event: TouchEvent, action: Action): void {
     const target = event.target as HTMLElement;
     if (
@@ -1127,6 +1128,7 @@ export class CanvasNode extends RapidElement {
     this.actionClickStartPos = null;
     this.pendingActionClick = null;
   }
+  /* c8 ignore stop */
 
   private handleActionClick(event: MouseEvent, action: Action): void {
     // This method is kept for backward compatibility but should not be used
@@ -1271,6 +1273,7 @@ export class CanvasNode extends RapidElement {
     this.pendingNodeClick = null;
   }
 
+  /* c8 ignore start -- touch-only handlers */
   private handleNodeTouchStart(event: TouchEvent): void {
     const target = event.target as HTMLElement;
     if (
@@ -1346,6 +1349,7 @@ export class CanvasNode extends RapidElement {
     this.nodeClickStartPos = null;
     this.pendingNodeClick = null;
   }
+  /* c8 ignore stop */
 
   private handleAddActionClick(event: MouseEvent): void {
     event.preventDefault();

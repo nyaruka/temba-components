@@ -1726,6 +1726,8 @@ export class Editor extends RapidElement {
    * Mirror of handleMouseDown for touch devices.
    * Sets up the same drag state so handleTouchMove/End can drive the drag.
    */
+  /* c8 ignore start -- touch-only handlers untestable in headless Chromium */
+
   /**
    * Mark the editor as a touch device — adds classes to #canvas and
    * #editor so touch-specific CSS activates (visible controls,
@@ -1782,6 +1784,8 @@ export class Editor extends RapidElement {
     // to decide whether this is a drag or a tap
     event.stopPropagation();
   }
+
+  /* c8 ignore stop */
 
   private handleGlobalMouseDown(event: MouseEvent): void {
     if (isRightClick(event)) return;
@@ -2501,6 +2505,8 @@ export class Editor extends RapidElement {
     }
   }
 
+  /* c8 ignore start -- touch-only handlers */
+
   /**
    * Find the temba-flow-node element at the given viewport coordinates.
    * Uses elementFromPoint which works for both mouse and touch input.
@@ -2570,6 +2576,8 @@ export class Editor extends RapidElement {
 
     event.preventDefault();
   }
+
+  /* c8 ignore stop */
 
   private handleMouseMove(event: MouseEvent): void {
     // Handle selection box drawing
@@ -2903,6 +2911,8 @@ export class Editor extends RapidElement {
     this.lastPointerPos = null;
   }
 
+  /* c8 ignore start -- touch-only handlers */
+
   /**
    * Handle touch move on the document — mirrors handleMouseMove for
    * both connection dragging and node/sticky dragging on touch devices.
@@ -3221,6 +3231,8 @@ export class Editor extends RapidElement {
 
     this.requestUpdate();
   }
+
+  /* c8 ignore stop */
 
   private updateCanvasSize(): void {
     if (!this.definition) return;

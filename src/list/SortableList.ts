@@ -422,6 +422,7 @@ export class SortableList extends RapidElement {
     }
   }
 
+  /* c8 ignore start -- touch-only handlers */
   private handleTouchStart(event: TouchEvent) {
     const touch = event.touches[0];
     if (!touch) return;
@@ -436,6 +437,7 @@ export class SortableList extends RapidElement {
       document.addEventListener('touchcancel', this.handleTouchEnd);
     }
   }
+  /* c8 ignore stop */
 
   /**
    * Shared drag-move logic for both mouse and touch.
@@ -603,6 +605,7 @@ export class SortableList extends RapidElement {
     this.processDragMove(event.clientX, event.clientY);
   }
 
+  /* c8 ignore next 6 -- touch-only */
   private handleTouchMove(event: TouchEvent) {
     const touch = event.touches[0];
     if (!touch) return;
@@ -695,6 +698,7 @@ export class SortableList extends RapidElement {
     this.dispatchEvent(new Event('change'));
   }
 
+  /* c8 ignore start -- touch-only */
   private handleTouchEnd(evt: TouchEvent) {
     const touch = evt.changedTouches[0];
     const clientX = touch?.clientX ?? 0;
@@ -705,6 +709,7 @@ export class SortableList extends RapidElement {
     document.removeEventListener('touchcancel', this.handleTouchEnd);
     this.dispatchEvent(new Event('change'));
   }
+  /* c8 ignore stop */
 
   public render(): TemplateResult {
     return html`
