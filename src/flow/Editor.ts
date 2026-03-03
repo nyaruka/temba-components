@@ -214,7 +214,7 @@ export class Editor extends RapidElement {
   private autoScrollAnimationId: number | null = null;
   private autoScrollDeltaX = 0;
   private autoScrollDeltaY = 0;
-  private lastMouseEvent: MouseEvent | null = null;
+  private lastPointerPos: { clientX: number; clientY: number } | null = null;
 
   // Selection state
   @state()
@@ -225,6 +225,16 @@ export class Editor extends RapidElement {
 
   @state()
   private selectionBox: SelectionBox | null = null;
+
+  // Touch device state
+  private isTouchDevice = false;
+  private isTwoFingerPanning = false;
+  private twoFingerDidPan = false;
+  private twoFingerStartMidX = 0;
+  private twoFingerStartMidY = 0;
+  private twoFingerOnCanvas = false;
+  private lastPanX = 0;
+  private lastPanY = 0;
 
   @state()
   private targetId: string | null = null;
@@ -410,6 +420,10 @@ export class Editor extends RapidElement {
   private boundKeyDown = this.handleKeyDown.bind(this);
   private boundCanvasContextMenu = this.handleCanvasContextMenu.bind(this);
   private boundWheel = this.handleWheel.bind(this);
+  private boundTouchMove = this.handleTouchMove.bind(this);
+  private boundTouchEnd = this.handleTouchEnd.bind(this);
+  private boundTouchCancel = this.handleTouchCancel.bind(this);
+  private boundCanvasTouchStart = this.handleCanvasTouchStart.bind(this);
 
   static get styles() {
     return css`
@@ -424,6 +438,29 @@ export class Editor extends RapidElement {
         overflow: scroll;
         flex: 1;
         -webkit-font-smoothing: antialiased;
+      }
+
+      /* On touch devices, disable native scroll-by-touch so canvas
+         drag draws a selection rectangle. Users scroll via scrollbars. */
+      #editor.touch-device {
+        touch-action: none;
+      }
+
+      #editor.touch-device::-webkit-scrollbar {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+      }
+
+      #editor.touch-device::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+
+      #editor.touch-device::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
       }
 
       temba-floating-tab {
@@ -456,6 +493,7 @@ export class Editor extends RapidElement {
       #canvas > .draggable {
         position: absolute;
         z-index: 100;
+        touch-action: none;
       }
 
       #canvas > .dragging {
@@ -1106,6 +1144,12 @@ export class Editor extends RapidElement {
     super.firstUpdated(changes);
     this.plumber = new Plumber(this.querySelector('#canvas'), this);
     this.setupGlobalEventListeners();
+
+    // Eagerly detect touch capability so hover-only controls are visible
+    // from the start and scrollbar/touch-action CSS is applied immediately.
+    if (navigator.maxTouchPoints > 0) {
+      this.markTouchDevice();
+    }
     this.updateZoomControlPositioning();
     if (changes.has('flow')) {
       getStore().getState().fetchRevision(`/flow/revisions/${this.flow}`);
@@ -1508,10 +1552,14 @@ export class Editor extends RapidElement {
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
     document.removeEventListener('keydown', this.boundKeyDown);
+    document.removeEventListener('touchmove', this.boundTouchMove);
+    document.removeEventListener('touchend', this.boundTouchEnd);
+    document.removeEventListener('touchcancel', this.boundTouchCancel);
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
       canvas.removeEventListener('contextmenu', this.boundCanvasContextMenu);
+      canvas.removeEventListener('touchstart', this.boundCanvasTouchStart);
     }
 
     const editor = this.querySelector('#editor');
@@ -1529,10 +1577,26 @@ export class Editor extends RapidElement {
     document.addEventListener('mouseup', this.boundMouseUp);
     document.addEventListener('mousedown', this.boundGlobalMouseDown);
     document.addEventListener('keydown', this.boundKeyDown);
+    document.addEventListener('touchmove', this.boundTouchMove, {
+      passive: false
+    });
+    document.addEventListener('touchend', this.boundTouchEnd);
+    document.addEventListener('touchcancel', this.boundTouchCancel);
+
+    // Fallback: on first touch, mark as touch device in case
+    // navigator.maxTouchPoints wasn't detected in firstUpdated.
+    const markTouchOnce = () => {
+      this.markTouchDevice();
+      document.removeEventListener('touchstart', markTouchOnce);
+    };
+    document.addEventListener('touchstart', markTouchOnce);
 
     const canvas = this.querySelector('#canvas');
     if (canvas) {
       canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
+      canvas.addEventListener('touchstart', this.boundCanvasTouchStart, {
+        passive: false
+      });
     }
 
     const editor = this.querySelector('#editor');
@@ -1657,6 +1721,71 @@ export class Editor extends RapidElement {
     event.preventDefault();
     event.stopPropagation();
   }
+
+  /**
+   * Mirror of handleMouseDown for touch devices.
+   * Sets up the same drag state so handleTouchMove/End can drive the drag.
+   */
+  /* c8 ignore start -- touch-only handlers untestable in headless Chromium */
+
+  /**
+   * Mark the editor as a touch device — adds classes to #canvas and
+   * #editor so touch-specific CSS activates (visible controls,
+   * always-on scrollbars, touch-action: none).
+   */
+  private markTouchDevice(): void {
+    if (this.isTouchDevice) return;
+    this.isTouchDevice = true;
+    this.querySelector('#canvas')?.classList.add('touch-device');
+    this.querySelector('#editor')?.classList.add('touch-device');
+  }
+
+  private handleItemTouchStart(event: TouchEvent): void {
+    this.markTouchDevice();
+
+    if (this.isReadOnly()) return;
+    this.blurActiveContentEditable();
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const element = event.currentTarget as HTMLElement;
+    const target = event.target as HTMLElement;
+    if (
+      target.classList.contains('exit') ||
+      target.closest('.exit') ||
+      target.closest('.linked-name')
+    ) {
+      return;
+    }
+
+    const uuid = element.getAttribute('uuid');
+    const type = element.tagName === 'TEMBA-FLOW-NODE' ? 'node' : 'sticky';
+
+    const position = this.getPosition(uuid, type);
+    if (!position) return;
+
+    // Touch doesn't support Ctrl/Cmd selection — just clear
+    if (!this.selectedItems.has(uuid)) {
+      this.selectedItems.clear();
+    }
+
+    this.isMouseDown = true;
+    this.dragStartPos = { x: touch.clientX, y: touch.clientY };
+    this.startPos = { left: position.left, top: position.top };
+    this.currentDragItem = {
+      uuid,
+      position,
+      element,
+      type
+    };
+
+    // Don't preventDefault here — allow the threshold check in touchmove
+    // to decide whether this is a drag or a tap
+    event.stopPropagation();
+  }
+
+  /* c8 ignore stop */
 
   private handleGlobalMouseDown(event: MouseEvent): void {
     if (isRightClick(event)) return;
@@ -2376,6 +2505,80 @@ export class Editor extends RapidElement {
     }
   }
 
+  /* c8 ignore start -- touch-only handlers */
+
+  /**
+   * Find the temba-flow-node element at the given viewport coordinates.
+   * Uses elementFromPoint which works for both mouse and touch input.
+   */
+  private findTargetNodeAt(clientX: number, clientY: number): Element | null {
+    const el = document.elementFromPoint(clientX, clientY);
+    return el?.closest('temba-flow-node') ?? null;
+  }
+
+  /**
+   * Handle touchstart on the canvas element. Mirrors handleGlobalMouseDown
+   * + handleCanvasMouseDown for touch: starts selection on empty canvas,
+   * and detects double-tap to show the context menu.
+   */
+  private handleCanvasTouchStart(event: TouchEvent): void {
+    this.markTouchDevice();
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    // Only handle touches directly on canvas/grid (not on nodes)
+    const target = event.target as HTMLElement;
+    if (target.closest('.draggable')) return;
+    if (target.id !== 'canvas' && target.id !== 'grid') return;
+
+    // Two-finger touch on canvas — record start position and enter the
+    // two-finger state immediately (even before any touchmove). If the
+    // fingers lift without panning, we show the context menu (handleTouchEnd).
+    if (event.touches.length >= 2) {
+      // Cancel any single-finger selection that the first touch started
+      this.canvasMouseDown = false;
+      this.isSelecting = false;
+      this.selectionBox = null;
+
+      this.isTwoFingerPanning = true;
+      this.twoFingerOnCanvas = true;
+      this.twoFingerDidPan = false;
+      this.twoFingerStartMidX =
+        (event.touches[0].clientX + event.touches[1].clientX) / 2;
+      this.twoFingerStartMidY =
+        (event.touches[0].clientY + event.touches[1].clientY) / 2;
+      this.lastPanX = this.twoFingerStartMidX;
+      this.lastPanY = this.twoFingerStartMidY;
+      return;
+    }
+
+    // Start selection box (mirrors handleCanvasMouseDown)
+    if (this.isReadOnly()) return;
+
+    this.canvasMouseDown = true;
+    this.dragStartPos = { x: touch.clientX, y: touch.clientY };
+
+    const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+    if (canvasRect) {
+      this.selectedItems.clear();
+
+      const relativeX = (touch.clientX - canvasRect.left) / this.zoom;
+      const relativeY = (touch.clientY - canvasRect.top) / this.zoom;
+
+      this.selectionBox = {
+        startX: relativeX,
+        startY: relativeY,
+        endX: relativeX,
+        endY: relativeY
+      };
+    }
+
+    event.preventDefault();
+  }
+
+  /* c8 ignore stop */
+
   private handleMouseMove(event: MouseEvent): void {
     // Handle selection box drawing
     if (this.canvasMouseDown && !this.isMouseDown) {
@@ -2461,7 +2664,7 @@ export class Editor extends RapidElement {
     // Handle item dragging
     if (!this.isMouseDown || !this.currentDragItem) return;
 
-    this.lastMouseEvent = event;
+    this.lastPointerPos = { clientX: event.clientX, clientY: event.clientY };
 
     const deltaX = event.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
     const deltaY = event.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
@@ -2480,16 +2683,16 @@ export class Editor extends RapidElement {
   }
 
   private updateDragPositions(): void {
-    if (!this.currentDragItem || !this.lastMouseEvent) return;
+    if (!this.currentDragItem || !this.lastPointerPos) return;
 
     // Convert screen + scroll delta to canvas delta
     const deltaX =
-      (this.lastMouseEvent.clientX -
+      (this.lastPointerPos.clientX -
         this.dragStartPos.x +
         this.autoScrollDeltaX) /
       this.zoom;
     const deltaY =
-      (this.lastMouseEvent.clientY -
+      (this.lastPointerPos.clientY -
         this.dragStartPos.y +
         this.autoScrollDeltaY) /
       this.zoom;
@@ -2524,14 +2727,14 @@ export class Editor extends RapidElement {
     if (!editor) return;
 
     const tick = () => {
-      if (!this.isDragging || !this.lastMouseEvent) {
+      if (!this.isDragging || !this.lastPointerPos) {
         this.autoScrollAnimationId = null;
         return;
       }
 
       const editorRect = editor.getBoundingClientRect();
-      const mouseX = this.lastMouseEvent.clientX;
-      const mouseY = this.lastMouseEvent.clientY;
+      const mouseX = this.lastPointerPos.clientX;
+      const mouseY = this.lastPointerPos.clientY;
 
       let scrollDx = 0;
       let scrollDy = 0;
@@ -2705,8 +2908,331 @@ export class Editor extends RapidElement {
     this.canvasMouseDown = false;
     this.autoScrollDeltaX = 0;
     this.autoScrollDeltaY = 0;
-    this.lastMouseEvent = null;
+    this.lastPointerPos = null;
   }
+
+  /* c8 ignore start -- touch-only handlers */
+
+  /**
+   * Handle touch move on the document — mirrors handleMouseMove for
+   * both connection dragging and node/sticky dragging on touch devices.
+   */
+  private handleTouchMove(event: TouchEvent): void {
+    // --- Two-finger panning ---
+    if (event.touches.length >= 2) {
+      event.preventDefault();
+      const midX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+      const midY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+
+      if (this.isTwoFingerPanning) {
+        const dx = this.lastPanX - midX;
+        const dy = this.lastPanY - midY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+          this.twoFingerDidPan = true;
+        }
+        const editor = this.querySelector('#editor') as HTMLElement;
+        if (editor) {
+          editor.scrollBy(dx, dy);
+        }
+      }
+
+      // Cancel any in-progress single-finger actions
+      this.canvasMouseDown = false;
+      this.isSelecting = false;
+      this.selectionBox = null;
+
+      this.isTwoFingerPanning = true;
+      this.lastPanX = midX;
+      this.lastPanY = midY;
+      return;
+    }
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    // --- Selection box drawing ---
+    if (this.canvasMouseDown && !this.isMouseDown) {
+      event.preventDefault();
+      this.isSelecting = true;
+
+      const canvasRect = this.querySelector('#canvas')?.getBoundingClientRect();
+      if (canvasRect && this.selectionBox) {
+        this.selectionBox = {
+          ...this.selectionBox,
+          endX: (touch.clientX - canvasRect.left) / this.zoom,
+          endY: (touch.clientY - canvasRect.top) / this.zoom
+        };
+        this.updateSelectedItemsFromBox();
+      }
+
+      this.requestUpdate();
+      return;
+    }
+
+    // --- Connection dragging ---
+    if (this.plumber.connectionDragging) {
+      event.preventDefault();
+
+      const targetNode = this.findTargetNodeAt(touch.clientX, touch.clientY);
+
+      // Clear previous target styles
+      document.querySelectorAll('temba-flow-node').forEach((node) => {
+        node.classList.remove(
+          'connection-target-valid',
+          'connection-target-invalid'
+        );
+      });
+
+      if (targetNode) {
+        this.targetId = targetNode.getAttribute('uuid');
+        this.isValidTarget = this.targetId !== this.dragFromNodeId;
+
+        if (this.isValidTarget) {
+          targetNode.classList.add('connection-target-valid');
+        } else {
+          targetNode.classList.add('connection-target-invalid');
+        }
+
+        this.connectionPlaceholder = null;
+      } else {
+        this.targetId = null;
+        this.isValidTarget = true;
+
+        const canvas = this.querySelector('#canvas');
+        if (canvas) {
+          const canvasRect = canvas.getBoundingClientRect();
+          const relativeX = (touch.clientX - canvasRect.left) / this.zoom;
+          const relativeY = (touch.clientY - canvasRect.top) / this.zoom;
+
+          const placeholderWidth = 200;
+          const placeholderHeight = 64;
+          const arrowLength = ARROW_LENGTH;
+          const cursorGap = CURSOR_GAP;
+
+          const dragUp =
+            this.connectionSourceY != null
+              ? relativeY < this.connectionSourceY
+              : false;
+
+          let top: number;
+          if (dragUp) {
+            top = relativeY + cursorGap - placeholderHeight;
+          } else {
+            top = relativeY - cursorGap + arrowLength;
+          }
+
+          this.connectionPlaceholder = {
+            position: {
+              left: relativeX - placeholderWidth / 2,
+              top
+            },
+            visible: true,
+            dragUp
+          };
+        }
+      }
+
+      this.requestUpdate();
+      return;
+    }
+
+    // --- Node/sticky dragging ---
+    if (!this.isMouseDown || !this.currentDragItem) return;
+
+    this.lastPointerPos = { clientX: touch.clientX, clientY: touch.clientY };
+
+    const deltaX = touch.clientX - this.dragStartPos.x + this.autoScrollDeltaX;
+    const deltaY = touch.clientY - this.dragStartPos.y + this.autoScrollDeltaY;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (!this.isDragging && distance > DRAG_THRESHOLD) {
+      this.isDragging = true;
+      this.startAutoScroll();
+    }
+
+    // Only prevent default scrolling once we're actually dragging.
+    // Before the threshold, allow the browser to fire synthetic click
+    // events for taps on buttons (remove, add-action, etc.).
+    if (this.isDragging) {
+      event.preventDefault();
+      this.updateDragPositions();
+    }
+  }
+
+  /**
+   * Handle touch end on the document — mirrors handleMouseUp for
+   * both connection dragging and node/sticky dragging on touch devices.
+   */
+  private handleTouchEnd(event: TouchEvent): void {
+    // --- Two-finger gesture end ---
+    if (this.isTwoFingerPanning) {
+      if (event.touches.length === 0) {
+        const didPan = this.twoFingerDidPan;
+        const onCanvas = this.twoFingerOnCanvas;
+        const midX = this.twoFingerStartMidX;
+        const midY = this.twoFingerStartMidY;
+
+        // Reset state
+        this.isTwoFingerPanning = false;
+        this.twoFingerOnCanvas = false;
+        this.twoFingerDidPan = false;
+
+        // Two-finger tap (no pan) on canvas → show context menu
+        if (!didPan && onCanvas) {
+          this.showContextMenuAt(midX, midY);
+        }
+      }
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+
+    // --- Selection box completion ---
+    if (this.canvasMouseDown && this.isSelecting) {
+      this.isSelecting = false;
+      this.selectionBox = null;
+      this.canvasMouseDown = false;
+      this.requestUpdate();
+      return;
+    }
+
+    // --- Canvas tap (no drag) — clear selection ---
+    if (this.canvasMouseDown && !this.isSelecting) {
+      this.canvasMouseDown = false;
+      return;
+    }
+
+    // --- Connection dragging ---
+    if (this.plumber.connectionDragging) {
+      if (touch) {
+        const targetNode = this.findTargetNodeAt(touch.clientX, touch.clientY);
+        if (targetNode) {
+          this.targetId = targetNode.getAttribute('uuid');
+          this.isValidTarget = this.targetId !== this.dragFromNodeId;
+        }
+      }
+      return;
+    }
+
+    // --- Node/sticky dragging ---
+    if (!this.isMouseDown || !this.currentDragItem) return;
+
+    this.stopAutoScroll();
+
+    if (this.isDragging && touch) {
+      const deltaX =
+        (touch.clientX - this.dragStartPos.x + this.autoScrollDeltaX) /
+        this.zoom;
+      const deltaY =
+        (touch.clientY - this.dragStartPos.y + this.autoScrollDeltaY) /
+        this.zoom;
+
+      const itemsToMove =
+        this.selectedItems.has(this.currentDragItem.uuid) &&
+        this.selectedItems.size > 1
+          ? Array.from(this.selectedItems)
+          : [this.currentDragItem.uuid];
+
+      const newPositions: { [uuid: string]: FlowPosition } = {};
+
+      itemsToMove.forEach((uuid) => {
+        const type = this.definition.nodes.find((node) => node.uuid === uuid)
+          ? 'node'
+          : 'sticky';
+        const position = this.getPosition(uuid, type);
+
+        if (position) {
+          const newLeft = position.left + deltaX;
+          const newTop = position.top + deltaY;
+          const snappedLeft = snapToGrid(newLeft);
+          const snappedTop = snapToGrid(newTop);
+
+          newPositions[uuid] = { left: snappedLeft, top: snappedTop };
+
+          const element = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+          if (element) {
+            element.classList.remove('dragging');
+            element.style.left = `${snappedLeft}px`;
+            element.style.top = `${snappedTop}px`;
+          }
+        }
+      });
+
+      if (Object.keys(newPositions).length > 0) {
+        getStore().getState().updateCanvasPositions(newPositions);
+
+        const nodeUuids = itemsToMove.filter((uuid) =>
+          this.definition.nodes.find((node) => node.uuid === uuid)
+        );
+
+        if (nodeUuids.length > 0) {
+          setTimeout(() => {
+            this.checkCollisionsAndReflow(nodeUuids);
+          }, 0);
+        } else {
+          setTimeout(() => {
+            this.plumber.repaintEverything();
+          }, 0);
+        }
+      }
+
+      this.selectedItems.clear();
+    }
+
+    // Reset all drag state
+    this.isDragging = false;
+    this.isMouseDown = false;
+    this.currentDragItem = null;
+    this.canvasMouseDown = false;
+    this.autoScrollDeltaX = 0;
+    this.autoScrollDeltaY = 0;
+    this.lastPointerPos = null;
+  }
+
+  /**
+   * Handle touchcancel — reset all touch-related state so the editor
+   * doesn't get stuck in a partial drag/selection mode.
+   */
+  private handleTouchCancel(): void {
+    this.isTwoFingerPanning = false;
+    this.isSelecting = false;
+    this.selectionBox = null;
+    this.canvasMouseDown = false;
+
+    if (this.isDragging && this.currentDragItem) {
+      // Remove dragging class from all moved items
+      const itemsToReset =
+        this.selectedItems.has(this.currentDragItem.uuid) &&
+        this.selectedItems.size > 1
+          ? Array.from(this.selectedItems)
+          : [this.currentDragItem.uuid];
+      itemsToReset.forEach((uuid) => {
+        const el = this.querySelector(`[uuid="${uuid}"]`) as HTMLElement;
+        if (el) el.classList.remove('dragging');
+      });
+    }
+
+    this.stopAutoScroll();
+    this.isDragging = false;
+    this.isMouseDown = false;
+    this.currentDragItem = null;
+    this.autoScrollDeltaX = 0;
+    this.autoScrollDeltaY = 0;
+    this.lastPointerPos = null;
+
+    // Clear connection drag visual state
+    document.querySelectorAll('temba-flow-node').forEach((node) => {
+      node.classList.remove(
+        'connection-target-valid',
+        'connection-target-invalid'
+      );
+    });
+    this.connectionPlaceholder = null;
+
+    this.requestUpdate();
+  }
+
+  /* c8 ignore stop */
 
   private updateCanvasSize(): void {
     if (!this.definition) return;
@@ -2783,27 +3309,32 @@ export class Editor extends RapidElement {
     event.preventDefault();
     event.stopPropagation();
 
-    // Get canvas position
+    this.showContextMenuAt(event.clientX, event.clientY);
+  }
+
+  /**
+   * Show the canvas context menu at the given viewport coordinates.
+   * Shared by right-click (mouse) and double-tap (touch).
+   */
+  private showContextMenuAt(clientX: number, clientY: number): void {
+    if (this.isReadOnly()) return;
+
     const canvas = this.querySelector('#canvas');
-    if (!canvas) {
-      return;
-    }
+    if (!canvas) return;
 
     const canvasRect = canvas.getBoundingClientRect();
-    const relativeX = (event.clientX - canvasRect.left) / this.zoom - 10;
-    const relativeY = (event.clientY - canvasRect.top) / this.zoom - 10;
+    const relativeX = (clientX - canvasRect.left) / this.zoom - 10;
+    const relativeY = (clientY - canvasRect.top) / this.zoom - 10;
 
-    // Snap position to grid
     const snappedLeft = snapToGrid(relativeX);
     const snappedTop = snapToGrid(relativeY);
 
-    // Show the canvas menu at the mouse position (use viewport coordinates)
     const canvasMenu = this.querySelector('temba-canvas-menu') as CanvasMenu;
     if (canvasMenu) {
       const hasNodes = this.definition && this.definition.nodes.length > 0;
       canvasMenu.show(
-        event.clientX,
-        event.clientY,
+        clientX,
+        clientY,
         {
           x: snappedLeft,
           y: snappedTop
@@ -4743,6 +5274,7 @@ export class Editor extends RapidElement {
                           ? 'flow-start'
                           : ''}"
                         @mousedown=${this.handleMouseDown.bind(this)}
+                        @touchstart=${this.handleItemTouchStart.bind(this)}
                         uuid=${node.uuid}
                         data-node-uuid=${node.uuid}
                         style="left:${position.left}px; top:${position.top}px;transition: all 0.2s ease-in-out;"
@@ -4769,6 +5301,7 @@ export class Editor extends RapidElement {
                       ? 'selected'
                       : ''}"
                     @mousedown=${this.handleMouseDown.bind(this)}
+                    @touchstart=${this.handleItemTouchStart.bind(this)}
                     style="left:${position.left}px; top:${position.top}px;"
                     uuid=${uuid}
                     .data=${sticky}
