@@ -2,7 +2,7 @@ import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
-import { renderNamedObjects } from '../utils';
+import { renderFlowLinks } from '../utils';
 import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
@@ -33,7 +33,9 @@ export const split_by_subflow: NodeConfig = {
     ) as any;
     return html`
       <div class="body">
-        ${renderNamedObjects([enterFlowAction?.flow], 'flow')}
+        ${enterFlowAction?.flow
+          ? renderFlowLinks([enterFlowAction.flow], 'flow')
+          : null}
       </div>
     `;
   },

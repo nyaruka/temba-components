@@ -14,6 +14,8 @@ import {
   LayoutItem,
   RowLayoutConfig,
   GroupLayoutConfig,
+  AccordionLayoutConfig,
+  AccordionSection,
   FormData,
   ACTION_GROUP_METADATA,
   SPLIT_GROUP_METADATA
@@ -153,6 +155,25 @@ export class NodeEditor extends RapidElement {
         border: 1px solid #e0e0e0;
         border-radius: 6px;
         overflow: hidden;
+      }
+
+      .form-group.no-border {
+        border: none;
+      }
+
+      .form-group.no-border > .form-group-header {
+        background: none;
+        border-bottom: none;
+        padding-left: 11px; /* 1px border + 10px padding to align with bordered groups */
+      }
+
+      .form-group.no-border > .form-group-header:hover {
+        background: none;
+      }
+
+      .form-group.no-border > .form-group-content {
+        padding-left: 0;
+        padding-right: 0;
       }
 
       .form-group.has-errors {
@@ -317,6 +338,133 @@ export class NodeEditor extends RapidElement {
         position: relative;
         display: flex;
         align-items: center;
+      }
+
+      /* Accordion styles */
+      .accordion {
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .accordion-section {
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .accordion-section:last-child {
+        border-bottom: none;
+      }
+
+      .accordion-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        cursor: pointer;
+        user-select: none;
+        background: #f8f9fa;
+        transition: background 0.15s ease;
+      }
+
+      .accordion-header:hover {
+        background: #f0f1f2;
+      }
+
+      .accordion-section.expanded > .accordion-header {
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .accordion-title {
+        font-weight: 500;
+        font-size: 13px;
+        color: var(--color-label, #777);
+      }
+
+      .accordion-toggle-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .accordion-toggle-icon {
+        color: #999;
+        transition: transform 0.2s ease, opacity 0.3s ease;
+      }
+
+      .accordion-toggle-icon.expanded {
+        transform: rotate(90deg);
+      }
+
+      .accordion-toggle-icon.faded {
+        opacity: 0;
+      }
+
+      .accordion-count-bubble {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 3px;
+        min-width: 10px;
+        min-height: 10px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        line-height: 0px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        background: var(--color-bubble-bg, #fff);
+        border: 1px solid var(--color-bubble-border, #777);
+        color: var(--color-bubble-text, #000);
+      }
+
+      .accordion-count-bubble.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .accordion-checkmark-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        border-radius: 50%;
+        color: var(--color-bubble-text, #000);
+        background: var(--color-bubble-bg, #fff);
+        border: 1px solid var(--color-bubble-border, #777);
+        padding: 0.15em;
+      }
+
+      .accordion-checkmark-icon.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .accordion-content {
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        opacity: 1;
+      }
+
+      .accordion-content.collapsed {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+      }
+
+      .accordion-error-icon {
+        color: var(--color-error, tomato);
+        margin-right: 6px;
       }
 
       .gutter-fields {
@@ -1261,15 +1409,20 @@ export class NodeEditor extends RapidElement {
         const { label, collapsed, collapsible } = item;
 
         // Only update if the group is collapsible and has a function-based collapsed property
+        // Skip reveal groups that have been expanded — they are one-way
         if (collapsible && typeof collapsed === 'function') {
-          const newCollapsedState = collapsed(this.formData);
+          if (item.reveal && this.groupCollapseState[label] === false) {
+            // Reveal group was manually expanded — don't re-collapse
+          } else {
+            const newCollapsedState = collapsed(this.formData);
 
-          // Only update if the state has changed to avoid unnecessary re-renders
-          if (this.groupCollapseState[label] !== newCollapsedState) {
-            this.groupCollapseState = {
-              ...this.groupCollapseState,
-              [label]: newCollapsedState
-            };
+            // Only update if the state has changed to avoid unnecessary re-renders
+            if (this.groupCollapseState[label] !== newCollapsedState) {
+              this.groupCollapseState = {
+                ...this.groupCollapseState,
+                [label]: newCollapsedState
+              };
+            }
           }
         }
 
@@ -1278,6 +1431,21 @@ export class NodeEditor extends RapidElement {
       } else if (typeof item === 'object' && item.type === 'row') {
         // Recursively check items in rows
         this.updateGroupCollapseStatesRecursive(item.items);
+      } else if (typeof item === 'object' && item.type === 'accordion') {
+        // Check each accordion section
+        item.sections.forEach((section) => {
+          const stateKey = `accordion:${section.label}`;
+          if (typeof section.collapsed === 'function') {
+            const newCollapsedState = section.collapsed(this.formData);
+            if (this.groupCollapseState[stateKey] !== newCollapsedState) {
+              this.groupCollapseState = {
+                ...this.groupCollapseState,
+                [stateKey]: newCollapsedState
+              };
+            }
+          }
+          this.updateGroupCollapseStatesRecursive(section.items);
+        });
       }
     });
   }
@@ -1518,6 +1686,9 @@ export class NodeEditor extends RapidElement {
           const picker = e.target as any;
           const url = picker.attachments?.[0]?.url || '';
           this.handleNewFieldChange(fieldName, url);
+        } else if (fieldName && config.type === 'template-editor') {
+          // Special handling for template editor (manages template + template_variables)
+          this.handleTemplateEditorChange(fieldName, e);
         } else {
           // Default handling for most field types
           this.handleFormFieldChange(fieldName, e);
@@ -1526,7 +1697,8 @@ export class NodeEditor extends RapidElement {
       showLabel: true,
       formData: this.formData,
       additionalData: {
-        attachments: this.formData.attachments || []
+        attachments: this.formData.attachments || [],
+        template_variables: this.formData.template_variables || []
       }
     });
   }
@@ -1584,6 +1756,21 @@ export class NodeEditor extends RapidElement {
       } else if (typeof item === 'object' && item.type === 'row') {
         // Recursively check items in rows
         this.expandGroupsWithErrorsRecursive(item.items, errorFields);
+      } else if (typeof item === 'object' && item.type === 'accordion') {
+        // Check each accordion section for errors
+        item.sections.forEach((section) => {
+          const fieldsInSection = this.collectFieldsFromItems(section.items);
+          const sectionHasErrors = fieldsInSection.some((fieldName) =>
+            errorFields.has(fieldName)
+          );
+          if (sectionHasErrors) {
+            this.groupCollapseState = {
+              ...this.groupCollapseState,
+              [`accordion:${section.label}`]: false
+            };
+          }
+          this.expandGroupsWithErrorsRecursive(section.items, errorFields);
+        });
       }
     });
   }
@@ -1630,6 +1817,9 @@ export class NodeEditor extends RapidElement {
 
       case 'group':
         return this.renderGroup(item, config, renderedFields);
+
+      case 'accordion':
+        return this.renderAccordion(item, config, renderedFields);
 
       case 'spacer':
         return html``;
@@ -1771,6 +1961,8 @@ export class NodeEditor extends RapidElement {
       collapsed = false,
       helpText,
       contentPadding,
+      bordered = true,
+      reveal = false,
       getGroupValueCount
     } = groupConfig;
 
@@ -1790,6 +1982,13 @@ export class NodeEditor extends RapidElement {
       ? this.groupCollapseState[label] ??
         (typeof collapsed === 'function' ? collapsed(this.formData) : collapsed)
       : false;
+
+    // Reveal mode: once expanded, render items directly without any group wrapper
+    if (reveal && !isCollapsed) {
+      return html`${items.map((item) =>
+        this.renderLayoutItem(item, config, renderedFields)
+      )}`;
+    }
 
     // Check if any field in this group has errors
     const fieldsInGroup = this.collectFieldsFromItems(items);
@@ -1832,7 +2031,7 @@ export class NodeEditor extends RapidElement {
           ? 'has-errors'
           : ''} ${isCollapsed ? 'collapsed' : 'expanded'} ${hasValue
           ? 'has-bubble'
-          : ''}"
+          : ''} ${!bordered ? 'no-border' : ''}"
       >
         <div
           class="form-group-header ${collapsible ? 'clickable' : ''}"
@@ -1900,6 +2099,150 @@ export class NodeEditor extends RapidElement {
     `;
   }
 
+  private renderAccordion(
+    accordionConfig: AccordionLayoutConfig,
+    config: ActionConfig | NodeConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const { sections, multi = false } = accordionConfig;
+
+    return html`
+      <div class="accordion">
+        ${sections.map((section) => {
+          const { label, collapsed = true, getValueCount } = section;
+          const stateKey = `accordion:${label}`;
+
+          // Initialize collapse state if not set
+          if (!(stateKey in this.groupCollapseState)) {
+            const initialCollapsed =
+              typeof collapsed === 'function'
+                ? collapsed(this.formData)
+                : collapsed;
+            this.groupCollapseState = {
+              ...this.groupCollapseState,
+              [stateKey]: initialCollapsed
+            };
+          }
+
+          const isCollapsed = this.groupCollapseState[stateKey] ?? true;
+          const isHovered = this.groupHoverState[stateKey] ?? false;
+
+          // Check for errors in this section
+          const fieldsInSection = this.collectFieldsFromItems(section.items);
+          const sectionHasErrors = fieldsInSection.some(
+            (fieldName) => this.errors[fieldName]
+          );
+
+          // Value count / checkmark display
+          let valueCount = 0;
+          let showBubble = false;
+          let showCheckmark = false;
+          let hasValue = false;
+
+          if (getValueCount) {
+            try {
+              const result = getValueCount(this.formData);
+              if (typeof result === 'boolean') {
+                hasValue = result;
+                showCheckmark = result && isCollapsed && !isHovered;
+              } else if (typeof result === 'number') {
+                valueCount = result;
+                hasValue = valueCount > 0;
+                showBubble = valueCount > 0 && isCollapsed && !isHovered;
+              }
+            } catch (error) {
+              // ignore
+            }
+          }
+
+          return html`
+            <div
+              class="accordion-section ${isCollapsed
+                ? 'collapsed'
+                : 'expanded'} ${hasValue ? 'has-value' : ''}"
+            >
+              <div
+                class="accordion-header"
+                @click=${() =>
+                  this.handleAccordionToggle(stateKey, sections, multi)}
+                @mouseenter=${() => this.handleGroupMouseEnter(stateKey)}
+                @mouseleave=${() => this.handleGroupMouseLeave(stateKey)}
+              >
+                <div class="accordion-title">${label}</div>
+                ${sectionHasErrors
+                  ? html`<temba-icon
+                      name="alert_warning"
+                      class="accordion-error-icon"
+                      size="1.2"
+                    ></temba-icon>`
+                  : html`<div class="accordion-toggle-container">
+                      <temba-icon
+                        name="arrow_right"
+                        size="1.2"
+                        class="accordion-toggle-icon ${isCollapsed
+                          ? 'collapsed'
+                          : 'expanded'} ${showBubble || showCheckmark
+                          ? 'faded'
+                          : ''}"
+                      ></temba-icon>
+                      ${showCheckmark
+                        ? html`<temba-icon
+                            name="check"
+                            size="0.8"
+                            class="accordion-checkmark-icon"
+                          ></temba-icon>`
+                        : showBubble
+                        ? html`<div
+                            class="accordion-count-bubble ${!showBubble
+                              ? 'hidden'
+                              : ''}"
+                          >
+                            ${valueCount}
+                          </div>`
+                        : ''}
+                    </div>`}
+              </div>
+              <div
+                class="accordion-content ${isCollapsed
+                  ? 'collapsed'
+                  : 'expanded'}"
+              >
+                ${section.items.map((item) =>
+                  this.renderLayoutItem(item, config, renderedFields)
+                )}
+              </div>
+            </div>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  private handleAccordionToggle(
+    stateKey: string,
+    sections: AccordionSection[],
+    multi: boolean
+  ): void {
+    const isCurrentlyCollapsed = this.groupCollapseState[stateKey] ?? true;
+
+    if (multi) {
+      // Multi mode: just toggle this section
+      this.groupCollapseState = {
+        ...this.groupCollapseState,
+        [stateKey]: !isCurrentlyCollapsed
+      };
+    } else {
+      // Single mode: collapse all other sections, toggle this one
+      const newState = { ...this.groupCollapseState };
+      sections.forEach((section) => {
+        const key = `accordion:${section.label}`;
+        newState[key] = true; // collapse all
+      });
+      newState[stateKey] = !isCurrentlyCollapsed; // toggle clicked
+      this.groupCollapseState = newState;
+    }
+  }
+
   private collectFieldsFromItems(items: LayoutItem[]): string[] {
     const fields: string[] = [];
 
@@ -1912,6 +2255,10 @@ export class NodeEditor extends RapidElement {
         fields.push(...this.collectFieldsFromItems(item.items));
       } else if (item.type === 'group') {
         fields.push(...this.collectFieldsFromItems(item.items));
+      } else if (item.type === 'accordion') {
+        item.sections.forEach((section) => {
+          fields.push(...this.collectFieldsFromItems(section.items));
+        });
       }
     });
 
@@ -1953,6 +2300,22 @@ export class NodeEditor extends RapidElement {
     // Trigger re-render
     this.requestUpdate();
   }
+  private handleTemplateEditorChange(fieldName: string, event: Event): void {
+    const customEvent = event as CustomEvent;
+    const detail = customEvent.detail;
+
+    this.formData = {
+      ...this.formData,
+      [fieldName]: detail.template
+        ? { uuid: detail.template.uuid, name: detail.template.name }
+        : null,
+      template_variables: detail.variables || []
+    };
+
+    this.updateGroupCollapseStates();
+    this.requestUpdate();
+  }
+
   private handleMessageEditorChange(fieldName: string, event: Event): void {
     const target = event.target as any;
 

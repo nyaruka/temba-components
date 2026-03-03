@@ -6,6 +6,7 @@ import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
+import { renderClamped } from '../utils';
 
 const defaultPost = `@(json(object(
   "contact", object(
@@ -91,48 +92,39 @@ export const split_by_webhook: NodeConfig = {
     }
   },
   layout: [
-    // Row with method and URL side by side
     { type: 'row', items: ['method', 'url'] },
-    // Advanced group with nested layouts
     {
-      type: 'group',
-      label: 'Headers',
-      items: ['headers'],
-      collapsible: true,
-      collapsed: true,
-      helpText: 'Configure authentication or custom headers',
-      getGroupValueCount: (formData: FormData) => {
-        return formData.headers?.length || 0;
-      }
-    },
-    {
-      type: 'group',
-      label: 'Body',
-      items: ['body'],
-      collapsible: true,
-      collapsed: true,
-      helpText: 'Configure the request payload',
-      getGroupValueCount: (formData: FormData) => {
-        return !!(
-          formData.body &&
-          formData.body.trim() !== '' &&
-          formData.body !== defaultPost
-        );
-      }
+      type: 'accordion',
+      sections: [
+        {
+          label: 'Headers',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return formData.headers?.length || 0;
+          },
+          items: ['headers']
+        },
+        {
+          label: 'Body',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            return !!(
+              formData.body &&
+              formData.body.trim() !== '' &&
+              formData.body !== defaultPost
+            );
+          },
+          items: ['body']
+        }
+      ]
     }
   ],
   render: (node: Node) => {
     const callWebhookAction = node.actions?.find(
       (action) => action.type === 'call_webhook'
     ) as CallWebhook;
-    return html`
-      <div
-        class="body"
-        style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-      >
-        ${callWebhookAction?.url || 'Configure webhook'}
-      </div>
-    `;
+    const url = callWebhookAction?.url || 'Configure webhook';
+    return html` <div class="body">${renderClamped(url, url)}</div> `;
   },
   toFormData: (node: Node) => {
     // Extract data from the existing node structure

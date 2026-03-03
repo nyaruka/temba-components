@@ -44,6 +44,7 @@ export class SortableList extends RapidElement {
 
       slot > * {
         user-select: none;
+        touch-action: none;
       }
 
       temba-icon {
@@ -103,6 +104,9 @@ export class SortableList extends RapidElement {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
+    this.handleTouchMove = this.handleTouchMove.bind(this);
+    this.handleTouchEnd = this.handleTouchEnd.bind(this);
+    this.handleTouchStart = this.handleTouchStart.bind(this);
   }
 
   private getSortableElements(): Element[] {
@@ -369,48 +373,81 @@ export class SortableList extends RapidElement {
     this.downEle.insertAdjacentElement('afterend', this.dropPlaceholder);
   }
 
-  private handleMouseDown(event: MouseEvent) {
-    let ele = event.target as HTMLDivElement;
-
+  /**
+   * Shared drag-start logic for both mouse and touch.
+   * Returns true if a drag target was found and state was initialised.
+   */
+  private beginDrag(
+    target: HTMLElement,
+    clientX: number,
+    clientY: number
+  ): boolean {
     // if we have a drag handle, only allow dragging from that element
     if (this.dragHandle) {
-      if (!ele.classList.contains(this.dragHandle)) {
-        return;
+      if (!target.classList.contains(this.dragHandle)) {
+        return false;
       }
     }
 
-    ele = ele.closest('.sortable');
-    if (ele) {
+    const ele = target.closest('.sortable') as HTMLDivElement;
+    if (!ele) return false;
+
+    this.downEle = ele;
+    this.draggingId = ele.id;
+    this.draggingIdx = this.getRowIndex(ele.id);
+    this.draggingEle = ele;
+
+    const rect = ele.getBoundingClientRect();
+    this.originalElementRect = rect;
+    this.originalLayoutSize = {
+      width: ele.offsetWidth,
+      height: ele.offsetHeight
+    };
+    this.xOffset = clientX - rect.left;
+    this.yOffset = clientY - rect.top;
+    this.yDown = clientY;
+    this.xDown = clientX;
+
+    return true;
+  }
+
+  private handleMouseDown(event: MouseEvent) {
+    if (
+      this.beginDrag(event.target as HTMLElement, event.clientX, event.clientY)
+    ) {
       event.preventDefault();
       event.stopPropagation();
-      this.downEle = ele;
-      this.draggingId = ele.id;
-      this.draggingIdx = this.getRowIndex(ele.id);
-      this.draggingEle = ele;
-
-      // Use getBoundingClientRect for accurate offsets and store original dimensions
-      const rect = ele.getBoundingClientRect();
-      this.originalElementRect = rect; // Store viewport rect for ghost positioning
-      this.originalLayoutSize = {
-        width: ele.offsetWidth,
-        height: ele.offsetHeight
-      }; // Store layout dimensions for placeholders
-      this.xOffset = event.clientX - rect.left;
-      this.yOffset = event.clientY - rect.top;
-      this.yDown = event.clientY;
-      this.xDown = event.clientX;
-
       document.addEventListener('mousemove', this.handleMouseMove);
       document.addEventListener('mouseup', this.handleMouseUp);
     }
   }
 
-  private handleMouseMove(event: MouseEvent) {
+  /* c8 ignore start -- touch-only handlers */
+  private handleTouchStart(event: TouchEvent) {
+    const touch = event.touches[0];
+    if (!touch) return;
+    if (
+      this.beginDrag(event.target as HTMLElement, touch.clientX, touch.clientY)
+    ) {
+      event.stopPropagation();
+      document.addEventListener('touchmove', this.handleTouchMove, {
+        passive: false
+      });
+      document.addEventListener('touchend', this.handleTouchEnd);
+      document.addEventListener('touchcancel', this.handleTouchEnd);
+    }
+  }
+  /* c8 ignore stop */
+
+  /**
+   * Shared drag-move logic for both mouse and touch.
+   */
+  private processDragMove(clientX: number, clientY: number) {
     if (
       !this.ghostElement &&
       this.downEle &&
-      (Math.abs(event.clientY - this.yDown) > DRAG_THRESHOLD ||
-        Math.abs(event.clientX - this.xDown) > DRAG_THRESHOLD)
+      (Math.abs(clientY - this.yDown) > DRAG_THRESHOLD ||
+        Math.abs(clientX - this.xDown) > DRAG_THRESHOLD)
     ) {
       this.fireCustomEvent(CustomEventType.DragStart, {
         id: this.downEle.id
@@ -440,8 +477,8 @@ export class SortableList extends RapidElement {
       const hasAncestorScale = Math.abs(ancestorScale - 1) > 0.001;
 
       this.ghostElement.style.position = 'fixed';
-      this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
-      this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
+      this.ghostElement.style.left = clientX - this.xOffset + 'px';
+      this.ghostElement.style.top = clientY - this.yOffset + 'px';
       this.ghostElement.style.zIndex = '99999';
       this.ghostElement.style.opacity = '0.8';
 
@@ -480,12 +517,12 @@ export class SortableList extends RapidElement {
     }
 
     if (this.ghostElement) {
-      this.ghostElement.style.left = event.clientX - this.xOffset + 'px';
-      this.ghostElement.style.top = event.clientY - this.yOffset + 'px';
+      this.ghostElement.style.left = clientX - this.xOffset + 'px';
+      this.ghostElement.style.top = clientY - this.yOffset + 'px';
 
       // check if the drag is over the container (only if external dragging is allowed)
       const isOverContainer = this.externalDrag
-        ? this.isMouseOverContainer(event.clientX, event.clientY)
+        ? this.isMouseOverContainer(clientX, clientY)
         : true; // always consider "over container" if external drag is disabled
 
       // detect transition between internal and external drag (only if allowed)
@@ -501,8 +538,8 @@ export class SortableList extends RapidElement {
 
         this.fireCustomEvent(CustomEventType.DragExternal, {
           id: this.downEle.id,
-          mouseX: event.clientX,
-          mouseY: event.clientY
+          mouseX: clientX,
+          mouseY: clientY
         });
       } else if (this.externalDrag && isOverContainer && this.isExternalDrag) {
         // transitioning back to internal drag
@@ -520,7 +557,7 @@ export class SortableList extends RapidElement {
 
       // only show drop placeholder and calculate drop position if internal drag
       if (!this.isExternalDrag) {
-        const targetInfo = this.getDropTargetInfo(event.clientX, event.clientY);
+        const targetInfo = this.getDropTargetInfo(clientX, clientY);
         if (targetInfo) {
           const { element: targetElement, insertAfter } = targetInfo;
           const targetIdx = this.getRowIndex(targetElement.id);
@@ -537,9 +574,6 @@ export class SortableList extends RapidElement {
             dropIdx = insertAfter ? targetIdx + 1 : targetIdx;
           } else {
             // Target was originally after the drag position - moving forward
-            // When moving the dragged element forward (i.e., to a higher index), the targetIdx is based on the current DOM,
-            // which no longer includes the dragged element. This means all elements after the original position have shifted left by one,
-            // so we need to subtract 1 from targetIdx to get the correct insertion index. If inserting after the target, we use targetIdx as is.
             dropIdx = insertAfter ? targetIdx : targetIdx - 1;
           }
 
@@ -560,18 +594,30 @@ export class SortableList extends RapidElement {
         // external drag - continue firing external drag events with updated position
         this.fireCustomEvent(CustomEventType.DragExternal, {
           id: this.downEle.id,
-          mouseX: event.clientX,
-          mouseY: event.clientY
+          mouseX: clientX,
+          mouseY: clientY
         });
       }
     }
   }
 
-  private handleMouseUp(evt: MouseEvent) {
-    if (this.draggingId && this.ghostElement) {
-      evt.preventDefault();
-      evt.stopPropagation();
+  private handleMouseMove(event: MouseEvent) {
+    this.processDragMove(event.clientX, event.clientY);
+  }
 
+  /* c8 ignore next 6 -- touch-only */
+  private handleTouchMove(event: TouchEvent) {
+    const touch = event.touches[0];
+    if (!touch) return;
+    event.preventDefault();
+    this.processDragMove(touch.clientX, touch.clientY);
+  }
+
+  /**
+   * Shared drag-end logic for both mouse and touch.
+   */
+  private processDragEnd(clientX: number, clientY: number) {
+    if (this.draggingId && this.ghostElement) {
       // Remove the ghost clone from document.body
       if (this.ghostElement) {
         this.ghostElement.remove();
@@ -610,8 +656,8 @@ export class SortableList extends RapidElement {
       this.fireCustomEvent(CustomEventType.DragStop, {
         id: this.draggingId,
         isExternal: this.isExternalDrag,
-        mouseX: evt.clientX,
-        mouseY: evt.clientY
+        mouseX: clientX,
+        mouseY: clientY
       });
 
       this.draggingId = null;
@@ -639,10 +685,31 @@ export class SortableList extends RapidElement {
         }, 100);
       }
     }
+  }
+
+  private handleMouseUp(evt: MouseEvent) {
+    if (this.draggingId && this.ghostElement) {
+      evt.preventDefault();
+      evt.stopPropagation();
+    }
+    this.processDragEnd(evt.clientX, evt.clientY);
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
     this.dispatchEvent(new Event('change'));
   }
+
+  /* c8 ignore start -- touch-only */
+  private handleTouchEnd(evt: TouchEvent) {
+    const touch = evt.changedTouches[0];
+    const clientX = touch?.clientX ?? 0;
+    const clientY = touch?.clientY ?? 0;
+    this.processDragEnd(clientX, clientY);
+    document.removeEventListener('touchmove', this.handleTouchMove);
+    document.removeEventListener('touchend', this.handleTouchEnd);
+    document.removeEventListener('touchcancel', this.handleTouchEnd);
+    this.dispatchEvent(new Event('change'));
+  }
+  /* c8 ignore stop */
 
   public render(): TemplateResult {
     return html`
@@ -650,7 +717,10 @@ export class SortableList extends RapidElement {
         class="container ${this.horizontal ? 'horizontal' : ''}"
         style="gap: ${this.gap}"
       >
-        <slot @mousedown=${this.handleMouseDown}></slot>
+        <slot
+          @mousedown=${this.handleMouseDown}
+          @touchstart=${this.handleTouchStart}
+        ></slot>
       </div>
     `;
   }

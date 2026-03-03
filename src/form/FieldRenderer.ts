@@ -9,7 +9,8 @@ import {
   MessageEditorFieldConfig,
   KeyValueFieldConfig,
   ArrayFieldConfig,
-  MediaFieldConfig
+  MediaFieldConfig,
+  TemplateEditorFieldConfig
 } from '../flow/types';
 import { Attachment } from '../interfaces';
 import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
@@ -101,6 +102,14 @@ export class FieldRenderer {
           context
         );
 
+      case 'template-editor':
+        return FieldRenderer.renderTemplateEditor(
+          fieldName,
+          config as TemplateEditorFieldConfig,
+          value,
+          context
+        );
+
       default:
         return html`<div>Unsupported field type: ${(config as any).type}</div>`;
     }
@@ -129,7 +138,7 @@ export class FieldRenderer {
         .errors="${errors}"
         .value="${value || ''}"
         placeholder="${config.placeholder || ''}"
-        expressions="session"
+        session
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${style}"
@@ -181,7 +190,7 @@ export class FieldRenderer {
         .value="${value || ''}"
         placeholder="${config.placeholder || ''}"
         textarea
-        expressions="session"
+        session
         .helpText="${config.helpText || ''}"
         class="${extraClasses}"
         style="${combinedStyle}"
@@ -462,6 +471,7 @@ export class FieldRenderer {
       ?autogrow="${config.autogrow}"
       ?gsm="${config.gsm}"
       ?disableCompletion="${config.disableCompletion}"
+      session
       counter="${config.counter || ''}"
       accept="${config.accept || ''}"
       endpoint="${config.endpoint || ''}"
@@ -471,6 +481,25 @@ export class FieldRenderer {
       style="${style}"
       @change="${onChange || (() => {})}"
     ></temba-message-editor>`;
+  }
+
+  private static renderTemplateEditor(
+    _fieldName: string,
+    config: TemplateEditorFieldConfig,
+    value: any,
+    context: FieldRenderContext
+  ): TemplateResult {
+    const { onChange, additionalData = {} } = context;
+    const templateUuid = value?.uuid || '';
+    const variables = JSON.stringify(additionalData.template_variables || []);
+
+    return html`<temba-template-editor
+      url="${config.endpoint || '/api/internal/templates.json'}"
+      template="${templateUuid}"
+      variables="${variables}"
+      @temba-context-changed="${onChange || (() => {})}"
+      @temba-content-changed="${onChange || (() => {})}"
+    ></temba-template-editor>`;
   }
 }
 

@@ -734,12 +734,12 @@ describe('temba-simulator', () => {
     // mock the start response for reset
     mockSimulatorStart();
 
-    // click the reset button (has delete icon)
+    // click the reset button (has refresh icon)
     const optionButtons = Array.from(
       simulator.shadowRoot.querySelectorAll('.option-btn')
     );
     const resetButton = optionButtons.find((btn) =>
-      btn.querySelector('temba-icon[name="delete"]')
+      btn.querySelector('temba-icon[name="refresh"]')
     ) as HTMLElement;
     expect(resetButton).to.exist;
     resetButton.click();

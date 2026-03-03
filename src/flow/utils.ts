@@ -1,6 +1,7 @@
-import { html } from 'lit-html';
+import { html, TemplateResult } from 'lit-html';
 import { NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue } from '../store/AppState';
+import { CustomEventType } from '../interfaces';
 
 const IS_MAC =
   typeof navigator !== 'undefined' &&
@@ -33,6 +34,23 @@ export function snapToGrid(value: number): number {
 }
 
 /**
+ * Renders content clamped to a maximum number of lines with ellipsis.
+ * Hovering shows the full text in a tooltip.
+ */
+export const renderClamped = (
+  content: TemplateResult | string,
+  titleText: string,
+  maxLines: number = 3
+) => {
+  return html`<div
+    style="display: -webkit-box; -webkit-line-clamp: ${maxLines}; -webkit-box-orient: vertical; overflow: hidden; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+    title="${titleText}"
+  >
+    ${content}
+  </div>`;
+};
+
+/**
  * Renders a single line item with optional icon
  */
 export const renderLineItem = (name: string, icon?: string) => {
@@ -42,6 +60,7 @@ export const renderLineItem = (name: string, icon?: string) => {
       : null}
     <div
       style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
+      title="${name}"
     >
       ${name}
     </div>
@@ -85,6 +104,65 @@ export const renderStringList = (items: string[], icon?: string) => {
       ${icon
         ? html`<div style="margin-right:0.4em; width: 1em;"></div>` // spacing placeholder
         : null}
+      <div style="font-size:0.8em">+${remainingCount} more</div>
+    </div>`);
+  }
+  return itemElements;
+};
+
+/**
+ * Renders a single flow as a clickable link that fires a temba-flow-clicked event
+ */
+const renderFlowLink = (flow: NamedObject, icon?: string) => {
+  const handleClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const target = e.currentTarget as HTMLElement;
+    const editor = target.closest('temba-flow-editor') as any;
+    if (editor) {
+      editor.fireCustomEvent(CustomEventType.FlowClicked, {
+        uuid: flow.uuid,
+        name: flow.name,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey
+      });
+    }
+  };
+
+  return html`<div class="linked-name" style="display:flex;items-align:center;">
+    ${icon
+      ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
+      : null}
+    <div
+      @click=${handleClick}
+      style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; text-decoration: underline; cursor: pointer;"
+    >
+      ${flow.name}
+    </div>
+  </div>`;
+};
+
+/**
+ * Renders a list of flows as clickable links, showing up to 3 items
+ * with a "+X more" indicator if there are more items
+ */
+export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
+  const itemElements = [];
+  const maxDisplay = 3;
+
+  const displayCount =
+    flows.length === 4 ? 4 : Math.min(maxDisplay, flows.length);
+
+  for (let i = 0; i < displayCount; i++) {
+    itemElements.push(renderFlowLink(flows[i], icon));
+  }
+
+  if (flows.length > maxDisplay && flows.length !== 4) {
+    const remainingCount = flows.length - maxDisplay;
+    itemElements.push(html`<div
+      style="display:flex;items-align:center;margin-top:0.2em;"
+    >
+      ${icon ? html`<div style="margin-right:0.4em; width: 1em;"></div>` : null}
       <div style="font-size:0.8em">+${remainingCount} more</div>
     </div>`);
   }

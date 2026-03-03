@@ -127,6 +127,7 @@ export enum Icon {
   overview = 'pie-chart-01',
   prometheus = 'prometheus',
   progress_spinner = 'refresh-cw-04',
+  refresh = 'refresh-cw-05',
   featured = 'star-01',
   quick_replies = 'dotpoints-01',
   recording = 'microphone-01',

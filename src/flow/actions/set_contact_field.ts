@@ -1,6 +1,7 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
+import { renderClamped } from '../utils';
 
 export const set_contact_field: ActionConfig = {
   name: 'Update Field',
@@ -8,12 +9,16 @@ export const set_contact_field: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactField) => {
     if (action.value) {
-      return html`<div>
-        Set <strong>${action.field.name}</strong> to
-        <strong>${action.value}</strong>
-      </div>`;
+      return renderClamped(
+        html`Set <strong>${action.field.name}</strong> to
+          <strong>${action.value}</strong>`,
+        `Set ${action.field.name} to ${action.value}`
+      );
     } else {
-      return html`<div>Clear <strong>${action.field.name}</strong></div>`;
+      return renderClamped(
+        html`Clear <strong>${action.field.name}</strong>`,
+        `Clear ${action.field.name}`
+      );
     }
   },
   form: {

@@ -7,7 +7,7 @@ import {
   FlowTypes
 } from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
-import { renderStringList } from '../utils';
+import { renderStringList, renderClamped } from '../utils';
 import { Icon } from '../../Icons';
 
 export const send_email: ActionConfig = {
@@ -18,11 +18,7 @@ export const send_email: ActionConfig = {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email)}</div>
       <div style="margin-top: 0.5em">
-        <div
-          style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-        >
-          ${action.subject}
-        </div>
+        ${renderClamped(action.subject, action.subject)}
       </div>
     </div>`;
   },

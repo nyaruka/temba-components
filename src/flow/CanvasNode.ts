@@ -6,7 +6,7 @@ import { Action, Exit, Node, NodeUI, Router } from '../store/flow-definition';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { getClasses } from '../utils';
-import { isRightClick } from './utils';
+import { isRightClick, renderClamped } from './utils';
 import { Plumber } from './Plumber';
 import { getStore } from '../store/Store';
 import { CustomEventType } from '../interfaces';
@@ -251,24 +251,20 @@ export class CanvasNode extends RapidElement {
       }
       .title-spacer {
         width: 1.8em;
-        
       }
 
       .action:hover .drag-handle {
         visibility: visible;
         opacity: 0.7;
-        
-        
-      }
-
-      strong {
-        font-weight: 500;
       }
 
       .action .drag-handle:hover {
         visibility: visible;
         opacity: 1;
-        
+      }
+
+      strong {
+        font-weight: 500;
       }
 
       .action .cn-title,
@@ -295,6 +291,8 @@ export class CanvasNode extends RapidElement {
 
       .quick-replies {
         margin-top: 0.5em;
+        display: flex;
+        flex-wrap: wrap;
       }
 
       .quick-reply {
@@ -302,9 +300,14 @@ export class CanvasNode extends RapidElement {
         border: 1px solid #e0e0e0;
         border-radius: calc(var(--curvature) * 1.5);
         padding: 0.2em 1em;
-        display: inline-block;
         font-size: 0.8em;
         margin: 0.2em;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .router-section {
@@ -349,6 +352,7 @@ export class CanvasNode extends RapidElement {
 
       .router .body {
         padding: 0.75em;
+        max-width: 180px;
       }
 
       .result-name {
@@ -487,6 +491,22 @@ export class CanvasNode extends RapidElement {
         justify-content: center;
         color: #9ca3af;
         font-size: 0.9em;
+      }
+
+      /* On touch devices, always show interactive controls.
+         The .touch-device class is added to the editor on first touch. */
+      .touch-device .remove-button {
+        visibility: visible !important;
+        opacity: 0.7;
+      }
+
+      .touch-device .action .drag-handle {
+        visibility: visible !important;
+        opacity: 0.7;
+      }
+
+      .touch-device .add-action-button {
+        opacity: 0.8 !important;
       }
   }`;
   }
@@ -973,11 +993,12 @@ export class CanvasNode extends RapidElement {
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
     if (isRightClick(event)) return;
 
-    // Don't handle clicks on the remove button, drag handle, or when action is in removing state
+    // Don't handle clicks on the remove button, drag handle, linked elements, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
       this.actionRemovingState.has(action.uuid)
     ) {
       return;
@@ -1000,11 +1021,12 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button, drag handle, or when action is in removing state
+    // Don't handle clicks on the remove button, drag handle, linked elements, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
       this.actionRemovingState.has(action.uuid)
     ) {
       this.actionClickStartPos = null;
@@ -1045,6 +1067,75 @@ export class CanvasNode extends RapidElement {
     this.actionClickStartPos = null;
     this.pendingActionClick = null;
   }
+
+  /* c8 ignore start -- touch-only handlers untestable in headless Chromium */
+  private handleActionTouchStart(event: TouchEvent, action: Action): void {
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
+      this.actionRemovingState.has(action.uuid)
+    ) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    if (!touch) return;
+    this.actionClickStartPos = { x: touch.clientX, y: touch.clientY };
+    this.pendingActionClick = { action, event: event as any };
+  }
+
+  private handleActionTouchEnd(event: TouchEvent, action: Action): void {
+    if (
+      !this.pendingActionClick ||
+      this.pendingActionClick.action.uuid !== action.uuid
+    ) {
+      this.actionClickStartPos = null;
+      this.pendingActionClick = null;
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
+      this.actionRemovingState.has(action.uuid)
+    ) {
+      this.actionClickStartPos = null;
+      this.pendingActionClick = null;
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    if (this.actionClickStartPos && touch) {
+      const deltaX = touch.clientX - this.actionClickStartPos.x;
+      const deltaY = touch.clientY - this.actionClickStartPos.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      const editor = this.closest('temba-flow-editor') as any;
+      const editorWasDragging = editor?.dragging;
+
+      if (distance <= DRAG_THRESHOLD && (!editor || !editorWasDragging)) {
+        const actionEl = event.currentTarget as Element;
+        const origin = actionEl
+          ? this.getTopCenter(actionEl)
+          : { x: touch.clientX, y: touch.clientY };
+
+        this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+          action,
+          nodeUuid: this.node.uuid,
+          originX: origin.x,
+          originY: origin.y
+        });
+      }
+    }
+
+    this.actionClickStartPos = null;
+    this.pendingActionClick = null;
+  }
+  /* c8 ignore stop */
 
   private handleActionClick(event: MouseEvent, action: Action): void {
     // This method is kept for backward compatibility but should not be used
@@ -1102,13 +1193,14 @@ export class CanvasNode extends RapidElement {
   private handleNodeMouseDown(event: MouseEvent): void {
     if (isRightClick(event)) return;
 
-    // Don't handle clicks on the remove button, exits, drag handle, or when node is in removing state
+    // Don't handle clicks on the remove button, exits, drag handle, linked elements, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       return;
@@ -1128,13 +1220,14 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button, exits, drag handle, or when node is in removing state
+    // Don't handle clicks on the remove button, exits, drag handle, linked elements, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       this.nodeClickStartPos = null;
@@ -1186,6 +1279,84 @@ export class CanvasNode extends RapidElement {
     this.nodeClickStartPos = null;
     this.pendingNodeClick = null;
   }
+
+  /* c8 ignore start -- touch-only handlers */
+  private handleNodeTouchStart(event: TouchEvent): void {
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      target.closest('.exit') ||
+      target.closest('.exit-wrapper') ||
+      target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
+      this.actionRemovingState.has(this.node.uuid)
+    ) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    if (!touch) return;
+    this.nodeClickStartPos = { x: touch.clientX, y: touch.clientY };
+    this.pendingNodeClick = { event: event as any };
+  }
+
+  private handleNodeTouchEnd(event: TouchEvent): void {
+    if (!this.pendingNodeClick) {
+      this.nodeClickStartPos = null;
+      this.pendingNodeClick = null;
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.remove-button') ||
+      target.closest('.exit') ||
+      target.closest('.exit-wrapper') ||
+      target.closest('.drag-handle') ||
+      target.closest('.linked-name') ||
+      this.actionRemovingState.has(this.node.uuid)
+    ) {
+      this.nodeClickStartPos = null;
+      this.pendingNodeClick = null;
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    if (this.nodeClickStartPos && touch) {
+      const deltaX = touch.clientX - this.nodeClickStartPos.x;
+      const deltaY = touch.clientY - this.nodeClickStartPos.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      const editor = this.closest('temba-flow-editor') as any;
+      const editorWasDragging = editor?.dragging;
+
+      if (distance <= 5 && (!editor || !editorWasDragging)) {
+        if (this.node.router) {
+          const origin = this.getTopCenter(this);
+
+          if (this.node.actions && this.node.actions.length === 1) {
+            this.fireCustomEvent(CustomEventType.ActionEditRequested, {
+              action: this.node.actions[0],
+              nodeUuid: this.node.uuid,
+              originX: origin.x,
+              originY: origin.y
+            });
+          } else {
+            this.fireCustomEvent(CustomEventType.NodeEditRequested, {
+              node: this.node,
+              nodeUI: this.ui,
+              originX: origin.x,
+              originY: origin.y
+            });
+          }
+        }
+      }
+    }
+
+    this.nodeClickStartPos = null;
+    this.pendingNodeClick = null;
+  }
+  /* c8 ignore stop */
 
   private handleAddActionClick(event: MouseEvent): void {
     event.preventDefault();
@@ -1498,6 +1669,10 @@ export class CanvasNode extends RapidElement {
             !isDisabled && this.handleActionMouseDown(e, action)}
           @mouseup=${(e: MouseEvent) =>
             !isDisabled && this.handleActionMouseUp(e, action)}
+          @touchstart=${(e: TouchEvent) =>
+            !isDisabled && this.handleActionTouchStart(e, action)}
+          @touchend=${(e: TouchEvent) =>
+            !isDisabled && this.handleActionTouchEnd(e, action)}
           style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'}"
         >
           ${this.renderTitle(config, action, index, isRemoving)}
@@ -1559,10 +1734,15 @@ export class CanvasNode extends RapidElement {
               class="body"
               @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
               @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+              @touchstart=${(e: TouchEvent) => this.handleNodeTouchStart(e)}
+              @touchend=${(e: TouchEvent) => this.handleNodeTouchEnd(e)}
               style="cursor: pointer;"
             >
-              Save as
-              <div class="result-name">${router.result_name}</div>
+              ${renderClamped(
+                html`Save as
+                  <span class="result-name">${router.result_name}</span>`,
+                `Save as ${router.result_name}`
+              )}
             </div>`
           : null}
       </div>`;
@@ -1622,9 +1802,11 @@ export class CanvasNode extends RapidElement {
             })}
             @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
             @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+            @touchstart=${(e: TouchEvent) => this.handleNodeTouchStart(e)}
+            @touchend=${(e: TouchEvent) => this.handleNodeTouchEnd(e)}
             style="cursor: pointer;"
           >
-            <div class="cn-title">${displayName}</div>
+            <div class="cn-title" title="${displayName}">${displayName}</div>
             ${this.renderExit(exit)}
           </div>`;
         }
@@ -1697,6 +1879,8 @@ export class CanvasNode extends RapidElement {
               <div
                 @mousedown=${(e: MouseEvent) => this.handleNodeMouseDown(e)}
                 @mouseup=${(e: MouseEvent) => this.handleNodeMouseUp(e)}
+                @touchstart=${(e: TouchEvent) => this.handleNodeTouchStart(e)}
+                @touchend=${(e: TouchEvent) => this.handleNodeTouchEnd(e)}
                 style="cursor: pointer;"
               >
                 ${this.renderNodeTitle(
