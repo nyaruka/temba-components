@@ -306,13 +306,12 @@ export class CanvasNode extends RapidElement {
         padding: 0.2em 1em;
         font-size: 0.8em;
         margin: 0.2em;
-        flex: 1 1 5em;
+        flex: 0 1 auto;
         min-width: 0;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        text-align: center;
       }
 
       .router-section {
