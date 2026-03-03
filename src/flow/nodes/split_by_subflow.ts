@@ -33,7 +33,9 @@ export const split_by_subflow: NodeConfig = {
     ) as any;
     return html`
       <div class="body">
-        ${enterFlowAction?.flow ? renderFlowLinks([enterFlowAction.flow], 'flow') : null}
+        ${enterFlowAction?.flow
+          ? renderFlowLinks([enterFlowAction.flow], 'flow')
+          : null}
       </div>
     `;
   },

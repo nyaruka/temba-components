@@ -295,6 +295,8 @@ export class CanvasNode extends RapidElement {
 
       .quick-replies {
         margin-top: 0.5em;
+        display: flex;
+        flex-wrap: wrap;
       }
 
       .quick-reply {
@@ -302,9 +304,14 @@ export class CanvasNode extends RapidElement {
         border: 1px solid #e0e0e0;
         border-radius: calc(var(--curvature) * 1.5);
         padding: 0.2em 1em;
-        display: inline-block;
         font-size: 0.8em;
         margin: 0.2em;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .router-section {
