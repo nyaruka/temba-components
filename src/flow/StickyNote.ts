@@ -21,6 +21,11 @@ export class StickyNote extends RapidElement {
   @property({ type: Boolean })
   private colorPickerExpanded = false;
 
+  // On touch devices, contenteditable starts false to prevent Apple Pencil
+  // Scribble from hijacking touches. It is set to true on explicit tap.
+  private isTouchDevice = navigator.maxTouchPoints > 0;
+  private editingField: HTMLElement | null = null;
+
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
 
@@ -289,6 +294,7 @@ export class StickyNote extends RapidElement {
   }
 
   private handleTitleBlur(event: FocusEvent): void {
+    this.handleContentBlurForTouch(event);
     const target = event.target as HTMLElement;
     const newTitle = target.textContent || '';
 
@@ -304,6 +310,7 @@ export class StickyNote extends RapidElement {
   }
 
   private handleBodyBlur(event: FocusEvent): void {
+    this.handleContentBlurForTouch(event);
     const target = event.target as HTMLElement;
     const newBody = target.innerText || '';
 
@@ -316,6 +323,44 @@ export class StickyNote extends RapidElement {
         });
     }
     this.requestUpdate();
+  }
+
+  private handleDragHandleTouchStart(event: TouchEvent): void {
+    // Prevent Apple Pencil Scribble from activating on the adjacent
+    // contenteditable fields when touching/dragging the handle.
+    event.preventDefault();
+  }
+
+  /**
+   * On touch devices, contenteditable is off by default. A tap on the
+   * title or body enables it and focuses the element for editing.
+   */
+  private handleContentTap(event: TouchEvent): void {
+    if (!this.isTouchDevice) return;
+    const target = event.target as HTMLElement;
+    if (
+      !target.classList.contains('sticky-title') &&
+      !target.classList.contains('sticky-body')
+    )
+      return;
+
+    // Enable editing and focus
+    target.setAttribute('contenteditable', 'true');
+    this.editingField = target;
+    target.focus();
+    event.stopPropagation();
+  }
+
+  /**
+   * When a contenteditable field loses focus on a touch device,
+   * disable contenteditable again to prevent Scribble.
+   */
+  private handleContentBlurForTouch(event: FocusEvent): void {
+    const target = event.target as HTMLElement;
+    if (this.isTouchDevice && this.editingField === target) {
+      target.setAttribute('contenteditable', 'false');
+      this.editingField = null;
+    }
   }
 
   private handleContentMouseDown(event: MouseEvent): void {
@@ -356,11 +401,18 @@ export class StickyNote extends RapidElement {
     this.colorPickerExpanded = false;
   }
 
+  private handleColorPickerTap(event: TouchEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.colorPickerExpanded = !this.colorPickerExpanded;
+  }
+
   private handleColorOptionClick(
-    event: MouseEvent,
+    event: MouseEvent | TouchEvent,
     color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray'
   ): void {
     event.stopPropagation();
+    event.preventDefault();
 
     if (this.data && color !== this.data.color) {
       getStore()
@@ -391,23 +443,29 @@ export class StickyNote extends RapidElement {
         data-uuid="${this.uuid}"
       >
         <div class="sticky-title-container">
-          <temba-icon name="drag" class="drag-handle"></temba-icon>
+          <temba-icon
+            name="drag"
+            class="drag-handle"
+            @touchstart=${this.handleDragHandleTouchStart}
+          ></temba-icon>
           <div
             class="sticky-title"
-            contenteditable="${!this.isTranslating}"
+            contenteditable="${!this.isTranslating && !this.isTouchDevice}"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleTitleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
+            @touchend="${this.handleContentTap}"
             .textContent="${this.data.title}"
           ></div>
         </div>
         <div class="sticky-body-container">
           <div
             class="sticky-body"
-            contenteditable="${!this.isTranslating}"
+            contenteditable="${!this.isTranslating && !this.isTouchDevice}"
             @blur="${this.handleBodyBlur}"
             @keydown="${this.handleBodyKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
+            @touchend="${this.handleContentTap}"
             .textContent="${this.data.body}"
           ></div>
           ${!this.isTranslating
@@ -419,6 +477,7 @@ export class StickyNote extends RapidElement {
             class="color-picker"
             @mouseenter="${this.handleColorPickerMouseEnter}"
             @mouseleave="${this.handleColorPickerMouseLeave}"
+            @touchend="${this.handleColorPickerTap}"
           >
             <div
               class="color-options ${this.colorPickerExpanded
@@ -429,25 +488,35 @@ export class StickyNote extends RapidElement {
                 class="color-option yellow"
                 @click="${(e: MouseEvent) =>
                   this.handleColorOptionClick(e, 'yellow')}"
+                @touchend="${(e: TouchEvent) =>
+                  this.handleColorOptionClick(e, 'yellow')}"
               ></div>
               <div
                 class="color-option blue"
                 @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'blue')}"
+                @touchend="${(e: TouchEvent) =>
                   this.handleColorOptionClick(e, 'blue')}"
               ></div>
               <div
                 class="color-option pink"
                 @click="${(e: MouseEvent) =>
                   this.handleColorOptionClick(e, 'pink')}"
+                @touchend="${(e: TouchEvent) =>
+                  this.handleColorOptionClick(e, 'pink')}"
               ></div>
               <div
                 class="color-option green"
                 @click="${(e: MouseEvent) =>
                   this.handleColorOptionClick(e, 'green')}"
+                @touchend="${(e: TouchEvent) =>
+                  this.handleColorOptionClick(e, 'green')}"
               ></div>
               <div
                 class="color-option gray"
                 @click="${(e: MouseEvent) =>
+                  this.handleColorOptionClick(e, 'gray')}"
+                @touchend="${(e: TouchEvent) =>
                   this.handleColorOptionClick(e, 'gray')}"
               ></div>
             </div>

@@ -388,9 +388,7 @@ export class NodeEditor extends RapidElement {
 
       .accordion-toggle-icon {
         color: #999;
-        transition:
-          transform 0.2s ease,
-          opacity 0.3s ease;
+        transition: transform 0.2s ease, opacity 0.3s ease;
       }
 
       .accordion-toggle-icon.expanded {
@@ -2194,18 +2192,20 @@ export class NodeEditor extends RapidElement {
                             class="accordion-checkmark-icon"
                           ></temba-icon>`
                         : showBubble
-                          ? html`<div
-                              class="accordion-count-bubble ${!showBubble
-                                ? 'hidden'
-                                : ''}"
-                            >
-                              ${valueCount}
-                            </div>`
-                          : ''}
+                        ? html`<div
+                            class="accordion-count-bubble ${!showBubble
+                              ? 'hidden'
+                              : ''}"
+                          >
+                            ${valueCount}
+                          </div>`
+                        : ''}
                     </div>`}
               </div>
               <div
-                class="accordion-content ${isCollapsed ? 'collapsed' : 'expanded'}"
+                class="accordion-content ${isCollapsed
+                  ? 'collapsed'
+                  : 'expanded'}"
               >
                 ${section.items.map((item) =>
                   this.renderLayoutItem(item, config, renderedFields)

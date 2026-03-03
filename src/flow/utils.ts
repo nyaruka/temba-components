@@ -162,9 +162,7 @@ export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
     itemElements.push(html`<div
       style="display:flex;items-align:center;margin-top:0.2em;"
     >
-      ${icon
-        ? html`<div style="margin-right:0.4em; width: 1em;"></div>`
-        : null}
+      ${icon ? html`<div style="margin-right:0.4em; width: 1em;"></div>` : null}
       <div style="font-size:0.8em">+${remainingCount} more</div>
     </div>`);
   }

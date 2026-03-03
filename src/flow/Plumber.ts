@@ -2,6 +2,21 @@ import { isRightClick } from './utils';
 
 export type TargetFace = 'top' | 'left' | 'right';
 
+/** Extract clientX/clientY from a MouseEvent or the first touch of a TouchEvent. */
+function getClientCoords(e: MouseEvent | TouchEvent): {
+  clientX: number;
+  clientY: number;
+} {
+  if ('touches' in e) {
+    const touch = e.touches[0] || (e as TouchEvent).changedTouches[0];
+    return { clientX: touch.clientX, clientY: touch.clientY };
+  }
+  return {
+    clientX: (e as MouseEvent).clientX,
+    clientY: (e as MouseEvent).clientY
+  };
+}
+
 // Shared arrow/drag constants used by both Plumber and Editor
 export const ARROW_LENGTH = 13;
 export const ARROW_HALF_WIDTH = 6.5;
@@ -33,8 +48,8 @@ interface DragState {
   svgEl: SVGSVGElement;
   pathEl: SVGPathElement;
   arrowEl: SVGPolygonElement;
-  onMove: (e: MouseEvent) => void;
-  onUp: (e: MouseEvent) => void;
+  onMove: (e: MouseEvent | TouchEvent) => void;
+  onUp: (e: MouseEvent | TouchEvent) => void;
 }
 
 /**
@@ -242,56 +257,75 @@ export class Plumber {
     let pendingDrag: {
       startX: number;
       startY: number;
-      onMove: (e: MouseEvent) => void;
-      onUp: (e: MouseEvent) => void;
+      onMove: (e: MouseEvent | TouchEvent) => void;
+      onUp: (e: MouseEvent | TouchEvent) => void;
+      isTouch: boolean;
     } | null = null;
 
     const DRAG_THRESHOLD = 5;
 
-    const onMouseDown = (e: MouseEvent) => {
-      if (isRightClick(e)) return;
+    const beginPendingDrag = (e: MouseEvent | TouchEvent) => {
+      if ('button' in e && isRightClick(e)) return;
 
       // Don't start drag from exit if it already has a connection —
       // existing connections are picked up from the arrowhead instead
       if (this.connections.has(exitId)) return;
 
-      const startX = e.clientX;
-      const startY = e.clientY;
+      const isTouch = 'touches' in e;
+      if (isTouch) e.preventDefault();
+
+      const { clientX: startX, clientY: startY } = getClientCoords(e);
 
       const nodeEl = element.closest('temba-flow-node');
       const scope = nodeEl?.getAttribute('uuid') || '';
       const originalTargetId: string | null = null;
 
-      const onMove = (me: MouseEvent) => {
-        const dx = me.clientX - startX;
-        const dy = me.clientY - startY;
+      const onMove = (me: MouseEvent | TouchEvent) => {
+        const { clientX, clientY } = getClientCoords(me);
+        const dx = clientX - startX;
+        const dy = clientY - startY;
         if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
           // Exceeded threshold — start actual drag
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
-          pendingDrag = null;
+          removePendingListeners();
           this.startDrag(exitId, scope, originalTargetId, me);
         }
       };
 
       const onUp = () => {
-        // Mouse released without dragging — let click handler fire
+        // Released without dragging — let click handler fire
+        removePendingListeners();
+      };
+
+      const removePendingListeners = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onUp);
+        document.removeEventListener('touchcancel', onUp);
         pendingDrag = null;
       };
 
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
-      pendingDrag = { startX, startY, onMove, onUp };
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onUp);
+      document.addEventListener('touchcancel', onUp);
+      pendingDrag = { startX, startY, onMove, onUp, isTouch };
     };
 
-    element.addEventListener('mousedown', onMouseDown);
+    element.addEventListener('mousedown', beginPendingDrag);
+    element.addEventListener('touchstart', beginPendingDrag, {
+      passive: false
+    });
     this.sources.set(exitId, () => {
-      element.removeEventListener('mousedown', onMouseDown);
+      element.removeEventListener('mousedown', beginPendingDrag);
+      element.removeEventListener('touchstart', beginPendingDrag);
       if (pendingDrag) {
         document.removeEventListener('mousemove', pendingDrag.onMove);
         document.removeEventListener('mouseup', pendingDrag.onUp);
+        document.removeEventListener('touchmove', pendingDrag.onMove);
+        document.removeEventListener('touchend', pendingDrag.onUp);
+        document.removeEventListener('touchcancel', pendingDrag.onUp);
         pendingDrag = null;
       }
     });
@@ -714,19 +748,23 @@ export class Plumber {
 
     // Make arrowhead draggable for picking up existing connections
     const DRAG_THRESHOLD = 5;
-    const onArrowMouseDown = (e: MouseEvent) => {
-      if (isRightClick(e)) return;
+    const onArrowDown = (e: MouseEvent | TouchEvent) => {
+      if ('button' in e && isRightClick(e)) return;
       e.stopPropagation();
+      if ('touches' in e) e.preventDefault();
 
-      const startX = e.clientX;
-      const startY = e.clientY;
+      const { clientX: startX, clientY: startY } = getClientCoords(e);
 
-      const onMove = (me: MouseEvent) => {
-        const dx = me.clientX - startX;
-        const dy = me.clientY - startY;
+      const onMove = (me: MouseEvent | TouchEvent) => {
+        const { clientX, clientY } = getClientCoords(me);
+        const dx = clientX - startX;
+        const dy = clientY - startY;
         if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onUp);
+          document.removeEventListener('touchcancel', onUp);
           this.startDrag(exitId, scope, toId, me);
         }
       };
@@ -734,12 +772,21 @@ export class Plumber {
       const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onUp);
+        document.removeEventListener('touchcancel', onUp);
       };
 
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onUp);
+      document.addEventListener('touchcancel', onUp);
     };
-    arrowEl.addEventListener('mousedown', onArrowMouseDown);
+    arrowEl.addEventListener('mousedown', onArrowDown);
+    arrowEl.addEventListener('touchstart', onArrowDown, { passive: false });
+    pathEl.addEventListener('mousedown', onArrowDown);
+    pathEl.addEventListener('touchstart', onArrowDown, { passive: false });
 
     // Mark the exit element as connected
     const exitEl = document.getElementById(exitId);
@@ -1202,10 +1249,18 @@ export class Plumber {
     exitId: string,
     scope: string,
     originalTargetId: string | null,
-    e: MouseEvent
+    e: MouseEvent | TouchEvent
   ) {
-    // Remove existing connection SVG for this exit (the connection is being dragged away)
-    this.removeConnectionSVG(exitId);
+    // Hide (don't remove) the existing connection SVG while dragging.
+    // On iOS Safari, removing the element that received the original
+    // touchstart can trigger touchcancel, prematurely ending the drag.
+    // We defer removal until the drag ends.
+    const oldConn = this.connections.get(exitId);
+    if (oldConn) {
+      oldConn.svgEl.style.display = 'none';
+      const overlay = this.overlays.get(exitId);
+      if (overlay) overlay.style.display = 'none';
+    }
 
     const { svgEl, pathEl, arrowEl } = this.createSVGElement();
     svgEl.classList.add('dragging');
@@ -1283,26 +1338,33 @@ export class Plumber {
     };
 
     // Initial path to cursor (convert viewport to canvas coordinates)
-    const cursorX = this.toCanvas(e.clientX - canvasRect.left);
-    const cursorY = this.toCanvas(e.clientY - canvasRect.top);
+    const { clientX: initX, clientY: initY } = getClientCoords(e);
+    const cursorX = this.toCanvas(initX - canvasRect.left);
+    const cursorY = this.toCanvas(initY - canvasRect.top);
     updateDragPath(cursorX, cursorY);
 
     this.connectionDragging = true;
 
-    const onMove = (me: MouseEvent) => {
+    const onMove = (me: MouseEvent | TouchEvent) => {
+      if ('touches' in me) me.preventDefault();
       // Re-read canvasRect each move since scroll may have changed
       const rect = this.canvas.getBoundingClientRect();
-      const cx = this.toCanvas(me.clientX - rect.left);
-      const cy = this.toCanvas(me.clientY - rect.top);
+      const { clientX, clientY } = getClientCoords(me);
+      const cx = this.toCanvas(clientX - rect.left);
+      const cy = this.toCanvas(clientY - rect.top);
       updateDragPath(cx, cy);
     };
 
-    const onUp = (_me: MouseEvent) => {
+    const onUp = (_me: MouseEvent | TouchEvent) => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      document.removeEventListener('touchcancel', onUp);
 
-      // Remove the drag SVG
+      // Remove the drag SVG and the hidden old connection SVG
       svgEl.remove();
+      this.removeConnectionSVG(exitId);
       this.connectionDragging = false;
       this.dragState = null;
 
@@ -1317,6 +1379,9 @@ export class Plumber {
 
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+    document.addEventListener('touchcancel', onUp);
 
     this.dragState = {
       sourceId: exitId,
