@@ -19,20 +19,23 @@ export const send_msg: ActionConfig = {
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     return html`
+      ${action.template
+        ? html`<div
+            style="border: 1px solid #7dc8bc;padding: 0.5em;margin-bottom: 0.5em;border-radius: 4px; display:flex;align-items: flex-start;background: #f0faf7;color: #128C7E;font-size: 0.85em;"
+          >
+            <temba-icon
+              name="channel_wac"
+              style="--icon-size: 14px;"
+            ></temba-icon>
+            <div style="margin-left:0.4em">${action.template.name}</div>
+          </div>`
+        : null}
       ${renderClamped(html`${unsafeHTML(text)}`, action.text)}
       ${(action.quick_replies || [])?.length > 0
         ? html`<div class="quick-replies">
             ${(action.quick_replies || []).map((reply) => {
               return html`<div class="quick-reply">${reply}</div>`;
             })}
-          </div>`
-        : null}
-      ${action.template
-        ? html`<div
-            style="border: 1px solid var(--color-widget-border);padding: 0.5em;margin-top: 1em;border-radius: var(--curvature); display:flex;background: rgba(0,0,0,.03);"
-          >
-            <temba-icon name="channel_wac"></temba-icon>
-            <div style="margin-left:0.5em">${action.template.name}</div>
           </div>`
         : null}
     `;
