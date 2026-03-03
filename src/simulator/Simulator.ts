@@ -582,6 +582,7 @@ export class Simulator extends RapidElement {
         flex-wrap: wrap;
         justify-content: center;
         gap: 6px;
+        padding: 0 12px;
         z-index: 9;
       }
 
@@ -594,7 +595,10 @@ export class Simulator extends RapidElement {
         font-size: 11px;
         cursor: pointer;
         transition: all 0.2s ease;
-        flex-shrink: 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .quick-reply-btn:hover:not(:disabled) {
