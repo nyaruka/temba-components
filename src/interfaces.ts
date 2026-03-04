@@ -1,3 +1,8 @@
+export interface DirtyTrackable {
+  dirtyMessage?: string;
+  markClean(): void;
+}
+
 export interface Workspace {
   uuid: string;
   name: string;

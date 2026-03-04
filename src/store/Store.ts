@@ -18,7 +18,8 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
-  Shortcut
+  Shortcut,
+  DirtyTrackable
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { lru } from 'tiny-lru';
@@ -113,9 +114,9 @@ export class Store extends RapidElement {
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
 
-  private dirtyElements: StoreMonitorElement[] = [];
+  private dirtyElements: DirtyTrackable[] = [];
 
-  public markDirty(ele: StoreMonitorElement) {
+  public markDirty(ele: DirtyTrackable) {
     if (!this.dirtyElements.includes(ele)) {
       this.dirtyElements.push(ele);
     }
@@ -126,7 +127,7 @@ export class Store extends RapidElement {
     this.dirtyElements = [];
   }
 
-  public markClean(ele: StoreMonitorElement) {
+  public markClean(ele: DirtyTrackable) {
     this.dirtyElements = this.dirtyElements.filter((el) => el !== ele);
   }
 
