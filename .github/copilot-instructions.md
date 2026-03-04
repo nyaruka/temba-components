@@ -60,7 +60,7 @@ pnpm validate
 
 ### Making commits
 
-Before committing always run `pnpm precommit` and include any changes it makes.
+Before committing always run `pnpm pre-commit` and include any changes it makes.
 
 ### Test Coverage Requirements
 
