@@ -18,6 +18,9 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
   @property({ type: Boolean })
   showValidation = true;
 
+  @property({ type: Boolean })
+  readOnlyKeys = false;
+
   @state()
   private keyErrors: { [index: number]: string } = {};
 
@@ -174,6 +177,19 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
   }
 
   renderItem(item: KeyValueItem, index: number): TemplateResult {
+    if (this.readOnlyKeys) {
+      return html`
+        <div class="row readonly-keys">
+          <div class="key-label">${item.key}</div>
+          <temba-textinput
+            .value=${item.value}
+            .placeholder=${this.valuePlaceholder}
+            @change=${(e: any) => this.handleValueChange(index, e.target.value)}
+          ></temba-textinput>
+        </div>
+      `;
+    }
+
     const canRemove = this.canRemoveItem(index);
     const keyError =
       this.showValidation && this.keyErrors[index] ? this.keyErrors[index] : '';
@@ -202,6 +218,21 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
     `;
   }
 
+  protected get displayItems(): KeyValueItem[] {
+    if (this.readOnlyKeys) {
+      // In readOnlyKeys mode, show only the actual items (no empty row)
+      return [...this._items];
+    }
+    return super.displayItems;
+  }
+
+  protected shouldShowAddButton(): boolean {
+    if (this.readOnlyKeys) {
+      return false;
+    }
+    return super.shouldShowAddButton();
+  }
+
   protected getContainerClass(): string {
     return 'key-value-editor';
   }
@@ -221,6 +252,17 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
         grid-template-columns: 1fr 1fr auto;
         align-items: center;
         column-gap: 6px;
+      }
+
+      .row.readonly-keys {
+        grid-template-columns: auto 1fr;
+      }
+
+      .key-label {
+        font-size: 14px;
+        color: #555;
+        padding: 0 8px;
+        white-space: nowrap;
       }
 
       .remove-btn {

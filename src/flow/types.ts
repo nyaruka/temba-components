@@ -217,6 +217,7 @@ export interface KeyValueFieldConfig extends BaseFieldConfig {
   keyPlaceholder?: string;
   valuePlaceholder?: string;
   minRows?: number;
+  readOnlyKeys?: boolean;
 }
 
 export interface ArrayFieldConfig extends BaseFieldConfig {

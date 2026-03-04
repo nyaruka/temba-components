@@ -30,6 +30,7 @@ export const split_by_subflow: NodeConfig = {
       keyPlaceholder: 'Parameter name',
       valuePlaceholder: 'Value',
       minRows: 0,
+      readOnlyKeys: true,
       dependsOn: ['flow'],
       computeValue: (values: Record<string, any>, currentValue: any) => {
         const flow =
