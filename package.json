@@ -9,26 +9,26 @@
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/nyaruka/temba-components/",
   "scripts": {
-    "start": "concurrently --kill-others --names tsc,web-dev-server \"yarn tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
+    "start": "concurrently --kill-others --names tsc,web-dev-server \"pnpm tsc:watch\" \"web-dev-server --app-index demo/index.html --node-resolve --watch --port 3010 --esbuild-target auto\"",
     "tsc:watch": "tsc --watch",
-    "build": "rimraf dist && yarn svg && tsc && rollup -c rollup.components.mjs ",
+    "build": "rimraf dist && pnpm svg && tsc && rollup -c rollup.components.mjs ",
     "build-wc": "rollup -c rollup.webchat.mjs",
-    "dev": "yarn build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
+    "dev": "pnpm build && cp -R ./dist/* ../temba/rapidpro/node_modules/@nyaruka/temba-components/dist/ && cp -R ./dist/* ../floweditor/node_modules/@nyaruka/temba-components/dist/",
     "postversion": "git push --tags && git push origin main",
-    "pre-commit": "yarn locale:extract && yarn locale:build && yarn svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
+    "pre-commit": "pnpm locale:extract && pnpm locale:build && pnpm svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
     "format:eslint": "eslint --ext .ts . --fix --ignore-path .gitignore --ignore-pattern \"src/locales/\"",
     "format:prettier": "prettier \"**/*.js\" \"**/*.ts\" \"!src/locales/**\" --config .prettierrc --write --ignore-path .gitignore",
-    "format": "yarn format:eslint && yarn format:prettier",
+    "format": "pnpm format:eslint && pnpm format:prettier",
     "test": "wtr --node-resolve",
     "test:fast": "wtr --node-resolve --fast",
     "test:coverage": "wtr --node-resolve --coverage",
     "check-coverage": "node check-coverage.js",
-    "validate": "yarn format && yarn build && yarn test:coverage && yarn check-coverage",
+    "validate": "pnpm format && pnpm build && pnpm test:coverage && pnpm check-coverage",
     "test:watch": "wtr --node-resolve --watch",
     "stress-test": "node stress-test.js",
     "svg": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/index.svg' --usage='./src/Icons.ts'",
     "svg-wc": "rimraf static/svg/work && node svg.js --resolution=150 --output='./static/svg/webchat.svg' --usage='./src/webchat/index.ts'",
-    "version": "yarn run build && auto-changelog -p && git add CHANGELOG.md",
+    "version": "pnpm run build && auto-changelog -p && git add CHANGELOG.md",
     "locale:extract": "lit-localize extract --config localize.config.json",
     "locale:build": "echo 'Building localizations..' && lit-localize build --config localize.config.json > dist/locale.out 2>&1",
     "dev-data:sync": "node scripts/dev-data-sync.mjs copy",
@@ -108,17 +108,22 @@
     "sinon": "^21.0.0",
     "svgstore": "^3.0.1",
     "tslib": "2.6.2",
-    "typescript": "5.4.4"
+    "typescript": "5.4.4",
+    "yargs": "^17.7.2"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn pre-commit"
+      "pre-commit": "pnpm pre-commit"
     }
   },
-  "resolutions": {
-    "trim": "^0.0.3",
-    "prismjs": "^1.23.0",
-    "rollup-plugin-terser/**/rollup": "^3.0.0"
+  "pnpm": {
+    "overrides": {
+      "trim": "^0.0.3",
+      "prismjs": "^1.23.0",
+      "rollup": "^3.0.0",
+      "@open-wc/testing-helpers": "3.0.0",
+      "@types/minimatch": "5.1.2"
+    }
   },
-  "packageManager": "yarn@1.22.1"
+  "packageManager": "pnpm@9.15.4"
 }

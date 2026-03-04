@@ -24,9 +24,6 @@ start.sh
 /dist/
 /out-tsc/
 
-.yarn/cache/
-.yarn/install-state.gz
-.yarn/versions
 
 # svg working directory
 /static/svg/work/

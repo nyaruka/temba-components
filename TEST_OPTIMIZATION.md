@@ -7,22 +7,22 @@ This document outlines strategies for running tests efficiently and optimizing d
 ### Fast Test Execution
 ```bash
 # Run tests in fast mode (skips network idle waits)
-yarn test:fast
+pnpm test:fast
 
 # Run only unit tests (excludes visual regression tests)
-yarn test:unit
+pnpm test:unit
 
 # Watch mode for iterative development
-yarn test:watch
+pnpm test:watch
 ```
 
 ### Coverage and Validation
 ```bash
 # Full test suite with coverage
-yarn test --coverage
+pnpm test --coverage
 
 # Complete validation (formatting, build, tests)
-yarn validate
+pnpm validate
 ```
 
 ## Test Categories
@@ -95,10 +95,10 @@ await assertScreenshot('select/open', getClipWithOptions(select));
 ### Individual Test Files
 ```bash
 # Run specific test file
-yarn test test/temba-select.test.ts
+pnpm test test/temba-select.test.ts
 
 # Run multiple specific files
-yarn test test/temba-select.test.ts test/temba-list.test.ts
+pnpm test test/temba-select.test.ts test/temba-list.test.ts
 ```
 
 ### Isolating Tests During Development
@@ -135,10 +135,10 @@ Monitor test execution times to identify slow tests:
 
 ```bash
 # Time full test suite
-time yarn test
+time pnpm test
 
 # Profile individual test files
-time yarn test test/specific-file.test.ts
+time pnpm test test/specific-file.test.ts
 ```
 
 ### Common Performance Issues
