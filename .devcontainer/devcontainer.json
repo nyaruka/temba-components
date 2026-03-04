@@ -21,7 +21,7 @@
   ],
   "workspaceMount": "",
   "workspaceFolder": "/workspaces/temba-components",
-  "postCreateCommand": "sudo chown node:node /workspaces/temba-components/node_modules /home/node/.local/share/pnpm/store",
+  "postCreateCommand": "sudo chown -R node:node /workspaces/temba-components/node_modules /home/node/.local/share/pnpm",
   "remoteUser": "node",
   "customizations": {
     "vscode": {
