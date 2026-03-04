@@ -1,5 +1,5 @@
 import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
-import { Node } from '../../store/flow-definition';
+import { Node, SetRunResult } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 import { html } from 'lit';
 import { renderFlowLinks } from '../utils';
@@ -24,9 +24,68 @@ export const split_by_subflow: NodeConfig = {
       endpoint: '/api/v2/flows.json',
       valueKey: 'uuid',
       nameKey: 'name'
+    },
+    params: {
+      type: 'key-value',
+      keyPlaceholder: 'Parameter name',
+      valuePlaceholder: 'Value',
+      minRows: 0,
+      dependsOn: ['flow'],
+      computeValue: (values: Record<string, any>, currentValue: any) => {
+        const flow =
+          Array.isArray(values.flow) && values.flow.length > 0
+            ? values.flow[0]
+            : null;
+        if (!flow?.parent_refs?.length) {
+          return currentValue || [];
+        }
+
+        // Build a map of existing values
+        const existingValues: Record<string, string> = {};
+        if (Array.isArray(currentValue)) {
+          currentValue.forEach((item: any) => {
+            if (item.key) existingValues[item.key] = item.value || '';
+          });
+        } else if (currentValue && typeof currentValue === 'object') {
+          Object.entries(currentValue).forEach(([k, v]) => {
+            existingValues[k] = typeof v === 'string' ? (v as string) : '';
+          });
+        }
+
+        // Create params from parent_refs, preserving existing values
+        return flow.parent_refs.map((ref: string) => ({
+          key: ref,
+          value: existingValues[ref] || ''
+        }));
+      }
     }
   },
-  layout: ['flow'],
+  layout: [
+    'flow',
+    {
+      type: 'accordion',
+      sections: [
+        {
+          label: 'Parameters',
+          collapsed: true,
+          getValueCount: (formData: FormData) => {
+            const params = formData.params;
+            if (Array.isArray(params)) {
+              return params.filter((p: any) => p.value && p.value.trim() !== '')
+                .length;
+            }
+            if (params && typeof params === 'object') {
+              return Object.values(params).filter(
+                (v) => typeof v === 'string' && v.trim() !== ''
+              ).length;
+            }
+            return 0;
+          },
+          items: ['params']
+        }
+      ]
+    }
+  ],
   render: (node: Node) => {
     const enterFlowAction = node.actions?.find(
       (action) => action.type === 'enter_flow'
@@ -45,11 +104,21 @@ export const split_by_subflow: NodeConfig = {
       (action) => action.type === 'enter_flow'
     ) as any;
 
+    // Extract params from set_run_result actions
+    const params: Record<string, string> = {};
+    node.actions
+      ?.filter((action) => action.type === 'set_run_result')
+      .forEach((action) => {
+        const setResult = action as SetRunResult;
+        params[setResult.name] = setResult.value;
+      });
+
     return {
       uuid: node.uuid,
       flow: enterFlowAction?.flow
         ? [{ uuid: enterFlowAction.flow.uuid, name: enterFlowAction.flow.name }]
-        : []
+        : [],
+      params
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -76,6 +145,24 @@ export const split_by_subflow: NodeConfig = {
           }
         : { uuid: '', name: '' }
     };
+
+    // Create set_run_result actions for params
+    const actions: any[] = [];
+    const params = formData.params || {};
+    Object.entries(params).forEach(([name, value]: [string, any]) => {
+      if (typeof value === 'string' && value.trim() !== '') {
+        actions.push({
+          type: 'set_run_result',
+          uuid: generateUUID(),
+          name,
+          value,
+          category: ''
+        });
+      }
+    });
+
+    // enter_flow action goes last (after set_run_result actions)
+    actions.push(enterFlowAction);
 
     // Create categories and exits for Complete and Expired
     const existingCategories = originalNode.router?.categories || [];
@@ -160,7 +247,7 @@ export const split_by_subflow: NodeConfig = {
     // Return the complete node
     return {
       uuid: originalNode.uuid,
-      actions: [enterFlowAction],
+      actions: actions,
       router: router,
       exits: exits
     };
