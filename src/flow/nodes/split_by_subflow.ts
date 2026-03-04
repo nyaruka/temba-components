@@ -18,6 +18,7 @@ export const split_by_subflow: NodeConfig = {
     flow: {
       type: 'select',
       required: true,
+      searchable: true,
       placeholder: 'Select a flow...',
       helpText:
         'Once the subflow is complete or expires, the contact will return here',
