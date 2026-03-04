@@ -34,9 +34,13 @@ const getContactChat = async (attrs: any = {}) => {
     'display:flex;flex-direction:column;flex-grow:1;min-height:0;'
   )) as ContactChat;
 
-  // TODO: this should be waiting for an event instead
-  await waitFor(100);
-  await clock.tick(0);
+  // wait for contact data and history to load (real HTTP)
+  // and flush fake timers so addMessages' setTimeout(fn, 0) fires
+  for (let i = 0; i < 40; i++) {
+    await waitFor(50);
+    clock.tick(0);
+    if (chat.currentContact) break;
+  }
   return chat;
 };
 
