@@ -57,7 +57,8 @@ export class VectorIcon extends LitElement {
       .sheet {
         color: var(--icon-color);
         transform: scale(1);
-        transition: fill 100ms ease-in-out,
+        transition:
+          fill 100ms ease-in-out,
           background 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
           padding 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
           margin 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -105,9 +106,11 @@ export class VectorIcon extends LitElement {
         display: flex;
         flex-direction: column;
         border-radius: 999px;
-        transition: background 200ms linear,
+        transition:
+          background 200ms linear,
           transform 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55),
-          padding 150ms linear, margin 150ms linear;
+          padding 150ms linear,
+          margin 150ms linear;
       }
 
       .wrapper.clickable {

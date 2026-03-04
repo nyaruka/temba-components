@@ -438,29 +438,33 @@ describe('FieldRenderer', () => {
         }
       );
 
-      const nodeContainer = await fixture(html`<div
-        style="width: 400px; padding: 20px; border: 1px solid #ddd; margin: 10px;"
-      >
-        <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-          NodeEditor Context
-        </h3>
-        ${nodeEditorTemplate}
-      </div>`);
+      const nodeContainer = await fixture(
+        html`<div
+          style="width: 400px; padding: 20px; border: 1px solid #ddd; margin: 10px;"
+        >
+          <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
+            NodeEditor Context
+          </h3>
+          ${nodeEditorTemplate}
+        </div>`
+      );
 
-      const arrayContainer = await fixture(html`<div
-        style="width: 400px; padding: 20px; border: 1px solid #ddd; margin: 10px;"
-      >
-        <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-          ArrayEditor Context
-        </h3>
-        ${arrayEditorTemplate}
-      </div>`);
+      const arrayContainer = await fixture(
+        html`<div
+          style="width: 400px; padding: 20px; border: 1px solid #ddd; margin: 10px;"
+        >
+          <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
+            ArrayEditor Context
+          </h3>
+          ${arrayEditorTemplate}
+        </div>`
+      );
 
-      const combinedContainer = await fixture(html`<div
-        style="display: flex; flex-direction: column; width: 420px;"
-      >
-        ${nodeContainer} ${arrayContainer}
-      </div>`);
+      const combinedContainer = await fixture(
+        html`<div style="display: flex; flex-direction: column; width: 420px;">
+          ${nodeContainer} ${arrayContainer}
+        </div>`
+      );
 
       await assertScreenshot(
         'field-renderer/context-comparison',

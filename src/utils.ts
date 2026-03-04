@@ -404,9 +404,8 @@ export const fillTemplate = (
 ): TemplateResult => {
   for (const key in replacements) {
     const className = key + '-replaced';
-    replacements[
-      key
-    ] = `<span class="${className}">${replacements[key]}</span>`;
+    replacements[key] =
+      `<span class="${className}">${replacements[key]}</span>`;
   }
 
   const templateDiv = document.createElement('div');

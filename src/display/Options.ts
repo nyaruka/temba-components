@@ -20,8 +20,8 @@ export class Options extends RapidElement {
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        transition: transform var(--transition-speed)
-            cubic-bezier(0.71, 0.18, 0.61, 1.33),
+        transition:
+          transform var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33),
           opacity var(--transition-speed) cubic-bezier(0.71, 0.18, 0.61, 1.33);
         opacity: 0;
         z-index: 1000;
@@ -487,8 +487,7 @@ export class Options extends RapidElement {
         this.cursorIndex = index;
       }
     }
-  },
-  50);
+  }, 50);
 
   public scrollToTop() {
     const scrollBox = this.shadowRoot.querySelector('.options-scroll');
@@ -706,13 +705,13 @@ export class Options extends RapidElement {
                   </div>`;
                 })
               : this.visible && this.showEmptyMessage
-              ? html`<div
-                  class="option no-options"
-                  style="color: var(--color-text-dark-secondary); cursor: default;"
-                >
-                  ${msg('No options')}
-                </div>`
-              : null}
+                ? html`<div
+                    class="option no-options"
+                    style="color: var(--color-text-dark-secondary); cursor: default;"
+                  >
+                    ${msg('No options')}
+                  </div>`
+                : null}
             ${this.block ? html`<div style="height:0.1em"></div>` : null}
           </div>
           <slot></slot>

@@ -46,13 +46,17 @@ export class ImagePicker extends FieldElement {
       }
 
       .toggle.set {
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
-          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, inset 0 0 0 5px rgba(0, 0, 0, 0.1);
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
+          inset 0 0 0 5px rgba(0, 0, 0, 0.1);
       }
 
       .toggle.set:hover {
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
-          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, inset 0 0 0 5px rgba(0, 0, 0, 0.2);
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
+          inset 0 0 0 5px rgba(0, 0, 0, 0.2);
       }
 
       .toggle temba-icon {
@@ -231,28 +235,28 @@ export class ImagePicker extends FieldElement {
           this.handleFileChanged
         }/>
         <div class='toggle ${this.url ? 'set' : ''}  ${
-      this.showCroppie ? 'hidden' : ''
-    }' @click=${this.handleToggleClicked} style="background: ${
-      this.url
-        ? `url('${this.url}') center / contain no-repeat`
-        : 'rgba(0, 0, 0, 0.1)'
-    }">
+          this.showCroppie ? 'hidden' : ''
+        }' @click=${this.handleToggleClicked} style="background: ${
+          this.url
+            ? `url('${this.url}') center / contain no-repeat`
+            : 'rgba(0, 0, 0, 0.1)'
+        }">
           <temba-icon name=${Icon.upload_image} size="1.5"></temba-icon>
         </div>
         
         <temba-mask ?show=${this.showCroppie} class="${
-      this.showCroppie ? 'editing' : ''
-    }">
+          this.showCroppie ? 'editing' : ''
+        }">
           <div class='croppie'>
             <div class='embed'></div>
             <div class='controls'>
               <temba-icon class="close" size="1" name=${Icon.close} @click=${
-      this.closeCroppie
-    }></temba-icon>
+                this.closeCroppie
+              }></temba-icon>
               <div style="flex-grow:1"></div>
               <temba-icon class="submit" size="1" name=${Icon.submit} @click=${
-      this.saveResult
-    }></temba-icon>
+                this.saveResult
+              }></temba-icon>
             </div>
         </temba-mask>
       </div>

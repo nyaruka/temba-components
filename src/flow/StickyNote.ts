@@ -44,11 +44,13 @@ export class StickyNote extends RapidElement {
         border: 1px solid var(--sticky-border-color);
         border-radius: var(--curvature);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 12px;
         overflow: hidden;
-        transition: transform 0.1s ease, box-shadow 0.2s ease;
+        transition:
+          transform 0.1s ease,
+          box-shadow 0.2s ease;
         color: var(--sticky-text-color);
         opacity: 0.85;
       }
@@ -180,7 +182,8 @@ export class StickyNote extends RapidElement {
 
       /* Focus/active states */
       .sticky-note:focus-within {
-        box-shadow: 0 0 0 1px var(--sticky-border-color),
+        box-shadow:
+          0 0 0 1px var(--sticky-border-color),
           0 10px 20px rgba(0, 0, 0, 0.3);
       }
 
@@ -222,7 +225,9 @@ export class StickyNote extends RapidElement {
         transform-origin: bottom right;
         transform: scale(0);
         opacity: 0;
-        transition: transform 0.2s ease, opacity 0.2s ease;
+        transition:
+          transform 0.2s ease,
+          opacity 0.2s ease;
         z-index: 1000;
       }
 
@@ -237,7 +242,9 @@ export class StickyNote extends RapidElement {
         border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 3px;
         cursor: pointer;
-        transition: transform 0.15s ease, border-color 0.15s ease;
+        transition:
+          transform 0.15s ease,
+          border-color 0.15s ease;
       }
 
       .color-option:hover {

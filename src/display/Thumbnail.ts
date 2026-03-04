@@ -374,62 +374,62 @@ export class Thumbnail extends RapidElement {
           src="${this.url}"
         ></img></div>`
           : this.contentType === ThumbnailContentType.AUDIO
-          ? html`<div class="audio-player">
-              <div class="audio-play-btn" @click=${this.handleAudioPlayClick}>
-                ${this.audioPlaying
-                  ? html`<svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                    >
-                      <rect x="5" y="3" width="4" height="18" />
-                      <rect x="15" y="3" width="4" height="18" />
-                    </svg>`
-                  : html`<svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                    >
-                      <polygon points="6,3 20,12 6,21" />
-                    </svg>`}
-              </div>
-              <div
-                class="audio-progress-bar"
-                @click=${this.handleProgressClick}
-              >
+            ? html`<div class="audio-player">
+                <div class="audio-play-btn" @click=${this.handleAudioPlayClick}>
+                  ${this.audioPlaying
+                    ? html`<svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="currentColor"
+                      >
+                        <rect x="5" y="3" width="4" height="18" />
+                        <rect x="15" y="3" width="4" height="18" />
+                      </svg>`
+                    : html`<svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="currentColor"
+                      >
+                        <polygon points="6,3 20,12 6,21" />
+                      </svg>`}
+                </div>
                 <div
-                  class="audio-progress-fill"
-                  style="width: ${this.audioProgress * 100}%"
-                ></div>
-              </div>
-              <div class="audio-time">
-                ${this.audioDuration
-                  ? this.formatTime(
-                      this.audioPlaying || this.audioProgress > 0
-                        ? this.audio?.currentTime || 0
-                        : this.audioDuration
-                    )
-                  : ''}
-              </div>
-            </div>`
-          : html`
-              ${this.contentType === ThumbnailContentType.LOCATION
-                ? html`<img
-                    style="height:125px;margin-bottom:-3px;border-radius:var(--curvature);"
-                    src="${this.tileUrl}"
-                    alt="Location preview"
-                  />`
-                : html`<div
-                    style="padding:1em; background:rgba(0,0,0,.05);border-radius:var(--curvature);"
-                  >
-                    <temba-icon
-                      size="1.5"
-                      name="${ThumbnailIcons[this.contentType]}"
-                    ></temba-icon>
-                  </div>`}
-            `}
+                  class="audio-progress-bar"
+                  @click=${this.handleProgressClick}
+                >
+                  <div
+                    class="audio-progress-fill"
+                    style="width: ${this.audioProgress * 100}%"
+                  ></div>
+                </div>
+                <div class="audio-time">
+                  ${this.audioDuration
+                    ? this.formatTime(
+                        this.audioPlaying || this.audioProgress > 0
+                          ? this.audio?.currentTime || 0
+                          : this.audioDuration
+                      )
+                    : ''}
+                </div>
+              </div>`
+            : html`
+                ${this.contentType === ThumbnailContentType.LOCATION
+                  ? html`<img
+                      style="height:125px;margin-bottom:-3px;border-radius:var(--curvature);"
+                      src="${this.tileUrl}"
+                      alt="Location preview"
+                    />`
+                  : html`<div
+                      style="padding:1em; background:rgba(0,0,0,.05);border-radius:var(--curvature);"
+                    >
+                      <temba-icon
+                        size="1.5"
+                        name="${ThumbnailIcons[this.contentType]}"
+                      ></temba-icon>
+                    </div>`}
+              `}
       </div>
     `;
   }

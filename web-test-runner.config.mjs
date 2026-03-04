@@ -146,7 +146,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   rimraf.sync(diffs);
   rimraf.sync(tests);
 
-  page.exposeFunction(
+  await page.exposeFunction(
     'matchPageSnapshot',
     (filename, clip, excluded, threshold, waitForNetwork = false) => {
       return new Promise(async (resolve, reject) => {
@@ -228,7 +228,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   });
 
   await page.exposeFunction('waitFor', (millis) => {
-    return page.waitForTimeout(millis);
+    return new Promise((resolve) => setTimeout(resolve, millis));
   });
 
   await page.exposeFunction('moveMouse', (x, y) => {
@@ -313,13 +313,13 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-  concurrency: 4,
+  concurrency: 1,
   coverageConfig: {
     include: ['src/**']
   },
   testFramework: {
     config: {
-      timeout: '5000'
+      timeout: '10000'
     }
   },
 
@@ -382,7 +382,7 @@ export default {
         }
       }
     },
-    esbuildPlugin({ ts: true })
+    esbuildPlugin({ ts: true, tsconfig: './tsconfig.json' })
 
     /* importMapsPlugin({
       inject: {

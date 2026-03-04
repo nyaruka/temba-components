@@ -101,7 +101,8 @@ export class ColorPicker extends FieldElement {
         position: relative;
         width: 100%;
         height: 100%;
-        background-image: linear-gradient(
+        background-image:
+          linear-gradient(
             to bottom,
             rgba(0, 0, 0, 0) 60%,
             rgba(0, 0, 0, 0.5) 90%,

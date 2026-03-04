@@ -261,7 +261,9 @@ export class NodeEditor extends RapidElement {
 
       .group-toggle-icon {
         color: #666;
-        transition: transform 0.3s ease, opacity 0.3s ease;
+        transition:
+          transform 0.3s ease,
+          opacity 0.3s ease;
         cursor: pointer;
         transform: rotate(0deg);
         opacity: 1;
@@ -388,7 +390,9 @@ export class NodeEditor extends RapidElement {
 
       .accordion-toggle-icon {
         color: #999;
-        transition: transform 0.2s ease, opacity 0.3s ease;
+        transition:
+          transform 0.2s ease,
+          opacity 0.3s ease;
       }
 
       .accordion-toggle-icon.expanded {
@@ -1173,11 +1177,10 @@ export class NodeEditor extends RapidElement {
           .map((item: any) => item.name.trim()); // Preserve original case
 
         if (reservedUsed.length > 0) {
-          errors[
-            fieldName
-          ] = `Reserved category names cannot be used: ${reservedUsed.join(
-            ', '
-          )}`;
+          errors[fieldName] =
+            `Reserved category names cannot be used: ${reservedUsed.join(
+              ', '
+            )}`;
         }
       }
     });
@@ -1895,8 +1898,8 @@ export class NodeEditor extends RapidElement {
             typeof item === 'string'
               ? item
               : item.type === 'field'
-              ? item.field
-              : null;
+                ? item.field
+                : null;
 
           // Get flex style for this field if it's a visible field
           const flexStyle =
@@ -1979,8 +1982,10 @@ export class NodeEditor extends RapidElement {
     }
 
     const isCollapsed = collapsible
-      ? this.groupCollapseState[label] ??
-        (typeof collapsed === 'function' ? collapsed(this.formData) : collapsed)
+      ? (this.groupCollapseState[label] ??
+        (typeof collapsed === 'function'
+          ? collapsed(this.formData)
+          : collapsed))
       : false;
 
     // Reveal mode: once expanded, render items directly without any group wrapper
@@ -2076,12 +2081,14 @@ export class NodeEditor extends RapidElement {
                       class="group-checkmark-icon"
                     ></temba-icon>`
                   : showBubble
-                  ? html`<div
-                      class="group-count-bubble ${!showBubble ? 'hidden' : ''}"
-                    >
-                      ${valueCount}
-                    </div>`
-                  : ''}
+                    ? html`<div
+                        class="group-count-bubble ${!showBubble
+                          ? 'hidden'
+                          : ''}"
+                      >
+                        ${valueCount}
+                      </div>`
+                    : ''}
               </div>`
             : ''}
         </div>
@@ -2192,14 +2199,14 @@ export class NodeEditor extends RapidElement {
                             class="accordion-checkmark-icon"
                           ></temba-icon>`
                         : showBubble
-                        ? html`<div
-                            class="accordion-count-bubble ${!showBubble
-                              ? 'hidden'
-                              : ''}"
-                          >
-                            ${valueCount}
-                          </div>`
-                        : ''}
+                          ? html`<div
+                              class="accordion-count-bubble ${!showBubble
+                                ? 'hidden'
+                                : ''}"
+                            >
+                              ${valueCount}
+                            </div>`
+                          : ''}
                     </div>`}
               </div>
               <div

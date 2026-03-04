@@ -30,7 +30,8 @@ export class ContactFields extends ContactStoreElement {
       }
 
       .field:hover {
-        box-shadow: 1px 1px 6px 2px rgba(0, 0, 0, 0.05),
+        box-shadow:
+          1px 1px 6px 2px rgba(0, 0, 0, 0.05),
           0px 0px 0px 2px var(--color-link-primary);
         cursor: pointer;
       }

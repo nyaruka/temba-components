@@ -14,7 +14,10 @@ import '../temba-modules';
  * split nodes, and complex form-configured nodes.
  */
 export class NodeTest<T extends Node> {
-  constructor(private nodeConfig: any, private nodeName: string) {}
+  constructor(
+    private nodeConfig: any,
+    private nodeName: string
+  ) {}
 
   /**
    * Renders a node in the flow editor and returns the flow node

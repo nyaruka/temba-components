@@ -242,7 +242,8 @@ export class Simulator extends RapidElement {
         z-index: 1;
         font-size: 13px;
         color: #374151;
-        transition: left calc(var(--animation-time) * 1.5) ease-out,
+        transition:
+          left calc(var(--animation-time) * 1.5) ease-out,
           opacity calc(var(--animation-time) * 1.5) ease-out;
         opacity: 0;
         pointer-events: none;
@@ -669,7 +670,9 @@ export class Simulator extends RapidElement {
         opacity: 0;
         pointer-events: none;
         transform: translateY(10px);
-        transition: opacity var(--animation-time) ease, transform 0.2s ease;
+        transition:
+          opacity var(--animation-time) ease,
+          transform 0.2s ease;
         z-index: 20;
       }
       .attachment-menu.open {
@@ -1821,8 +1824,8 @@ export class Simulator extends RapidElement {
                   to the clipboard
                 </div>`
               : this.toastMessage
-              ? html`<div class="context-toast">${this.toastMessage}</div>`
-              : html``}
+                ? html`<div class="context-toast">${this.toastMessage}</div>`
+                : html``}
           </div>
 
           <div
@@ -1943,8 +1946,8 @@ export class Simulator extends RapidElement {
               ${this.size === 'small'
                 ? 'S'
                 : this.size === 'medium'
-                ? 'M'
-                : 'L'}
+                  ? 'M'
+                  : 'L'}
             </button>
 
             <button class="option-btn" @click=${this.handleReset} title="Reset">

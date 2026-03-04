@@ -4881,8 +4881,8 @@ export class Editor extends RapidElement {
                           ? '#f0f6ff' // Light blue bg for selected
                           : '#f9fafb'
                       }; border:1px solid ${
-                    isSelected ? '#a4cafe' : '#e5e7eb'
-                  }; transition: all 0.2s ease;"
+                        isSelected ? '#a4cafe' : '#e5e7eb'
+                      }; transition: all 0.2s ease;"
                       @click=${() => this.handleRevisionClick(rev)}
                     >
                       <div
@@ -4998,10 +4998,11 @@ export class Editor extends RapidElement {
               @change=${this.handleLocalizationLanguageSelectChange}
             >
               ${languages.map(
-                (lang) => html`<temba-option
-                  value="${lang.code}"
-                  name="${lang.name}"
-                ></temba-option>`
+                (lang) =>
+                  html`<temba-option
+                    value="${lang.code}"
+                    name="${lang.name}"
+                  ></temba-option>`
               )}
             </temba-select>
             <button
@@ -5019,14 +5020,12 @@ export class Editor extends RapidElement {
                 ? html`<temba-loading units="3" size="8"></temba-loading>
                     <span>Auto translating remaining text…</span>`
                 : !hasTranslations
-                ? html`<span>
-                    Add content or enable more options to start translating.
-                  </span>`
-                : hasPendingTranslations
-                ? html`<span>
-                    ${progress.localized} of ${progress.total} items translated
-                  </span>`
-                : html`<span>All items are translated.</span>`}
+                  ? // prettier-ignore
+                    html`<span>Add content or enable more options to start translating.</span>`
+                  : hasPendingTranslations
+                    ? // prettier-ignore
+                      html`<span>${progress.localized} of ${progress.total} items translated</span>`
+                    : html`<span>All items are translated.</span>`}
             </div>
             ${this.autoTranslateError
               ? html`<div class="auto-translate-error">

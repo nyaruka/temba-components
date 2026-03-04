@@ -242,9 +242,8 @@ export class TemplateEditor extends FieldElement {
     } else {
       const attachment = media.attachments[0];
       if (attachment.url && attachment.content_type) {
-        this.currentVariables[
-          index
-        ] = `${attachment.content_type}:${attachment.url}`;
+        this.currentVariables[index] =
+          `${attachment.content_type}:${attachment.url}`;
       } else {
         this.currentVariables[index] = ``;
       }

@@ -52,7 +52,10 @@ export class RangePicker extends RapidElement {
       justify-content: center;
       width: 23px;
       height: 23px;
-      transition: background 0.2s, border 0.2s, opacity 0.2s;
+      transition:
+        background 0.2s,
+        border 0.2s,
+        opacity 0.2s;
     }
 
     .nav-arrow:hover:not(:disabled) {
@@ -82,7 +85,9 @@ export class RangePicker extends RapidElement {
       padding: 0.2em 0.8em;
       cursor: pointer;
       font-size: 0.95em;
-      transition: background 0.2s, border 0.2s;
+      transition:
+        background 0.2s,
+        border 0.2s;
     }
 
     .button-group .range-btn:first-child {
@@ -448,12 +453,12 @@ export class RangePicker extends RapidElement {
           ? 'day'
           : 'days'
         : interval.type === 'months'
-        ? amount === 1
-          ? 'month'
-          : 'months'
-        : amount === 1
-        ? 'year'
-        : 'years';
+          ? amount === 1
+            ? 'month'
+            : 'months'
+          : amount === 1
+            ? 'year'
+            : 'years';
 
     return `${
       direction === 'previous' ? 'Previous' : 'Next'
@@ -552,12 +557,12 @@ export class RangePicker extends RapidElement {
             title="Previous ${this.selectedRange === 'W'
               ? 'week'
               : this.selectedRange === 'M'
-              ? 'month'
-              : this.selectedRange === 'Y'
-              ? 'year'
-              : this.selectedRange === ''
-              ? this.getNavigationLabel('previous')
-              : 'period'}"
+                ? 'month'
+                : this.selectedRange === 'Y'
+                  ? 'year'
+                  : this.selectedRange === ''
+                    ? this.getNavigationLabel('previous')
+                    : 'period'}"
           >
             ◀
           </button>
@@ -596,12 +601,12 @@ export class RangePicker extends RapidElement {
             title="Next ${this.selectedRange === 'W'
               ? 'week'
               : this.selectedRange === 'M'
-              ? 'month'
-              : this.selectedRange === 'Y'
-              ? 'year'
-              : this.selectedRange === ''
-              ? this.getNavigationLabel('next')
-              : 'period'}"
+                ? 'month'
+                : this.selectedRange === 'Y'
+                  ? 'year'
+                  : this.selectedRange === ''
+                    ? this.getNavigationLabel('next')
+                    : 'period'}"
           >
             ▶
           </button>

@@ -61,7 +61,9 @@ export class TabPane extends RapidElement {
         margin-left: 0.4em;
         max-width: 200px;
         overflow: hidden;
-        transition: max-width 500ms ease-in-out, margin 500ms ease-in-out;
+        transition:
+          max-width 500ms ease-in-out,
+          margin 500ms ease-in-out;
         white-space: nowrap;
         text-overflow: ellipsis;
       }
@@ -89,7 +91,9 @@ export class TabPane extends RapidElement {
       .focusedname .option .name {
         max-width: 0px;
         margin: 0;
-        transition: max-width 200ms linear, margin 200ms linear;
+        transition:
+          max-width 200ms linear,
+          margin 200ms linear;
       }
 
       .focusedname .option.selected .name {

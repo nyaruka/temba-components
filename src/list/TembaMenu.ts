@@ -343,7 +343,9 @@ export class TembaMenu extends ResizeElement {
       }
 
       .level-1 {
-        transition: opacity 100ms linear, margin 200ms linear;
+        transition:
+          opacity 100ms linear,
+          margin 200ms linear;
         overflow-y: scroll;
       }
 

@@ -323,8 +323,7 @@ export const zustand = createStore<AppState>()(
         ) {
           languages[result.value] = result.name;
           return languages;
-        },
-        {});
+        }, {});
 
         set({ languageNames: allLanguages });
       },

@@ -819,9 +819,8 @@ describe('temba-node-editor', () => {
     };
 
     // Import the node config to test fromFormData directly
-    const { split_by_llm_categorize } = await import(
-      '../src/flow/nodes/split_by_llm_categorize'
-    );
+    const { split_by_llm_categorize } =
+      await import('../src/flow/nodes/split_by_llm_categorize');
 
     // Test with same categories - should preserve UUIDs
     const formDataSame = {

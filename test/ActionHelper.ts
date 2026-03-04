@@ -12,7 +12,10 @@ import '../temba-modules';
  * For node configuration testing, see NodeHelper.ts
  */
 export class ActionTest<T extends Action> {
-  constructor(private actionConfig: any, private actionName: string) {}
+  constructor(
+    private actionConfig: any,
+    private actionName: string
+  ) {}
 
   /**
    * Renders an action in the flow editor and returns the flow node

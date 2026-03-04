@@ -1526,11 +1526,11 @@ export class CanvasNode extends RapidElement {
       ${isTerminal
         ? html`<div class="title-spacer"></div>`
         : this.ui?.type === 'execute_actions' || this.node?.actions?.length > 1
-        ? html`<temba-icon
-            class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
-            name="sort"
-          ></temba-icon>`
-        : html`<div class="title-spacer"></div>`}
+          ? html`<temba-icon
+              class="drag-handle ${this.isReadOnly() ? 'read-only-hidden' : ''}"
+              name="sort"
+            ></temba-icon>`
+          : html`<div class="title-spacer"></div>`}
 
       <div class="name">${isRemoving ? 'Remove?' : config.name}</div>
       <div
@@ -1566,8 +1566,8 @@ export class CanvasNode extends RapidElement {
         ${isRemoving
           ? 'Remove?'
           : config.renderTitle
-          ? config.renderTitle(node, ui)
-          : html`${config.name}`}
+            ? config.renderTitle(node, ui)
+            : html`${config.name}`}
       </div>
       <div
         class="remove-button ${this.isReadOnly() ? 'read-only-hidden' : ''}"
@@ -1895,44 +1895,44 @@ export class CanvasNode extends RapidElement {
               </div>
             </div>`
           : this.node.actions?.length > 0
-          ? this.ui.type === 'execute_actions'
-            ? html`<temba-sortable-list
-                  dragHandle="drag-handle"
-                  externalDrag
-                  @temba-order-changed="${this.handleActionOrderChanged}"
-                  @temba-drag-start="${this.handleActionDragStart}"
-                  @temba-drag-external="${this.handleActionDragExternal}"
-                  @temba-drag-internal="${this.handleActionDragInternal}"
-                  @temba-drag-stop="${this.handleActionDragStop}"
-                >
-                  ${this.renderActionsWithPlaceholder()}
-                </temba-sortable-list>
-                ${this.showLastActionPlaceholder
-                  ? html`<div
-                      class="empty-node-placeholder"
-                      style="height: ${this.lastActionPlaceholderHeight}px;"
-                    ></div>`
-                  : ''}`
-            : html`${this.node.actions.map((action, index) =>
-                this.renderAction(this.node, action, index)
-              )}`
-          : this.ui.type === 'execute_actions'
-          ? html`<div class="empty-node-placeholder"></div>`
-          : ''}
+            ? this.ui.type === 'execute_actions'
+              ? html`<temba-sortable-list
+                    dragHandle="drag-handle"
+                    externalDrag
+                    @temba-order-changed="${this.handleActionOrderChanged}"
+                    @temba-drag-start="${this.handleActionDragStart}"
+                    @temba-drag-external="${this.handleActionDragExternal}"
+                    @temba-drag-internal="${this.handleActionDragInternal}"
+                    @temba-drag-stop="${this.handleActionDragStop}"
+                  >
+                    ${this.renderActionsWithPlaceholder()}
+                  </temba-sortable-list>
+                  ${this.showLastActionPlaceholder
+                    ? html`<div
+                        class="empty-node-placeholder"
+                        style="height: ${this.lastActionPlaceholderHeight}px;"
+                      ></div>`
+                    : ''}`
+              : html`${this.node.actions.map((action, index) =>
+                  this.renderAction(this.node, action, index)
+                )}`
+            : this.ui.type === 'execute_actions'
+              ? html`<div class="empty-node-placeholder"></div>`
+              : ''}
         ${this.node.router
           ? html`<div class="router-section">
               ${this.renderRouter(this.node.router, this.ui)}
               ${this.renderCategories(this.node)}
             </div>`
           : this.ui.type === 'terminal'
-          ? ''
-          : html`<div class="action-exits">
-              ${repeat(
-                this.node.exits,
-                (exit) => exit.uuid,
-                (exit) => this.renderExit(exit)
-              )}
-            </div>`}
+            ? ''
+            : html`<div class="action-exits">
+                ${repeat(
+                  this.node.exits,
+                  (exit) => exit.uuid,
+                  (exit) => this.renderExit(exit)
+                )}
+              </div>`}
         ${this.ui.type === 'execute_actions' && !this.isReadOnly()
           ? html`<div
               class="add-action-button"

@@ -15,7 +15,8 @@ export class FloatingWindow extends RapidElement {
       }
 
       .window {
-        transition: transform var(--transition-duration, 300ms) ease-in-out,
+        transition:
+          transform var(--transition-duration, 300ms) ease-in-out,
           opacity var(--transition-duration, 300ms) ease-in-out;
         position: fixed;
         z-index: 5000;

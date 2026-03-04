@@ -83,8 +83,8 @@ export const split_by_airtime: NodeConfig = {
           Array.isArray(item.currency) && item.currency.length > 0
             ? item.currency[0].value
             : typeof item.currency === 'string'
-            ? item.currency
-            : item.currency?.value;
+              ? item.currency
+              : item.currency?.value;
 
         if (currencies.has(currencyCode)) {
           duplicates.push(currencyCode);

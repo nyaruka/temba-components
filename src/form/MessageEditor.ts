@@ -25,7 +25,9 @@ export class MessageEditor extends FieldElement {
         border-radius: var(--curvature-widget);
         background: #fff;
         position: relative;
-        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        transition:
+          border-color 0.2s ease-in-out,
+          box-shadow 0.2s ease-in-out;
       }
 
       .message-editor-container:focus-within {

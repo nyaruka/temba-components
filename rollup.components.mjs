@@ -60,7 +60,7 @@ export default {
         commonjs({ include: 'node_modules/**' }),
 
         // compile our typescript
-        typescript({ sourceMap: true, inlineSources: true }),
+        typescript({ sourceMap: true, inlineSources: true, outDir: 'dist' }),
 
         copy({
             targets: [

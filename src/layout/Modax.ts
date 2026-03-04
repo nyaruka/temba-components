@@ -64,7 +64,8 @@ export class Modax extends RapidElement {
       ul.errorlist li {
         color: var(--color-error);
         background: rgba(255, 181, 181, 0.17);
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+        box-shadow:
+          0 1px 3px 0 rgba(0, 0, 0, 0.1),
           0 1px 2px 0 rgba(0, 0, 0, 0.06);
         color: tomato;
         padding: 10px;
