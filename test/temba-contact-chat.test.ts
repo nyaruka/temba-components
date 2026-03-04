@@ -39,7 +39,7 @@ const getContactChat = async (attrs: any = {}) => {
   for (let i = 0; i < 40; i++) {
     await waitFor(50);
     clock.tick(0);
-    if (chat.currentContact) break;
+    if (chat.currentContact && chat.blockFetching) break;
   }
   return chat;
 };
