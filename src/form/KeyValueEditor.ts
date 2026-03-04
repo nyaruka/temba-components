@@ -18,6 +18,9 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
   @property({ type: Boolean })
   showValidation = true;
 
+  @property({ type: Boolean })
+  readOnlyKeys = false;
+
   @state()
   private keyErrors: { [index: number]: string } = {};
 
@@ -173,6 +176,30 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
     });
   }
 
+  // Override renderWidget for readOnlyKeys to use a single grid
+  // so all key labels share one auto-sized column
+  renderWidget(): TemplateResult {
+    if (this.readOnlyKeys) {
+      const items = this.displayItems;
+      return html`
+        <div class="readonly-keys-grid">
+          ${items.map(
+            (item, index) => html`
+              <div class="key-label">${item.key}</div>
+              <temba-textinput
+                .value=${item.value}
+                .placeholder=${this.valuePlaceholder}
+                @change=${(e: any) =>
+                  this.handleValueChange(index, e.target.value)}
+              ></temba-textinput>
+            `
+          )}
+        </div>
+      `;
+    }
+    return super.renderWidget();
+  }
+
   renderItem(item: KeyValueItem, index: number): TemplateResult {
     const canRemove = this.canRemoveItem(index);
     const keyError =
@@ -202,6 +229,21 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
     `;
   }
 
+  protected get displayItems(): KeyValueItem[] {
+    if (this.readOnlyKeys) {
+      // In readOnlyKeys mode, show only the actual items (no empty row)
+      return [...this._items];
+    }
+    return super.displayItems;
+  }
+
+  protected shouldShowAddButton(): boolean {
+    if (this.readOnlyKeys) {
+      return false;
+    }
+    return super.shouldShowAddButton();
+  }
+
   protected getContainerClass(): string {
     return 'key-value-editor';
   }
@@ -221,6 +263,20 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
         grid-template-columns: 1fr 1fr auto;
         align-items: center;
         column-gap: 6px;
+      }
+
+      .readonly-keys-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px 10px;
+        align-items: center;
+      }
+
+      .key-label {
+        font-size: 14px;
+        color: #555;
+        padding: 6px 10px;
+        white-space: nowrap;
       }
 
       .remove-btn {

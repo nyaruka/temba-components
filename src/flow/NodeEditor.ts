@@ -630,6 +630,7 @@ export class NodeEditor extends RapidElement {
     this.initializeFormData();
     this.errors = {};
     this.isOpen = true;
+    this.resolveFormData();
   }
 
   private initializeFormData(): void {
@@ -713,6 +714,41 @@ export class NodeEditor extends RapidElement {
         this.formData[key] = { ...value };
       }
     });
+  }
+
+  private async resolveFormData(): Promise<void> {
+    const config = this.getConfig();
+    if (!config?.resolveFormData) return;
+
+    try {
+      const resolved = await config.resolveFormData(this.formData);
+      if (resolved && resolved !== this.formData) {
+        this.formData = resolved;
+        this.processFormDataForEditing();
+
+        // Run computed fields for all dependencies that may have changed
+        const form = config.form;
+        if (form) {
+          Object.entries(form).forEach(([fieldName, fieldConfig]) => {
+            if (fieldConfig.dependsOn && fieldConfig.computeValue) {
+              const computedValue = fieldConfig.computeValue(
+                this.formData,
+                this.formData[fieldName],
+                this.originalFormData
+              );
+              this.formData = {
+                ...this.formData,
+                [fieldName]: computedValue
+              };
+            }
+          });
+        }
+
+        this.requestUpdate();
+      }
+    } catch (error) {
+      // Resolve failures are non-fatal; form still works with initial data
+    }
   }
 
   private processFormDataForEditing(): void {
@@ -2106,9 +2142,23 @@ export class NodeEditor extends RapidElement {
   ): TemplateResult {
     const { sections, multi = false } = accordionConfig;
 
+    // Filter out sections where all fields are invisible
+    const visibleSections = sections.filter((section) => {
+      const fieldsInSection = this.collectFieldsFromItems(section.items);
+      if (fieldsInSection.length === 0) return true;
+      return fieldsInSection.some((fieldName) => {
+        const fieldConfig = config.form?.[fieldName];
+        return fieldConfig ? this.isFieldVisible(fieldName, fieldConfig) : true;
+      });
+    });
+
+    if (visibleSections.length === 0) {
+      return html``;
+    }
+
     return html`
       <div class="accordion">
-        ${sections.map((section) => {
+        ${visibleSections.map((section) => {
           const { label, collapsed = true, getValueCount } = section;
           const stateKey = `accordion:${label}`;
 
