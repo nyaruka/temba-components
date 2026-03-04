@@ -98,6 +98,30 @@ export const split_by_subflow: NodeConfig = {
       ]
     }
   ],
+  resolveFormData: async (formData: FormData) => {
+    const flow =
+      Array.isArray(formData.flow) && formData.flow.length > 0
+        ? formData.flow[0]
+        : null;
+    if (!flow?.uuid) return formData;
+
+    // Already have parent_refs (e.g. from a fresh selection)
+    if (flow.parent_refs) return formData;
+
+    try {
+      const response = await fetch(`/api/v2/flows.json?uuid=${flow.uuid}`);
+      const data = await response.json();
+      const flowData = data.results?.[0];
+      if (flowData?.parent_refs) {
+        const updatedFlow = { ...flow, parent_refs: flowData.parent_refs };
+        return { ...formData, flow: [updatedFlow] };
+      }
+    } catch {
+      // Non-fatal; params just won't auto-populate
+    }
+
+    return formData;
+  },
   render: (node: Node) => {
     const enterFlowAction = node.actions?.find(
       (action) => action.type === 'enter_flow'
