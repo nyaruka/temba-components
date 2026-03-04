@@ -15,10 +15,13 @@
   ],
   "mounts": [
     "source=${localEnv:NYARUKA_HOME}/temba-components,target=/workspaces/temba-components,type=bind,consistency=cached",
-    "source=${localEnv:CONDUCTOR_HOME}/workspaces,target=/workspaces/conductor,type=bind,consistency=cached"
+    "source=${localEnv:CONDUCTOR_HOME}/workspaces,target=/workspaces/conductor,type=bind,consistency=cached",
+    "source=temba-node-modules,target=/workspaces/temba-components/node_modules,type=volume",
+    "source=temba-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
   ],
   "workspaceMount": "",
   "workspaceFolder": "/workspaces/temba-components",
+  "postCreateCommand": "sudo chown node:node /workspaces/temba-components/node_modules /home/node/.local/share/pnpm/store",
   "remoteUser": "node",
   "customizations": {
     "vscode": {
