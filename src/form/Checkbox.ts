@@ -38,6 +38,7 @@ export class Checkbox extends FieldElement {
       }
 
       .checkbox-container {
+        position: relative;
         cursor: pointer;
         display: flex;
         align-items: flex-start;
