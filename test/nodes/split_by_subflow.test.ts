@@ -501,7 +501,7 @@ describe('split_by_subflow node config', () => {
       ]);
     });
 
-    it('returns current value when no parent_refs', () => {
+    it('clears params when no parent_refs', () => {
       const values = {
         flow: [{ uuid: 'flow-1', name: 'Test' }]
       };
@@ -509,16 +509,16 @@ describe('split_by_subflow node config', () => {
 
       const result = computeValue(values, currentValue);
 
-      expect(result).to.deep.equal(currentValue);
+      expect(result).to.deep.equal([]);
     });
 
-    it('returns current value when no flow selected', () => {
+    it('clears params when no flow selected', () => {
       const values = { flow: [] };
       const currentValue = [{ key: 'test', value: 'val' }];
 
       const result = computeValue(values, currentValue);
 
-      expect(result).to.deep.equal(currentValue);
+      expect(result).to.deep.equal([]);
     });
 
     it('handles Record format current value', () => {

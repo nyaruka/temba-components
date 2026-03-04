@@ -33,13 +33,23 @@ export const split_by_subflow: NodeConfig = {
       minRows: 0,
       readOnlyKeys: true,
       dependsOn: ['flow'],
+      conditions: {
+        visible: (formData: Record<string, any>) => {
+          const params = formData.params;
+          if (Array.isArray(params)) return params.length > 0;
+          if (params && typeof params === 'object')
+            return Object.keys(params).length > 0;
+          return false;
+        }
+      },
       computeValue: (values: Record<string, any>, currentValue: any) => {
         const flow =
           Array.isArray(values.flow) && values.flow.length > 0
             ? values.flow[0]
             : null;
         if (!flow?.parent_refs?.length) {
-          return currentValue || [];
+          // Clear params when selected flow has no parent_refs
+          return [];
         }
 
         // Build a map of existing values
@@ -69,7 +79,7 @@ export const split_by_subflow: NodeConfig = {
       sections: [
         {
           label: 'Parameters',
-          collapsed: true,
+          collapsed: false,
           getValueCount: (formData: FormData) => {
             const params = formData.params;
             if (Array.isArray(params)) {

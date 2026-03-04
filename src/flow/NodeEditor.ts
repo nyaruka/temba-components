@@ -2106,9 +2106,23 @@ export class NodeEditor extends RapidElement {
   ): TemplateResult {
     const { sections, multi = false } = accordionConfig;
 
+    // Filter out sections where all fields are invisible
+    const visibleSections = sections.filter((section) => {
+      const fieldsInSection = this.collectFieldsFromItems(section.items);
+      if (fieldsInSection.length === 0) return true;
+      return fieldsInSection.some((fieldName) => {
+        const fieldConfig = config.form?.[fieldName];
+        return fieldConfig ? this.isFieldVisible(fieldName, fieldConfig) : true;
+      });
+    });
+
+    if (visibleSections.length === 0) {
+      return html``;
+    }
+
     return html`
       <div class="accordion">
-        ${sections.map((section) => {
+        ${visibleSections.map((section) => {
           const { label, collapsed = true, getValueCount } = section;
           const stateKey = `accordion:${label}`;
 

@@ -261,8 +261,9 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
       .key-label {
         font-size: 14px;
         color: #555;
-        padding: 0 8px;
+        padding: 6px 10px;
         white-space: nowrap;
+        min-width: 100px;
       }
 
       .remove-btn {
