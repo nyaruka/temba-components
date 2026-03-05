@@ -317,6 +317,8 @@ export interface StickyNote {
   title: string;
   body: string;
   color: 'yellow' | 'blue' | 'pink' | 'green' | 'gray';
+  width?: number;
+  height?: number;
 }
 
 export interface FlowUI {

@@ -2161,7 +2161,11 @@ export class Editor extends RapidElement {
             height: el.offsetHeight
           });
         } else {
-          stickySizes.set(uuid, { width: 182, height: 100 });
+          const sticky = stickies[uuid];
+          stickySizes.set(uuid, {
+            width: sticky.width || 200,
+            height: sticky.height || 100
+          });
         }
       }
 
@@ -3325,8 +3329,14 @@ export class Editor extends RapidElement {
           maxHeight = Math.max(maxHeight, sticky.position.top + height);
         } else {
           // Fallback to default sizes if element not found
-          maxWidth = Math.max(maxWidth, sticky.position.left + 200);
-          maxHeight = Math.max(maxHeight, sticky.position.top + 100);
+          maxWidth = Math.max(
+            maxWidth,
+            sticky.position.left + (sticky.width || 200)
+          );
+          maxHeight = Math.max(
+            maxHeight,
+            sticky.position.top + (sticky.height || 100)
+          );
         }
       }
     });
