@@ -10,6 +10,7 @@ import {
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 import { renderClamped } from '../utils';
+import { splitSMS } from '../../display/sms';
 
 export const send_msg: ActionConfig = {
   name: 'Send Message',
@@ -18,6 +19,8 @@ export const send_msg: ActionConfig = {
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
+    const sms = splitSMS(action.text);
+
     return html`
       ${action.template
         ? html`<div
@@ -30,7 +33,15 @@ export const send_msg: ActionConfig = {
             <div style="margin-left:0.4em">${action.template.name}</div>
           </div>`
         : null}
-      ${renderClamped(html`${unsafeHTML(text)}`, action.text)}
+      ${renderClamped(html`${unsafeHTML(text)}`, action.text, 6)}
+      ${sms.parts.length > 1
+        ? html`<div style="text-align: right;">
+            <temba-charcount
+              .text="${action.text}"
+              style="font-size: 1em; --temba-charcount-background: var(--color-overlay-light, rgba(0,0,0,0.05)); --temba-charcount-color: var(--color-overlay-light-text, #666);"
+            ></temba-charcount>
+          </div>`
+        : null}
       ${(action.quick_replies || [])?.length > 0
         ? html`<div class="quick-replies">
             ${(action.quick_replies || []).map((reply) => {
