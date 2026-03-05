@@ -77,7 +77,7 @@
     "@web/dev-server-esbuild": "^1.0.5",
     "@web/dev-server-rollup": "^0.6.4",
     "@web/test-runner": "0.20.2",
-    "@web/test-runner-puppeteer": "^0.18.0",
+    "@web/test-runner-puppeteer": "0.15.0",
     "auto-changelog": "*",
     "busboy": "^1.6.0",
     "concurrently": "^9.2.1",

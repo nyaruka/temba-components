@@ -333,7 +333,7 @@ export default {
   rootDir: './',
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
-  concurrency: 1,
+  concurrency: 4,
   coverageConfig: {
     include: ['src/**']
   },

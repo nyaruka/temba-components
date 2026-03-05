@@ -472,7 +472,8 @@ describe('temba-simulator', () => {
     // take screenshot with quick replies
     await assertScreenshot(
       'simulator/quick-replies',
-      getSimulatorClip(simulator)
+      getSimulatorClip(simulator),
+      true
     );
   });
 
