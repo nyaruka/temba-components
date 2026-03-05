@@ -10,6 +10,7 @@ import {
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 import { renderClamped } from '../utils';
+import { splitSMS } from '../../display/sms';
 
 export const send_msg: ActionConfig = {
   name: 'Send Message',
@@ -18,6 +19,9 @@ export const send_msg: ActionConfig = {
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
+    const sms = splitSMS(action.text);
+    const hasExpressions = action.text && action.text.indexOf('@') > -1;
+
     return html`
       ${action.template
         ? html`<div
@@ -30,7 +34,19 @@ export const send_msg: ActionConfig = {
             <div style="margin-left:0.4em">${action.template.name}</div>
           </div>`
         : null}
-      ${renderClamped(html`${unsafeHTML(text)}`, action.text)}
+      ${renderClamped(html`${unsafeHTML(text)}`, action.text, 6)}
+      ${sms.parts.length > 1
+        ? html`<div
+            style="margin-top: 0.5em; padding-right: 0.5em; font-size: 0.8em; color: ${sms
+              .parts.length > 2
+              ? 'var(--color-error, #dc3545)'
+              : '#666'}; text-align: right;"
+          >
+            ${action.text.length} / ${sms.parts.length}${hasExpressions
+              ? '+'
+              : ''}
+          </div>`
+        : null}
       ${(action.quick_replies || [])?.length > 0
         ? html`<div class="quick-replies">
             ${(action.quick_replies || []).map((reply) => {

@@ -55,6 +55,7 @@ export class MessageEditor extends FieldElement {
       }
 
       .completion-wrapper {
+        --temba-textinput-padding: 9px 9px 24px 9px;
       }
 
       .media-wrapper {
@@ -108,20 +109,33 @@ export class MessageEditor extends FieldElement {
         font-weight: 500;
       }
 
-      .attachment-icon {
+      .bottom-bar {
         position: absolute;
         bottom: 4px;
         right: 4px;
+        display: flex;
+        align-items: center;
+      }
+
+      .bottom-bar temba-charcount {
+        display: flex;
+        align-items: center;
+        line-height: 1;
+      }
+
+      .has-attachments .attachment-icon {
+        display: none;
+      }
+
+      .attachment-icon {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
         color: var(--color-text-dark);
         cursor: pointer;
         padding: 6px;
         border-radius: var(--curvature);
         transition: background-color 0.2s ease-in-out;
-        display: block;
-      }
-
-      .has-attachments .attachment-icon {
-        display: none;
       }
 
       .attachment-icon:hover {
@@ -403,7 +417,6 @@ export class MessageEditor extends FieldElement {
             ?gsm=${this.gsm}
             ?disableCompletion=${this.disableCompletion}
             maxlength=${ifDefined(this.maxLength)}
-            counter=${ifDefined(this.counter)}
             minHeight=${ifDefined(this.minHeight)}
             widgetOnly
             @change=${this.handleCompletionChange}
@@ -422,9 +435,16 @@ export class MessageEditor extends FieldElement {
         <temba-icon
           class="attachment-icon"
           name=${Icon.attachment}
-          size="1.2"
+          size="1"
           @click=${this.handleAttachmentIconClick}
         ></temba-icon>
+        <div class="bottom-bar">
+          ${this.counter
+            ? html`<temba-charcount
+                .text="${this.value || ''}"
+              ></temba-charcount>`
+            : null}
+        </div>
 
         <div class="drop-overlay"></div>
 
