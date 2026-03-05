@@ -224,7 +224,33 @@ describe('temba-node-type-selector', () => {
     expect(titles).to.include('Wait for Menu');
   });
 
-  it('filters by features - AI feature enables AI splits', async () => {
+  it('filters by features - AI feature enables Call AI in Actions that Branch', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = ['ai'];
+    await selector.updateComplete;
+    selector.show('action', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
+
+    // Call AI should appear in the Actions that Branch section
+    expect(titles).to.include('Call AI');
+
+    // verify it's in the branching section
+    const branchingSection =
+      selector.shadowRoot?.querySelector('.section-branching');
+    const branchingTitles = Array.from(
+      branchingSection?.querySelectorAll('.node-item-title') || []
+    ).map((item) => item.textContent?.trim());
+    expect(branchingTitles).to.include('Call AI');
+  });
+
+  it('filters by features - AI feature does not show Split by AI in split mode', async () => {
     const selector = await createSelector();
     selector.flowType = 'message';
     selector.features = ['ai'];

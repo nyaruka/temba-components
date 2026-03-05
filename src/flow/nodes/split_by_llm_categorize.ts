@@ -19,7 +19,7 @@ export const split_by_llm_categorize: NodeConfig = {
       label: 'LLM',
       helpText: 'Select the LLM to use for categorization',
       required: true,
-      endpoint: '/test-assets/select/llms.json',
+      endpoint: '/api/internal/llms.json',
       valueKey: 'uuid',
       nameKey: 'name',
       placeholder: 'Select an LLM...'
@@ -115,9 +115,7 @@ export const split_by_llm_categorize: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      llm: callLlmAction?.llm
-        ? [{ value: callLlmAction.llm.uuid, name: callLlmAction.llm.name }]
-        : [],
+      llm: callLlmAction?.llm ? [callLlmAction.llm] : [],
       input: callLlmAction?.input || '@input',
       categories: categories
     };
@@ -145,7 +143,7 @@ export const split_by_llm_categorize: NodeConfig = {
       type: 'call_llm',
       uuid: callLlmUuid,
       llm: llmSelection
-        ? { uuid: llmSelection.value, name: llmSelection.name }
+        ? { uuid: llmSelection.uuid || llmSelection.value, name: llmSelection.name }
         : { uuid: '', name: '' },
       instructions: `@(prompt("categorize", slice(node.categories, 0, -2)))`,
       input: formData.input || '@input',

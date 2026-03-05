@@ -40,7 +40,7 @@ export const split_by_llm: NodeConfig = {
       label: 'LLM',
       required: true,
       options: [],
-      endpoint: '/test-assets/select/llms.json',
+      endpoint: '/api/internal/llms.json',
       searchable: true,
       valueKey: 'uuid',
       nameKey: 'name',
@@ -74,9 +74,7 @@ export const split_by_llm: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      llm: callLlmAction?.llm
-        ? [{ value: callLlmAction.llm.uuid, name: callLlmAction.llm.name }]
-        : [],
+      llm: callLlmAction?.llm ? [callLlmAction.llm] : [],
       input: callLlmAction?.input || '@input',
       instructions: callLlmAction?.instructions || ''
     };
@@ -99,7 +97,7 @@ export const split_by_llm: NodeConfig = {
       type: 'call_llm',
       uuid: callLlmUuid,
       llm: llmSelection
-        ? { uuid: llmSelection.value, name: llmSelection.name }
+        ? { uuid: llmSelection.uuid || llmSelection.value, name: llmSelection.name }
         : { uuid: '', name: '' },
       input: formData.input || '@input',
       instructions: formData.instructions || '',
