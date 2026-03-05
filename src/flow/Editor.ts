@@ -1660,6 +1660,16 @@ export class Editor extends RapidElement {
       this.handleNodeDeleted.bind(this)
     );
 
+    // Listen for sticky note deletion events
+    this.addEventListener(CustomEventType.StickyNoteDeleted, ((
+      event: CustomEvent
+    ) => {
+      const uuid = event.detail?.uuid;
+      if (uuid) {
+        getStore().getState().removeStickyNotes([uuid]);
+      }
+    }) as EventListener);
+
     // Listen for canvas menu selections
     this.addEventListener(CustomEventType.Selection, (event: CustomEvent) => {
       const target = event.target as HTMLElement;

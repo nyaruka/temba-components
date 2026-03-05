@@ -1,5 +1,6 @@
 import { expect, assert } from '@open-wc/testing';
 import { StickyNote } from '../src/flow/StickyNote';
+import { CustomEventType } from '../src/interfaces';
 import { StickyNote as StickyNoteData } from '../src/store/flow-definition';
 import { assertScreenshot, getClip, getComponent } from './utils.test';
 
@@ -277,5 +278,87 @@ describe('temba-sticky-note', () => {
     expect(grayOption).to.exist;
 
     await assertScreenshot('sticky-note/gray-color', getClip(component));
+  });
+
+  it('renders remove button', async () => {
+    const component = await createStickyNote(mockStickyData);
+
+    const removeButton = component.shadowRoot?.querySelector('.remove-button');
+    expect(removeButton).to.exist;
+    expect(removeButton?.textContent?.trim()).to.equal('✕');
+  });
+
+  it('shows removing state on first click', async () => {
+    const component = await createStickyNote(mockStickyData);
+
+    const removeButton = component.shadowRoot?.querySelector(
+      '.remove-button'
+    ) as HTMLElement;
+    removeButton.click();
+    await component.updateComplete;
+
+    // Title container should have removing class
+    const titleContainer = component.shadowRoot?.querySelector(
+      '.sticky-title-container'
+    );
+    expect(titleContainer?.classList.contains('removing')).to.be.true;
+
+    // Title should show "Remove?"
+    const title = component.shadowRoot?.querySelector('.sticky-title');
+    expect(title?.textContent).to.equal('Remove?');
+
+    await assertScreenshot('sticky-note/removing', getClip(component));
+  });
+
+  it('resets removing state after timeout', async () => {
+    const component = await createStickyNote(mockStickyData);
+
+    const removeButton = component.shadowRoot?.querySelector(
+      '.remove-button'
+    ) as HTMLElement;
+    removeButton.click();
+    await component.updateComplete;
+
+    // Verify it's in removing state
+    const titleContainer = component.shadowRoot?.querySelector(
+      '.sticky-title-container'
+    );
+    expect(titleContainer?.classList.contains('removing')).to.be.true;
+
+    // Wait for timeout to expire
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    await component.updateComplete;
+
+    // Should no longer be in removing state
+    expect(titleContainer?.classList.contains('removing')).to.be.false;
+
+    // Title should be back to original
+    const title = component.shadowRoot?.querySelector('.sticky-title');
+    expect(title?.textContent).to.equal('Test Title');
+  });
+
+  it('fires StickyNoteDeleted event on second click', async () => {
+    const component = await createStickyNote(mockStickyData);
+
+    let deletedUuid: string | null = null;
+    component.addEventListener(CustomEventType.StickyNoteDeleted, ((
+      event: CustomEvent
+    ) => {
+      deletedUuid = event.detail.uuid;
+    }) as EventListener);
+
+    const removeButton = component.shadowRoot?.querySelector(
+      '.remove-button'
+    ) as HTMLElement;
+
+    // First click — enter removing state
+    removeButton.click();
+    await component.updateComplete;
+
+    // Second click — confirm removal
+    removeButton.click();
+    await component.updateComplete;
+
+    expect(deletedUuid).to.equal('test-uuid');
   });
 });
