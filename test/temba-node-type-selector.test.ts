@@ -40,7 +40,11 @@ describe('temba-node-type-selector', () => {
     expect(selector.hasAttribute('open')).to.be.true;
 
     const dialog = selector.shadowRoot?.querySelector('.dialog') as HTMLElement;
-    await assertScreenshot('node-type-selector/action-mode', getClip(dialog));
+    await assertScreenshot(
+      'node-type-selector/action-mode',
+      getClip(dialog),
+      true
+    );
   });
 
   it('shows dialog when opened in split mode', async () => {
@@ -53,7 +57,11 @@ describe('temba-node-type-selector', () => {
     expect(selector.mode).to.equal('split');
 
     const dialog = selector.shadowRoot?.querySelector('.dialog') as HTMLElement;
-    await assertScreenshot('node-type-selector/split-mode', getClip(dialog));
+    await assertScreenshot(
+      'node-type-selector/split-mode',
+      getClip(dialog),
+      true
+    );
   });
 
   it('displays action types in action mode', async () => {
