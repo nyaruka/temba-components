@@ -2,8 +2,7 @@ import {
   ACTION_GROUPS,
   FormData,
   NodeConfig,
-  FlowTypes,
-  Features
+  FlowTypes
 } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
@@ -19,7 +18,6 @@ export const split_by_llm: NodeConfig = {
   name: 'Call AI',
   group: ACTION_GROUPS.services,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
-  features: [Features.AI],
   showAsAction: true,
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
@@ -40,7 +38,7 @@ export const split_by_llm: NodeConfig = {
       label: 'LLM',
       required: true,
       options: [],
-      endpoint: '/test-assets/select/llms.json',
+      endpoint: '/api/internal/llms.json',
       searchable: true,
       valueKey: 'uuid',
       nameKey: 'name',
@@ -74,9 +72,7 @@ export const split_by_llm: NodeConfig = {
 
     return {
       uuid: node.uuid,
-      llm: callLlmAction?.llm
-        ? [{ value: callLlmAction.llm.uuid, name: callLlmAction.llm.name }]
-        : [],
+      llm: callLlmAction?.llm ? [callLlmAction.llm] : [],
       input: callLlmAction?.input || '@input',
       instructions: callLlmAction?.instructions || ''
     };
@@ -99,7 +95,7 @@ export const split_by_llm: NodeConfig = {
       type: 'call_llm',
       uuid: callLlmUuid,
       llm: llmSelection
-        ? { uuid: llmSelection.value, name: llmSelection.name }
+        ? { uuid: llmSelection.uuid || llmSelection.value, name: llmSelection.name }
         : { uuid: '', name: '' },
       input: formData.input || '@input',
       instructions: formData.instructions || '',

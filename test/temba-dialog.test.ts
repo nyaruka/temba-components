@@ -85,12 +85,12 @@ describe('temba-dialog', () => {
     expect(body.style.position).to.equal('');
   });
 
-  it('focuses the first text input', async () => {
+  it('does not auto-focus the first text input on open', async () => {
     const dialog: Dialog = await fixture(getDialogHTML());
     await open(dialog);
 
     const input = dialog.querySelector('input');
-    expect(document.activeElement).to.equal(input);
+    expect(document.activeElement).to.not.equal(input);
     await assertScreenshot('dialog/focused', getDialogClip(dialog));
   });
 
