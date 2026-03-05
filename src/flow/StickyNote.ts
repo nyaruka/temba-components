@@ -524,6 +524,11 @@ export class StickyNote extends RapidElement {
     }
   }
 
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.resetRemovingState();
+  }
+
   public render(): TemplateResult {
     if (!this.data) {
       return html`<div class="sticky-note" style="display: none;"></div>`;
@@ -562,6 +567,8 @@ export class StickyNote extends RapidElement {
                   ? 'touch-visible'
                   : ''}"
                 @click=${this.handleRemoveClick}
+                @mousedown=${(e: MouseEvent) => e.stopPropagation()}
+                @touchstart=${(e: TouchEvent) => e.stopPropagation()}
                 title="Remove note"
               >
                 ✕

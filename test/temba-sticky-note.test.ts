@@ -1,4 +1,5 @@
 import { expect, assert } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
 import { StickyNote } from '../src/flow/StickyNote';
 import { CustomEventType } from '../src/interfaces';
 import { StickyNote as StickyNoteData } from '../src/store/flow-definition';
@@ -311,30 +312,36 @@ describe('temba-sticky-note', () => {
   });
 
   it('resets removing state after timeout', async () => {
-    const component = await createStickyNote(mockStickyData);
+    const clock = useFakeTimers();
 
-    const removeButton = component.shadowRoot?.querySelector(
-      '.remove-button'
-    ) as HTMLElement;
-    removeButton.click();
-    await component.updateComplete;
+    try {
+      const component = await createStickyNote(mockStickyData);
 
-    // Verify it's in removing state
-    const titleContainer = component.shadowRoot?.querySelector(
-      '.sticky-title-container'
-    );
-    expect(titleContainer?.classList.contains('removing')).to.be.true;
+      const removeButton = component.shadowRoot?.querySelector(
+        '.remove-button'
+      ) as HTMLElement;
+      removeButton.click();
+      await component.updateComplete;
 
-    // Wait for timeout to expire
-    await new Promise((resolve) => setTimeout(resolve, 1100));
-    await component.updateComplete;
+      // Verify it's in removing state
+      const titleContainer = component.shadowRoot?.querySelector(
+        '.sticky-title-container'
+      );
+      expect(titleContainer?.classList.contains('removing')).to.be.true;
 
-    // Should no longer be in removing state
-    expect(titleContainer?.classList.contains('removing')).to.be.false;
+      // Advance clock past the timeout
+      clock.tick(1001);
+      await component.updateComplete;
 
-    // Title should be back to original
-    const title = component.shadowRoot?.querySelector('.sticky-title');
-    expect(title?.textContent).to.equal('Test Title');
+      // Should no longer be in removing state
+      expect(titleContainer?.classList.contains('removing')).to.be.false;
+
+      // Title should be back to original
+      const title = component.shadowRoot?.querySelector('.sticky-title');
+      expect(title?.textContent).to.equal('Test Title');
+    } finally {
+      clock.restore();
+    }
   });
 
   it('fires StickyNoteDeleted event on second click', async () => {
