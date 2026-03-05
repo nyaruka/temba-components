@@ -335,6 +335,11 @@ export default {
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
   concurrency: 4,
+  filterBrowserLogs(log) {
+    return !log.args.some(
+      (arg) => typeof arg === 'string' && arg.includes('Lit is in dev mode')
+    );
+  },
   coverageConfig: {
     include: ['src/**']
   },
