@@ -121,6 +121,11 @@ export class MessageEditor extends FieldElement {
         display: flex;
         align-items: center;
         line-height: 1;
+        --temba-charcount-background: var(
+          --color-overlay-light,
+          rgba(0, 0, 0, 0.05)
+        );
+        --temba-charcount-color: var(--color-overlay-light-text, #666);
       }
 
       .has-attachments .attachment-icon {

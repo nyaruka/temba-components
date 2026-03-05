@@ -508,6 +508,10 @@ export class Editor extends RapidElement {
         touch-action: none;
       }
 
+      #canvas > .draggable:hover {
+        z-index: 200;
+      }
+
       #canvas > .dragging {
         z-index: 99999 !important;
         transition: none !important;

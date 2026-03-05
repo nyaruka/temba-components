@@ -20,7 +20,6 @@ export const send_msg: ActionConfig = {
   render: (_node: Node, action: SendMsg) => {
     const text = action.text.replace(/\n/g, '<br>');
     const sms = splitSMS(action.text);
-    const hasExpressions = action.text && action.text.indexOf('@') > -1;
 
     return html`
       ${action.template
@@ -36,15 +35,11 @@ export const send_msg: ActionConfig = {
         : null}
       ${renderClamped(html`${unsafeHTML(text)}`, action.text, 6)}
       ${sms.parts.length > 1
-        ? html`<div
-            style="margin-top: 0.5em; padding-right: 0.5em; font-size: 0.8em; color: ${sms
-              .parts.length > 2
-              ? 'var(--color-error, #dc3545)'
-              : '#666'}; text-align: right;"
-          >
-            ${action.text.length} / ${sms.parts.length}${hasExpressions
-              ? '+'
-              : ''}
+        ? html`<div style="text-align: right;">
+            <temba-charcount
+              .text="${action.text}"
+              style="font-size: 1em; --temba-charcount-background: var(--color-overlay-light, rgba(0,0,0,0.05)); --temba-charcount-color: var(--color-overlay-light-text, #666);"
+            ></temba-charcount>
           </div>`
         : null}
       ${(action.quick_replies || [])?.length > 0

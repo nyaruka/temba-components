@@ -1,9 +1,4 @@
-import {
-  ACTION_GROUPS,
-  FormData,
-  NodeConfig,
-  FlowTypes
-} from '../types';
+import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
@@ -95,7 +90,10 @@ export const split_by_llm: NodeConfig = {
       type: 'call_llm',
       uuid: callLlmUuid,
       llm: llmSelection
-        ? { uuid: llmSelection.uuid || llmSelection.value, name: llmSelection.name }
+        ? {
+            uuid: llmSelection.uuid || llmSelection.value,
+            name: llmSelection.name
+          }
         : { uuid: '', name: '' },
       input: formData.input || '@input',
       instructions: formData.instructions || '',

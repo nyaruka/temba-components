@@ -249,6 +249,8 @@ export class CharCount extends RapidElement {
         padding: 2px 6px;
         border-radius: var(--curvature);
         margin-top: var(--temba-charcount-counts-margin-top);
+        background: var(--temba-charcount-background, transparent);
+        color: var(--temba-charcount-color, inherit);
       }
 
       .segments {
@@ -258,8 +260,8 @@ export class CharCount extends RapidElement {
 
       .attention .counts {
         transform: scale(0.95);
-        background: var(--color-overlay-light);
-        color: var(--color-overlay-light-text);
+        background: var(--color-error, #dc3545);
+        color: white;
       }
 
       .attention .segments {
@@ -344,8 +346,11 @@ export class CharCount extends RapidElement {
           </div>`
         : null;
 
+    const attention =
+      this.segments > 2 || (this.segments === 2 && this.extended.length > 0);
+
     return html`<div class="counter${
-      extended ? ' attention' : ''
+      attention ? ' attention' : ''
     }"><div class="counts">${this.count}${
       this.segments > 1 || hasExpressions
         ? html`<div class="segments">
