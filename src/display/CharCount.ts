@@ -260,11 +260,7 @@ export class CharCount extends RapidElement {
 
       .attention .counts {
         transform: scale(0.95);
-        background: rgba(220, 53, 69, 0.15);
-        color: rgba(0, 0, 0, 0.7);
-      }
-
-      .attention .segments {
+        color: var(--color-error, #dc3545);
         font-weight: 600;
       }
 
