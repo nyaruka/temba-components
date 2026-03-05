@@ -168,7 +168,7 @@ export class StickyNote extends RapidElement {
 
       /* Body */
       .sticky-body {
-        padding: 8px 10px;
+        padding: 8px 10px 20px;
         color: var(--sticky-text-color);
         line-height: 1.4;
         min-height: 48px;

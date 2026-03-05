@@ -143,7 +143,10 @@ export const split_by_llm_categorize: NodeConfig = {
       type: 'call_llm',
       uuid: callLlmUuid,
       llm: llmSelection
-        ? { uuid: llmSelection.uuid || llmSelection.value, name: llmSelection.name }
+        ? {
+            uuid: llmSelection.uuid || llmSelection.value,
+            name: llmSelection.name
+          }
         : { uuid: '', name: '' },
       instructions: `@(prompt("categorize", slice(node.categories, 0, -2)))`,
       input: formData.input || '@input',
