@@ -150,81 +150,104 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
     'matchPageSnapshot',
     (filename, clip, excluded, threshold, waitForNetwork = false) => {
       return new Promise(async (resolve, reject) => {
-        // const start = Date.now();
-        const testFile = await getPath(TEST, filename);
-        const truthFile = await getPath(TRUTH, filename);
-
-        // Wait for network idle before taking screenshot
         try {
-          if (waitForNetwork) {
-            await page.waitForNetworkIdle({ idleTime: 500, timeout: 2000 });
-          } else {
-            await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
-          }
-        } catch (error) {
-          console.error(
-            'Error waiting for network idle, proceeding: ' + filename
-          );
-        }
-
-        if (!(await fileExists(truthFile))) {
-          // no truth yet, record it
-          await page.screenshot({ path: truthFile, clip });
-        } else {
-          // if its close, force our file to be the same size as our truth for pixelmatch
-          const dimensions = sizeOf(truthFile);
-          let { width, height } = dimensions;
-
-          // we should have a device ratio of 2
-          width /= 2;
-          height /= 2;
-
-          const wDiff = Math.abs((clip.width - width) / width);
-          const hDiff = Math.abs((clip.height - height) / height);
-
-          if (wDiff < 0.15) {
-            clip.width = width;
-          }
-
-          if (hDiff < 0.15) {
-            clip.height = height;
-          }
-
-          if (!clip.width || !clip.height) {
-            reject({ message: "Couldn't take screenshot clip is empty" });
+          if (page.isClosed()) {
+            resolve(null);
             return;
           }
 
-          // create a test screenshot to compare with our truth
-          await page.screenshot({ path: testFile, clip });
+          const testFile = await getPath(TEST, filename);
+          const truthFile = await getPath(TRUTH, filename);
 
+          // Wait for network idle before taking screenshot
           try {
-            const result = await checkScreenshot(filename, excluded, threshold);
-            // const end = Date.now();
-            // console.log(`Screenshot took ${end - start}ms`);
-            resolve(result);
-          } catch (error) {
-            if (replaceScreenshots) {
-              await page.screenshot({ path: truthFile, clip });
-              resolve();
+            if (waitForNetwork) {
+              await page.waitForNetworkIdle({ idleTime: 500, timeout: 2000 });
+            } else if (wait) {
+              await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });
             } else {
-              reject(error);
+              await page.waitForNetworkIdle({ idleTime: 10, timeout: 100 });
             }
+          } catch (error) {
+            // timeout is expected, proceed with screenshot
+          }
+
+          if (page.isClosed()) {
+            resolve(null);
             return;
           }
-        }
 
-        resolve(true);
+          if (!(await fileExists(truthFile))) {
+            // no truth yet, record it
+            await page.screenshot({ path: truthFile, clip });
+          } else {
+            // if its close, force our file to be the same size as our truth for pixelmatch
+            const dimensions = sizeOf(truthFile);
+            let { width, height } = dimensions;
+
+            // we should have a device ratio of 2
+            width /= 2;
+            height /= 2;
+
+            const wDiff = Math.abs((clip.width - width) / width);
+            const hDiff = Math.abs((clip.height - height) / height);
+
+            if (wDiff < 0.15) {
+              clip.width = width;
+            }
+
+            if (hDiff < 0.15) {
+              clip.height = height;
+            }
+
+            if (!clip.width || !clip.height) {
+              reject({ message: "Couldn't take screenshot clip is empty" });
+              return;
+            }
+
+            // create a test screenshot to compare with our truth
+            await page.screenshot({ path: testFile, clip });
+
+            try {
+              const result = await checkScreenshot(
+                filename,
+                excluded,
+                threshold
+              );
+              resolve(result);
+            } catch (error) {
+              if (replaceScreenshots) {
+                await page.screenshot({ path: truthFile, clip });
+                resolve();
+              } else {
+                reject(error);
+              }
+              return;
+            }
+          }
+
+          resolve(true);
+        } catch (error) {
+          // guard against page closure during screenshot operations
+          if (
+            error.constructor.name === 'TargetCloseError' ||
+            page.isClosed()
+          ) {
+            resolve(null);
+          } else {
+            reject(error);
+          }
+        }
       });
     }
   );
 
   await page.exposeFunction('waitForNetworkIdle', async () => {
-    await page.waitForNetworkIdle();
+    if (!page.isClosed()) await page.waitForNetworkIdle();
   });
 
   await page.exposeFunction('setViewport', async (options) => {
-    await page.setViewport(options);
+    if (!page.isClosed()) await page.setViewport(options);
   });
 
   await page.exposeFunction('waitFor', (millis) => {
@@ -232,10 +255,11 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   });
 
   await page.exposeFunction('moveMouse', async (x, y) => {
-    await page.mouse.move(x, y, { steps: 5 });
+    if (!page.isClosed()) await page.mouse.move(x, y, { steps: 5 });
   });
 
   await page.exposeFunction('mouseClick', async (x, y) => {
+    if (page.isClosed()) return;
     await page.mouse.move(x, y);
     // reset mouse state to avoid "already pressed" errors in Puppeteer 24+
     await page.mouse.up().catch(() => {});
@@ -244,16 +268,18 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   });
 
   await page.exposeFunction('mouseDown', async () => {
+    if (page.isClosed()) return;
     // reset mouse state to avoid "already pressed" errors in Puppeteer 24+
     await page.mouse.up().catch(() => {});
     await page.mouse.down();
   });
 
   await page.exposeFunction('mouseUp', async () => {
-    await page.mouse.up().catch(() => {});
+    if (!page.isClosed()) await page.mouse.up().catch(() => {});
   });
 
   await page.exposeFunction('click', async (element) => {
+    if (page.isClosed()) return;
     const frame = await page.frames().find((f) => {
       return true;
     });
@@ -264,6 +290,7 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   await page.exposeFunction(
     'typeInto',
     async (selector, text, replace = false, enter = false) => {
+      if (page.isClosed()) return;
       const selectors = selector.split(':');
       const frame = await page.frames().find((f) => {
         return true;
@@ -291,13 +318,14 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
   );
 
   await page.exposeFunction('pressKey', async (key, times, options) => {
+    if (page.isClosed()) return;
     for (let i = 0; i < times; i++) {
       await page.keyboard.press(key, options);
     }
   });
 
   await page.exposeFunction('type', async (text) => {
-    await page.keyboard.type(text);
+    if (!page.isClosed()) await page.keyboard.type(text);
   });
 };
 
@@ -449,7 +477,14 @@ export default {
           !!isCopilotEnvironment
         );
 
-        await wireScreenshots(page, context, wait, replaceScreenshots);
+        // serialize wireScreenshots setup to avoid CDP deadlock with concurrent pages
+        if (!globalThis.__wireScreenshotsLock) {
+          globalThis.__wireScreenshotsLock = Promise.resolve();
+        }
+        globalThis.__wireScreenshotsLock = globalThis.__wireScreenshotsLock.then(() =>
+          wireScreenshots(page, context, wait, replaceScreenshots)
+        );
+        await globalThis.__wireScreenshotsLock;
 
         await page.emulateTimezone('GMT');
 

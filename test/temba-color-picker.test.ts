@@ -35,7 +35,7 @@ describe('temba-color-picker', () => {
     });
     (picker.shadowRoot.querySelector('.preview') as HTMLElement).click();
 
-    await assertScreenshot('colorpicker/focused', getClip(picker));
+    await assertScreenshot('colorpicker/focused', getClip(picker), true);
   });
 
   it('selects color', async () => {
@@ -52,6 +52,6 @@ describe('temba-color-picker', () => {
     const page = window as any;
     await page.mouseClick(clip.left + 200, clip.top + 35);
 
-    await assertScreenshot('colorpicker/selected', getClip(picker));
+    await assertScreenshot('colorpicker/selected', getClip(picker), true);
   });
 });
