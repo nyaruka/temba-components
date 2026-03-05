@@ -231,34 +231,26 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
     return new Promise((resolve) => setTimeout(resolve, millis));
   });
 
-  await page.exposeFunction('moveMouse', (x, y) => {
-    return new Promise(async (resolve, reject) => {
-      await page.mouse.move(x, y, { steps: 5 });
-      resolve();
-    });
+  await page.exposeFunction('moveMouse', async (x, y) => {
+    await page.mouse.move(x, y, { steps: 5 });
   });
 
-  await page.exposeFunction('mouseClick', (x, y) => {
-    return new Promise(async (resolve, reject) => {
-      await page.mouse.move(x, y);
-      await page.mouse.down();
-      await page.mouse.up();
-      resolve();
-    });
+  await page.exposeFunction('mouseClick', async (x, y) => {
+    await page.mouse.move(x, y);
+    // reset mouse state to avoid "already pressed" errors in Puppeteer 24+
+    await page.mouse.up().catch(() => {});
+    await page.mouse.down();
+    await page.mouse.up();
   });
 
   await page.exposeFunction('mouseDown', async () => {
-    return new Promise(async (resolve, reject) => {
-      await page.mouse.down();
-      resolve();
-    });
+    // reset mouse state to avoid "already pressed" errors in Puppeteer 24+
+    await page.mouse.up().catch(() => {});
+    await page.mouse.down();
   });
 
   await page.exposeFunction('mouseUp', async () => {
-    return new Promise(async (resolve, reject) => {
-      await page.mouse.up();
-      resolve();
-    });
+    await page.mouse.up().catch(() => {});
   });
 
   await page.exposeFunction('click', async (element) => {
@@ -428,7 +420,8 @@ export default {
           '--use-mock-keychain',
           '--disable-ipc-flooding-protection',
           '--disable-component-update',
-          '--disable-domain-reliability'
+          '--disable-domain-reliability',
+          '--disable-dev-shm-usage'
         ],
         headless: true
       },
@@ -456,9 +449,7 @@ export default {
           !!isCopilotEnvironment
         );
 
-        await page.once('load', async () => {
-          await wireScreenshots(page, context, wait, replaceScreenshots);
-        });
+        await wireScreenshots(page, context, wait, replaceScreenshots);
 
         await page.emulateTimezone('GMT');
 
