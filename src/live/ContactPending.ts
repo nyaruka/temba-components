@@ -92,13 +92,15 @@ export class ContactPending extends EndpointMonitorElement {
         display: flex;
         flex-direction: row;
         align-items: center;
-        box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
+        box-shadow:
+          0 0 8px 1px rgba(0, 0, 0, 0.055),
           0 0 0px 1px rgba(0, 0, 0, 0.02);
       }
 
       .event:hover {
         cursor: pointer;
-        box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.055),
+        box-shadow:
+          0 0 8px 1px rgba(0, 0, 0, 0.055),
           0 0 0px 2px var(--color-link-primary);
       }
 

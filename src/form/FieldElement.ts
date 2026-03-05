@@ -98,14 +98,17 @@ export abstract class FieldElement extends RapidElement {
         padding: 8px 12px;
         margin: 2px 0 0 0;
         border-radius: var(--curvature);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1),
           0 2px 4px -1px rgba(0, 0, 0, 0.06);
         font-size: 0.85em;
         line-height: 1.2;
         opacity: 0;
         visibility: hidden;
         transform: translateY(-12px);
-        transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out,
+        transition:
+          opacity 0.2s ease-in-out,
+          visibility 0.2s ease-in-out,
           transform 0.2s ease-in-out;
       }
 

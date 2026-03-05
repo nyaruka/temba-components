@@ -196,7 +196,8 @@ export class WebChat extends LitElement {
         height: 2em;
         overflow: hidden;
         border-radius: 100%;
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
           inset 0 0 0 0.15em rgba(0, 0, 0, 0.1);
       }
@@ -207,7 +208,8 @@ export class WebChat extends LitElement {
         height: 4em;
         overflow: hidden;
         border-radius: 100%;
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
           inset 0 0 0 0.25em rgba(0, 0, 0, 0.1);
         cursor: pointer;
@@ -218,7 +220,8 @@ export class WebChat extends LitElement {
       }
 
       .toggle:hover {
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
           rgba(0, 0, 0, 0.4) 0px 1px 2px 0px,
           inset 0 0 0 0.25em rgba(0, 0, 0, 0.2);
       }
@@ -264,8 +267,10 @@ export class WebChat extends LitElement {
         width: 28rem;
         border-radius: var(--curvature);
         overflow: hidden;
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
-          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, rgba(0, 0, 0, 0.1) 5em 5em 5em 5em;
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
+          rgba(0, 0, 0, 0.1) 5em 5em 5em 5em;
         position: absolute;
         bottom: 3em;
         right: 1em;

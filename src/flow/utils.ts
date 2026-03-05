@@ -98,14 +98,14 @@ export const renderStringList = (items: string[], icon?: string) => {
   // Add "+X more" if there are more than 3 items (and not exactly 4)
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
-    itemElements.push(html`<div
-      style="display:flex;items-align:center;margin-top:0.2em;"
-    >
-      ${icon
-        ? html`<div style="margin-right:0.4em; width: 1em;"></div>` // spacing placeholder
-        : null}
-      <div style="font-size:0.8em">+${remainingCount} more</div>
-    </div>`);
+    itemElements.push(
+      html`<div style="display:flex;items-align:center;margin-top:0.2em;">
+        ${icon
+          ? html`<div style="margin-right:0.4em; width: 1em;"></div>` // spacing placeholder
+          : null}
+        <div style="font-size:0.8em">+${remainingCount} more</div>
+      </div>`
+    );
   }
   return itemElements;
 };
@@ -159,12 +159,14 @@ export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
 
   if (flows.length > maxDisplay && flows.length !== 4) {
     const remainingCount = flows.length - maxDisplay;
-    itemElements.push(html`<div
-      style="display:flex;items-align:center;margin-top:0.2em;"
-    >
-      ${icon ? html`<div style="margin-right:0.4em; width: 1em;"></div>` : null}
-      <div style="font-size:0.8em">+${remainingCount} more</div>
-    </div>`);
+    itemElements.push(
+      html`<div style="display:flex;items-align:center;margin-top:0.2em;">
+        ${icon
+          ? html`<div style="margin-right:0.4em; width: 1em;"></div>`
+          : null}
+        <div style="font-size:0.8em">+${remainingCount} more</div>
+      </div>`
+    );
   }
   return itemElements;
 };

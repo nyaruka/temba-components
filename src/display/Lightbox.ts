@@ -155,9 +155,8 @@ export class Lightbox extends RapidElement {
     }
 
     if (this.zoom) {
-      styles[
-        'transform'
-      ] = `translate(${this.xTrans}px, ${this.yTrans}px) scale(${this.scale}, ${this.scale})`;
+      styles['transform'] =
+        `translate(${this.xTrans}px, ${this.yTrans}px) scale(${this.scale}, ${this.scale})`;
     }
 
     return html`

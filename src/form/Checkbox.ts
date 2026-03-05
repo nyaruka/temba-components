@@ -162,8 +162,8 @@ export class Checkbox extends FieldElement {
       name="${this.checked
         ? Icon.checkbox_checked
         : this.partial
-        ? Icon.checkbox_partial
-        : Icon.checkbox}"
+          ? Icon.checkbox_partial
+          : Icon.checkbox}"
       size="${this.size}"
       animatechange="${this.animateChange}"
     ></temba-icon>`;

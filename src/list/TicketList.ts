@@ -52,7 +52,7 @@ export class TicketList extends TembaList {
               ${contact.ticket.closed_on
                 ? null
                 : contact.last_msg
-                ? html`
+                  ? html`
                     <div
                       style="font-size: 0.9em; display: -webkit-box;  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
                     >
@@ -67,21 +67,21 @@ export class TicketList extends TembaList {
                         contact.last_msg.text
                           ? contact.last_msg.text
                           : contact.last_msg.attachments
-                          ? html`<div style="display:inline-block">
-                              <div style="display:flex; margin-left:0.2em">
-                                <temba-icon
-                                  name="${Icon.attachment}"
-                                ></temba-icon>
-                                <div style="flex-grow:1;margin-left:0.2em">
-                                  Attachment
+                            ? html`<div style="display:inline-block">
+                                <div style="display:flex; margin-left:0.2em">
+                                  <temba-icon
+                                    name="${Icon.attachment}"
+                                  ></temba-icon>
+                                  <div style="flex-grow:1;margin-left:0.2em">
+                                    Attachment
+                                  </div>
                                 </div>
-                              </div>
-                            </div>`
-                          : 'Unsupported Message'
+                              </div>`
+                            : 'Unsupported Message'
                       }
                     </div></div>
                   `
-                : null}
+                  : null}
             </div>
             <div
               style="margin-right: -5px; margin-top: 0px;display:flex;flex-direction:column;align-items:flex-end;max-width:60px;min-width:30px;border:0px solid green;text-align:right"

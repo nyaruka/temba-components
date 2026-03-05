@@ -21,8 +21,8 @@ export class FloatingTab extends RapidElement {
         border-bottom-left-radius: 8px;
         cursor: pointer;
         box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
-        transition: transform calc(var(--transition-duration, 300ms) * 0.7)
-            ease-in-out,
+        transition:
+          transform calc(var(--transition-duration, 300ms) * 0.7) ease-in-out,
           padding-right calc(var(--transition-duration, 300ms) * 0.7)
             ease-in-out,
           box-shadow calc(var(--transition-duration, 300ms) * 0.7) ease-in-out;

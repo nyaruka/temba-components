@@ -246,7 +246,8 @@ export class Chat extends RapidElement {
         height: 4em;
         overflow: hidden;
         border-radius: 100%;
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
           inset 0 0 0 0.25em rgba(0, 0, 0, 0.1);
         cursor: pointer;
@@ -257,7 +258,8 @@ export class Chat extends RapidElement {
       }
 
       .toggle:hover {
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 0px 1em 0.7em,
           rgba(0, 0, 0, 0.4) 0px 1px 2px 0px,
           inset 0 0 0 0.25em rgba(0, 0, 0, 0.2);
       }
@@ -395,8 +397,10 @@ export class Chat extends RapidElement {
         width: 28rem;
         border-radius: var(--curvature);
         overflow: hidden;
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
-          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, rgba(0, 0, 0, 0.1) 5em 5em 5em 5em;
+        box-shadow:
+          rgba(0, 0, 0, 0.1) 0px 3px 7px 0px,
+          rgba(0, 0, 0, 0.2) 0px 1px 2px 0px,
+          rgba(0, 0, 0, 0.1) 5em 5em 5em 5em;
         position: absolute;
         bottom: 3em;
         right: 1em;
@@ -634,7 +638,8 @@ export class Chat extends RapidElement {
         margin: 0;
         padding: 0.5em 1em;
         border-radius: var(--curvature);
-        box-shadow: rgba(0, 0, 0, 0.05) 0px 3px 7px 0px,
+        box-shadow:
+          rgba(0, 0, 0, 0.05) 0px 3px 7px 0px,
           rgba(0, 0, 0, 0.2) 0px 1px 2px 0px;
         border: 1px solid #f3f3f3;
         opacity: 0;
@@ -668,7 +673,8 @@ export class Chat extends RapidElement {
         color: white;
         padding: 0.75em 1.5em;
         border-radius: var(--curvature);
-        box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 7px 0px,
+        box-shadow:
+          rgba(0, 0, 0, 0.2) 0px 3px 7px 0px,
           rgba(0, 0, 0, 0.3) 0px 1px 2px 0px;
         cursor: pointer;
         opacity: 0;
@@ -686,7 +692,8 @@ export class Chat extends RapidElement {
 
       .new-message-notification:hover {
         background: var(--color-primary-darker, #2b7ac4);
-        box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 10px 0px,
+        box-shadow:
+          rgba(0, 0, 0, 0.3) 0px 4px 10px 0px,
           rgba(0, 0, 0, 0.4) 0px 2px 4px 0px;
       }
     `;
@@ -1047,8 +1054,8 @@ export class Chat extends RapidElement {
       const format = isDifferentYear
         ? VERBOSE_FORMAT_WITH_YEAR
         : today.getDate() !== firstMsg.created_on.getDate()
-        ? VERBOSE_FORMAT
-        : TIME_FORMAT;
+          ? VERBOSE_FORMAT
+          : TIME_FORMAT;
 
       timeForReason = html`<div class="time time-elapsed">
         ${firstMsg.created_on.toLocaleTimeString(undefined, format)}
@@ -1121,8 +1128,8 @@ export class Chat extends RapidElement {
     const errorMessage = unsendableReason
       ? getUnsendableReasonMessage(unsendableReason)
       : statusReason
-      ? getStatusReasonMessage(statusReason)
-      : null;
+        ? getStatusReasonMessage(statusReason)
+        : null;
 
     const logsURL =
       this.showMessageLogsAfter &&
@@ -1184,11 +1191,11 @@ export class Chat extends RapidElement {
               </div>
             </div>`
           : message.msg.text && !textIsCoordinates
-          ? html`<div class="bubble">
-              ${name ? html`<div class="name">${name}</div>` : null}
-              <div class="message-text">${message.msg.text}</div>
-            </div>`
-          : null}
+            ? html`<div class="bubble">
+                ${name ? html`<div class="name">${name}</div>` : null}
+                <div class="message-text">${message.msg.text}</div>
+              </div>`
+            : null}
 
         <div class="attachments">
           ${(message.msg.attachments || []).map(

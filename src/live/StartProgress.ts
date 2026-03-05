@@ -122,9 +122,12 @@ export class StartProgress extends RapidElement {
 
         if (!this.complete && this.current < this.total) {
           // refresh with a backoff up to 1 minute
-          setTimeout(() => {
-            this.refresh();
-          }, Math.min(1000 * this.refreshes, 60000));
+          setTimeout(
+            () => {
+              this.refresh();
+            },
+            Math.min(1000 * this.refreshes, 60000)
+          );
         }
 
         if (this.complete) {

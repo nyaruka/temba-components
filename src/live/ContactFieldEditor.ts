@@ -591,10 +591,10 @@ export class ContactFieldEditor extends RapidElement {
         ${this.type === 'datetime'
           ? this.renderDateField(state)
           : this.type === 'state' ||
-            this.type === 'district' ||
-            this.type === 'ward'
-          ? this.renderLocationField(this.type)
-          : this.renderTextField(state)}
+              this.type === 'district' ||
+              this.type === 'ward'
+            ? this.renderLocationField(this.type)
+            : this.renderTextField(state)}
       </div>
     `;
   }

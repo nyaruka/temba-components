@@ -31,8 +31,8 @@ export const unicodeSplit = function (message, options) {
       content: options.summary
         ? undefined
         : partEnd
-        ? message.substring(partStart, partEnd + 1)
-        : message.substring(partStart),
+          ? message.substring(partStart, partEnd + 1)
+          : message.substring(partStart),
       length: length,
       bytes: bytes
     };

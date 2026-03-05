@@ -521,8 +521,8 @@ export class NodeTypeSelector extends RapidElement {
       this.mode === 'split'
         ? 'Select a Split'
         : this.mode === 'action-no-branching'
-        ? 'Add Action'
-        : 'Select an Action';
+          ? 'Add Action'
+          : 'Select an Action';
 
     // Separate regular and branching categories for action mode
     const regularCategories = categories.filter((c) => !c.isBranching);

@@ -353,7 +353,8 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       .info-text {
         opacity: 1;
-        transition: padding-top var(--transition-speed) ease-in-out,
+        transition:
+          padding-top var(--transition-speed) ease-in-out,
           padding-bottom var(--transition-speed) ease-in-out;
         margin-bottom: 16px;
         padding: 0.5em 1em;
@@ -1872,8 +1873,8 @@ export class Select<T extends SelectOption> extends FieldElement {
           
         
         <div class="info-text ${!this.infoText ? 'hide' : ''} ${
-      this.focused ? 'focused' : ''
-    }">${this.infoText}</div></div></div>
+          this.focused ? 'focused' : ''
+        }">${this.infoText}</div></div></div>
 
     
     <temba-options

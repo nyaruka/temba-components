@@ -96,7 +96,8 @@ export class Dialog extends ResizeElement {
 
       .dialog-mask .dialog-container {
         position: relative;
-        transition: transform var(--transition-speed) ease-in-out,
+        transition:
+          transform var(--transition-speed) ease-in-out,
           opacity ease-in-out calc(var(--transition-speed) - 50ms);
         border-radius: var(--curvature);
         box-shadow: 0px 0px 2px 4px rgba(0, 0, 0, 0.06);

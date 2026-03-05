@@ -202,8 +202,7 @@ export class Store extends RapidElement {
           ) {
             languages[result.value] = result.name;
             return languages;
-          },
-          {});
+          }, {});
         })
       );
     }
