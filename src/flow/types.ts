@@ -94,6 +94,11 @@ export interface FormConfig {
   gutter?: LayoutItem[];
   sanitize?: (formData: FormData) => void;
   validate?: (formData: FormData) => ValidationResult;
+
+  // Async hook to resolve additional data after form initialization.
+  // Called once when the form opens. Useful for fetching metadata (e.g. parent_refs)
+  // that isn't available from the node data alone.
+  resolveFormData?: (formData: FormData) => Promise<FormData>;
 }
 
 export interface NodeConfig extends FormConfig {
@@ -217,6 +222,7 @@ export interface KeyValueFieldConfig extends BaseFieldConfig {
   keyPlaceholder?: string;
   valuePlaceholder?: string;
   minRows?: number;
+  readOnlyKeys?: boolean;
 }
 
 export interface ArrayFieldConfig extends BaseFieldConfig {

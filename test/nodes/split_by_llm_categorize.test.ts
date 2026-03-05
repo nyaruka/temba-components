@@ -263,7 +263,7 @@ describe('split_by_llm_categorize node config', () => {
 
       expect(formData.uuid).to.equal('test-node');
       expect(formData.llm).to.deep.equal([
-        { value: 'llm-123', name: 'Test LLM' }
+        { uuid: 'llm-123', name: 'Test LLM' }
       ]);
       expect(formData.input).to.equal('@input');
       expect(formData.categories).to.deep.equal([
@@ -493,7 +493,9 @@ describe('split_by_llm_categorize node config', () => {
 
       // Should match original data
       expect(recoveredFormData.uuid).to.equal(originalFormData.uuid);
-      expect(recoveredFormData.llm).to.deep.equal(originalFormData.llm);
+      expect(recoveredFormData.llm).to.deep.equal([
+        { uuid: 'llm-uuid-123', name: 'Claude' }
+      ]);
       expect(recoveredFormData.input).to.equal(originalFormData.input);
       expect(recoveredFormData.categories).to.deep.equal(
         originalFormData.categories

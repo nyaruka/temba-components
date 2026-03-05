@@ -8,7 +8,7 @@ import {
   Node,
   NodeUI
 } from '../store/flow-definition';
-import { getStore } from '../store/Store';
+import { getStore, Store } from '../store/Store';
 import {
   AppState,
   FlowIssue,
@@ -18,7 +18,7 @@ import {
 } from '../store/AppState';
 import { RapidElement } from '../RapidElement';
 import { repeat } from 'lit-html/directives/repeat.js';
-import { CustomEventType, Workspace } from '../interfaces';
+import { CustomEventType, DirtyTrackable, Workspace } from '../interfaces';
 import {
   generateUUID,
   postJSON,
@@ -327,6 +327,18 @@ export class Editor extends RapidElement {
   } | null = null;
 
   private translationCache = new Map<string, string>();
+
+  private dirtyAdapter: DirtyTrackable = {
+    dirtyMessage:
+      'Your flow is still saving. If you leave now, your latest changes may be lost.',
+    markClean: () => {
+      // no-op — the editor manages its own save lifecycle
+    }
+  };
+
+  private boundBeforeUnload = (e: BeforeUnloadEvent) => {
+    e.preventDefault();
+  };
 
   // NodeEditor state - handles both node and action editing
   @state()
@@ -1337,6 +1349,21 @@ export class Editor extends RapidElement {
       }
     }
 
+    if (changes.has('isSaving')) {
+      const store = document.querySelector('temba-store') as Store;
+      if (this.isSaving) {
+        window.addEventListener('beforeunload', this.boundBeforeUnload);
+        if (store?.markDirty) {
+          store.markDirty(this.dirtyAdapter);
+        }
+      } else {
+        window.removeEventListener('beforeunload', this.boundBeforeUnload);
+        if (store?.markClean) {
+          store.markClean(this.dirtyAdapter);
+        }
+      }
+    }
+
     if (changes.has('saveError') && this.saveError) {
       this.showSaveErrorDialog(this.saveError);
       this.saveError = null;
@@ -1539,6 +1566,11 @@ export class Editor extends RapidElement {
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this.stopAutoScroll();
+    window.removeEventListener('beforeunload', this.boundBeforeUnload);
+    const store = document.querySelector('temba-store') as Store;
+    if (store?.markClean) {
+      store.markClean(this.dirtyAdapter);
+    }
     if (this.saveTimer !== null) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
@@ -1627,6 +1659,16 @@ export class Editor extends RapidElement {
       CustomEventType.NodeDeleted,
       this.handleNodeDeleted.bind(this)
     );
+
+    // Listen for sticky note deletion events
+    this.addEventListener(CustomEventType.StickyNoteDeleted, ((
+      event: CustomEvent
+    ) => {
+      const uuid = event.detail?.uuid;
+      if (uuid) {
+        getStore().getState().removeStickyNotes([uuid]);
+      }
+    }) as EventListener);
 
     // Listen for canvas menu selections
     this.addEventListener(CustomEventType.Selection, (event: CustomEvent) => {

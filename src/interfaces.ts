@@ -1,3 +1,8 @@
+export interface DirtyTrackable {
+  dirtyMessage?: string;
+  markClean(): void;
+}
+
 export interface Workspace {
   uuid: string;
   name: string;
@@ -296,6 +301,7 @@ export enum CustomEventType {
   Moved = 'temba-moved',
   DateRangeChanged = 'temba-date-range-changed',
   NodeDeleted = 'temba-node-deleted',
+  StickyNoteDeleted = 'temba-sticky-note-deleted',
   ActionEditRequested = 'temba-action-edit-requested',
   AddActionRequested = 'temba-add-action-requested',
   ActionSaved = 'temba-action-saved',

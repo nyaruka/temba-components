@@ -1,6 +1,7 @@
 import { css, html, PropertyValueMap, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
+import { CustomEventType } from '../interfaces';
 import { StickyNote as StickyNoteData } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
@@ -21,10 +22,14 @@ export class StickyNote extends RapidElement {
   @property({ type: Boolean })
   private colorPickerExpanded = false;
 
+  @property({ type: Boolean })
+  private removing = false;
+
   // On touch devices, contenteditable starts false to prevent Apple Pencil
   // Scribble from hijacking touches. It is set to true on explicit tap.
   private isTouchDevice = navigator.maxTouchPoints > 0;
   private editingField: HTMLElement | null = null;
+  private removalTimeout: number | null = null;
 
   @fromStore(zustand, (state: AppState) => state.isTranslating)
   private isTranslating!: boolean;
@@ -178,6 +183,62 @@ export class StickyNote extends RapidElement {
       }
 
       .sticky-note:focus-within .sticky-title-container > .drag-handle {
+      }
+
+      /* Remove button */
+      .remove-button {
+        background: transparent;
+        border: none;
+        color: var(--sticky-text-color);
+        visibility: hidden;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        line-height: 1;
+        z-index: 10;
+        transition: all 100ms ease-in-out;
+        align-self: center;
+        margin-right: 0.3em;
+        width: 1em;
+        pointer-events: auto;
+      }
+
+      .sticky-note:hover .remove-button {
+        visibility: visible;
+        opacity: 0.7;
+      }
+
+      .remove-button:hover {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .remove-button.touch-visible {
+        visibility: visible !important;
+        opacity: 0.7;
+      }
+
+      /* Removing state */
+      .sticky-title-container.removing {
+        background-color: var(--color-error, #dc3545) !important;
+      }
+
+      .sticky-title-container.removing .sticky-title,
+      .sticky-title-container.removing .remove-button {
+        color: white;
+      }
+
+      .sticky-title-container.removing .drag-handle {
+        --icon-color: white;
+      }
+
+      .sticky-title-container.removing .remove-button {
+        visibility: visible;
+        opacity: 0.7;
+      }
+
+      .sticky-title-container.removing .remove-button:hover {
+        opacity: 1;
       }
 
       /* Focus/active states */
@@ -437,6 +498,44 @@ export class StickyNote extends RapidElement {
     this.requestUpdate();
   }
 
+  private handleRemoveClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.removing) {
+      // Second click — delete the sticky note
+      this.resetRemovingState();
+      this.fireCustomEvent(CustomEventType.StickyNoteDeleted, {
+        uuid: this.uuid
+      });
+      return;
+    }
+
+    // First click — show confirmation
+    this.removing = true;
+
+    if (this.removalTimeout !== null) {
+      clearTimeout(this.removalTimeout);
+    }
+
+    this.removalTimeout = window.setTimeout(() => {
+      this.resetRemovingState();
+    }, 1000);
+  }
+
+  private resetRemovingState(): void {
+    this.removing = false;
+    if (this.removalTimeout !== null) {
+      clearTimeout(this.removalTimeout);
+      this.removalTimeout = null;
+    }
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.resetRemovingState();
+  }
+
   public render(): TemplateResult {
     if (!this.data) {
       return html`<div class="sticky-note" style="display: none;"></div>`;
@@ -452,7 +551,7 @@ export class StickyNote extends RapidElement {
         style="${style}"
         data-uuid="${this.uuid}"
       >
-        <div class="sticky-title-container">
+        <div class="sticky-title-container ${this.removing ? 'removing' : ''}">
           <temba-icon
             name="drag"
             class="drag-handle"
@@ -460,13 +559,28 @@ export class StickyNote extends RapidElement {
           ></temba-icon>
           <div
             class="sticky-title"
-            contenteditable="${!this.isTranslating && !this.isTouchDevice}"
+            contenteditable="${!this.isTranslating &&
+            !this.isTouchDevice &&
+            !this.removing}"
             @blur="${this.handleTitleBlur}"
             @keydown="${this.handleTitleKeyDown}"
             @mousedown="${this.handleContentMouseDown}"
             @touchend="${this.handleContentTap}"
-            .textContent="${this.data.title}"
+            .textContent="${this.removing ? 'Remove?' : this.data.title}"
           ></div>
+          ${!this.isTranslating
+            ? html`<div
+                class="remove-button ${this.isTouchDevice
+                  ? 'touch-visible'
+                  : ''}"
+                @click=${this.handleRemoveClick}
+                @mousedown=${(e: MouseEvent) => e.stopPropagation()}
+                @touchstart=${(e: TouchEvent) => e.stopPropagation()}
+                title="Remove note"
+              >
+                ✕
+              </div>`
+            : ''}
         </div>
         <div class="sticky-body-container">
           <div

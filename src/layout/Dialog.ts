@@ -365,10 +365,6 @@ export class Dialog extends ResizeElement {
           .forEach((button: Button) => {
             if (button) button.submitting = false;
           });
-
-        if (!this.noFocus) {
-          this.focusFirstInput();
-        }
       } else {
         window.setTimeout(() => {
           this.ready = false;

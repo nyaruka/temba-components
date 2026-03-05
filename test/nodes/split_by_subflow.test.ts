@@ -29,11 +29,17 @@ describe('split_by_subflow node config', () => {
       expect(split_by_subflow.form.flow).to.exist;
       expect(split_by_subflow.form.flow.type).to.equal('select');
       expect(split_by_subflow.form.flow.required).to.be.true;
+      expect(split_by_subflow.form.params).to.exist;
+      expect(split_by_subflow.form.params.type).to.equal('key-value');
     });
 
-    it('has layout configuration', () => {
+    it('has layout with accordion for parameters', () => {
       expect(split_by_subflow.layout).to.exist;
-      expect(split_by_subflow.layout).to.deep.equal(['flow']);
+      expect(split_by_subflow.layout[0]).to.equal('flow');
+      expect((split_by_subflow.layout[1] as any).type).to.equal('accordion');
+      expect((split_by_subflow.layout[1] as any).sections[0].label).to.equal(
+        'Parameters'
+      );
     });
   });
 
@@ -80,6 +86,62 @@ describe('split_by_subflow node config', () => {
         uuid: 'flow-123',
         name: 'Registration Flow'
       });
+      expect(formData.params).to.deep.equal({});
+    });
+
+    it('extracts params from set_run_result actions', () => {
+      const node: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            uuid: 'result-1',
+            type: 'set_run_result',
+            name: 'language',
+            value: '@contact.language',
+            category: ''
+          } as any,
+          {
+            uuid: 'result-2',
+            type: 'set_run_result',
+            name: 'age',
+            value: '@fields.age',
+            category: ''
+          } as any,
+          {
+            uuid: 'test-action',
+            type: 'enter_flow',
+            flow: { uuid: 'flow-123', name: 'Registration Flow' }
+          } as any
+        ],
+        router: {
+          type: 'switch',
+          operand: '@child.status',
+          cases: [
+            {
+              uuid: 'case-1',
+              type: 'has_only_text',
+              arguments: ['completed'],
+              category_uuid: 'cat-1'
+            }
+          ],
+          categories: [
+            { uuid: 'cat-1', name: 'Complete', exit_uuid: 'exit-1' },
+            { uuid: 'cat-2', name: 'Expired', exit_uuid: 'exit-2' }
+          ],
+          default_category_uuid: 'cat-2'
+        },
+        exits: [
+          { uuid: 'exit-1', destination_uuid: null },
+          { uuid: 'exit-2', destination_uuid: null }
+        ]
+      };
+
+      const formData = split_by_subflow.toFormData(node);
+
+      expect(formData.params).to.deep.equal({
+        language: '@contact.language',
+        age: '@fields.age'
+      });
     });
 
     it('handles empty node', () => {
@@ -94,6 +156,7 @@ describe('split_by_subflow node config', () => {
       expect(formData.uuid).to.equal('test-node');
       expect(formData.flow).to.be.an('array');
       expect(formData.flow).to.have.lengthOf(0);
+      expect(formData.params).to.deep.equal({});
     });
   });
 
@@ -133,6 +196,66 @@ describe('split_by_subflow node config', () => {
 
       // Check exits
       expect(node.exits).to.have.length(2);
+    });
+
+    it('creates set_run_result actions for params', () => {
+      const formData = {
+        uuid: 'test-node',
+        flow: [{ uuid: 'flow-123', name: 'Registration Flow' }],
+        params: {
+          language: '@contact.language',
+          age: '@fields.age'
+        }
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: []
+      };
+
+      const node = split_by_subflow.fromFormData(formData, originalNode);
+
+      // Should have set_run_result actions before enter_flow
+      expect(node.actions).to.have.length(3);
+      expect(node.actions[0].type).to.equal('set_run_result');
+      expect(node.actions[1].type).to.equal('set_run_result');
+      expect(node.actions[2].type).to.equal('enter_flow');
+
+      // Check set_run_result actions
+      const param1 = node.actions[0] as any;
+      expect(param1.name).to.equal('language');
+      expect(param1.value).to.equal('@contact.language');
+
+      const param2 = node.actions[1] as any;
+      expect(param2.name).to.equal('age');
+      expect(param2.value).to.equal('@fields.age');
+    });
+
+    it('skips empty param values', () => {
+      const formData = {
+        uuid: 'test-node',
+        flow: [{ uuid: 'flow-123', name: 'Registration Flow' }],
+        params: {
+          language: '@contact.language',
+          age: '',
+          empty: '   '
+        }
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: []
+      };
+
+      const node = split_by_subflow.fromFormData(formData, originalNode);
+
+      // Only non-empty params should become actions
+      expect(node.actions).to.have.length(2);
+      expect(node.actions[0].type).to.equal('set_run_result');
+      expect((node.actions[0] as any).name).to.equal('language');
+      expect(node.actions[1].type).to.equal('enter_flow');
     });
 
     it('handles empty flow selection', () => {
@@ -204,8 +327,11 @@ describe('split_by_subflow node config', () => {
 
       const node = split_by_subflow.fromFormData(formData, existingNode);
 
+      // enter_flow action is the last action (after any params)
+      const enterFlowAction = node.actions[node.actions.length - 1];
+
       // Should preserve action UUID
-      expect(node.actions[0].uuid).to.equal('existing-action-uuid');
+      expect(enterFlowAction.uuid).to.equal('existing-action-uuid');
 
       // Should preserve router structure UUIDs
       expect(node.router.categories[0].uuid).to.equal('existing-cat-1');
@@ -214,9 +340,9 @@ describe('split_by_subflow node config', () => {
       expect(node.exits[1].uuid).to.equal('existing-exit-2');
 
       // But should update the flow
-      const enterFlowAction = node.actions[0] as any;
-      expect(enterFlowAction.flow.uuid).to.equal('flow-new');
-      expect(enterFlowAction.flow.name).to.equal('New Flow');
+      const action = enterFlowAction as any;
+      expect(action.flow.uuid).to.equal('flow-new');
+      expect(action.flow.name).to.equal('New Flow');
     });
   });
 
@@ -270,6 +396,143 @@ describe('split_by_subflow node config', () => {
 
       // Should match the original structure
       expect(resultNode).to.deep.equal(originalNode);
+    });
+
+    it('should preserve params through round-trip', () => {
+      const originalNode: Node = {
+        uuid: 'test-node-uuid',
+        actions: [
+          {
+            uuid: 'result-uuid',
+            type: 'set_run_result',
+            name: 'language',
+            value: '@contact.language',
+            category: ''
+          } as any,
+          {
+            uuid: 'action-uuid',
+            type: 'enter_flow',
+            flow: { uuid: 'flow-456', name: 'My Subflow' }
+          } as any
+        ],
+        router: {
+          type: 'switch',
+          operand: '@child.status',
+          cases: [
+            {
+              uuid: 'case-uuid',
+              type: 'has_only_text',
+              arguments: ['completed'],
+              category_uuid: 'cat-complete'
+            }
+          ],
+          categories: [
+            {
+              uuid: 'cat-complete',
+              name: 'Complete',
+              exit_uuid: 'exit-complete'
+            },
+            {
+              uuid: 'cat-expired',
+              name: 'Expired',
+              exit_uuid: 'exit-expired'
+            }
+          ],
+          default_category_uuid: 'cat-expired'
+        },
+        exits: [
+          { uuid: 'exit-complete', destination_uuid: null },
+          { uuid: 'exit-expired', destination_uuid: null }
+        ]
+      };
+
+      const formData = split_by_subflow.toFormData(originalNode);
+
+      expect(formData.params).to.deep.equal({
+        language: '@contact.language'
+      });
+
+      const resultNode = split_by_subflow.fromFormData(formData, originalNode);
+
+      // Should have set_run_result + enter_flow actions
+      expect(resultNode.actions).to.have.length(2);
+      expect(resultNode.actions[0].type).to.equal('set_run_result');
+      expect((resultNode.actions[0] as any).name).to.equal('language');
+      expect((resultNode.actions[0] as any).value).to.equal(
+        '@contact.language'
+      );
+      expect(resultNode.actions[1].type).to.equal('enter_flow');
+
+      // enter_flow UUID preserved
+      expect(resultNode.actions[1].uuid).to.equal('action-uuid');
+    });
+  });
+
+  describe('params computeValue', () => {
+    const computeValue = (split_by_subflow.form.params as any).computeValue;
+
+    it('populates params from parent_refs', () => {
+      const values = {
+        flow: [{ uuid: 'flow-1', name: 'Test', parent_refs: ['lang', 'age'] }]
+      };
+
+      const result = computeValue(values, []);
+
+      expect(result).to.deep.equal([
+        { key: 'lang', value: '' },
+        { key: 'age', value: '' }
+      ]);
+    });
+
+    it('preserves existing values when parent_refs match', () => {
+      const values = {
+        flow: [{ uuid: 'flow-1', name: 'Test', parent_refs: ['lang', 'age'] }]
+      };
+      const currentValue = [
+        { key: 'lang', value: '@contact.language' },
+        { key: 'age', value: '' }
+      ];
+
+      const result = computeValue(values, currentValue);
+
+      expect(result).to.deep.equal([
+        { key: 'lang', value: '@contact.language' },
+        { key: 'age', value: '' }
+      ]);
+    });
+
+    it('clears params when no parent_refs', () => {
+      const values = {
+        flow: [{ uuid: 'flow-1', name: 'Test' }]
+      };
+      const currentValue = [{ key: 'custom', value: 'val' }];
+
+      const result = computeValue(values, currentValue);
+
+      expect(result).to.deep.equal([]);
+    });
+
+    it('clears params when no flow selected', () => {
+      const values = { flow: [] };
+      const currentValue = [{ key: 'test', value: 'val' }];
+
+      const result = computeValue(values, currentValue);
+
+      expect(result).to.deep.equal([]);
+    });
+
+    it('handles Record format current value', () => {
+      const values = {
+        flow: [{ uuid: 'flow-1', name: 'Test', parent_refs: ['lang', 'age'] }]
+      };
+      const currentValue = { lang: '@contact.language', age: '' };
+
+      const result = computeValue(values, currentValue);
+
+      expect(result).to.deep.equal([
+        { key: 'lang', value: '@contact.language' },
+        { key: 'age', value: '' }
+      ]);
     });
   });
 

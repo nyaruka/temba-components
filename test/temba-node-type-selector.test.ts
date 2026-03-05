@@ -224,7 +224,33 @@ describe('temba-node-type-selector', () => {
     expect(titles).to.include('Wait for Menu');
   });
 
-  it('filters by features - AI feature enables AI splits', async () => {
+  it('shows Call AI in Actions that Branch without requiring AI feature', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = [];
+    await selector.updateComplete;
+    selector.show('action', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // get all node item titles
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
+
+    // Call AI should appear in the Actions that Branch section
+    expect(titles).to.include('Call AI');
+
+    // verify it's in the branching section
+    const branchingSection =
+      selector.shadowRoot?.querySelector('.section-branching');
+    const branchingTitles = Array.from(
+      branchingSection?.querySelectorAll('.node-item-title') || []
+    ).map((item) => item.textContent?.trim());
+    expect(branchingTitles).to.include('Call AI');
+  });
+
+  it('filters by features - AI feature does not show Split by AI in split mode', async () => {
     const selector = await createSelector();
     selector.flowType = 'message';
     selector.features = ['ai'];
@@ -257,7 +283,8 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // without ai feature, should not have Call AI or Split by AI
+    // Call AI has showAsAction so it doesn't appear in split mode
+    // Split by AI has flowTypes: [] so it doesn't appear anywhere
     expect(titles).to.not.include('Call AI');
     expect(titles).to.not.include('Split by AI');
   });

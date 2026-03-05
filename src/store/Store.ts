@@ -18,7 +18,8 @@ import {
   KeyedAssets,
   CustomEventType,
   Workspace,
-  Shortcut
+  Shortcut,
+  DirtyTrackable
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import { lru } from 'tiny-lru';
@@ -26,7 +27,6 @@ import { DateTime } from 'luxon';
 import { css, html } from 'lit';
 import { configureLocalization } from '@lit/localize';
 import { sourceLocale, targetLocales } from '../locales/locale-codes';
-import { StoreMonitorElement } from './StoreMonitorElement';
 import { getFullName } from '../display/TembaUser';
 import { AppState, zustand } from './AppState';
 import { StoreApi } from 'zustand/vanilla';
@@ -113,9 +113,9 @@ export class Store extends RapidElement {
   // http promise to monitor for completeness
   public initialHttpComplete: Promise<void | WebResponse[]>;
 
-  private dirtyElements: StoreMonitorElement[] = [];
+  private dirtyElements: DirtyTrackable[] = [];
 
-  public markDirty(ele: StoreMonitorElement) {
+  public markDirty(ele: DirtyTrackable) {
     if (!this.dirtyElements.includes(ele)) {
       this.dirtyElements.push(ele);
     }
@@ -126,7 +126,7 @@ export class Store extends RapidElement {
     this.dirtyElements = [];
   }
 
-  public markClean(ele: StoreMonitorElement) {
+  public markClean(ele: DirtyTrackable) {
     this.dirtyElements = this.dirtyElements.filter((el) => el !== ele);
   }
 

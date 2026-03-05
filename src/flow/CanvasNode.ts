@@ -198,6 +198,14 @@ export class CanvasNode extends RapidElement {
         background: repeating-linear-gradient(120deg, tomato, tomato 6px, #ff7056 0, #ff7056 18px) !important;
       }
 
+      /* Disable links on actions/nodes with issues */
+      .action-content.has-issues .linked-name div,
+      .node.has-issues > .router .linked-name div {
+        text-decoration: none !important;
+        cursor: default !important;
+        pointer-events: none;
+      }
+
       .action.sortable {
         display: flex;
         align-items: stretch;
@@ -990,15 +998,30 @@ export class CanvasNode extends RapidElement {
     return { x: rect.left + rect.width / 2, y: rect.top };
   }
 
+  /**
+   * Returns true if the click target is inside a `.linked-name` that is
+   * still active (i.e. the containing action/node has no issues).
+   * When an action/node has issues, links are visually disabled and clicks
+   * should fall through to open the editor instead.
+   */
+  private isActiveLink(target: HTMLElement, action?: Action): boolean {
+    if (!target.closest('.linked-name')) return false;
+    if (action) return !this.issuesByAction?.has(action.uuid);
+    return !(
+      this.issuesByNode?.has(this.node.uuid) ||
+      this.node.actions?.some((a) => this.issuesByAction?.has(a.uuid))
+    );
+  }
+
   private handleActionMouseDown(event: MouseEvent, action: Action): void {
     if (isRightClick(event)) return;
 
-    // Don't handle clicks on the remove button, drag handle, linked elements, or when action is in removing state
+    // Don't handle clicks on the remove button, drag handle, active linked elements, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
       return;
@@ -1021,12 +1044,12 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button, drag handle, linked elements, or when action is in removing state
+    // Don't handle clicks on the remove button, drag handle, active linked elements, or when action is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
       this.actionClickStartPos = null;
@@ -1074,7 +1097,7 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
       return;
@@ -1100,7 +1123,7 @@ export class CanvasNode extends RapidElement {
     if (
       target.closest('.remove-button') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target, action) ||
       this.actionRemovingState.has(action.uuid)
     ) {
       this.actionClickStartPos = null;
@@ -1193,14 +1216,14 @@ export class CanvasNode extends RapidElement {
   private handleNodeMouseDown(event: MouseEvent): void {
     if (isRightClick(event)) return;
 
-    // Don't handle clicks on the remove button, exits, drag handle, linked elements, or when node is in removing state
+    // Don't handle clicks on the remove button, exits, drag handle, active linked elements, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       return;
@@ -1220,14 +1243,14 @@ export class CanvasNode extends RapidElement {
       return;
     }
 
-    // Don't handle clicks on the remove button, exits, drag handle, linked elements, or when node is in removing state
+    // Don't handle clicks on the remove button, exits, drag handle, active linked elements, or when node is in removing state
     const target = event.target as HTMLElement;
     if (
       target.closest('.remove-button') ||
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       this.nodeClickStartPos = null;
@@ -1288,7 +1311,7 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       return;
@@ -1313,7 +1336,7 @@ export class CanvasNode extends RapidElement {
       target.closest('.exit') ||
       target.closest('.exit-wrapper') ||
       target.closest('.drag-handle') ||
-      target.closest('.linked-name') ||
+      this.isActiveLink(target) ||
       this.actionRemovingState.has(this.node.uuid)
     ) {
       this.nodeClickStartPos = null;
