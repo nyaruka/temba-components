@@ -224,10 +224,10 @@ describe('temba-node-type-selector', () => {
     expect(titles).to.include('Wait for Menu');
   });
 
-  it('filters by features - AI feature enables Call AI in Actions that Branch', async () => {
+  it('shows Call AI in Actions that Branch without requiring AI feature', async () => {
     const selector = await createSelector();
     selector.flowType = 'message';
-    selector.features = ['ai'];
+    selector.features = [];
     await selector.updateComplete;
     selector.show('action', { x: 100, y: 100 });
     await selector.updateComplete;
@@ -283,7 +283,8 @@ describe('temba-node-type-selector', () => {
       item.textContent?.trim()
     );
 
-    // without ai feature, should not have Call AI or Split by AI
+    // Call AI has showAsAction so it doesn't appear in split mode
+    // Split by AI has flowTypes: [] so it doesn't appear anywhere
     expect(titles).to.not.include('Call AI');
     expect(titles).to.not.include('Split by AI');
   });

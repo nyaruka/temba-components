@@ -2,8 +2,7 @@ import {
   ACTION_GROUPS,
   FormData,
   NodeConfig,
-  FlowTypes,
-  Features
+  FlowTypes
 } from '../types';
 import { CallLLM, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
@@ -19,7 +18,6 @@ export const split_by_llm: NodeConfig = {
   name: 'Call AI',
   group: ACTION_GROUPS.services,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
-  features: [Features.AI],
   showAsAction: true,
   render: (node: Node) => {
     const callLlmAction = node.actions?.find(
