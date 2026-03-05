@@ -154,9 +154,9 @@ const wireScreenshots = async (page, context, wait, replaceScreenshots) => {
         const testFile = await getPath(TEST, filename);
         const truthFile = await getPath(TRUTH, filename);
 
-        // Wait for network idle - use per-call parameter or fall back to global wait flag
+        // Wait for network idle before taking screenshot
         try {
-          if (waitForNetwork || wait) {
+          if (waitForNetwork) {
             await page.waitForNetworkIdle({ idleTime: 500, timeout: 2000 });
           } else {
             await page.waitForNetworkIdle({ idleTime: 100, timeout: 1000 });

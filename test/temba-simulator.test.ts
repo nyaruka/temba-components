@@ -500,7 +500,8 @@ describe('temba-simulator', () => {
 
     await assertScreenshot(
       'simulator/attachment-menu',
-      getSimulatorClip(simulator)
+      getSimulatorClip(simulator),
+      true
     );
   });
 
@@ -553,7 +554,8 @@ describe('temba-simulator', () => {
 
     await assertScreenshot(
       'simulator/image-attachment',
-      getSimulatorClip(simulator)
+      getSimulatorClip(simulator),
+      true
     );
   });
 
