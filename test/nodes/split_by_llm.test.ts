@@ -53,7 +53,7 @@ describe('split_by_llm node config', () => {
       const formData = split_by_llm.toFormData(node);
 
       expect(formData.uuid).to.equal('test-node');
-      expect(formData.llm).to.deep.equal([{ value: 'gpt-4', name: 'GPT 4.1' }]);
+      expect(formData.llm).to.deep.equal([{ uuid: 'gpt-4', name: 'GPT 4.1' }]);
       expect(formData.input).to.equal('@input');
       expect(formData.instructions).to.equal('Translate to French');
     });
