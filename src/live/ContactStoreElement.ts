@@ -1,4 +1,4 @@
-import { PropertyValueMap, PropertyValues } from 'lit';
+import { PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, Group } from '../interfaces';
 import { EndpointMonitorElement } from '../store/EndpointMonitorElement';

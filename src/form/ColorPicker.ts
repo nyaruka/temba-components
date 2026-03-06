@@ -1,4 +1,4 @@
-import { html, css, PropertyValueMap, PropertyValues } from 'lit';
+import { html, css, PropertyValues } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { getClasses, hslToHex } from '../utils';

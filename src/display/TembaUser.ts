@@ -1,4 +1,4 @@
-import { PropertyValueMap, PropertyValues, TemplateResult, css, html } from 'lit';
+import { PropertyValues, TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { colorHash, extractInitials } from '../utils';

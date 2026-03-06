@@ -1,4 +1,4 @@
-import { TemplateResult, html, css, PropertyValueMap, PropertyValues } from 'lit';
+import { TemplateResult, html, css, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
 import { getClasses } from '../utils';
