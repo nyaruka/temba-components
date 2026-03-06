@@ -287,6 +287,22 @@ export class RichEditor extends FieldElement {
         resize: none;
       }
 
+      :host(:not([textarea])) {
+        min-width: 0;
+      }
+
+      :host(:not([textarea])) .highlight-editor {
+        white-space: pre;
+        overflow-x: auto;
+        overflow-y: hidden;
+        min-height: 0;
+        scrollbar-width: none;
+      }
+
+      :host(:not([textarea])) .highlight-editor::-webkit-scrollbar {
+        display: none;
+      }
+
       .highlight-editor:empty::before {
         content: attr(data-placeholder);
         color: var(--color-placeholder, #999);
@@ -313,7 +329,7 @@ export class RichEditor extends FieldElement {
       }
 
       .tok-str {
-        color: var(--expression-string-color, #298557);
+        color: var(--expression-string-color, #00cf0d);
       }
 
       .tok-num {
@@ -637,7 +653,7 @@ export class RichEditor extends FieldElement {
 
     // Enter
     if (e.key === 'Enter') {
-      if (this.submitOnEnter) {
+      if (this.submitOnEnter || !this.textarea) {
         e.preventDefault();
         const modax = this.closest('temba-modax') as any;
         if (modax) {

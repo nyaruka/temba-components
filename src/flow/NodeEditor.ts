@@ -1977,7 +1977,9 @@ export class NodeEditor extends RapidElement {
                   <span class="form-row-inline-label">${inlineLabel}</span>
                   <div style="flex: 1 1 0; min-width: 0;">${itemContent}</div>
                 </div>`
-              : html`<div style="${flexStyle}">${itemContent}</div>`;
+              : html`<div style="${flexStyle} min-width: 0;">
+                  ${itemContent}
+                </div>`;
           }
           return itemContent;
         })}

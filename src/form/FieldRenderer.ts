@@ -131,7 +131,7 @@ export class FieldRenderer {
 
     // If field supports expression evaluation, use temba-completion
     if (config.evaluated) {
-      return html`<temba-completion
+      return html`<temba-rich-edit
         name="${fieldName}"
         label="${showLabel ? config.label : ''}"
         ?required="${config.required}"
@@ -143,7 +143,7 @@ export class FieldRenderer {
         class="${extraClasses}"
         style="${style}"
         @input="${onChange || (() => {})}"
-      ></temba-completion>`;
+      ></temba-rich-edit>`;
     }
 
     return html`<temba-textinput
@@ -180,9 +180,9 @@ export class FieldRenderer {
       : '';
     const combinedStyle = `${minHeightStyle}${style}`;
 
-    // If field supports expression evaluation, use temba-completion
+    // If field supports expression evaluation, use temba-rich-edit
     if (config.evaluated) {
-      return html`<temba-completion
+      return html`<temba-rich-edit
         name="${fieldName}"
         label="${showLabel ? config.label : ''}"
         ?required="${config.required}"
@@ -195,7 +195,7 @@ export class FieldRenderer {
         class="${extraClasses}"
         style="${combinedStyle}"
         @input="${onChange || (() => {})}"
-      ></temba-completion>`;
+      ></temba-rich-edit>`;
     }
 
     return html`<temba-textinput
