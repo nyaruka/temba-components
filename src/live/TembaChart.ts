@@ -1,6 +1,12 @@
 import { RapidElement } from '../RapidElement';
 import { property, state } from 'lit/decorators.js';
-import { css, html, PropertyValueMap, PropertyValues, TemplateResult } from 'lit';
+import {
+  css,
+  html,
+  PropertyValueMap,
+  PropertyValues,
+  TemplateResult
+} from 'lit';
 
 import { Select, SelectOption } from '../form/select/Select';
 import { darkenColor, getClasses } from '../utils';

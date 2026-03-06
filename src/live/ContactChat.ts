@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { css, html, PropertyValueMap, PropertyValues, TemplateResult } from 'lit';
+import {
+  css,
+  html,
+  PropertyValueMap,
+  PropertyValues,
+  TemplateResult
+} from 'lit';
 import { property } from 'lit/decorators.js';
 import {
   Contact,

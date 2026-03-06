@@ -166,9 +166,7 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   animated = true;
 
-  public willUpdate(
-    changes: PropertyValues
-  ): void {
+  public willUpdate(changes: PropertyValues): void {
     super.willUpdate(changes);
 
     if (changes.has('eta') && this.eta) {

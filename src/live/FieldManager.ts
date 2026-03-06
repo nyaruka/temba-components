@@ -182,7 +182,6 @@ export class FieldManager extends EndpointMonitorElement {
     this.featuredFields = featured;
   }
 
-
   private handleOrderChanged(event) {
     // Apply the reordering immediately - the SortableList now provides accurate indexes
     const [fromIdx, toIdx] = event.detail.swap;

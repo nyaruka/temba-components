@@ -1,4 +1,10 @@
-import { css, html, PropertyValueMap, PropertyValues, TemplateResult } from 'lit';
+import {
+  css,
+  html,
+  PropertyValueMap,
+  PropertyValues,
+  TemplateResult
+} from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
