@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
@@ -168,6 +168,19 @@ export class Modax extends RapidElement {
     this.open = true;
   }
 
+  public willUpdate(changes: PropertyValues) {
+    super.willUpdate(changes);
+
+    if (changes.has('open') && !this.open) {
+      // open can get reflected into undefined, make sure we've been open before
+      if (changes.get('open') !== undefined) {
+        this.body = '';
+        this.originX = null;
+        this.originY = null;
+      }
+    }
+  }
+
   public updated(changes: Map<string, any>) {
     super.updated(changes);
 
@@ -177,18 +190,13 @@ export class Modax extends RapidElement {
       } else {
         // open can get reflected into undefined, make sure we've been open before
         if (changes.get('open') !== undefined) {
-          // hide our body after our hiding animation is done
-          if (this.open) {
-            window.setTimeout(() => {
-              this.body = this.getLoading();
-              this.submitting = false;
-            }, 500);
-          } else {
-            // clear the modal body out when closed, note that js functions declared on the
-            // window will hang around
-            this.setBody('');
-            this.originX = null;
-            this.originY = null;
+          // clear the modal body out when closed, note that js functions declared on the
+          // window will hang around
+          const scriptBlock = this.shadowRoot.querySelector('.scripts') as any;
+          if (scriptBlock) {
+            for (const child of Array.from(scriptBlock.children)) {
+              (child as Element).remove();
+            }
           }
         }
       }

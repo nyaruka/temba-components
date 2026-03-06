@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, PropertyValueMap, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { getClasses, postJSON } from '../utils';
 import { ContactFieldEditor } from './ContactFieldEditor';
@@ -98,15 +98,20 @@ export class ContactFields extends ContactStoreElement {
     return this.role === 'T';
   }
 
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('data') && this.data) {
+      if (Object.keys(this.data.fields).length <= MIN_FOR_FILTER) {
+        this.showAll = true;
+      }
+    }
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
-    if (changes.has('data')) {
-      if (Object.keys(this.data.fields).length <= MIN_FOR_FILTER) {
-        this.showAll = true;
-      }
-
+    if (changes.has('data') && this.data) {
       this.fireCustomEvent(CustomEventType.DetailsChanged, {
         count: Object.values(this.data.fields).filter((value) => !!value).length
       });

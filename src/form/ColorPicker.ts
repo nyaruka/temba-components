@@ -1,4 +1,4 @@
-import { html, css, PropertyValueMap } from 'lit';
+import { html, css, PropertyValueMap, PropertyValues } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { getClasses, hslToHex } from '../utils';
@@ -133,19 +133,17 @@ export class ColorPicker extends FieldElement {
     `;
   }
 
-  protected firstUpdated(
-    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(_changedProperties);
-  }
-
-  public updated(changed: Map<string, any>): void {
-    super.updated(changed);
+  protected willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
 
     if (changed.has('value')) {
       this.previewColor = this.value || '#9c9c9c';
       this.hex = this.value;
     }
+  }
+
+  public updated(changed: Map<string, any>): void {
+    super.updated(changed);
 
     if (changed.has('selecting')) {
       if (this.selecting) {
@@ -153,10 +151,6 @@ export class ColorPicker extends FieldElement {
           this.selecting = false;
         }, 100);
       }
-    }
-
-    if (changed.has('previewLabel') && this.hue) {
-      this.hex = hslToHex(this.hue, this.saturation, this.lightness);
     }
   }
 

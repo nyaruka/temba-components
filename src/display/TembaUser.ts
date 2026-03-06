@@ -1,4 +1,4 @@
-import { PropertyValueMap, TemplateResult, css, html } from 'lit';
+import { PropertyValueMap, PropertyValues, TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { colorHash, extractInitials } from '../utils';
@@ -68,10 +68,8 @@ export class TembaUser extends RapidElement {
   @property({ type: String })
   avatar: string;
 
-  public updated(
-    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(changed);
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
 
     if (changed.has('system') && this.system) {
       this.bgimage = `url('${DEFAULT_AVATAR}') center / contain no-repeat`;

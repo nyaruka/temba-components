@@ -1,4 +1,4 @@
-import { PropertyValueMap, css, html } from 'lit';
+import { PropertyValueMap, PropertyValues, css, html } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { property, state } from 'lit/decorators.js';
 import { getClasses } from '../utils';
@@ -259,27 +259,8 @@ export class Thumbnail extends RapidElement {
     return { x, y, z: zoom };
   }
 
-  protected updated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(changes);
-
-    if (
-      changes.has('contentType') &&
-      this.contentType === ThumbnailContentType.IMAGE
-    ) {
-      const toObserve = this.shadowRoot.querySelector('.observe');
-      if (toObserve) {
-        new ResizeObserver((e, observer) => {
-          if (toObserve.clientHeight > 0 && toObserve.clientWidth > 0) {
-            this.ratio = toObserve.clientHeight / toObserve.clientWidth;
-            this.preview =
-              this.ratio === 0 || (this.ratio > 0.25 && this.ratio <= 1.5);
-            observer.disconnect();
-          }
-        }).observe(toObserve);
-      }
-    }
+  protected willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
 
     // convert our attachment to a url and label
     if (changes.has('attachment')) {
@@ -307,6 +288,8 @@ export class Thumbnail extends RapidElement {
             if (coords) {
               this.latitude = parseFloat(coords[1]);
               this.longitude = parseFloat(coords[2]);
+              const tile = this.latLngToTile(this.latitude, this.longitude, 13);
+              this.tileUrl = `https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`;
             }
           } else {
             this.contentType = ThumbnailContentType.OTHER;
@@ -327,6 +310,29 @@ export class Thumbnail extends RapidElement {
         this.tileUrl = `https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`;
       } else {
         this.tileUrl = '';
+      }
+    }
+  }
+
+  protected updated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.updated(changes);
+
+    if (
+      changes.has('contentType') &&
+      this.contentType === ThumbnailContentType.IMAGE
+    ) {
+      const toObserve = this.shadowRoot.querySelector('.observe');
+      if (toObserve) {
+        new ResizeObserver((e, observer) => {
+          if (toObserve.clientHeight > 0 && toObserve.clientWidth > 0) {
+            this.ratio = toObserve.clientHeight / toObserve.clientWidth;
+            this.preview =
+              this.ratio === 0 || (this.ratio > 0.25 && this.ratio <= 1.5);
+            observer.disconnect();
+          }
+        }).observe(toObserve);
       }
     }
   }

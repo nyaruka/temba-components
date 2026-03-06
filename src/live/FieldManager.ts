@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ContactField, CustomEventType } from '../interfaces';
 
@@ -141,11 +141,18 @@ export class FieldManager extends EndpointMonitorElement {
   @property({ type: String })
   query = '';
 
-  protected firstUpdated(
-    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(_changedProperties);
-    this.url = this.store.fieldsEndpoint;
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.store?.fieldsEndpoint) {
+      this.url = this.store.fieldsEndpoint;
+    }
+  }
+
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('data') || changed.has('query')) {
+      this.filterFields();
+    }
   }
 
   private filterFields() {
@@ -175,16 +182,6 @@ export class FieldManager extends EndpointMonitorElement {
     this.featuredFields = featured;
   }
 
-  protected updated(
-    properties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.update(properties);
-    if (properties.has('data')) {
-      this.filterFields();
-    } else if (properties.has('query')) {
-      this.filterFields();
-    }
-  }
 
   private handleOrderChanged(event) {
     // Apply the reordering immediately - the SortableList now provides accurate indexes

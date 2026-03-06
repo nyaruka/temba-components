@@ -1,4 +1,4 @@
-import { LitElement, TemplateResult, html, css } from 'lit';
+import { LitElement, TemplateResult, html, css, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Icon, SVG_FINGERPRINT } from '../Icons';
 import { getClasses } from '../utils';
@@ -153,9 +153,9 @@ export class VectorIcon extends LitElement {
 
   private lastName: string;
 
-  public firstUpdated(changes: Map<string, any>) {
-    super.firstUpdated(changes);
-    if (changes.has('animateChange')) {
+  public willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+    if (!this.hasUpdated && changes.has('animateChange')) {
       // set our default duration if we need one
       if (!changes.has('animationDuration')) {
         this.animationDuration = this.steps * this.animationDuration;

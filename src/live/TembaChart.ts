@@ -1,6 +1,6 @@
 import { RapidElement } from '../RapidElement';
 import { property, state } from 'lit/decorators.js';
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, PropertyValueMap, PropertyValues, TemplateResult } from 'lit';
 
 import { Select, SelectOption } from '../form/select/Select';
 import { darkenColor, getClasses } from '../utils';
@@ -436,18 +436,22 @@ export class TembaChart extends RapidElement {
     this.ctx = this.canvas.getContext('2d');
   }
 
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+
+    if (changed.has('splitNames')) {
+      this.splits = this.splitNames.split(',').map((s) => s.trim());
+    }
+
+    if (changed.has('data') || changed.has('splits')) {
+      this.calculateSplits();
+    }
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(changes);
-
-    if (changes.has('splitNames')) {
-      this.splits = this.splitNames.split(',').map((s) => s.trim());
-    }
-
-    if (changes.has('data') || changes.has('splits')) {
-      this.calculateSplits();
-    }
 
     if (changes.has('datasets')) {
       this.updateChart();

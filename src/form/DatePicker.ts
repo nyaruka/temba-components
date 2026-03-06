@@ -1,4 +1,4 @@
-import { TemplateResult, html, css, PropertyValueMap } from 'lit';
+import { TemplateResult, html, css, PropertyValueMap, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
 import { getClasses } from '../utils';
@@ -147,10 +147,9 @@ export class DatePicker extends FieldElement {
     super();
   }
 
-  protected firstUpdated(
-    changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    if (changed.has('value')) {
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('value') && !this.hasUpdated) {
       // default to the local browser zone
       if (this.time) {
         this.timezone =
@@ -174,17 +173,19 @@ export class DatePicker extends FieldElement {
         this.value = this.datetime.toISODate();
       }
     }
-  }
 
-  public updated(changed: Map<string, any>): void {
-    super.updated(changed);
-    if (changed.has('timezone') && this.time) {
+    if (changed.has('timezone') && this.hasUpdated && this.time) {
       this.timezone =
         this.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       this.timezoneFriendly = this.timezone
         .replace('_', ' ')
         .replace('/', ', ');
-      this.requestUpdate('value');
+
+      // force re-render since the displayed value depends on timezone
+      if (this.datetime) {
+        this.datetime = this.datetime.setZone(this.timezone);
+        this.value = this.datetime.toUTC().toISO();
+      }
     }
   }
 

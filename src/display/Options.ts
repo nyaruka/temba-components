@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement, EventHandler } from '../RapidElement';
@@ -331,6 +331,44 @@ export class Options extends RapidElement {
 
   private resizeObserver: ResizeObserver;
 
+  public willUpdate(changed: PropertyValues) {
+    super.willUpdate(changed);
+
+    if (changed.has('visible') && changed.has('options')) {
+      if (!this.visible && this.options.length == 0) {
+        this.tempOptions = changed.get('options');
+        window.setTimeout(() => {
+          this.tempOptions = [];
+        }, 200);
+      }
+    }
+
+    if (changed.has('options')) {
+      // allow scrolls to trigger again
+      this.triggerScroll = true;
+
+      const prevOptions = changed.get('options');
+      const previousCount = prevOptions ? prevOptions.length : 0;
+      const newCount = this.options ? this.options.length : 0;
+
+      if (
+        this.cursorIndex === -1 ||
+        newCount < previousCount ||
+        (previousCount === 0 && newCount > 0 && !changed.has('cursorIndex'))
+      ) {
+        if (!this.internalFocusDisabled) {
+          if (!this.block) {
+            this.cursorIndex = 0;
+          } else {
+            if (this.cursorIndex >= newCount) {
+              this.cursorIndex = newCount - 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
   public updated(changed: Map<string, any>) {
     super.updated(changed);
 
@@ -359,21 +397,9 @@ export class Options extends RapidElement {
       });
     }
 
-    if (changed.has('visible') && changed.has('options')) {
-      if (!this.visible && this.options.length == 0) {
-        this.tempOptions = changed.get('options');
-        window.setTimeout(() => {
-          this.tempOptions = [];
-        }, 200);
-      }
-    }
-
     if (changed.has('options')) {
       this.adjustWidth();
       this.calculatePosition();
-
-      // allow scrolls to trigger again
-      this.triggerScroll = true;
 
       const prevOptions = changed.get('options');
       const previousCount = prevOptions ? prevOptions.length : 0;
@@ -385,14 +411,6 @@ export class Options extends RapidElement {
         (previousCount === 0 && newCount > 0 && !changed.has('cursorIndex'))
       ) {
         if (!this.internalFocusDisabled) {
-          if (!this.block) {
-            this.cursorIndex = 0;
-          } else {
-            if (this.cursorIndex >= newCount) {
-              this.cursorIndex = newCount - 1;
-            }
-          }
-
           if (this.cursorSelection) {
             this.handleSelection(false);
           }

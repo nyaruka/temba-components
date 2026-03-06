@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, PropertyValueMap, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
@@ -206,20 +206,18 @@ export class FloatingWindow extends RapidElement {
     event.preventDefault();
   };
 
-  public updated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(changes);
-    if (changes.has('hidden')) {
+  public willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+    if (this.hasUpdated && changes.has('hidden')) {
       // when hiding, reset positioning behavior to original
-      if (this.hidden && !changes.get('hidden')) {
+      if (this.hidden && changes.get('hidden') === false) {
         if (this.defaultLeft === -1) {
           this.positionFromRight = true;
         }
       }
 
       // reset to default position when showing
-      if (!this.hidden && changes.get('hidden')) {
+      if (!this.hidden && changes.get('hidden') === true) {
         // reset top to default
         this.top = this.defaultTop;
 
@@ -232,6 +230,12 @@ export class FloatingWindow extends RapidElement {
         }
       }
     }
+  }
+
+  public updated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.updated(changes);
 
     // setup drag handles if chromeless changed to true
     if (changes.has('chromeless') && this.chromeless) {

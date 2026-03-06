@@ -1,5 +1,5 @@
 import { property } from 'lit/decorators.js';
-import { TemplateResult, html, css, LitElement } from 'lit';
+import { TemplateResult, html, css, LitElement, PropertyValues } from 'lit';
 import { CustomEventType } from '../interfaces';
 import { MediaPicker } from './MediaPicker';
 import { getClasses } from '../utils';
@@ -176,8 +176,8 @@ export class TemplateEditor extends FieldElement {
 
   textInputAttachments: { [index: number]: boolean } = {};
 
-  public updated(changes: Map<string, any>): void {
-    super.updated(changes);
+  public willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
     if (changes.has('template')) {
       this.textInputAttachments = {};
       this.currentVariables = this.variables || [];

@@ -1,5 +1,5 @@
 import { property } from 'lit/decorators.js';
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValues } from 'lit';
 import { Button } from '../display/Button';
 import { CustomEventType } from '../interfaces';
 import { styleMap } from 'lit-html/directives/style-map.js';
@@ -285,15 +285,25 @@ export class Dialog extends ResizeElement {
         type: ButtonType.PRIMARY
       });
     }
-    this.requestUpdate();
   }
 
-  public updated(changes: Map<string, any>) {
-    super.updated(changes);
+  public willUpdate(changes: PropertyValues) {
+    super.willUpdate(changes);
 
     if (changes.has('cancelButtonName') || changes.has('primaryButtonName')) {
       this.updateButtons();
     }
+
+    if (changes.has('open') && this.open) {
+      if (this.originX == null && this.originY == null) {
+        // Default animation (no origin): set animationEnd before render
+        this.animationEnd = true;
+      }
+    }
+  }
+
+  public updated(changes: Map<string, any>) {
+    super.updated(changes);
 
     if (changes.has('open')) {
       const body = document.querySelector('body');
@@ -335,8 +345,7 @@ export class Dialog extends ResizeElement {
             }
           });
         } else {
-          // Default animation (no origin)
-          this.animationEnd = true;
+          // Default animation (no origin): animationEnd already set in willUpdate
           window.setTimeout(() => {
             this.ready = true;
             this.animationEnd = false;

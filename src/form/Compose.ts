@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, PropertyValues } from 'lit';
 import { FieldElement } from './FieldElement';
 import { property } from 'lit/decorators.js';
 import { Attachment, CustomEventType, Language, Shortcut } from '../interfaces';
@@ -308,25 +308,20 @@ export class Compose extends FieldElement {
     this.setFocusOnChatbox();
   }
 
-  public firstUpdated(changes: Map<string, any>): void {
-    super.firstUpdated(changes);
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
 
-    if (changes.has('languages') && this.languages.length > 0) {
+    if (changed.has('languages') && this.languages.length > 0) {
       this.currentLanguage = this.languages[0].iso;
     }
 
-    if (changes.has('value')) {
+    if (changed.has('value')) {
       this.langValues = this.getDeserializedValue() || {};
       this.variables = this.langValues[this.currentLanguage]?.variables || [];
       this.template = this.langValues[this.currentLanguage]?.template || null;
     }
-    this.setFocusOnChatbox();
-  }
 
-  public updated(changes: Map<string, any>): void {
-    super.updated(changes);
-
-    if (changes.has('currentLanguage') && this.langValues) {
+    if (changed.has('currentLanguage') && this.langValues) {
       let langValue = {
         text: '',
         attachments: [],
@@ -346,25 +341,16 @@ export class Compose extends FieldElement {
         }
       );
       this.currentOptin = langValue['optin'] ? [langValue['optin']] : [];
-      this.setFocusOnChatbox();
-
-      // TODO: this feels like it shouldn't be needed
-      const chatbox = this.shadowRoot.querySelector('.chatbox') as any;
-      if (chatbox) {
-        chatbox.value = this.initialText;
-      }
-      this.resetTabs();
-      this.requestUpdate('currentAttachments');
     }
 
     if (
-      (this.langValues &&
-        (changes.has('currentText') ||
-          changes.has('currentAttachments') ||
-          changes.has('currentQuickReplies'))) ||
-      changes.has('currentOptin') ||
-      changes.has('currentTemplate') ||
-      changes.has('variables')
+      this.langValues &&
+      (changed.has('currentText') ||
+        changed.has('currentAttachments') ||
+        changed.has('currentQuickReplies') ||
+        changed.has('currentOptin') ||
+        changed.has('currentTemplate') ||
+        changed.has('variables'))
     ) {
       this.checkIfEmpty();
 
@@ -387,9 +373,39 @@ export class Compose extends FieldElement {
       } else {
         delete this.langValues[this.currentLanguage];
       }
+      this.setValue(this.langValues);
+    }
+  }
+
+  public firstUpdated(changes: PropertyValues): void {
+    super.firstUpdated(changes);
+    this.setFocusOnChatbox();
+  }
+
+  public updated(changes: Map<string, any>): void {
+    super.updated(changes);
+
+    if (changes.has('currentLanguage') && this.langValues) {
+      this.setFocusOnChatbox();
+
+      const chatbox = this.shadowRoot.querySelector('.chatbox') as any;
+      if (chatbox) {
+        chatbox.value = this.initialText;
+      }
+      this.resetTabs();
+    }
+
+    if (
+      (this.langValues &&
+        (changes.has('currentText') ||
+          changes.has('currentAttachments') ||
+          changes.has('currentQuickReplies'))) ||
+      changes.has('currentOptin') ||
+      changes.has('currentTemplate') ||
+      changes.has('variables')
+    ) {
       this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
       this.requestUpdate('langValues');
-      this.setValue(this.langValues);
     }
   }
 

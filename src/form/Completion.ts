@@ -94,10 +94,8 @@ export class Completion extends FieldElement {
   @property({ type: String })
   placeholder = '';
 
-  @property({ attribute: false })
   textInputElement: TextInput;
 
-  @property({ attribute: false })
   anchorElement: HTMLDivElement;
 
   @property({ type: Array })

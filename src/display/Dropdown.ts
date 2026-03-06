@@ -109,11 +109,9 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   mask = false;
 
-  @property({ type: Object, attribute: false })
-  dropdownStyle = {};
+  dropdownStyle: Record<string, string> = {};
 
-  @property({ type: Object, attribute: false })
-  arrowStyle = {};
+  arrowStyle: Record<string, string> = {};
 
   constructor() {
     super();
@@ -177,13 +175,7 @@ export class Dropdown extends RapidElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('open')) {
-      this.dropdownStyle = {};
-    }
-
-    if (changedProperties.has('dropdownStyle')) {
-      if (Object.keys(this.dropdownStyle).length === 0) {
-        this.calculatePosition();
-      }
+      this.calculatePosition();
     }
   }
 

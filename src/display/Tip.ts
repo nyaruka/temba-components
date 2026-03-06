@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { RapidElement } from '../RapidElement';
@@ -75,10 +75,7 @@ export class Tip extends RapidElement {
   @property({ type: Boolean })
   hideOnChange: boolean;
 
-  @property({ type: Number, attribute: false })
   top: number;
-
-  @property({ type: Number, attribute: false })
   left: number;
 
   @property({ type: Number, attribute: false })
@@ -95,13 +92,16 @@ export class Tip extends RapidElement {
   lastEnter = 0;
   failSafe = 0;
 
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('text') && this.hideOnChange) {
+      this.visible = false;
+    }
+  }
+
   public updated(changed: Map<string, any>) {
     if ((changed.has('visible') || changed.has('text')) && this.visible) {
       this.calculatePosition();
-    }
-
-    if (changed.has('text') && this.hideOnChange) {
-      this.visible = false;
     }
   }
 
@@ -149,6 +149,7 @@ export class Tip extends RapidElement {
         this.arrowLeft = tipBounds.width / 2 - 3;
         this.arrow = '▲';
       }
+      this.requestUpdate();
     }
   }
 

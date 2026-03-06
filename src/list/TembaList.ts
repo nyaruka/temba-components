@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -119,12 +119,25 @@ export class TembaList extends RapidElement {
     clearInterval(this.refreshInterval);
   }
 
+  public willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+
+    if (changedProperties.has('cursorIndex')) {
+      if (this.cursorIndex > -1) {
+        this.selected = this.items[this.cursorIndex];
+      }
+    }
+
+    if (changedProperties.has('endpoint') && this.endpoint) {
+      this.loading = true;
+    }
+  }
+
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
     if (changedProperties.has('endpoint') && this.endpoint) {
       this.reset();
-      this.loading = true;
       this.fetchItems();
     }
 
@@ -147,7 +160,6 @@ export class TembaList extends RapidElement {
 
     if (changedProperties.has('cursorIndex')) {
       if (this.cursorIndex > -1) {
-        this.selected = this.items[this.cursorIndex];
         this.handleSelected(this.selected);
       }
     }

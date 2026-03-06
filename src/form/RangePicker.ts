@@ -1,7 +1,7 @@
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { DateTime } from 'luxon';
-import { html, css } from 'lit';
+import { html, css, PropertyValues } from 'lit';
 import { DatePicker } from './DatePicker';
 import { CustomEventType } from '../interfaces';
 
@@ -465,16 +465,28 @@ export class RangePicker extends RapidElement {
     } ${amount} ${unit}`;
   }
 
-  updated(changed: Map<string, any>) {
-    super.updated(changed);
+  willUpdate(changed: PropertyValues) {
+    super.willUpdate(changed);
 
     if (
       changed.has('startDate') &&
       changed.has('endDate') &&
       (!this.startDate || !this.endDate)
     ) {
-      this.setRange('M');
+      const today = DateTime.now().toISODate();
+      this.startDate = DateTime.now()
+        .minus({ months: 1 })
+        .plus({ days: 1 })
+        .toISODate();
+      this.endDate = today;
+      this.selectedRange = 'M';
+      this.editingStart = false;
+      this.editingEnd = false;
     }
+  }
+
+  updated(changed: Map<string, any>) {
+    super.updated(changed);
 
     if (changed.has('editingStart') && this.editingStart) {
       setTimeout(() => {

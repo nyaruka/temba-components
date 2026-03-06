@@ -462,10 +462,8 @@ export class Select<T extends SelectOption> extends FieldElement {
   @property({ type: Number })
   cursorIndex: number;
 
-  @property({ attribute: false })
   anchorElement: HTMLElement;
 
-  @property({ attribute: false })
   anchorExpressions: HTMLElement;
 
   @property({ type: Object })
@@ -709,15 +707,26 @@ export class Select<T extends SelectOption> extends FieldElement {
     );
   }
 
-  public updated(changes: Map<string, any>) {
-    super.updated(changes);
-
+  public willUpdate(changes: Map<string, any>) {
     if (changes.has('createArbitraryOption')) {
       if (!this.createArbitraryOption) {
         this.createArbitraryOption =
           this.createArbitraryOptionDefault.bind(this);
       }
     }
+
+    // default to the first option if we don't have a placeholder
+    if (
+      this.values.length === 0 &&
+      !this.placeholder &&
+      this.staticOptions.length > 0
+    ) {
+      this._values = [this.staticOptions[0]];
+    }
+  }
+
+  public updated(changes: Map<string, any>) {
+    super.updated(changes);
 
     if (changes.has('sorted')) {
       this.sortFunction = this.sorted ? this.alphaSort : null;
@@ -779,15 +788,6 @@ export class Select<T extends SelectOption> extends FieldElement {
           this.fetchOptions(this.query, this.page + 1);
         }
       }
-    }
-
-    // default to the first option if we don't have a placeholder
-    if (
-      this.values.length === 0 &&
-      !this.placeholder &&
-      this.staticOptions.length > 0
-    ) {
-      this.setValues([this.staticOptions[0]]);
     }
   }
 
