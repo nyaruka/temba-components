@@ -464,8 +464,8 @@ export class CanvasNode extends RapidElement {
         position: absolute;
         bottom: 0.5em;
         right: 0.5em;
-        width: 1.5em;
-        height: 1.5em;
+        width: 1.2em;
+        height: 1.2em;
         border-radius: 50%;
         background: var(--color-primary, #3b82f6);
         color: white;
@@ -477,7 +477,7 @@ export class CanvasNode extends RapidElement {
         transition: opacity 200ms ease-in-out;
         z-index: 10;
         pointer-events: auto;
-        font-size: 0.9em;
+        font-size: 0.8em;
       }
 
       .node.execute-actions:hover .add-action-button {

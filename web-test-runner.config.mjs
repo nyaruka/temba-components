@@ -1,5 +1,6 @@
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+process.env.PUPPETEER_DISABLE_HEADLESS_WARNING = '1';
 import { puppeteerLauncher } from '@web/test-runner-puppeteer';
 import { esbuildPlugin } from '@web/dev-server-esbuild';
 import fs from 'fs';
@@ -334,6 +335,11 @@ export default {
   files: '**/test/**/*.test.ts',
   nodeResolve: true,
   concurrency: 4,
+  filterBrowserLogs(log) {
+    return !log.args.some(
+      (arg) => typeof arg === 'string' && arg.includes('Lit is in dev mode')
+    );
+  },
   coverageConfig: {
     include: ['src/**']
   },
@@ -481,9 +487,10 @@ export default {
         if (!globalThis.__wireScreenshotsLock) {
           globalThis.__wireScreenshotsLock = Promise.resolve();
         }
-        globalThis.__wireScreenshotsLock = globalThis.__wireScreenshotsLock.then(() =>
-          wireScreenshots(page, context, wait, replaceScreenshots)
-        );
+        globalThis.__wireScreenshotsLock =
+          globalThis.__wireScreenshotsLock.then(() =>
+            wireScreenshots(page, context, wait, replaceScreenshots)
+          );
         await globalThis.__wireScreenshotsLock;
 
         await page.emulateTimezone('GMT');
