@@ -131,7 +131,7 @@ const renderFlowLink = (flow: NamedObject, icon?: string) => {
 
   return html`<div
     class="linked-name"
-    style="display:inline-flex;align-items:center;"
+    style="display:inline-flex;align-items:center;max-width:100%;"
   >
     ${icon
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
