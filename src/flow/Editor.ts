@@ -308,6 +308,10 @@ export class Editor extends RapidElement {
   @state()
   private reflowPending = false;
 
+  // Non-reactive flag set in willUpdate to suppress the debouncedSave
+  // call in updated() when the dirtyDate change comes from a reflow
+  private _suppressDirtySave = false;
+
   @state()
   private reflowUnsaved = false;
 
@@ -1306,7 +1310,9 @@ export class Editor extends RapidElement {
       if (this.dirtyDate) {
         if (this.reflowPending) {
           // This dirtyDate is from the reflow itself — clear the flag
+          // and suppress the save in updated()
           this.reflowPending = false;
+          this._suppressDirtySave = true;
         } else {
           // Normal change — if reflow card was showing, it goes away
           // because these changes will be included in the save
@@ -1361,9 +1367,9 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        // If reflowPending was just cleared in willUpdate, this dirtyDate
-        // is from the reflow itself — suppress save
-        if (!changes.has('reflowPending')) {
+        if (this._suppressDirtySave) {
+          this._suppressDirtySave = false;
+        } else {
           this.debouncedSave();
         }
       }

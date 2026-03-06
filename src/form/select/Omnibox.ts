@@ -1,4 +1,4 @@
-import { TemplateResult, html } from 'lit';
+import { PropertyValues, TemplateResult, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { Select, SelectOption } from './Select';
@@ -53,7 +53,7 @@ export class Omnibox extends Select<OmniOption> {
   @property({ type: Boolean })
   queryParam = 'search';
 
-  public willUpdate(changes: Map<string, any>): void {
+  public willUpdate(changes: PropertyValues): void {
     if (
       (changes.has('groups') || changes.has('contacts')) &&
       (this.groups || this.contacts)

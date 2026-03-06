@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { TemplateResult, html, css } from 'lit';
+import { PropertyValues, TemplateResult, html, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
   getUrl,
@@ -707,7 +707,7 @@ export class Select<T extends SelectOption> extends FieldElement {
     );
   }
 
-  public willUpdate(changes: Map<string, any>) {
+  public willUpdate(changes: PropertyValues) {
     if (changes.has('createArbitraryOption')) {
       if (!this.createArbitraryOption) {
         this.createArbitraryOption =
@@ -721,7 +721,9 @@ export class Select<T extends SelectOption> extends FieldElement {
       !this.placeholder &&
       this.staticOptions.length > 0
     ) {
+      const oldValues = this._values;
       this._values = [this.staticOptions[0]];
+      this.requestUpdate('values', oldValues);
     }
 
     if (changes.has('sorted')) {
@@ -758,6 +760,8 @@ export class Select<T extends SelectOption> extends FieldElement {
         }
       }
     }
+
+    super.willUpdate(changes);
   }
 
   public updated(changes: Map<string, any>) {
