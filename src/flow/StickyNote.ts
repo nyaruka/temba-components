@@ -435,6 +435,7 @@ export class StickyNote extends RapidElement {
           ...this.data,
           title: newTitle
         });
+      this.fireCustomEvent(CustomEventType.SizeChanged, { uuid: this.uuid });
     }
     this.requestUpdate();
   }
@@ -451,6 +452,7 @@ export class StickyNote extends RapidElement {
           ...this.data,
           body: newBody
         });
+      this.fireCustomEvent(CustomEventType.SizeChanged, { uuid: this.uuid });
     }
     this.requestUpdate();
   }
@@ -678,6 +680,7 @@ export class StickyNote extends RapidElement {
       });
 
     this.updateCanvasSize();
+    this.fireCustomEvent(CustomEventType.SizeChanged, { uuid: this.uuid });
   }
 
   private cleanupResize(): void {
