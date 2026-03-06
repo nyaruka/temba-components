@@ -61,7 +61,7 @@ describe('temba-message-editor', () => {
     })) as MessageEditor;
 
     const completion = editor.shadowRoot.querySelector(
-      'temba-completion'
+      'temba-rich-edit'
     ) as any;
     expect(completion).to.not.be.null;
     expect(completion.hasAttribute('widgetOnly')).to.be.true;
@@ -114,7 +114,7 @@ describe('temba-message-editor', () => {
     });
 
     const completion = editor.shadowRoot.querySelector(
-      'temba-completion'
+      'temba-rich-edit'
     ) as any;
     completion.value = 'New message';
     completion.dispatchEvent(new Event('change'));
@@ -227,7 +227,7 @@ describe('temba-message-editor', () => {
       'temba-message-editor'
     )) as MessageEditor;
     const completion = editor.shadowRoot.querySelector(
-      'temba-completion'
+      'temba-rich-edit'
     ) as any;
 
     let focusCalled = false;
@@ -244,7 +244,7 @@ describe('temba-message-editor', () => {
       'temba-message-editor'
     )) as MessageEditor;
     const completion = editor.shadowRoot.querySelector(
-      'temba-completion'
+      'temba-rich-edit'
     ) as any;
 
     let clickCalled = false;
@@ -268,29 +268,19 @@ describe('temba-message-editor', () => {
     // Wait for component to fully render
     await editor.updateComplete;
 
-    // Get the text input element to verify its height
-    const completion = editor.shadowRoot.querySelector(
-      'temba-completion'
-    ) as any;
-    expect(completion).to.not.be.null;
+    // Get the rich editor element
+    const richEdit = editor.shadowRoot.querySelector('temba-rich-edit') as any;
+    expect(richEdit).to.not.be.null;
 
-    // The completion should have the long text value
-    expect(completion.value).to.equal(longText);
+    // The rich editor should have the long text value
+    expect(richEdit.value).to.equal(longText);
 
-    // Get the actual TextInput component inside the completion
-    const textInput = completion.getTextInput();
-    expect(textInput).to.not.be.null;
-
-    // The textarea should be in autogrow mode
-    expect(textInput.autogrow).to.be.true;
-    expect(textInput.textarea).to.be.true;
-
-    // Check that the autogrow div has been updated with content
-    const autogrowDiv = textInput.shadowRoot.querySelector(
-      '.grow-wrap > div'
+    // Get the contenteditable div inside the rich editor
+    const editableDiv = richEdit.shadowRoot.querySelector(
+      '.highlight-editor'
     ) as HTMLDivElement;
-    expect(autogrowDiv).to.not.be.null;
-    expect(autogrowDiv.innerText).to.include(longText);
+    expect(editableDiv).to.not.be.null;
+    expect(editableDiv.textContent).to.include(longText);
 
     await assertScreenshot(
       'message-editor/autogrow-initial-content',
