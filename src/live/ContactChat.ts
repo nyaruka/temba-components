@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import {
+  css,
+  html,
+  PropertyValueMap,
+  PropertyValues,
+  TemplateResult
+} from 'lit';
 import { property } from 'lit/decorators.js';
 import {
   Contact,
@@ -321,6 +327,22 @@ export class ContactChat extends ContactStoreElement {
     super();
   }
 
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+
+    if (changed.has('data')) {
+      this.currentContact = this.data;
+    }
+
+    if (changed.has('currentContact') && this.currentContact) {
+      const prev = changed.get('currentContact') as Contact | undefined;
+      if (this.currentContact.uuid !== prev?.uuid) {
+        this.blockFetching = false;
+        this.errorMessage = null;
+      }
+    }
+  }
+
   public firstUpdated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -352,8 +374,6 @@ export class ContactChat extends ContactStoreElement {
         clearTimeout(this.refreshId);
         this.refreshId = null;
       }
-
-      this.currentContact = this.data;
     }
 
     if (changedProperties.has('currentContact') && this.currentContact) {
@@ -374,7 +394,6 @@ export class ContactChat extends ContactStoreElement {
     if (this.chat) {
       this.chat.reset();
     }
-    this.blockFetching = false;
     this.ticket = null;
     this.beforeUUID = null;
     this.afterUUID = null;
@@ -382,7 +401,6 @@ export class ContactChat extends ContactStoreElement {
     this.polling = false;
     this.pollingInterval = 2000;
     this.lastFetchTime = null;
-    this.errorMessage = null;
 
     const compose = this.shadowRoot.querySelector('temba-compose') as Compose;
     if (compose) {

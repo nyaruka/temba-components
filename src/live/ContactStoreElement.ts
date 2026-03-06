@@ -1,4 +1,4 @@
-import { PropertyValueMap } from 'lit';
+import { PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Contact, Group } from '../interfaces';
 import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
@@ -55,11 +55,9 @@ export class ContactStoreElement extends EndpointMonitorElement {
     this.store.updateCache(`${this.endpoint}${this.contact}`, this.data);
   }
 
-  protected updated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(changes);
-    if (changes.has('contact')) {
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('contact') || changed.has('endpoint')) {
       if (this.contact) {
         this.url = `${this.endpoint}${this.contact}`;
       } else {

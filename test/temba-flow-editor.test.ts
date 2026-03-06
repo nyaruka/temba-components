@@ -900,11 +900,11 @@ describe('Editor', () => {
 
       (editor as any).isSaving = false;
 
-      // Simulate a dirtyDate change via updated()
+      // Simulate a dirtyDate change via willUpdate()
       (editor as any).dirtyDate = new Date();
       const changes = new Map();
       changes.set('dirtyDate', null);
-      (editor as any).updated(changes);
+      (editor as any).willUpdate(changes);
 
       expect((editor as any).isSaving).to.be.true;
     });
@@ -1227,6 +1227,7 @@ describe('Editor', () => {
       (editor as any).dirtyDate = new Date();
       const changes = new Map();
       changes.set('dirtyDate', null);
+      (editor as any).willUpdate(changes);
       (editor as any).updated(changes);
 
       expect((editor as any).reflowUnsaved).to.be.false;

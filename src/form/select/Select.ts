@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { TemplateResult, html, css } from 'lit';
+import { PropertyValues, TemplateResult, html, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
   getUrl,
@@ -462,10 +462,8 @@ export class Select<T extends SelectOption> extends FieldElement {
   @property({ type: Number })
   cursorIndex: number;
 
-  @property({ attribute: false })
   anchorElement: HTMLElement;
 
-  @property({ attribute: false })
   anchorExpressions: HTMLElement;
 
   @property({ type: Object })
@@ -709,9 +707,7 @@ export class Select<T extends SelectOption> extends FieldElement {
     );
   }
 
-  public updated(changes: Map<string, any>) {
-    super.updated(changes);
-
+  public willUpdate(changes: PropertyValues) {
     if (changes.has('createArbitraryOption')) {
       if (!this.createArbitraryOption) {
         this.createArbitraryOption =
@@ -719,15 +715,57 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
     }
 
+    // default to the first option if we don't have a placeholder
+    if (
+      this.values.length === 0 &&
+      !this.placeholder &&
+      this.staticOptions.length > 0
+    ) {
+      const oldValues = this._values;
+      this._values = [this.staticOptions[0]];
+      this.requestUpdate('values', oldValues);
+    }
+
     if (changes.has('sorted')) {
       this.sortFunction = this.sorted ? this.alphaSort : null;
     }
 
+    // sync value → values for static options
     if (changes.has('value')) {
       if (this.value && !this.values.length) {
-        this.setSelectedValue(this.value);
+        if (this.staticOptions.length > 0) {
+          const existing = this.staticOptions.find((option) => {
+            return this.getValue(option) === this.value;
+          });
+          if (existing) {
+            this._values = [existing];
+            this.requestUpdate('values');
+          }
+        } else {
+          this.checkSelectedOption();
+        }
       }
     }
+
+    // pre-sync value/selection from values to prevent warnings
+    // when updateInputs() sets them again in updated()
+    if (changes.has('values')) {
+      if (this.values.length === 0) {
+        this.value = null;
+      } else {
+        const name = this.getAttribute('name');
+        if (name && !this.isMultiMode && this.values.length === 1) {
+          this.selection = this.values[0];
+          this.value = this.serializeValue(this.values[0]);
+        }
+      }
+    }
+
+    super.willUpdate(changes);
+  }
+
+  public updated(changes: Map<string, any>) {
+    super.updated(changes);
 
     if (changes.has('values')) {
       this.updateInputs();
@@ -779,15 +817,6 @@ export class Select<T extends SelectOption> extends FieldElement {
           this.fetchOptions(this.query, this.page + 1);
         }
       }
-    }
-
-    // default to the first option if we don't have a placeholder
-    if (
-      this.values.length === 0 &&
-      !this.placeholder &&
-      this.staticOptions.length > 0
-    ) {
-      this.setValues([this.staticOptions[0]]);
     }
   }
 
@@ -1288,23 +1317,27 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   private handleBlur() {
-    this.focused = false;
-    this.attemptedOpen = false;
-    if (this.visibleOptions.length > 0) {
-      this.input = '';
-      this.next = null;
-      this.complete = true;
-      this.visibleOptions = [];
-      this.cursorIndex = 0;
-    }
+    // defer to avoid scheduling an update during the current cycle;
+    // blur can fire synchronously during the lit-html render when DOM changes
+    setTimeout(() => {
+      this.focused = false;
+      this.attemptedOpen = false;
+      if (this.visibleOptions.length > 0) {
+        this.input = '';
+        this.next = null;
+        this.complete = true;
+        this.visibleOptions = [];
+        this.cursorIndex = 0;
+      }
 
-    if (
-      this.isMultiMode &&
-      this.maxItems > 0 &&
-      this.values.length >= this.maxItems
-    ) {
-      this.infoText = '';
-    }
+      if (
+        this.isMultiMode &&
+        this.maxItems > 0 &&
+        this.values.length >= this.maxItems
+      ) {
+        this.infoText = '';
+      }
+    }, 0);
   }
 
   private handleClick(): void {

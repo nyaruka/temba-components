@@ -168,7 +168,6 @@ export class TextInput extends FieldElement {
   @property({ type: Number })
   maxlength: number;
 
-  @property({ type: Object })
   inputElement: HTMLInputElement;
 
   @property({ type: Boolean })

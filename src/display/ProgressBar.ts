@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { property } from 'lit/decorators.js';
 
@@ -166,9 +166,9 @@ export class ProgressBar extends RapidElement {
   @property({ type: Boolean })
   animated = true;
 
-  public updated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
+  public willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+
     if (changes.has('eta') && this.eta) {
       this.estimatedCompletionDate = new Date(this.eta);
       this.showEstimatedCompletion = this.estimatedCompletionDate > new Date();

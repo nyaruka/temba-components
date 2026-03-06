@@ -1,4 +1,4 @@
-import { TemplateResult, html, PropertyValues } from 'lit';
+import { PropertyValues, TemplateResult, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { Select, SelectOption } from './Select';
@@ -53,9 +53,7 @@ export class Omnibox extends Select<OmniOption> {
   @property({ type: Boolean })
   queryParam = 'search';
 
-  public update(changes: PropertyValues): void {
-    super.update(changes);
-
+  public willUpdate(changes: PropertyValues): void {
     if (
       (changes.has('groups') || changes.has('contacts')) &&
       (this.groups || this.contacts)
@@ -71,6 +69,7 @@ export class Omnibox extends Select<OmniOption> {
 
       this.endpoint = this.endpoint + types;
     }
+    super.willUpdate(changes);
   }
 
   /** An option in the drop down */

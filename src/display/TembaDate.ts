@@ -1,4 +1,4 @@
-import { css, html, PropertyValueMap, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Store } from '../store/Store';
@@ -35,24 +35,16 @@ export class TembaDate extends RapidElement {
 
   store: Store;
 
-  protected firstUpdated(
-    changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.firstUpdated(changedProperties);
+  public connectedCallback(): void {
+    super.connectedCallback();
     this.store = document.querySelector('temba-store');
   }
 
-  protected updated(
-    changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(changedProperties);
-    if (changedProperties.has('value')) {
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('value')) {
       this.datetime = DateTime.fromISO(this.value);
     }
-  }
-
-  public connectedCallback(): void {
-    super.connectedCallback();
   }
 
   public render(): TemplateResult {

@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
@@ -82,6 +82,20 @@ export class TembaSlider extends FieldElement {
     this.handleMouseUp = this.handleMouseUp.bind(this);
   }
 
+  public willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+    if (changedProperties.has('value')) {
+      // Normalize value to min/max bounds
+      let cValue = parseInt(this.value);
+      if (!cValue || cValue < this.min) {
+        cValue = this.min;
+      } else if (cValue > this.max) {
+        cValue = this.max;
+      }
+      this.value = '' + cValue;
+    }
+  }
+
   public updated(changedProperties: Map<string, any>): void {
     if (changedProperties.has('value')) {
       this.updateCircle();
@@ -127,19 +141,15 @@ export class TembaSlider extends FieldElement {
   public updateCircle() {
     const track = this.shadowRoot.querySelector('.track') as HTMLDivElement;
     const pre = this.shadowRoot.querySelector('.pre') as HTMLDivElement;
+    const circle = this.shadowRoot.querySelector('.circle') as HTMLDivElement;
     const range = this.max - this.min;
-    let cValue = parseInt(this.value);
-    if (!cValue || cValue < this.min) {
-      cValue = this.min;
-    } else if (cValue > this.max) {
-      cValue = this.max;
-    }
-    this.value = '' + cValue;
+    const cValue = parseInt(this.value) || this.min;
     const pct = (cValue - this.min) / range;
     const pctAsPixels = track.offsetWidth * pct;
 
-    this.circleX = pctAsPixels + (pre ? pre.offsetWidth : 0);
-    this.requestUpdate();
+    this.circleX = Math.round(pctAsPixels + (pre ? pre.offsetWidth : 0));
+    // directly update DOM to avoid scheduling another update
+    circle.style.left = this.circleX + 'px';
   }
 
   public renderWidget(): TemplateResult {

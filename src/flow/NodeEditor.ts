@@ -1,4 +1,4 @@
-import { html, TemplateResult, css } from 'lit';
+import { html, TemplateResult, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Node, NodeUI, Action, FlowDefinition } from '../store/flow-definition';
@@ -608,6 +608,32 @@ export class NodeEditor extends RapidElement {
     this.initializeFormData();
   }
 
+  willUpdate(changedProperties: PropertyValues): void {
+    super.willUpdate(changedProperties);
+    if (
+      changedProperties.has('node') ||
+      changedProperties.has('action') ||
+      changedProperties.has('nodeUI')
+    ) {
+      // For action editing, we only need the action
+      if (this.action && (!this.node || !this.nodeUI)) {
+        this.isOpen = true;
+        this.initializeFormData();
+        this.errors = {};
+      }
+      // For node editing, we need both node and nodeUI
+      else if (this.node && this.nodeUI) {
+        this.isOpen = true;
+        this.initializeFormData();
+        this.errors = {};
+      }
+      // If we don't have the required data, close the dialog
+      else if (!this.action && (!this.node || !this.nodeUI)) {
+        this.isOpen = false;
+      }
+    }
+  }
+
   updated(changedProperties: Map<string | number | symbol, unknown>): void {
     super.updated(changedProperties);
     if (
@@ -617,24 +643,13 @@ export class NodeEditor extends RapidElement {
     ) {
       // For action editing, we only need the action
       if (this.action && (!this.node || !this.nodeUI)) {
-        this.openDialog();
+        this.resolveFormData();
       }
       // For node editing, we need both node and nodeUI
       else if (this.node && this.nodeUI) {
-        this.openDialog();
-      }
-      // If we don't have the required data, close the dialog
-      else if (!this.action && (!this.node || !this.nodeUI)) {
-        this.isOpen = false;
+        this.resolveFormData();
       }
     }
-  }
-
-  private openDialog(): void {
-    this.initializeFormData();
-    this.errors = {};
-    this.isOpen = true;
-    this.resolveFormData();
   }
 
   private initializeFormData(): void {

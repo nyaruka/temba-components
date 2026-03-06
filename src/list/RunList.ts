@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Checkbox } from '../form/Checkbox';
 import { Select } from '../form/select/Select';
@@ -54,8 +54,7 @@ export class RunList extends TembaList {
     super.firstUpdated(changedProperties);
   }
 
-  public updated(changedProperties: Map<string, any>): void {
-    super.updated(changedProperties);
+  public willUpdate(changedProperties: PropertyValues): void {
     if (changedProperties.has('responses') || changedProperties.has('flow')) {
       if (this.flow) {
         this.endpoint = `/api/v2/runs.json?flow=${this.flow}${
@@ -67,6 +66,19 @@ export class RunList extends TembaList {
     if (changedProperties.has('resultPreview')) {
       this.createRenderOption();
     }
+
+    // pre-sync selectedRun so handleSelected() in updated() won't trigger a warning
+    if (changedProperties.has('cursorIndex')) {
+      if (this.cursorIndex > -1) {
+        this.selectedRun = this.items[this.cursorIndex];
+      }
+    }
+
+    super.willUpdate(changedProperties);
+  }
+
+  public updated(changedProperties: Map<string, any>): void {
+    super.updated(changedProperties);
 
     if (changedProperties.has('results')) {
       if (this.results) {

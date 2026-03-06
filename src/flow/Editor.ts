@@ -1,5 +1,5 @@
 import { html, TemplateResult } from 'lit-html';
-import { css, PropertyValueMap, unsafeCSS } from 'lit';
+import { css, PropertyValueMap, PropertyValues, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
   FlowDefinition,
@@ -307,6 +307,10 @@ export class Editor extends RapidElement {
 
   @state()
   private reflowPending = false;
+
+  // Non-reactive flag set in willUpdate to suppress the debouncedSave
+  // call in updated() when the dirtyDate change comes from a reflow
+  private _suppressDirtySave = false;
 
   @state()
   private reflowUnsaved = false;
@@ -1281,17 +1285,10 @@ export class Editor extends RapidElement {
     this.isValidTarget = true;
   }
 
-  protected updated(
-    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    super.updated(changes);
-    if (changes.has('canvasSize')) {
-      // console.log('Setting canvas size', this.canvasSize);
-    }
+  protected willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
 
     if (changes.has('definition')) {
-      this.updateCanvasSize();
-
       // Set flowType from the loaded definition
       if (this.definition?.type) {
         this.flowType = this.getFlowTypeFromDefinition(this.definition.type);
@@ -1307,6 +1304,40 @@ export class Editor extends RapidElement {
       if (this.translationFilters.categories !== normalizedFilters.categories) {
         this.translationFilters = normalizedFilters;
       }
+    }
+
+    if (changes.has('dirtyDate')) {
+      if (this.dirtyDate) {
+        if (this.reflowPending) {
+          // This dirtyDate is from the reflow itself — clear the flag
+          // and suppress the save in updated()
+          this.reflowPending = false;
+          this._suppressDirtySave = true;
+        } else {
+          // Normal change — if reflow card was showing, it goes away
+          // because these changes will be included in the save
+          if (this.reflowUnsaved) {
+            this.reflowUnsaved = false;
+            this.savedReflowPositions = null;
+            this.clearReflowAutoSaveTimer();
+          }
+          this.isSaving = true;
+        }
+      }
+    }
+  }
+
+  protected updated(
+    changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    super.updated(changes);
+    if (changes.has('canvasSize')) {
+      // console.log('Setting canvas size', this.canvasSize);
+    }
+
+    if (changes.has('definition')) {
+      // defer to avoid triggering a reactive canvasSize update during this cycle
+      setTimeout(() => this.updateCanvasSize(), 0);
 
       this.translationCache.clear();
 
@@ -1336,18 +1367,9 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        if (this.reflowPending) {
-          // This dirtyDate is from the reflow itself — suppress save
-          this.reflowPending = false;
+        if (this._suppressDirtySave) {
+          this._suppressDirtySave = false;
         } else {
-          // Normal change — if reflow card was showing, it goes away
-          // because these changes will be included in the save
-          if (this.reflowUnsaved) {
-            this.reflowUnsaved = false;
-            this.savedReflowPositions = null;
-            this.clearReflowAutoSaveTimer();
-          }
-          this.isSaving = true;
           this.debouncedSave();
         }
       }
@@ -1370,7 +1392,9 @@ export class Editor extends RapidElement {
 
     if (changes.has('saveError') && this.saveError) {
       this.showSaveErrorDialog(this.saveError);
-      this.saveError = null;
+      setTimeout(() => {
+        this.saveError = null;
+      }, 0);
     }
 
     if (changes.has('languageCode')) {

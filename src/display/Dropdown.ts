@@ -109,11 +109,9 @@ export class Dropdown extends RapidElement {
   @property({ type: Boolean })
   mask = false;
 
-  @property({ type: Object, attribute: false })
-  dropdownStyle = {};
+  dropdownStyle: Record<string, string> = {};
 
-  @property({ type: Object, attribute: false })
-  arrowStyle = {};
+  arrowStyle: Record<string, string> = {};
 
   constructor() {
     super();
@@ -149,6 +147,10 @@ export class Dropdown extends RapidElement {
   }
 
   private openDropdown() {
+    // reset position so calculatePosition() sees the natural bounds
+    this.dropdownStyle = {};
+    this.arrowStyle = {};
+
     this.open = true;
     this.dormant = false;
     this.resetBlurHandler();
@@ -176,14 +178,10 @@ export class Dropdown extends RapidElement {
   public updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('open')) {
-      this.dropdownStyle = {};
-    }
-
-    if (changedProperties.has('dropdownStyle')) {
-      if (Object.keys(this.dropdownStyle).length === 0) {
-        this.calculatePosition();
-      }
+    if (changedProperties.has('open') && this.open) {
+      // defer to avoid scheduling an update during the current cycle;
+      // the dropdown transitions from opacity 0 so this is not visible
+      setTimeout(() => this.calculatePosition(), 0);
     }
   }
 
@@ -223,7 +221,7 @@ export class Dropdown extends RapidElement {
       // if off to the bottom, bump it up
       if (dropdownBounds.bottom > window.innerHeight) {
         dropdownStyle['top'] = toggleBounds.top - dropdownBounds.height + 'px';
-        dropdownStyle['margin-top'] = '-0.5em';
+        dropdownStyle['marginTop'] = '-0.5em';
         bumpedUp = true;
       }
 

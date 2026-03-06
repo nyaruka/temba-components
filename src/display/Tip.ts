@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { RapidElement } from '../RapidElement';
@@ -75,10 +75,7 @@ export class Tip extends RapidElement {
   @property({ type: Boolean })
   hideOnChange: boolean;
 
-  @property({ type: Number, attribute: false })
   top: number;
-
-  @property({ type: Number, attribute: false })
   left: number;
 
   @property({ type: Number, attribute: false })
@@ -95,19 +92,24 @@ export class Tip extends RapidElement {
   lastEnter = 0;
   failSafe = 0;
 
-  public updated(changed: Map<string, any>) {
-    if ((changed.has('visible') || changed.has('text')) && this.visible) {
-      this.calculatePosition();
-    }
-
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
     if (changed.has('text') && this.hideOnChange) {
       this.visible = false;
     }
   }
 
+  public updated(changed: Map<string, any>) {
+    if ((changed.has('visible') || changed.has('text')) && this.visible) {
+      this.calculatePosition();
+    }
+  }
+
   private calculatePosition() {
     if (this.visible) {
-      const tipBounds = this.getDiv('.tip').getBoundingClientRect();
+      const tipEl = this.getDiv('.tip') as HTMLElement;
+      const arrowEl = this.getDiv('.arrow') as HTMLElement;
+      const tipBounds = tipEl.getBoundingClientRect();
       const anchorBounds = this.getDiv('.slot').getBoundingClientRect();
 
       // TODO: pick a direction automatically
@@ -120,12 +122,12 @@ export class Tip extends RapidElement {
       this.arrowTop = 0;
 
       if (tipSide === 'left') {
-        this.left = anchorBounds.left - tipBounds.width - 16;
+        this.left = anchorBounds.left - tipBounds.width - 10;
         this.top = getMiddle(anchorBounds, tipBounds);
 
         // position our arrow
         this.arrowTop = tipBounds.height / 2;
-        this.arrowLeft = tipBounds.width - 1;
+        this.arrowLeft = tipBounds.width + 2;
         this.arrow = '▶';
       } else if (tipSide === 'right') {
         this.left = anchorBounds.right + 12;
@@ -149,6 +151,20 @@ export class Tip extends RapidElement {
         this.arrowLeft = tipBounds.width / 2 - 3;
         this.arrow = '▲';
       }
+
+      // round to avoid sub-pixel rendering differences
+      this.top = Math.round(this.top);
+      this.left = Math.round(this.left);
+      this.arrowTop = Math.round(this.arrowTop);
+      this.arrowLeft = Math.round(this.arrowLeft);
+
+      // directly update DOM to avoid scheduling another update
+      tipEl.style.top = `${this.top}px`;
+      tipEl.style.left = `${this.left}px`;
+      arrowEl.style.top = `${this.arrowTop}px`;
+      arrowEl.style.left = `${this.arrowLeft}px`;
+      arrowEl.textContent = this.arrow;
+      arrowEl.className = `arrow ${this.arrow}`;
     }
   }
 

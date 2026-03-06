@@ -1,7 +1,7 @@
 import { html, TemplateResult } from 'lit-html';
 import { RapidElement } from '../RapidElement';
 import { FloatingWindow } from '../layout/FloatingWindow';
-import { css, PropertyValueMap } from 'lit';
+import { css, PropertyValueMap, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { postJSON, fromCookie, generateUUIDv7 } from '../utils';
 import { getStore } from '../store/Store';
@@ -929,6 +929,14 @@ export class Simulator extends RapidElement {
     });
   }
 
+  protected willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+
+    if (changes.has('flow') && this.flow) {
+      this.endpoint = `/flow/simulate/${this.flow}/`;
+    }
+  }
+
   protected updated(
     changes: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -940,10 +948,6 @@ export class Simulator extends RapidElement {
       changes.has('attachmentMenuOpen')
     ) {
       this.updateBottomInputHeight();
-    }
-
-    if (changes.has('flow') && this.flow) {
-      this.endpoint = `/flow/simulate/${this.flow}/`;
     }
 
     // handle attachment menu click outside listener

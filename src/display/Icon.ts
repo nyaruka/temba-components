@@ -1,4 +1,4 @@
-import { LitElement, TemplateResult, html, css } from 'lit';
+import { LitElement, TemplateResult, html, css, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { Icon, SVG_FINGERPRINT } from '../Icons';
 import { getClasses } from '../utils';
@@ -153,9 +153,9 @@ export class VectorIcon extends LitElement {
 
   private lastName: string;
 
-  public firstUpdated(changes: Map<string, any>) {
-    super.firstUpdated(changes);
-    if (changes.has('animateChange')) {
+  public willUpdate(changes: PropertyValues): void {
+    super.willUpdate(changes);
+    if (!this.hasUpdated && changes.has('animateChange')) {
       // set our default duration if we need one
       if (!changes.has('animationDuration')) {
         this.animationDuration = this.steps * this.animationDuration;
@@ -165,6 +165,13 @@ export class VectorIcon extends LitElement {
         this.steps = 3;
         this.animationDuration = 400;
         this.easing = 'linear';
+      }
+    }
+
+    // clear lastName at the animation halfway point so render uses the new name
+    if (changes.has('animationStep')) {
+      if (this.lastName && this.animationStep >= this.steps / 2) {
+        this.lastName = null;
       }
     }
   }
@@ -179,12 +186,6 @@ export class VectorIcon extends LitElement {
     super.updated(changes);
 
     if (changes.has('animationStep')) {
-      // if we are halfway through, change the icon
-      if (this.lastName && this.animationStep >= this.steps / 2) {
-        this.lastName = null;
-        this.requestUpdate();
-      }
-
       setTimeout(() => {
         if (this.animationStep > 0 && this.animationStep < this.steps) {
           this.animationStep++;
@@ -197,9 +198,12 @@ export class VectorIcon extends LitElement {
     if (changes.has('name') && this.animateChange) {
       this.lastName = changes.get('name');
 
-      // our name changed, lets animate it
+      // our name changed, defer animation start to avoid scheduling
+      // an update during the current update cycle
       if (this.lastName && this.animateChange) {
-        this.animationStep = 1;
+        setTimeout(() => {
+          this.animationStep = 1;
+        }, 0);
       }
     }
   }

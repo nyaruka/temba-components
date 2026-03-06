@@ -1,4 +1,4 @@
-import { PropertyValueMap } from 'lit';
+import { PropertyValueMap, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 
@@ -45,16 +45,19 @@ export class EndpointMonitorElement extends StoreMonitorElement {
     }
   }
 
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('url') && !this.url) {
+      this.data = null;
+    }
+  }
+
   protected updated(
     properties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     super.updated(properties);
-    if (properties.has('url')) {
-      if (this.url) {
-        this.store.makeRequest(this.url, { prepareData: this.prepareData });
-      } else {
-        this.data = null;
-      }
+    if (properties.has('url') && this.url) {
+      this.store.makeRequest(this.url, { prepareData: this.prepareData });
     }
   }
 }

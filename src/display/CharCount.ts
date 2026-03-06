@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { splitSMS } from './sms';
 import { property } from 'lit/decorators.js';
@@ -285,9 +285,9 @@ export class CharCount extends RapidElement {
   @property({ type: Object, attribute: false })
   extended: string[] = [];
 
-  public updated(changes: Map<string, any>) {
-    super.updated(changes);
-    if (changes.has('text')) {
+  public willUpdate(changed: PropertyValues) {
+    super.willUpdate(changed);
+    if (changed.has('text')) {
       this.updateSegments();
     }
   }
