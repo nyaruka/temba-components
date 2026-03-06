@@ -141,13 +141,15 @@ export class TembaSlider extends FieldElement {
   public updateCircle() {
     const track = this.shadowRoot.querySelector('.track') as HTMLDivElement;
     const pre = this.shadowRoot.querySelector('.pre') as HTMLDivElement;
+    const circle = this.shadowRoot.querySelector('.circle') as HTMLDivElement;
     const range = this.max - this.min;
     const cValue = parseInt(this.value) || this.min;
     const pct = (cValue - this.min) / range;
     const pctAsPixels = track.offsetWidth * pct;
 
-    this.circleX = pctAsPixels + (pre ? pre.offsetWidth : 0);
-    this.requestUpdate();
+    this.circleX = Math.round(pctAsPixels + (pre ? pre.offsetWidth : 0));
+    // directly update DOM to avoid scheduling another update
+    circle.style.left = this.circleX + 'px';
   }
 
   public renderWidget(): TemplateResult {

@@ -1304,7 +1304,10 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        if (!this.reflowPending) {
+        if (this.reflowPending) {
+          // This dirtyDate is from the reflow itself — clear the flag
+          this.reflowPending = false;
+        } else {
           // Normal change — if reflow card was showing, it goes away
           // because these changes will be included in the save
           if (this.reflowUnsaved) {
@@ -1327,7 +1330,8 @@ export class Editor extends RapidElement {
     }
 
     if (changes.has('definition')) {
-      this.updateCanvasSize();
+      // defer to avoid triggering a reactive canvasSize update during this cycle
+      setTimeout(() => this.updateCanvasSize(), 0);
 
       this.translationCache.clear();
 
@@ -1357,10 +1361,9 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        if (this.reflowPending) {
-          // This dirtyDate is from the reflow itself — suppress save
-          this.reflowPending = false;
-        } else {
+        // If reflowPending was just cleared in willUpdate, this dirtyDate
+        // is from the reflow itself — suppress save
+        if (!changes.has('reflowPending')) {
           this.debouncedSave();
         }
       }
@@ -1383,9 +1386,9 @@ export class Editor extends RapidElement {
 
     if (changes.has('saveError') && this.saveError) {
       this.showSaveErrorDialog(this.saveError);
-      this.updateComplete.then(() => {
+      setTimeout(() => {
         this.saveError = null;
-      });
+      }, 0);
     }
 
     if (changes.has('languageCode')) {

@@ -171,9 +171,12 @@ export class Modax extends RapidElement {
   public willUpdate(changes: PropertyValues) {
     super.willUpdate(changes);
 
-    if (changes.has('open') && !this.open) {
-      // open can get reflected into undefined, make sure we've been open before
-      if (changes.get('open') !== undefined) {
+    if (changes.has('open')) {
+      if (this.open) {
+        this.fetching = true;
+        this.body = this.getLoading();
+      } else if (changes.get('open') !== undefined) {
+        // open can get reflected into undefined, make sure we've been open before
         this.body = '';
         this.originX = null;
         this.originY = null;
@@ -300,8 +303,6 @@ export class Modax extends RapidElement {
   private fetchForm() {
     // const CancelToken = axios.CancelToken;
     // this.cancelToken = CancelToken.source();
-    this.fetching = true;
-    this.body = this.getLoading();
     getUrl(this.endpoint, null, this.getHeaders())
       .then((response: WebResponse) => {
         // if it's a full page, breakout of the modal

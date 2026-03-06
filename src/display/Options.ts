@@ -367,6 +367,27 @@ export class Options extends RapidElement {
         }
       }
     }
+
+    // pre-sync width so adjustWidth() in updated() won't trigger a warning
+    if ((changed.has('options') || changed.has('anchorTo')) && this.anchorTo) {
+      const anchorBounds = this.anchorTo.getBoundingClientRect();
+      this.width =
+        this.staticWidth > 0
+          ? this.staticWidth
+          : anchorBounds.width - 2 - this.marginHorizontal * 2;
+    }
+
+    // pre-sync position so calculatePosition() in updated() won't trigger a warning
+    if (
+      (changed.has('options') || changed.has('visible')) &&
+      this.visible &&
+      !this.block &&
+      this.anchorTo
+    ) {
+      const anchorBounds = this.anchorTo.getBoundingClientRect();
+      this.top = anchorBounds.bottom;
+      this.left = anchorBounds.left;
+    }
   }
 
   public updated(changed: Map<string, any>) {

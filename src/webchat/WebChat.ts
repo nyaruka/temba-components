@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { LitElement, TemplateResult, html, css, PropertyValueMap } from 'lit';
+import {
+  LitElement,
+  PropertyValues,
+  TemplateResult,
+  html,
+  css,
+  PropertyValueMap
+} from 'lit';
 import { property } from 'lit/decorators.js';
 import { generateUUIDv7, getCookie, setCookie } from '../utils';
 import { DEFAULT_AVATAR } from './assets';
@@ -404,6 +411,16 @@ export class WebChat extends LitElement {
     super();
   }
 
+  public willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    // pre-sync status to CONNECTING to avoid setting it during updated()
+    if (changed.has('open') && this.open && changed.get('open') !== undefined) {
+      if (this.status === ChatStatus.DISCONNECTED) {
+        this.status = ChatStatus.CONNECTING;
+      }
+    }
+  }
+
   public firstUpdated(
     changed: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
@@ -430,7 +447,15 @@ export class WebChat extends LitElement {
   }
 
   private openSocket(): void {
-    if (this.status !== ChatStatus.DISCONNECTED) {
+    if (
+      this.status !== ChatStatus.DISCONNECTED &&
+      this.status !== ChatStatus.CONNECTING
+    ) {
+      return;
+    }
+
+    // avoid creating duplicate sockets
+    if (this.sock && this.sock.readyState <= WebSocket.OPEN) {
       return;
     }
 
@@ -540,7 +565,7 @@ export class WebChat extends LitElement {
     super.updated(changed);
 
     if (this.open && changed.has('open') && changed.get('open') !== undefined) {
-      if (this.status === ChatStatus.DISCONNECTED) {
+      if (this.status === ChatStatus.CONNECTING) {
         this.openSocket();
       }
     }

@@ -130,6 +130,7 @@ export class TembaList extends RapidElement {
 
     if (changedProperties.has('endpoint') && this.endpoint) {
       this.loading = true;
+      this.reset();
     }
   }
 
@@ -137,7 +138,6 @@ export class TembaList extends RapidElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('endpoint') && this.endpoint) {
-      this.reset();
       this.fetchItems();
     }
 

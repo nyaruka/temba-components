@@ -405,7 +405,6 @@ export class Compose extends FieldElement {
       changes.has('variables')
     ) {
       this.fireCustomEvent(CustomEventType.ContentChanged, this.langValues);
-      this.requestUpdate('langValues');
     }
   }
 

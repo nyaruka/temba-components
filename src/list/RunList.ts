@@ -62,15 +62,23 @@ export class RunList extends TembaList {
         }`;
       }
     }
+
+    if (changedProperties.has('resultPreview')) {
+      this.createRenderOption();
+    }
+
+    // pre-sync selectedRun so handleSelected() in updated() won't trigger a warning
+    if (changedProperties.has('cursorIndex')) {
+      if (this.cursorIndex > -1) {
+        this.selectedRun = this.items[this.cursorIndex];
+      }
+    }
+
     super.willUpdate(changedProperties);
   }
 
   public updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
-
-    if (changedProperties.has('resultPreview')) {
-      this.createRenderOption();
-    }
 
     if (changedProperties.has('results')) {
       if (this.results) {
