@@ -82,12 +82,7 @@ export class Compose extends FieldElement {
 
       temba-charcount {
         margin-right: 5px;
-        overflow: hidden;
         --temba-charcount-counts-margin-top: 0px;
-        --temba-charcount-summary-margin-top: 0px;
-        --temba-charcount-summary-position: fixed;
-        --temba-charcount-summary-right: 105px;
-        --temba-charcount-summary-bottom: 105px;
       }
 
       .send-error {

@@ -170,7 +170,7 @@ export class CharCount extends RapidElement {
   static get styles() {
     return css`
       :host {
-        overflow: auto;
+        overflow: visible;
       }
 
       :host::after {
@@ -215,8 +215,6 @@ export class CharCount extends RapidElement {
         visibility: hidden;
         text-align: left;
         position: fixed;
-        margin-left: -190px;
-        margin-top: 20px;
         z-index: 1000;
       }
 
@@ -300,6 +298,17 @@ export class CharCount extends RapidElement {
     this.count = this.text.length;
   }
 
+  private handleCounterMouseEnter(e: MouseEvent) {
+    const counter = e.currentTarget as HTMLElement;
+    const summary = counter.querySelector('.summary') as HTMLElement;
+    if (!summary) return;
+
+    // Use margin-based positioning so it works both in normal contexts
+    // and inside CSS transform ancestors (where fixed acts like absolute)
+    summary.style.marginLeft = `${counter.offsetWidth - summary.offsetWidth}px`;
+    summary.style.marginTop = '4px';
+  }
+
   public render(): TemplateResult {
     const hasExpressions = this.text && this.text.indexOf('@') > -1;
 
@@ -348,7 +357,7 @@ export class CharCount extends RapidElement {
 
     return html`<div class="counter${
       attention ? ' attention' : ''
-    }"><div class="counts">${this.count}${
+    }" @mouseenter=${this.handleCounterMouseEnter}><div class="counts">${this.count}${
       this.segments > 1 || hasExpressions
         ? html`<div class="segments">
             &nbsp;/&nbsp;${this.segments}${hasExpressions ? html`+` : null}
