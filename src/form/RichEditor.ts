@@ -481,8 +481,8 @@ export class RichEditor extends FieldElement {
   private query: string;
   private _skipRender = false;
 
-  // -- Undo/redo --
-
+  // Undo/redo: native browser undo doesn't work because syntax highlighting
+  // replaces innerHTML on every input, destroying the browser's undo history.
   private undoStack: { value: string; caret: number }[] = [];
   private redoStack: { value: string; caret: number }[] = [];
 
@@ -636,7 +636,6 @@ export class RichEditor extends FieldElement {
     const text = getTextFromEditableDiv(this.editableDiv);
     const caretPos = getCaretOffset(this.editableDiv);
 
-    // Save undo state when value actually changes
     if (text !== (this.value || '')) {
       this.undoStack.push({ value: this.value || '', caret: caretPos });
       this.redoStack = [];
@@ -656,30 +655,48 @@ export class RichEditor extends FieldElement {
     this.fireEvent('change');
   }
 
+  private performUndo(): void {
+    if (this.undoStack.length > 0) {
+      const caret = getCaretOffset(this.editableDiv);
+      this.redoStack.push({ value: this.value || '', caret });
+      const state = this.undoStack.pop();
+      this.applyValue(state.value, state.caret);
+    }
+  }
+
+  private performRedo(): void {
+    if (this.redoStack.length > 0) {
+      const caret = getCaretOffset(this.editableDiv);
+      this.undoStack.push({ value: this.value || '', caret });
+      const state = this.redoStack.pop();
+      this.applyValue(state.value, state.caret);
+    }
+  }
+
+  // Handles undo/redo from Edit menu and context menu
+  private handleBeforeInput(e: InputEvent): void {
+    if (e.inputType === 'historyUndo') {
+      e.preventDefault();
+      this.performUndo();
+    } else if (e.inputType === 'historyRedo') {
+      e.preventDefault();
+      this.performRedo();
+    }
+  }
+
   private handleKeydown(e: KeyboardEvent): void {
     const mod = e.metaKey || e.ctrlKey;
 
-    // Undo
+    // Undo/redo via keyboard: preventDefault here suppresses the subsequent
+    // beforeinput event, avoiding double-handling
     if (mod && e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
-      if (this.undoStack.length > 0) {
-        const caret = getCaretOffset(this.editableDiv);
-        this.redoStack.push({ value: this.value || '', caret });
-        const state = this.undoStack.pop();
-        this.applyValue(state.value, state.caret);
-      }
+      this.performUndo();
       return;
     }
-
-    // Redo
     if (mod && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
       e.preventDefault();
-      if (this.redoStack.length > 0) {
-        const caret = getCaretOffset(this.editableDiv);
-        this.undoStack.push({ value: this.value || '', caret });
-        const state = this.redoStack.pop();
-        this.applyValue(state.value, state.caret);
-      }
+      this.performRedo();
       return;
     }
 
@@ -880,6 +897,7 @@ export class RichEditor extends FieldElement {
             spellcheck="false"
             data-placeholder=${this.placeholder}
             @input=${this.handleInput}
+            @beforeinput=${this.handleBeforeInput}
             @keydown=${this.handleKeydown}
             @keyup=${this.handleKeyUp}
             @click=${this.handleClick}
