@@ -6,7 +6,12 @@ import {
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
-import { renderClamped } from '../utils';
+import {
+  renderClamped,
+  renderHighlightedText,
+  renderLineItem,
+  getLlmIcon
+} from '../utils';
 
 export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
@@ -20,9 +25,18 @@ export const split_by_llm: NodeConfig = {
     ) as CallLLM;
     const instructions =
       callLlmAction?.instructions || 'Configure AI instructions';
+    const llmName = callLlmAction?.llm?.name;
     return html`
+      ${llmName
+        ? html`<div class="body" style="padding-bottom:0;">
+            ${renderLineItem(llmName, getLlmIcon(llmName))}
+          </div>`
+        : null}
       <div class="body" style="margin-bottom:10px;">
-        ${renderClamped(instructions, instructions)}
+        ${renderClamped(
+          renderHighlightedText(instructions, true),
+          instructions
+        )}
       </div>
     `;
   },

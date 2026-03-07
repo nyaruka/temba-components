@@ -73,6 +73,7 @@ import { NodeEditor } from './src/flow/NodeEditor';
 import { KeyValueEditor } from './src/form/KeyValueEditor';
 import { TembaArrayEditor } from './src/form/ArrayEditor';
 import { MessageEditor } from './src/form/MessageEditor';
+import { RichEditor } from './src/form/RichEditor';
 import './src/form/BaseListEditor'; // Import base class
 import { FloatingTab } from './src/display/FloatingTab';
 import { FloatingWindow } from './src/layout/FloatingWindow';
@@ -161,6 +162,7 @@ addCustomElement('temba-chart', TembaChart);
 addCustomElement('temba-key-value-editor', KeyValueEditor);
 addCustomElement('temba-array-editor', TembaArrayEditor);
 addCustomElement('temba-message-editor', MessageEditor);
+addCustomElement('temba-rich-edit', RichEditor);
 addCustomElement('temba-floating-tab', FloatingTab);
 addCustomElement('temba-floating-window', FloatingWindow);
 addCustomElement('temba-simulator', Simulator);

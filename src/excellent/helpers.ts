@@ -11,14 +11,14 @@ import {
 import { getStore, Store } from '../store/Store';
 import { renderMarkdownInline } from '../markdown';
 
-const messageParser = new ExcellentParser('@', [
+export const messageParser = new ExcellentParser('@', [
   'contact',
   'fields',
   'globals',
   'urns'
 ]);
 
-const sessionParser = new ExcellentParser('@', [
+export const sessionParser = new ExcellentParser('@', [
   'contact',
   'fields',
   'globals',
@@ -191,11 +191,16 @@ export const getCompletionSignature = (option: CompletionOption): string => {
 };
 
 /**
- * Determines the pixel position of position inside a textarea or input
- * TODO: Explore somethign like contenteditable to avoid this madness
- * see: https://jh3y.medium.com/how-to-where-s-the-caret-getting-the-xy-position-of-the-caret-a24ba372990a
+ * Determines the pixel position of a character position inside an input element.
+ * For contenteditable elements, uses the Selection API directly.
+ * For textarea/input, uses a mirror-div technique.
  */
 const getCursorXY = (input, selectionPoint) => {
+  // For contenteditable elements, use Selection API
+  if (input.isContentEditable) {
+    return getCursorXYContentEditable(input, selectionPoint);
+  }
+
   const { offsetLeft: inputX, offsetTop: inputY } = input;
   const div = document.createElement('div');
   const copyStyle = getComputedStyle(input);
@@ -219,6 +224,79 @@ const getCursorXY = (input, selectionPoint) => {
   return {
     left: inputX + spanX,
     top: inputY + spanY
+  };
+};
+
+/**
+ * Finds the DOM position (node + offset) for a given plain-text offset.
+ * Newlines are \n characters inside text nodes (tok-newline spans).
+ * Browser-added <br> artifacts are ignored.
+ */
+const findDomPosition = (root, targetOffset) => {
+  let remaining = targetOffset;
+
+  const walk = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (remaining <= node.textContent.length) {
+        return { node, offset: remaining };
+      }
+      remaining -= node.textContent.length;
+      return null;
+    }
+
+    // Ignore browser-added <br> artifacts
+    if (node.nodeName === 'BR') {
+      return null;
+    }
+
+    for (const child of node.childNodes) {
+      const result = walk(child);
+      if (result) return result;
+    }
+    return null;
+  };
+
+  return walk(root);
+};
+
+/**
+ * Gets cursor pixel position in a contenteditable element by creating a range
+ * at the target offset and measuring with getBoundingClientRect.
+ */
+const getCursorXYContentEditable = (element, offset) => {
+  // Save current selection
+  const sel = element.getRootNode() as ShadowRoot;
+  const selection = (sel as any).getSelection
+    ? (sel as any).getSelection()
+    : window.getSelection();
+  const savedRange =
+    selection && selection.rangeCount > 0
+      ? selection.getRangeAt(0).cloneRange()
+      : null;
+
+  const pos = findDomPosition(element, offset);
+
+  if (!pos) {
+    // Offset is beyond the text — use element bounds
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, top: rect.top };
+  }
+
+  // Create a range at the target position and measure it
+  const range = document.createRange();
+  range.setStart(pos.node, pos.offset);
+  range.collapse(true);
+  const rect = range.getBoundingClientRect();
+
+  // Restore original selection
+  if (savedRange && selection) {
+    selection.removeAllRanges();
+    selection.addRange(savedRange);
+  }
+
+  return {
+    left: rect.left - element.getBoundingClientRect().left + element.offsetLeft,
+    top: rect.top - element.getBoundingClientRect().top + element.offsetTop
   };
 };
 
@@ -285,7 +363,15 @@ export const executeCompletionQuery = (
   }
 
   const cursor = ele.selectionStart;
-  const input = ele.value.substring(0, cursor);
+  const fullValue = ele.value;
+
+  // Don't show completions when cursor is in the middle of a word
+  const charAfterCursor = fullValue[cursor];
+  if (charAfterCursor && /[\w.]/.test(charAfterCursor)) {
+    return result;
+  }
+
+  const input = fullValue.substring(0, cursor);
 
   const parser = session ? sessionParser : messageParser;
   const expressions = parser.findExpressions(input);
@@ -352,6 +438,20 @@ export const executeCompletionQuery = (
             ? getFunctions(store.getFunctions(), result.query)
             : [])
         ];
+
+        // Don't show completion when the query is already an exact match
+        // for the only option (e.g. cursor at end of a complete function name)
+        if (result.options.length === 1) {
+          const opt = result.options[0];
+          const optName = (
+            opt.name ||
+            opt.signature?.substring(0, opt.signature.indexOf('(')) ||
+            ''
+          ).toLowerCase();
+          if (optName === result.query.toLowerCase()) {
+            result.options = [];
+          }
+        }
 
         return result;
       }

@@ -2,6 +2,8 @@ import { html, TemplateResult } from 'lit-html';
 import { NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
+import { tokenize, TokenType } from '../excellent/tokenizer';
+import { messageParser, sessionParser } from '../excellent/helpers';
 
 const IS_MAC =
   typeof navigator !== 'undefined' &&
@@ -32,6 +34,71 @@ export function snapToGrid(value: number): number {
   const snapped = Math.round(value / GRID_SIZE) * GRID_SIZE;
   return Math.max(snapped, 0);
 }
+
+const MONO =
+  "font-family:SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;font-size:0.95em";
+
+const TOKEN_STYLES: Record<string, string> = {
+  [TokenType.ExpressionPrefix]: `color:#0086e0;font-weight:600;${MONO}`,
+  [TokenType.Identifier]: `color:#0086e0;${MONO}`,
+  [TokenType.FunctionName]: `color:#0086e0;font-weight:900;${MONO}`,
+  [TokenType.StringLiteral]: `color:#00cf0d;${MONO}`,
+  [TokenType.NumberLiteral]: `color:#c25ceb;${MONO}`,
+  [TokenType.Keyword]: `color:#1750eb;${MONO}`,
+  [TokenType.Operator]: `color:#666;${MONO}`,
+  [TokenType.ContextRef]: `color:#0086e0;${MONO}`,
+  [TokenType.Separator]: `color:#666;${MONO}`,
+  [TokenType.Arrow]: `color:#666;${MONO}`,
+  [TokenType.Bracket]: `color:#666;${MONO}`,
+  [TokenType.Paren]: `color:#999;${MONO}`,
+  [TokenType.Whitespace]: MONO
+};
+
+const LLM_ICON_MAP: [RegExp, string][] = [
+  [/claude|anthropic/i, 'anthropic'],
+  [/gpt|openai|o1|o3|o4/i, 'openai'],
+  [/gemini|google/i, 'gemini'],
+  [/azure|microsoft/i, 'azure'],
+  [/deepseek/i, 'deepseek']
+];
+
+export const getLlmIcon = (name: string): string | null => {
+  if (!name) return null;
+  for (const [pattern, icon] of LLM_ICON_MAP) {
+    if (pattern.test(name)) return icon;
+  }
+  return null;
+};
+
+/**
+ * Tokenizes text containing Excellent expressions and returns highlighted
+ * lit-html templates with inline styles, suitable for rendering on the canvas.
+ */
+export const renderHighlightedText = (
+  text: string,
+  session = false
+): TemplateResult => {
+  const parser = session ? sessionParser : messageParser;
+  const tokens = tokenize(text || '', parser);
+
+  return html`${tokens.map((token) => {
+    const style = TOKEN_STYLES[token.type];
+    if (!style) {
+      // Plain text — convert newlines to <br>
+      const parts = token.text.split('\n');
+      return html`${parts.map(
+        (part, i) => html`${i > 0 ? html`<br />` : null}${part}`
+      )}`;
+    }
+    const parts = token.text.split('\n');
+    return html`${parts.map(
+      (part, i) =>
+        html`${i > 0 ? html`<br />` : null}${part
+          ? html`<span style="${style}">${part}</span>`
+          : null}`
+    )}`;
+  })}`;
+};
 
 /**
  * Renders content clamped to a maximum number of lines with ellipsis.

@@ -1970,6 +1970,10 @@ export class NodeEditor extends RapidElement {
 
           // Wrap in a div with flex style if we have a flex style
           if (flexStyle) {
+            // Evaluated fields use temba-rich-edit which needs min-width: 0
+            // on its flex item wrapper to prevent overflow in flex rows
+            const fieldConfig = fieldName ? config.form?.[fieldName] : null;
+            const minWidth = fieldConfig?.evaluated ? ' min-width: 0;' : '';
             return inlineLabel
               ? html`<div
                   style="${flexStyle} display: flex; align-items: center; gap: 0.35rem;"
@@ -1977,7 +1981,7 @@ export class NodeEditor extends RapidElement {
                   <span class="form-row-inline-label">${inlineLabel}</span>
                   <div style="flex: 1 1 0; min-width: 0;">${itemContent}</div>
                 </div>`
-              : html`<div style="${flexStyle}">${itemContent}</div>`;
+              : html`<div style="${flexStyle}${minWidth}">${itemContent}</div>`;
           }
           return itemContent;
         })}

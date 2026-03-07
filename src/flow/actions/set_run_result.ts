@@ -2,7 +2,7 @@ import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
-import { renderClamped } from '../utils';
+import { renderClamped, renderHighlightedText } from '../utils';
 
 export const set_run_result: ActionConfig = {
   name: 'Save Flow Result',
@@ -10,7 +10,7 @@ export const set_run_result: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetRunResult) => {
     return renderClamped(
-      html`Save <strong>${action.value}</strong> as
+      html`Save ${renderHighlightedText(action.value, true)} as
         <strong>${action.name}</strong>`,
       `Save ${action.value} as ${action.name}`
     );
@@ -45,7 +45,7 @@ export const set_run_result: ActionConfig = {
       }
     },
     value: {
-      type: 'text',
+      type: 'textarea',
       label: 'Value',
       helpText: 'The value to save for this result (can use expressions)',
       required: false,

@@ -2,7 +2,7 @@ import { TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { FieldElement } from './FieldElement';
-import { Completion } from './Completion';
+import { RichEditor } from './RichEditor';
 import { MediaPicker } from './MediaPicker';
 import { Attachment } from '../interfaces';
 import { getClasses } from '../utils';
@@ -39,14 +39,14 @@ export class MessageEditor extends FieldElement {
         border-color: rgba(156, 222, 106, 0.88);
       }
 
-      /* Hide the completion field border since we draw our own */
-      .message-editor-container temba-completion::part(field) {
+      /* Hide the rich editor field border since we draw our own */
+      .message-editor-container temba-rich-edit::part(field) {
         border: none;
         box-shadow: none;
         border-radius: 0;
       }
 
-      .message-editor-container temba-completion {
+      .message-editor-container temba-rich-edit {
         --widget-box-shadow: none;
         --widget-box-shadow-focused: none;
         --widget-box-shadow-focused: none;
@@ -55,7 +55,7 @@ export class MessageEditor extends FieldElement {
       }
 
       .completion-wrapper {
-        --temba-textinput-padding: 9px 9px 24px 9px;
+        --temba-textinput-padding: 9px 9px 30px 9px;
       }
 
       .media-wrapper {
@@ -161,7 +161,7 @@ export class MessageEditor extends FieldElement {
   autogrow = true;
 
   @property({ type: Number })
-  minHeight = 60;
+  minHeight = 92;
 
   @property({ type: Number })
   maxLength: number;
@@ -199,15 +199,15 @@ export class MessageEditor extends FieldElement {
   @property({ type: Boolean, attribute: false })
   uploading = false;
 
-  private completionElement: Completion;
+  private completionElement: RichEditor;
   private mediaPickerElement: MediaPicker;
 
   public firstUpdated(changes: Map<string, any>) {
     super.firstUpdated(changes);
 
     this.completionElement = this.shadowRoot.querySelector(
-      'temba-completion'
-    ) as Completion;
+      'temba-rich-edit'
+    ) as RichEditor;
 
     // Get the visible media picker (either in media-wrapper or the hidden one)
     this.mediaPickerElement = this.shadowRoot.querySelector(
@@ -283,7 +283,7 @@ export class MessageEditor extends FieldElement {
 
   private handleCompletionChange(event: Event) {
     event.stopPropagation();
-    const completion = event.target as Completion;
+    const completion = event.target as RichEditor;
     this.value = completion.value;
     this.fireEvent('change');
   }
@@ -410,7 +410,7 @@ export class MessageEditor extends FieldElement {
         @drop=${this.handleDrop}
       >
         <div class="completion-wrapper">
-          <temba-completion
+          <temba-rich-edit
             name=${this.name}
             .value=${this.value}
             placeholder=${this.placeholder}
@@ -424,7 +424,7 @@ export class MessageEditor extends FieldElement {
             minHeight=${ifDefined(this.minHeight)}
             widgetOnly
             @change=${this.handleCompletionChange}
-          ></temba-completion>
+          ></temba-rich-edit>
         </div>
 
         <div class="media-wrapper ">
