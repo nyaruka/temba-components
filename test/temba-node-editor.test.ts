@@ -473,16 +473,16 @@ describe('temba-node-editor', () => {
     const selectComponents = el.shadowRoot.querySelectorAll('temba-select');
     const arrayComponents =
       el.shadowRoot.querySelectorAll('temba-array-editor');
-    const completionComponents =
-      el.shadowRoot.querySelectorAll('temba-completion');
+    const richEditComponents =
+      el.shadowRoot.querySelectorAll('temba-rich-edit');
 
     // Should have LLM select field
     expect(selectComponents.length).to.equal(1);
     expect(selectComponents[0].getAttribute('label')).to.equal('LLM');
 
-    // Should have input completion field
-    expect(completionComponents.length).to.equal(1);
-    expect(completionComponents[0].getAttribute('label')).to.equal('Input');
+    // Should have input rich edit field
+    expect(richEditComponents.length).to.equal(1);
+    expect(richEditComponents[0].getAttribute('label')).to.equal('Input');
 
     // Should have categories array editor
     expect(arrayComponents.length).to.equal(1);
