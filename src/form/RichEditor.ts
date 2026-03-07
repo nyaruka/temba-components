@@ -372,7 +372,7 @@ export class RichEditor extends FieldElement {
       .tok-paren {
         /* color: var(--expression-paren-color, #5492dd);*/
         color: #999;
-       }
+      }
 
       .tok-paren-unmatched {
         color: var(--expression-paren-unmatched-color, #ff0011);

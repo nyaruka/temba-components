@@ -32,7 +32,10 @@ export const split_by_llm: NodeConfig = {
             ${renderLineItem(llmName, getLlmIcon(llmName))}
           </div>`
         : null}
-      <div class="body" style="${llmName ? 'padding-top:0;' : ''}margin-bottom:10px;">
+      <div
+        class="body"
+        style="margin-bottom:10px;"
+      >
         ${renderClamped(
           renderHighlightedText(instructions, true),
           instructions
