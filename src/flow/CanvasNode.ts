@@ -1531,8 +1531,11 @@ export class CanvasNode extends RapidElement {
       getStore()?.getState().updateNode(sourceNodeUuid, updatedSourceNode);
     }
 
-    // Request update
+    // Request update and notify that this node's size changed
     this.requestUpdate();
+    this.fireCustomEvent(CustomEventType.SizeChanged, {
+      uuid: this.node.uuid
+    });
   }
 
   private renderTitle(

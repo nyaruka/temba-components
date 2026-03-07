@@ -1734,6 +1734,15 @@ export class Editor extends RapidElement {
         this.handleActionDropExternal(event);
       }
     });
+
+    this.addEventListener(CustomEventType.SizeChanged, (event: CustomEvent) => {
+      const { uuid } = event.detail;
+      if (uuid) {
+        requestAnimationFrame(() => {
+          this.checkCollisionsAndReflow([uuid]);
+        });
+      }
+    });
   }
 
   private getPosition(uuid: string, type: 'node' | 'sticky'): FlowPosition {
@@ -2547,11 +2556,11 @@ export class Editor extends RapidElement {
   }
 
   /**
-   * Checks for node collisions and reflows nodes as needed.
-   * Sacred nodes (just moved/dropped) keep their positions while
-   * other nodes are moved in the least-disruptive direction.
+   * Checks for collisions between nodes and sticky notes, and reflows
+   * as needed. Sacred items (just moved/dropped/resized) keep their
+   * positions while other items are moved in the least-disruptive direction.
    */
-  private checkCollisionsAndReflow(sacredNodeUuids: string[]): void {
+  private checkCollisionsAndReflow(sacredUuids: string[]): void {
     if (!this.definition) return;
 
     const allBounds: NodeBounds[] = [];
@@ -2565,10 +2574,20 @@ export class Editor extends RapidElement {
       }
     }
 
-    const reflowPositions = calculateReflowPositions(
-      sacredNodeUuids,
-      allBounds
-    );
+    const stickies = this.definition._ui?.stickies || {};
+    for (const [uuid, sticky] of Object.entries(stickies)) {
+      if (!sticky.position) continue;
+      const el = this.querySelector(
+        `temba-sticky-note[uuid="${uuid}"]`
+      ) as HTMLElement;
+      if (!el) continue;
+      const bounds = getNodeBounds(uuid, sticky.position, el);
+      if (bounds) {
+        allBounds.push(bounds);
+      }
+    }
+
+    const reflowPositions = calculateReflowPositions(sacredUuids, allBounds);
 
     if (reflowPositions.size > 0) {
       const positions: { [uuid: string]: FlowPosition } = {};
@@ -2953,23 +2972,12 @@ export class Editor extends RapidElement {
       if (Object.keys(newPositions).length > 0) {
         getStore().getState().updateCanvasPositions(newPositions);
 
-        // Check for collisions and reflow nodes after updating positions
-        // Filter to only check nodes (not stickies)
-        const nodeUuids = itemsToMove.filter((uuid) =>
-          this.definition.nodes.find((node) => node.uuid === uuid)
-        );
-
-        if (nodeUuids.length > 0) {
-          // Allow DOM to update before checking collisions
-          setTimeout(() => {
-            this.checkCollisionsAndReflow(nodeUuids);
-          }, 0);
-        } else {
-          // No nodes moved, just repaint connections
-          setTimeout(() => {
-            this.plumber.repaintEverything();
-          }, 0);
-        }
+        // Check for collisions and reflow after updating positions
+        // Allow DOM to update before checking collisions
+        setTimeout(() => {
+          this.checkCollisionsAndReflow(itemsToMove);
+          this.plumber.repaintEverything();
+        }, 0);
       }
 
       this.selectedItems.clear();
@@ -3235,19 +3243,11 @@ export class Editor extends RapidElement {
       if (Object.keys(newPositions).length > 0) {
         getStore().getState().updateCanvasPositions(newPositions);
 
-        const nodeUuids = itemsToMove.filter((uuid) =>
-          this.definition.nodes.find((node) => node.uuid === uuid)
-        );
-
-        if (nodeUuids.length > 0) {
-          setTimeout(() => {
-            this.checkCollisionsAndReflow(nodeUuids);
-          }, 0);
-        } else {
-          setTimeout(() => {
-            this.plumber.repaintEverything();
-          }, 0);
-        }
+        // Check for collisions and reflow after updating positions
+        setTimeout(() => {
+          this.checkCollisionsAndReflow(itemsToMove);
+          this.plumber.repaintEverything();
+        }, 0);
       }
 
       this.selectedItems.clear();
@@ -3466,10 +3466,16 @@ export class Editor extends RapidElement {
 
     if (selection.action === 'sticky') {
       // Create new sticky note
-      store.getState().createStickyNote({
+      const stickyUuid = store.getState().createStickyNote({
         left: selection.position.x,
         top: selection.position.y
       });
+
+      // Check for collisions with the new sticky as sacred
+      requestAnimationFrame(() => {
+        this.checkCollisionsAndReflow([stickyUuid]);
+      });
+
       // Clear all pending connection state and placeholder
       this.pendingCanvasConnection = null;
       this.connectionPlaceholder = null;
