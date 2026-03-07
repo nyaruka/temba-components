@@ -2887,9 +2887,14 @@ export class Editor extends RapidElement {
 
     const uuidMapping = getStore().getState().duplicateNodes(itemsToCopy);
 
-    // Accumulate copied UUIDs for the discard card — if a previous copy
-    // is still in its discard window, new copies join the same bucket.
-    this.copiedItemUuids.push(...Object.values(uuidMapping));
+    // Track only the top-level duplicated item UUIDs (not internal
+    // action/exit/category UUIDs). Accumulate across the discard window.
+    for (const uuid of itemsToCopy) {
+      const newUuid = uuidMapping[uuid];
+      if (newUuid && !this.copiedItemUuids.includes(newUuid)) {
+        this.copiedItemUuids.push(newUuid);
+      }
+    }
     this.currentDragIsCopy = true;
 
     // Update drag item to reference the copy

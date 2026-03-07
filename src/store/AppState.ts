@@ -808,6 +808,10 @@ export const zustand = createStore<AppState>()(
               cloned.router.default_category_uuid =
                 uuidMapping[cloned.router.default_category_uuid];
             }
+            if (cloned.router.wait?.timeout?.category_uuid) {
+              cloned.router.wait.timeout.category_uuid =
+                uuidMapping[cloned.router.wait.timeout.category_uuid];
+            }
           }
 
           const clonedUI: NodeUI = JSON.parse(JSON.stringify(nodeUI));
