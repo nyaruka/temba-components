@@ -4943,8 +4943,8 @@ export class Editor extends RapidElement {
       <temba-floating-window
         id="revisions-window"
         header="Revisions"
-        .width=${360}
-        .maxHeight=${600}
+        .width=${240}
+        .maxHeight=${400}
         .top=${75}
         color="rgb(142, 94, 167)"
         .hidden=${this.revisionsWindowHidden}
