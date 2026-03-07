@@ -25,7 +25,7 @@ describe('temba-message-editor', () => {
     expect(editor.placeholder).to.equal('');
     expect(editor.textarea).to.be.true;
     expect(editor.autogrow).to.be.true;
-    expect(editor.minHeight).to.equal(60);
+    expect(editor.minHeight).to.equal(92);
     expect(editor.attachments).to.deep.equal([]);
     expect(editor.maxAttachments).to.equal(3);
 

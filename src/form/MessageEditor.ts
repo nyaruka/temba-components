@@ -161,7 +161,7 @@ export class MessageEditor extends FieldElement {
   autogrow = true;
 
   @property({ type: Number })
-  minHeight = 60;
+  minHeight = 92;
 
   @property({ type: Number })
   maxLength: number;
