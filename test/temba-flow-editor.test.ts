@@ -1087,7 +1087,7 @@ describe('Editor', () => {
     });
   });
 
-  describe('reflow card', () => {
+  describe('pending changes card', () => {
     let clock: any;
 
     beforeEach(() => {
@@ -1098,7 +1098,7 @@ describe('Editor', () => {
       clock.restore();
     });
 
-    it('renders only Discard button and meter when reflowUnsaved', async () => {
+    it('renders Discard button and meter when pendingTimer is unsaved', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -1106,7 +1106,8 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).reflowUnsaved = true;
+      (editor as any).pendingTimer.unsaved = true;
+      editor.requestUpdate();
       await editor.updateComplete;
 
       const card = editor.querySelector('.reflow-card');
@@ -1126,7 +1127,7 @@ describe('Editor', () => {
       expect(meterFill).to.exist;
     });
 
-    it('does not render reflow card when reflowUnsaved is false', async () => {
+    it('does not render card when pendingTimer is not unsaved', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -1134,7 +1135,8 @@ describe('Editor', () => {
       `);
 
       (editor as any).canvasSize = { width: 800, height: 600 };
-      (editor as any).reflowUnsaved = false;
+      (editor as any).pendingTimer.unsaved = false;
+      editor.requestUpdate();
       await editor.updateComplete;
 
       const card = editor.querySelector('.reflow-card');
@@ -1149,30 +1151,21 @@ describe('Editor', () => {
       `);
 
       const saveStub = stub(editor as any, 'saveChanges').resolves();
-      (editor as any).reflowUnsaved = true;
-      (editor as any).savedReflowPositions = { 'node-1': { left: 0, top: 0 } };
+      (editor as any).pendingPositions = { 'node-1': { left: 0, top: 0 } };
 
       // Start the auto-save timer
-      (editor as any).clearReflowAutoSaveTimer();
-      (editor as any).reflowAutoSaveTimer = setTimeout(() => {
-        (editor as any).reflowAutoSaveTimer = null;
-        if ((editor as any).reflowUnsaved) {
-          (editor as any).reflowUnsaved = false;
-          (editor as any).savedReflowPositions = null;
-          (editor as any).saveChanges();
-        }
-      }, 5000);
+      (editor as any).pendingTimer.start();
 
       // Advance time just before the deadline
       clock.tick(4999);
       expect(saveStub).to.not.have.been.called;
-      expect((editor as any).reflowUnsaved).to.be.true;
+      expect((editor as any).pendingTimer.unsaved).to.be.true;
 
       // Advance past the deadline
       clock.tick(1);
       expect(saveStub).to.have.been.calledOnce;
-      expect((editor as any).reflowUnsaved).to.be.false;
-      expect((editor as any).savedReflowPositions).to.be.null;
+      expect((editor as any).pendingTimer.unsaved).to.be.false;
+      expect((editor as any).pendingPositions).to.be.null;
 
       saveStub.restore();
     });
@@ -1185,20 +1178,13 @@ describe('Editor', () => {
       `);
 
       const saveStub = stub(editor as any, 'saveChanges').resolves();
-      (editor as any).reflowUnsaved = true;
-      // Don't set savedReflowPositions — we're testing timer cancellation,
-      // not the position-revert logic (which needs the store).
-
-      // Start the auto-save timer
-      (editor as any).reflowAutoSaveTimer = setTimeout(() => {
-        (editor as any).saveChanges();
-      }, 5000);
+      // Start the timer
+      (editor as any).pendingTimer.start();
 
       // Click discard
-      (editor as any).handleReflowDiscard();
+      (editor as any).handlePendingDiscard();
 
-      expect((editor as any).reflowUnsaved).to.be.false;
-      expect((editor as any).reflowAutoSaveTimer).to.be.null;
+      expect((editor as any).pendingTimer.unsaved).to.be.false;
 
       // Advance past the original deadline — save should NOT fire
       clock.tick(6000);
@@ -1207,7 +1193,7 @@ describe('Editor', () => {
       saveStub.restore();
     });
 
-    it('cancels auto-save timer when a normal edit dismisses card', async () => {
+    it('resets timer when a normal edit occurs during countdown', async () => {
       editor = await fixture(html`
         <temba-flow-editor>
           <div id="canvas"></div>
@@ -1215,27 +1201,31 @@ describe('Editor', () => {
       `);
 
       const saveStub = stub(editor as any, 'saveChanges').resolves();
-      (editor as any).reflowUnsaved = true;
-      (editor as any).savedReflowPositions = { 'node-1': { left: 0, top: 0 } };
+      (editor as any).pendingPositions = { 'node-1': { left: 0, top: 0 } };
 
-      // Start the auto-save timer
-      (editor as any).reflowAutoSaveTimer = setTimeout(() => {
-        (editor as any).saveChanges();
-      }, 5000);
+      // Start the timer
+      (editor as any).pendingTimer.start();
 
-      // Simulate a normal edit triggering the dirtyDate handler
+      // Advance partway
+      clock.tick(3000);
+      expect((editor as any).pendingTimer.unsaved).to.be.true;
+
+      // Simulate a normal edit triggering willUpdate
       (editor as any).dirtyDate = new Date();
       const changes = new Map();
       changes.set('dirtyDate', null);
       (editor as any).willUpdate(changes);
-      (editor as any).updated(changes);
 
-      expect((editor as any).reflowUnsaved).to.be.false;
-      expect((editor as any).reflowAutoSaveTimer).to.be.null;
+      // Timer should still be active (reset, not dismissed)
+      expect((editor as any).pendingTimer.unsaved).to.be.true;
 
-      // The debouncedSave from the normal edit will call saveChanges,
-      // but the reflow timer should not fire separately
-      clock.tick(6000);
+      // Advance past the original 5s deadline but before the reset deadline
+      clock.tick(2001);
+      expect(saveStub).to.not.have.been.called;
+
+      // Advance to the full reset deadline (5s from reset at t=3000)
+      clock.tick(2999);
+      expect(saveStub).to.have.been.calledOnce;
 
       saveStub.restore();
     });
@@ -1248,29 +1238,55 @@ describe('Editor', () => {
       `);
 
       // Start the auto-save timer
-      (editor as any).reflowAutoSaveTimer = setTimeout(() => {}, 5000);
-      expect((editor as any).reflowAutoSaveTimer).to.not.be.null;
+      (editor as any).pendingTimer.start();
+      expect((editor as any).pendingTimer.unsaved).to.be.true;
 
       // Remove the editor from DOM
       editor.remove();
 
-      expect((editor as any).reflowAutoSaveTimer).to.be.null;
+      // The disconnectedCallback clears the timer
+      clock.tick(6000);
+      // No error means the timer was properly cleared
     });
 
-    it('clears existing timer when performReflow is called again', () => {
+    it('clears existing timer when start is called again', () => {
       editor = new Editor();
 
-      // Set up a first timer
-      const firstTimer = setTimeout(() => {}, 5000);
-      (editor as any).reflowAutoSaveTimer = firstTimer;
+      const saveStub = stub(editor as any, 'saveChanges').resolves();
 
-      // Call clearReflowAutoSaveTimer (which performReflow calls)
-      (editor as any).clearReflowAutoSaveTimer();
+      // Start a first timer
+      (editor as any).pendingTimer.start();
 
-      expect((editor as any).reflowAutoSaveTimer).to.be.null;
+      // Start again (resets)
+      (editor as any).pendingTimer.start();
 
-      // The old timer should be cleared — advancing time should not fire it
-      clock.tick(6000);
+      // Advance past one timer period — should only fire once
+      clock.tick(5000);
+      expect(saveStub).to.have.been.calledOnce;
+
+      saveStub.restore();
+    });
+
+    it('shows only one card even when both copy and reflow happen', async () => {
+      editor = await fixture(html`
+        <temba-flow-editor>
+          <div id="canvas"></div>
+        </temba-flow-editor>
+      `);
+
+      (editor as any).canvasSize = { width: 800, height: 600 };
+
+      // Start timer for copy
+      (editor as any).pendingTimer.start();
+
+      // Start timer again for reflow — should reset, not add a second card
+      (editor as any).pendingTimer.start();
+
+      editor.requestUpdate();
+      await editor.updateComplete;
+
+      const cards = editor.querySelectorAll('.reflow-card');
+      expect(cards.length).to.equal(1);
     });
   });
 });

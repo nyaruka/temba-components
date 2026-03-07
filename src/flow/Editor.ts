@@ -132,9 +132,67 @@ interface LocalizationUpdate {
 
 const AUTO_TRANSLATE_MODELS_ENDPOINT = '/api/internal/llms.json';
 
-// How long the reflow auto-save countdown runs (in ms).
+// How long the pending-changes auto-save countdown runs (in ms).
 // Used in both the CSS animation and the JS setTimeout.
-const REFLOW_AUTO_SAVE_DELAY = 5000;
+const PENDING_SAVE_DELAY = 5000;
+
+/**
+ * Manages a timed "pending changes" card that lets users discard or auto-save
+ * after a delay.  Used for both auto-layout and shift+drag copy.
+ */
+class PendingChangesTimer {
+  /** Whether the card is visible. */
+  unsaved = false;
+
+  /**
+   * Flag consumed once per willUpdate cycle to suppress the debounced save
+   * that would otherwise fire when dirtyDate changes.
+   */
+  pending = false;
+
+  /** Counter incremented on every start/reset – used as a Lit template key
+   *  so the CSS countdown animation restarts. */
+  resetCount = 0;
+
+  private timer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    public readonly label: string,
+    private readonly delay: number,
+    private readonly host: { requestUpdate(): void },
+    private readonly onExpire: () => void
+  ) {}
+
+  /** Show the card and start (or restart) the countdown timer. */
+  start(): void {
+    this.clearTimer();
+    this.resetCount++;
+    this.unsaved = true;
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      if (this.unsaved) {
+        this.unsaved = false;
+        this.host.requestUpdate();
+        this.onExpire();
+      }
+    }, this.delay);
+    this.host.requestUpdate();
+  }
+
+  /** Hide the card and cancel the timer without calling any callback. */
+  dismiss(): void {
+    this.unsaved = false;
+    this.clearTimer();
+    this.host.requestUpdate();
+  }
+
+  clearTimer(): void {
+    if (this.timer !== null) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+}
 
 // Offset for positioning dropped action node relative to mouse cursor
 // Keep small to make drop location close to cursor position
@@ -307,39 +365,46 @@ export class Editor extends RapidElement {
   @state()
   private zoomFitted = false;
 
-  @state()
-  private reflowPending = false;
-
   // Non-reactive flag set in willUpdate to suppress the debouncedSave
-  // call in updated() when the dirtyDate change comes from a reflow
+  // call in updated() when the dirtyDate change comes from a reflow/copy
   private _suppressDirtySave = false;
 
-  @state()
-  private reflowUnsaved = false;
+  // --- Pending-changes timer (shared by reflow + copy) ---
 
-  private savedReflowPositions: Record<string, FlowPosition> | null = null;
-  private reflowAutoSaveTimer: ReturnType<typeof setTimeout> | null = null;
-
-  private clearReflowAutoSaveTimer(): void {
-    if (this.reflowAutoSaveTimer !== null) {
-      clearTimeout(this.reflowAutoSaveTimer);
-      this.reflowAutoSaveTimer = null;
+  private pendingTimer = new PendingChangesTimer(
+    'Unsaved Changes',
+    PENDING_SAVE_DELAY,
+    this,
+    () => {
+      this.pendingPositions = null;
+      this.copiedItemUuids = [];
+      this.saveChanges();
     }
-  }
+  );
 
-  // Copy-discard state (mirrors reflow-discard)
-  @state()
-  private copyUnsaved = false;
-  private copyPending = false;
+  /** Positions of all items captured before the first pending operation. */
+  private pendingPositions: Record<string, FlowPosition> | null = null;
+
+  /** UUIDs of items created by shift+drag copy during the pending window. */
   private copiedItemUuids: string[] = [];
-  private preCopyPositions: Record<string, FlowPosition> | null = null;
-  private copyAutoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private clearCopyAutoSaveTimer(): void {
-    if (this.copyAutoSaveTimer !== null) {
-      clearTimeout(this.copyAutoSaveTimer);
-      this.copyAutoSaveTimer = null;
+  /** Save all current canvas positions if not already saved. */
+  private capturePositionsOnce(): void {
+    if (this.pendingPositions) return;
+    const saved: Record<string, FlowPosition> = {};
+    for (const node of this.definition.nodes) {
+      const ui = this.definition._ui?.nodes[node.uuid];
+      if (ui?.position) {
+        saved[node.uuid] = { ...ui.position };
+      }
     }
+    const stickies = this.definition._ui?.stickies || {};
+    for (const [uuid, sticky] of Object.entries(stickies)) {
+      if (sticky.position) {
+        saved[uuid] = { ...sticky.position };
+      }
+    }
+    this.pendingPositions = saved;
   }
 
   private preRevertState: {
@@ -1157,17 +1222,10 @@ export class Editor extends RapidElement {
         height: 100%;
         background: rgba(255, 255, 255, 0.5);
         border-radius: 2px;
-        animation: reflow-countdown ${unsafeCSS(REFLOW_AUTO_SAVE_DELAY / 1000)}s
-          linear forwards;
-      }
-
-      @keyframes reflow-countdown {
-        from {
-          width: 100%;
-        }
-        to {
-          width: 0%;
-        }
+        /* animation-name is set dynamically via style attribute */
+        animation-duration: ${unsafeCSS(PENDING_SAVE_DELAY / 1000)}s;
+        animation-timing-function: linear;
+        animation-fill-mode: forwards;
       }
     `;
   }
@@ -1326,30 +1384,17 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        if (this.reflowPending || this.copyPending) {
-          // This dirtyDate is from a reflow or copy — clear the flag
-          // and suppress the save in updated()
-          this.reflowPending = false;
-          this.copyPending = false;
+        if (this.pendingTimer.pending) {
+          // This dirtyDate is from a reflow/copy operation — consume the
+          // flag and suppress the save in updated().
+          this.pendingTimer.pending = false;
           this._suppressDirtySave = true;
-        } else if (this.copyUnsaved) {
-          // Suppress saves while copy card is showing
-          // (handles collision reflow dirtyDate changes after copy)
+        } else if (this.pendingTimer.unsaved) {
+          // Additional change while the pending-changes card is showing —
+          // reset the timer so all accumulated changes can be discarded.
+          this.pendingTimer.start();
           this._suppressDirtySave = true;
         } else {
-          // Normal change — if reflow/copy card was showing, it goes away
-          // because these changes will be included in the save
-          if (this.reflowUnsaved) {
-            this.reflowUnsaved = false;
-            this.savedReflowPositions = null;
-            this.clearReflowAutoSaveTimer();
-          }
-          if (this.copyUnsaved) {
-            this.copyUnsaved = false;
-            this.copiedItemUuids = [];
-            this.preCopyPositions = null;
-            this.clearCopyAutoSaveTimer();
-          }
           this.isSaving = true;
         }
       }
@@ -1457,8 +1502,8 @@ export class Editor extends RapidElement {
     }
 
     this.saveTimer = window.setTimeout(() => {
-      // Don't auto-save while a reflow/copy preview is pending user confirmation
-      if (this.reflowUnsaved || this.copyUnsaved) {
+      // Don't auto-save while the pending-changes card is showing
+      if (this.pendingTimer.unsaved) {
         this.saveTimer = null;
         return;
       }
@@ -1636,8 +1681,7 @@ export class Editor extends RapidElement {
       clearTimeout(this.activityTimer);
       this.activityTimer = null;
     }
-    this.clearReflowAutoSaveTimer();
-    this.clearCopyAutoSaveTimer();
+    this.pendingTimer.clearTimer();
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
@@ -2175,21 +2219,10 @@ export class Editor extends RapidElement {
   private performReflow(): void {
     if (!this.definition || this.definition.nodes.length === 0) return;
 
-    // Save current positions for discard (nodes + stickies)
-    const savedPositions: Record<string, FlowPosition> = {};
-    for (const node of this.definition.nodes) {
-      const ui = this.definition._ui?.nodes[node.uuid];
-      if (ui?.position) {
-        savedPositions[node.uuid] = { ...ui.position };
-      }
-    }
+    // Save current positions for discard (only on first pending operation)
+    this.capturePositionsOnce();
+
     const stickies = this.definition._ui?.stickies || {};
-    for (const [uuid, sticky] of Object.entries(stickies)) {
-      if (sticky.position) {
-        savedPositions[uuid] = { ...sticky.position };
-      }
-    }
-    this.savedReflowPositions = savedPositions;
 
     // Save old node positions before reflow for sticky proximity calculation
     const oldNodePositions: Record<string, FlowPosition> = {};
@@ -2270,8 +2303,7 @@ export class Editor extends RapidElement {
     }
 
     // Suppress the auto-save from this updateCanvasPositions call
-    this.reflowPending = true;
-    this.reflowUnsaved = true;
+    this.pendingTimer.pending = true;
 
     // Apply new positions
     getStore().getState().updateCanvasPositions(newPositions);
@@ -2288,58 +2320,24 @@ export class Editor extends RapidElement {
       editor.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
     }
 
-    // Start auto-save countdown (duration shared with CSS animation)
-    this.clearReflowAutoSaveTimer();
-    this.reflowAutoSaveTimer = setTimeout(() => {
-      this.reflowAutoSaveTimer = null;
-      if (this.reflowUnsaved) {
-        this.reflowUnsaved = false;
-        this.savedReflowPositions = null;
-        this.saveChanges();
-      }
-    }, REFLOW_AUTO_SAVE_DELAY);
+    // Start/reset auto-save countdown
+    this.pendingTimer.start();
   }
 
-  private handleReflowDiscard(): void {
-    this.reflowUnsaved = false;
-    this.clearReflowAutoSaveTimer();
+  private handlePendingDiscard(): void {
+    this.pendingTimer.dismiss();
 
-    if (this.savedReflowPositions) {
-      // Cancel any pending save timer before reverting
-      if (this.saveTimer !== null) {
-        clearTimeout(this.saveTimer);
-        this.saveTimer = null;
-      }
+    const hasChanges = this.copiedItemUuids.length > 0 || this.pendingPositions;
+    if (!hasChanges) return;
 
-      // Suppress the auto-save from reverting positions
-      this.reflowPending = true;
-      getStore().getState().updateCanvasPositions(this.savedReflowPositions);
-      this.savedReflowPositions = null;
-
-      // Clear dirty state since we reverted to the saved version
-      setTimeout(() => {
-        getStore().getState().setDirtyDate(null);
-        this.isSaving = false;
-      }, 0);
-
-      requestAnimationFrame(() => {
-        this.plumber.repaintEverything();
-      });
+    // Cancel any pending save timer before reverting
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
     }
-  }
 
-  private handleCopyDiscard(): void {
-    this.copyUnsaved = false;
-    this.clearCopyAutoSaveTimer();
-
+    // Remove any copied items first
     if (this.copiedItemUuids.length > 0) {
-      // Cancel any pending save timer before removing copies
-      if (this.saveTimer !== null) {
-        clearTimeout(this.saveTimer);
-        this.saveTimer = null;
-      }
-
-      // Separate nodes and stickies
       const nodeUuids = this.copiedItemUuids.filter((uuid) =>
         this.definition.nodes.some((n) => n.uuid === uuid)
       );
@@ -2347,35 +2345,61 @@ export class Editor extends RapidElement {
         (uuid) => this.definition._ui?.stickies?.[uuid]
       );
 
-      // Suppress save from removeNodes/removeStickyNotes
-      this.copyPending = true;
+      this.pendingTimer.pending = true;
       if (nodeUuids.length > 0) {
         getStore().getState().removeNodes(nodeUuids);
       }
       if (stickyUuids.length > 0) {
-        this.copyPending = true;
+        this.pendingTimer.pending = true;
         getStore().getState().removeStickyNotes(stickyUuids);
       }
-
-      // Restore positions of items that were pushed by collision reflow
-      if (this.preCopyPositions) {
-        this.copyPending = true;
-        getStore().getState().updateCanvasPositions(this.preCopyPositions);
-        this.preCopyPositions = null;
-      }
-
       this.copiedItemUuids = [];
-
-      // Clear dirty state since we reverted to the pre-copy state
-      setTimeout(() => {
-        getStore().getState().setDirtyDate(null);
-        this.isSaving = false;
-      }, 0);
-
-      requestAnimationFrame(() => {
-        this.plumber.repaintEverything();
-      });
     }
+
+    // Restore all positions to pre-pending state
+    if (this.pendingPositions) {
+      this.pendingTimer.pending = true;
+      getStore().getState().updateCanvasPositions(this.pendingPositions);
+      this.pendingPositions = null;
+    }
+
+    // Clear dirty state since we reverted
+    setTimeout(() => {
+      getStore().getState().setDirtyDate(null);
+      this.isSaving = false;
+    }, 0);
+
+    requestAnimationFrame(() => {
+      this.plumber.repaintEverything();
+    });
+  }
+
+  private renderPendingCard(): TemplateResult | string {
+    if (!this.pendingTimer.unsaved) return '';
+    // Each resetCount value produces a unique animation-name so the
+    // CSS countdown restarts when the timer is reset.
+    const anim = `pc-${this.pendingTimer.resetCount}`;
+    return html`<div class="reflow-card">
+      <div class="reflow-top">
+        <span class="reflow-label">${this.pendingTimer.label}</span>
+        <button class="reflow-discard" @click=${this.handlePendingDiscard}>
+          Discard
+        </button>
+      </div>
+      <div class="reflow-meter">
+        <div class="reflow-meter-fill" style="animation-name: ${anim}"></div>
+      </div>
+      <style>
+        @keyframes ${anim} {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+      </style>
+    </div>`;
   }
 
   private deleteNodes(uuids: string[]): void {
@@ -3112,29 +3136,11 @@ export class Editor extends RapidElement {
       });
 
       if (Object.keys(newPositions).length > 0) {
-        // Suppress save if this was a shift+drag copy — the discard card
+        // Suppress save if this was a shift+drag copy — the pending card
         // gives the user a chance to abandon before the revision is saved.
         if (this.currentDragIsCopy) {
-          this.copyPending = true;
-
-          // Save positions of all existing items before the copy lands,
-          // so discard can restore them (only on the first copy in a window).
-          if (!this.preCopyPositions) {
-            const saved: Record<string, FlowPosition> = {};
-            for (const node of this.definition.nodes) {
-              const ui = this.definition._ui?.nodes[node.uuid];
-              if (ui?.position) {
-                saved[node.uuid] = { ...ui.position };
-              }
-            }
-            const stickies = this.definition._ui?.stickies || {};
-            for (const [uuid, sticky] of Object.entries(stickies)) {
-              if (sticky.position) {
-                saved[uuid] = { ...sticky.position };
-              }
-            }
-            this.preCopyPositions = saved;
-          }
+          this.pendingTimer.pending = true;
+          this.capturePositionsOnce();
         }
 
         getStore().getState().updateCanvasPositions(newPositions);
@@ -3147,23 +3153,9 @@ export class Editor extends RapidElement {
         }, 0);
       }
 
-      // Show/reset discard card for shift+drag copy
+      // Show/reset pending-changes card for shift+drag copy
       if (this.currentDragIsCopy) {
-        // Briefly hide the card to restart the CSS countdown animation
-        this.copyUnsaved = false;
-        this.clearCopyAutoSaveTimer();
-        requestAnimationFrame(() => {
-          this.copyUnsaved = true;
-          this.copyAutoSaveTimer = setTimeout(() => {
-            this.copyAutoSaveTimer = null;
-            if (this.copyUnsaved) {
-              this.copyUnsaved = false;
-              this.copiedItemUuids = [];
-              this.preCopyPositions = null;
-              this.saveChanges();
-            }
-          }, REFLOW_AUTO_SAVE_DELAY);
-        });
+        this.pendingTimer.start();
       }
 
       this.selectedItems.clear();
@@ -5624,35 +5616,7 @@ export class Editor extends RapidElement {
             <temba-icon name=${Icon.zoom_in} size="1"></temba-icon>
           </button>
         </div>
-        ${this.reflowUnsaved
-          ? html`<div class="reflow-card">
-              <div class="reflow-top">
-                <span class="reflow-label">Unsaved layout changes</span>
-                <button
-                  class="reflow-discard"
-                  @click=${this.handleReflowDiscard}
-                >
-                  Discard
-                </button>
-              </div>
-              <div class="reflow-meter">
-                <div class="reflow-meter-fill"></div>
-              </div>
-            </div>`
-          : ''}
-        ${this.copyUnsaved
-          ? html`<div class="reflow-card">
-              <div class="reflow-top">
-                <span class="reflow-label">Copied nodes</span>
-                <button class="reflow-discard" @click=${this.handleCopyDiscard}>
-                  Discard
-                </button>
-              </div>
-              <div class="reflow-meter">
-                <div class="reflow-meter-fill"></div>
-              </div>
-            </div>`
-          : ''}
+        ${this.renderPendingCard()}
       </div>
 
       ${this.editingNode || this.editingAction
