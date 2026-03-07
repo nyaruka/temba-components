@@ -28,7 +28,7 @@ export const send_email: ActionConfig = {
       label: 'Recipients',
       multi: true,
       searchable: true,
-      placeholder: 'Search for contacts...',
+      placeholder: 'Enter email addresses...',
       emails: true
     },
     subject: {
