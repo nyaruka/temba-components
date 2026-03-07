@@ -199,6 +199,8 @@ export class Editor extends RapidElement {
   @state()
   private isDragging = false;
   private isMouseDown = false;
+  private shiftDragCopy = false;
+  private currentDragIsCopy = false;
   private dragStartPos = { x: 0, y: 0 };
 
   // Public getter for drag state
@@ -325,11 +327,27 @@ export class Editor extends RapidElement {
     }
   }
 
+  // Copy-discard state (mirrors reflow-discard)
+  @state()
+  private copyUnsaved = false;
+  private copyPending = false;
+  private copiedItemUuids: string[] = [];
+  private preCopyPositions: Record<string, FlowPosition> | null = null;
+  private copyAutoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private clearCopyAutoSaveTimer(): void {
+    if (this.copyAutoSaveTimer !== null) {
+      clearTimeout(this.copyAutoSaveTimer);
+      this.copyAutoSaveTimer = null;
+    }
+  }
+
   private preRevertState: {
     definition: FlowDefinition;
     dirtyDate: Date | null;
   } | null = null;
 
+  private deleteDialog: Dialog | null = null;
   private translationCache = new Map<string, string>();
 
   private dirtyAdapter: DirtyTrackable = {
@@ -1308,18 +1326,29 @@ export class Editor extends RapidElement {
 
     if (changes.has('dirtyDate')) {
       if (this.dirtyDate) {
-        if (this.reflowPending) {
-          // This dirtyDate is from the reflow itself — clear the flag
+        if (this.reflowPending || this.copyPending) {
+          // This dirtyDate is from a reflow or copy — clear the flag
           // and suppress the save in updated()
           this.reflowPending = false;
+          this.copyPending = false;
+          this._suppressDirtySave = true;
+        } else if (this.copyUnsaved) {
+          // Suppress saves while copy card is showing
+          // (handles collision reflow dirtyDate changes after copy)
           this._suppressDirtySave = true;
         } else {
-          // Normal change — if reflow card was showing, it goes away
+          // Normal change — if reflow/copy card was showing, it goes away
           // because these changes will be included in the save
           if (this.reflowUnsaved) {
             this.reflowUnsaved = false;
             this.savedReflowPositions = null;
             this.clearReflowAutoSaveTimer();
+          }
+          if (this.copyUnsaved) {
+            this.copyUnsaved = false;
+            this.copiedItemUuids = [];
+            this.preCopyPositions = null;
+            this.clearCopyAutoSaveTimer();
           }
           this.isSaving = true;
         }
@@ -1428,8 +1457,8 @@ export class Editor extends RapidElement {
     }
 
     this.saveTimer = window.setTimeout(() => {
-      // Don't auto-save while a reflow preview is pending user confirmation
-      if (this.reflowUnsaved) {
+      // Don't auto-save while a reflow/copy preview is pending user confirmation
+      if (this.reflowUnsaved || this.copyUnsaved) {
         this.saveTimer = null;
         return;
       }
@@ -1608,6 +1637,7 @@ export class Editor extends RapidElement {
       this.activityTimer = null;
     }
     this.clearReflowAutoSaveTimer();
+    this.clearCopyAutoSaveTimer();
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousedown', this.boundGlobalMouseDown);
@@ -1788,6 +1818,7 @@ export class Editor extends RapidElement {
     // Always set up drag state regardless of selection status
     // This allows single nodes to be dragged without being selected
     this.isMouseDown = true;
+    this.shiftDragCopy = event.shiftKey;
     this.dragStartPos = { x: event.clientX, y: event.clientY };
     this.startPos = { left: position.left, top: position.top };
     this.currentDragItem = {
@@ -1942,6 +1973,13 @@ export class Editor extends RapidElement {
 
   private handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Delete' || event.key === 'Backspace') {
+      // If delete confirmation dialog is already showing, confirm it
+      if (this.deleteDialog?.open) {
+        this.deleteSelectedItems();
+        this.deleteDialog.open = false;
+        return;
+      }
+
       if (this.selectedItems.size > 0) {
         this.showDeleteConfirmation();
       }
@@ -2105,6 +2143,9 @@ export class Editor extends RapidElement {
     const itemType = itemCount === 1 ? 'item' : 'items';
 
     // Create and show confirmation dialog
+    // Don't open a second dialog if one is already showing
+    if (this.deleteDialog?.open) return;
+
     const dialog = document.createElement('temba-dialog') as Dialog;
     dialog.header = 'Delete Items';
     dialog.primaryButtonName = 'Delete';
@@ -2122,10 +2163,12 @@ export class Editor extends RapidElement {
     // Add to document and show
     document.body.appendChild(dialog);
     dialog.open = true;
+    this.deleteDialog = dialog;
 
     // Clean up dialog when closed
     dialog.addEventListener('temba-dialog-hidden', () => {
       document.body.removeChild(dialog);
+      this.deleteDialog = null;
     });
   }
 
@@ -2274,6 +2317,56 @@ export class Editor extends RapidElement {
       this.savedReflowPositions = null;
 
       // Clear dirty state since we reverted to the saved version
+      setTimeout(() => {
+        getStore().getState().setDirtyDate(null);
+        this.isSaving = false;
+      }, 0);
+
+      requestAnimationFrame(() => {
+        this.plumber.repaintEverything();
+      });
+    }
+  }
+
+  private handleCopyDiscard(): void {
+    this.copyUnsaved = false;
+    this.clearCopyAutoSaveTimer();
+
+    if (this.copiedItemUuids.length > 0) {
+      // Cancel any pending save timer before removing copies
+      if (this.saveTimer !== null) {
+        clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+
+      // Separate nodes and stickies
+      const nodeUuids = this.copiedItemUuids.filter((uuid) =>
+        this.definition.nodes.some((n) => n.uuid === uuid)
+      );
+      const stickyUuids = this.copiedItemUuids.filter(
+        (uuid) => this.definition._ui?.stickies?.[uuid]
+      );
+
+      // Suppress save from removeNodes/removeStickyNotes
+      this.copyPending = true;
+      if (nodeUuids.length > 0) {
+        getStore().getState().removeNodes(nodeUuids);
+      }
+      if (stickyUuids.length > 0) {
+        this.copyPending = true;
+        getStore().getState().removeStickyNotes(stickyUuids);
+      }
+
+      // Restore positions of items that were pushed by collision reflow
+      if (this.preCopyPositions) {
+        this.copyPending = true;
+        getStore().getState().updateCanvasPositions(this.preCopyPositions);
+        this.preCopyPositions = null;
+      }
+
+      this.copiedItemUuids = [];
+
+      // Clear dirty state since we reverted to the pre-copy state
       setTimeout(() => {
         getStore().getState().setDirtyDate(null);
         this.isSaving = false;
@@ -2767,11 +2860,60 @@ export class Editor extends RapidElement {
     if (!this.isDragging && distance > DRAG_THRESHOLD) {
       this.isDragging = true;
       this.startAutoScroll();
+
+      if (this.shiftDragCopy) {
+        this.performShiftDragCopy();
+        this.shiftDragCopy = false;
+      }
     }
 
     // If we're actually dragging, update positions
     if (this.isDragging) {
       this.updateDragPositions();
+    }
+  }
+
+  private performShiftDragCopy(): void {
+    if (!this.currentDragItem) return;
+
+    // Determine which items to copy (same logic as itemsToMove)
+    const itemsToCopy =
+      this.selectedItems.has(this.currentDragItem.uuid) &&
+      this.selectedItems.size > 1
+        ? Array.from(this.selectedItems)
+        : [this.currentDragItem.uuid];
+
+    if (itemsToCopy.length === 0) return;
+
+    const uuidMapping = getStore().getState().duplicateNodes(itemsToCopy);
+
+    // Track only the top-level duplicated item UUIDs (not internal
+    // action/exit/category UUIDs). Accumulate across the discard window.
+    for (const uuid of itemsToCopy) {
+      const newUuid = uuidMapping[uuid];
+      if (newUuid && !this.copiedItemUuids.includes(newUuid)) {
+        this.copiedItemUuids.push(newUuid);
+      }
+    }
+    this.currentDragIsCopy = true;
+
+    // Update drag item to reference the copy
+    const newDragUuid = uuidMapping[this.currentDragItem.uuid];
+    if (newDragUuid) {
+      this.currentDragItem = {
+        ...this.currentDragItem,
+        uuid: newDragUuid
+      };
+    }
+
+    // Update selected items to reference copies
+    if (this.selectedItems.size > 1) {
+      const newSelectedItems = new Set<string>();
+      for (const uuid of this.selectedItems) {
+        const newUuid = uuidMapping[uuid];
+        newSelectedItems.add(newUuid || uuid);
+      }
+      this.selectedItems = newSelectedItems;
     }
   }
 
@@ -2970,6 +3112,31 @@ export class Editor extends RapidElement {
       });
 
       if (Object.keys(newPositions).length > 0) {
+        // Suppress save if this was a shift+drag copy — the discard card
+        // gives the user a chance to abandon before the revision is saved.
+        if (this.currentDragIsCopy) {
+          this.copyPending = true;
+
+          // Save positions of all existing items before the copy lands,
+          // so discard can restore them (only on the first copy in a window).
+          if (!this.preCopyPositions) {
+            const saved: Record<string, FlowPosition> = {};
+            for (const node of this.definition.nodes) {
+              const ui = this.definition._ui?.nodes[node.uuid];
+              if (ui?.position) {
+                saved[node.uuid] = { ...ui.position };
+              }
+            }
+            const stickies = this.definition._ui?.stickies || {};
+            for (const [uuid, sticky] of Object.entries(stickies)) {
+              if (sticky.position) {
+                saved[uuid] = { ...sticky.position };
+              }
+            }
+            this.preCopyPositions = saved;
+          }
+        }
+
         getStore().getState().updateCanvasPositions(newPositions);
 
         // Check for collisions and reflow after updating positions
@@ -2980,12 +3147,33 @@ export class Editor extends RapidElement {
         }, 0);
       }
 
+      // Show/reset discard card for shift+drag copy
+      if (this.currentDragIsCopy) {
+        // Briefly hide the card to restart the CSS countdown animation
+        this.copyUnsaved = false;
+        this.clearCopyAutoSaveTimer();
+        requestAnimationFrame(() => {
+          this.copyUnsaved = true;
+          this.copyAutoSaveTimer = setTimeout(() => {
+            this.copyAutoSaveTimer = null;
+            if (this.copyUnsaved) {
+              this.copyUnsaved = false;
+              this.copiedItemUuids = [];
+              this.preCopyPositions = null;
+              this.saveChanges();
+            }
+          }, REFLOW_AUTO_SAVE_DELAY);
+        });
+      }
+
       this.selectedItems.clear();
     }
 
     // Reset all drag state
     this.isDragging = false;
     this.isMouseDown = false;
+    this.shiftDragCopy = false;
+    this.currentDragIsCopy = false;
     this.currentDragItem = null;
     this.canvasMouseDown = false;
     this.autoScrollDeltaX = 0;
@@ -5444,6 +5632,19 @@ export class Editor extends RapidElement {
                   class="reflow-discard"
                   @click=${this.handleReflowDiscard}
                 >
+                  Discard
+                </button>
+              </div>
+              <div class="reflow-meter">
+                <div class="reflow-meter-fill"></div>
+              </div>
+            </div>`
+          : ''}
+        ${this.copyUnsaved
+          ? html`<div class="reflow-card">
+              <div class="reflow-top">
+                <span class="reflow-label">Copied nodes</span>
+                <button class="reflow-discard" @click=${this.handleCopyDiscard}>
                   Discard
                 </button>
               </div>

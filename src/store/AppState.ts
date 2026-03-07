@@ -240,6 +240,7 @@ export interface AppState {
   createStickyNote(position: FlowPosition): string;
   createNode(nodeType: string, position: FlowPosition): string;
   addNode(node: Node, nodeUI: NodeUI): void;
+  duplicateNodes(uuids: string[]): Record<string, string>;
   updateLocalization(
     languageCode: string,
     actionUuid: string,
@@ -715,6 +716,164 @@ export const zustand = createStore<AppState>()(
 
           state.dirtyDate = new Date();
         });
+      },
+
+      duplicateNodes: (uuids: string[]): Record<string, string> => {
+        const currentState = get();
+        const uuidsSet = new Set(uuids);
+        const uuidMapping: Record<string, string> = {};
+        const stickies = currentState.flowDefinition._ui.stickies || {};
+
+        // First pass: build UUID mapping for all internal UUIDs
+        for (const uuid of uuids) {
+          // Check if it's a sticky note
+          if (stickies[uuid]) {
+            uuidMapping[uuid] = generateUUID();
+            continue;
+          }
+
+          const node = currentState.flowDefinition.nodes.find(
+            (n) => n.uuid === uuid
+          );
+          if (!node) continue;
+
+          uuidMapping[uuid] = generateUUID();
+
+          for (const action of node.actions) {
+            uuidMapping[action.uuid] = generateUUID();
+          }
+
+          for (const exit of node.exits) {
+            uuidMapping[exit.uuid] = generateUUID();
+          }
+
+          if (node.router) {
+            for (const category of node.router.categories) {
+              uuidMapping[category.uuid] = generateUUID();
+            }
+            for (const c of node.router.cases || []) {
+              uuidMapping[c.uuid] = generateUUID();
+            }
+          }
+        }
+
+        // Second pass: deep clone and remap UUIDs
+        const newNodes: Array<{ node: Node; ui: NodeUI }> = [];
+        const newStickies: Array<{ uuid: string; sticky: StickyNote }> = [];
+
+        for (const uuid of uuids) {
+          // Handle sticky notes
+          if (stickies[uuid]) {
+            const clonedSticky: StickyNote = JSON.parse(
+              JSON.stringify(stickies[uuid])
+            );
+            newStickies.push({ uuid: uuidMapping[uuid], sticky: clonedSticky });
+            continue;
+          }
+
+          const node = currentState.flowDefinition.nodes.find(
+            (n) => n.uuid === uuid
+          );
+          const nodeUI = currentState.flowDefinition._ui.nodes[uuid];
+          if (!node || !nodeUI) continue;
+
+          const cloned: Node = JSON.parse(JSON.stringify(node));
+          cloned.uuid = uuidMapping[uuid];
+
+          for (const action of cloned.actions) {
+            action.uuid = uuidMapping[action.uuid];
+          }
+
+          for (const exit of cloned.exits) {
+            exit.uuid = uuidMapping[exit.uuid];
+            if (exit.destination_uuid && uuidsSet.has(exit.destination_uuid)) {
+              exit.destination_uuid = uuidMapping[exit.destination_uuid];
+            } else {
+              exit.destination_uuid = null;
+            }
+          }
+
+          if (cloned.router) {
+            for (const category of cloned.router.categories) {
+              category.uuid = uuidMapping[category.uuid];
+              category.exit_uuid = uuidMapping[category.exit_uuid];
+            }
+            if (cloned.router.cases) {
+              for (const c of cloned.router.cases) {
+                c.uuid = uuidMapping[c.uuid];
+                c.category_uuid = uuidMapping[c.category_uuid];
+              }
+            }
+            if (cloned.router.default_category_uuid) {
+              cloned.router.default_category_uuid =
+                uuidMapping[cloned.router.default_category_uuid];
+            }
+            if (cloned.router.wait?.timeout?.category_uuid) {
+              cloned.router.wait.timeout.category_uuid =
+                uuidMapping[cloned.router.wait.timeout.category_uuid];
+            }
+          }
+
+          const clonedUI: NodeUI = JSON.parse(JSON.stringify(nodeUI));
+          newNodes.push({ node: cloned, ui: clonedUI });
+        }
+
+        // Copy localization entries for duplicated actions
+        const localizationCopies: Record<string, Record<string, any>> = {};
+        const localization = currentState.flowDefinition.localization;
+        if (localization) {
+          for (const langCode of Object.keys(localization)) {
+            const langEntries = localization[langCode];
+            for (const oldUuid of Object.keys(uuidMapping)) {
+              if (langEntries[oldUuid]) {
+                if (!localizationCopies[langCode]) {
+                  localizationCopies[langCode] = {};
+                }
+                localizationCopies[langCode][uuidMapping[oldUuid]] = JSON.parse(
+                  JSON.stringify(langEntries[oldUuid])
+                );
+              }
+            }
+          }
+        }
+
+        // Mutate store
+        set((state: AppState) => {
+          for (const { node, ui } of newNodes) {
+            state.flowDefinition.nodes.push(node);
+            state.flowDefinition._ui.nodes[node.uuid] = ui;
+          }
+
+          // Add duplicated sticky notes
+          if (!state.flowDefinition._ui.stickies) {
+            state.flowDefinition._ui.stickies = {};
+          }
+          for (const { uuid, sticky } of newStickies) {
+            state.flowDefinition._ui.stickies[uuid] = sticky;
+          }
+
+          // Apply localization copies
+          for (const langCode of Object.keys(localizationCopies)) {
+            if (!state.flowDefinition.localization[langCode]) {
+              state.flowDefinition.localization[langCode] = {};
+            }
+            for (const [newUuid, data] of Object.entries(
+              localizationCopies[langCode]
+            )) {
+              state.flowDefinition.localization[langCode][newUuid] = data;
+            }
+          }
+
+          sortNodesByPosition(
+            state.flowDefinition.nodes,
+            state.flowDefinition._ui.nodes
+          );
+
+          // Don't set dirtyDate here — the caller (shift+drag) will trigger
+          // the save via updateCanvasPositions once the drag completes.
+        });
+
+        return uuidMapping;
       },
 
       updateLocalization: (
