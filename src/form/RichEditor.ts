@@ -10,6 +10,7 @@ import {
   executeCompletionQuery,
   updateInputElementWithCompletion
 } from '../excellent/helpers';
+import { getStore } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { msg } from '@lit/localize';
 
@@ -329,7 +330,7 @@ export class RichEditor extends FieldElement {
       }
 
       .tok-str {
-        color: var(--expression-string-color, #00cf0d);
+        color: var(--expression-string-color, #06a810);
       }
 
       .tok-num {
@@ -369,13 +370,18 @@ export class RichEditor extends FieldElement {
       }
 
       .tok-paren {
-        color: var(--expression-paren-color, #5492dd);
-        font-weight: 600;
-      }
+        /* color: var(--expression-paren-color, #5492dd);*/
+        color: #999;
+       }
 
       .tok-paren-unmatched {
         color: var(--expression-paren-unmatched-color, #ff0011);
-        font-weight: 600;
+        font-weight: 900;
+      }
+
+      .tok-fn-invalid {
+        text-decoration: wavy underline #ff0011;
+        text-underline-offset: 3px;
       }
 
       .tok-mono {
@@ -387,6 +393,7 @@ export class RichEditor extends FieldElement {
           'Menlo',
           monospace
         );
+        font-size: 0.95em;
       }
 
       /* Completion popup styles */
@@ -402,6 +409,9 @@ export class RichEditor extends FieldElement {
         color: rgba(0, 0, 0, 0.5);
         border-radius: var(--curvature-widget);
         font-size: 90%;
+        max-width: 216px;
+        overflow: hidden;
+        word-wrap: break-word;
       }
 
       .footer {
@@ -561,12 +571,28 @@ export class RichEditor extends FieldElement {
     const parser = this.session ? sessionParser : messageParser;
     const tokens = tokenize(text || '', parser);
 
+    // Build set of valid function names for validation
+    const store = getStore();
+    const validFunctions = new Set<string>();
+    if (store) {
+      for (const fn of store.getFunctions()) {
+        const name = fn.signature?.substring(0, fn.signature.indexOf('('));
+        if (name) validFunctions.add(name.toLowerCase());
+      }
+    }
+
     // Clear
     div.textContent = '';
 
     for (const token of tokens) {
       const cls = getTokenClass(token);
       const isMono = EXPRESSION_TOKENS.has(token.type);
+
+      // Check if function name is invalid
+      const isInvalidFn =
+        token.type === TokenType.FunctionName &&
+        validFunctions.size > 0 &&
+        !validFunctions.has(token.text.toLowerCase());
 
       // Split token text on newlines; newlines become styled spans with \n
       const parts = token.text.split('\n');
@@ -580,7 +606,9 @@ export class RichEditor extends FieldElement {
         if (parts[i].length > 0) {
           const span = document.createElement('span');
           span.textContent = parts[i];
-          span.className = isMono ? `${cls} tok-mono` : cls;
+          let className = isMono ? `${cls} tok-mono` : cls;
+          if (isInvalidFn) className += ' tok-fn-invalid';
+          span.className = className;
           div.appendChild(span);
         }
       }
@@ -653,6 +681,12 @@ export class RichEditor extends FieldElement {
 
     // Enter
     if (e.key === 'Enter') {
+      // If completion popup is visible, let temba-options handle the selection
+      if (this.hasVisibleOptions()) {
+        e.preventDefault();
+        return;
+      }
+
       if (this.submitOnEnter || !this.textarea) {
         e.preventDefault();
         const modax = this.closest('temba-modax') as any;
@@ -839,6 +873,7 @@ export class RichEditor extends FieldElement {
           <div
             class="highlight-editor"
             contenteditable="true"
+            spellcheck="false"
             data-placeholder=${this.placeholder}
             @input=${this.handleInput}
             @keydown=${this.handleKeydown}

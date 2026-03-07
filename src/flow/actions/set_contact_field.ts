@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
-import { renderClamped } from '../utils';
+import { renderClamped, renderHighlightedText } from '../utils';
 
 export const set_contact_field: ActionConfig = {
   name: 'Update Field',
@@ -11,7 +11,7 @@ export const set_contact_field: ActionConfig = {
     if (action.value) {
       return renderClamped(
         html`Set <strong>${action.field.name}</strong> to
-          <strong>${action.value}</strong>`,
+          ${renderHighlightedText(action.value, true)}`,
         `Set ${action.field.name} to ${action.value}`
       );
     } else {
@@ -41,7 +41,7 @@ export const set_contact_field: ActionConfig = {
       })
     },
     value: {
-      type: 'text',
+      type: 'textarea',
       label: 'Value',
       placeholder: 'Enter field value...',
       evaluated: true,

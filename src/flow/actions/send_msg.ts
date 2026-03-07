@@ -1,5 +1,4 @@
 import { html } from 'lit-html';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import {
   ActionConfig,
   ACTION_GROUPS,
@@ -9,7 +8,7 @@ import {
 } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
-import { renderClamped } from '../utils';
+import { renderClamped, renderHighlightedText } from '../utils';
 import { splitSMS } from '../../display/sms';
 
 export const send_msg: ActionConfig = {
@@ -18,7 +17,6 @@ export const send_msg: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
-    const text = action.text.replace(/\n/g, '<br>');
     const sms = splitSMS(action.text);
 
     return html`
@@ -33,7 +31,7 @@ export const send_msg: ActionConfig = {
             <div style="margin-left:0.4em">${action.template.name}</div>
           </div>`
         : null}
-      ${renderClamped(html`${unsafeHTML(text)}`, action.text, 6)}
+      ${renderClamped(renderHighlightedText(action.text, true), action.text, 6)}
       ${sms.parts.length > 1
         ? html`<div style="text-align: right;">
             <temba-charcount

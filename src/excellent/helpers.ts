@@ -363,7 +363,15 @@ export const executeCompletionQuery = (
   }
 
   const cursor = ele.selectionStart;
-  const input = ele.value.substring(0, cursor);
+  const fullValue = ele.value;
+
+  // Don't show completions when cursor is in the middle of a word
+  const charAfterCursor = fullValue[cursor];
+  if (charAfterCursor && /[\w.]/.test(charAfterCursor)) {
+    return result;
+  }
+
+  const input = fullValue.substring(0, cursor);
 
   const parser = session ? sessionParser : messageParser;
   const expressions = parser.findExpressions(input);
@@ -430,6 +438,20 @@ export const executeCompletionQuery = (
             ? getFunctions(store.getFunctions(), result.query)
             : [])
         ];
+
+        // Don't show completion when the query is already an exact match
+        // for the only option (e.g. cursor at end of a complete function name)
+        if (result.options.length === 1) {
+          const opt = result.options[0];
+          const optName = (
+            opt.name ||
+            opt.signature?.substring(0, opt.signature.indexOf('(')) ||
+            ''
+          ).toLowerCase();
+          if (optName === result.query.toLowerCase()) {
+            result.options = [];
+          }
+        }
 
         return result;
       }

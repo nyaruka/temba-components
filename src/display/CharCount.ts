@@ -2,6 +2,7 @@ import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { RapidElement } from '../RapidElement';
 import { splitSMS } from './sms';
 import { property } from 'lit/decorators.js';
+import { messageParser } from '../excellent/helpers';
 
 export const MAX_GSM_SINGLE = 160;
 export const MAX_GSM_MULTI = 153;
@@ -292,12 +293,28 @@ export class CharCount extends RapidElement {
     }
   }
 
+  /** Replaces all Excellent expressions with a 10-char placeholder estimate. */
+  private replaceExpressions(text: string): string {
+    const expressions = messageParser.findExpressions(text);
+    if (expressions.length === 0) return text;
+
+    const placeholder = 'x'.repeat(10);
+    let result = '';
+    let lastEnd = 0;
+    for (const expr of expressions) {
+      result += text.substring(lastEnd, expr.start) + placeholder;
+      lastEnd = expr.end;
+    }
+    result += text.substring(lastEnd);
+    return result;
+  }
+
   private updateSegments() {
-    const sms = splitSMS(this.text);
-    this.count = sms.length;
+    const estimated = this.replaceExpressions(this.text);
+    const sms = splitSMS(estimated);
+    this.count = estimated.length;
     this.segments = sms.parts.length;
-    this.extended = getExtendedCharacters(this.text);
-    this.count = this.text.length;
+    this.extended = getExtendedCharacters(estimated);
   }
 
   public render(): TemplateResult {
@@ -335,8 +352,8 @@ export class CharCount extends RapidElement {
               ? html`
                   <div class="fine-print">
                     <div class="note">NOTE</div>
-                    Using variables may result in more messages when sending
-                    over SMS than this estimate.
+                    Expressions are estimated at 10 characters each. Actual
+                    message count may vary when sent over SMS.
                   </div>
                 `
               : null}

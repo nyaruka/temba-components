@@ -55,7 +55,7 @@ export class MessageEditor extends FieldElement {
       }
 
       .completion-wrapper {
-        --temba-textinput-padding: 9px 9px 24px 9px;
+        --temba-textinput-padding: 9px 9px 30px 9px;
       }
 
       .media-wrapper {
