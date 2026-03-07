@@ -314,6 +314,42 @@ export default {
           }
         }
 
+        // Handle omnibox endpoint - combines groups and contacts
+        if (context.request.method === 'GET' && context.path === '/contact/omnibox/') {
+          const url = new URL(context.request.url, 'http://localhost');
+          const search = (url.searchParams.get('search') || '').toLowerCase();
+          const types = url.searchParams.get('types') || 'gc';
+          const results = [];
+
+          if (types.includes('g')) {
+            const groupsPath = getDataFilePath('api', 'groups.json');
+            if (fs.existsSync(groupsPath)) {
+              const groups = JSON.parse(fs.readFileSync(groupsPath, 'utf-8')).results || [];
+              for (const g of groups) {
+                if (!search || g.name.toLowerCase().includes(search)) {
+                  results.push({ id: g.uuid, name: g.name, type: 'group', count: g.count || 0 });
+                }
+              }
+            }
+          }
+
+          if (types.includes('c')) {
+            const contactsPath = getDataFilePath('api', 'contacts.json');
+            if (fs.existsSync(contactsPath)) {
+              const contacts = JSON.parse(fs.readFileSync(contactsPath, 'utf-8')).results || [];
+              for (const c of contacts) {
+                if (!search || c.name.toLowerCase().includes(search)) {
+                  results.push({ id: c.uuid, name: c.name, type: 'contact' });
+                }
+              }
+            }
+          }
+
+          context.contentType = 'application/json';
+          context.body = JSON.stringify({ results, more: false, total: results.length, err: 'nil' });
+          return;
+        }
+
         // Handle minio file uploads for media
         if (context.request.method === 'POST' && context.path === '/api/v2/media.json') {
           return handleMinioUpload(context);

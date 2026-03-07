@@ -7,42 +7,32 @@ import {
   FlowTypes
 } from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
-import { renderNamedObjects, renderFlowLinks } from '../utils';
-
+import { renderStringList, renderFlowLinks } from '../utils';
+import { Icon } from '../../Icons';
 export const start_session: ActionConfig = {
   name: 'Start Flow',
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: StartSession) => {
-    const hasGroups = action.groups && action.groups.length > 0;
-    const hasContacts = action.contacts && action.contacts.length > 0;
-    const hasRecipients = hasGroups || hasContacts;
+    const contacts = (action.contacts || []).map((c) => c.name);
+    const groups = (action.groups || []).map((g) => g.name);
 
-    // Build the recipients display
     let recipientsDisplay = html``;
     if (action.create_contact) {
       recipientsDisplay = html`Create a new contact`;
     } else if ((action as any).contact_query) {
       recipientsDisplay = html`${(action as any).contact_query}`;
-    } else if (hasRecipients) {
-      const allRecipients = [
-        ...(action.contacts || []),
-        ...(action.groups || [])
-      ];
-      recipientsDisplay = html`${renderNamedObjects(
-        allRecipients,
-        hasGroups ? 'group' : 'contact'
-      )}`;
+    } else {
+      recipientsDisplay = html`
+        ${renderStringList(groups, Icon.group)}
+        ${renderStringList(contacts, Icon.contacts)}
+      `;
     }
 
     return html`
       <div>
-        <div
-          style="padding: 3px 10px; background: #f5f5f5; padding-bottom: 0px; font-size: 11px; border-radius: var(--curvature); margin-bottom: 10px;"
-        >
-          ${recipientsDisplay}
-        </div>
-        <div style="padding: 0px 10px;">
+        <div>${recipientsDisplay}</div>
+        <div style="margin-top: 0.5em">
           ${renderFlowLinks([action.flow], 'flow')}
         </div>
       </div>
@@ -75,7 +65,18 @@ export const start_session: ActionConfig = {
 
     return {
       flow: action.flow ? [action.flow] : null,
-      recipients: [...(action.contacts || []), ...(action.groups || [])],
+      recipients: [
+        ...(action.contacts || []).map((c) => ({
+          id: c.uuid,
+          name: c.name,
+          type: 'contact'
+        })),
+        ...(action.groups || []).map((g) => ({
+          id: g.uuid,
+          name: g.name,
+          type: 'group'
+        }))
+      ],
       startType: [startType],
       contactQuery: extendedAction.contact_query || '',
       skipContactsInFlow: extendedAction.exclusions?.in_a_flow || false,
@@ -110,11 +111,11 @@ export const start_session: ActionConfig = {
       type: 'select',
       label: 'Recipients',
       helpText: 'Select who should be started in the flow',
-      options: [],
       multi: true,
       searchable: true,
-      endpoint: '/api/v2/contacts.json',
-      valueKey: 'uuid',
+      endpoint: '/contact/omnibox/?types=gc',
+      queryParam: 'search',
+      valueKey: 'id',
       nameKey: 'name',
       placeholder: 'Search for contacts or groups...',
       conditions: {
@@ -206,11 +207,11 @@ export const start_session: ActionConfig = {
       // Manual selection - separate contacts and groups
       const recipients = formData.recipients || [];
       action.contacts = recipients
-        .filter((r: any) => !r.group)
-        .map((c: any) => ({ uuid: c.uuid, name: c.name }));
+        .filter((r: any) => r.type !== 'group')
+        .map((c: any) => ({ uuid: c.id, name: c.name }));
       action.groups = recipients
-        .filter((r: any) => r.group)
-        .map((g: any) => ({ uuid: g.uuid, name: g.name }));
+        .filter((r: any) => r.type === 'group')
+        .map((g: any) => ({ uuid: g.id, name: g.name }));
     }
 
     // Add exclusions if set
