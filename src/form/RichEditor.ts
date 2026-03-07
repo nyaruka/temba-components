@@ -572,13 +572,17 @@ export class RichEditor extends FieldElement {
     const tokens = tokenize(text || '', parser);
 
     // Build set of valid function names for validation
-    const store = getStore();
     const validFunctions = new Set<string>();
-    if (store) {
-      for (const fn of store.getFunctions()) {
-        const name = fn.signature?.substring(0, fn.signature.indexOf('('));
-        if (name) validFunctions.add(name.toLowerCase());
+    try {
+      const store = getStore();
+      if (store) {
+        for (const fn of store.getFunctions()) {
+          const name = fn.signature?.substring(0, fn.signature.indexOf('('));
+          if (name) validFunctions.add(name.toLowerCase());
+        }
       }
+    } catch {
+      // Store may not have getFunctions in some contexts
     }
 
     // Clear
