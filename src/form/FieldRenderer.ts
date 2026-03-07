@@ -477,7 +477,7 @@ export class FieldRenderer {
       accept="${config.accept || ''}"
       endpoint="${config.endpoint || ''}"
       max-attachments="${config.maxAttachments || 3}"
-      minHeight="${config.minHeight || 60}"
+      minHeight="${config.minHeight || 92}"
       class="${extraClasses}"
       style="${style}"
       @change="${onChange || (() => {})}"
