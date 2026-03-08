@@ -244,6 +244,7 @@ export class FieldRenderer {
       ?searchable="${config.searchable}"
       ?tags="${config.tags}"
       ?emails="${config.emails}"
+      expressions="${config.expressions || ''}"
       ?clearable="${config.clearable || false}"
       placeholder="${config.placeholder || ''}"
       maxItems="${config.maxItems || 0}"

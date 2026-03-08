@@ -16,7 +16,7 @@ export const send_email: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
-      <div>${renderStringList(action.addresses, Icon.email)}</div>
+      <div>${renderStringList(action.addresses, Icon.email, true)}</div>
       <div style="margin-top: 0.5em">
         ${renderClamped(action.subject, action.subject)}
       </div>
@@ -29,7 +29,8 @@ export const send_email: ActionConfig = {
       multi: true,
       searchable: true,
       placeholder: 'Enter email addresses...',
-      emails: true
+      emails: true,
+      expressions: 'session'
     },
     subject: {
       type: 'text',

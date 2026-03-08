@@ -209,6 +209,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   nameKey?: string;
   endpoint?: string;
   emails?: boolean;
+  expressions?: string;
   getName?: (item: any) => string;
   flavor?: 'xsmall' | 'small' | 'large';
   createArbitraryOption?: (input: string, options: any[]) => any;

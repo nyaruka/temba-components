@@ -118,9 +118,14 @@ export const renderClamped = (
 };
 
 /**
- * Renders a single line item with optional icon
+ * Renders a single line item with optional icon.
+ * Content can be plain text or a TemplateResult (e.g. highlighted text).
  */
-export const renderLineItem = (name: string, icon?: string) => {
+export const renderLineItem = (
+  name: string,
+  icon?: string,
+  content?: TemplateResult
+) => {
   return html`<div style="display:flex;items-align:center;">
     ${icon
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
@@ -129,7 +134,7 @@ export const renderLineItem = (name: string, icon?: string) => {
       style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"
       title="${name}"
     >
-      ${name}
+      ${content || name}
     </div>
   </div>`;
 };
@@ -147,9 +152,14 @@ export const renderNamedObjects = (assets: NamedObject[], icon?: string) => {
 
 /**
  * Renders a list of strings with optional icon, showing up to 3 items
- * with a "+X more" indicator if there are more items
+ * with a "+X more" indicator if there are more items.
+ * When session is provided, expression strings (starting with @) are highlighted.
  */
-export const renderStringList = (items: string[], icon?: string) => {
+export const renderStringList = (
+  items: string[],
+  icon?: string,
+  session?: boolean
+) => {
   const itemElements = [];
   const maxDisplay = 3;
 
@@ -159,7 +169,11 @@ export const renderStringList = (items: string[], icon?: string) => {
 
   for (let i = 0; i < displayCount; i++) {
     const item = items[i];
-    itemElements.push(renderLineItem(item, icon));
+    const highlighted =
+      session !== undefined && item.startsWith('@')
+        ? renderHighlightedText(item, session)
+        : undefined;
+    itemElements.push(renderLineItem(item, icon, highlighted));
   }
 
   // Add "+X more" if there are more than 3 items (and not exactly 4)
