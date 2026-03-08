@@ -271,7 +271,7 @@ describe('temba-webchat', () => {
       const closeButton = webChat.shadowRoot.querySelector('.close-button');
       expect(closeButton).to.exist;
 
-      await mouseClickElement(closeButton);
+      (closeButton as HTMLElement).click();
       await webChat.updateComplete;
 
       expect(webChat.open).to.equal(false);
