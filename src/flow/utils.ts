@@ -178,6 +178,33 @@ export const renderStringList = (items: string[], icon?: string) => {
 };
 
 /**
+ * Renders a mixed list of items, each with its own icon, showing up to 3 items
+ * with a "+X more" indicator if there are more items
+ */
+export const renderMixedList = (items: { name: string; icon: string }[]) => {
+  const itemElements = [];
+  const maxDisplay = 3;
+
+  const displayCount =
+    items.length === 4 ? 4 : Math.min(maxDisplay, items.length);
+
+  for (let i = 0; i < displayCount; i++) {
+    itemElements.push(renderLineItem(items[i].name, items[i].icon));
+  }
+
+  if (items.length > maxDisplay && items.length !== 4) {
+    const remainingCount = items.length - maxDisplay;
+    itemElements.push(
+      html`<div style="display:flex;items-align:center;margin-top:0.2em;">
+        <div style="margin-right:0.4em; width: 1em;"></div>
+        <div style="font-size:0.8em">+${remainingCount} more</div>
+      </div>`
+    );
+  }
+  return itemElements;
+};
+
+/**
  * Renders a single flow as a clickable link that fires a temba-flow-clicked event
  */
 const renderFlowLink = (flow: NamedObject, icon?: string) => {

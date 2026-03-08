@@ -7,26 +7,31 @@ import {
   FlowTypes
 } from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
-import { renderStringList, renderFlowLinks } from '../utils';
+import { renderMixedList, renderFlowLinks } from '../utils';
 import { Icon } from '../../Icons';
+
 export const start_session: ActionConfig = {
   name: 'Start Flow',
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: StartSession) => {
-    const contacts = (action.contacts || []).map((c) => c.name);
-    const groups = (action.groups || []).map((g) => g.name);
-
     let recipientsDisplay = html``;
     if (action.create_contact) {
       recipientsDisplay = html`Create a new contact`;
     } else if ((action as any).contact_query) {
       recipientsDisplay = html`${(action as any).contact_query}`;
     } else {
-      recipientsDisplay = html`
-        ${renderStringList(groups, Icon.group)}
-        ${renderStringList(contacts, Icon.contacts)}
-      `;
+      const recipients = [
+        ...(action.groups || []).map((g) => ({
+          name: g.name,
+          icon: Icon.group
+        })),
+        ...(action.contacts || []).map((c) => ({
+          name: c.name,
+          icon: Icon.contacts
+        }))
+      ];
+      recipientsDisplay = html`${renderMixedList(recipients)}`;
     }
 
     return html`

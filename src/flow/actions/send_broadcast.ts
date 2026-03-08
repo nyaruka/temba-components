@@ -2,7 +2,7 @@ import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
 import {
-  renderStringList,
+  renderMixedList,
   renderClamped,
   renderHighlightedText
 } from '../utils';
@@ -13,14 +13,16 @@ export const send_broadcast: ActionConfig = {
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendBroadcast) => {
-    const contacts = (action.contacts || []).map((c) => c.name);
-    const groups = (action.groups || []).map((g) => g.name);
+    const recipients = [
+      ...(action.groups || []).map((g) => ({ name: g.name, icon: Icon.group })),
+      ...(action.contacts || []).map((c) => ({
+        name: c.name,
+        icon: Icon.contacts
+      }))
+    ];
 
     return html`<div>
-      <div>
-        ${renderStringList(groups, Icon.group)}
-        ${renderStringList(contacts, Icon.contacts)}
-      </div>
+      <div>${renderMixedList(recipients)}</div>
       <div style="margin-top: 0.5em">
         ${renderClamped(renderHighlightedText(action.text, true), action.text)}
       </div>
