@@ -3679,13 +3679,13 @@ export class Editor extends RapidElement {
           } as NodeTypeSelection
         })
       );
-    } else {
-      // Show node type selector
+    } else if (selection.action === 'other') {
+      // Show unified node type selector
       const selector = this.querySelector(
         'temba-node-type-selector'
       ) as NodeTypeSelector;
       if (selector) {
-        selector.show(selection.action, selection.position);
+        selector.show('all', selection.position);
       }
       // Note: we don't clear pendingCanvasConnection or placeholder here,
       // they will be used in handleNodeTypeSelection

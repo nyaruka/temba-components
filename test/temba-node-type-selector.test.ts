@@ -29,70 +29,377 @@ describe('temba-node-type-selector', () => {
     expect(selector.hasAttribute('open')).to.be.false;
   });
 
-  it('shows dialog when opened in action mode', async () => {
+  it('shows unified dialog when opened in all mode', async () => {
     const selector = await createSelector();
 
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     expect(selector.open).to.be.true;
-    expect(selector.mode).to.equal('action');
+    expect(selector.mode).to.equal('all');
     expect(selector.hasAttribute('open')).to.be.true;
 
+    // No title heading, just a search input in the header
+    const title = selector.shadowRoot?.querySelector('.header h2');
+    expect(title).to.be.null;
+
+    const searchInput = selector.shadowRoot?.querySelector('.search-input');
+    expect(searchInput).to.not.be.null;
+
     const dialog = selector.shadowRoot?.querySelector('.dialog') as HTMLElement;
     await assertScreenshot(
-      'node-type-selector/action-mode',
+      'node-type-selector/all-mode',
       getClip(dialog),
       true
     );
   });
 
-  it('shows dialog when opened in split mode', async () => {
+  it('shows promoted items at the top', async () => {
     const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
 
-    selector.show('split', { x: 100, y: 100 });
+    const promotedSection =
+      selector.shadowRoot?.querySelector('.promoted-section');
+    expect(promotedSection).to.not.be.null;
+
+    const promotedTitles = Array.from(
+      promotedSection?.querySelectorAll('.node-item-title') || []
+    ).map((item) => item.textContent?.trim());
+
+    expect(promotedTitles).to.include('Send Message');
+    expect(promotedTitles).to.include('Wait for Response');
+
+    // Promoted section should NOT have a border-bottom
+    // (no extra visual separator beyond normal spacing)
+  });
+
+  it('uses different colors for promoted items', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    const promotedItems =
+      selector.shadowRoot?.querySelectorAll('.promoted-section .node-item');
+    expect(promotedItems?.length).to.equal(2);
+
+    // Each promoted item should have its own color via --item-color
+    const sendMsgStyle = (promotedItems?.[0] as HTMLElement)?.style;
+    const waitStyle = (promotedItems?.[1] as HTMLElement)?.style;
+    const sendMsgColor = sendMsgStyle?.getPropertyValue('--item-color');
+    const waitColor = waitStyle?.getPropertyValue('--item-color');
+
+    // Colors should be different
+    expect(sendMsgColor).to.not.equal(waitColor);
+  });
+
+  it('shows both actions and splits in unified view', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
+
+    // Should have actions
+    expect(titles).to.include('Update Field');
+
+    // Should have splits
+    expect(titles).to.include('Split by Expression');
+    expect(titles).to.include('Split by Contact Field');
+  });
+
+  it('shows Call AI in action categories (not a separate branching section)', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    selector.features = [];
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
+    expect(titles).to.include('Call AI');
+
+    // Should NOT have a separate "Actions that Branch" section
+    const branchingSection =
+      selector.shadowRoot?.querySelector('.section-branching');
+    expect(branchingSection).to.be.null;
+  });
+
+  it('marks branching items with the branching class', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // Call AI should have branching class
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item');
+    let callAiBranching = false;
+    let setFieldBranching = false;
+
+    nodeItems?.forEach((item) => {
+      const title = item.querySelector('.node-item-title')?.textContent?.trim();
+      if (title === 'Call AI') {
+        callAiBranching = item.classList.contains('branching');
+      }
+      if (title === 'Update Field') {
+        setFieldBranching = item.classList.contains('branching');
+      }
+    });
+
+    expect(callAiBranching).to.be.true;
+    expect(setFieldBranching).to.be.false;
+  });
+
+  it('highlights first item by default', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // First node-item should have the highlighted class
+    const firstItem = selector.shadowRoot?.querySelector('.node-item');
+    expect(firstItem?.classList.contains('highlighted')).to.be.true;
+
+    // Only one item should be highlighted
+    const highlightedItems =
+      selector.shadowRoot?.querySelectorAll('.node-item.highlighted');
+    expect(highlightedItems?.length).to.equal(1);
+  });
+
+  it('selects first item on Enter key', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    let selectionDetail: any = null;
+    selector.addEventListener('temba-selection', (event: any) => {
+      selectionDetail = event.detail;
+    });
+
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    );
+    await selector.updateComplete;
+
+    expect(selectionDetail).to.not.be.null;
+    expect(selectionDetail.nodeType).to.equal('send_msg');
+    expect(selector.open).to.be.false;
+  });
+
+  it('selects filtered item on Enter key', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // Search for webhook
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+    searchInput.value = 'webhook';
+    searchInput.dispatchEvent(new InputEvent('input'));
+    await selector.updateComplete;
+
+    let selectionDetail: any = null;
+    selector.addEventListener('temba-selection', (event: any) => {
+      selectionDetail = event.detail;
+    });
+
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    );
+    await selector.updateComplete;
+
+    expect(selectionDetail).to.not.be.null;
+    expect(selectionDetail.nodeType).to.equal('split_by_webhook');
+  });
+
+  it('navigates highlight with arrow keys', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+
+    // Initially first item is highlighted
+    let highlighted = selector.shadowRoot?.querySelectorAll(
+      '.node-item.highlighted'
+    );
+    expect(highlighted?.length).to.equal(1);
+
+    // Arrow down moves to second item
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+    );
+    await selector.updateComplete;
+
+    highlighted = selector.shadowRoot?.querySelectorAll(
+      '.node-item.highlighted'
+    );
+    expect(highlighted?.length).to.equal(1);
+    // The highlighted item should be the second one
+    const allItems = selector.shadowRoot?.querySelectorAll('.node-item');
+    expect(allItems?.[1]?.classList.contains('highlighted')).to.be.true;
+
+    // Arrow up moves back to first
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })
+    );
+    await selector.updateComplete;
+
+    expect(allItems?.[0]?.classList.contains('highlighted')).to.be.true;
+  });
+
+  it('navigates highlight with Ctrl+n and Ctrl+p', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+
+    // Ctrl+n moves down
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'n',
+        ctrlKey: true,
+        bubbles: true
+      })
+    );
+    await selector.updateComplete;
+
+    const allItems = selector.shadowRoot?.querySelectorAll('.node-item');
+    expect(allItems?.[1]?.classList.contains('highlighted')).to.be.true;
+
+    // Ctrl+p moves up
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'p',
+        ctrlKey: true,
+        bubbles: true
+      })
+    );
+    await selector.updateComplete;
+
+    expect(allItems?.[0]?.classList.contains('highlighted')).to.be.true;
+  });
+
+  it('closes on Escape key', async () => {
+    const selector = await createSelector();
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     expect(selector.open).to.be.true;
-    expect(selector.mode).to.equal('split');
 
-    const dialog = selector.shadowRoot?.querySelector('.dialog') as HTMLElement;
-    await assertScreenshot(
-      'node-type-selector/split-mode',
-      getClip(dialog),
-      true
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+    searchInput.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
     );
-  });
-
-  it('displays action types in action mode', async () => {
-    const selector = await createSelector();
-    selector.show('action', { x: 100, y: 100 });
     await selector.updateComplete;
 
-    const title = selector.shadowRoot?.querySelector('.header h2');
-    expect(title?.textContent).to.equal('Select an Action');
-
-    // verify we have node items
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item');
-    expect(nodeItems?.length).to.be.greaterThan(0);
+    expect(selector.open).to.be.false;
   });
 
-  it('displays split types in split mode', async () => {
+  it('hides branching items in action-no-branching mode', async () => {
     const selector = await createSelector();
-    selector.show('split', { x: 100, y: 100 });
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('action-no-branching', { x: 100, y: 100 });
     await selector.updateComplete;
 
-    const title = selector.shadowRoot?.querySelector('.header h2');
-    expect(title?.textContent).to.equal('Select a Split');
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
 
-    // verify we have node items
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item');
-    expect(nodeItems?.length).to.be.greaterThan(0);
+    // Should have regular actions
+    expect(titles).to.include('Update Field');
+
+    // Should NOT have branching items
+    expect(titles).to.not.include('Call AI');
+    expect(titles).to.not.include('Call Webhook');
+    expect(titles).to.not.include('Wait for Response');
+    expect(titles).to.not.include('Split by Expression');
+  });
+
+  it('has a search input that filters items', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    // Search input should exist
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+    expect(searchInput).to.not.be.null;
+
+    // Type a search query
+    searchInput.value = 'webhook';
+    searchInput.dispatchEvent(new InputEvent('input'));
+    await selector.updateComplete;
+
+    // Should only show matching items
+    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
+    const titles = Array.from(nodeItems || []).map((item) =>
+      item.textContent?.trim()
+    );
+
+    expect(titles).to.include('Call Webhook');
+    expect(titles).to.not.include('Update Field');
+    expect(titles).to.not.include('Send Message');
+  });
+
+  it('shows no results message when search has no matches', async () => {
+    const selector = await createSelector();
+    selector.show('all', { x: 100, y: 100 });
+    await selector.updateComplete;
+
+    const searchInput = selector.shadowRoot?.querySelector(
+      '.search-input'
+    ) as HTMLInputElement;
+    searchInput.value = 'xyznonexistent';
+    searchInput.dispatchEvent(new InputEvent('input'));
+    await selector.updateComplete;
+
+    const noResults = selector.shadowRoot?.querySelector('.no-results');
+    expect(noResults).to.not.be.null;
+    expect(noResults?.textContent?.trim()).to.equal('No matching items found');
   });
 
   it('closes when close() is called', async () => {
     const selector = await createSelector();
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     expect(selector.open).to.be.true;
@@ -105,7 +412,7 @@ describe('temba-node-type-selector', () => {
 
   it('closes when overlay is clicked', async () => {
     const selector = await createSelector();
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     const overlay = selector.shadowRoot?.querySelector(
@@ -119,7 +426,7 @@ describe('temba-node-type-selector', () => {
 
   it('closes when cancel button is clicked', async () => {
     const selector = await createSelector();
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     const cancelButton = selector.shadowRoot?.querySelector(
@@ -133,7 +440,7 @@ describe('temba-node-type-selector', () => {
 
   it('fires selection event when node type is clicked', async () => {
     const selector = await createSelector();
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     let selectionFired = false;
@@ -162,7 +469,7 @@ describe('temba-node-type-selector', () => {
     const selector = await createSelector();
     selector.flowType = 'voice';
     await selector.updateComplete;
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     // get all node item titles
@@ -180,7 +487,7 @@ describe('temba-node-type-selector', () => {
     const selector = await createSelector();
     selector.flowType = 'message';
     await selector.updateComplete;
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     // get all node item titles
@@ -194,115 +501,12 @@ describe('temba-node-type-selector', () => {
     expect(titles).to.not.include('Play Recording');
   });
 
-  it('filters splits by flow type - message flow should not show wait for response in split dialog', async () => {
-    const selector = await createSelector();
-    selector.flowType = 'message';
-    await selector.updateComplete;
-    selector.show('split', { x: 100, y: 100 });
-    await selector.updateComplete;
-
-    // get all node item titles
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) =>
-      item.textContent?.trim()
-    );
-
-    // Wait for Response is now promoted to the context menu, not in split dialog
-    expect(titles).to.not.include('Wait for Response');
-  });
-
-  it('filters splits by flow type - voice flow should not show wait for response', async () => {
-    const selector = await createSelector();
-    selector.flowType = 'voice';
-    await selector.updateComplete;
-    selector.show('split', { x: 100, y: 100 });
-    await selector.updateComplete;
-
-    // get all node item titles
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) =>
-      item.textContent?.trim()
-    );
-
-    // voice flow should not have Wait for Response
-    expect(titles).to.not.include('Wait for Response');
-
-    // but should have Wait for Digits and Wait for Menu
-    expect(titles).to.include('Wait for Digits');
-    expect(titles).to.include('Wait for Menu');
-  });
-
-  it('shows Call AI in Actions that Branch without requiring AI feature', async () => {
-    const selector = await createSelector();
-    selector.flowType = 'message';
-    selector.features = [];
-    await selector.updateComplete;
-    selector.show('action', { x: 100, y: 100 });
-    await selector.updateComplete;
-
-    // get all node item titles
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) =>
-      item.textContent?.trim()
-    );
-
-    // Call AI should appear in the Actions that Branch section
-    expect(titles).to.include('Call AI');
-
-    // verify it's in the branching section
-    const branchingSection =
-      selector.shadowRoot?.querySelector('.section-branching');
-    const branchingTitles = Array.from(
-      branchingSection?.querySelectorAll('.node-item-title') || []
-    ).map((item) => item.textContent?.trim());
-    expect(branchingTitles).to.include('Call AI');
-  });
-
-  it('filters by features - AI feature does not show Split by AI in split mode', async () => {
-    const selector = await createSelector();
-    selector.flowType = 'message';
-    selector.features = ['ai'];
-    await selector.updateComplete;
-    selector.show('split', { x: 100, y: 100 });
-    await selector.updateComplete;
-
-    // get all node item titles
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) =>
-      item.textContent?.trim()
-    );
-
-    // split_by_llm_categorize (Split by AI) is filtered out for old editor compatibility
-    // so it should NOT appear even when AI feature is enabled
-    expect(titles).to.not.include('Split by AI');
-  });
-
-  it('filters by features - without AI feature, AI splits are hidden', async () => {
-    const selector = await createSelector();
-    selector.flowType = 'message';
-    selector.features = [];
-    await selector.updateComplete;
-    selector.show('split', { x: 100, y: 100 });
-    await selector.updateComplete;
-
-    // get all node item titles
-    const nodeItems = selector.shadowRoot?.querySelectorAll('.node-item-title');
-    const titles = Array.from(nodeItems || []).map((item) =>
-      item.textContent?.trim()
-    );
-
-    // Call AI has showAsAction so it doesn't appear in split mode
-    // Split by AI has flowTypes: [] so it doesn't appear anywhere
-    expect(titles).to.not.include('Call AI');
-    expect(titles).to.not.include('Split by AI');
-  });
-
   it('filters by features - airtime feature enables airtime actions', async () => {
     const selector = await createSelector();
     selector.flowType = 'message';
     selector.features = ['airtime'];
     await selector.updateComplete;
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     // get all node item titles
@@ -320,7 +524,7 @@ describe('temba-node-type-selector', () => {
     selector.flowType = 'message';
     selector.features = [];
     await selector.updateComplete;
-    selector.show('action', { x: 100, y: 100 });
+    selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
     // get all node item titles
@@ -394,7 +598,7 @@ describe('temba-node-type-selector', () => {
     it('should not show split_by_run_result twice when aliases exist', async () => {
       const selector = await createSelector();
 
-      selector.show('split', { x: 100, y: 100 });
+      selector.show('all', { x: 100, y: 100 });
       await selector.updateComplete;
 
       // Get all the node items rendered in the selector
@@ -416,7 +620,7 @@ describe('temba-node-type-selector', () => {
     it('should not show split_by_run_result_delimited type in the selector', async () => {
       const selector = await createSelector();
 
-      selector.show('split', { x: 100, y: 100 });
+      selector.show('all', { x: 100, y: 100 });
       await selector.updateComplete;
 
       // Get all the node items and check their data-type attributes
@@ -433,10 +637,10 @@ describe('temba-node-type-selector', () => {
       expect(foundDelimitedType).to.be.false;
     });
 
-    it('should not show split_by_llm_categorize in split mode', async () => {
+    it('should not show split_by_llm_categorize in the selector', async () => {
       const selector = await createSelector();
 
-      selector.show('split', { x: 100, y: 100 });
+      selector.show('all', { x: 100, y: 100 });
       await selector.updateComplete;
 
       // Get all the node items and check their data-type attributes
@@ -452,25 +656,23 @@ describe('temba-node-type-selector', () => {
 
       expect(foundLLMCategorize).to.be.false;
     });
+  });
 
-    it('should not show split_by_llm_categorize in action mode', async () => {
-      const selector = await createSelector();
+  it('send_msg appears in promoted section for message flows', async () => {
+    const selector = await createSelector();
+    selector.flowType = 'message';
+    await selector.updateComplete;
+    selector.show('action-no-branching', { x: 100, y: 100 });
+    await selector.updateComplete;
 
-      selector.show('action', { x: 100, y: 100 });
-      await selector.updateComplete;
+    const promotedSection =
+      selector.shadowRoot?.querySelector('.promoted-section');
+    const promotedTitles = Array.from(
+      promotedSection?.querySelectorAll('.node-item-title') || []
+    ).map((item) => item.textContent?.trim());
 
-      // Get all the node items and check their data-type attributes
-      const nodeItems = selector.shadowRoot!.querySelectorAll('.node-item');
-
-      let foundLLMCategorize = false;
-      nodeItems.forEach((item) => {
-        const typeAttr = item.getAttribute('data-type');
-        if (typeAttr === 'split_by_llm_categorize') {
-          foundLLMCategorize = true;
-        }
-      });
-
-      expect(foundLLMCategorize).to.be.false;
-    });
+    expect(promotedTitles).to.include('Send Message');
+    // Wait for Response is branching, so it should NOT appear in no-branching mode
+    expect(promotedTitles).to.not.include('Wait for Response');
   });
 });

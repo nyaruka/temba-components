@@ -9,8 +9,7 @@ import { CustomEventType } from '../interfaces';
 export interface CanvasMenuSelection {
   action:
     | 'sticky'
-    | 'action'
-    | 'split'
+    | 'other'
     | 'send_msg'
     | 'wait_for_response'
     | 'reflow';
@@ -230,18 +229,10 @@ export class CanvasMenu extends RapidElement {
 
         <div
           class="menu-item"
-          @click=${() => this.handleMenuItemClick('action')}
+          @click=${() => this.handleMenuItemClick('other')}
         >
-          <temba-icon name="action" size="1.25"></temba-icon>
-          <div class="menu-item-title">Add Action</div>
-        </div>
-
-        <div
-          class="menu-item"
-          @click=${() => this.handleMenuItemClick('split')}
-        >
-          <temba-icon name="split" size="1.25"></temba-icon>
-          <div class="menu-item-title">Add Split</div>
+          <temba-icon name="plus" size="1.25"></temba-icon>
+          <div class="menu-item-title">Add Other</div>
         </div>
 
         ${this.showStickyNote

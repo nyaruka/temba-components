@@ -21,19 +21,29 @@ export interface NodeTypeSelection {
 }
 
 /**
+ * An item in the node type selector
+ */
+interface NodeItem {
+  type: string;
+  config: NodeConfig | ActionConfig;
+  branching: boolean;
+  color: string;
+}
+
+/**
  * Categorizes node types for display
  */
 interface NodeCategory {
   name: string;
   description: string;
   color: string;
-  items: Array<{ type: string; config: NodeConfig | ActionConfig }>;
-  isBranching?: boolean; // true if this category contains actions that branch/split
+  items: NodeItem[];
 }
 
 /**
- * NodeTypeSelector - A dialog for selecting which type of node to create
- * Shows categorized lists of available actions and splits
+ * NodeTypeSelector - A unified dialog for selecting which type of node to create.
+ * Shows promoted items (Send Message, Wait for Response) at the top,
+ * then categorized actions, then splits.
  */
 export class NodeTypeSelector extends RapidElement {
   static get styles() {
@@ -68,7 +78,7 @@ export class NodeTypeSelector extends RapidElement {
         background: white;
         border-radius: var(--curvature);
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        max-width: 700px;
+        max-width: 740px;
         max-height: 80vh;
         width: 90%;
         display: flex;
@@ -78,70 +88,34 @@ export class NodeTypeSelector extends RapidElement {
       .header {
         padding: 1.5em;
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: var(--curvature) var(--curvature) 0 0;
       }
 
-      .header h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--color-text-dark);
+      .search-input {
+        width: 100%;
+        padding: 0.6em 0.8em;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: calc(var(--curvature) * 0.75);
+        font-size: 1rem;
+        outline: none;
+        box-sizing: border-box;
+      }
+
+      .search-input:focus {
+        border-color: var(--color-focus);
+        box-shadow: var(--widget-box-shadow-focused);
       }
 
       .content {
         overflow-y: auto;
         overflow-x: hidden;
         flex: 1;
-        padding: 0;
-      }
-
-      .section-regular {
         padding: 1.5em;
       }
 
-      .section-branching {
-        background: linear-gradient(
-          135deg,
-          rgba(170, 170, 170, 0.12),
-          rgba(170, 170, 170, 0.08)
-        );
-        padding: 1.5em;
-        margin: 0 -1.5em;
-        padding-left: 3em;
-        padding-right: 3em;
-      }
-
-      .section-header {
+      .promoted-section {
         margin-bottom: 1.5em;
-        padding-top: 1em;
-      }
-
-      .section-title {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: var(--color-text-dark);
-        margin-bottom: 0.35em;
-        display: flex;
-        align-items: center;
-      }
-
-      .section-title::before {
-        content: '';
-        display: inline-block;
-        height: 1.2em;
-        background: linear-gradient(
-          135deg,
-          var(--color-primary-dark),
-          var(--color-primary)
-        );
-        border-radius: 2px;
-      }
-
-      .section-description {
-        font-size: 0.9rem;
-        color: var(--color-text);
-        opacity: 0.7;
-        margin-left: 0em;
-        padding-bottom: 1em;
       }
 
       .category {
@@ -172,7 +146,7 @@ export class NodeTypeSelector extends RapidElement {
 
       .items-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
         gap: 0.75em;
       }
 
@@ -198,13 +172,15 @@ export class NodeTypeSelector extends RapidElement {
         background: var(--item-color, rgba(0, 0, 0, 0.1));
       }
 
-      .node-item:hover {
+      .node-item:hover,
+      .node-item.highlighted {
         border-color: var(--item-color, var(--color-primary));
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transform: translateY(-1px);
       }
 
-      .node-item:hover::before {
+      .node-item:hover::before,
+      .node-item.highlighted::before {
         width: 6px;
       }
 
@@ -212,13 +188,14 @@ export class NodeTypeSelector extends RapidElement {
         font-weight: 500;
         font-size: 1rem;
         color: var(--color-text-dark);
+        white-space: nowrap;
       }
 
-      .node-item-type {
-        font-size: 0.75rem;
+      .no-results {
+        text-align: center;
+        padding: 2em;
         color: var(--color-text);
         opacity: 0.6;
-        font-family: monospace;
       }
 
       .footer {
@@ -226,6 +203,8 @@ export class NodeTypeSelector extends RapidElement {
         border-top: 1px solid rgba(0, 0, 0, 0.1);
         display: flex;
         justify-content: flex-end;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 0 0 var(--curvature) var(--curvature);
       }
 
       temba-button {
@@ -239,7 +218,7 @@ export class NodeTypeSelector extends RapidElement {
   public open = false;
 
   @property({ type: String })
-  public mode: 'action' | 'split' | 'action-no-branching' = 'action';
+  public mode: 'all' | 'action-no-branching' = 'all';
 
   @property({ type: String })
   public flowType: string = 'message';
@@ -250,27 +229,40 @@ export class NodeTypeSelector extends RapidElement {
   @state()
   private clickPosition = { x: 0, y: 0 };
 
-  private handleKeyDown = (e: KeyboardEvent) => {
+  @state()
+  private searchQuery = '';
+
+  @state()
+  private highlightedIndex = 0;
+
+  private boundHandleEscape = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       this.close();
     }
   };
 
   public show(
-    mode: 'action' | 'split' | 'action-no-branching',
+    mode: 'all' | 'action-no-branching',
     position: { x: number; y: number }
   ) {
     this.mode = mode;
     this.clickPosition = position;
+    this.searchQuery = '';
+    this.highlightedIndex = 0;
     this.open = true;
-    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keydown', this.boundHandleEscape);
+    this.updateComplete.then(() => {
+      const input = this.shadowRoot?.querySelector(
+        '.search-input'
+      ) as HTMLInputElement;
+      input?.focus();
+    });
   }
 
   public close(fireCanceledEvent: boolean = true) {
     if (this.open) {
       this.open = false;
-      document.removeEventListener('keydown', this.handleKeyDown);
-      // Fire canceled event so parent can clean up, but only if not from a selection
+      document.removeEventListener('keydown', this.boundHandleEscape);
       if (fireCanceledEvent) {
         this.fireCustomEvent(CustomEventType.Canceled, {});
       }
@@ -319,204 +311,250 @@ export class NodeTypeSelector extends RapidElement {
     this.close();
   }
 
-  private getCategories(): NodeCategory[] {
-    if (this.mode === 'action' || this.mode === 'action-no-branching') {
-      // Group actions by group
-      const actionsByGroup = new Map<
-        string,
-        Array<{ type: string; config: ActionConfig }>
-      >();
-      const splitsByGroup = new Map<
-        string,
-        Array<{ type: string; config: NodeConfig }>
-      >();
+  private handleSearchInput(e: InputEvent) {
+    this.searchQuery = (e.target as HTMLInputElement).value;
+    this.highlightedIndex = 0;
+  }
 
-      // Collect regular actions (from ACTION_CONFIG, unless hideFromActions is true)
-      Object.entries(ACTION_CONFIG)
+  private handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      const allVisible = this.getVisibleItems();
+      if (allVisible.length > 0) {
+        const idx = Math.min(this.highlightedIndex, allVisible.length - 1);
+        this.handleNodeTypeClick(allVisible[idx].type);
+      }
+    } else if (
+      e.key === 'ArrowDown' ||
+      (e.key === 'n' && e.ctrlKey)
+    ) {
+      e.preventDefault();
+      const allVisible = this.getVisibleItems();
+      if (allVisible.length > 0) {
+        this.highlightedIndex =
+          (this.highlightedIndex + 1) % allVisible.length;
+      }
+    } else if (
+      e.key === 'ArrowUp' ||
+      (e.key === 'p' && e.ctrlKey)
+    ) {
+      e.preventDefault();
+      const allVisible = this.getVisibleItems();
+      if (allVisible.length > 0) {
+        this.highlightedIndex =
+          (this.highlightedIndex - 1 + allVisible.length) % allVisible.length;
+      }
+    } else if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  /**
+   * Get promoted items shown at the top of the selector
+   */
+  private getPromotedItems(): NodeItem[] {
+    const items: NodeItem[] = [];
+
+    const sendMsgConfig = ACTION_CONFIG['send_msg'];
+    if (sendMsgConfig && this.isConfigAvailable(sendMsgConfig)) {
+      items.push({
+        type: 'send_msg',
+        config: sendMsgConfig,
+        branching: false,
+        color: ACTION_GROUP_METADATA[sendMsgConfig.group].color
+      });
+    }
+
+    const waitConfig = NODE_CONFIG['wait_for_response'];
+    if (waitConfig && this.isConfigAvailable(waitConfig)) {
+      items.push({
+        type: 'wait_for_response',
+        config: waitConfig,
+        branching: true,
+        color: SPLIT_GROUP_METADATA[SPLIT_GROUPS.wait].color
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Get categorized items: action groups followed by split groups
+   */
+  private getCategories(): NodeCategory[] {
+    const categories: NodeCategory[] = [];
+    const noBranching = this.mode === 'action-no-branching';
+
+    // --- Action categories ---
+    const actionsByGroup = new Map<string, NodeItem[]>();
+
+    // Regular actions (excluding hideFromActions)
+    Object.entries(ACTION_CONFIG)
+      .filter(([type, config]) => {
+        const isAlias = config.aliases && config.aliases.includes(type);
+        return (
+          !isAlias &&
+          config.name &&
+          !config.hideFromActions &&
+          config.group &&
+          this.isConfigAvailable(config)
+        );
+      })
+      .forEach(([type, config]) => {
+        const metadata = ACTION_GROUP_METADATA[config.group];
+        if (!actionsByGroup.has(config.group))
+          actionsByGroup.set(config.group, []);
+        actionsByGroup
+          .get(config.group)!
+          .push({ type, config, branching: false, color: metadata.color });
+      });
+
+    // Nodes with showAsAction mixed into their action groups
+    if (!noBranching) {
+      Object.entries(NODE_CONFIG)
         .filter(([type, config]) => {
-          // exclude aliases - if config has aliases, check if this type is an alias
-          const isAlias = config.aliases && config.aliases.includes(type);
           return (
-            !isAlias &&
+            type !== 'execute_actions' &&
+            type === config.type &&
             config.name &&
-            !config.hideFromActions &&
+            config.showAsAction &&
             config.group &&
             this.isConfigAvailable(config)
           );
         })
         .forEach(([type, config]) => {
-          const group = config.group;
-          if (!actionsByGroup.has(group)) {
-            actionsByGroup.set(group, []);
-          }
-          actionsByGroup.get(group)!.push({ type, config });
+          const group = config.group!;
+          const metadata =
+            ACTION_GROUP_METADATA[group] || SPLIT_GROUP_METADATA[group];
+          if (!actionsByGroup.has(group)) actionsByGroup.set(group, []);
+          actionsByGroup
+            .get(group)!
+            .push({ type, config, branching: true, color: metadata.color });
         });
+    }
 
-      // Collect nodes that have showAsAction=true (these appear as "with split" actions)
-      // Only if we're not in 'action-no-branching' mode
-      if (this.mode === 'action') {
-        Object.entries(NODE_CONFIG)
-          .filter(([type, config]) => {
-            return (
-              type !== 'execute_actions' &&
-              type === config.type && // exclude aliases (type won't match config.type for aliases)
-              config.name &&
-              config.showAsAction &&
-              config.group &&
-              this.isConfigAvailable(config)
-            );
-          })
-          .forEach(([type, config]) => {
-            const group = config.group!;
-            if (!splitsByGroup.has(group)) {
-              splitsByGroup.set(group, []);
-            }
-            splitsByGroup.get(group)!.push({ type, config });
-          });
-      }
+    const actionGroupOrder = Object.keys(ACTION_GROUPS);
+    const actionConfigOrder = Object.keys(ACTION_CONFIG);
+    const nodeConfigOrder = Object.keys(NODE_CONFIG);
 
-      // Build categories - first regular actions, then splitting actions
-      const categories: NodeCategory[] = [];
-
-      // Get the implicit order from ACTION_GROUPS object
-      const actionGroupOrder = Object.keys(ACTION_GROUPS);
-      // Get the implicit order of actions from ACTION_CONFIG
-      const actionConfigOrder = Object.keys(ACTION_CONFIG);
-
-      // Add regular action categories sorted by implicit order
-      const sortedActionCategories = Array.from(actionsByGroup.entries()).sort(
-        ([groupA], [groupB]) => {
-          const orderA = actionGroupOrder.indexOf(groupA);
-          const orderB = actionGroupOrder.indexOf(groupB);
-          return (
-            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-          );
-        }
-      );
-
-      sortedActionCategories.forEach(([group, items]) => {
-        const metadata = ACTION_GROUP_METADATA[group];
-        // Sort items within the category by their order in ACTION_CONFIG
+    Array.from(actionsByGroup.entries())
+      .sort(([a], [b]) => {
+        const oa = actionGroupOrder.indexOf(a);
+        const ob = actionGroupOrder.indexOf(b);
+        return (oa === -1 ? 999 : oa) - (ob === -1 ? 999 : ob);
+      })
+      .forEach(([group, items]) => {
+        // Sort: actions by ACTION_CONFIG order, then nodes by NODE_CONFIG order
         const sortedItems = items.sort((a, b) => {
-          const orderA = actionConfigOrder.indexOf(a.type);
-          const orderB = actionConfigOrder.indexOf(b.type);
-          return (
-            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-          );
+          const oaA = actionConfigOrder.indexOf(a.type);
+          const obA = actionConfigOrder.indexOf(b.type);
+          const oaN = nodeConfigOrder.indexOf(a.type);
+          const obN = nodeConfigOrder.indexOf(b.type);
+          const oa = oaA !== -1 ? oaA : oaN !== -1 ? 1000 + oaN : 2000;
+          const ob = obA !== -1 ? obA : obN !== -1 ? 1000 + obN : 2000;
+          return oa - ob;
         });
+        const metadata = ACTION_GROUP_METADATA[group];
         categories.push({
           name: metadata.title,
           description: metadata.description,
           color: metadata.color,
-          items: sortedItems,
-          isBranching: false
+          items: sortedItems
         });
       });
 
-      // Add splitting action categories (with modified description to indicate they split)
-      // Also sorted by implicit order
-      // Get the implicit order of nodes from NODE_CONFIG
-      const nodeConfigOrder = Object.keys(NODE_CONFIG);
-
-      const sortedSplitCategories = Array.from(splitsByGroup.entries()).sort(
-        ([groupA], [groupB]) => {
-          const orderA = actionGroupOrder.indexOf(groupA);
-          const orderB = actionGroupOrder.indexOf(groupB);
-          return (
-            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-          );
-        }
-      );
-
-      sortedSplitCategories.forEach(([group, items]) => {
-        const metadata = ACTION_GROUP_METADATA[group];
-        // Sort items within the category by their order in NODE_CONFIG
-        const sortedItems = items.sort((a, b) => {
-          const orderA = nodeConfigOrder.indexOf(a.type);
-          const orderB = nodeConfigOrder.indexOf(b.type);
-          return (
-            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-          );
-        });
-        categories.push({
-          name: metadata.title,
-          description: metadata.description,
-          color: metadata.color,
-          items: sortedItems,
-          isBranching: true
-        });
-      });
-
-      return categories;
-    } else {
-      // Group splits by group
-      const itemsByGroup = new Map<
-        string,
-        Array<{ type: string; config: NodeConfig }>
-      >();
+    // --- Split categories (only in 'all' mode) ---
+    if (!noBranching) {
+      const splitsByGroup = new Map<string, NodeItem[]>();
 
       Object.entries(NODE_CONFIG)
         .filter(([type, config]) => {
-          // exclude execute_actions (it's the default action-only node)
-          // exclude nodes that have showAsAction=true (they appear in action mode)
-          // exclude nodes that have hideFromSplits=true (promoted to context menu)
-          // exclude aliases (type won't match config.type for aliases)
           return (
             type !== 'execute_actions' &&
             type === config.type &&
             config.name &&
             !config.showAsAction &&
             !config.hideFromSplits &&
+            type !== 'wait_for_response' &&
             this.isConfigAvailable(config)
           );
         })
         .forEach(([type, config]) => {
           const group = config.group || SPLIT_GROUPS.split;
-          if (!itemsByGroup.has(group)) {
-            itemsByGroup.set(group, []);
-          }
-          itemsByGroup.get(group)!.push({ type, config });
-        });
-
-      // Convert to categories using group metadata, sorted by implicit order from SPLIT_GROUPS
-      const splitGroupOrder = Object.keys(SPLIT_GROUPS);
-      // Get the implicit order of nodes from NODE_CONFIG
-      const nodeConfigOrder = Object.keys(NODE_CONFIG);
-
-      return Array.from(itemsByGroup.entries())
-        .map(([group, items]) => {
           const metadata =
             SPLIT_GROUP_METADATA[group] || ACTION_GROUP_METADATA[group];
-          // Sort items within the category by their order in NODE_CONFIG
+          if (!splitsByGroup.has(group)) splitsByGroup.set(group, []);
+          splitsByGroup
+            .get(group)!
+            .push({ type, config, branching: true, color: metadata.color });
+        });
+
+      const splitGroupOrder = Object.keys(SPLIT_GROUPS);
+
+      Array.from(splitsByGroup.entries())
+        .sort(([a], [b]) => {
+          const oa = splitGroupOrder.indexOf(a);
+          const ob = splitGroupOrder.indexOf(b);
+          return (oa === -1 ? 999 : oa) - (ob === -1 ? 999 : ob);
+        })
+        .forEach(([group, items]) => {
           const sortedItems = items.sort((a, b) => {
-            const orderA = nodeConfigOrder.indexOf(a.type);
-            const orderB = nodeConfigOrder.indexOf(b.type);
-            return (
-              (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-            );
+            const oa = nodeConfigOrder.indexOf(a.type);
+            const ob = nodeConfigOrder.indexOf(b.type);
+            return (oa === -1 ? 999 : oa) - (ob === -1 ? 999 : ob);
           });
-          return {
+          const metadata =
+            SPLIT_GROUP_METADATA[group] || ACTION_GROUP_METADATA[group];
+          categories.push({
             name: metadata.title,
             description: metadata.description,
             color: metadata.color,
             items: sortedItems
-          };
-        })
-        .sort((a, b) => {
-          // Find the group key by looking up metadata by title
-          const groupA = Object.keys(SPLIT_GROUP_METADATA).find(
-            (key) => SPLIT_GROUP_METADATA[key].title === a.name
-          )!;
-          const groupB = Object.keys(SPLIT_GROUP_METADATA).find(
-            (key) => SPLIT_GROUP_METADATA[key].title === b.name
-          )!;
-          const orderA = splitGroupOrder.indexOf(groupA);
-          const orderB = splitGroupOrder.indexOf(groupB);
-          return (
-            (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-          );
+          });
         });
     }
+
+    return categories;
+  }
+
+  private filterBySearch(items: NodeItem[]): NodeItem[] {
+    if (!this.searchQuery) return items;
+    const query = this.searchQuery.toLowerCase();
+    return items.filter((item) =>
+      item.config.name?.toLowerCase().includes(query)
+    );
+  }
+
+  /**
+   * Get all visible items in order (promoted + categories), after filtering
+   */
+  private getVisibleItems(): NodeItem[] {
+    const promotedItems = this.getPromotedItems();
+    const categories = this.getCategories();
+    const noBranching = this.mode === 'action-no-branching';
+
+    const filteredPromoted = this.filterBySearch(
+      noBranching ? promotedItems.filter((i) => !i.branching) : promotedItems
+    );
+    const filteredCategories = categories
+      .map((cat) => ({ ...cat, items: this.filterBySearch(cat.items) }))
+      .filter((cat) => cat.items.length > 0);
+
+    return [
+      ...filteredPromoted,
+      ...filteredCategories.flatMap((cat) => cat.items)
+    ];
+  }
+
+  private renderItem(item: NodeItem, index: number): TemplateResult {
+    return html`
+      <div
+        class="node-item ${item.branching ? 'branching' : ''} ${index === this.highlightedIndex ? 'highlighted' : ''}"
+        style="--item-color: ${item.color}"
+        @click=${() => this.handleNodeTypeClick(item.type)}
+      >
+        <div class="node-item-title">${item.config.name}</div>
+      </div>
+    `;
   }
 
   public render(): TemplateResult {
@@ -524,126 +562,67 @@ export class NodeTypeSelector extends RapidElement {
       return html``;
     }
 
+    const promotedItems = this.getPromotedItems();
     const categories = this.getCategories();
-    const title =
-      this.mode === 'split'
-        ? 'Select a Split'
-        : this.mode === 'action-no-branching'
-          ? 'Add Action'
-          : 'Select an Action';
+    const noBranching = this.mode === 'action-no-branching';
 
-    // Separate regular and branching categories for action mode
-    const regularCategories = categories.filter((c) => !c.isBranching);
-    const branchingCategories = categories.filter((c) => c.isBranching);
-    const hasBranchingSection = branchingCategories.length > 0;
+    // Apply search and branching filters
+    const filteredPromoted = this.filterBySearch(
+      noBranching ? promotedItems.filter((i) => !i.branching) : promotedItems
+    );
+    const filteredCategories = categories
+      .map((cat) => ({ ...cat, items: this.filterBySearch(cat.items) }))
+      .filter((cat) => cat.items.length > 0);
+
+    // Build a running index for highlight tracking
+    let itemIndex = 0;
+
+    const hasResults =
+      filteredPromoted.length > 0 || filteredCategories.length > 0;
 
     return html`
       <div class="overlay" @click=${this.handleOverlayClick}></div>
       <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
         <div class="header">
-          <h2>${title}</h2>
+          <input
+            class="search-input"
+            type="text"
+            placeholder="Search..."
+            .value=${this.searchQuery}
+            @input=${this.handleSearchInput}
+            @keydown=${this.handleKeyDown}
+          />
         </div>
         <div class="content">
-          ${this.mode === 'action' || this.mode === 'action-no-branching'
+          ${filteredPromoted.length > 0
             ? html`
-                <div class="section-regular">
-                  ${regularCategories.map(
-                    (category) => html`
-                      <div class="category">
-                        <div class="category-title">${category.name}</div>
-                        <div class="category-description">
-                          ${category.description}
-                        </div>
-                        <div class="items-grid">
-                          ${category.items.map(
-                            (item) => html`
-                              <div
-                                class="node-item"
-                                style="--item-color: ${category.color}"
-                                @click=${() =>
-                                  this.handleNodeTypeClick(item.type)}
-                              >
-                                <div class="node-item-title">
-                                  ${item.config.name}
-                                </div>
-                              </div>
-                            `
-                          )}
-                        </div>
-                      </div>
-                    `
-                  )}
+                <div class="promoted-section">
+                  <div class="items-grid">
+                    ${filteredPromoted.map((item) =>
+                      this.renderItem(item, itemIndex++)
+                    )}
+                  </div>
                 </div>
-                ${hasBranchingSection
-                  ? html`
-                      <div class="section-branching">
-                        <div class="section-header">
-                          <div class="section-title">Actions that Branch</div>
-                          <div class="section-description">
-                            These actions also split the flow based on their
-                            outcome
-                          </div>
-                        </div>
-                        ${branchingCategories.map(
-                          (category) => html`
-                            <div class="category">
-                              <div class="category-title">${category.name}</div>
-                              <div class="category-description">
-                                ${category.description}
-                              </div>
-                              <div class="items-grid">
-                                ${category.items.map(
-                                  (item) => html`
-                                    <div
-                                      class="node-item"
-                                      style="--item-color: ${category.color}"
-                                      @click=${() =>
-                                        this.handleNodeTypeClick(item.type)}
-                                    >
-                                      <div class="node-item-title">
-                                        ${item.config.name}
-                                      </div>
-                                    </div>
-                                  `
-                                )}
-                              </div>
-                            </div>
-                          `
-                        )}
-                      </div>
-                    `
-                  : ''}
               `
-            : html`
-                <div class="section-regular">
-                  ${categories.map(
-                    (category) => html`
-                      <div class="category">
-                        <div class="category-title">${category.name}</div>
-                        <div class="category-description">
-                          ${category.description}
-                        </div>
-                        <div class="items-grid">
-                          ${category.items.map(
-                            (item) => html`
-                              <div
-                                class="node-item"
-                                style="--item-color: ${category.color}"
-                                @click=${() =>
-                                  this.handleNodeTypeClick(item.type)}
-                              >
-                                <div class="node-item-title">
-                                  ${item.config.name}
-                                </div>
-                              </div>
-                            `
-                          )}
-                        </div>
-                      </div>
-                    `
+            : ''}
+          ${filteredCategories.map(
+            (category) => html`
+              <div class="category">
+                <div class="category-title">${category.name}</div>
+                <div class="category-description">
+                  ${category.description}
+                </div>
+                <div class="items-grid">
+                  ${category.items.map((item) =>
+                    this.renderItem(item, itemIndex++)
                   )}
                 </div>
-              `}
+              </div>
+            `
+          )}
+          ${!hasResults
+            ? html`<div class="no-results">No matching items found</div>`
+            : ''}
         </div>
         <div class="footer">
           <temba-button name="Cancel" @click=${this.close} secondary></temba-button>

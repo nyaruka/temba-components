@@ -603,9 +603,23 @@ export class NodeEditor extends RapidElement {
   @fromStore(zustand, (state: AppState) => state.issuesByAction)
   private issuesByAction!: Map<string, FlowIssue[]>;
 
+  private boundHandleEscape = this.handleEscapeKey.bind(this);
+
   connectedCallback(): void {
     super.connectedCallback();
     this.initializeFormData();
+    document.addEventListener('keydown', this.boundHandleEscape);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    document.removeEventListener('keydown', this.boundHandleEscape);
+  }
+
+  private handleEscapeKey(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.isOpen) {
+      this.handleCancel();
+    }
   }
 
   willUpdate(changedProperties: PropertyValues): void {
