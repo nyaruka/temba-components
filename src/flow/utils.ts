@@ -3,6 +3,7 @@ import { NamedObject, FlowPosition } from '../store/flow-definition';
 import { FlowIssue } from '../store/AppState';
 import { CustomEventType } from '../interfaces';
 import { tokenize, TokenType } from '../excellent/tokenizer';
+import { TOKEN_COLORS } from '../excellent/token-styles';
 import { messageParser, sessionParser } from '../excellent/helpers';
 
 const IS_MAC =
@@ -39,18 +40,18 @@ const MONO =
   "font-family:SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;font-size:0.95em";
 
 const TOKEN_STYLES: Record<string, string> = {
-  [TokenType.ExpressionPrefix]: `color:#0086e0;font-weight:600;${MONO}`,
-  [TokenType.Identifier]: `color:#0086e0;${MONO}`,
-  [TokenType.FunctionName]: `color:#0086e0;font-weight:900;${MONO}`,
-  [TokenType.StringLiteral]: `color:#00cf0d;${MONO}`,
-  [TokenType.NumberLiteral]: `color:#c25ceb;${MONO}`,
-  [TokenType.Keyword]: `color:#1750eb;${MONO}`,
-  [TokenType.Operator]: `color:#666;${MONO}`,
-  [TokenType.ContextRef]: `color:#0086e0;${MONO}`,
-  [TokenType.Separator]: `color:#666;${MONO}`,
-  [TokenType.Arrow]: `color:#666;${MONO}`,
-  [TokenType.Bracket]: `color:#666;${MONO}`,
-  [TokenType.Paren]: `color:#999;${MONO}`,
+  [TokenType.ExpressionPrefix]: `color:${TOKEN_COLORS.expression};font-weight:600;${MONO}`,
+  [TokenType.Identifier]: `color:${TOKEN_COLORS.expression};${MONO}`,
+  [TokenType.FunctionName]: `color:${TOKEN_COLORS.fn};font-weight:900;${MONO}`,
+  [TokenType.StringLiteral]: `color:${TOKEN_COLORS.string};${MONO}`,
+  [TokenType.NumberLiteral]: `color:${TOKEN_COLORS.number};${MONO}`,
+  [TokenType.Keyword]: `color:${TOKEN_COLORS.keyword};${MONO}`,
+  [TokenType.Operator]: `color:${TOKEN_COLORS.operator};${MONO}`,
+  [TokenType.ContextRef]: `color:${TOKEN_COLORS.expression};${MONO}`,
+  [TokenType.Separator]: `color:${TOKEN_COLORS.operator};${MONO}`,
+  [TokenType.Arrow]: `color:${TOKEN_COLORS.operator};${MONO}`,
+  [TokenType.Bracket]: `color:${TOKEN_COLORS.operator};${MONO}`,
+  [TokenType.Paren]: `color:${TOKEN_COLORS.paren};${MONO}`,
   [TokenType.Whitespace]: MONO
 };
 
