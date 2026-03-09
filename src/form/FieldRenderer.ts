@@ -251,6 +251,7 @@ export class FieldRenderer {
       valueKey="${config.valueKey || 'value'}"
       nameKey="${config.nameKey || 'name'}"
       endpoint="${config.endpoint || ''}"
+      queryParam="${config.queryParam || ''}"
       .helpText="${config.helpText || ''}"
       flavor="${flavor || config.flavor || 'small'}"
       class="${extraClasses}"

@@ -3,6 +3,7 @@ import { CallWebhook, Node } from '../../store/flow-definition';
 import { generateUUID, createSuccessFailureRouter } from '../../utils';
 import { html } from 'lit';
 import {
+  resultNameField,
   categoriesToLocalizationFormData,
   localizationFormDataToCategories
 } from './shared';
@@ -48,6 +49,7 @@ export const split_by_webhook: NodeConfig = {
       valuePlaceholder: 'Header value',
       minRows: 0
     },
+    result_name: resultNameField,
     body: {
       type: 'textarea',
       evaluated: true,
@@ -117,7 +119,8 @@ export const split_by_webhook: NodeConfig = {
           items: ['body']
         }
       ]
-    }
+    },
+    'result_name'
   ],
   render: (node: Node) => {
     const callWebhookAction = node.actions?.find(
@@ -139,7 +142,8 @@ export const split_by_webhook: NodeConfig = {
       method: callWebhookAction?.method || 'GET',
       url: callWebhookAction?.url || '',
       headers: callWebhookAction?.headers || [],
-      body: callWebhookAction?.body || ''
+      body: callWebhookAction?.body || '',
+      result_name: node.router?.result_name || ''
     };
   },
   fromFormData: (formData: FormData, originalNode: Node): Node => {
@@ -181,11 +185,21 @@ export const split_by_webhook: NodeConfig = {
       existingCases
     );
 
+    // Build final router with result_name
+    const finalRouter: any = {
+      ...router
+    };
+
+    // Only set result_name if provided
+    if (formData.result_name && formData.result_name.trim() !== '') {
+      finalRouter.result_name = formData.result_name.trim();
+    }
+
     // Return the complete node
     return {
       uuid: originalNode.uuid,
       actions: [callWebhookAction],
-      router: router,
+      router: finalRouter,
       exits: exits
     };
   },

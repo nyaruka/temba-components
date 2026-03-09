@@ -208,6 +208,7 @@ export interface SelectFieldConfig extends BaseFieldConfig {
   valueKey?: string;
   nameKey?: string;
   endpoint?: string;
+  queryParam?: string;
   emails?: boolean;
   expressions?: string;
   getName?: (item: any) => string;

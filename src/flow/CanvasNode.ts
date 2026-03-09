@@ -1397,9 +1397,10 @@ export class CanvasNode extends RapidElement {
     if (!sortableList || !this.node.actions)
       return this.node.actions?.length ?? 0;
 
-    // Get all action elements
+    // Get all action elements, excluding any existing placeholder so its
+    // space doesn't shift positions and feed back into the calculation.
     const actionElements = Array.from(
-      sortableList.querySelectorAll('.action.sortable')
+      sortableList.querySelectorAll('.action.sortable:not(.drop-placeholder)')
     );
 
     if (actionElements.length === 0) {

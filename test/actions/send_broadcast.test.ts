@@ -125,8 +125,8 @@ describe('send_broadcast action config', () => {
       const formData = {
         uuid: 'test-uuid',
         recipients: [
-          { uuid: 'contact-1', name: 'Contact 1' },
-          { uuid: 'contact-2', name: 'Contact 2' }
+          { id: 'contact-1', name: 'Contact 1', type: 'contact' },
+          { id: 'contact-2', name: 'Contact 2', type: 'contact' }
         ],
         text: 'Test message',
         attachments: []
@@ -146,8 +146,8 @@ describe('send_broadcast action config', () => {
       const formData = {
         uuid: 'test-uuid',
         recipients: [
-          { uuid: 'group-1', name: 'Group 1', group: true },
-          { uuid: 'group-2', name: 'Group 2', group: true }
+          { id: 'group-1', name: 'Group 1', type: 'group' },
+          { id: 'group-2', name: 'Group 2', type: 'group' }
         ],
         text: 'Test message',
         attachments: []
@@ -163,8 +163,8 @@ describe('send_broadcast action config', () => {
       const formData = {
         uuid: 'test-uuid',
         recipients: [
-          { uuid: 'contact-1', name: 'Contact 1' },
-          { uuid: 'group-1', name: 'Group 1', group: true }
+          { id: 'contact-1', name: 'Contact 1', type: 'contact' },
+          { id: 'group-1', name: 'Group 1', type: 'group' }
         ],
         text: 'Test message',
         attachments: ['image/jpeg:test.jpg']
@@ -180,7 +180,9 @@ describe('send_broadcast action config', () => {
     it('sanitizes text by trimming whitespace', () => {
       const formData = {
         uuid: 'test-uuid',
-        recipients: [{ uuid: 'contact-1', name: 'Test Contact' }],
+        recipients: [
+          { id: 'contact-1', name: 'Test Contact', type: 'contact' }
+        ],
         text: '  Test message  \n  '
       };
 
@@ -194,25 +196,16 @@ describe('send_broadcast action config', () => {
         uuid: 'test-uuid',
         recipients: [
           {
-            uuid: 'contact-1',
+            id: 'contact-1',
             name: 'Alice',
-            status: 'active',
-            language: 'eng',
-            urns: ['tel:+250788123456'],
-            groups: [{ uuid: 'g-1', name: 'G1' }],
-            fields: { age: '30' },
-            created_on: '2024-01-01T00:00:00.000Z',
-            modified_on: '2024-06-15T12:00:00.000Z',
-            last_seen_on: '2024-06-14T10:00:00.000Z'
+            type: 'contact',
+            urn: 'tel:+250788123456'
           },
           {
-            uuid: 'group-1',
+            id: 'group-1',
             name: 'Subscribers',
-            group: true,
-            query: null,
-            status: 'ready',
-            count: 500,
-            system: false
+            type: 'group',
+            count: 500
           }
         ],
         text: 'Hello!',

@@ -193,25 +193,16 @@ describe('start_session action config', () => {
         startType: [{ value: 'manual', name: 'Select recipients manually' }],
         recipients: [
           {
-            uuid: 'contact-1',
+            id: 'contact-1',
             name: 'Alice',
-            status: 'active',
-            language: 'eng',
-            urns: ['tel:+250788123456'],
-            groups: [{ uuid: 'g-1', name: 'G1' }],
-            fields: { age: '30' },
-            created_on: '2024-01-01T00:00:00.000Z',
-            modified_on: '2024-06-15T12:00:00.000Z',
-            last_seen_on: '2024-06-14T10:00:00.000Z'
+            type: 'contact',
+            urn: 'tel:+250788123456'
           },
           {
-            uuid: 'group-1',
+            id: 'group-1',
             name: 'VIP',
-            group: true,
-            query: 'status = vip',
-            status: 'ready',
-            count: 42,
-            system: false
+            type: 'group',
+            count: 42
           }
         ]
       };

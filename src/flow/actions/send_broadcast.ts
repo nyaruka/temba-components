@@ -1,7 +1,11 @@
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
-import { renderStringList, renderClamped } from '../utils';
+import {
+  renderMixedList,
+  renderClamped,
+  renderHighlightedText
+} from '../utils';
 import { Icon } from '../../Icons';
 
 export const send_broadcast: ActionConfig = {
@@ -10,14 +14,17 @@ export const send_broadcast: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendBroadcast) => {
     const recipients = [
-      ...(action.contacts || []).map((c) => c.name),
-      ...(action.groups || []).map((g) => g.name)
+      ...(action.groups || []).map((g) => ({ name: g.name, icon: Icon.group })),
+      ...(action.contacts || []).map((c) => ({
+        name: c.name,
+        icon: Icon.contacts
+      }))
     ];
 
     return html`<div>
-      <div>${renderStringList(recipients, Icon.contacts)}</div>
+      <div>${renderMixedList(recipients)}</div>
       <div style="margin-top: 0.5em">
-        ${renderClamped(action.text, action.text)}
+        ${renderClamped(renderHighlightedText(action.text, true), action.text)}
       </div>
     </div>`;
   },
@@ -27,11 +34,11 @@ export const send_broadcast: ActionConfig = {
       type: 'select',
       label: 'Recipients',
       helpText: 'Select the contacts or groups to receive the broadcast',
-      options: [],
       multi: true,
       searchable: true,
-      endpoint: '/api/v2/contacts.json',
-      valueKey: 'uuid',
+      endpoint: '/contact/omnibox/?types=gc',
+      queryParam: 'search',
+      valueKey: 'id',
       nameKey: 'name',
       placeholder: 'Search for contacts or groups...',
       required: true
@@ -58,7 +65,18 @@ export const send_broadcast: ActionConfig = {
   toFormData: (action: SendBroadcast) => {
     return {
       uuid: action.uuid,
-      recipients: [...(action.contacts || []), ...(action.groups || [])],
+      recipients: [
+        ...(action.contacts || []).map((c) => ({
+          id: c.uuid,
+          name: c.name,
+          type: 'contact'
+        })),
+        ...(action.groups || []).map((g) => ({
+          id: g.uuid,
+          name: g.name,
+          type: 'group'
+        }))
+      ],
       text: action.text || '',
       attachments: action.attachments || []
     };
@@ -67,11 +85,11 @@ export const send_broadcast: ActionConfig = {
   fromFormData: (formData: FormData): SendBroadcast => {
     const recipients = formData.recipients || [];
     const contacts = recipients
-      .filter((r: any) => !r.group)
-      .map((c: any) => ({ uuid: c.uuid, name: c.name }));
+      .filter((r: any) => r.type !== 'group')
+      .map((c: any) => ({ uuid: c.id, name: c.name }));
     const groups = recipients
-      .filter((r: any) => r.group)
-      .map((g: any) => ({ uuid: g.uuid, name: g.name }));
+      .filter((r: any) => r.type === 'group')
+      .map((g: any) => ({ uuid: g.id, name: g.name }));
 
     const result: SendBroadcast = {
       uuid: formData.uuid,
