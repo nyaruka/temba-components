@@ -81,10 +81,22 @@ export const renderHighlightedText = (
   const parser = session ? sessionParser : messageParser;
   const tokens = tokenize(text || '', parser);
 
-  return html`${tokens.map((token) => {
+  // Group consecutive expression tokens so we can wrap them in a single
+  // span with hyphens:none (plain text keeps hyphens:auto from container).
+  const groups: { isExpr: boolean; tokens: typeof tokens }[] = [];
+  for (const token of tokens) {
+    const isExpr = !!TOKEN_STYLES[token.type];
+    const last = groups[groups.length - 1];
+    if (last && last.isExpr === isExpr) {
+      last.tokens.push(token);
+    } else {
+      groups.push({ isExpr, tokens: [token] });
+    }
+  }
+
+  const renderToken = (token: (typeof tokens)[0]) => {
     const style = TOKEN_STYLES[token.type];
     if (!style) {
-      // Plain text — convert newlines to <br>
       const parts = token.text.split('\n');
       return html`${parts.map(
         (part, i) => html`${i > 0 ? html`<br />` : null}${part}`
@@ -97,6 +109,13 @@ export const renderHighlightedText = (
           ? html`<span style="${style}">${part}</span>`
           : null}`
     )}`;
+  };
+
+  return html`${groups.map((group) => {
+    const content = html`${group.tokens.map(renderToken)}`;
+    return group.isExpr
+      ? html`<span style="hyphens:none">${content}</span>`
+      : content;
   })}`;
 };
 
