@@ -250,6 +250,12 @@ export class NodeTypeSelector extends RapidElement {
   @state()
   private clickPosition = { x: 0, y: 0 };
 
+  private handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  };
+
   public show(
     mode: 'action' | 'split' | 'action-no-branching',
     position: { x: number; y: number }
@@ -257,11 +263,13 @@ export class NodeTypeSelector extends RapidElement {
     this.mode = mode;
     this.clickPosition = position;
     this.open = true;
+    document.addEventListener('keydown', this.handleKeyDown);
   }
 
   public close(fireCanceledEvent: boolean = true) {
     if (this.open) {
       this.open = false;
+      document.removeEventListener('keydown', this.handleKeyDown);
       // Fire canceled event so parent can clean up, but only if not from a selection
       if (fireCanceledEvent) {
         this.fireCustomEvent(CustomEventType.Canceled, {});
@@ -638,7 +646,7 @@ export class NodeTypeSelector extends RapidElement {
               `}
         </div>
         <div class="footer">
-          <temba-button @click=${this.close} secondary>Cancel</temba-button>
+          <temba-button name="Cancel" @click=${this.close} secondary></temba-button>
         </div>
       </div>
     `;
