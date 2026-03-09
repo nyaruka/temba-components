@@ -195,7 +195,9 @@ export const renderStringList = (
  * Renders a mixed list of items, each with its own icon, showing up to 3 items
  * with a "+X more" indicator if there are more items
  */
-export const renderMixedList = (items: { name: string; icon: string }[]) => {
+export const renderMixedList = (
+  items: { name: string; icon: string; content?: TemplateResult }[]
+) => {
   const itemElements = [];
   const maxDisplay = 3;
 
@@ -203,7 +205,9 @@ export const renderMixedList = (items: { name: string; icon: string }[]) => {
     items.length === 4 ? 4 : Math.min(maxDisplay, items.length);
 
   for (let i = 0; i < displayCount; i++) {
-    itemElements.push(renderLineItem(items[i].name, items[i].icon));
+    itemElements.push(
+      renderLineItem(items[i].name, items[i].icon, items[i].content)
+    );
   }
 
   if (items.length > maxDisplay && items.length !== 4) {

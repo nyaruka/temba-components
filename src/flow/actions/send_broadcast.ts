@@ -18,6 +18,11 @@ export const send_broadcast: ActionConfig = {
       ...(action.contacts || []).map((c) => ({
         name: c.name,
         icon: Icon.contacts
+      })),
+      ...(action.legacy_vars || []).map((v) => ({
+        name: v,
+        icon: Icon.contacts,
+        content: renderHighlightedText(v, true)
       }))
     ];
 
@@ -41,7 +46,8 @@ export const send_broadcast: ActionConfig = {
       valueKey: 'id',
       nameKey: 'name',
       placeholder: 'Search for contacts or groups...',
-      required: true
+      required: true,
+      expressions: 'session'
     },
     text: {
       type: 'message-editor',
@@ -75,6 +81,11 @@ export const send_broadcast: ActionConfig = {
           id: g.uuid,
           name: g.name,
           type: 'group'
+        })),
+        ...(action.legacy_vars || []).map((v) => ({
+          id: v,
+          name: v,
+          type: 'expression'
         }))
       ],
       text: action.text || '',
@@ -85,11 +96,16 @@ export const send_broadcast: ActionConfig = {
   fromFormData: (formData: FormData): SendBroadcast => {
     const recipients = formData.recipients || [];
     const contacts = recipients
-      .filter((r: any) => r.type !== 'group')
+      .filter(
+        (r: any) => r.type === 'contact' || (!r.type && !r.expression && r.id)
+      )
       .map((c: any) => ({ uuid: c.id, name: c.name }));
     const groups = recipients
       .filter((r: any) => r.type === 'group')
       .map((g: any) => ({ uuid: g.id, name: g.name }));
+    const legacy_vars = recipients
+      .filter((r: any) => r.type === 'expression' || r.expression)
+      .map((e: any) => e.value || e.name || e.id);
 
     const result: SendBroadcast = {
       uuid: formData.uuid,
@@ -99,6 +115,10 @@ export const send_broadcast: ActionConfig = {
       groups,
       attachments: formData.attachments || []
     };
+
+    if (legacy_vars.length > 0) {
+      result.legacy_vars = legacy_vars;
+    }
 
     // Remove empty attachments array to match original format
     if (result.attachments.length === 0) {

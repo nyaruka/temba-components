@@ -1102,12 +1102,7 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   private createArbitraryOptionDefault(input: string, _options: any[]): any {
-    if (
-      (this.emails || this.tags) &&
-      this.expressions &&
-      input &&
-      this.isValidExpression(input)
-    ) {
+    if (this.expressions && input && this.isValidExpression(input)) {
       return { name: input, value: input, expression: true };
     }
     if (this.emails && input && this.isValidEmail(input)) {
@@ -1147,6 +1142,9 @@ export class Select<T extends SelectOption> extends FieldElement {
     if (this.tags) {
       return input.trim().length > 0;
     }
+    if (this.expressions) {
+      return false;
+    }
     return true;
   }
 
@@ -1169,11 +1167,7 @@ export class Select<T extends SelectOption> extends FieldElement {
 
   /** Whether this select uses a contenteditable div for expression highlighting. */
   private get useExpressionInput(): boolean {
-    return !!(
-      this.expressions &&
-      this.searchable &&
-      (this.emails || this.tags)
-    );
+    return !!(this.expressions && this.searchable);
   }
 
   private expressionInputPatchedElement: HTMLElement = null;
@@ -1637,7 +1631,7 @@ export class Select<T extends SelectOption> extends FieldElement {
     if (
       evt.key === 'Enter' &&
       this.completionOptions.length === 0 &&
-      (this.emails || this.tags) &&
+      (this.emails || this.tags || this.expressions) &&
       this.isAcceptableInput(this.input)
     ) {
       evt.preventDefault();

@@ -83,8 +83,9 @@ describe('temba-node-type-selector', () => {
     selector.show('all', { x: 100, y: 100 });
     await selector.updateComplete;
 
-    const promotedItems =
-      selector.shadowRoot?.querySelectorAll('.promoted-section .node-item');
+    const promotedItems = selector.shadowRoot?.querySelectorAll(
+      '.promoted-section .node-item'
+    );
     expect(promotedItems?.length).to.equal(2);
 
     // Each promoted item should have its own color via --item-color
@@ -175,8 +176,9 @@ describe('temba-node-type-selector', () => {
     expect(firstItem?.classList.contains('highlighted')).to.be.true;
 
     // Only one item should be highlighted
-    const highlightedItems =
-      selector.shadowRoot?.querySelectorAll('.node-item.highlighted');
+    const highlightedItems = selector.shadowRoot?.querySelectorAll(
+      '.node-item.highlighted'
+    );
     expect(highlightedItems?.length).to.equal(1);
   });
 

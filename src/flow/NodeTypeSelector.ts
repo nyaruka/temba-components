@@ -323,20 +323,13 @@ export class NodeTypeSelector extends RapidElement {
         const idx = Math.min(this.highlightedIndex, allVisible.length - 1);
         this.handleNodeTypeClick(allVisible[idx].type);
       }
-    } else if (
-      e.key === 'ArrowDown' ||
-      (e.key === 'n' && e.ctrlKey)
-    ) {
+    } else if (e.key === 'ArrowDown' || (e.key === 'n' && e.ctrlKey)) {
       e.preventDefault();
       const allVisible = this.getVisibleItems();
       if (allVisible.length > 0) {
-        this.highlightedIndex =
-          (this.highlightedIndex + 1) % allVisible.length;
+        this.highlightedIndex = (this.highlightedIndex + 1) % allVisible.length;
       }
-    } else if (
-      e.key === 'ArrowUp' ||
-      (e.key === 'p' && e.ctrlKey)
-    ) {
+    } else if (e.key === 'ArrowUp' || (e.key === 'p' && e.ctrlKey)) {
       e.preventDefault();
       const allVisible = this.getVisibleItems();
       if (allVisible.length > 0) {
@@ -548,7 +541,10 @@ export class NodeTypeSelector extends RapidElement {
   private renderItem(item: NodeItem, index: number): TemplateResult {
     return html`
       <div
-        class="node-item ${item.branching ? 'branching' : ''} ${index === this.highlightedIndex ? 'highlighted' : ''}"
+        class="node-item ${item.branching ? 'branching' : ''} ${index ===
+        this.highlightedIndex
+          ? 'highlighted'
+          : ''}"
         style="--item-color: ${item.color}"
         @click=${() => this.handleNodeTypeClick(item.type)}
       >
@@ -609,9 +605,7 @@ export class NodeTypeSelector extends RapidElement {
             (category) => html`
               <div class="category">
                 <div class="category-title">${category.name}</div>
-                <div class="category-description">
-                  ${category.description}
-                </div>
+                <div class="category-description">${category.description}</div>
                 <div class="items-grid">
                   ${category.items.map((item) =>
                     this.renderItem(item, itemIndex++)
@@ -625,7 +619,11 @@ export class NodeTypeSelector extends RapidElement {
             : ''}
         </div>
         <div class="footer">
-          <temba-button name="Cancel" @click=${this.close} secondary></temba-button>
+          <temba-button
+            name="Cancel"
+            @click=${this.close}
+            secondary
+          ></temba-button>
         </div>
       </div>
     `;
