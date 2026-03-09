@@ -3569,6 +3569,9 @@ export class Editor extends RapidElement {
     event.preventDefault();
     event.stopPropagation();
 
+    // Ensure no sticky note contenteditable retains focus
+    this.blurActiveContentEditable();
+
     this.showContextMenuAt(event.clientX, event.clientY);
   }
 
