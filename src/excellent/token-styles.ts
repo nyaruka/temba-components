@@ -1,5 +1,17 @@
-import { css } from 'lit';
+import { css, unsafeCSS } from 'lit';
 import { TokenType, Token } from './tokenizer';
+
+/** Default colors for expression token syntax highlighting. */
+export const TOKEN_COLORS = {
+  expression: '#0086e0',
+  fn: '#0086e0',
+  string: '#06a810',
+  number: '#c25ceb',
+  keyword: '#1750eb',
+  operator: '#666',
+  paren: '#999',
+  parenUnmatched: '#ff0011'
+};
 
 export const TOKEN_CLASS_MAP: Record<string, string> = {
   [TokenType.Text]: 'tok-text',
@@ -43,6 +55,8 @@ export function getTokenClass(token: Token): string {
   return TOKEN_CLASS_MAP[token.type] || 'tok-text';
 }
 
+const c = (key: keyof typeof TOKEN_COLORS) => unsafeCSS(TOKEN_COLORS[key]);
+
 /** Shared CSS for token syntax highlighting. */
 export const tokenCss = css`
   .tok-text {
@@ -50,49 +64,49 @@ export const tokenCss = css`
   }
 
   .tok-prefix {
-    color: var(--expression-color, #0086e0);
+    color: var(--expression-color, ${c('expression')});
     font-weight: 600;
   }
 
   .tok-id {
-    color: var(--expression-color, #0086e0);
+    color: var(--expression-color, ${c('expression')});
   }
 
   .tok-fn {
-    color: var(--expression-fn-color, #0086e0);
+    color: var(--expression-fn-color, ${c('fn')});
     font-weight: 900;
   }
 
   .tok-str {
-    color: var(--expression-string-color, #06a810);
+    color: var(--expression-string-color, ${c('string')});
   }
 
   .tok-num {
-    color: var(--expression-number-color, #c25ceb);
+    color: var(--expression-number-color, ${c('number')});
   }
 
   .tok-kw {
-    color: var(--expression-keyword-color, #1750eb);
+    color: var(--expression-keyword-color, ${c('keyword')});
   }
 
   .tok-op {
-    color: var(--expression-operator-color, #666);
+    color: var(--expression-operator-color, ${c('operator')});
   }
 
   .tok-ctx {
-    color: var(--expression-color, #0086e0);
+    color: var(--expression-color, ${c('expression')});
   }
 
   .tok-sep {
-    color: var(--expression-operator-color, #666);
+    color: var(--expression-operator-color, ${c('operator')});
   }
 
   .tok-arrow {
-    color: var(--expression-operator-color, #666);
+    color: var(--expression-operator-color, ${c('operator')});
   }
 
   .tok-bracket {
-    color: var(--expression-operator-color, #666);
+    color: var(--expression-operator-color, ${c('operator')});
   }
 
   .tok-ws {
@@ -104,16 +118,16 @@ export const tokenCss = css`
   }
 
   .tok-paren {
-    color: #999;
+    color: ${c('paren')};
   }
 
   .tok-paren-unmatched {
-    color: var(--expression-paren-unmatched-color, #ff0011);
+    color: var(--expression-paren-unmatched-color, ${c('parenUnmatched')});
     font-weight: 900;
   }
 
   .tok-fn-invalid {
-    text-decoration: wavy underline #ff0011;
+    text-decoration: wavy underline ${c('parenUnmatched')};
     text-underline-offset: 3px;
   }
 
