@@ -5,6 +5,7 @@ import { CustomEventType } from '../interfaces';
 import { StickyNote as StickyNoteData } from '../store/flow-definition';
 import { getStore } from '../store/Store';
 import { AppState, fromStore, zustand } from '../store/AppState';
+import { isRightClick } from './utils';
 
 export class StickyNote extends RapidElement {
   @property({ type: String })
@@ -498,6 +499,11 @@ export class StickyNote extends RapidElement {
   /* c8 ignore stop */
 
   private handleContentMouseDown(event: MouseEvent): void {
+    // Prevent contenteditable from gaining focus on right-click
+    if (isRightClick(event)) {
+      event.preventDefault();
+      return;
+    }
     // If this sticky note is selected, don't stop propagation
     // so that group dragging can work
     if (this.selected) {
