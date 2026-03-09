@@ -95,6 +95,7 @@ export class SortableList extends RapidElement {
   dropPlaceholder: HTMLDivElement = null;
   pendingDropIndex = -1;
   pendingTargetElement: HTMLElement = null;
+  pendingInsertAfter: boolean = null;
   isExternalDrag = false;
 
   private clickBlocker: ((e: MouseEvent) => void) | null = null;
@@ -273,16 +274,26 @@ export class SortableList extends RapidElement {
     if (elements.length === 0) return null;
 
     if (this.horizontal) {
-      // For horizontal layout, find the insertion point based on mouse X position
+      // For horizontal (possibly wrapping) layouts, compare in reading order:
+      // row first (Y), then column (X).  Items in DOM order may span
+      // multiple rows when the container uses flex-wrap.
       for (let i = 0; i < elements.length; i++) {
         const ele = elements[i];
         const rect = ele.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
 
-        if (mouseX < centerX) {
-          // Insert before this element
+        // Mouse is on a row above this element — insert before it
+        if (mouseY < rect.top) {
           return { element: ele as HTMLDivElement, insertAfter: false };
         }
+
+        // Mouse is on the same row — compare X within the row
+        if (mouseY < rect.bottom) {
+          if (mouseX < centerX) {
+            return { element: ele as HTMLDivElement, insertAfter: false };
+          }
+        }
+        // Mouse is below this element's row — continue to next element
       }
       // If we're past all elements, insert after the last one
       return {
@@ -309,22 +320,15 @@ export class SortableList extends RapidElement {
     }
   }
 
-  private showDropPlaceholder(
-    targetElement: HTMLElement,
-    insertAfter: boolean
-  ) {
-    this.hideDropPlaceholder();
-
-    if (!targetElement || !this.draggingEle) return;
-
-    // Don't show placeholder if we're targeting the dragging element itself
-    if (targetElement === this.draggingEle) return;
+  /**
+   * Creates the persistent placeholder element (once per drag).
+   */
+  private ensurePlaceholder() {
+    if (this.dropPlaceholder) return;
 
     this.dropPlaceholder = document.createElement('div');
-
     this.dropPlaceholder.className = 'drop-placeholder sortable';
 
-    // Use layout-space dimensions for placeholders (unaffected by ancestor transforms)
     if (this.originalLayoutSize) {
       const size = this.originalLayoutSize;
       this.dropPlaceholder.style.width = size.width + 'px';
@@ -336,8 +340,19 @@ export class SortableList extends RapidElement {
       this.dropPlaceholder.style.outline = '2px dashed #d1d5db';
       this.dropPlaceholder.style.outlineOffset = '-2px';
     }
+  }
 
-    // Insert the placeholder in the correct position in the DOM
+  /**
+   * Inserts the placeholder adjacent to targetElement.
+   * Reuses the existing element — insertAdjacentElement atomically
+   * moves it if it is already in the DOM.
+   */
+  private insertPlaceholder(targetElement: HTMLElement, insertAfter: boolean) {
+    if (!targetElement || !this.draggingEle) return;
+    if (targetElement === this.draggingEle) return;
+
+    this.ensurePlaceholder();
+
     if (insertAfter) {
       targetElement.insertAdjacentElement('afterend', this.dropPlaceholder);
     } else {
@@ -355,19 +370,7 @@ export class SortableList extends RapidElement {
   private showInitialPlaceholder() {
     if (!this.downEle || !this.originalElementRect) return;
 
-    this.dropPlaceholder = document.createElement('div');
-    this.dropPlaceholder.className = 'drop-placeholder sortable';
-
-    // Use layout-space dimensions for placeholders (unaffected by ancestor transforms)
-    const size = this.originalLayoutSize;
-    this.dropPlaceholder.style.width = size.width + 'px';
-    this.dropPlaceholder.style.height = size.height + 'px';
-    this.dropPlaceholder.style.minHeight = size.height + 'px';
-    this.dropPlaceholder.style.borderRadius = 'var(--curvature)';
-    this.dropPlaceholder.style.flexShrink = '0';
-    this.dropPlaceholder.style.background = '#f3f4f6';
-    this.dropPlaceholder.style.outline = '2px dashed #d1d5db';
-    this.dropPlaceholder.style.outlineOffset = '-2px';
+    this.ensurePlaceholder();
 
     // Insert the placeholder right after the hidden original element
     this.downEle.insertAdjacentElement('afterend', this.dropPlaceholder);
@@ -557,6 +560,13 @@ export class SortableList extends RapidElement {
 
       // only show drop placeholder and calculate drop position if internal drag
       if (!this.isExternalDrag) {
+        // Detach the placeholder before measuring so its presence cannot
+        // shift element positions (e.g. flex-wrap reflow) and feed back
+        // into the calculation, which would cause oscillation.
+        if (this.dropPlaceholder) {
+          this.dropPlaceholder.remove();
+        }
+
         const targetInfo = this.getDropTargetInfo(clientX, clientY);
         if (targetInfo) {
           const { element: targetElement, insertAfter } = targetInfo;
@@ -577,18 +587,27 @@ export class SortableList extends RapidElement {
             dropIdx = insertAfter ? targetIdx : targetIdx - 1;
           }
 
-          // Store pending drop info but don't fire event yet
-          this.dropTargetId = targetElement.id;
-          this.pendingDropIndex = dropIdx;
-          this.pendingTargetElement = targetElement;
+          // Only update state when the logical position changes
+          if (dropIdx !== this.pendingDropIndex) {
+            this.dropTargetId = targetElement.id;
+            this.pendingDropIndex = dropIdx;
+            this.pendingTargetElement = targetElement;
+            this.pendingInsertAfter = insertAfter;
+          }
 
-          // Show drop placeholder
-          this.showDropPlaceholder(targetElement, insertAfter);
+          // Re-insert placeholder at the (possibly unchanged) position.
+          // insertPlaceholder reuses the same DOM element so there is
+          // no destroy/create flash.
+          this.insertPlaceholder(
+            this.pendingTargetElement,
+            this.pendingInsertAfter
+          );
         } else {
           this.hideDropPlaceholder();
           this.dropTargetId = null;
           this.pendingDropIndex = -1;
           this.pendingTargetElement = null;
+          this.pendingInsertAfter = null;
         }
       } else {
         // external drag - continue firing external drag events with updated position
@@ -667,6 +686,7 @@ export class SortableList extends RapidElement {
       this.originalDragIndex = -1;
       this.pendingDropIndex = -1;
       this.pendingTargetElement = null;
+      this.pendingInsertAfter = null;
       this.isExternalDrag = false;
 
       // Clear the ghost reference since we removed it

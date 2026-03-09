@@ -133,14 +133,13 @@ describe('Drag actions between nodes', () => {
     await node2Element.updateComplete;
 
     // Get action element bounds to calculate positions
-    const actionElement = node2Element.querySelector(
-      '.action.sortable'
+    let actionElement = node2Element.querySelector(
+      '.action.sortable:not(.drop-placeholder)'
     ) as HTMLElement;
     expect(actionElement).to.exist;
 
-    const rect = actionElement.getBoundingClientRect();
+    let rect = actionElement.getBoundingClientRect();
     const topY = rect.top + 5; // Near top of first action
-    const bottomY = rect.bottom + 5; // Below first action
 
     // Drag over at top
     const dragOverEventTop = new CustomEvent('action-drag-over', {
@@ -158,6 +157,13 @@ describe('Drag actions between nodes', () => {
     // Check drop index is at beginning
     let externalDragInfo = (node2Element as any).externalDragInfo;
     expect(externalDragInfo.dropIndex).to.equal(0);
+
+    // Re-query bounds after placeholder has been rendered (it shifts the action)
+    actionElement = node2Element.querySelector(
+      '.action.sortable:not(.drop-placeholder)'
+    ) as HTMLElement;
+    rect = actionElement.getBoundingClientRect();
+    const bottomY = rect.bottom + 5; // Below the (shifted) action
 
     // Drag over at bottom
     const dragOverEventBottom = new CustomEvent('action-drag-over', {
