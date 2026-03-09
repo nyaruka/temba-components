@@ -660,6 +660,48 @@ describe('temba-select', () => {
       expect(select.values[1].value).to.equal('second@example.com');
     });
 
+    it('treats comma as Enter for email input', async () => {
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          placeholder: 'Enter email addresses',
+          searchable: true,
+          emails: true
+        })
+      );
+
+      // Type a valid email and press comma - should add it
+      await typeInto('temba-select', 'first@example.com', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      let searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      searchbox.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ',', bubbles: true })
+      );
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].value).to.equal('first@example.com');
+
+      // Type an invalid email and press comma - should not add it
+      await typeInto('temba-select', 'not-an-email', false, false);
+      await clock.runAll();
+      await select.updateComplete;
+
+      searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      searchbox.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ',', bubbles: true })
+      );
+      await select.updateComplete;
+
+      expect(select.values.length).to.equal(1);
+    });
+
     it('validates email format correctly', async () => {
       const select = await createSelect(
         clock,

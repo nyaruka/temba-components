@@ -1620,6 +1620,19 @@ export class Select<T extends SelectOption> extends FieldElement {
       evt.preventDefault();
     }
 
+    // In email mode, treat comma like Enter (but not inside expressions)
+    if (
+      evt.key === ',' &&
+      this.emails &&
+      !this.looksLikeExpression(this.input)
+    ) {
+      evt.preventDefault();
+      if (this.isAcceptableInput(this.input)) {
+        this.addInputAsValue();
+      }
+      return;
+    }
+
     // if Enter is pressed with acceptable input (email, tag, or expression), add it
     if (
       evt.key === 'Enter' &&
