@@ -1131,6 +1131,25 @@ export class Select<T extends SelectOption> extends FieldElement {
     );
   }
 
+  /**
+   * Whether the current input text would be accepted as a value on Enter.
+   * Used for both grey text styling and Enter key gating.
+   */
+  private isAcceptableInput(input: string): boolean {
+    if (!input || this.isDuplicateValue(input)) return false;
+    const isExpression = this.expressions && input.trimStart().startsWith('@');
+    if (isExpression) {
+      return this.isValidExpression(input);
+    }
+    if (this.emails) {
+      return this.isValidEmail(input.trim());
+    }
+    if (this.tags) {
+      return input.trim().length > 0;
+    }
+    return true;
+  }
+
   private looksLikeExpression(input: string): boolean {
     return /^@[a-zA-Z_(]/.test(input.trim());
   }
@@ -1597,44 +1616,16 @@ export class Select<T extends SelectOption> extends FieldElement {
       evt.preventDefault();
     }
 
-    // if we are completing an expression, select it
+    // if Enter is pressed with acceptable input (email, tag, or expression), add it
     if (
       evt.key === 'Enter' &&
-      this.expressions &&
       this.completionOptions.length === 0 &&
-      this.input.indexOf('@') > -1 &&
-      (!(this.emails || this.tags) || this.input.trimStart().startsWith('@')) &&
-      this.isValidExpression(this.input) &&
-      !this.isDuplicateValue(this.input)
+      (this.emails || this.tags) &&
+      this.isAcceptableInput(this.input)
     ) {
+      evt.preventDefault();
       this.addInputAsValue();
       return;
-    }
-
-    // if we are in email or tag mode and have valid, non-duplicate input, add it
-    if (
-      evt.key === 'Enter' &&
-      this.input &&
-      !this.isDuplicateValue(this.input)
-    ) {
-      if (this.emails && this.isValidEmail(this.input.trim())) {
-        evt.preventDefault();
-        const emailOption = {
-          name: this.input.trim(),
-          value: this.input.trim()
-        };
-        this.setSelectedOption(emailOption);
-        return;
-      }
-      if (this.tags) {
-        evt.preventDefault();
-        const tagOption = {
-          name: this.input.trim(),
-          value: this.input.trim()
-        };
-        this.setSelectedOption(tagOption);
-        return;
-      }
     }
 
     // see if we should open our options on a key event
@@ -1997,15 +1988,11 @@ export class Select<T extends SelectOption> extends FieldElement {
         }
       : {};
 
-    // Show grey text for invalid/duplicate emails or duplicate expressions
-    const isExpression = this.input && this.input.trimStart().startsWith('@');
+    // Show grey text when input would not be accepted
     const inputGrey =
       this.input &&
-      ((this.emails &&
-        !isExpression &&
-        (!this.isValidEmail(this.input.trim()) ||
-          this.isDuplicateValue(this.input))) ||
-        (isExpression && this.isDuplicateValue(this.input)));
+      (this.emails || this.tags) &&
+      !this.isAcceptableInput(this.input);
 
     const inputStyles: StyleInfo = {
       ...this.inputStyle,
@@ -2043,7 +2030,9 @@ export class Select<T extends SelectOption> extends FieldElement {
       : null;
 
     const multiItems =
-      this.isMultiMode && (this.emails || this.tags || this.values.length > 1)
+      this.isMultiMode &&
+      (this.emails || this.tags || this.values.length > 1) &&
+      (this.values.length > 0 || this.focused)
         ? html`
             <temba-sortable-list
               horizontal
