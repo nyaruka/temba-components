@@ -18,8 +18,22 @@ import { CompletionOption, CustomEventType, Position } from '../../interfaces';
 import {
   renderCompletionOption,
   updateInputElementWithCompletion,
-  executeCompletionQuery
+  executeCompletionQuery,
+  sessionParser,
+  messageParser
 } from '../../excellent/helpers';
+import { tokenize } from '../../excellent/tokenizer';
+import {
+  getCaretOffset,
+  getCaretEndOffset,
+  setCaretRange,
+  getTextFromEditableDiv
+} from '../../excellent/caret-utils';
+import {
+  EXPRESSION_TOKENS,
+  getTokenClass,
+  tokenCss
+} from '../../excellent/token-styles';
 import { Store } from '../../store/Store';
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../../Icons';
@@ -80,7 +94,6 @@ export class Select<T extends SelectOption> extends FieldElement {
         padding: 3px 6px;
         border-right: 1px solid rgba(100, 100, 100, 0.2);
         margin: 0;
-        background: rgba(100, 100, 100, 0.05);
       }
 
       .selected-item.multi .remove-item {
@@ -181,7 +194,8 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       .multi .selected .selected-item {
         vertical-align: middle;
-        background: rgba(100, 100, 100, 0.1);
+        background: #fff;
+        border: 1px solid rgba(100, 100, 100, 0.3);
         user-select: none;
         border-radius: 2px;
         align-items: stretch;
@@ -259,7 +273,7 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       .multi .input-wrapper {
-        margin-left: 2px !important;
+        margin-left: 6px !important;
         margin-right: 2px !important;
         margin-top: 2px;
         margin-bottom: 2px;
@@ -307,6 +321,27 @@ export class Select<T extends SelectOption> extends FieldElement {
       .searchbox {
         border: 0px;
       }
+
+      /* Expression-highlighting contenteditable input */
+      .searchbox.expression-input {
+        outline: none;
+        white-space: pre;
+        overflow: hidden;
+        min-width: 1px;
+        background: none;
+        color: var(--color-text);
+        caret-color: var(--input-caret);
+        font-family: var(--font-family);
+        font-size: inherit;
+        line-height: inherit;
+        padding: 0;
+      }
+
+      .searchbox.expression-input:empty::before {
+        content: '';
+      }
+
+      ${tokenCss}
 
       .placeholder {
         font-size: var(--temba-select-selected-font-size);
@@ -767,6 +802,34 @@ export class Select<T extends SelectOption> extends FieldElement {
   public updated(changes: Map<string, any>) {
     super.updated(changes);
 
+    // Re-acquire anchor for expression completions (may not exist on first
+    // render in multi mode since the input is only shown when focused)
+    if (this.expressions && !this.anchorExpressions) {
+      const anchor = this.shadowRoot.querySelector('#anchor') as HTMLElement;
+      if (anchor) {
+        this.anchorExpressions = anchor;
+      }
+    }
+
+    // Patch the contenteditable expression input if it exists
+    if (this.useExpressionInput) {
+      const div = this.shadowRoot.querySelector(
+        '.expression-input'
+      ) as HTMLElement;
+      if (div) {
+        this.patchEditableAsInput(div);
+        // Sync contenteditable content when input is changed programmatically
+        // (e.g., cleared after adding a value). User-driven input is handled
+        // synchronously in handleInput.
+        if (changes.has('input')) {
+          const currentText = getTextFromEditableDiv(div);
+          if (currentText !== this.input) {
+            this.renderExpressionHighlight(div, this.input);
+          }
+        }
+      }
+    }
+
     if (changes.has('values')) {
       this.updateInputs();
       if (this.hasChanges(changes.get('values'))) {
@@ -790,10 +853,20 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       this.lastQuery = window.setTimeout(() => {
-        if (this.expressions && this.input.indexOf('@') > -1) {
+        if (
+          this.expressions &&
+          this.input.indexOf('@') > -1 &&
+          (!(this.emails || this.tags) ||
+            this.input.trimStart().startsWith('@'))
+        ) {
           this.fetchExpressions();
         } else {
-          this.fetchOptions(this.input);
+          if (this.completionOptions.length > 0) {
+            this.completionOptions = [];
+          }
+          if (!(this.emails || this.tags)) {
+            this.fetchOptions(this.input);
+          }
         }
       }, this.quietMillis);
     }
@@ -969,12 +1042,21 @@ export class Select<T extends SelectOption> extends FieldElement {
     const tabbed = evt.detail.tabbed;
 
     const ele = this.shadowRoot.querySelector('.searchbox') as HTMLInputElement;
+    const textBefore = this.input;
     updateInputElementWithCompletion(this.query, ele, option);
 
     this.query = '';
     this.completionOptions = [];
 
+    // If the completion didn't change the text, just hide the popup
+    if (this.input === textBefore) {
+      return;
+    }
+
     if (tabbed) {
+      this.fetchExpressions();
+    } else if (this.emails || this.tags) {
+      // In emails/tags mode, just complete the text — user presses Enter again to add
       this.fetchExpressions();
     } else if (this.input.indexOf('(') === -1) {
       this.addInputAsValue();
@@ -1020,6 +1102,14 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   private createArbitraryOptionDefault(input: string, _options: any[]): any {
+    if (
+      (this.emails || this.tags) &&
+      this.expressions &&
+      input &&
+      this.isValidExpression(input)
+    ) {
+      return { name: input, value: input, expression: true };
+    }
     if (this.emails && input && this.isValidEmail(input)) {
       return { name: input, value: input };
     }
@@ -1032,6 +1122,149 @@ export class Select<T extends SelectOption> extends FieldElement {
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  }
+
+  private isDuplicateValue(input: string): boolean {
+    const val = input.trim().toLowerCase();
+    return this.values.some(
+      (v: any) => (v.value || v.name || '').toLowerCase() === val
+    );
+  }
+
+  /**
+   * Whether the current input text would be accepted as a value on Enter.
+   * Used for both grey text styling and Enter key gating.
+   */
+  private isAcceptableInput(input: string): boolean {
+    if (!input || this.isDuplicateValue(input)) return false;
+    const isExpression = this.expressions && input.trimStart().startsWith('@');
+    if (isExpression) {
+      return this.isValidExpression(input);
+    }
+    if (this.emails) {
+      return this.isValidEmail(input.trim());
+    }
+    if (this.tags) {
+      return input.trim().length > 0;
+    }
+    return true;
+  }
+
+  private looksLikeExpression(input: string): boolean {
+    return /^@[a-zA-Z_(]/.test(input.trim());
+  }
+
+  private isValidExpression(input: string): boolean {
+    if (!this.looksLikeExpression(input)) return false;
+    const parser =
+      this.expressions === 'session' ? sessionParser : messageParser;
+    const expressions = parser.findExpressions(input.trim());
+    if (expressions.length === 0) return false;
+    // Identifier expressions (e.g. @contact.email) are always valid.
+    // Parenthesized expressions (e.g. @(upper(...))) must have balanced parens.
+    return expressions.every(
+      (expr) => !expr.text.startsWith('@(') || expr.closed
+    );
+  }
+
+  /** Whether this select uses a contenteditable div for expression highlighting. */
+  private get useExpressionInput(): boolean {
+    return !!(
+      this.expressions &&
+      this.searchable &&
+      (this.emails || this.tags)
+    );
+  }
+
+  private expressionInputPatchedElement: HTMLElement = null;
+
+  /**
+   * Patches a contenteditable div to behave like an HTMLInputElement,
+   * providing .value, .selectionStart, .selectionEnd, and .setSelectionRange().
+   */
+  private patchEditableAsInput(div: HTMLElement): void {
+    if (this.expressionInputPatchedElement === div) return;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const host = this;
+    const anyDiv = div as any;
+
+    Object.defineProperty(anyDiv, 'value', {
+      get() {
+        return getTextFromEditableDiv(div);
+      },
+      set(val: string) {
+        host.renderExpressionHighlight(div, val);
+      },
+      configurable: true
+    });
+
+    Object.defineProperty(anyDiv, 'selectionStart', {
+      get() {
+        return getCaretOffset(div);
+      },
+      configurable: true
+    });
+
+    Object.defineProperty(anyDiv, 'selectionEnd', {
+      get() {
+        return getCaretEndOffset(div);
+      },
+      configurable: true
+    });
+
+    anyDiv.setSelectionRange = (start: number, end: number) => {
+      setCaretRange(div, start, end);
+    };
+
+    this.expressionInputPatchedElement = div;
+  }
+
+  /**
+   * Renders highlighted expression tokens into a contenteditable div.
+   * Does NOT restore the caret — caller is responsible for that.
+   */
+  private renderExpressionHighlight(div: HTMLElement, text: string): void {
+    div.textContent = '';
+
+    // Only tokenize/highlight when input starts with @ (expression)
+    // and is not a duplicate of an existing value.
+    // Mid-string @ (e.g. email addresses) should render as plain text.
+    if (
+      text &&
+      text.trimStart().startsWith('@') &&
+      !this.isDuplicateValue(text)
+    ) {
+      const parser =
+        this.expressions === 'session' ? sessionParser : messageParser;
+      const tokens = tokenize(text, parser);
+
+      for (const token of tokens) {
+        const cls = getTokenClass(token);
+        const isMono = EXPRESSION_TOKENS.has(token.type);
+
+        if (token.text.length > 0) {
+          const span = document.createElement('span');
+          span.textContent = token.text;
+          span.className = isMono ? `${cls} tok-mono` : cls;
+          div.appendChild(span);
+        }
+      }
+    } else if (text) {
+      // Duplicate expressions still get monospace font, just no syntax colors
+      if (text.trimStart().startsWith('@')) {
+        const span = document.createElement('span');
+        span.textContent = text;
+        span.className = 'tok-mono';
+        div.appendChild(span);
+      } else {
+        div.appendChild(document.createTextNode(text));
+      }
+    }
+
+    // Ensure there's at least an empty text node for cursor placement
+    if (!text) {
+      div.appendChild(document.createTextNode(''));
+    }
   }
 
   // Helper method to determine if this select should behave as multi-select
@@ -1329,6 +1562,10 @@ export class Select<T extends SelectOption> extends FieldElement {
         this.visibleOptions = [];
         this.cursorIndex = 0;
       }
+      if (this.emails || this.tags) {
+        this.input = '';
+        this.completionOptions = [];
+      }
 
       if (
         this.isMultiMode &&
@@ -1378,28 +1615,20 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   private handleKeyDown(evt: KeyboardEvent) {
-    // if we are completing an expression, select it
-    if (
-      evt.key === 'Enter' &&
-      this.expressions &&
-      this.completionOptions.length === 0 &&
-      this.input.indexOf('@') > -1
-    ) {
-      this.addInputAsValue();
-      return;
+    // Prevent Enter from inserting newlines in contenteditable
+    if (evt.key === 'Enter' && this.useExpressionInput) {
+      evt.preventDefault();
     }
 
-    // if we are in email mode and have a valid email, add it
+    // if Enter is pressed with acceptable input (email, tag, or expression), add it
     if (
       evt.key === 'Enter' &&
-      this.emails &&
-      this.input &&
-      this.isValidEmail(this.input.trim()) &&
-      this.visibleOptions.length === 0
+      this.completionOptions.length === 0 &&
+      (this.emails || this.tags) &&
+      this.isAcceptableInput(this.input)
     ) {
       evt.preventDefault();
-      const emailOption = { name: this.input.trim(), value: this.input.trim() };
-      this.setSelectedOption(emailOption);
+      this.addInputAsValue();
       return;
     }
 
@@ -1428,9 +1657,11 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
 
       if (this.selectedIndex === -1) {
+        // First backspace: highlight the last item
         this.selectedIndex = this.values.length - 1;
         this.visibleOptions = [];
       } else {
+        // Second backspace: delete the highlighted item
         this.popValue();
         this.selectedIndex = -1;
       }
@@ -1444,8 +1675,23 @@ export class Select<T extends SelectOption> extends FieldElement {
   }
 
   private handleInput(evt: KeyboardEvent) {
-    const ele = evt.currentTarget as HTMLInputElement;
-    this.input = ele.value;
+    const ele = evt.currentTarget as HTMLElement;
+
+    if (this.useExpressionInput) {
+      // Extract plain text and caret before modifying DOM
+      const text = getTextFromEditableDiv(ele);
+      const caretPos = getCaretOffset(ele);
+      this.input = text;
+      // Re-render with highlighting and restore caret synchronously
+      this.renderExpressionHighlight(ele, text);
+      try {
+        setCaretRange(ele, caretPos, caretPos);
+      } catch {
+        // Caret restore may fail if text is empty
+      }
+    } else {
+      this.input = (ele as HTMLInputElement).value;
+    }
   }
 
   private handleCancel() {
@@ -1457,6 +1703,19 @@ export class Select<T extends SelectOption> extends FieldElement {
     this.cursorIndex = event.detail.index;
   }
 
+  /** Returns the searchbox element, whether it's an input or contenteditable div. */
+  private getSearchboxElement(): HTMLElement | null {
+    return this.shadowRoot.querySelector('.searchbox');
+  }
+
+  /** Checks if the event target is the expression contenteditable input. */
+  private isExpressionInputTarget(target: EventTarget): boolean {
+    return (
+      target instanceof HTMLElement &&
+      target.classList.contains('expression-input')
+    );
+  }
+
   private handleContainerClick(event: MouseEvent) {
     if (this.disabled) {
       // prevent opening dropdown right after drag-and-drop
@@ -1466,8 +1725,9 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
 
     this.focused = true;
-    if ((event.target as any).tagName !== 'INPUT') {
-      const input = this.shadowRoot.querySelector('input');
+    const targetTag = (event.target as any).tagName;
+    if (targetTag !== 'INPUT' && !this.isExpressionInputTarget(event.target)) {
+      const input = this.getSearchboxElement();
       if (input) {
         input.click();
         input.focus();
@@ -1510,6 +1770,23 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
   }
 
+  private renderHighlightedName(option: T): TemplateResult | string {
+    const name = this.getNameInternal(option);
+    if (this.expressions && name.startsWith('@')) {
+      const parser =
+        this.expressions === 'session' ? sessionParser : messageParser;
+      const tokens = tokenize(name, parser);
+      return html`${tokens.map((token) => {
+        const cls = getTokenClass(token);
+        const isMono = EXPRESSION_TOKENS.has(token.type);
+        return html`<span class="${isMono ? `${cls} tok-mono` : cls}"
+          >${token.text}</span
+        >`;
+      })}`;
+    }
+    return name;
+  }
+
   public renderOptionDefault(option: T): TemplateResult {
     if (!option) {
       return null;
@@ -1533,7 +1810,7 @@ export class Select<T extends SelectOption> extends FieldElement {
               name="${icon}"
               style="margin-right:0.5em;"
             ></temba-icon>`
-          : null}<span>${this.getNameInternal(option)}</span>
+          : null}<span>${this.renderHighlightedName(option)}</span>
       </div>
     `;
   }
@@ -1710,10 +1987,21 @@ export class Select<T extends SelectOption> extends FieldElement {
 
     const anchorStyles = this.anchorPosition
       ? {
-          top: '0px',
+          top: `${this.anchorPosition.top || 0}px`,
           left: `${this.anchorPosition.left - 10}px`
         }
       : {};
+
+    // Show grey text when input would not be accepted
+    const inputGrey =
+      this.input &&
+      (this.emails || this.tags) &&
+      !this.isAcceptableInput(this.input);
+
+    const inputStyles: StyleInfo = {
+      ...this.inputStyle,
+      ...(inputGrey ? { color: '#ccc' } : {})
+    };
 
     const input = this.searchable
       ? html`
@@ -1721,39 +2009,52 @@ export class Select<T extends SelectOption> extends FieldElement {
             class="input-wrapper"
             style="${this.focused ? 'display:flex;' : ''}"
           >
-            <input
-              class="searchbox"
-              style="${this.inputStyle ? styleMap(this.inputStyle) : ''};"
-              @input=${this.handleInput}
-              @keydown=${this.handleKeyDown}
-              @click=${this.handleClick}
-              type="text"
-              .value=${this.input}
-            />
+            ${this.useExpressionInput
+              ? html`<div
+                  class="searchbox expression-input"
+                  contenteditable="true"
+                  spellcheck="false"
+                  style=${styleMap(inputStyles)}
+                  @input=${this.handleInput}
+                  @keydown=${this.handleKeyDown}
+                  @click=${this.handleClick}
+                ></div>`
+              : html`<input
+                  class="searchbox"
+                  style=${styleMap(inputStyles)}
+                  @input=${this.handleInput}
+                  @keydown=${this.handleKeyDown}
+                  @click=${this.handleClick}
+                  type="text"
+                  .value=${this.input}
+                />`}
             <div id="anchor" style=${styleMap(anchorStyles)}></div>
           </div>
         `
       : null;
 
-    const items = html`${!this.isMultiMode && !this.resolving ? input : null}
-    ${this.isMultiMode && this.values.length > 1
-      ? html`
-          <temba-sortable-list
-            horizontal
-            @temba-order-changed=${this.handleOrderChanged}
-          >
-            ${this.values.map(
-              (selected: any, index: number) => html`
-                <div
-                  class="sortable selected-item ${index === this.selectedIndex
-                    ? 'focused'
-                    : ''} ${this.draggingId === `selected-${index}`
-                    ? 'dragging'
-                    : ''}"
-                  id="selected-${index}"
-                  style="
+    const multiItems =
+      this.isMultiMode &&
+      (this.emails || this.tags || this.values.length > 1) &&
+      (this.values.length > 0 || this.focused)
+        ? html`
+            <temba-sortable-list
+              horizontal
+              @temba-order-changed=${this.handleOrderChanged}
+            >
+              ${this.values.map(
+                (selected: any, index: number) => html`
+                  <div
+                    class="sortable selected-item ${index === this.selectedIndex
+                      ? 'focused'
+                      : ''} ${this.draggingId === `selected-${index}`
+                      ? 'dragging'
+                      : ''}"
+                    id="selected-${index}"
+                    style="
                                 vertical-align: middle;
-                                background: rgba(100,100,100,0.1);
+                                background: #fff;
+                                border: 1px solid rgba(100,100,100,0.3);
                                 user-select: none;
                                 border-radius: 2px;
                                 align-items: center;
@@ -1766,47 +2067,46 @@ export class Select<T extends SelectOption> extends FieldElement {
                                 line-height: var(--temba-select-selected-line-height);
                                 --icon-color: var(--color-text-dark);
                                 ${index === this.selectedIndex
-                    ? 'background: rgba(100,100,100,0.3);'
-                    : ''}
+                      ? 'background: rgba(100,100,100,0.3);'
+                      : ''}
                                 ${this.draggingId === `selected-${index}`
-                    ? 'opacity: 0.5;'
-                    : ''}
+                      ? 'opacity: 0.5;'
+                      : ''}
                               "
-                >
-                  ${this.isMultiMode
-                    ? html`
-                        <div
-                          class="remove-item"
-                          style="
-                                        cursor: pointer;
-                                        display: inline-block;
-                                        padding: 3px 6px;
-                                        border-right: 1px solid rgba(100,100,100,0.2);
-                                        margin: 0;
-                                        background: rgba(100,100,100,0.05);
-                                        margin-top:1px;
-                                      "
-                          @click=${(evt: MouseEvent) => {
-                            evt.preventDefault();
-                            evt.stopPropagation();
-                            this.handleRemoveSelection(selected);
-                          }}
-                        >
-                          <temba-icon
-                            name="${Icon.delete_small}"
-                            size="1"
-                          ></temba-icon>
-                        </div>
-                      `
-                    : null}
-                  ${this.renderSelectedItem(selected)}
-                </div>
-              `
-            )}
-            ${input}
-          </temba-sortable-list>
-        `
-      : html`${this.values.map(
+                  >
+                    <div
+                      class="remove-item"
+                      style="
+                                      cursor: pointer;
+                                      display: inline-block;
+                                      padding: 3px 6px;
+                                      border-right: 1px solid rgba(100,100,100,0.2);
+                                      margin: 0;
+                                      background: rgba(100,100,100,0.05);
+                                      margin-top:1px;
+                                    "
+                      @click=${(evt: MouseEvent) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        this.handleRemoveSelection(selected);
+                      }}
+                    >
+                      <temba-icon
+                        name="${Icon.delete_small}"
+                        size="1"
+                      ></temba-icon>
+                    </div>
+                    ${this.renderSelectedItem(selected)}
+                  </div>
+                `
+              )}
+              ${input}
+            </temba-sortable-list>
+          `
+        : null;
+
+    const singleItems = !multiItems
+      ? html`${this.values.map(
           (selected: any, index: number) => html`
             <div
               class="selected-item ${index === this.selectedIndex
@@ -1818,6 +2118,9 @@ export class Select<T extends SelectOption> extends FieldElement {
                             color: var(--color-widget-text);
                             line-height: var(--temba-select-selected-line-height);
                             --icon-color: var(--color-text-dark);
+                            ${this.isMultiMode
+                ? 'vertical-align: middle; background: #fff; border: 1px solid rgba(100,100,100,0.3); user-select: none; border-radius: 2px; align-items: center; flex-direction: row; flex-wrap: nowrap; margin: 2px 2px;'
+                : ''}
                             ${index === this.selectedIndex
                 ? 'background: rgba(100,100,100,0.3);'
                 : ''}
@@ -1849,8 +2152,11 @@ export class Select<T extends SelectOption> extends FieldElement {
             </div>
           `
         )}
-        ${this.isMultiMode && this.searchable && this.focused ? input : null}
-        ${placeholderElement}`}`;
+        ${this.isMultiMode && this.searchable && this.focused ? input : null}`
+      : null;
+
+    const items = html`${!this.isMultiMode && !this.resolving ? input : null}
+    ${multiItems}${singleItems} ${placeholderElement}`;
 
     return html`
         <slot></slot>

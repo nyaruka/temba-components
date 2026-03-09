@@ -2,7 +2,7 @@ import { TemplateResult, css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
 import { CompletionOption, Position } from '../interfaces';
-import { tokenize, TokenType, Token } from '../excellent/tokenizer';
+import { tokenize, TokenType } from '../excellent/tokenizer';
 import {
   messageParser,
   sessionParser,
@@ -13,222 +13,21 @@ import {
 import { getStore } from '../store/Store';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { msg } from '@lit/localize';
+import {
+  getCaretOffset,
+  getCaretEndOffset,
+  setCaretOffset,
+  setCaretRange,
+  getTextFromEditableDiv
+} from '../excellent/caret-utils';
+import {
+  EXPRESSION_TOKENS,
+  getTokenClass,
+  tokenCss
+} from '../excellent/token-styles';
 
-// ---------------------------------------------------------------------------
-// Cursor management utilities for contenteditable
-// Newlines are represented as \n characters inside <span class="tok-newline">
-// elements, so they're handled as regular text by cursor utilities.
-// Browser-added <br> artifacts are ignored (treated as zero-length).
-// ---------------------------------------------------------------------------
-
-/** Gets the Selection object, handling shadow DOM. */
-function getSelectionFromRoot(element: HTMLElement): Selection | null {
-  const root = element.getRootNode() as ShadowRoot;
-  if ((root as any).getSelection) {
-    return (root as any).getSelection();
-  }
-  return window.getSelection();
-}
-
-/** Returns the plain-text length of a DOM node. Ignores browser <br> artifacts. */
-function nodeTextLength(node: Node): number {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent.length;
-  }
-  // Ignore browser-added <br> artifacts
-  if (node.nodeName === 'BR') {
-    return 0;
-  }
-  let len = 0;
-  for (const child of Array.from(node.childNodes)) {
-    len += nodeTextLength(child);
-  }
-  return len;
-}
-
-/** Converts a DOM selection position (container + offset) to a plain-text offset. */
-function domPositionToTextOffset(
-  root: Node,
-  targetContainer: Node,
-  targetOffset: number
-): number {
-  let total = 0;
-
-  const walk = (node: Node): boolean => {
-    if (node === targetContainer) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        total += targetOffset;
-      } else {
-        // offset is a child index
-        for (let i = 0; i < targetOffset && i < node.childNodes.length; i++) {
-          total += nodeTextLength(node.childNodes[i]);
-        }
-      }
-      return true; // found
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      total += node.textContent.length;
-      return false;
-    }
-    // Ignore browser-added <br> artifacts
-    if (node.nodeName === 'BR') {
-      return false;
-    }
-
-    for (const child of Array.from(node.childNodes)) {
-      if (walk(child)) return true;
-    }
-    return false;
-  };
-
-  walk(root);
-  return total;
-}
-
-/** Converts a plain-text offset to a DOM position (node + offset). */
-function textOffsetToDomPosition(
-  root: Node,
-  targetOffset: number
-): { node: Node; offset: number } | null {
-  let remaining = targetOffset;
-
-  const walk = (node: Node): { node: Node; offset: number } | null => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      if (remaining <= node.textContent.length) {
-        return { node, offset: remaining };
-      }
-      remaining -= node.textContent.length;
-      return null;
-    }
-    // Ignore browser-added <br> artifacts
-    if (node.nodeName === 'BR') {
-      return null;
-    }
-
-    for (const child of Array.from(node.childNodes)) {
-      const result = walk(child);
-      if (result) return result;
-    }
-    return null;
-  };
-
-  return walk(root);
-}
-
-/**
- * Extracts plain text from the contenteditable DOM by walking our span structure.
- * Ignores browser-added <br> artifacts. Our newlines are \n chars inside spans.
- */
-function getTextFromEditableDiv(element: HTMLElement): string {
-  let text = '';
-  for (const child of Array.from(element.childNodes)) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      text += child.textContent;
-    } else if (child.nodeType === Node.ELEMENT_NODE) {
-      // Skip browser-added <br> artifacts
-      if (child.nodeName === 'BR') {
-        continue;
-      }
-      // Recurse into spans and other elements
-      text += getTextFromEditableDiv(child as HTMLElement);
-    }
-  }
-  return text;
-}
-
-/** Gets the caret (selection start) as a plain-text offset. */
-function getCaretOffset(element: HTMLElement): number {
-  const selection = getSelectionFromRoot(element);
-  if (!selection || selection.rangeCount === 0) return 0;
-  const range = selection.getRangeAt(0);
-  return domPositionToTextOffset(
-    element,
-    range.startContainer,
-    range.startOffset
-  );
-}
-
-/** Gets the selection end as a plain-text offset. */
-function getCaretEndOffset(element: HTMLElement): number {
-  const selection = getSelectionFromRoot(element);
-  if (!selection || selection.rangeCount === 0) return 0;
-  const range = selection.getRangeAt(0);
-  return domPositionToTextOffset(element, range.endContainer, range.endOffset);
-}
-
-/** Sets the caret to a plain-text offset. */
-function setCaretOffset(element: HTMLElement, offset: number): void {
-  const pos = textOffsetToDomPosition(element, offset);
-  if (!pos) return;
-  const selection = getSelectionFromRoot(element);
-  if (!selection) return;
-  const range = document.createRange();
-  range.setStart(pos.node, pos.offset);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
-/** Sets a selection range by plain-text offsets. */
-function setCaretRange(element: HTMLElement, start: number, end: number): void {
-  const startPos = textOffsetToDomPosition(element, start);
-  const endPos = textOffsetToDomPosition(element, end);
-  if (!startPos || !endPos) return;
-  const selection = getSelectionFromRoot(element);
-  if (!selection) return;
-  const range = document.createRange();
-  range.setStart(startPos.node, startPos.offset);
-  range.setEnd(endPos.node, endPos.offset);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
-// ---------------------------------------------------------------------------
-// Token type → CSS class mapping
-// ---------------------------------------------------------------------------
-
-const TOKEN_CLASS_MAP: Record<string, string> = {
-  [TokenType.Text]: 'tok-text',
-  [TokenType.ExpressionPrefix]: 'tok-prefix',
-  [TokenType.Identifier]: 'tok-id',
-  [TokenType.FunctionName]: 'tok-fn',
-  [TokenType.StringLiteral]: 'tok-str',
-  [TokenType.NumberLiteral]: 'tok-num',
-  [TokenType.Keyword]: 'tok-kw',
-  [TokenType.Operator]: 'tok-op',
-  [TokenType.ContextRef]: 'tok-ctx',
-  [TokenType.Separator]: 'tok-sep',
-  [TokenType.Whitespace]: 'tok-ws',
-  [TokenType.Arrow]: 'tok-arrow',
-  [TokenType.Bracket]: 'tok-bracket',
-  [TokenType.EscapedAt]: 'tok-text',
-  [TokenType.Paren]: 'tok-paren'
-};
-
-/** Expression token types get monospace font. */
-const EXPRESSION_TOKENS = new Set([
-  TokenType.ExpressionPrefix,
-  TokenType.Identifier,
-  TokenType.FunctionName,
-  TokenType.StringLiteral,
-  TokenType.NumberLiteral,
-  TokenType.Keyword,
-  TokenType.Operator,
-  TokenType.ContextRef,
-  TokenType.Separator,
-  TokenType.Whitespace,
-  TokenType.Arrow,
-  TokenType.Bracket,
-  TokenType.Paren
-]);
-
-function getTokenClass(token: Token): string {
-  if (token.type === TokenType.Paren && token.balanced === false) {
-    return 'tok-paren-unmatched';
-  }
-  return TOKEN_CLASS_MAP[token.type] || 'tok-text';
-}
+// Token type → CSS class mapping and caret utilities are now shared modules.
+// See ../excellent/token-styles.ts and ../excellent/caret-utils.ts
 
 // ---------------------------------------------------------------------------
 // RichEditor component
@@ -310,91 +109,8 @@ export class RichEditor extends FieldElement {
         pointer-events: none;
       }
 
-      /* Token styles */
-      .tok-text {
-        color: inherit;
-      }
-
-      .tok-prefix {
-        color: var(--expression-color, #0086e0);
-        font-weight: 600;
-      }
-
-      .tok-id {
-        color: var(--expression-color, #0086e0);
-      }
-
-      .tok-fn {
-        color: var(--expression-fn-color, #0086e0);
-        font-weight: 900;
-      }
-
-      .tok-str {
-        color: var(--expression-string-color, #06a810);
-      }
-
-      .tok-num {
-        color: var(--expression-number-color, #c25ceb);
-      }
-
-      .tok-kw {
-        color: var(--expression-keyword-color, #1750eb);
-      }
-
-      .tok-op {
-        color: var(--expression-operator-color, #666);
-      }
-
-      .tok-ctx {
-        color: var(--expression-color, #0086e0);
-      }
-
-      .tok-sep {
-        color: var(--expression-operator-color, #666);
-      }
-
-      .tok-arrow {
-        color: var(--expression-operator-color, #666);
-      }
-
-      .tok-bracket {
-        color: var(--expression-operator-color, #666);
-      }
-
-      .tok-ws {
-        /* whitespace tokens — no special color */
-      }
-
-      .tok-newline {
-        /* Newline chars rendered via white-space: pre-wrap on parent */
-      }
-
-      .tok-paren {
-        /* color: var(--expression-paren-color, #5492dd);*/
-        color: #999;
-      }
-
-      .tok-paren-unmatched {
-        color: var(--expression-paren-unmatched-color, #ff0011);
-        font-weight: 900;
-      }
-
-      .tok-fn-invalid {
-        text-decoration: wavy underline #ff0011;
-        text-underline-offset: 3px;
-      }
-
-      .tok-mono {
-        font-family: var(
-          --expression-font-family,
-          'SFMono-Regular',
-          'Consolas',
-          'Liberation Mono',
-          'Menlo',
-          monospace
-        );
-        font-size: 0.95em;
-      }
+      /* Token styles (shared) */
+      ${tokenCss}
 
       /* Completion popup styles */
       temba-options {

@@ -7,7 +7,11 @@ import {
   FlowTypes
 } from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
-import { renderStringList, renderClamped } from '../utils';
+import {
+  renderStringList,
+  renderClamped,
+  renderHighlightedText
+} from '../utils';
 import { Icon } from '../../Icons';
 
 export const send_email: ActionConfig = {
@@ -16,9 +20,12 @@ export const send_email: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
-      <div>${renderStringList(action.addresses, Icon.email)}</div>
+      <div>${renderStringList(action.addresses, Icon.email, true)}</div>
       <div style="margin-top: 0.5em">
-        ${renderClamped(action.subject, action.subject)}
+        ${renderClamped(
+          renderHighlightedText(action.subject, true),
+          action.subject
+        )}
       </div>
     </div>`;
   },
@@ -29,12 +36,14 @@ export const send_email: ActionConfig = {
       multi: true,
       searchable: true,
       placeholder: 'Enter email addresses...',
-      emails: true
+      emails: true,
+      expressions: 'session'
     },
     subject: {
       type: 'text',
       label: 'Subject',
       required: true,
+      evaluated: true,
       placeholder: 'Enter email subject',
       maxLength: 255
     },

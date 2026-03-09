@@ -584,34 +584,35 @@ describe('temba-select', () => {
         })
       );
 
-      // Try typing an invalid email - should not show as option
+      // Try typing an invalid email and pressing Enter - should not be added
       await typeInto('temba-select', 'invalid-email', false, false);
       await clock.runAll();
       await select.updateComplete;
 
-      let visibleOptions = select.shadowRoot.querySelectorAll(
-        '.option:not(.header)'
+      const searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      searchbox.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
       );
-      expect(visibleOptions.length).to.equal(0);
+      await select.updateComplete;
+      expect(select.values.length).to.equal(0);
 
       // Clear input
       select.input = '';
       await select.updateComplete;
 
-      // Try typing a valid email - should show as option
+      // Try typing a valid email and pressing Enter - should be added
       await typeInto('temba-select', 'test@example.com', false, false);
       await clock.runAll();
       await select.updateComplete;
-      await openSelect(clock, select);
 
-      const optionsComponent = select.shadowRoot.querySelector(
-        'temba-options'
-      ) as any;
-      visibleOptions = optionsComponent.shadowRoot.querySelectorAll(
-        '.option:not(.header)'
+      searchbox.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
       );
-      expect(visibleOptions.length).to.equal(1);
-      expect(visibleOptions[0].textContent).to.contain('test@example.com');
+      await select.updateComplete;
+      expect(select.values.length).to.equal(1);
+      expect(select.values[0].value).to.equal('test@example.com');
     });
 
     it('behaves as multi-select when emails is true', async () => {
@@ -624,24 +625,34 @@ describe('temba-select', () => {
         })
       );
 
-      // Add first email
+      // Add first email via Enter
       await typeInto('temba-select', 'first@example.com', false, false);
       await clock.runAll();
       await select.updateComplete;
 
-      // Click on the first option to select it using the standard helper
-      await openAndClick(clock, select, 0);
+      let searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      searchbox.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+      );
+      await select.updateComplete;
 
       expect(select.values.length).to.equal(1);
       expect(select.values[0].value).to.equal('first@example.com');
 
-      // Add second email
+      // Add second email via Enter
       await typeInto('temba-select', 'second@example.com', false, false);
       await clock.runAll();
       await select.updateComplete;
 
-      // Click on the second option to select it using the standard helper
-      await openAndClick(clock, select, 0);
+      searchbox = select.shadowRoot.querySelector(
+        '.searchbox'
+      ) as HTMLInputElement;
+      searchbox.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+      );
+      await select.updateComplete;
 
       // Should have both emails selected (multi-select behavior)
       expect(select.values.length).to.equal(2);
@@ -659,7 +670,7 @@ describe('temba-select', () => {
         })
       );
 
-      // Test various email formats
+      // Test various email formats — Enter should only add valid emails
       const testCases = [
         { email: 'valid@example.com', shouldBeValid: true },
         { email: 'user.name+tag@example.co.uk', shouldBeValid: true },
@@ -670,6 +681,7 @@ describe('temba-select', () => {
         { email: 'user@example', shouldBeValid: false } // no domain extension
       ];
 
+      let expectedCount = 0;
       for (const testCase of testCases) {
         select.input = '';
         await select.updateComplete;
@@ -677,24 +689,26 @@ describe('temba-select', () => {
         await typeInto('temba-select', testCase.email, false, false);
         await clock.runAll();
         await select.updateComplete;
-        await openSelect(clock, select);
 
-        const optionsComponent = select.shadowRoot.querySelector(
-          'temba-options'
-        ) as any;
-        const visibleOptions = optionsComponent.shadowRoot.querySelectorAll(
-          '.option:not(.header)'
+        const searchbox = select.shadowRoot.querySelector(
+          '.searchbox'
+        ) as HTMLInputElement;
+        searchbox.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
         );
+        await select.updateComplete;
+
         if (testCase.shouldBeValid) {
+          expectedCount++;
           expect(
-            visibleOptions.length,
+            select.values.length,
             `${testCase.email} should be valid`
-          ).to.equal(1);
+          ).to.equal(expectedCount);
         } else {
           expect(
-            visibleOptions.length,
+            select.values.length,
             `${testCase.email} should be invalid`
-          ).to.equal(0);
+          ).to.equal(expectedCount);
         }
       }
     });
