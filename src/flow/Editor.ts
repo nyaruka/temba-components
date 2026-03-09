@@ -3725,6 +3725,7 @@ export class Editor extends RapidElement {
   }
 
   private handleNodeTypeSelectorClosed(): void {
+    this.addActionToNodeUuid = null;
     this.cleanUpConnection();
   }
 
