@@ -148,6 +148,7 @@ export interface SendBroadcast extends Action {
   text: string;
   groups: Group[];
   contacts: NamedObject[];
+  legacy_vars?: string[];
   attachments?: string[];
 }
 

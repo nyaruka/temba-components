@@ -7,12 +7,7 @@ import { CustomEventType } from '../interfaces';
  * Event detail for canvas menu selection
  */
 export interface CanvasMenuSelection {
-  action:
-    | 'sticky'
-    | 'other'
-    | 'send_msg'
-    | 'wait_for_response'
-    | 'reflow';
+  action: 'sticky' | 'other' | 'send_msg' | 'wait_for_response' | 'reflow';
   position: { x: number; y: number };
 }
 

@@ -100,6 +100,18 @@ describe('send_broadcast action config', () => {
       } as SendBroadcast,
       'many-groups'
     );
+
+    helper.testAction(
+      {
+        uuid: 'test-action-7',
+        type: 'send_broadcast',
+        text: 'This is the thing.',
+        groups: [],
+        contacts: [],
+        legacy_vars: ['@parent']
+      } as SendBroadcast,
+      'with-legacy-vars'
+    );
   });
 
   describe('form data conversion', () => {
@@ -189,6 +201,62 @@ describe('send_broadcast action config', () => {
       send_broadcast.sanitize(formData);
 
       expect(formData.text).to.equal('Test message');
+    });
+
+    it('converts action to form data correctly with legacy_vars', () => {
+      const action: SendBroadcast = {
+        uuid: 'test-uuid',
+        type: 'send_broadcast',
+        text: 'Test message',
+        groups: [],
+        contacts: [],
+        legacy_vars: ['@parent', '@child']
+      };
+
+      const formData = send_broadcast.toFormData(action);
+
+      expect(formData.recipients).to.have.lengthOf(2);
+      expect(formData.recipients[0]).to.deep.equal({
+        id: '@parent',
+        name: '@parent',
+        type: 'expression'
+      });
+      expect(formData.recipients[1]).to.deep.equal({
+        id: '@child',
+        name: '@child',
+        type: 'expression'
+      });
+    });
+
+    it('converts form data to action correctly with expression recipients', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        recipients: [
+          { id: 'group-1', name: 'Group 1', type: 'group' },
+          { name: '@parent', value: '@parent', expression: true }
+        ],
+        text: 'Test message',
+        attachments: []
+      };
+
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
+
+      expect(action.groups).to.have.lengthOf(1);
+      expect(action.contacts).to.have.lengthOf(0);
+      expect(action.legacy_vars).to.deep.equal(['@parent']);
+    });
+
+    it('omits legacy_vars when no expressions present', () => {
+      const formData = {
+        uuid: 'test-uuid',
+        recipients: [{ id: 'contact-1', name: 'Contact 1', type: 'contact' }],
+        text: 'Test message',
+        attachments: []
+      };
+
+      const action = send_broadcast.fromFormData(formData) as SendBroadcast;
+
+      expect(action.legacy_vars).to.be.undefined;
     });
 
     it('should strip superfluous API metadata from contacts and groups', () => {
