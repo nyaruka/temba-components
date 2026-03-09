@@ -9,6 +9,49 @@ import {
 } from './shared';
 import { renderClamped, renderHighlightedText } from '../utils';
 
+// Default headers as {key, value} arrays (format used by key-value editor)
+const defaultGetHeaders = [{ key: 'Accept', value: 'application/json' }];
+
+const defaultPostHeaders = [
+  { key: 'Accept', value: 'application/json' },
+  { key: 'Content-Type', value: 'application/json' }
+];
+
+function headersMatchDefaults(headers: any[]): boolean {
+  if (!headers || headers.length === 0) return true;
+  const filtered = headers.filter(
+    (h: any) => (h.key || h.name || '') !== '' || (h.value || '') !== ''
+  );
+  if (filtered.length === 0) return true;
+  for (const defaults of [defaultGetHeaders, defaultPostHeaders]) {
+    if (
+      filtered.length === defaults.length &&
+      filtered.every(
+        (h: any, i: number) =>
+          (h.key || h.name) === defaults[i].key && h.value === defaults[i].value
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getDefaultHeaders(method: string): { key: string; value: string }[] {
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+    return defaultPostHeaders.map((h) => ({ ...h }));
+  }
+  return defaultGetHeaders.map((h) => ({ ...h }));
+}
+
+// Default headers as Record format (for toFormData, before processFormDataForEditing converts them)
+function getDefaultHeadersRecord(method: string): Record<string, string> {
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+    return { Accept: 'application/json', 'Content-Type': 'application/json' };
+  }
+  return { Accept: 'application/json' };
+}
+
 const defaultPost = `@(json(object(
   "contact", object(
     "uuid", contact.uuid, 
@@ -47,7 +90,23 @@ export const split_by_webhook: NodeConfig = {
       sortable: true,
       keyPlaceholder: 'Header name',
       valuePlaceholder: 'Header value',
-      minRows: 0
+      minRows: 0,
+      dependsOn: ['method'],
+      computeValue: (
+        values: Record<string, any>,
+        currentValue: any,
+        _originalValues?: Record<string, any>
+      ) => {
+        const method =
+          Array.isArray(values.method) && values.method.length > 0
+            ? values.method[0].value || values.method[0].name
+            : values.method;
+
+        if (headersMatchDefaults(currentValue)) {
+          return getDefaultHeaders(method);
+        }
+        return currentValue;
+      }
     },
     result_name: resultNameField,
     body: {
@@ -141,7 +200,9 @@ export const split_by_webhook: NodeConfig = {
       uuid: node.uuid,
       method: callWebhookAction?.method || 'GET',
       url: callWebhookAction?.url || '',
-      headers: callWebhookAction?.headers || [],
+      headers:
+        callWebhookAction?.headers ||
+        getDefaultHeadersRecord(callWebhookAction?.method || 'GET'),
       body: callWebhookAction?.body || '',
       result_name: node.router?.result_name || ''
     };

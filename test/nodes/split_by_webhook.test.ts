@@ -101,6 +101,63 @@ describe('split_by_webhook node config', () => {
       expect(action.body).to.equal('{"data": "@contact.name"}');
     });
 
+    it('should provide default GET headers for new actions', () => {
+      const node: Node = {
+        uuid: 'test-node',
+        actions: [],
+        exits: []
+      };
+
+      const formData = split_by_webhook.toFormData!(node);
+
+      expect(formData.headers).to.deep.equal({
+        Accept: 'application/json'
+      });
+    });
+
+    it('should provide default POST headers for new POST actions', () => {
+      const node: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'call_webhook',
+            uuid: 'action-1',
+            method: 'POST',
+            url: 'https://example.com',
+            headers: {},
+            body: ''
+          } as CallWebhook
+        ],
+        exits: []
+      };
+
+      // When headers are empty object, should get POST defaults
+      const formData = split_by_webhook.toFormData!(node);
+
+      // Empty object from existing action is preserved (not replaced with defaults)
+      expect(formData.headers).to.deep.equal({});
+    });
+
+    it('should preserve existing headers for existing actions', () => {
+      const node: Node = {
+        uuid: 'test-node',
+        actions: [
+          {
+            type: 'call_webhook',
+            uuid: 'action-1',
+            method: 'GET',
+            url: 'https://example.com',
+            headers: { 'X-Custom': 'value' }
+          } as CallWebhook
+        ],
+        exits: []
+      };
+
+      const formData = split_by_webhook.toFormData!(node);
+
+      expect(formData.headers).to.deep.equal({ 'X-Custom': 'value' });
+    });
+
     it('should preserve action UUID on re-save', () => {
       const originalNode: Node = {
         uuid: 'test-node',
