@@ -1674,7 +1674,7 @@ export class Select<T extends SelectOption> extends FieldElement {
     return this.staticOptions;
   }
 
-  private handleInput(evt: KeyboardEvent) {
+  private handleInput(evt: Event) {
     const ele = evt.currentTarget as HTMLElement;
 
     if (this.useExpressionInput) {
