@@ -1562,6 +1562,10 @@ export class Select<T extends SelectOption> extends FieldElement {
         this.visibleOptions = [];
         this.cursorIndex = 0;
       }
+      if (this.emails || this.tags) {
+        this.input = '';
+        this.completionOptions = [];
+      }
 
       if (
         this.isMultiMode &&
