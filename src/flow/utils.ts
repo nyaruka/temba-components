@@ -126,7 +126,7 @@ export const renderLineItem = (
   icon?: string,
   content?: TemplateResult
 ) => {
-  return html`<div style="display:flex;items-align:center;">
+  return html`<div style="display:flex;align-items:center;">
     ${icon
       ? html`<temba-icon name=${icon} style="margin-right:0.5em"></temba-icon>`
       : null}
@@ -180,7 +180,7 @@ export const renderStringList = (
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;items-align:center;margin-top:0.2em;">
+      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
         ${icon
           ? html`<div style="margin-right:0.4em; width: 1em;"></div>` // spacing placeholder
           : null}
@@ -209,7 +209,7 @@ export const renderMixedList = (items: { name: string; icon: string }[]) => {
   if (items.length > maxDisplay && items.length !== 4) {
     const remainingCount = items.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;items-align:center;margin-top:0.2em;">
+      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
         <div style="margin-right:0.4em; width: 1em;"></div>
         <div style="font-size:0.8em">+${remainingCount} more</div>
       </div>`
@@ -271,7 +271,7 @@ export const renderFlowLinks = (flows: NamedObject[], icon?: string) => {
   if (flows.length > maxDisplay && flows.length !== 4) {
     const remainingCount = flows.length - maxDisplay;
     itemElements.push(
-      html`<div style="display:flex;items-align:center;margin-top:0.2em;">
+      html`<div style="display:flex;align-items:center;margin-top:0.2em;">
         ${icon
           ? html`<div style="margin-right:0.4em; width: 1em;"></div>`
           : null}
